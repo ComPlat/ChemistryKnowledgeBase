@@ -1,0 +1,32 @@
+//
+// Styling for the SearchBar
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+.p-search {
+
+	width: 100%;
+
+	@include media-breakpoint-up( md ) {
+		width: auto;
+	}
+
+	.searchGoButton, .mw-searchButton {
+
+		@extend .btn;
+		@extend .btn-#{$cmln-search-bar-btn-color}; // FIXME: Should this be ".btn-secondary"? Or some self-defined button style?
+
+		border: {
+			top-color: $input-group-addon-border-color;
+			bottom-color: $input-group-addon-border-color;
+			left-width: 0;
+		}
+
+		&:last-child {
+			border-right-color: $input-group-addon-border-color;
+		}
+	}
+}

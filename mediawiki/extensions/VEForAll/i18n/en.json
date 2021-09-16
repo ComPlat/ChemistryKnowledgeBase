@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"veforall-desc": "A library for extensions to add VisualEditor",
+	"veforall-switch-editor-tool-title": "Switch to wikitext editor",
+	"apihelp-veforall-parsoid-utils-summary": "Convert text back and forth from Wikitext to HTML",
+	"apihelp-veforall-parsoid-utils-param-from": "'html' or 'wikitext'",
+	"apihelp-veforall-parsoid-utils-param-to": "'html' or 'wikitext'",
+	"apihelp-veforall-parsoid-utils-param-content": "content to be converted",
+	"apihelp-veforall-parsoid-utils-param-title": "title of the page holding the content",
+	"apihelp-veforall-parsoid-utils-param-pageid": "page ID of the page holding the content",
+	"apihelp-veforall-parsoid-utils-example-1": "convert ''blah'' from wikitext to html",
+	"veforall-api-error-unsupported-conversion": "Conversion from '$1' to '$2' is not supported.",
+	"veforall-api-error-unsupported-parser-conversion": "Conversion from '$1' to '$2' is not supported by the core parser.",
+	"veforall-api-error-parsoid-error": "Request to $1 for $2 to $3 conversion of content connected to title $4 failed: $5",
+	"veforall-form-instances-not-minimized": "Due to limitations in the software, some collapsed boxes had to be expanded before this form could be submitted. Please re-submit the form now."
+}

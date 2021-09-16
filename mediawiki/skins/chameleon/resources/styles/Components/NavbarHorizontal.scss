@@ -1,0 +1,160 @@
+//
+// Styles for the NavbarHorizontal component
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+.p-navbar {
+
+	@extend .navbar;
+	@extend .navbar-light;
+
+	background-color: map-get( $theme-colors, $cmln-navbar-bg-color );
+
+	&.collapsible {
+		@extend .navbar-expand-#{$cmln-navbar-horizontal-collapse-point};
+
+		.navbar-collapse {
+
+			@extend .flex-column;
+			@extend .flex-#{$cmln-navbar-horizontal-collapse-point}-row;
+
+			&.show, &.collapsing {
+
+				display: flex;
+
+			}
+
+			&.collapsing .navbar-nav:not(.right):not(.flex-row) {
+				display: block;
+			}
+		}
+	}
+
+	&.not-collapsible {
+		@extend .navbar-expand;
+	}
+
+	&.small {
+		padding: {
+			top: 0;
+			bottom: 0;
+		};
+	}
+
+	a {
+		outline: none; // No outline around menu items.
+
+		&:visited {
+			color: $link-color;
+		}
+
+	}
+
+	.navbar-nav {
+
+		&.right {
+			@extend .ml-#{$cmln-navbar-horizontal-collapse-point}-auto;
+			@extend .mt-#{$cmln-navbar-horizontal-collapse-point}-0;
+			@extend .mt-4;
+			@extend .flex-row;
+			@extend .justify-content-center;
+		}
+
+		.dropdown-menu {
+
+			// no list bullets in a dropdown
+			list-style: none;
+			padding-left: 0;
+
+			// Override nav-link styling in case the menu item is in a dropdown
+			& > div > a:first-child:last-child {
+
+				@extend .dropdown-item;
+
+				&:before {
+					margin-right: 2 * $cmln-icon-margin;
+				}
+			}
+		}
+
+		.navbar-tools {
+
+			// TODO: use dedicated variable instead of $nav-link-padding-x
+			padding-left: $nav-link-padding-x;
+			padding-right: $nav-link-padding-x;
+
+		}
+
+		> .nav-item > .nav-link::before {
+			margin-right: $cmln-icon-margin;
+			display: inline-block;
+			text-decoration: none;
+		}
+	}
+
+	.navbar-tool > a {
+
+		@extend .nav-link;
+
+		position: relative;
+
+		padding-left: 0;
+		padding-right: 0;
+
+		.badge {
+			display: inline-block;
+			position: absolute;
+			left: $cmln-icon-margin;
+			bottom: .2rem;
+			font-size: 50%;
+		}
+	}
+
+	.navbar-toggler {
+		@extend .ml-auto;
+
+		.navbar-toggler-text {
+			padding-left: $navbar-toggler-padding-x;
+		}
+	}
+
+	.navbar-brand {
+		&.p-logo {
+
+			height: 2 * $nav-link-padding-y + $font-size-base;
+
+			padding: {
+				top: 0;
+				bottom: 0;
+			};
+		}
+
+		img {
+			height:   $cmln-navbar-logo-height;
+			position: relative;
+			top:      (2 * $nav-link-padding-y + $font-size-base - $cmln-navbar-logo-height) / 2;
+		}
+	}
+
+	.navbar-form {
+
+		padding-left: $nav-link-padding-x;
+		padding-right: $nav-link-padding-x;
+
+		button {
+			//@extend .btn-#{$cmln-search-bar-btn-color}; // FIXME: Should this be ".btn-secondary"? Or some self-defined button style?
+			color: $navbar-light-color;
+
+			@include hover-focus {
+				color: $navbar-light-hover-color;
+			}
+		}
+	}
+
+	a.navbar-more-tools, a.navbar-usernotloggedin, a.navbar-userloggedin, a.navbar-tool-link, a:visited.navbar-tool-link {
+		    color: $navbar-light-color;
+	}
+}

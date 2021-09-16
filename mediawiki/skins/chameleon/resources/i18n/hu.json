@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dj",
+			"Tacsipacsi"
+		]
+	},
+	"skinname-chameleon": "Kaméleon",
+	"chameleon-desc": "Egy rendkívül rugalmas alkalmazkodó felület Bootstrap 4-gyel",
+	"chameleon-loggedin": "Be vagy jelentkezve $1 néven.",
+	"chameleon-notloggedin": "Nem vagy bejelentkezve.",
+	"chameleon-newmessages": "Új üzeneteid vannak.",
+	"chameleon-nonewmessages": "Nincsenek új üzeneteid."
+}

@@ -1,0 +1,78 @@
+ == How-to use LDAP authentication locally ==
+
+1. Install OpenLDAP image in Docker
+
+    docker run -p 389:389 -p 636:636 --name my-openldap-container --detach osixia/openldap:1.5.0
+
+2. Install LDP tool in Windows: (or any other LDAP browser/editor)
+
+    https://www.microsoft.com/en-us/download/details.aspx?id=45520
+
+3. Add some data: (for example via LDP)
+
+dn: cn=horst,dc=example,dc=org
+objectClass: inetOrgPerson
+sn: hosse
+mail: horst@web.de
+userPassword: schinken
+cn: horst
+memberOf: cn=contributor,dc=example,dc=org
+
+
+4. put this into env.php:
+
+// -------------------------------------
+wfLoadExtension( 'PluggableAuth' );
+wfLoadExtension( 'LDAPProvider' );
+wfLoadExtension( 'LDAPAuthorization' );
+wfLoadExtension( 'LDAPAuthentication2' );
+wfLoadExtension( 'LDAPGroups' );
+
+ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, 0);
+$LDAPProviderDomainConfigProvider = function() {
+    $config = [
+        'LDAP' => [
+            'connection' => [
+                "server" => "192.168.56.1",   // <<- replace with your Host's IP
+                "port" => 389,
+                "enctype" => "clear",
+                "user" => "cn=admin,dc=example,dc=org",
+                "pass" => 'admin',
+                "options" => [
+                  //  "LDAP_OPT_DEREF" => 1,
+                    "LDAP_OPT_X_TLS_REQUIRE_CERT" => 0
+                ],
+
+                "basedn" => "dc=example,dc=org",
+                "groupbasedn" => "dc=example,dc=org",
+                "userbasedn" => "dc=example,dc=org",
+                "searchattribute" => "cn",
+                "usernameattribute" => "cn",
+                "realnameattribute" => "cn",
+                "emailattribute" => "mail",
+                "grouprequest" => "MediaWiki\\Extension\\LDAPProvider\\UserGroupsRequest\\UserMemberOf::factory",
+                "groupattribute" => "memberOf"
+            ],
+            'authorization' => [
+                'rules' => [
+                    'groups' => [
+                        'required' => [ ]
+                    ]
+                ]
+            ],
+            'groupsync' => [
+                "mechanism" => "mappedgroups",
+                //"locally-managed" => [ "local", "wiki", "group", "names" ]
+                "mapping" => [
+                    "contributor" => "cn=contributor,dc=example,dc=org",
+                    "sysop" => "cn=administrator,dc=example,dc=org",
+                    "bureaucrat" => "cn=administrator,dc=example,dc=org"
+                ]
+            ]
+        ]
+    ];
+
+    return new \MediaWiki\Extension\LDAPProvider\DomainConfigProvider\InlinePHPArray( $config );
+};
+
+$LDAPAuthentication2AllowLocalLogin=true;

@@ -1,0 +1,35 @@
+{
+    "name": "ChemExtension",
+    "author": "DIQA Projektmanagement GmbH",
+    "url": "https://www.diqa.de",
+    "description": "This extension allows displaying chemical formulas and editing them via pageforms.",
+    "version": "0.1",
+    "license-name": "GPL-2.0-or-later",
+    "type": "extension",
+    "requires": {
+        "MediaWiki": ">= 1.35.0",
+        "extensions": {
+            "Bootstrap": ">= 4.5.0"
+        }
+    },
+    "callback" : "DIQA\\ChemExtension\\Setup::initModules",
+    "SpecialPages": {
+        "KetcherEditor": "DIQA\\ChemExtension\\SpecialKetcherEditor"
+    },
+    "AutoloadNamespaces": {
+        "DIQA\\ChemExtension\\": "src/"
+    },
+    "Hooks": {
+        "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
+        "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay"
+    },
+    "ExtensionMessagesFiles": {
+        "ChemExtensionMagic": "i18n/MagicWords.php"
+    },
+    "MessagesDirs": {
+        "ChemExtension": [
+            "i18n"
+        ]
+    },
+    "manifest_version": 2
+}

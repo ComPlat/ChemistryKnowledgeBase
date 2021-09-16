@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Athena in Wonderland",
+			"Hamilton Abreu"
+		]
+	},
+	"veforall-desc": "Uma biblioteca para as extensões adicionarem o VisualEditor",
+	"veforall-switch-editor-tool-title": "Alternar para o editor da notação wiki",
+	"apihelp-veforall-parsoid-utils-summary": "Converter de texto wiki para HTML e vice-versa",
+	"apihelp-veforall-parsoid-utils-param-from": "'html' ou 'wikitext'",
+	"apihelp-veforall-parsoid-utils-param-to": "'html' ou 'wikitext'",
+	"apihelp-veforall-parsoid-utils-param-content": "conteúdo para ser convertido",
+	"apihelp-veforall-parsoid-utils-param-title": "título da página que tem o conteúdo",
+	"apihelp-veforall-parsoid-utils-param-pageid": "identificador da página que tem o conteúdo",
+	"apihelp-veforall-parsoid-utils-example-1": "converter ''blah'' de texto wiki para HTML",
+	"veforall-api-error-unsupported-conversion": "A conversão de '$1' para '$2' não é suportada.",
+	"veforall-api-error-unsupported-parser-conversion": "A conversão de '$1' para '$2' não é suportada pelo analisador sintático central.",
+	"veforall-api-error-parsoid-error": "O pedido de $1 para conversão de $2 para $3 de conteúdo ligado ao título $4 falhou: $5"
+}

@@ -1,0 +1,35 @@
+//
+// Central Chameleon style file
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+@import "functions";
+// @import "variables"; // imported at the correct position in SetupAfterCache.php
+@import "mixins";
+@import "mediawiki.legacy.shared";
+@import "utilities";
+@import "fixes";
+@import "basics";
+@import "mw-elements";
+@import "print";
+@import "specialpages";
+@import "extensionfixes";
+
+
+/**
+ * Component styles
+ *
+ * TODO: Include them programmatically only when necessary
+ */
+
+@import "Components/FooterComponents";
+@import "Components/MainContent";
+@import "Components/NavbarHorizontal";
+@import "Components/NewtalkNotifier";
+@import "Components/PageTools";
+@import "Components/PersonalTools";
+@import "Components/SearchBar";
+@import "specials/SpecialSearch";

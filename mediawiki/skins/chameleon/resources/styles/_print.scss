@@ -1,0 +1,33 @@
+//
+// Styles related to printing
+//
+// This file contains styles that mostly hide certain elements depending on the
+// media, e.g. some (like nav bars) for printing, some others (like the print
+// footer) on screens
+//
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+@media not print {
+
+	.printfooter {
+		display: none !important;
+	}
+}
+
+@media print {
+	.noprint,
+	.navbar,
+	.p-personal,
+	.p-search,
+	.p-contentnavigation,
+	.mw-editsection-like,
+	.footer-places,
+	.footer-icons {
+		display: none !important;
+	}
+
+}

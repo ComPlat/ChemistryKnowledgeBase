@@ -1,0 +1,114 @@
+//
+// Style fixes for extensions
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+/* Extension VisualEditor */
+.ve-ui-toolbar, .ve-ui-debugBar, .oo-ui-processDialog-navigation {
+	&, &::before, &::after {
+		box-sizing: content-box;
+	}
+}
+
+.ve-ui-overlay-global {
+	z-index: 1; // FIXME: Was $zindex-navbar-fixed + 1. What was $zindex-navbar-fixed?
+}
+
+// float the VE UI toolbar below a fixed or sticky navbar
+.navbar.navbar-fixed-top, .navbar + .sticky-wrapper {
+	~ * .ve-ui-toolbar-floating > .oo-ui-toolbar-bar {
+		//			transform: translateY($navbar-height);
+	}
+}
+
+/* Extension SemanticMediaWiki */
+.skin-chameleon {
+	.smw-editpage-help, .smw-search-results-prepend {
+		@extend .infobox;
+	}
+}
+
+/* Extension Echo */
+.skin-chameleon {
+	.mw-echo-ui-overlay {
+		// Prevent the popup from being below the content on the Notifications page
+		z-index: 2;
+	}
+
+	.mw-echo-alert {
+		padding: 0px;
+	}
+
+	#pt-notifications-alert .mw-echo-notifications-badge.oo-ui-icon-bell,
+	#pt-notifications-notice .mw-echo-notifications-badge.oo-ui-icon-tray {
+		top: 0px;
+	}
+
+	// MW 1.31
+	#pt-notifications-alert .mw-echo-notifications-badge:not(.oo-ui-icon-bell):before,
+	#pt-notifications-notice .mw-echo-notifications-badge:not(.oo-ui-icon-tray):before {
+		top: 1005px;
+	}
+}
+
+.echo-icons {
+	align-items: center;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	list-style: none;
+	margin: 0;
+
+	& > * + * {
+		margin-left: 0.75rem;
+	}
+}
+
+/* Extension MultimediaViewer */
+.skin-chameleon {
+	// Revert Bootstrap override
+	[class*="mw-mmv"] {
+		&, &::before, &::after {
+			box-sizing: content-box;
+		}
+	}
+
+	// Prevent horizontal scrolling
+	.mw-mmv-post-image {
+		overflow: hidden;
+	}
+
+	.mw-mmv-image-links-div {
+		width: 100%;
+	}
+
+	// Revert Bootstrap list padding
+	.mw-mmv-image-links {
+		padding: 0px;
+	}
+
+	// Increase metadata column width on narrow screens
+	@media (max-width: 500px) {
+		.mw-mmv-image-metadata-desc-column {
+			width: 50%;
+		}
+
+		.mw-mmv-image-metadata-links-column {
+			width: 40%;
+			max-width: 50%;
+		}
+
+		.mw-mmv-untruncated {
+			.mw-mmv-image-metadata-links-column {
+				width: 50%;
+			}
+		}
+
+		.mw-mmv-image-links {
+			word-break: break-word;
+		}
+	}
+}

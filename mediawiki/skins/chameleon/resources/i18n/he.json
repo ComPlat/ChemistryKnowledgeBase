@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"Nimrod Rak",
+			"Steeve815",
+			"YaronSh"
+		]
+	},
+	"skinname-chameleon": "זיקית",
+	"chameleon-desc": "מעטפת גמישה ומסתגלת בעזרת Bootstrap 4",
+	"chameleon-loggedin": "נכנסת בשם $1.",
+	"chameleon-notloggedin": "לא נכנסת",
+	"chameleon-newmessages": "יש לך הודעות חדשות",
+	"chameleon-nonewmessages": "אין לך הודעות חדשות.",
+	"chameleon-search-aria-label": "מעבר לדף",
+	"chameleon-toggler": "תפריט"
+}

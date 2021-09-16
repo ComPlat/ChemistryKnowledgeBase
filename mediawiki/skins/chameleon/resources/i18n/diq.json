@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"1917 Ekim Devrimi",
+			"Gorizon",
+			"Kumkumuk",
+			"Mirzali",
+			"Orbot707"
+		]
+	},
+	"skinname-chameleon": "Chameleon",
+	"chameleon-desc": "Bootstrap 4 gureynayışiya xeylê namnaye u cesasyew asayış",
+	"chameleon-loggedin": "$1 nameya şıma ronıştış akerd o.",
+	"chameleon-notloggedin": "Şıma ronıştış nêakerd o.",
+	"chameleon-newmessages": "Şımaré mesaco newe esto",
+	"chameleon-nonewmessages": "Şımaré mesaco newe çıni yo",
+	"chameleon-search-aria-label": "Şo pele"
+}
