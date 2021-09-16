@@ -94,6 +94,8 @@ sudo yum install ImageMagick --assumeyes
 echo '#################### Install unzip'
 sudo yum install unzip --assumeyes
 
+echo '#################### Install Java8'
+sudo yum install java-1.8.0-openjdk --assumeyes
 
 echo '#################### Install tools required for Guest additions'
 sudo yum install perl gcc dkms kernel-devel kernel-headers make bzip2 --assumeyes

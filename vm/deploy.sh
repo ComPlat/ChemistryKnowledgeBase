@@ -4,13 +4,14 @@ export MEDIAWIKI=/var/www/html/mediawiki
 
 # Install Powersearch
 sudo mkdir /opt/powersearch
-sudo mv /home/vagrant/powersearch-2.2.1.zip /opt/powersearch
+sudo mv /home/vagrant/powersearch-2.3.0.zip /opt/powersearch
 cd /opt/powersearch
-sudo unzip powersearch-2.2.1.zip
+sudo unzip powersearch-2.3.0.zip
 sudo unzip solr-8.3.0.zip
+sudo sh install_solr_service.sh solr-8.3.0.zip
 sudo cp -r mw /var/solr/data
 sudo chown -R solr:solr /var/solr/data/mw
-sudo sh install_solr_service.sh solr-8.3.0.zip
+sudo service solr restart
 
 #################### Drop DB -- if desired
 # Be very careful. This step cannot be undone.
