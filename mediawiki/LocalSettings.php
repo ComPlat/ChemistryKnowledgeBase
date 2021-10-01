@@ -61,6 +61,8 @@ $wgDBname = "chemwiki";
 $wgDBuser = "root";
 $wgDBpassword = "vagrant";
 
+require_once ("WikiSwitch.php");
+
 # MySQL specific settings
 $wgDBprefix = "";
 

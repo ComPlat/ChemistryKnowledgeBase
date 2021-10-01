@@ -106,8 +106,8 @@ sudo yum clean all
 
 
 echo '#################### Configure Apache changes'
-sudo sh -c "echo '127.0.0.1   balmung.localhost' >> /etc/hosts"
-sudo sh -c "echo '127.0.0.1   balmung.local' >> /etc/hosts"
+sudo sh -c "echo '127.0.0.1   chemwiki.localhost' >> /etc/hosts"
+sudo sh -c "echo '127.0.0.1   chemwiki.local' >> /etc/hosts"
 
 
 echo '#################### Turn off firewall'
