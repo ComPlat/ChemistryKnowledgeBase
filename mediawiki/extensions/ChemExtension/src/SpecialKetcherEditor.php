@@ -24,7 +24,8 @@ class SpecialKetcherEditor extends SpecialPage {
         // create the form
         global $wgScriptPath;
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher";
-        $this->getOutput()->addHTML("<iframe id=\"ifKetcher\" src=\"$path/index.html\" width=\"800\" height=\"600\"></iframe>");
+        $chemform = isset($_GET['chemform']) ? urlencode($_GET['chemform']) : '';
+        $this->getOutput()->addHTML("<iframe id=\"ifKetcher\" src=\"$path/index.html?chemform=$chemform\" width=\"800\" height=\"600\"></iframe>");
     }
 
 
