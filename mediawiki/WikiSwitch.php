@@ -5,47 +5,72 @@
  * Erzeugung eines neuen Wikis verlangt:
  *
  *  - eine leere DB importieren (mit Wiki-Schema),
- *  - ein leeres Bilderverzeichnis anlegen
- *  - ein symlink angelegen
- *  - eine kleine Infodatei mit Metadaten (Name des Wikis z.b.) schreiben
+ *  - ein Verzeichnis mit der wikiId unter /var/www/html anlegen mit folgendem Inhalt:
+ *      - ein symlink mit wikiId auf mediawiki folder
+ *      - eine kleine Infodatei mit Metadaten (Name des Wikis z.b.) schreiben. Name: $wikiId.json
+ *      - ein leeres Image Verzeichnis (images) mit Schreibrechten für Apache
  *  - ein Eintrag in eine neue Tabelle schreiben, die den Benutzer als Eigentümer des neuen Wikis ausweist
  *  - einen neuen leeren SOLR core erzeugen
- *  - und ein Eintrag in die interwiki-Tabelle schreiben.
+ *  - und ein Eintrag in die interwiki-Tabelle schreiben ?? (nur wenn sich Wikis gegenseitig referenzieren)
  */
-$wgSharedDB="chemwiki";
-$wgSharedTables = [ 'user', 'user_properties'];
-$callingurl = strtolower( $_SERVER['REQUEST_URI'] ); // get the calling url
-if ( strpos( $callingurl, '/mediawiki' )  === 0 ) {
-    $wgDBname = "chemwiki";
-    $wgScriptPath = "/mediawiki";
-    $wgArticlePath = '/mediawiki/$1';
-    $wgUploadDirectory = "/var/www/html/images1";
-    $wgUploadPath = "/images1";
-} elseif ( strpos( $callingurl, '/wiki2' ) === 0 ) {
-    $wgDBname = "chemwiki2";
-    $wgScriptPath = "/wiki2";
-    $wgArticlePath = '/wiki2/$1';
-    $wgUploadDirectory = "/var/www/html/images2";
-    $wgUploadPath = "/images2";
+$wgSharedDB = "chemwiki";
+$wgSharedTables = ['user', 'user_properties'];
+$callingurl = strtolower($_SERVER['REQUEST_URI']);
+$wiki = parseWikiUrl($callingurl);
 
-    /*$wgForeignFileRepos[] = [
-        'class' => FileRepo::class,
-        'name' => 'sharedFsRepo',
-        'directory' => "/var/www/html/images1",
-        'hashLevels' => 2,
-        'url' => 'http://localhost/images1',
-    ];*/
+if (is_null($wiki)) {
+    header('HTTP/1.1 404 Not Found');
+    echo "This wiki (\"" . htmlspecialchars($callingurl) . "\") is not available. Check configuration.";
+    exit(0);
+}
+global $SOLRcore;
+if ($wiki == 'main') {
+    $wgDBname = "chemmain";
+    $wgScriptPath = "/main/mediawiki";
+    $wgArticlePath = '/main/mediawiki/$1';
+    $wgUploadDirectory = "/var/www/html/main/images";
+    $wgUploadPath = "/main/images";
+    $SOLRcore = 'main';
+} else {
+    $wgDBname = "chem$wiki";
+    $wgScriptPath = "/$wiki/mediawiki";
+    $wgArticlePath = "/$wiki/mediawiki/$1";
+    $wgUploadDirectory = "/var/www/html/$wiki/images";
+    $wgUploadPath = "/$wiki/images";
+    $SOLRcore = $wiki;
+
+    global $wgServer;
     $wgForeignFileRepos[] = [
         'class' => ForeignAPIRepo::class,
         'name' => 'chemwiki',
-        'apibase' => 'http://localhost/mediawiki/api.php',
-        'url' => 'http://localhost/images1',
-        'thumbUrl' => 'http://localhost/images1/thumb',
+        'apibase' => "$wgServer/main/mediawiki/api.php",
+        'url' => "$wgServer/main/images",
+        'thumbUrl' => "$wgServer/main/images/thumb",
         'hashLevels' => 2,
     ];
+}
 
-} else {
-    header( 'HTTP/1.1 404 Not Found' );
-    echo "This wiki (\"" . htmlspecialchars( $callingurl ) . "\") is not available. Check configuration.";
-    exit( 0 );
+global $wgSitename;
+$metadata = parseWikiMetadata($wiki);
+$wgSitename = $metadata["name"];
+
+
+function parseWikiUrl($url) {
+    $matches = [];
+    preg_match('/\/(\w+)\/mediawiki/', $url, $matches);
+    return $matches[1] ?? NULL;
+}
+
+function parseWikiMetadata($wiki) {
+    $result = [];
+    $result["name"] = "Personal ChemWiki";
+    $filePath = "/var/www/html/$wiki/$wiki.json";
+    if (!file_exists($filePath)) {
+        return $result;
+    }
+    $json = json_decode(file_get_contents($filePath));
+    if (isset($json->name)) {
+        $result["name"] = $json->name;
+    }
+    return $result;
 }
