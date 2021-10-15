@@ -13,8 +13,8 @@
  *  - einen neuen leeren SOLR core erzeugen
  *  - und ein Eintrag in die interwiki-Tabelle schreiben ?? (nur wenn sich Wikis gegenseitig referenzieren)
  */
-$wgSharedDB = "chemwiki";
-$wgSharedTables = ['user', 'user_properties'];
+$wgSharedDB = "chemmain";
+$wgSharedTables = ['user', 'user_properties', 'wiki_farm_user'];
 $callingurl = strtolower($_SERVER['REQUEST_URI']);
 $wiki = parseWikiUrl($callingurl);
 
@@ -42,7 +42,7 @@ if ($wiki == 'main') {
     global $wgServer;
     $wgForeignFileRepos[] = [
         'class' => ForeignAPIRepo::class,
-        'name' => 'chemwiki',
+        'name' => 'chemmain',
         'apibase' => "$wgServer/main/mediawiki/api.php",
         'url' => "$wgServer/main/images",
         'thumbUrl' => "$wgServer/main/images/thumb",

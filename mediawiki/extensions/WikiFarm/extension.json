@@ -1,0 +1,46 @@
+{
+  "name": "WikiFarm",
+  "author": "DIQA Projektmanagement GmbH",
+  "url": "https://www.diqa.de",
+  "description": "This extension allows to run several wiki besides each other using the same codebase.",
+  "version": "0.1",
+  "license-name": "GPL-2.0-or-later",
+  "type": "extension",
+  "requires": {
+    "MediaWiki": ">= 1.35.0",
+    "extensions": {
+
+    }
+  },
+  "callback" : "DIQA\\WikiFarm\\Setup::initModules",
+  "SpecialPages": {
+    "SpecialCreateWiki": "DIQA\\WikiFarm\\Special\\SpecialCreateWiki"
+  },
+  "AutoloadNamespaces": {
+    "DIQA\\WikiFarm\\": "src/",
+    "DIQA\\WikiFarm\\Maintenance\\": "maintenance/"
+  },
+  "Hooks": {
+    "BeforePageDisplay": "DIQA\\WikiFarm\\Setup::onBeforePageDisplay",
+    "LoadExtensionSchemaUpdates": "DIQA\\WikiFarm\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
+  },
+  "ExtensionMessagesFiles": {
+
+  },
+  "RestRoutes": [
+    {
+      "path": "/WikiFarm/v1/createWiki",
+      "method": "POST",
+      "class": "DIQA\\WikiFarm\\RestEndpoint"
+    }
+  ],
+  "JobClasses": {
+    "CreateWikiJob": "DIQA\\WikiFarm\\CreateWikiJob"
+  },
+  "MessagesDirs": {
+    "ChemExtension": [
+      "i18n"
+    ]
+  },
+  "manifest_version": 2
+}

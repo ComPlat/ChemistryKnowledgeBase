@@ -61,7 +61,7 @@ $wgDBname = "chemwiki";
 $wgDBuser = "root";
 $wgDBpassword = "vagrant";
 
-require_once ("WikiSwitch.php");
+require_once ("extensions/WikiFarm/WikiSwitch.php");
 
 # MySQL specific settings
 $wgDBprefix = "";
@@ -231,6 +231,7 @@ wfLoadExtension( 'LimitedPageCreator' );
 
 
 wfLoadExtension('ChemExtension');
+wfLoadExtension('WikiFarm');
 $wgRawHtml = true;
 
 global $IP;
