@@ -9,7 +9,7 @@
                 method: "POST",
                 url: url,
                 contentType: "application/x-www-form-urlencoded",
-                data: "wikiId=wiki11&wikiName=Wiki11"
+                data: "wikiName=PersonalWiki"
             }).done(function( msg ) {
                     console.log(msg);
             });

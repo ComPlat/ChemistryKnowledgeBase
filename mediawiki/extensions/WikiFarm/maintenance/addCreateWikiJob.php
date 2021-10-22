@@ -4,6 +4,9 @@ namespace DIQA\WikiFarm\Maintenance;
 
 use DIQA\WikiFarm\CreateWikiJob;
 use DIQA\WikiFarm\Setup;
+use DIQA\WikiFarm\WikiCreator;
+use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\LoadBalancer;
 
 /**
  * Load the required class
@@ -25,7 +28,7 @@ class addCreateWikiJob extends \Maintenance
         parent::__construct();
         $this->addDescription('adds a job which creates a new wiki');
         $this->addOption('name', 'Wiki name', true, true);
-        $this->addOption('wiki', 'Wiki Id', true, true);
+        $this->addOption('user', 'User who creates', true, true);
     }
 
     public function getDbType()
@@ -51,10 +54,8 @@ class addCreateWikiJob extends \Maintenance
             exit;
         }
         $name = $this->getOption('name');
-        $title = \Title::newFromText( "Wiki $name/CreateWikiJob" );
-        $jobParams = [ 'wiki' => $this->getOption('wiki'), 'name' => $name ];
-        $job = new CreateWikiJob( $title, $jobParams );
-        \JobQueueGroup::singleton()->push( $job );
+        $user = $this->getOption('user');
+        WikiCreator::createWikiJob($this->getConnection(), $name, $user);
     }
 
 

@@ -24,9 +24,6 @@
     "BeforePageDisplay": "DIQA\\WikiFarm\\Setup::onBeforePageDisplay",
     "LoadExtensionSchemaUpdates": "DIQA\\WikiFarm\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
   },
-  "ExtensionMessagesFiles": {
-
-  },
   "RestRoutes": [
     {
       "path": "/WikiFarm/v1/createWiki",

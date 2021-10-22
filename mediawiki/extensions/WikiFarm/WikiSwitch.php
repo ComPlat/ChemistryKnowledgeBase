@@ -20,7 +20,7 @@ $wiki = parseWikiUrl($callingurl);
 
 if (is_null($wiki)) {
     header('HTTP/1.1 404 Not Found');
-    echo "This wiki (\"" . htmlspecialchars($callingurl) . "\") is not available. Check configuration.";
+    echo "This wiki (\"" . htmlspecialchars($callingurl) . "\") is not available. Check configuration.\n";
     exit(0);
 }
 global $SOLRcore;

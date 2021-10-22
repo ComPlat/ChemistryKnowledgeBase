@@ -10,8 +10,8 @@ class CreateWikiJob extends \Job {
     public function run()
     {
         global $IP;
-        $wiki = $this->params['wiki'];
+        $wikiId = $this->params['wikiId'];
         $name = $this->params['name'];
-        echo shell_exec("$IP/extensions/WikiFarm/bin/createWiki.sh $wiki $name");
+        echo shell_exec("$IP/extensions/WikiFarm/bin/createWiki.sh $wikiId $name");
     }
 }

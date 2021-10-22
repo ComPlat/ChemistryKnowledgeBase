@@ -25,7 +25,7 @@ class addUser extends \Maintenance
         $this->addDescription('adds a user to the WikiFarm storage backend.');
         $this->addOption('user', 'User name', true, true);
         $this->addOption('wiki', 'Wiki Id', true, true);
-        $this->addOption('status', 'Status (CREATOR, USER)', false, true);
+        $this->addOption('status', 'Status (USER)', false, true);
     }
 
     public function getDbType()
@@ -64,7 +64,7 @@ class addUser extends \Maintenance
         }
         $db->insert('wiki_farm_user',
             ['fk_user_id' => $userId,
-             'wiki_id' => $wikiId,
+             'fk_wiki_id' => $wikiId,
              'status_enum' => $status_enum
             ]);
 

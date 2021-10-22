@@ -82,17 +82,34 @@ class setupStore extends \Maintenance
 
     private static function setupTables($db)
     {
+        $db->query('CREATE TABLE IF NOT EXISTS wiki_farm (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        fk_created_by INT(10) UNSIGNED NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (fk_created_by) 
+                        REFERENCES `user`(user_id)
+                        ON UPDATE RESTRICT 
+                        ON DELETE CASCADE
+                    )  ENGINE=INNODB;');
+
         $db->query('CREATE TABLE IF NOT EXISTS wiki_farm_user (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         fk_user_id INT(10) UNSIGNED NOT NULL,
-                        wiki_id INT(10) NOT NULL,
+                        fk_wiki_id INT NOT NULL,
                         status_enum VARCHAR(10) NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (fk_user_id) 
                         REFERENCES `user`(user_id)
                         ON UPDATE RESTRICT 
+                        ON DELETE CASCADE,
+                        FOREIGN KEY (fk_wiki_id) 
+                        REFERENCES `wiki_farm`(id)
+                        ON UPDATE RESTRICT 
                         ON DELETE CASCADE
                     )  ENGINE=INNODB;');
+
+
+
 
     }
 
