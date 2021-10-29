@@ -4,7 +4,7 @@ namespace DIQA\WikiFarm\Maintenance;
 
 use DIQA\WikiFarm\CreateWikiJob;
 use DIQA\WikiFarm\Setup;
-use DIQA\WikiFarm\WikiCreator;
+use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\LoadBalancer;
 
@@ -55,7 +55,7 @@ class addCreateWikiJob extends \Maintenance
         }
         $name = $this->getOption('name');
         $user = $this->getOption('user');
-        WikiCreator::createWikiJob($this->getConnection(), $name, $user);
+        (new WikiRepository($this->getConnection()))->createWikiJob($name, $user);
     }
 
 

@@ -3,6 +3,7 @@
 namespace DIQA\WikiFarm\Maintenance;
 
 use DIQA\WikiFarm\Setup;
+use DIQA\WikiFarm\WikiRepository;
 
 /**
  * Load the required class
@@ -19,17 +20,21 @@ if (getenv('MW_INSTALL_PATH') !== false) {
 class setupStore extends \Maintenance
 {
 
+    private $repository;
+
     public function __construct()
     {
         parent::__construct();
         $this->addDescription('Sets up the WikiFarm storage backend.');
         $this->addOption('delete', 'Delete all WikiFarm tables, uninstall the selected storage backend.');
+
     }
 
     public static function onLoadExtensionSchemaUpdates( \DatabaseUpdater $updater ) {
         print ("=== Wiki Farm =============================================================");
         $db = $updater->getDB();
-        self::setupTables($db);
+        (new WikiRepository($db))->setupTables();
+        print ("\nCreated table wiki_farm.");
         print ("\nCreated table wiki_farm_user.");
         print ("\n");
     }
@@ -51,7 +56,7 @@ class setupStore extends \Maintenance
      */
     public function execute()
     {
-
+        $this->repository = new WikiRepository($this->getConnection());
         if (!Setup::isEnabled()) {
             $this->reportMessage("\nYou need to have WikiFarm enabled in order to run the maintenance script!\n");
             exit;
@@ -62,7 +67,8 @@ class setupStore extends \Maintenance
         if ($this->hasOption('delete')) {
             $this->dropStore();
         } else {
-            self::setupTables($db);
+            $this->repository->setupTables();
+            $this->reportMessage("\nCreated table wiki_farm.");
             $this->reportMessage("\nCreated table wiki_farm_user.");
         }
         $this->reportMessage("\n...done.\n");
@@ -78,39 +84,6 @@ class setupStore extends \Maintenance
     private function reportMessage($message)
     {
         $this->output($message);
-    }
-
-    private static function setupTables($db)
-    {
-        $db->query('CREATE TABLE IF NOT EXISTS wiki_farm (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        fk_created_by INT(10) UNSIGNED NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (fk_created_by) 
-                        REFERENCES `user`(user_id)
-                        ON UPDATE RESTRICT 
-                        ON DELETE CASCADE
-                    )  ENGINE=INNODB;');
-
-        $db->query('CREATE TABLE IF NOT EXISTS wiki_farm_user (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        fk_user_id INT(10) UNSIGNED NOT NULL,
-                        fk_wiki_id INT NOT NULL,
-                        status_enum VARCHAR(10) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (fk_user_id) 
-                        REFERENCES `user`(user_id)
-                        ON UPDATE RESTRICT 
-                        ON DELETE CASCADE,
-                        FOREIGN KEY (fk_wiki_id) 
-                        REFERENCES `wiki_farm`(id)
-                        ON UPDATE RESTRICT 
-                        ON DELETE CASCADE
-                    )  ENGINE=INNODB;');
-
-
-
-
     }
 
 }

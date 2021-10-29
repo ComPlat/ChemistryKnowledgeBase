@@ -53,11 +53,9 @@ class Setup {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
         );
-        $rows = $dbr->select("wiki_farm_user", ["status_enum"],
-            ['fk_user_id' => $wgUser->getId(), 'fk_wiki_id' => $wikiId]);
 
-        $row = $rows->fetchRow();
-        if ($row === false) {
+        $mayAccess = (new WikiRepository($dbr))->mayAccess($wgUser, $wikiId);
+        if (!$mayAccess) {
             self::accessDenied();
         }
 

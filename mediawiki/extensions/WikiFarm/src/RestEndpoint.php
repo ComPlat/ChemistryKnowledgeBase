@@ -20,7 +20,7 @@ class RestEndpoint extends SimpleHandler {
 
         $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
         $db = $lb->getConnection(DB_MASTER);
-        $wikiId = WikiCreator::createWikiJob($db, $params['wikiName'], $wgUser->getName());
+        $wikiId = (new WikiRepository($db))->createWikiJob($params['wikiName'], $wgUser->getName());
 
         return ['result' => 'ok', 'wikiId' => $wikiId];
     }

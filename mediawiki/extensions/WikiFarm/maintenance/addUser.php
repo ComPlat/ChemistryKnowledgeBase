@@ -3,6 +3,7 @@
 namespace DIQA\WikiFarm\Maintenance;
 
 use DIQA\WikiFarm\Setup;
+use DIQA\WikiFarm\WikiRepository;
 
 /**
  * Load the required class
@@ -33,11 +34,6 @@ class addUser extends \Maintenance
         return \Maintenance::DB_ADMIN;
     }
 
-    private function getConnection()
-    {
-        return $this->getDB(DB_MASTER);
-    }
-
     /**
      * @see Maintenance::execute
      *
@@ -47,33 +43,22 @@ class addUser extends \Maintenance
     {
 
         if (!Setup::isEnabled()) {
-            $this->reportMessage("\nYou need to have WikiFarm enabled in order to run the maintenance script!\n");
+            $this->output("\nYou need to have WikiFarm enabled in order to run the maintenance script!\n");
             exit;
         }
+        $repository = new WikiRepository($this->getConnection());
 
-
-        $db = $this->getConnection();
         $username = $this->getOption("user");
         $wikiId = $this->getOption("wiki");
         $status_enum = $this->getOption("status");
 
-        $userId = \User::idFromName($username);
-        if (is_null($userId)) {
-            print "\nUser '$username' does not exist\n";
+        $user = \User::newFromName($username);
+        if ($user === false) {
+            $this->output("\nUser '$username' does not exist\n");
             exit;
         }
-        $db->insert('wiki_farm_user',
-            ['fk_user_id' => $userId,
-             'fk_wiki_id' => $wikiId,
-             'status_enum' => $status_enum
-            ]);
+        $repository->addUserToWiki($user, $wikiId, $status_enum);
 
-    }
-
-
-    private function reportMessage($message)
-    {
-        $this->output($message);
     }
 
 }
