@@ -17,7 +17,7 @@ mw.libs.ve.addPlugin( function ( target ) {
             var basePath = mw.config.get("wgServer") + mw.config.get("wgScriptPath");
             var chemForm = this.originalMwData.body.extsrc;
             var button = new OO.ui.ButtonWidget( {
-                label: 'Open Ketcher XXX',
+                label: 'Open Ketcher',
                 href: basePath + "/index.php/Spezial:KetcherEditor?chemform="+encodeURIComponent(chemForm),
                 target: '_blank'
             } );

@@ -13,7 +13,9 @@ class Setup {
             'localBasePath' => "$IP",
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
-            'scripts' => [ $baseScript . '/ve.extend.js',
+            'scripts' => [
+                $baseScript . '/ve.extend.js',
+                $baseScript . '/ve.insert-chem-form.js',
             ],
             'styles' => [ '/extensions/ChemExtension/skins/main.css'],
             'dependencies' => ['ext.visualEditor.core'],
