@@ -8,11 +8,13 @@ class Setup {
         global $wgResourceModules;
         global $IP;
 
+        $baseScript = '/extensions/ChemExtension/scripts';
         $wgResourceModules['ext.diqa.chemextension'] = array(
             'localBasePath' => "$IP",
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
-            'scripts' => [ '/extensions/ChemExtension/scripts/ve.extend.js'],
+            'scripts' => [ $baseScript . '/ve.extend.js',
+            ],
             'styles' => [ '/extensions/ChemExtension/skins/main.css'],
             'dependencies' => ['ext.visualEditor.core'],
         );
@@ -25,17 +27,22 @@ class Setup {
     }
 
     public static function onParserFirstCallInit( \Parser $parser ) {
-
-        // Create a function hook associating the "example" magic word with renderExample()
         $parser->setHook( 'chemform', [ self::class, 'renderIframe' ] );
     }
 
-    public static function renderIframe( $innerText, array $arguments, \Parser $parser, \PPFrame $frame ) {
+    public static function renderIframe( $formula, array $arguments, \Parser $parser, \PPFrame $frame ) {
+        $cssClass = "chemformula";
+        $width = $arguments['width'] ?? "800px";
+        $height = $arguments['height'] ?? "400px";
+        $nofloat = $arguments['nofloat'] ?? false;
+        if ($nofloat == "true") {
+            $cssClass = "chemformula-nofloat";
+        }
         global $wgScriptPath;
-        $path = "$wgScriptPath/extensions/ChemExtension/cheminfo";
-        $output = "<iframe class=\"chemformula\" src=\"$path/index.html?formula=$innerText\" width='800px' height='400px'></iframe>";
+        $formula = urlencode($formula);
+        $path = "$wgScriptPath/extensions/ChemExtension/rdkit";
+        $output = "<iframe class=\"$cssClass\" src=\"$path/index.html?formula=$formula\" width='$width' height='$height'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
-
 
 }
