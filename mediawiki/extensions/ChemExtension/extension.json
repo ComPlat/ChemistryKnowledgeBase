@@ -31,5 +31,12 @@
             "i18n"
         ]
     },
+    "RestRoutes": [
+        {
+            "path": "/ChemExtension/v1/chemscanner/jobs/{job_id}/notify-done",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\NotifyChemscannerJob"
+        }
+    ],
     "manifest_version": 2
 }
