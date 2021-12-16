@@ -4,6 +4,8 @@
 			"DIQA Projektmanagement GmbH"
 		]
 	},
-	"specialcreatewiki": "Wiki erzeugen"
-
+	"specialcreatewiki": "Wiki erzeugen",
+	"wfarm-wikis-created-by-you": "Wikis, die von dir erzeugt wurden",
+	"wfarm-create-wiki" : "Neues Wiki erzeugen",
+	"wfarm-no-wikis-found" : "Keine Wikis gefunden"
 }

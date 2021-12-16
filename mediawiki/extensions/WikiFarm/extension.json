@@ -28,7 +28,12 @@
     {
       "path": "/WikiFarm/v1/createWiki",
       "method": "POST",
-      "class": "DIQA\\WikiFarm\\RestEndpoint"
+      "class": "DIQA\\WikiFarm\\Endpoints\\CreateWikiEndpoint"
+    },
+    {
+      "path": "/WikiFarm/v1/getWikis",
+      "method": "GET",
+      "class": "DIQA\\WikiFarm\\Endpoints\\GetWikisEndpoint"
     }
   ],
   "JobClasses": {

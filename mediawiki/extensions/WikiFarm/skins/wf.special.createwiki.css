@@ -1,0 +1,21 @@
+.wfarm-button {
+    margin-top: 15px;
+}
+
+div.wfarm-createdwikis-table {
+    margin-top: 15px;
+}
+
+tr.wfarm-recent {
+    background: lightblue;
+}
+
+tr.wfarm-in-creation {
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}

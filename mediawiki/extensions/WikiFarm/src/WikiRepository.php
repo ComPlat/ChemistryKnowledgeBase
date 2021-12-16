@@ -28,7 +28,7 @@ class WikiRepository {
             exit;
         }
         $wikiId = self::createWikiInDB($name, $userId);
-        $jobParams['wikiId'] = "wiki$wikiId";
+        $jobParams['wikiId'] = "$wikiId";
         $job = new CreateWikiJob( $title, $jobParams );
         \JobQueueGroup::singleton()->push( $job );
         return $wikiId;
@@ -39,22 +39,40 @@ class WikiRepository {
         $this->db->insert('wiki_farm',
             [
                 'fk_created_by' => $userId,
-                'wiki_name' => $name
+                'wiki_name' => $name,
+                'wiki_status' => 'IN_CREATION'
             ]);
         $wikiId = $this->db->insertId();
         $this->db->endAtomic( __METHOD__ );
         return $wikiId;
     }
 
+    public function updateToCreated($wikiId) {
+        $this->db->startAtomic( __METHOD__ );
+        $this->db->update('wiki_farm',
+            [
+                'wiki_status' => 'CREATED'
+            ],
+            [
+                'id' => $wikiId
+            ]
+        );
+        $this->db->endAtomic( __METHOD__ );
+    }
+
     public function getAllWikisCreatedById($userId): array
     {
         $results = [];
-        $res = $this->db->select('wiki_farm', ['id', 'wiki_name'], ['fk_created_by' => $userId ]);
+        $res = $this->db->select('wiki_farm', ['id', 'wiki_name', 'wiki_status', 'created_at'],
+            ['fk_created_by' => $userId ]);
         foreach ( $res as $row ) {
             $results[] =
             [
                 'id' => $row->id,
-                'wiki_name' => $row->wiki_name
+                'wiki_name' => $row->wiki_name,
+                'created_at' => $row->created_at,
+                'wiki_status' => $row->wiki_status,
+
             ];
 
         }
@@ -120,6 +138,7 @@ class WikiRepository {
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         wiki_name VARCHAR(255) NOT NULL,
                         fk_created_by INT(10) UNSIGNED NOT NULL,
+                        wiki_status VARCHAR(16) NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (fk_created_by) 
                         REFERENCES `user`(user_id)

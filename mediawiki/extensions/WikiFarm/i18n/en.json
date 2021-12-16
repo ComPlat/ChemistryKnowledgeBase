@@ -4,6 +4,8 @@
 			"DIQA Projektmanagement GmbH"
 		]
 	},
-	"specialcreatewiki": "Create Wiki"
-
+	"specialcreatewiki": "Create Wiki",
+	"wfarm-wikis-created-by-you": "Wikis created by you",
+	"wfarm-create-wiki" : "Create new wiki",
+	"wfarm-no-wikis-found" : "No wikis found"
 }

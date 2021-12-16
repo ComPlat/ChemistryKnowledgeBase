@@ -14,7 +14,7 @@
  *  - und ein Eintrag in die interwiki-Tabelle schreiben ?? (nur wenn sich Wikis gegenseitig referenzieren)
  */
 $wgSharedDB = "chemmain";
-$wgSharedTables = ['user', 'user_properties', 'wiki_farm_user'];
+$wgSharedTables = ['user', 'user_properties', 'wiki_farm', 'wiki_farm_user'];
 $callingurl = strtolower($_SERVER['REQUEST_URI']);
 $wiki = parseWikiUrl($callingurl);
 

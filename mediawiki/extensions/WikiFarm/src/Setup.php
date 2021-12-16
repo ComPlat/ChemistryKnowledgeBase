@@ -12,13 +12,14 @@ class Setup {
         global $IP;
 
         $scriptFolder = "/extensions/WikiFarm/scripts";
+        $skinsFolder = "/extensions/WikiFarm/skins";
 
         $wgResourceModules['ext.diqa.wikifarm'] = array(
             'localBasePath' => "$IP",
             'remoteExtPath' => 'WikiFarm',
             'position' => 'bottom',
-            'scripts' => [ $scriptFolder .'/wf.special.craetewiki.js'],
-            'styles' => [],
+            'scripts' => [ $scriptFolder .'/wf.special.createwiki.js'],
+            'styles' => [ $skinsFolder . '/wf.special.createwiki.css'],
             'dependencies' => [],
         );
     }

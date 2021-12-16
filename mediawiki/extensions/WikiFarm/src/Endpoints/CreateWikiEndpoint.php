@@ -1,8 +1,9 @@
 <?php
 
-namespace DIQA\WikiFarm;
+namespace DIQA\WikiFarm\Endpoints;
 
 
+use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -11,7 +12,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * solr proxy REST endpoint. This is where SOLR requests are processed
  */
-class RestEndpoint extends SimpleHandler {
+class CreateWikiEndpoint extends SimpleHandler {
 
     public function run() {
         global $wgUser;
