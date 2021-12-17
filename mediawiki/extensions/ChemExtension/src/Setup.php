@@ -47,4 +47,9 @@ class Setup {
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 
+    public static function isEnabled()
+    {
+        return defined('DIQA_WIKI_FARM');
+    }
+
 }

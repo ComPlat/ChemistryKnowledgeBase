@@ -33,10 +33,13 @@
     },
     "RestRoutes": [
         {
-            "path": "/ChemExtension/v1/chemscanner/jobs/{job_id}/notify-done",
+            "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",
             "method": "POST",
-            "class": "DIQA\\ChemExtension\\NotifyChemscannerJob"
+            "class": "DIQA\\ChemExtension\\ChemScanner\\NotifyChemScannerEndpoint"
         }
     ],
+    "JobClasses": {
+        "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob"
+    },
     "manifest_version": 2
 }
