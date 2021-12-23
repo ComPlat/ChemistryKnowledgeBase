@@ -7,5 +7,10 @@
 	"specialcreatewiki": "Wiki erzeugen",
 	"wfarm-wikis-created-by-you": "Wikis, die von dir erzeugt wurden",
 	"wfarm-create-wiki" : "Neues Wiki erzeugen",
-	"wfarm-no-wikis-found" : "Keine Wikis gefunden"
+	"wfarm-no-wikis-found" : "Keine Wikis gefunden",
+	"wfarm-save-users" : "Benutzer speichern",
+	"wfarm-wiki-name": "Wiki-Name",
+	"wfarm-wiki-url": "Wiki-URL",
+	"wfarm-wiki-creation-date": "Erzeugt am",
+	"wfarm-recent": "kürzlich erzeugt"
 }

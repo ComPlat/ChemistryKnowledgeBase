@@ -26,14 +26,24 @@
   },
   "RestRoutes": [
     {
-      "path": "/WikiFarm/v1/createWiki",
+      "path": "/WikiFarm/v1/wikis",
       "method": "POST",
       "class": "DIQA\\WikiFarm\\Endpoints\\CreateWikiEndpoint"
     },
     {
-      "path": "/WikiFarm/v1/getWikis",
+      "path": "/WikiFarm/v1/wikis",
       "method": "GET",
       "class": "DIQA\\WikiFarm\\Endpoints\\GetWikisEndpoint"
+    },
+    {
+      "path": "/WikiFarm/v1/wikis/{wikiId}/users",
+      "method": "POST",
+      "class": "DIQA\\WikiFarm\\Endpoints\\UpdateUserOfWiki"
+    },
+    {
+      "path": "/WikiFarm/v1/wikis/{wikiId}/users",
+      "method": "GET",
+      "class": "DIQA\\WikiFarm\\Endpoints\\GetWikiUsersEndpoint"
     }
   ],
   "JobClasses": {

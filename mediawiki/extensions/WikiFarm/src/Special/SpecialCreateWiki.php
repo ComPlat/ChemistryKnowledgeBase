@@ -6,6 +6,9 @@ use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FieldLayout;
+use OOUI\FormLayout;
+use OOUI\LabelWidget;
+use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
@@ -38,8 +41,9 @@ class SpecialCreateWiki extends \SpecialPage {
 
         OutputPage::setupOOUI();
 
-        $html = $this->getGUIElements();
+        $html = $this->getWikiGUIControls();
         $html .= $this->getWikiTable();
+        $html .= $this->getManageUserGUIControls();
 
         $output->addHTML($html);
     }
@@ -56,26 +60,44 @@ class SpecialCreateWiki extends \SpecialPage {
      * @return string
      * @throws \OOUI\Exception
      */
-    private function getGUIElements(): string
+    private function getWikiGUIControls(): string
     {
-        $button = new ButtonWidget([
+        $createWikiButton = new ButtonWidget([
             'classes' => ['wfarm-button'],
-            'id' => 'chemextension-create-wiki',
+            'id' => 'wfarm-create-wiki',
             'label' => $this->msg('wfarm-create-wiki')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true
         ]);
-        $html = '';
-        $text = new FieldLayout(
-            new TextInputWidget(['id' => 'wfarm-wikiName']),
+        $wikiNameInput = new FieldLayout(
+            new TextInputWidget(['id' => 'wfarm-wikiName', 'placeholder' => $this->msg('wfarm-wiki-name')]),
             [
                 'align' => 'top',
-                'label' => "Wikiname"
+                'label' => $this->msg('wfarm-wiki-name')->text()
             ]
         );
-        $html .= $text;
-        $html .= $button;
-        return $html;
+        return new FormLayout(['items' => [$wikiNameInput, $createWikiButton] ]);
+
+    }
+
+    private function getManageUserGUIControls() {
+
+        $label = new LabelWidget();
+        $label->setLabel('Benutzer des Wikis');
+        $saveButton = new ButtonWidget([
+            'classes' => ['wfarm-button'],
+            'id' => 'wfarm-add-user',
+            'label' => $this->msg('wfarm-save-users')->text(),
+            'flags' => ['primary', 'progressive'],
+            'infusable' => true
+        ]);
+        $usersList = new Tag('div');
+        $usersList->setAttributes(['id' => 'wfarm-wikiUserList']);
+        $section = new FormLayout(['items' => [$label, $usersList, $saveButton] ]);
+        $div = new Tag('div');
+        $div->setAttributes(['id' => 'wfarm-wikiUserList-section', 'style' => 'display: none;']);
+        $div->appendContent($section);
+        return $div;
     }
 
     private function getWikiTable() {

@@ -18,9 +18,11 @@ class Setup {
             'localBasePath' => "$IP",
             'remoteExtPath' => 'WikiFarm',
             'position' => 'bottom',
-            'scripts' => [ $scriptFolder .'/wf.special.createwiki.js'],
+            'scripts' => [
+                $scriptFolder .'/wf.special.createwiki.js'
+            ],
             'styles' => [ $skinsFolder . '/wf.special.createwiki.css'],
-            'dependencies' => [],
+            'dependencies' => ['mediawiki.widgets.UserInputWidget', 'mediawiki.widgets.UsersMultiselectWidget', 'mediawiki.userSuggest'],
         );
     }
 

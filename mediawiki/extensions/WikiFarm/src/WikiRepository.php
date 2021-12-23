@@ -8,6 +8,9 @@ use User;
 
 class WikiRepository {
 
+    public const OWNER = "OWNER";
+    public const USER = "USER";
+
     private $db;
 
     /**
@@ -84,23 +87,26 @@ class WikiRepository {
         $results = [];
         $res = $this->db->select('wiki_farm_user', ['fk_user_id'], ['fk_wiki_id' => $wikiId ]);
         foreach ( $res as $row ) {
-            $results[] =
-                [
-                    'user' => User::newFromId($row->fk_user_id)
-                ];
+            $results[] = User::newFromId($row->fk_user_id);
 
         }
         return $results;
     }
 
-    public function addUserToWiki(User $user, $wikiId, $status_enum) {
+    public function addUserToWiki(array $users, $wikiId, $status_enum) {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->insert('wiki_farm_user',
-            [
-                'fk_user_id' => $user->getId(),
-                'fk_wiki_id' => $wikiId,
-                'status_enum' => $status_enum
-            ]);
+        $this->db->delete('wiki_farm_user', [
+            'fk_wiki_id' => $wikiId,
+            'status_enum' => self::USER
+        ]);
+        foreach($users as $user) {
+            $this->db->insert('wiki_farm_user',
+                [
+                    'fk_user_id' => $user->getId(),
+                    'fk_wiki_id' => $wikiId,
+                    'status_enum' => $status_enum
+                ]);
+        }
         $this->db->endAtomic( __METHOD__ );
     }
 

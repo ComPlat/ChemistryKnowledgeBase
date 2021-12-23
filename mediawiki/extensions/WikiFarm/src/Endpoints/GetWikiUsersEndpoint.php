@@ -1,29 +1,24 @@
 <?php
-
 namespace DIQA\WikiFarm\Endpoints;
-
 
 use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
+use Philo\Blade\Blade;
 use Wikimedia\ParamValidator\ParamValidator;
 
-
-/**
- * Endpoint to trigger the creation of a new virtual wiki
- */
-class CreateWikiEndpoint extends SimpleHandler {
+class GetWikiUsersEndpoint extends SimpleHandler {
 
     public function run() {
-        global $wgUser;
 
         $params = $this->getValidatedParams();
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
+            DB_REPLICA
+        );
+        $repository = new WikiRepository($dbr);
+        $usersOfWiki = $repository->getAllUsersOfWiki($params['wikiId']);
 
-        $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-        $db = $lb->getConnection(DB_MASTER);
-        $wikiId = (new WikiRepository($db))->createWikiJob($params['wikiName'], $wgUser->getName());
-
-        return ['result' => 'ok', 'wikiId' => $wikiId];
+        return ['users' => array_map(function($e) { return $e->getName(); }, $usersOfWiki)];
     }
 
     public function needsWriteAccess() {
@@ -33,8 +28,8 @@ class CreateWikiEndpoint extends SimpleHandler {
     public function getParamSettings() {
         return [
 
-            'wikiName' => [
-                self::PARAM_SOURCE => 'post',
+            'wikiId' => [
+                self::PARAM_SOURCE => 'path',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
             ],
