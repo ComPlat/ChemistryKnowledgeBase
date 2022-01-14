@@ -29,6 +29,10 @@
       "path": "/WikiFarm/v1/wikis",
       "method": "POST",
       "class": "DIQA\\WikiFarm\\Endpoints\\CreateWikiEndpoint"
+    },{
+      "path": "/WikiFarm/v1/wikis/{wikiId}",
+      "method": "DELETE",
+      "class": "DIQA\\WikiFarm\\Endpoints\\RemoveWikiEndpoint"
     },
     {
       "path": "/WikiFarm/v1/wikis",
@@ -47,7 +51,8 @@
     }
   ],
   "JobClasses": {
-    "CreateWikiJob": "DIQA\\WikiFarm\\CreateWikiJob"
+    "CreateWikiJob": "DIQA\\WikiFarm\\CreateWikiJob",
+    "RemoveWikiJob": "DIQA\\WikiFarm\\RemoveWikiJob"
   },
   "MessagesDirs": {
     "ChemExtension": [

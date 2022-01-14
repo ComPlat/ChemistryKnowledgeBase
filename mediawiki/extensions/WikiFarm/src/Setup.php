@@ -19,10 +19,15 @@ class Setup {
             'remoteExtPath' => 'WikiFarm',
             'position' => 'bottom',
             'scripts' => [
-                $scriptFolder .'/wf.special.createwiki.js'
+                $scriptFolder .'/wf.special.createwiki.ajax.js',
+                $scriptFolder .'/wf.special.createwiki.js',
             ],
             'styles' => [ $skinsFolder . '/wf.special.createwiki.css'],
             'dependencies' => ['mediawiki.widgets.UserInputWidget', 'mediawiki.widgets.UsersMultiselectWidget', 'mediawiki.userSuggest'],
+            "messages" => [
+                "wfarm-ajax-error",
+                "wfarm-remove-wiki-confirm"
+            ],
         );
     }
 
@@ -49,7 +54,7 @@ class Setup {
             if ($wgTitle->isSpecial("Userlogin")) {
                 return;
             }
-            self::accessDenied();
+            self::accessDeniedBecauseUserAnon();
         }
         $wikiId = str_replace("wiki", "", $wikiId);
 
@@ -76,9 +81,17 @@ class Setup {
         return defined('DIQA_WIKI_FARM');
     }
 
+    private static function accessDeniedBecauseUserAnon()
+    {
+        global $wgServer,$wgScriptPath;
+        header("Location: $wgServer$wgScriptPath/Special:Userlogin");
+        die();
+    }
+
     private static function accessDenied()
     {
-        print "Access denied";
+        global $wgServer;
+        print "Access denied. Go back to <a href=\"$wgServer/main/mediawiki\">main wiki</a>";
         die();
     }
 }

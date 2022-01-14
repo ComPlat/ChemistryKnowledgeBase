@@ -8,7 +8,6 @@ use User;
 
 class WikiRepository {
 
-    public const OWNER = "OWNER";
     public const USER = "USER";
 
     private $db;
@@ -22,31 +21,54 @@ class WikiRepository {
     }
 
 
-    public function createWikiJob($name, $user) {
-        $title = \Title::newFromText( "Wiki $name/CreateWikiJob" );
-        $jobParams = [ 'name' => $name ];
-        $userId = \User::idFromName($user);
-        if (is_null($userId)) {
-            print "\nUser '$user' does not exist\n";
+    public function createWikiJob($wikiName, $userName) {
+        $title = \Title::newFromText( "Wiki $wikiName/CreateWikiJob" );
+        $jobParams = [ 'name' => $wikiName ];
+        $user = \User::newFromName($userName);
+        if ($user->getId() === 0) {
+            print "\nUser '$userName' does not exist\n";
             exit;
         }
-        $wikiId = self::createWikiInDB($name, $userId);
+        $wikiId = self::createWikiInDB($wikiName, $user);
         $jobParams['wikiId'] = "$wikiId";
         $job = new CreateWikiJob( $title, $jobParams );
         \JobQueueGroup::singleton()->push( $job );
         return $wikiId;
     }
 
-    private function createWikiInDB($name, $userId) {
+    private function createWikiInDB($name, $user) {
         $this->db->startAtomic( __METHOD__ );
         $this->db->insert('wiki_farm',
             [
-                'fk_created_by' => $userId,
+                'fk_created_by' => $user->getId(),
                 'wiki_name' => $name,
                 'wiki_status' => 'IN_CREATION'
             ]);
         $wikiId = $this->db->insertId();
+        $this->addUserToWiki([$user], $wikiId, self::USER);
         $this->db->endAtomic( __METHOD__ );
+        return $wikiId;
+    }
+
+    public function removeWikiJob($wikiId, $userId) {
+        $title = \Title::newFromText( "Wiki $wikiId/RemoveWikiJob" );
+        $jobParams = [ 'wikiId' => $wikiId ];
+
+        $wikiId = self::removeWikiInDB($wikiId, $userId);
+
+        $job = new RemoveWikiJob( $title, $jobParams );
+        \JobQueueGroup::singleton()->push( $job );
+        return $wikiId;
+    }
+
+    private function removeWikiInDB($wikiId, $userId) {
+
+        $this->db->delete('wiki_farm',
+            [
+                'fk_created_by' => $userId,
+                'id' => $wikiId,
+            ]);
+
         return $wikiId;
     }
 

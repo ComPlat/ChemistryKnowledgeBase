@@ -35,13 +35,3 @@ div.wfarm-createdwikis-table tr.wfarm-table-selected {
 tr.wfarm-recent {
     background: papayawhip;
 }
-
-tr.wfarm-in-creation {
-    animation: blinker 1s linear infinite;
-}
-
-@keyframes blinker {
-    50% {
-        opacity: 0;
-    }
-}

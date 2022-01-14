@@ -30,7 +30,7 @@ if ($wiki == 'main') {
     $wgArticlePath = '/main/mediawiki/$1';
     $wgUploadDirectory = "/var/www/html/main/images";
     $wgUploadPath = "/main/images";
-    $SOLRcore = 'main';
+    $SOLRcore = 'mw';
 } else {
     $wgDBname = "chem$wiki";
     $wgScriptPath = "/$wiki/mediawiki";

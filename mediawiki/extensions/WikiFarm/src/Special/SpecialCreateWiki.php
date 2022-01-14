@@ -19,7 +19,7 @@ class SpecialCreateWiki extends \SpecialPage {
     private $blade;
 
     function __construct() {
-        parent::__construct( 'SpecialCreateWiki' );
+        parent::__construct( 'SpecialCreateWiki', 'edit');
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
@@ -38,6 +38,12 @@ class SpecialCreateWiki extends \SpecialPage {
 
         $output = $this->getOutput();
         $this->setHeaders();
+
+        global $wgUser;
+        if ($wgUser->isAnon()) {
+            $output->addHTML(wfMessage('wfarm-must-be-logged-in-with-edit'));
+            return;
+        }
 
         OutputPage::setupOOUI();
 
@@ -106,7 +112,8 @@ class SpecialCreateWiki extends \SpecialPage {
         $allWikiCreated = $this->repository->getAllWikisCreatedById($wgUser->getId());
         return $this->blade->view ()->make ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
-                'baseURL' => $wgServer ]
+                'baseURL' => $wgServer
+                ]
         )->render ();
     }
 }

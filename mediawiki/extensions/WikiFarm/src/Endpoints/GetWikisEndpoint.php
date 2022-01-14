@@ -5,6 +5,7 @@ use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
 use Philo\Blade\Blade;
+use OutputPage;
 
 class GetWikisEndpoint extends SimpleHandler {
 
@@ -19,6 +20,8 @@ class GetWikisEndpoint extends SimpleHandler {
             DB_REPLICA
         );
         $repository = new WikiRepository($dbr);
+
+        OutputPage::setupOOUI();
 
         global $wgServer;
         $allWikiCreated = $repository->getAllWikisCreatedById($wgUser->getId());
