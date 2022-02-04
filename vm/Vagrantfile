@@ -45,14 +45,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
     # VirtualBox
     config.vm.provider "virtualbox" do |v, override|
-        v.name = "Chemwiki"
+        v.name = "Chemwiki-Ubuntu"
         v.memory = 2024
         v.cpus = 2
-        override.vm.provision "shell", path: "bootstrap.sh", privileged: false
+        override.vm.provision "shell", path: "bootstrap-ubuntu.sh", privileged: false
 
         # Every Vagrant virtual environment requires a box to build off of.
         # this is a VirtualBox machine: https://atlas.hashicorp.com/nrel/boxes/CentOS-6.6-x86_64
-        override.vm.box = "geerlingguy/centos7"
+        override.vm.box = "ubuntu/focal64"
 
         # Share an additional folder to the guest VM. The first argument is
         # the path on the host to the actual folder. The second argument is
@@ -66,15 +66,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # Hyper-V
     config.vm.provider "hyperv" do |v, override|
-        v.name = "Chemwiki"
+        v.name = "Chemwiki-Ubuntu"
         v.memory = 2024
         v.cpus = 2
 
-        override.vm.provision "shell", path: "hyper-v/bootstrap.sh", privileged: false
+        override.vm.provision "shell", path: "hyper-v/bootstrap-ubuntu.sh", privileged: false
 
         # Every Vagrant virtual environment requires a box to build off of.
         # this is the HyperV machine: https://atlas.hashicorp.com/pyranja/boxes/centos-6
-        override.vm.box = "geerlingguy/centos7"
+        override.vm.box = "ubuntu/focal64"
         
         # Share an additional folder to the guest VM. The first argument is
         # the path on the host to the actual folder. The second argument is
@@ -86,7 +86,4 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         override.vm.synced_folder "../vm", "/vagrant", :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
     end
 
-    # simple authentication
-    config.ssh.username = "vagrant"
-    config.ssh.password = "vagrant"
 end
