@@ -10,6 +10,8 @@ sudo apt -y install virtualbox-guest-dkms
 # Apache
 sudo apt -y install apache2
 sudo ufw allow "Apache Full"
+sudo a2enmod rewrite
+sudo sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # MariaDB
 sudo apt -y install mariadb-server
