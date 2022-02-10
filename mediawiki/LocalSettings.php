@@ -58,10 +58,10 @@ $wgEmailAuthentication = true;
 $wgDBtype = "mysql";
 $wgDBserver = "localhost";
 $wgDBname = "chemwiki";
-$wgDBuser = "root";
+$wgDBuser = "admin";
 $wgDBpassword = "vagrant";
 
-require_once ("extensions/WikiFarm/WikiSwitch.php");
+#require_once ("extensions/WikiFarm/WikiSwitch.php");
 
 # MySQL specific settings
 $wgDBprefix = "";
@@ -211,7 +211,7 @@ $wgHooks['VEForAllToolbarConfigNormal'][] = function( &$defaultConfigNormal ) {
     $defaultConfigNormal[4]['include'][] = 'media';
     $defaultConfigNormal[4]['include'][] = 'category';
 };
-$wgJobRunRate = 100;
+$wgJobRunRate = 0;
 
 wfLoadExtension( 'Bootstrap' );
 wfLoadSkin( 'chameleon' );

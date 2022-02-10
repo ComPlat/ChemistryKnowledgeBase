@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Repo
-sudo apt update
 sudo add-apt-repository multiverse
+sudo apt update
 
 # Guest extensions
 sudo apt -y install virtualbox-guest-dkms
@@ -15,7 +15,9 @@ sudo sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # MariaDB
 sudo apt -y install mariadb-server
-sudo mysql_secure_installation
+sudo service mysqld start
+sudo mariadb -e "GRANT ALL ON *.* TO 'admin'@'localhost' IDENTIFIED BY 'vagrant' WITH GRANT OPTION;"
+sudo mariadb -e "FLUSH PRIVILEGES;"
 
 # PHP
 sudo apt -y install php libapache2-mod-php php-mysql php-xml php-mbstring php-curl
@@ -33,7 +35,7 @@ sudo apt -y install unzip
 sudo apt -y install memcached
 
 # Java
-sudo apt install default-jre
+sudo apt -y install default-jre
 
 echo '#################### Configure Apache changes'
 sudo sh -c "echo '127.0.0.1   chemwiki.localhost' >> /etc/hosts"
@@ -42,4 +44,4 @@ sudo sh -c "echo '127.0.0.1   chemwiki.local' >> /etc/hosts"
 echo '#################### Start services'
 sudo service apache2 start
 sudo service memcached start
-sudo service mariadb start
+sudo service mysqld start
