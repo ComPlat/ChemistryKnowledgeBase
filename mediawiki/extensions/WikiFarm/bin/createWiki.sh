@@ -35,7 +35,7 @@ sudo chmod o+w $BASE/$1/creation.log
 echo 'done.'
 
 echo 'Create SOLR core...'
-sudo su solr -c "/opt/solr/bin/solr create_core -c $1 -d /vagrant/solrcore/conf" >> $BASE/$1/creation.log
+sudo su solr -c "/opt/solr/bin/solr create_core -c $1 -d $MEDIAWIKI/extensions/WikiFarm/bin/solrcore/conf" >> $BASE/$1/creation.log
 echo 'done.'
 
 echo 'Create database...'
