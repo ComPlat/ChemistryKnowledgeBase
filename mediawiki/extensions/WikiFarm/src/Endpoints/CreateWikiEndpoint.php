@@ -26,10 +26,6 @@ class CreateWikiEndpoint extends SimpleHandler {
         return ['result' => 'ok', 'wikiId' => $wikiId];
     }
 
-    public function needsWriteAccess() {
-        return false;
-    }
-
     public function getParamSettings() {
         return [
 

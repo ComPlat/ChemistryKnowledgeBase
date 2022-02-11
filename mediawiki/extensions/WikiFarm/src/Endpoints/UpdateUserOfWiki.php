@@ -31,10 +31,6 @@ class UpdateUserOfWiki extends SimpleHandler {
         return new Response();
     }
 
-    public function needsWriteAccess() {
-        return false;
-    }
-
     public function getParamSettings() {
         return [
 

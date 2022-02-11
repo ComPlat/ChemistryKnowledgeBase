@@ -26,10 +26,6 @@ class RemoveWikiEndpoint extends SimpleHandler {
         return ['result' => 'ok', 'wikiId' => $params['wikiId']];
     }
 
-    public function needsWriteAccess() {
-        return false;
-    }
-
     public function getParamSettings() {
         return [
 

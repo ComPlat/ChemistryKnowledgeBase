@@ -20,13 +20,13 @@ sudo service solr restart
 # Be very careful. This step cannot be undone.
 # If you want to completely remove all contents and all users etc. from
 # your Wiki-DB uncomment the next line before running this script.
-#mysql -u root -pvagrant -e "DROP DATABASE IF EXISTS chemwiki;"
+#mysql -u admin -pvagrant -e "DROP DATABASE IF EXISTS chemwiki;"
 mysql -u admin -pvagrant -e "CREATE DATABASE IF NOT EXISTS chemwiki;"
 mysql -u admin -pvagrant --database=chemwiki < /var/www/html/mediawiki/database.sql
 
-# Create wikis
-#sudo sh /vagrant/createWiki.sh main Hauptwiki
-#sudo sh /vagrant/createWiki.sh wiki2 Wiki2
+# For WikiFarm only
+#sudo $MEDIAWIKI/extensions/WikiFarm/bin/createWiki.sh main Hauptwiki
+
 
 
 

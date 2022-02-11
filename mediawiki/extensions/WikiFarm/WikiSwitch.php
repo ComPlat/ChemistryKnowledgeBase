@@ -23,6 +23,7 @@ if (is_null($wiki)) {
     echo "This wiki (\"" . htmlspecialchars($callingurl) . "\") is not available. Check configuration.\n";
     exit(0);
 }
+
 global $SOLRcore;
 if ($wiki == 'main') {
     $wgDBname = "chemmain";
@@ -30,7 +31,7 @@ if ($wiki == 'main') {
     $wgArticlePath = '/main/mediawiki/$1';
     $wgUploadDirectory = "/var/www/html/main/images";
     $wgUploadPath = "/main/images";
-    $SOLRcore = 'mw';
+    $SOLRcore = 'main';
 } else {
     $wgDBname = "chem$wiki";
     $wgScriptPath = "/$wiki/mediawiki";
