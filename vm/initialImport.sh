@@ -1,58 +1,90 @@
 #!/usr/bin/env bash
 
-export MEDIAWIKI=/var/www/html/mediawiki
+export MW=/var/www/html/mediawiki
+export MEDIAWIKI=$MW
 export WIKISCHEMA=/home/vagrant/wikischema
+export WIKIIMAGES=/home/vagrant/wikiimages
+export BIN=/home/vagrant/bin
 
-echo '#################### Run all Jobs'
+printf "\n\n\n#################### Run all Jobs\n"
 date
-/home/vagrant/bin/runJobs.sh 
+$BIN/runJobs2.sh 
 
 
 ## ideally stop CRON jobs and EnhancedRetrieval here
 
 
-echo '#################### Import Wiki-Schema'
+printf "\n\n\n#################### Import Wiki-Schema\n"
 date
 php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiImport.php --directory=$WIKISCHEMA
 
 
-echo '#################### Rebuild images, links, category pages, and recent changes'
+#printf "\n\n\n#################### Import Wiki-Images\n"
+#date
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/0
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/1
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/2
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/3
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/4
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/5
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/6
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/7
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/8
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/9
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/a
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/b
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/c
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/d
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/e
+#php $MEDIAWIKI/maintenance/importImages.php --search-recursively --overwrite $WIKIIMAGES/f
+printf "\n\n\n#################### Rebuild images, links, category pages, and recent changes\n"
 date
 php $MEDIAWIKI/maintenance/rebuildImages.php --missing
 php $MEDIAWIKI/maintenance/rebuildrecentchanges.php
 php $MEDIAWIKI/maintenance/refreshLinks.php
 
 
-echo '#################### Run all Jobs'
+printf "\n\n\n#################### Run all Jobs 1\n"
 date
-/home/vagrant/bin/runJobs.sh 
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationDispatch
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationClassUpdate
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationUpdate
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.propertyStatisticsRebuild
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.entityIdDisposer
+$BIN/runJobs2.sh 
 
 
-echo '#################### Rebuild all semantic data, possibly not needed after refreshLinks?!'
+printf "\n\n\n#################### Rebuild all semantic data, possibly not needed after refreshLinks?!\n"
 date
 php $MEDIAWIKI/extensions/SemanticMediaWiki/maintenance/rebuildData.php
 
 
-echo '#################### Run all Jobs'
+printf "\n\n\n#################### Run all Jobs 2\n"
 date
-/home/vagrant/bin/runJobs.sh 
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationDispatch
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationClassUpdate
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.changePropagationUpdate
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.propertyStatisticsRebuild
+php $MEDIAWIKI/maintenance/runJobs.php --type=smw.entityIdDisposer
+$BIN/runJobs2.sh 
 
 
 ## enable EnhancedRetrieval again
 
 
-echo '#################### Rebuild full-text index for EnhancedRetrieval'
+printf "\n\n\n#################### Rebuild full-text index for EnhancedRetrieval\n"
 date
+# curl "http://localhost:8893/solr/mw/update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/query%3E%3C/delete%3E&commit=true"
 php $MEDIAWIKI/extensions/EnhancedRetrieval/maintenance/updateSOLR.php -v
 
 
-echo '#################### Run all Jobs'
+printf "\n\n\n#################### Run all Jobs 3\n"
 date
-/home/vagrant/bin/runJobs.sh 
+$BIN/runJobs2.sh 
 
 
 ## enable CRON here again
 
 
-echo '#################### Finished initial import'
+printf "\n\n\n#################### Finished initial import\n"
 date

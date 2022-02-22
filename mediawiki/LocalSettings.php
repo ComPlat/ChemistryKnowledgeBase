@@ -15,14 +15,11 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	exit;
 }
 
-# Only for debugging purposes
-#error_reporting(E_ALL);
-#ini_set( 'display_errors', 1 );
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
 
-$wgSitename = "Chem-Wiki";
+$wgSitename = "ChemWiki";
 
 ## The URL base path to the directory containing the wiki;
 ## defaults for all runtime URL paths are based off of this.
@@ -30,25 +27,24 @@ $wgSitename = "Chem-Wiki";
 ## (like /w/index.php/Page_title to /wiki/Page_title) please see:
 ## https://www.mediawiki.org/wiki/Manual:Short_URL
 $wgScriptPath = "/mediawiki";
-$wgArticlePath = '/mediawiki/$1';
 
 ## The protocol and server name to use in fully-qualified URLs
-$wgServer = "http://localhost";
+$wgServer = "http://chemwiki.local";
 
 ## The URL path to static resources (images, scripts, etc.)
 $wgResourceBasePath = $wgScriptPath;
 
 ## The URL paths to the logo.  Make sure you change this from the default,
 ## or else you'll overwrite your logo when you upgrade!
-$wgLogos = [ '1x' => "$wgResourceBasePath/resources/assets/Wiki Logo-01.jpg" ];
+$wgLogos = [ '1x' => "$wgResourceBasePath/resources/assets/wiki.png" ];
 
 ## UPO means: this is also a user preference option
 
 $wgEnableEmail = true;
 $wgEnableUserEmail = true; # UPO
 
-$wgEmergencyContact = "info@diqa-pm.de";
-$wgPasswordSender = "noreply@diqa-pm.de";
+$wgEmergencyContact = "apache@chemwiki.local";
+$wgPasswordSender = "apache@chemwiki.local";
 
 $wgEnotifUserTalk = false; # UPO
 $wgEnotifWatchlist = false; # UPO
@@ -60,8 +56,6 @@ $wgDBserver = "localhost";
 $wgDBname = "chemwiki";
 $wgDBuser = "admin";
 $wgDBpassword = "vagrant";
-
-#require_once ("extensions/WikiFarm/WikiSwitch.php");
 
 # MySQL specific settings
 $wgDBprefix = "";
@@ -89,7 +83,7 @@ $wgUseInstantCommons = false;
 # Periodically send a pingback to https://www.mediawiki.org/ with basic data
 # about this MediaWiki instance. The Wikimedia Foundation shares this data
 # with MediaWiki developers to help guide future development efforts.
-$wgPingback = true;
+$wgPingback = false;
 
 ## If you use ImageMagick (or any other shell command) on a
 ## Linux server, this will need to be set to the name of an
@@ -97,7 +91,7 @@ $wgPingback = true;
 ## language locale so that the behaviour of C library functions will
 ## be consistent with typical installations. Use $wgLanguageCode to
 ## localise the wiki.
-$wgShellLocale = "en_US.utf8";
+$wgShellLocale = "C.UTF-8";
 
 ## Set $wgCacheDirectory to a writable directory on the web server
 ## to make your wiki go slightly faster. The directory should not
@@ -105,16 +99,16 @@ $wgShellLocale = "en_US.utf8";
 #$wgCacheDirectory = "$IP/cache";
 
 # Site language code, should be one of the list in ./languages/data/Names.php
-$wgLanguageCode = "de";
+$wgLanguageCode = "en";
 
-$wgSecretKey = "2b4cc2ac22c446ffe0930b95761b74e9d92d13635c59462eb9e52a14d918206b";
+$wgSecretKey = "26d8c6503cda75aefab9339cbcab0cdad65dece76645689fce97073b67f79e8e";
 
 # Changing this will log out all existing sessions.
 $wgAuthenticationTokenVersion = "1";
 
 # Site upgrade key. Must be set to a string (default provided) to turn on the
 # web installer while LocalSettings.php is in place
-$wgUpgradeKey = "f0d58e470896284b";
+$wgUpgradeKey = "3f81b1c435b08b8f";
 
 ## For attaching licensing metadata to pages, and displaying an
 ## appropriate copyright notice / icon. GNU Free Documentation
@@ -129,65 +123,168 @@ $wgDiff3 = "/usr/bin/diff3";
 
 ## Default skin: you can change the default skin. Use the internal symbolic
 ## names, ie 'vector', 'monobook':
-$wgDefaultSkin = "chameleon";
+$wgDefaultSkin = "vector";
 
 # Enabled skins.
 # The following skins were automatically enabled:
+wfLoadSkin( 'chameleon' );
 wfLoadSkin( 'MonoBook' );
 wfLoadSkin( 'Timeless' );
 wfLoadSkin( 'Vector' );
 
+
+# End of automatically generated settings.
+###############################################################################################################################
+# Add more configuration options below.
+
+###############################################################################################################################
+#################################################################
+# Logos
+#################################################################
+$wgLogos = ['1x' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png"];
+$wgFavicon = "/extensions/ChemExtension/resources/favicon.ico";
+
+#################################################################
 # General settings
+#################################################################
+$wgGroupPermissions['*']['createaccount'] = false;
 $wgGroupPermissions['*']['read'] = true;
 $wgGroupPermissions['*']['edit'] = false;
-
 $wgGroupPermissions['user']['read'] = true;
-
 $wgGroupPermissions['contributor']['edit'] = true;
 
-$wgIgnoreImageErrors=true;
-
-# Turn on only for debugging. creates large file
-//$wgDebugLogFile = "/var/www/html/mediawiki/mw-log.txt";
-
 $wgHTTPTimeout = 60;
-wfLoadExtension( 'ParserFunctions' );
-$wgPFEnableStringFunctions=true;
+$wgIgnoreImageErrors=true;
+$wgJobRunRate = 100;
 
-# SMW
-enableSemantics( 'chem-wiki.de' );
-
-# PageForms
-wfLoadExtension( 'PageForms' );
-
-#################################################################
-#
-# Chameleon
-# https://www.mediawiki.org/wiki/Skin:Chameleon
-#
-#################################################################
-
-$wgDefaultSkin='chameleon';
-$egChameleonLayoutFile = __DIR__ . '/fixedheadDIQA.xml';
-//$egChameleonExternalStyleModules = array( __DIR__ . '/custom.less' );
-$egChameleonExternalLessVariables = array(
-    'navbar-height' => '50px',
-    'grid-float-breakpoint' => '1000px'
+$wgUrlProtocols[] = "file://";
+$wgFileExtensions = array( 'png', 'gif', 'jpg', 'jpeg', 'doc',
+    'xls', 'mpp', 'pdf', 'ppt', 'tiff', 'bmp', 'docx', 'xlsx',
+    'pptx', 'ps', 'odt', 'ods', 'odp', 'odg'
 );
-// this enables formedit for the pencil icon for all pages that support forms (no patch needed)
-$wgPageformsRenameEditTabs = true;
-//currently Chameleon still only reads the SF-version of this variable
-$sfgRenameEditTabs = true;
 
-wfLoadExtension( 'NoTitle' );
-wfLoadExtension( 'InputBox' );
+$wgRawHtml = true;
 
-// Visual Editor
+$wgParserCacheType = CACHE_NONE;
+
+$wgPFEnableStringFunctions = true;
+$wgStringFunctionsLimitSearch = 5000;
+$wgPFStringLengthLimit = 65536;
+
+#Set Default Timezone
+$wgLocaltimezone = 'Europe/Berlin';
+date_default_timezone_set( $wgLocaltimezone );
+
+
+#################################################################
+# General settings (from ODB)
+#################################################################
+$wgGenerateThumbnailOnParse = true;
+
+$wgServerHTTP = $wgServer;
+$wgWikiServerPath = __DIR__ ;
+
+## If you want to use image uploads under safe mode,
+## create the directories images/archive, images/thumb and
+## images/temp, and make them all writable. Then uncomment
+## this, if it's not already uncommented:
+$wgHashedUploadDirectory = true;
+
+# deactivate MW autocomplete
+$wgEnableOpenSearchSuggest = false;
+
+// This MUST be even and the following odd integer.
+define("NS_TEST", 3300);
+define("NS_TEST_TALK", 3301);
+
+// Add namespaces.
+$wgExtraNamespaces[NS_TEST] = "Test";
+$wgExtraNamespaces[NS_TEST_TALK] = "Test_talk";
+
+# Erlaube das "<img>"-tag (f�r Bilder in Inventarbeschrieben)
+$wgAllowImageTag=true;
+
+
+#################################################################
+#
+# Include local server settings, if they exist
+#
+#################################################################
+if (file_exists(__DIR__ . '/env.php')) {
+    require_once('env.php');
+}
+
+
+#################################################################
+# Extensions - SMW
+#################################################################
+enableSemantics(explode( '://', $wgServer)[1]);
+
+$smwgNamespacesWithSemanticLinks[NS_TEST] = true;
+$smwgNamespacesWithSemanticLinks[NS_USER] = true;
+$smwgShowFactbox = SMW_FACTBOX_HIDDEN;
+$smwgShowFactboxEdit = SMW_FACTBOX_HIDDEN;
+$smwgBrowseFeatures = SMW_BROWSE_TLINK | SMW_BROWSE_SHOW_INCOMING | SMW_BROWSE_SHOW_GROUP | SMW_BROWSE_SHOW_SORTKEY | SMW_BROWSE_USE_API;
+$smwgPageSpecialProperties = array( '_MDAT', '_LEDT', '_CDAT' );
+
+## extend allowed complexity of queries
+## cf. http://semantic-mediawiki.org/wiki/Help:Configuration#Query_settings
+$smwgQMaxSize = 140;
+$smwgQPrintoutLimit = 100;
+
+## number of query results
+$smwgQDefaultLimit = 200;
+$smwgQMaxInlineLimit = 999000;
+$smwgQMaxLimit = 999000;
+$smwgQUpperbound = 999000;
+
+## disable concept caching
+## cf. http://semantic-mediawiki.org/wiki/Help:Configuration#Settings_for_concept_queries and http://semantic-mediawiki.org/wiki/Help:Concept_caching
+$smwgQConceptMaxSize = 24;
+$smwgQConceptCaching = CONCEPT_CACHE_NONE;
+# lifetime in minutes, might be irrelevant for CONCEPT_CACHE_NONE
+$smwgQConceptCacheLifetime = 24 * 60;
+
+# also allow iframe-tags in template expansion of query results
+use SMW\Query\ResultPrinters\ResultPrinter;
+ResultPrinter::$maxRecursionDepth = 8;
+
+# execute updates directly after page-save
+# cf. https://www.semantic-mediawiki.org/wiki/Deferred_updates
+# and https://www.semantic-mediawiki.org/wiki/Help:$smwgEnabledDeferredUpdate
+$smwgEnabledDeferredUpdate = false;
+//$smwgEnableUpdateJobs=false;
+//$smwgEnabledHttpDeferredJobRequest=false;
+
+
+#################################################################
+# Extensions - PageForms
+#################################################################
+wfLoadExtension( 'PageForms' );
+$wgPageFormsMaxLocalAutocompleteValues = 800;
+$wgPageFormsHeightForMinimizingInstances = 800; // default value is 800
+
+$wgPageFormsAutocompleteOnAllChars = true;
+
+global $wgPageFormsDatePickerSettings;
+global $wgPageFormsDateTimePickerSettings;
+global $wgPageFormsHeightForMinimizingInstances;
+$wgPageFormsDatePickerSettings['DateFormat'] = 'dd.mm.yy'; // yy means 4-digits, e.g. 2015
+$wgPageFormsDatePickerSettings['ShowResetButton'] = true;
+$wgPageFormsDateTimePickerSettings['ShowResetButton'] = true;
+$wgPageFormsDateTimePickerSettings['DateFormat'] = 'dd.mm.yy'; // yy means 4-digits, e.g. 2015
+$wgAmericanDates = false;
+
+
+#################################################################
+# Visual Editor
+#################################################################
 wfLoadExtension( 'VisualEditor' );
 
 // OPTIONAL: Enable VisualEditor in other namespaces
 // By default, VE is only enabled in NS_MAIN
-//$wgVisualEditorNamespaces[] = NS_PROJECT;
+$wgVisualEditorNamespaces[] = NS_PROJECT;
+$wgVisualEditorNamespaces[] = NS_TEST;
 
 // Enable by default for everybody
 $wgDefaultUserOptions['visualeditor-enable'] = 1;
@@ -198,45 +295,86 @@ $wgHiddenPrefs[] = 'visualeditor-enable';
 // OPTIONAL: Enable VisualEditor's experimental code features
 //$wgVisualEditorEnableExperimentalCode = true;
 
-wfLoadExtension( 'SyntaxHighlight_GeSHi' );
-
-# Powersearch
-$fsgShowNamespaces=false;
-$fsgShowArticleProperties=false;
-$fsgCreateNewPageLink = "/{article}?veaction=edit";
-
 wfLoadExtension( 'VEForAll' );
 // enable the file upload menu item in the embedded VisualEditor
 $wgHooks['VEForAllToolbarConfigNormal'][] = function( &$defaultConfigNormal ) {
     $defaultConfigNormal[4]['include'][] = 'media';
     $defaultConfigNormal[4]['include'][] = 'category';
 };
-$wgJobRunRate = 0;
 
-wfLoadExtension( 'Bootstrap' );
-wfLoadSkin( 'chameleon' );
+
+#################################################################
+# Powersearch
+#################################################################
+$fsgShowNamespaces=false;
+$fsgShowArticleProperties=false;
+$fsgCreateNewPageLink = "/{article}?veaction=edit";
+
+
+#################################################################
+# DisplayTitle
+#################################################################
 wfLoadExtension( 'DisplayTitle' );
 $wgAllowDisplayTitle = true; // defaults to true
 $wgRestrictDisplayTitle = false; // defaults to true
+$fsgShowSortOrder = true;
+$fsgShowCategories = false;
+$fsgShowSolrScore = true;
 
-$wgUrlProtocols[] = "file://";
-$wgFileExtensions = array( 'png', 'gif', 'jpg', 'jpeg', 'doc',
-    'xls', 'mpp', 'pdf', 'ppt', 'tiff', 'bmp', 'docx', 'xlsx',
-    'pptx', 'ps', 'odt', 'ods', 'odp', 'odg'
-);
 
+#################################################################
+# other Extensions 
+#################################################################
+// wfLoadExtension( 'ConfirmEdit' );
+wfLoadExtension( 'Nuke' );
+wfLoadExtension( 'ParserFunctions' );
+wfLoadExtension( 'Renameuser' );
+wfLoadExtension( 'ReplaceText' );
+wfLoadExtension( 'WikiEditor' );
+wfLoadExtension( 'NoTitle' );
+wfLoadExtension( 'InputBox' );
+wfLoadExtension( 'SyntaxHighlight_GeSHi' );
 wfLoadExtension( 'Lockdown' );
 
 wfLoadExtension( 'LimitedPageCreator' );
 
 
-wfLoadExtension('ChemExtension');
-wfLoadExtension('WikiFarm');
-$wgRawHtml = true;
+#################################################################
+# Chameleon https://www.mediawiki.org/wiki/Skin:Chameleon
+#################################################################
+wfLoadExtension( 'Bootstrap' );
+wfLoadSkin( 'chameleon' );
+$wgDefaultSkin='chameleon';
+// $egChameleonLayoutFile = __DIR__ . '/extensions/ChemExtension/resources/fixedheadDIQA.xml';
+$egChameleonLayoutFile = __DIR__ . '/skins/chameleon/layouts/fixedhead.xml';
 
-global $IP;
-if (!file_exists("$IP/env.php")) {
-    trigger_error("$IP/env.php does not exist. Please create!");
-    die();
-}
-require_once "env.php";
+//$egChameleonExternalStyleModules = array( __DIR__ . '/extensions/ChemExtension/resources/custom.less' );
+// $egChameleonExternalLessVariables = array(
+//     'navbar-height' => '50px',
+//     'grid-float-breakpoint' => '1000px'
+// );
+// this enables formedit for the pencil icon for all pages that support forms (no patch needed)
+$wgPageformsRenameEditTabs = true;
+//currently Chameleon still only reads the SF-version of this variable
+$sfgRenameEditTabs = true;
+
+
+#################################################################
+# WikiFarm settings
+#################################################################
+#
+# TODO
+#
+# $wgArticlePath = '/mediawiki/$1';
+# $wgOverrideHostname = 'chemwiki.local';
+# require_once ("extensions/WikiFarm/WikiSwitch.php");
+# wfLoadExtension('WikiFarm');
+
+
+#################################################################
+# Chemistry
+#################################################################
+ $wgJobRunRate = 0;
+
+wfLoadExtension('ChemExtension');
+

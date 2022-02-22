@@ -16,17 +16,14 @@
 
 namespace WikiImportExport;
 
-use \Maintenance;
-use \ContentHandler;
-use MediaWiki\MediaWikiServices;
-use \WikiPage;
-use \Revision;
-use \Title;
-use \RequestContext;
-use MediaWiki\Storage\RevisionRecord;
+use Maintenance;
+use RequestContext;
+use Title;
+
 error_reporting(E_ERROR);
 
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
+require_once 'EditWikiPage.php';
 
 class WikiImport extends Maintenance {
 
@@ -45,9 +42,6 @@ class WikiImport extends Maintenance {
     /// Storage directory.
     private $storageDirectory = null;
 
-    /// show verbose log output
-    private $verbose = false;
-
     public function __construct() {
         parent::__construct();
 
@@ -58,13 +52,10 @@ class WikiImport extends Maintenance {
     }
 
     public function execute() {
-
-
         // Get all namespaces.
         $this->allNamespaces = $this->getNamespaces();
         $this->processOptions();
         $this->doWikiImport();
-        echo "\n";
     }
 
     /**
@@ -72,13 +63,6 @@ class WikiImport extends Maintenance {
      * @return void
      */
     private function processOptions() {
-        global $wgODBLogLevel;
-        if($this->hasOption('verbose')) {
-            $wgODBLogLevel = 'DEBUG';
-        } else {
-            $wgODBLogLevel = 'LOG';
-        }
-
         $namespaces = $this->getOption( 'namespace', null);
         if($namespaces!= null) {
             $this->selectedNamespaces = explode(',', $namespaces);
@@ -101,10 +85,10 @@ class WikiImport extends Maintenance {
     private function doWikiImport() {
         $relevantNamespaces = $this->getRelevantNamespaces ( $this->selectedNamespaces, $this->allNamespaces );
 
-        echo "\nImporting files...";
+        echo("Importing files...\n");
 
         foreach ( $relevantNamespaces as $nsID => $nsName ) {
-            echo "\n$nsName";
+            echo("$nsName\n");
 
             $this->importNamespace ( $nsID, $nsName );
             $this->checkMissingPages ( $nsID, $nsName );
@@ -113,6 +97,8 @@ class WikiImport extends Maintenance {
 
     /**
      * import the files for this single namespace.
+     * @param int    $nsId   ID of the namespace
+     * @param string $nsName string representation of the namespace
      * @return void
      */
     private function importNamespace( $nsID, $nsName ) {
@@ -136,19 +122,22 @@ class WikiImport extends Maintenance {
                 }
             }
         } else {
-            echo "\n\tno files.";
+            echo("\tno files.\n");
         }
     }
 
     /**
      * import a single file.
+     * @param int    $nsId   ID of the namespace
+     * @param string $nsName string representation of the namespace
+     * @param string $file   filename including path of the file to import
      * @return void
      */
     private function importFile($nsID, $nsName, $file) {
         $encodedFileName = pathinfo($file, PATHINFO_FILENAME);
 
         if (empty($encodedFileName)) {
-            echo "\n\tignoring $file -- It has no title.";
+            echo("\tignoring $file -- It has no title.\n");
             return;
         }
 
@@ -160,82 +149,20 @@ class WikiImport extends Maintenance {
             $pageTitle = Title::newFromText("$nsName:$decodedFileName");
         }
 
-        $wikiPage = new WikiPage($pageTitle);
         $newContentString = file_get_contents($file);
         $newContentString = trim($newContentString);
-        $newContentObject = ContentHandler::makeContent($newContentString, $pageTitle);
 
-        // If the page already exists compare the page content and file content.
-        if ($wikiPage->exists()) {
-            $revision = Revision::newFromTitle($pageTitle);
-            $oldContentString = $revision->getContent(RevisionRecord::RAW)->serialize();
-            // or: $WikiMarkup = WikiPage::getContent(...)->serialize();
-            $oldContentString = trim($oldContentString);
-
-            if ($oldContentString == $newContentString) {
-                echo("\n\tignoring $decodedFileName -- It has same content as wiki page.");
-                return;
-
-            } else {
-                $result = $wikiPage->doEditContent($newContentObject, self::SUBJECT, EDIT_UPDATE);
-                if ($result->isOK()) {
-                    echo("\n\tupdating $decodedFileName");
-                } else {
-                    echo("\n\tupdating $decodedFileName <- Error!!!");
-                }
-            }
-
+        if ($pageTitle->exists()) {
+            $flags = EDIT_UPDATE;
         } else     {
-            // New page.
-            $result = $wikiPage->doEditContent($newContentObject, self::SUBJECT, EDIT_NEW);
-            if ($result->isOK()) {
-                echo("\n\tcreating $decodedFileName");
-            } else {
-                echo("\n\tcreating $decodedFileName <- Error!!!");
-            }
+            $flags = EDIT_NEW;
         }
 
-    }
-
-    private function uploadImage($imageFilePath, Title $filePageTitle, $wikitext, $comment = "DIQA-Tool hat Datei hochgeladen.")
-    {
-
-        $services = MediaWikiServices::getInstance();
-        $lbf = $services->getDBLoadBalancerFactory();
-
-        try {
-            if (!file_exists($imageFilePath)) {
-                echo "\n\tFile does not exist: $imageFilePath. Skip it";
-                return;
-            }
-            echo "\n\tImage file: $imageFilePath";
-            echo "\n\tUploading image file into {$filePageTitle->getPrefixedDBkey()}. ";
-            $filePage = wfLocalFile($filePageTitle);
-
-            $lbf->beginMasterChanges(__METHOD__);
-            $uploadStatus = $filePage->upload($imageFilePath, $comment, $wikitext);
-            $lbf->commitMasterChanges(__METHOD__);
-
-            if ($uploadStatus->isOk()) {
-                echo "\n\tFile '{$filePageTitle->getPrefixedText()}' uploaded.";
-            } else {
-                $errors = $uploadStatus->getErrorsArray();
-                if (isset($errors[0][0]) && $errors[0][0] == 'fileexists-no-change') {
-                    echo "Image did not change. Ignore it.";
-                } else {
-                    $errorStr = print_r($errors, 1);
-                }
-                echo "\n$errorStr";
-                $success = false;
-            }
-
-        } catch (Exception $e) {
-            $lbf->rollbackMasterChanges(__METHOD__);
-            echo "\t".$e->getMessage();
-            $success = false;
+        $success = EditWikiPage::doEditContent( $pageTitle, $newContentString, self::SUBJECT, $flags );
+        if ( !$success ) {
+            echo("\tERROR: creating $decodedFileName\n");
         }
 
-        return $success;
     }
 
     /**
@@ -252,7 +179,7 @@ class WikiImport extends Maintenance {
 
             $missingFiles = array_diff($allPages, $allFiles);
             foreach ($missingFiles as $file) {
-                echo("\n\twiki contains a page for which no file exists: $file");
+                echo("\twiki contains a page for which no file exists: $file\n");
             }
         }
     }
@@ -300,9 +227,9 @@ class WikiImport extends Maintenance {
         } else {
             $unknownNamespaces = array_diff($selectedNamespaces, $allNamespaces);
             if(!empty($unknownNamespaces)) {
-                echo("\nUnknown namespaces:");
+                echo("ERROR: Unknown namespaces:\n");
                 foreach ($unknownNamespaces as $namespace) {
-                    echo("\n\t$namespace");
+                    echo("\t$namespace\n");
                 }
             }
 

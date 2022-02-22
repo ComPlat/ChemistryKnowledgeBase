@@ -1,0 +1,18 @@
+* Authoring
+** Import a Paper with ChemScanner|Import a Paper with ChemScanner
+** Create a new Paper|Create a new Paper
+** Create a new Topic Page|Create a new Topic Page
+* Tools
+** Browse Topics|Browse Topics
+** Search for Molecules|Search for Molecules
+** Search for Reactions|Search for Reactions
+* Administration
+** Create a new Space|Create a new Space
+** Manage Space Users|Manage Space Users
+** Integrate Space in Main Wiki|Integrate Space in Main Wiki
+** User Management|User Management
+** Special:SpecialPages|Special Pages
+* Help
+** Help:Getting Started|Getting Started
+** Help:Creating a Private Space|Creating a Private Space
+** Special:Version|Wiki Version

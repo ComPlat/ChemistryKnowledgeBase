@@ -1,0 +1,19 @@
+* [[Use Cases]]
+* [[Test:Synthesis_of_new_pyrazolo123triazines_by_cyclative_cleavage_of_pyrazolo-triazenes]]
+* [[Moelkül]]
+* 
+
+
+
+
+
+<strong>MediaWiki has been installed.</strong>
+
+Consult the [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents User's Guide] for information on using the wiki software.
+
+== Getting started ==
+* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:Configuration_settings Configuration settings list]
+* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:FAQ MediaWiki FAQ]
+* [https://lists.wikimedia.org/postorius/lists/mediawiki-announce.lists.wikimedia.org/ MediaWiki release mailing list]
+* [https://www.mediawiki.org/wiki/Special:MyLanguage/Localisation#Translation_resources Localise MediaWiki for your language]
+* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:Combating_spam Learn how to combat spam on your wiki]

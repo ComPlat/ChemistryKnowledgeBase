@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+printf "\n\n\n#################### INSTALLATION\n"
+date
+
 # Repo
 sudo add-apt-repository multiverse
 sudo apt update
@@ -7,41 +10,61 @@ sudo apt update
 # Guest extensions
 sudo apt -y install virtualbox-guest-dkms
 
-# Apache
+printf "\n\n\n#################### Install apache\n"
+date
 sudo apt -y install apache2
 sudo ufw allow "Apache Full"
 sudo a2enmod rewrite
 sudo sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
-# MariaDB
+printf "\n\n\n#################### Install MySQL/Maria\n"
+date
 sudo apt -y install mariadb-server
 sudo service mysqld start
 sudo mariadb -e "GRANT ALL ON *.* TO 'admin'@'localhost' IDENTIFIED BY 'vagrant' WITH GRANT OPTION;"
 sudo mariadb -e "FLUSH PRIVILEGES;"
 
-# PHP
+printf "\n\n\n#################### Install PHP\n"
+date
 sudo apt -y install php libapache2-mod-php php-mysql php-xml php-mbstring php-curl
 
-# Composer
+printf "\n\n\n#################### Install composer\n"
+date
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
+sudo apt -y install unzip
 
-# Powersuche
+printf "\n\n\n#################### Get Powersuche\n"
+date
 sudo wget https://downloads.diqa-pm.com/free/power-search/2.3.0/powersearch-2.3.0.zip
 
-# Tools
+printf "\n\n\n#################### Install ImageMagick\n"
+date
 sudo apt -y install imagemagick
-sudo apt -y install unzip
+
+printf "\n\n\n#################### Install Memcached\n"
+date
 sudo apt -y install memcached
 
-# Java
+printf "\n\n\n#################### Java\n"
+date
 sudo apt -y install default-jre
 
-echo '#################### Configure Apache changes'
+printf "\n\n\n#################### Configure Apache changes\n"
+date
 sudo sh -c "echo '127.0.0.1   chemwiki.localhost' >> /etc/hosts"
 sudo sh -c "echo '127.0.0.1   chemwiki.local' >> /etc/hosts"
 
-echo '#################### Start services'
+printf "\n\n\n#################### Start services\n"
 sudo service apache2 start
 sudo service memcached start
 sudo service mysqld start
+
+printf "\n\n\n#################### Show service status\n"
+date
+sudo service apache2 status
+sudo service memcached status
+sudo service mysqld status
+
+printf "\n\n\n#################### Finished bootstrap.sh\n"
+date

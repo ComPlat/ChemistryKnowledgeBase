@@ -1,0 +1,17 @@
+
+Auf dieser Seite ist ein Molekül eingebettet:
+<chemform>CC(=O)NCCC1=CNc2c1cc(OC)cc2</chemform>
+
+und noch eins:
+
+<chemform>OC[C@@H](O1)[C@@H](O)[C@H](O)[C@@H]2[C@@H]1c3c(O)c(OC)c(O)cc3C(=O)O2</chemform>
+
+
+----
+
+Auf dieser Seite ist ein Molekül eingebettet:
+{{Chemform|formula=CC(=O)NCCC1=CNc2c1cc(OC)cc2}}
+
+und noch eins:
+
+{{Chemform|formula=OC[C@@H](O1)[C@@H](O)[C@H](O)[C@@H]2[C@@H]1c3c(O)c(OC)c(O)cc3C(=O)O2}}
