@@ -147,9 +147,9 @@ $wgFavicon = "/extensions/ChemExtension/resources/favicon.ico";
 #################################################################
 # General settings
 #################################################################
-$wgGroupPermissions['*']['createaccount'] = false;
+$wgGroupPermissions['*']['createaccount'] = true;
 $wgGroupPermissions['*']['read'] = true;
-$wgGroupPermissions['*']['edit'] = false;
+$wgGroupPermissions['*']['edit'] = true;
 $wgGroupPermissions['user']['read'] = true;
 $wgGroupPermissions['contributor']['edit'] = true;
 
@@ -359,6 +359,7 @@ $wgPageformsRenameEditTabs = true;
 $sfgRenameEditTabs = true;
 
 
+
 #################################################################
 # WikiFarm settings
 #################################################################
@@ -377,4 +378,3 @@ $sfgRenameEditTabs = true;
  $wgJobRunRate = 0;
 
 wfLoadExtension('ChemExtension');
-

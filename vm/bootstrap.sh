@@ -29,6 +29,21 @@ sudo systemctl start mariadb.service
 sudo systemctl enable mariadb.service
 
 
+printf "\n\n\n#################### Install Node.js, npm and Less\n"
+date
+# https://linuxize.com/post/how-to-install-node-js-on-centos-7/
+# this curl/bash seems not to be needed anymore?! curl -sL https://rpm.nodesource.com/setup_10.x | sudo bash -
+sudo yum install nodejs npm --assumeyes
+node --version
+npm --version
+
+# installing less
+# see http://lesscss.org/
+date
+sudo npm install -g less
+lessc --version
+
+
 echo '#################### Install PHP'
 sudo yum-config-manager --enable remi-php73 --assumeyes
 sudo yum install php php-mcrypt php-cli php-gd php-curl php-mysql php-ldap php-zip php-fileinfo --assumeyes
