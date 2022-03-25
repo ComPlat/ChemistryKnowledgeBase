@@ -19,6 +19,9 @@
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/"
     },
+    "SpecialPages": {
+        "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage"
+    },
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay"

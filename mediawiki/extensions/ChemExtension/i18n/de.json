@@ -4,5 +4,8 @@
 			"DIQA Projektmanagement GmbH"
 		]
 	},
-	"ketchereditor": "Ketcher-Editor"
+	"ketchereditor": "Ketcher-Editor",
+	"specialuploadtochemscanner": "Zu Chemscanner hochladen",
+	"ce-upload-to-chemscanner": "Hochladen",
+	"ce-choose-file" : "Wählen Sie eine Datei aus die Sie hochladen wollen"
 }
