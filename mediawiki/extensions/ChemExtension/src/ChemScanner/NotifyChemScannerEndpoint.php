@@ -1,8 +1,10 @@
 <?php
+
 namespace DIQA\ChemExtension\ChemScanner;
 
+use DIQA\ChemExtension\Utils\LoggerUtils;
+use Exception;
 use JobQueueGroup;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\Response;
 use Title;
@@ -16,28 +18,47 @@ class NotifyChemScannerEndpoint extends Handler
      */
     public function execute()
     {
-
+        $logger = new LoggerUtils('NotifyChemScannerEndpoint', 'ChemExtension');
         $queryParams = $this->getRequest()->getQueryParams();
-        $title = $queryParams['title'] ?? null;
-        if (is_null($title)) {
-            $res = new Response("title query parameter is required");
+        $logger->log("Request: " . $this->getRequest()->getUri()->getQuery());
+
+        $jobId = $queryParams['job_id'] ?? null;
+        if (is_null($jobId)) {
+            $res = new Response("job_id query parameter is required");
             $res->setStatus(400);
+            $logger->error("Bad request: job_id query parameter is required");
             return $res;
         }
-        $body = $this->getRequest()->getBody()->getContents();
-        $this->createChemScannerImportJob($title, $body);
-        return new Response();
+
+        try {
+            $body = $this->getRequest()->getBody()->getContents();
+            $this->createChemScannerImportJob($jobId, $body);
+            return new Response();
+        } catch (Exception $e) {
+            $res = new Response($e->getMessage());
+            $res->setStatus(400);
+            $logger->error($e->getMessage());
+            return $res;
+        }
     }
 
-    private function createChemScannerImportJob($title, $body) {
-        $title = Title::newFromText( $title );
+    /**
+     * @throws \Exception
+     */
+    private function createChemScannerImportJob($jobId, $body)
+    {
+        $title = Title::newFromText($jobId);
+        if (!$title->exists()) {
+            throw new Exception("No according page found for this job_id: $jobId");
+        }
         $jobParams = [];
         $jobParams['body'] = $body;
-        $job = new ChemScannerImportJob( $title, $jobParams );
-        JobQueueGroup::singleton()->push( $job );
+        $job = new ChemScannerImportJob($title, $jobParams);
+        JobQueueGroup::singleton()->push($job);
     }
 
-    public function needsReadAccess() {
+    public function needsReadAccess()
+    {
         return false;
     }
 

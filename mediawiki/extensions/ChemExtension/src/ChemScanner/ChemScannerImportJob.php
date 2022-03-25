@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Chemscanner;
 
 
+use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
@@ -11,12 +12,13 @@ class ChemScannerImportJob extends Job {
 
     private $jobId;
     private $body;
-
+    private $logger;
 
     public function __construct( $title, $params ) {
         parent::__construct( 'ChemScannerImportJob', $title, $params );
         $this->jobId = $params['job_id'];
         $this->body = $params['body'];
+        $this->logger = new LoggerUtils('ChemScannerImportJob', 'ChemExtension');
     }
 
     /**
@@ -32,7 +34,7 @@ class ChemScannerImportJob extends Job {
             WikiTools::createNotificationJobs($this->getTitle());
 
         } catch (Exception $e) {
-            wfDebugLog("ChemScannerJob", "\nERROR: " . $e->getMessage());
+            $this->logger->error("ERROR: " . $e->getMessage());
 
         }
     }

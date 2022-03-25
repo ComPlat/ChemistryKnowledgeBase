@@ -177,7 +177,7 @@ date_default_timezone_set( $wgLocaltimezone );
 
 
 #################################################################
-# General settings (from ODB)
+# General settings
 #################################################################
 $wgGenerateThumbnailOnParse = true;
 
@@ -193,15 +193,7 @@ $wgHashedUploadDirectory = true;
 # deactivate MW autocomplete
 $wgEnableOpenSearchSuggest = false;
 
-// This MUST be even and the following odd integer.
-define("NS_TEST", 3300);
-define("NS_TEST_TALK", 3301);
-
-// Add namespaces.
-$wgExtraNamespaces[NS_TEST] = "Test";
-$wgExtraNamespaces[NS_TEST_TALK] = "Test_talk";
-
-# Erlaube das "<img>"-tag (f�r Bilder in Inventarbeschrieben)
+# Erlaube das "<img>"-tag
 $wgAllowImageTag=true;
 
 
@@ -220,7 +212,6 @@ if (file_exists(__DIR__ . '/env.php')) {
 #################################################################
 enableSemantics(explode( '://', $wgServer)[1]);
 
-$smwgNamespacesWithSemanticLinks[NS_TEST] = true;
 $smwgNamespacesWithSemanticLinks[NS_USER] = true;
 $smwgShowFactbox = SMW_FACTBOX_HIDDEN;
 $smwgShowFactboxEdit = SMW_FACTBOX_HIDDEN;
@@ -284,7 +275,6 @@ wfLoadExtension( 'VisualEditor' );
 // OPTIONAL: Enable VisualEditor in other namespaces
 // By default, VE is only enabled in NS_MAIN
 $wgVisualEditorNamespaces[] = NS_PROJECT;
-$wgVisualEditorNamespaces[] = NS_TEST;
 
 // Enable by default for everybody
 $wgDefaultUserOptions['visualeditor-enable'] = 1;
