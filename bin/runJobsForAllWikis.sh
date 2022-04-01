@@ -6,4 +6,5 @@ if [ -z "$1" ]
     exit
 fi
 
+export REQUEST_URI=/main/mediawiki
 php $1/extensions/WikiFarm/maintenance/runJobsForAllWikis.php
