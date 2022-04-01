@@ -55,11 +55,11 @@ class runJobsForAllWikis extends \Maintenance
 
         global $wgWikiFarmBinFolder;
         $wgWikiFarmBinFolder = $wgWikiFarmBinFolder ?? "$IP/../bin";
+        chdir($wgWikiFarmBinFolder);
         foreach($allWikis as $wiki) {
-            echo "\nRun jobs for wiki $wiki";
             echo shell_exec("$wgWikiFarmBinFolder/runJobForWiki.sh wiki$wiki");
         }
-        echo "\nRun jobs for main wiki";
+
         echo shell_exec("$wgWikiFarmBinFolder/runJobForWiki.sh main");
         echo "\n";
     }
