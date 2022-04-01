@@ -104,6 +104,25 @@ class WikiRepository {
         return $results;
     }
 
+    public function getAllWikis(): array
+    {
+        $results = [];
+        $res = $this->db->select('wiki_farm', ['id', 'wiki_name', 'wiki_status', 'created_at'],
+            ['wiki_status' => "CREATED" ]);
+        foreach ( $res as $row ) {
+            $results[] =
+                [
+                    'id' => $row->id,
+                    'wiki_name' => $row->wiki_name,
+                    'created_at' => $row->created_at,
+                    'wiki_status' => $row->wiki_status,
+
+                ];
+
+        }
+        return $results;
+    }
+
     public function getAllUsersOfWiki($wikiId): array
     {
         $results = [];
