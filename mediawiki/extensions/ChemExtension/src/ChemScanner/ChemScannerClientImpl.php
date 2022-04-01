@@ -8,20 +8,25 @@ use Exception;
 class ChemScannerClientImpl implements ChemScannerClient {
 
     private $chemScannerBaseUrl;
+    private $chemScannerNotifyBaseUrl;
 
     /**
-     * @param $chemScannerBaseUrl
+     *
      */
-    public function __construct($chemScannerBaseUrl = NULL)
+    public function __construct()
     {
+        global $wgCEChemScannerBaseUrl;
+        $chemScannerBaseUrl = $wgCEChemScannerBaseUrl ?? null;
         if (is_null($chemScannerBaseUrl)) {
-            global $wgCEChemScannerBaseUrl;
-            $chemScannerBaseUrl = $wgCEChemScannerBaseUrl ?? null;
-            if (is_null($chemScannerBaseUrl)) {
-                throw new Exception('Chemscanner is not properly configured. Set $wgCEChemScannerBaseUrl.');
-            }
+            throw new Exception('Chemscanner is not properly configured. Set $wgCEChemScannerBaseUrl.');
         }
+
+        global $wgServer, $wgScriptPath;
+        global $wgCEChemScannerNotifyBaseUrl;
+        $chemScannerNotifyBaseUrl = $wgCEChemScannerNotifyBaseUrl ?? $wgServer . $wgScriptPath;
+
         $this->chemScannerBaseUrl = $chemScannerBaseUrl;
+        $this->chemScannerNotifyBaseUrl = $chemScannerNotifyBaseUrl;
     }
 
 
@@ -33,13 +38,14 @@ class ChemScannerClientImpl implements ChemScannerClient {
         try {
             $headerFields = [];
             $headerFields[] = "Content-Type: multipart/form-data";
-
+            $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $ch = curl_init();
             $url = $this->chemScannerBaseUrl . "/api/v1/chemscanner/scan";
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS,  [
                 $filename => $curlFile,
+                "postback_url" => $this->chemScannerNotifyBaseUrl . "/rest.php/ChemExtension/v1/chemscanner/jobs/notify-done"
             ]);
             curl_setopt($ch, CURLOPT_HEADER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields );

@@ -19,8 +19,8 @@ class NotifyChemScannerEndpoint extends Handler
     public function execute()
     {
         $logger = new LoggerUtils('NotifyChemScannerEndpoint', 'ChemExtension');
-        $queryParams = $this->getRequest()->getQueryParams();
-        $logger->log("Request: " . $this->getRequest()->getUri()->getQuery());
+        $body = $this->getRequest()->getBody()->getContents();
+        parse_str($body, $queryParams);
 
         $jobId = $queryParams['job_id'] ?? null;
         if (is_null($jobId)) {
@@ -31,8 +31,8 @@ class NotifyChemScannerEndpoint extends Handler
         }
 
         try {
-            $body = $this->getRequest()->getBody()->getContents();
-            $this->createChemScannerImportJob($jobId, $body);
+            $this->createChemScannerImportJob($jobId, $queryParams['data']);
+            $logger->debug(sprintf("ChemScannerImportJob created with job_id: %s, data: %s", $queryParams['job_id'], $queryParams['data']));
             return new Response();
         } catch (Exception $e) {
             $res = new Response($e->getMessage());
@@ -48,11 +48,10 @@ class NotifyChemScannerEndpoint extends Handler
     private function createChemScannerImportJob($jobId, $body)
     {
         $title = Title::newFromText($jobId);
-        if (!$title->exists()) {
-            throw new Exception("No according page found for this job_id: $jobId");
-        }
+
         $jobParams = [];
         $jobParams['body'] = $body;
+        $jobParams['job_id'] = $jobId;
         $job = new ChemScannerImportJob($title, $jobParams);
         JobQueueGroup::singleton()->push($job);
     }

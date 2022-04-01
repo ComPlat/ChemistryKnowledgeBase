@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Chemscanner;
 
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
@@ -40,7 +41,75 @@ class ChemScannerImportJob extends Job {
     }
 
     private function importChemScannerResult($chemScannerResult) {
-        // TODO: Implement import from $chemScannerResult
-        WikiTools::doEditContent($this->getTitle(), "real data", "auto-generated");
+        $wikitext = "";
+        $wikitext .= $this->importMolecules($chemScannerResult);
+        $wikitext .= $this->importReactions($chemScannerResult);
+        $oldText = WikiTools::getText($this->getTitle());
+        WikiTools::doEditContent($this->getTitle(), "$wikitext\n\n$oldText", "auto-generated");
+    }
+
+    private function importMolecules($chemScannerResult)
+    {
+        $wikitext = "\n== Molecules ==";
+        foreach($chemScannerResult->molecules as $m) {
+            $wikitext .= "\n=== {$m->label}===";
+            $wikitext .= "\nDescription: {$m->text}";
+            $wikitext .= "\n<chemform>\n{$m->cano_smiles}\n</chemform>";
+            $wikitext .= "\n";
+        }
+        return $wikitext;
+    }
+
+    private function importReactions($chemScannerResult)
+    {
+        $wikitext = "";
+        foreach($chemScannerResult->reactions as $reaction) {
+            $wikitext .= "\n== Reaction ==";
+            $wikitext .= "\nDescription: {$reaction->description}";
+            if (isset($reaction->time) && $reaction->time != '') {
+                $wikitext .= "\nTime: {$reaction->time}";
+            }
+            if (isset($reaction->temperature) && $reaction->temperature != '') {
+                $wikitext .= "\nTemperature: {$reaction->temperature}";
+            }
+            $wikitext .= "\n=== Reactants ===";
+            foreach($reaction->reactants as $r) {
+                $wikitext .= "\n* Name: {$r->label}";
+                $wikitext .= "\n* Description: {$r->text}";
+                $wikitext .= "\n<chemform>\n{$r->smiles}\n</chemform>";
+                $wikitext .= "\n";
+            }
+            $wikitext .= "\n=== Reagents ===";
+            foreach($reaction->reagents as $r) {
+                $wikitext .= "\n* Name: {$r->label}";
+                $wikitext .= "\n* Description: {$r->text}";
+                $wikitext .= "\n<chemform>\n{$r->smiles}\n</chemform>";
+                $wikitext .= "\n";
+            }
+            $wikitext .= "\n=== Products ===";
+            foreach($reaction->products as $product) {
+                $wikitext .= "\n* Name: {$product->label}";
+                $wikitext .= "\n* Description: {$product->text}";
+                $wikitext .= "\n<chemform>\n{$product->smiles}\n</chemform>";
+                $wikitext .= "\n";
+            }
+            $wikitext .= "\n=== Steps ===";
+            foreach($reaction->steps as $step) {
+                $wikitext .= "\n* Step: {$step->number}";
+                $wikitext .= "\n* Description: {$step->description}";
+                if (isset($step->time) && $step->time != '') {
+                    $wikitext .= "\nTime: {$step->time}";
+                }
+                if (isset($step->temperature) && $step->temperature != '') {
+                    $wikitext .= "\nTemperature: {$step->temperature}";
+                }
+                foreach($step->reagents as $reagent) {
+                    $wikitext .= "\n<chemform>\n{$reagent}\n</chemform>";
+                }
+                $wikitext .= "\n";
+            }
+            $wikitext .= "\n";
+        }
+        return $wikitext;
     }
 }

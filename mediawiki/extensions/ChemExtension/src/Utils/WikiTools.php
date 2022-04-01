@@ -51,6 +51,21 @@ class WikiTools {
         }
     }
 
+    public static function getText($title) {
+
+        if( ! $title instanceof Title ) {
+            $title = Title::newFromDBkey(str_replace(' ', '_', $title));
+        }
+
+        $revision = MediaWikiServices::getInstance()->getRevisionStore()->getRevisionByTitle( $title );
+        if( $revision == null || $revision->getContent( SlotRecord::MAIN ) == null ) {
+            $text = '';
+        } else {
+            $text = $revision->getContent( SlotRecord::MAIN )->getWikitextForTransclusion();
+        }
+        return $text;
+    }
+
     public static function createNotificationJobs($title)
     {
         $wikiSysop = User::newFromName("WikiSysop");

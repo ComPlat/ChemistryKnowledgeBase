@@ -53,3 +53,4 @@ Thumbs.db
 /mediawiki/mw-log.txt
 /mediawiki/web.config
 /mediawiki/extensions/WikiFarm/cache/*.php
+/mediawiki/extensions/ChemExtension/cache/*.php

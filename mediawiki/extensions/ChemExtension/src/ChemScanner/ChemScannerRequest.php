@@ -5,12 +5,14 @@ namespace DIQA\ChemExtension\ChemScanner;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
+use Philo\Blade\Blade;
 use Title;
 
 class ChemScannerRequest
 {
 
     private $documentPath;
+    private $blade;
 
     /**
      * @param $document
@@ -19,6 +21,10 @@ class ChemScannerRequest
     {
 
         $this->documentPath = $documentPath;
+
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $this->blade = new Blade ($views, $cache);
     }
 
     public function send(): array
@@ -40,14 +46,14 @@ class ChemScannerRequest
 
         $response = $client->uploadFile($this->documentPath);
 
+
         $createdPages = [];
         foreach($response->files as $file) {
-            $title = Title::newFromText($file->job_id);
 
-            $contLang = MediaWikiServices::getInstance()->getContentLanguage();
-            $userNsName = $contLang->getNsText(NS_USER);
+            $annotations = $this->getTemplateWithMetadata();
+            $title = Title::newFromText($file->job_id);
             WikiTools::doEditContent($title,
-                "--to be filled by ChemScannerJob -- [[Created for Chemscanner by::$userNsName:{$wgUser->getName()}]]",
+                "$annotations",
                 "auto-generated", EDIT_NEW);
             $store = MediaWikiServices::getInstance()->getWatchedItemStore();
             $store->addWatch($wgUser, $title);
@@ -56,5 +62,13 @@ class ChemScannerRequest
         return $createdPages;
     }
 
-
+    private function getTemplateWithMetadata() {
+        global $wgUser;
+        $contLang = MediaWikiServices::getInstance()->getContentLanguage();
+        $userNsName = $contLang->getNsText(NS_USER);
+        return '{{'.$this->blade->view ()->make ( "chemscanner-metadata",
+            ['user' => $userNsName.":".$wgUser->getName(),
+            ]
+        )->render ();
+    }
 }

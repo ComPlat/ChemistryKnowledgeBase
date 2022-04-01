@@ -25,10 +25,6 @@ class ChemScannerSpecialpage extends SpecialPage
         $cache = __DIR__ . '/../../cache';
         $this->blade = new Blade ($views, $cache);
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
-        );
-
     }
 
     /**
@@ -45,7 +41,7 @@ class ChemScannerSpecialpage extends SpecialPage
 
             if (isset($_FILES["chemfile"]["name"])) {
                 $createPages = $this->processUpload($tmpFolder);
-                $output->addHTML("Created page: " . $createPages[0]);
+                $output->addHTML($this->renderChemScannerUploadResult($createPages[0]));
                 return;
             }
 
@@ -57,6 +53,17 @@ class ChemScannerSpecialpage extends SpecialPage
         } catch (\Exception $e) {
             $output->addHTML($e->getMessage());
         }
+    }
+
+    private function renderChemScannerUploadResult($jobId)
+    {
+        global $wgServer, $wgScriptPath;
+
+        return $this->blade->view()->make("chemscanner-upload",
+            ['wikiUrl' => "$wgServer$wgScriptPath/index.php",
+                'jobId' => $jobId
+            ]
+        )->render();
     }
 
     /**
@@ -96,8 +103,11 @@ class ChemScannerSpecialpage extends SpecialPage
      */
     private function processUpload(string $tmpFolder): array
     {
-        $filename = $_FILES["chemfile"]["name"] . '_' . uniqid();
-        move_uploaded_file($_FILES["chemfile"]["tmp_name"], "$tmpFolder/$filename");
+        $pathInfo = pathinfo($_FILES["chemfile"]["name"]);
+        $filename = $pathInfo['filename'] . "_" . uniqid() . "." . $pathInfo['extension'];
+        if (move_uploaded_file($_FILES["chemfile"]["tmp_name"], "$tmpFolder/$filename") === false) {
+            throw new Exception("Can not store uploaded file at $tmpFolder/$filename");
+        }
         $chreq = new ChemScannerRequest("$tmpFolder/$filename");
         $createPages = $chreq->send();
         return $createPages;
@@ -109,9 +119,9 @@ class ChemScannerSpecialpage extends SpecialPage
      */
     private function checkPrerequisites(): string
     {
-        //FIXME: for some reason /tmp folder is not writeable by apache
-        //$tmpFolder = sys_get_temp_dir() . "/chemscanner";
-        $tmpFolder = "/vagrant/chemscanner";
+        global $wgCEChemScannerTempFolder;
+        $tmpFolder = sys_get_temp_dir() . "/chemscanner";
+        $tmpFolder = $wgCEChemScannerTempFolder ?? $tmpFolder;
 
         if (!file_exists($tmpFolder)) {
             mkdir($tmpFolder);
