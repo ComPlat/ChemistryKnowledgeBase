@@ -24,7 +24,7 @@ class CreateWikiJob extends \Job {
         $name = escapeshellarg($this->params['name']);
         try {
             $this->checkPreconditions($wikiId);
-            shell_exec("$IP/extensions/WikiFarm/bin/createWiki.sh wiki$wikiId $name");
+            shell_exec("bash $IP/extensions/WikiFarm/bin/createWiki.sh wiki$wikiId $name");
             $this->wikiRepository->updateToCreated($wikiId);
         } catch(Exception $e) {
             wfDebugLog('CreateWikiJob', $e->getMessage());
