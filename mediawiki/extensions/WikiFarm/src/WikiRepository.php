@@ -54,21 +54,8 @@ class WikiRepository {
         $title = \Title::newFromText( "Wiki $wikiId/RemoveWikiJob" );
         $jobParams = [ 'wikiId' => $wikiId ];
 
-        $wikiId = self::removeWikiInDB($wikiId, $userId);
-
         $job = new RemoveWikiJob( $title, $jobParams );
         \JobQueueGroup::singleton()->push( $job );
-        return $wikiId;
-    }
-
-    private function removeWikiInDB($wikiId, $userId) {
-
-        $this->db->delete('wiki_farm',
-            [
-                'fk_created_by' => $userId,
-                'id' => $wikiId,
-            ]);
-
         return $wikiId;
     }
 

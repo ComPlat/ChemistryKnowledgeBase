@@ -22,8 +22,10 @@ class RemoveWikiJob extends \Job {
         global $IP;
         $wikiId = $this->params['wikiId'];
 
+
         try {
-            echo shell_exec("bash $IP/extensions/WikiFarm/bin/removeWiki.sh wiki$wikiId");
+            echo shell_exec("bash $IP/extensions/WikiFarm/bin/removeWiki.sh wiki$wikiId 2>&1");
+            $this->wikiRepository->removeWiki($wikiId);
         } catch(Exception $e) {
             wfDebugLog('RemoveWikiJob', $e->getMessage());
         }

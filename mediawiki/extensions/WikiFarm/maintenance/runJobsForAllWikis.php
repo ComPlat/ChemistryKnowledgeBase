@@ -58,10 +58,10 @@ class runJobsForAllWikis extends \Maintenance
         chdir($wgWikiFarmBinFolder);
         foreach($allWikis as $wiki) {
             $id = $wiki['id'];
-            echo shell_exec("$wgWikiFarmBinFolder/runJobsForWiki.sh wiki$id");
+            echo shell_exec("bash $wgWikiFarmBinFolder/runJobsForWiki.sh wiki$id 2>&1");
         }
 
-        echo shell_exec("$wgWikiFarmBinFolder/runJobsForWiki.sh main");
+        echo shell_exec("bash $wgWikiFarmBinFolder/runJobsForWiki.sh main 2>&1");
         echo "\n";
     }
 
