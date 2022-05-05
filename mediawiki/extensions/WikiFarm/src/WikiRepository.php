@@ -54,6 +54,8 @@ class WikiRepository {
         $title = \Title::newFromText( "Wiki $wikiId/RemoveWikiJob" );
         $jobParams = [ 'wikiId' => $wikiId ];
 
+        $this->updateToBeDeleted($wikiId);
+
         $job = new RemoveWikiJob( $title, $jobParams );
         \JobQueueGroup::singleton()->push( $job );
         return $wikiId;
@@ -64,6 +66,19 @@ class WikiRepository {
         $this->db->update('wiki_farm',
             [
                 'wiki_status' => 'CREATED'
+            ],
+            [
+                'id' => $wikiId
+            ]
+        );
+        $this->db->endAtomic( __METHOD__ );
+    }
+
+    public function updateToBeDeleted($wikiId) {
+        $this->db->startAtomic( __METHOD__ );
+        $this->db->update('wiki_farm',
+            [
+                'wiki_status' => 'TO_BE_DELETED'
             ],
             [
                 'id' => $wikiId

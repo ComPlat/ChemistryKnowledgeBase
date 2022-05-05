@@ -16,6 +16,8 @@ $specialPage = $specialPage ?? null; // to prevent IDE warning
             <td>
                 @if($row['wiki_status'] === 'CREATED')
                 <a target="_blank" href="{{$baseURL}}/wiki{{$row['id']}}/mediawiki">{{$row['wiki_name']}}</a>
+                @elseif($row['wiki_status'] === 'TO_BE_DELETED')
+                {{$row['wiki_name']}} {{wfMessage('wfarm-wiki-to-be-deleted')}}
                 @else
                 {{$row['wiki_name']}} {{wfMessage('wfarm-wiki-in-creation')}}
                 @endif
