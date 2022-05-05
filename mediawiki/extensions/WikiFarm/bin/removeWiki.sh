@@ -22,8 +22,10 @@ echo 'done.'
 echo 'Delete database...'
 export DB_USER=admin
 export DB_PASS=vagrant
+export DB_USER_ADMIN=admin
+export DB_PASS_ADMIN=vagrant
 if [ -e $MEDIAWIKI/env.sh ]
 then
     source $MEDIAWIKI/env.sh
 fi
-mysql -u $DB_USER -p$DB_PASS -e "DROP DATABASE chem$1;"
+mysql -u $DB_USER_ADMIN -p$DB_PASS_ADMIN -e "DROP DATABASE chem$1;"

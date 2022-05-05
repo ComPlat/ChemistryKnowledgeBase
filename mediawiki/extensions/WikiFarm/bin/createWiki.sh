@@ -41,16 +41,18 @@ echo 'done.'
 echo 'Create database...'
 export DB_USER=admin
 export DB_PASS=vagrant
+export DB_USER_ADMIN=admin
+export DB_PASS_ADMIN=vagrant
 if [ -e $MEDIAWIKI/env.sh ]
 then
     source $MEDIAWIKI/env.sh
 fi
 
 
-mysql -u $DB_USER -p$DB_PASS -e "CREATE DATABASE chem$1;" >> $BASE/$1/creation.log
-mysql -u $DB_USER -p$DB_PASS -e "GRANT ALL PRIVILEGES ON chem$1.* TO 'root'@'%' IDENTIFIED BY 'vagrant';" >> $BASE/$1/creation.log
+mysql -u DB_USER_ADMIN -p$DB_PASS_ADMIN -e "CREATE DATABASE chem$1;" >> $BASE/$1/creation.log
+mysql -u DB_USER_ADMIN -p$DB_PASS_ADMIN -e "GRANT ALL PRIVILEGES ON chem$1.* TO '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';" >> $BASE/$1/creation.log
 
-mysql -u $DB_USER -p$DB_PASS --database=chem$1 < $MEDIAWIKI/database.sql
+mysql -u DB_USER_ADMIN -p$DB_PASS_ADMIN --database=chem$1 < $MEDIAWIKI/database.sql
 export REQUEST_URI="/$1/mediawiki"
 php $MEDIAWIKI/maintenance/update.php --quick >> $BASE/$1/creation.log
 echo 'done.'
