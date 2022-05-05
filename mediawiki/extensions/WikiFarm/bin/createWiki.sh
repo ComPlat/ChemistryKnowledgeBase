@@ -39,10 +39,18 @@ sudo su solr -c "/opt/solr/bin/solr create_core -c $1 -d $MEDIAWIKI/extensions/W
 echo 'done.'
 
 echo 'Create database...'
-mysql -u admin -pvagrant -e "CREATE DATABASE chem$1;" >> $BASE/$1/creation.log
-mysql -u admin -pvagrant -e "GRANT ALL PRIVILEGES ON chem$1.* TO 'root'@'%' IDENTIFIED BY 'vagrant';" >> $BASE/$1/creation.log
+export DB_USER=admin
+export DB_PASS=vagrant
+if [ -e $MEDIAWIKI/env.sh ]
+then
+    source $MEDIAWIKI/env.sh
+fi
 
-mysql -u admin -pvagrant --database=chem$1 < $MEDIAWIKI/database.sql
+
+mysql -u $DB_USER -p$DB_PASS -e "CREATE DATABASE chem$1;" >> $BASE/$1/creation.log
+mysql -u $DB_USER -p$DB_PASS -e "GRANT ALL PRIVILEGES ON chem$1.* TO 'root'@'%' IDENTIFIED BY 'vagrant';" >> $BASE/$1/creation.log
+
+mysql -u $DB_USER -p$DB_PASS --database=chem$1 < $MEDIAWIKI/database.sql
 export REQUEST_URI="/$1/mediawiki"
 php $MEDIAWIKI/maintenance/update.php --quick >> $BASE/$1/creation.log
 echo 'done.'

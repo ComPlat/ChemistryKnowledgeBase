@@ -49,6 +49,7 @@ Thumbs.db
 *.wmv
 
 /mediawiki/env.php
+/mediawiki/env.sh
 /mediawiki/images/*
 /mediawiki/mw-log.txt
 /mediawiki/web.config

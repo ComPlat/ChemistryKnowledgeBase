@@ -20,4 +20,10 @@ sudo su solr -c "/opt/solr/bin/solr delete -c $1"
 echo 'done.'
 
 echo 'Delete database...'
-mysql -u admin -pvagrant -e "DROP DATABASE chem$1;"
+export DB_USER=admin
+export DB_PASS=vagrant
+if [ -e $MEDIAWIKI/env.sh ]
+then
+    source $MEDIAWIKI/env.sh
+fi
+mysql -u $DB_USER -p$DB_PASS -e "DROP DATABASE chem$1;"
