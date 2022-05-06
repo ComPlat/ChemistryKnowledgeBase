@@ -16,6 +16,8 @@ class Setup {
             'scripts' => [
                 $baseScript . '/ve.extend.js',
                 $baseScript . '/ve.insert-chem-form.js',
+                $baseScript . '/ve.oo.ui.ketcher-widget.js',
+                $baseScript . '/ve.oo.ui.ketcher-dialog.js',
             ],
             'styles' => [ '/extensions/ChemExtension/skins/main.css'],
             'dependencies' => ['ext.visualEditor.core'],

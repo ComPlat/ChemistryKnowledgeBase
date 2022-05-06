@@ -14,13 +14,16 @@ mw.libs.ve.addPlugin( function ( target ) {
             if (this.originalMwData.name != 'chemform') {
                 return;
             }
-            var basePath = mw.config.get("wgServer") + mw.config.get("wgScriptPath");
+
             var chemForm = this.originalMwData.body.extsrc;
             var button = new OO.ui.ButtonWidget( {
-                label: 'Open Ketcher',
-                href: basePath + "/index.php/Spezial:KetcherEditor?chemform="+encodeURIComponent(chemForm),
-                target: '_blank'
+                label: 'Open Ketcher'
             } );
+
+            button.on( 'click', function() {
+                ve.init.target.getSurface().execute( 'window', 'open', 'edit-with-ketcher', { formula: chemForm } );
+            } );
+
             this.$attributes.append( button.$element );
 
             this.title.setLabel( this.selectedNode.getExtensionName() );

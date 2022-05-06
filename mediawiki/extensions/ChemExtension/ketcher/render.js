@@ -12,3 +12,5 @@ window.parent.onload = function(e){
     var smile=getParameterByName('chemform');
     ketcher.setMolecule(smile);
 }
+
+window.onload = window.parent.onload;
