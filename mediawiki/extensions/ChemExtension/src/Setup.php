@@ -40,6 +40,9 @@ class Setup {
         if ($nofloat == "true") {
             $cssClass = "chemformula-nofloat";
         }
+        $formula = self::startsWith($formula, "\n") ? $formula : "\n$formula";
+        $formula = self::endsWith($formula, "\n") ? $formula : "$formula\n";
+
         global $wgScriptPath;
         $formula = urlencode($formula);
         $path = "$wgScriptPath/extensions/ChemExtension/rdkit";
@@ -50,6 +53,18 @@ class Setup {
     public static function isEnabled()
     {
         return defined('DIQA_WIKI_FARM');
+    }
+
+    private static function startsWith( $haystack, $needle ) {
+        $length = strlen( $needle );
+        return substr( $haystack, 0, $length ) === $needle;
+    }
+    private static function endsWith( $haystack, $needle ) {
+        $length = strlen( $needle );
+        if( !$length ) {
+            return true;
+        }
+        return substr( $haystack, -$length ) === $needle;
     }
 
 }
