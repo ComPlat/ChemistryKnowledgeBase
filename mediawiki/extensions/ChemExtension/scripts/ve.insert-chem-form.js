@@ -2,8 +2,24 @@ mw.libs.ve.addPlugin( function ( target ) {
     // Some code to run when edit surface is ready
     //var surface = ve.init.target.getSurface();
 
+    ve.ui.ChemFormCommand = function veUiChemFormCommand( name, action, method, options ) {
+
+        // Parent constructor
+        ve.ui.ChemFormCommand.super.call( this, name, action, method, options );
+
+    };
+
+    /* Setup */
+
+    OO.inheritClass( ve.ui.ChemFormCommand, ve.ui.Command );
+
+    ve.ui.ChemFormCommand.prototype.execute = function ( surface, args, source ) {
+        this.args[0][0].attributes.mw.attrs.id = Math.random().toString(16).slice(2);
+        ve.ui.ChemFormCommand.super.prototype.execute.call( this, surface, args, source );
+    }
+
     ve.ui.commandRegistry.register(
-        new ve.ui.Command(
+        new ve.ui.ChemFormCommand(
             // Command name
             'addChemForm',
             // Type and name of the action to execute
@@ -18,7 +34,7 @@ mw.libs.ve.addPlugin( function ( target ) {
                                 mw: {
                                     name: 'chemform',
                                     attrs: {
-                                        'id': Math.random().toString(16).slice(2)
+                                        'id': ''
                                     },
                                     body: {
                                         extsrc: ''
