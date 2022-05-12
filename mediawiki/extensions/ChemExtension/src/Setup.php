@@ -48,7 +48,7 @@ class Setup {
         global $wgScriptPath;
         $formula = urlencode($formula);
         $path = "$wgScriptPath/extensions/ChemExtension/rdkit";
-        $output = "<iframe class=\"$cssClass\" src=\"$path/index.html?formula=$formula\" width='$width' height='$height'></iframe>";
+        $output = "<iframe class=\"$cssClass\" src=\"$path/index-formula.html?formula=$formula\" width='$width' height='$height'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 

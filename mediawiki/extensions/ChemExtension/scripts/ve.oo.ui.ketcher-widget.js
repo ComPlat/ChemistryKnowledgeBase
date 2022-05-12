@@ -36,7 +36,7 @@
 
         let enc_formula = encodeURIComponent(formula);
         this.id = id;
-        this.$element.attr("src", path + "/index.html?chemform="+enc_formula);
+        this.$element.attr("src", path + "/index-editor.html?chemform="+enc_formula);
 
     }
 

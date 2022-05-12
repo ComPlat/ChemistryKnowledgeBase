@@ -10,6 +10,9 @@ function getParameterByName(name, url = window.location.href) {
 onRuntimeInitialized: initRDKitModule().then(function(instance) {
     console.log('RDKIT version: ' + instance.version());
     var formula=getParameterByName('formula');
+    if (formula.indexOf("Ketcher") !== -1) {
+        formula = "\n" + formula.substr(formula.indexOf("Ketcher"));
+    }
     formula =formula.replace(/^[\n\s]+/,"\n");
     formula =formula.replace(/[\n\s]+$/,"\n");
     var mol = instance.get_mol(formula);

@@ -55,7 +55,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 var model = ve.init.target.getSurface().getModel();
                 let nodes = extractChemFormNode(model, this.iframe.id);
                 console.log(nodes);
-                getKetcher().getSmilesAsync().then(function(formula) {
+                getKetcher().getMolfileAsync().then(function(formula) {
                     console.log(formula);
                     //TODO: replace this with a custom transaction
                     nodes[0].element.attributes.mw.body.extsrc = formula;

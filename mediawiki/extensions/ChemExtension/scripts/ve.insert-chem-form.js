@@ -21,10 +21,10 @@ mw.libs.ve.addPlugin( function ( target ) {
                                         'id': Math.random().toString(16).slice(2)
                                     },
                                     body: {
-                                        extsrc: 'CN=C=O'
+                                        extsrc: ''
                                     }
                                 },
-                                originalMw: '{"name":"chemform","attrs":{},"body":{"extsrc":"CN=C=O"}}'
+                                originalMw: '{"name":"chemform","attrs":{},"body":{"extsrc":""}}'
                             }
                         }
 
