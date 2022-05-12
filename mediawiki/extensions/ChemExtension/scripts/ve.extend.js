@@ -16,12 +16,13 @@ mw.libs.ve.addPlugin( function ( target ) {
             }
 
             var chemForm = this.originalMwData.body.extsrc;
+            var id = this.originalMwData.attrs.id;
             var button = new OO.ui.ButtonWidget( {
                 label: 'Open Ketcher'
             } );
 
             button.on( 'click', function() {
-                ve.init.target.getSurface().execute( 'window', 'open', 'edit-with-ketcher', { formula: chemForm } );
+                ve.init.target.getSurface().execute( 'window', 'open', 'edit-with-ketcher', { formula: chemForm, id: id } );
             } );
 
             this.$attributes.append( button.$element );

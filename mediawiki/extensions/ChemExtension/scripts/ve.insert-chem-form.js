@@ -17,7 +17,9 @@ mw.libs.ve.addPlugin( function ( target ) {
                             attributes: {
                                 mw: {
                                     name: 'chemform',
-                                    attrs: {},
+                                    attrs: {
+                                        'id': Math.random().toString(16).slice(2)
+                                    },
                                     body: {
                                         extsrc: 'CN=C=O'
                                     }
