@@ -34,7 +34,10 @@ mw.libs.ve.addPlugin( function ( target ) {
                                 mw: {
                                     name: 'chemform',
                                     attrs: {
-                                        'id': ''
+                                        'id': '',
+                                        'height': "200px",
+                                        'width': "300px",
+                                        'float': 'none'
                                     },
                                     body: {
                                         extsrc: ''

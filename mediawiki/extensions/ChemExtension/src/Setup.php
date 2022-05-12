@@ -42,13 +42,18 @@ class Setup {
         if ($nofloat == "true") {
             $cssClass = "chemformula-nofloat";
         }
+        $float = $arguments['float'] ?? 'none';
+        $style = '';
+        if ($float !== 'none') {
+            $style = "style=\"float: $float;\"";
+        }
         $formula = self::startsWith($formula, "\n") ? $formula : "\n$formula";
         $formula = self::endsWith($formula, "\n") ? $formula : "$formula\n";
 
         global $wgScriptPath;
         $formula = urlencode($formula);
         $path = "$wgScriptPath/extensions/ChemExtension/rdkit";
-        $output = "<iframe class=\"$cssClass\" src=\"$path/index-formula.html?formula=$formula\" width='$width' height='$height'></iframe>";
+        $output = "<iframe $style class=\"$cssClass\" src=\"$path/index-formula.html?formula=$formula\" width='$width' height='$height'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 
