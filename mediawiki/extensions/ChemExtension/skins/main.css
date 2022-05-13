@@ -15,4 +15,9 @@ iframe.chemformula-nofloat {
     width: 100%;
 }
 
+.oo-ui-icon-chemform {
+    background-image: url( images/chemistry.png );
+
+}
+
 

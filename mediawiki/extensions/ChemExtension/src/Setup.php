@@ -8,9 +8,9 @@ class Setup {
         global $wgResourceModules;
         global $IP;
 
-        $baseScript = '/extensions/ChemExtension/scripts';
+        $baseScript = 'scripts';
         $wgResourceModules['ext.diqa.chemextension'] = array(
-            'localBasePath' => "$IP",
+            'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
@@ -19,7 +19,7 @@ class Setup {
                 $baseScript . '/ve.oo.ui.ketcher-widget.js',
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
             ],
-            'styles' => [ '/extensions/ChemExtension/skins/main.css'],
+            'styles' => [ 'skins/main.css'],
             'dependencies' => ['ext.visualEditor.core'],
         );
     }
