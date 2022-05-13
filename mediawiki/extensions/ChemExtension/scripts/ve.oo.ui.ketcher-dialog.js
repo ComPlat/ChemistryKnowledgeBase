@@ -54,15 +54,19 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             return new OO.ui.Process( function () {
                 var model = ve.init.target.getSurface().getModel();
                 let nodes = extractChemFormNode(model, this.iframe.id);
-                console.log(nodes);
-                getKetcher().getMolfileAsync().then(function(formula) {
-                    console.log(formula);
-                    //TODO: replace this with a custom transaction
-                    nodes[0].element.attributes.mw.body.extsrc = formula;
-                    ve.init.target.getSurface().getModel().getDocument().rebuildTree();
-                    ve.init.target.fromEditedState=true;
-                    ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
-                });
+
+                try {
+                    getKetcher().getMolfileAsync().then(function (formula) {
+
+                        //TODO: replace this with a custom transaction
+                        nodes[0].element.attributes.mw.body.extsrc = formula;
+                        ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+                        ve.init.target.fromEditedState = true;
+                        ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
+                    });
+                } catch(e) {
+                    mw.notify( 'Problem occured: ' + e, { type: 'error' } );
+                }
                 ve.ui.MWMediaDialog.super.prototype.close.call(this);
 
             }, this );
