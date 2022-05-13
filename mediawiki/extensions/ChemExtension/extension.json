@@ -37,6 +37,11 @@
             "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\ChemScanner\\NotifyChemScannerEndpoint"
+        },
+        {
+            "path": "/ChemExtension/v1/rdkit",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetRDKit"
         }
     ],
     "JobClasses": {
