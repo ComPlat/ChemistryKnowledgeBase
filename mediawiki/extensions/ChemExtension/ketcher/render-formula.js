@@ -7,10 +7,21 @@ function getParameterByName(name, url = window.location.href) {
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
+function getKetcherFrameElement(base) {
+    for(var i = 0; i < base.frames.length; i++) {
+        if (base.frames[i].window.ketcher) {
+            return base.frames[i].frameElement;
+        }
+    }
+    console.log("Ketcher not found");
+    return null;
+}
+
 window.parent.onload = function(e){
     var ketcher = window.ketcher;
-    var smile=getParameterByName('chemform');
-    ketcher.setMolecule(smile);
+    var formula = getKetcherFrameElement(window.parent).getAttribute("formula")
+    //var smile=getParameterByName('chemform');
+    ketcher.setMolecule(formula);
 }
 
 window.onload = window.parent.onload;

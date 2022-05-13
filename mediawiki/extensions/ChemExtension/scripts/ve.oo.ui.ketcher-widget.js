@@ -34,9 +34,9 @@
         let scriptPath = mw.config.get('wgScriptPath');
         let path = scriptPath + "/extensions/ChemExtension/ketcher";
 
-        let enc_formula = encodeURIComponent(formula);
         this.id = id;
-        this.$element.attr("src", path + "/index-editor.html?chemform="+enc_formula);
+        this.$element.attr("formula", formula);
+        this.$element.attr("src", path + "/index-editor.html");
 
     }
 
