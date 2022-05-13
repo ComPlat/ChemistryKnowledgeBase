@@ -1,39 +1,28 @@
-mw.libs.ve.addPlugin( function ( target ) {
+mw.loader.using('ext.visualEditor.core').then(function () {
 
-  /*!
-   * Extends the tag editor with a new button to open Ketcher
-   */
-    mw.loader.using('ext.visualEditor.core').then(function () {
-        /**
-         * @inheritdoc
-         */
-        var superClassMethod = ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess;
-        ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function (data) {
-            return superClassMethod.call(this, data).next(function () {
+    ve.ui.MWAlienExtensionInspectorExtension = {};
 
-                if (this.originalMwData.name != 'chemform') {
-                    return;
-                }
+    ve.ui.MWAlienExtensionInspectorExtension.extend = function(panel) {
+        if (panel.originalMwData.name != 'chemform') {
+            return;
+        }
 
-                var chemForm = this.originalMwData.body.extsrc;
-                var id = this.originalMwData.attrs.id;
-                var button = new OO.ui.ButtonWidget({
-                    label: 'Open Ketcher'
-                });
+        var chemForm = panel.originalMwData.body.extsrc;
+        var id = panel.originalMwData.attrs.id;
+        var button = new OO.ui.ButtonWidget({
+            label: 'Open Ketcher'
+        });
 
-                button.on('click', function () {
-                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                        formula: chemForm,
-                        id: id
-                    });
-                });
+        button.on('click', function () {
+            ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                formula: chemForm,
+                id: id
+            });
+        });
 
-                this.$attributes.append(button.$element);
+        panel.$attributes.append(button.$element);
 
-                this.title.setLabel(this.selectedNode.getExtensionName());
-            }, this);
-
-        };
-    });
+        panel.title.setLabel(panel.selectedNode.getExtensionName());
+    }
 
 } );

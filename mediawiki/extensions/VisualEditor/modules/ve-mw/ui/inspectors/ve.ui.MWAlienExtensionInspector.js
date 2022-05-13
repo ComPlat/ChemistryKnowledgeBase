@@ -76,6 +76,10 @@ ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function ( data ) {
 					);
 					this.$attributes.append( field.$element );
 				}
+				// Patch: KK to extend tag edit panel
+				if (ve.ui.MWAlienExtensionInspectorExtension) {
+					ve.ui.MWAlienExtensionInspectorExtension.extend(this);
+				}
 			}
 
 			this.title.setLabel( this.selectedNode.getExtensionName() );

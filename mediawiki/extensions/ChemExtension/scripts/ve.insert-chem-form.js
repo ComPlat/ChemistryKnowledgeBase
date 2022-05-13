@@ -1,7 +1,4 @@
-//mw.libs.ve.addPlugin( function ( target ) {
-    // Some code to run when edit surface is ready
-    //var surface = ve.init.target.getSurface();
-    mw.loader.using('ext.visualEditor.core').then(function () {
+mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.ChemFormCommand = function veUiChemFormCommand(name, action, method, options) {
 
             // Parent constructor
@@ -69,5 +66,4 @@
         ve.ui.AddChemForm.static.icon = 'chemform';
         ve.ui.AddChemForm.static.commandName = 'addChemForm';
         ve.ui.toolFactory.register(ve.ui.AddChemForm);
-    });
-//} );
+});
