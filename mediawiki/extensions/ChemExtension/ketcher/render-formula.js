@@ -1,7 +1,11 @@
 
 window.onload = function(e){
-    var ketcher = window.ketcher;
-    var formula = window.frameElement.getAttribute("formula")
+    let ketcher = window.ketcher;
+    if (!ketcher) {
+        setTimeout(window.onload, 500);
+        return;
+    }
+    let formula = window.frameElement.getAttribute("formula")
     ketcher.setMolecule(formula);
     renderFormula();
 
@@ -20,9 +24,7 @@ function renderFormula() {
             img.src = URL.createObjectURL(svgBlob);
             img.style.width = "100%";
             img.style.height = "95%";
-            /*let width = window.frameElement.getAttribute('width');
-            let height = window.frameElement.getAttribute('height');
-            document.body.style['min-width'] = width;*/
+
             document.body.append(img);
         });
     });
