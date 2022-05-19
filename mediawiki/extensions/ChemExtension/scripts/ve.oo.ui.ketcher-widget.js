@@ -36,7 +36,9 @@
 
         this.id = id;
         this.$element.attr("formula", formula);
-        this.$element.attr("src", path + "/index-editor.html");
+        this.$element.attr("id", id);
+
+        this.$element.attr("src", path + "/index-editor.html?id="+id+"&random="+Math.random());
 
     }
 

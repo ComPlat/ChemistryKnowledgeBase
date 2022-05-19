@@ -1,27 +1,30 @@
-function getParameterByName(name, url = window.location.href) {
-    name = name.replace(/[\[\]]/g, '\\$&');
-    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, ' '));
-}
 
-function getKetcherFrameElement(base) {
-    for(var i = 0; i < base.frames.length; i++) {
-        if (base.frames[i].window.ketcher) {
-            return base.frames[i].frameElement;
-        }
-    }
-    console.log("Ketcher not found");
-    return null;
-}
-
-window.parent.onload = function(e){
+window.onload = function(e){
     var ketcher = window.ketcher;
-    var formula = getKetcherFrameElement(window.parent).getAttribute("formula")
-    //var smile=getParameterByName('chemform');
+    var formula = window.frameElement.getAttribute("formula")
     ketcher.setMolecule(formula);
+    renderFormula();
+
 }
 
-window.onload = window.parent.onload;
+function renderFormula() {
+    window.ketcher.getSmilesAsync().then(function(smilesFormula) {
+        if (smilesFormula == '') {
+            setTimeout(function() {
+                renderFormula(); },
+                500);
+            return;
+        }
+        window.ketcher.generateImageAsync(smilesFormula, { outputFormat: 'svg' }).then(function(svgBlob) {
+            const img = new Image();
+            img.src = URL.createObjectURL(svgBlob);
+            img.style.width = "100%";
+            img.style.height = "95%";
+            /*let width = window.frameElement.getAttribute('width');
+            let height = window.frameElement.getAttribute('height');
+            document.body.style['min-width'] = width;*/
+            document.body.append(img);
+        });
+    });
+}
+

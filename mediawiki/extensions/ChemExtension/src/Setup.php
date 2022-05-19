@@ -51,9 +51,10 @@ class Setup {
         $formula = self::endsWith($formula, "\n") ? $formula : "$formula\n";
 
         global $wgScriptPath;
-        $formula = urlencode($formula);
-        $path = "$wgScriptPath/rest.php/ChemExtension/v1/rdkit?width=$width&height=$height&formula=$formula";
-        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height'></iframe>";
+        $random = uniqid();
+
+        $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?width=$width&height=$height&random=$random";
+        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' formula='$formula'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 

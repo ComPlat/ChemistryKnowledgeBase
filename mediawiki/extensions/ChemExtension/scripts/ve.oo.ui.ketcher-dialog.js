@@ -31,7 +31,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     function getKetcher() {
         for(var i = 0; i < window.frames.length; i++) {
-            if (window.frames[i].window.ketcher) {
+            if (window.frames[i].window.ketcher.isEditor) {
                 return window.frames[i].window.ketcher;
             }
         }
@@ -56,7 +56,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let nodes = extractChemFormNode(model, this.iframe.id);
 
                 try {
-                    getKetcher().getMolfileAsync().then(function (formula) {
+                    getKetcher().getSmilesAsync().then(function (formula) {
 
                         //TODO: replace this with a custom transaction
                         nodes[0].element.attributes.mw.body.extsrc = formula;
