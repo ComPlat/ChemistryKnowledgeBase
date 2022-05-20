@@ -33,6 +33,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                         name: 'chemform',
                                         attrs: {
                                             'id': '',
+                                            'smiles': '',
                                             'height': "200px",
                                             'width': "300px",
                                             'float': 'none'

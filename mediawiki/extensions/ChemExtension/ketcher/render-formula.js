@@ -6,7 +6,7 @@ window.onload = function(e){
         return;
     }
     let formula = window.frameElement.getAttribute("formula")
-    ketcher.setMolecule(formula);
+    ketcher.setMolecule(atob(formula));
     renderFormula();
 
 }

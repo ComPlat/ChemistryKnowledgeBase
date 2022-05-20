@@ -39,6 +39,18 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         return null;
     }
 
+    function updatePage(node, formula) {
+        let ketcher = getKetcher();
+        ketcher.getSmilesAsync().then(function (smiles) {
+            //TODO: replace this with a custom transaction
+            node.element.attributes.mw.body.extsrc = formula;
+            node.element.attributes.mw.attrs.smiles = smiles;
+            ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+            ve.init.target.fromEditedState = true;
+            ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
+        });
+    }
+
     ve.ui.KetcherDialog = function( manager, config ) {
         // Parent constructor
         ve.ui.KetcherDialog.super.call( this, manager, config );
@@ -56,14 +68,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let nodes = extractChemFormNode(model, this.iframe.id);
 
                 try {
-                    getKetcher().getSmilesAsync().then(function (formula) {
-
-                        //TODO: replace this with a custom transaction
-                        nodes[0].element.attributes.mw.body.extsrc = formula;
-                        ve.init.target.getSurface().getModel().getDocument().rebuildTree();
-                        ve.init.target.fromEditedState = true;
-                        ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
-                    });
+                    let ketcher = getKetcher();
+                    if (ketcher.containsReaction()) {
+                        ketcher.getRxnAsync().then(function (formula) {
+                            updatePage(nodes[0], formula);
+                        });
+                    } else {
+                        ketcher.getMolfileAsync().then(function (formula) {
+                            updatePage(nodes[0], formula);
+                        });
+                    }
                 } catch(e) {
                     mw.notify( 'Problem occured: ' + e, { type: 'error' } );
                 }

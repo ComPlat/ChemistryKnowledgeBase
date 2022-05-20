@@ -47,32 +47,13 @@ class Setup {
         if ($float !== 'none') {
             $style = "style=\"float: $float;\"";
         }
-        $formula = self::startsWith($formula, "\n") ? $formula : "\n$formula";
-        $formula = self::endsWith($formula, "\n") ? $formula : "$formula\n";
 
         global $wgScriptPath;
         $random = uniqid();
-
+        $formula = base64_encode($formula);
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?width=$width&height=$height&random=$random";
         $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' formula='$formula'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
-    }
-
-    public static function isEnabled()
-    {
-        return defined('DIQA_WIKI_FARM');
-    }
-
-    private static function startsWith( $haystack, $needle ) {
-        $length = strlen( $needle );
-        return substr( $haystack, 0, $length ) === $needle;
-    }
-    private static function endsWith( $haystack, $needle ) {
-        $length = strlen( $needle );
-        if( !$length ) {
-            return true;
-        }
-        return substr( $haystack, -$length ) === $needle;
     }
 
 }
