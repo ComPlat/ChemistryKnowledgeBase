@@ -5,8 +5,15 @@ window.onload = function(e){
         setTimeout(window.onload, 500);
         return;
     }
-    let formula = window.frameElement.getAttribute("formula")
-    ketcher.setMolecule(atob(formula));
+    let enc_formula = window.frameElement.getAttribute("formula")
+    let formula = atob(enc_formula);
+    if (!formula.startsWith("\n")) {
+        formula = "\n" + formula;
+    }
+    if (!formula.endsWith("\n")) {
+        formula = formula + "\n";
+    }
+    ketcher.setMolecule(formula);
     renderFormula();
 
 }

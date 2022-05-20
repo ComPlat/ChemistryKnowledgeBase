@@ -21,12 +21,14 @@ class PageCreator
             $title = Title::newFromText("Molecule:$hash");
         }
         if ($title->exists()) {
-            return $title;
+            // TODO: temporarily save always for debugging
+            //return $title;
         }
 
         $pageContent = $this->getPageContent($chemForm);
 
-        $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated", EDIT_NEW);
+        $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated",
+            $title->exists() ? EDIT_UPDATE : EDIT_NEW);
         if (!$successful) {
             throw new Exception("Could not create molecule/reaction page");
         }
@@ -41,10 +43,9 @@ class PageCreator
     private function getPageContent(ChemForm $chemForm): string
     {
         if ($chemForm->isReaction()) {
-            $template = "ChemicalFormula";
-        } else {
             $template = "ChemicalReaction";
-
+        } else {
+            $template = "ChemicalFormula";
         }
         $pageContent = "{{".$template;
         $pageContent .= "\n|id={$chemForm->getId()}";
