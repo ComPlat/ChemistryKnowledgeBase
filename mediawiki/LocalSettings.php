@@ -366,5 +366,14 @@ $sfgRenameEditTabs = true;
 # Chemistry
 #################################################################
  $wgJobRunRate = 0;
+define('NS_MOLECULE', 3300);
+define('NS_MOLECULE_TALK', 3301);
+$wgExtraNamespaces[NS_MOLECULE] = 'Molecule';
+$wgExtraNamespaces[NS_MOLECULE_TALK] = 'Molecule_talk';
+
+define('NS_REACTION', 3302);
+define('NS_REACTION_TALK', 3303);
+$wgExtraNamespaces[NS_REACTION] = 'Reaction';
+$wgExtraNamespaces[NS_REACTION_TALK] = 'Reaction_talk';
 
 wfLoadExtension('ChemExtension');

@@ -1,1 +1,0 @@
-<chemform>{{{formula}}}</chemform>

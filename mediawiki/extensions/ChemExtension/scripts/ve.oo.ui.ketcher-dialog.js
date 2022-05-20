@@ -45,6 +45,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             //TODO: replace this with a custom transaction
             node.element.attributes.mw.body.extsrc = formula;
             node.element.attributes.mw.attrs.smiles = smiles;
+            node.element.attributes.mw.attrs.isReaction = ketcher.containsReaction();
             ve.init.target.getSurface().getModel().getDocument().rebuildTree();
             ve.init.target.fromEditedState = true;
             ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();

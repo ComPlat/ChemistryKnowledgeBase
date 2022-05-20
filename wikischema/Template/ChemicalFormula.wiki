@@ -1,0 +1,3 @@
+* Smiles: [[Smiles::{{{smiles}}}|{{{smiles}}}]]
+{{#tag:chemform|{{{molOrRxn}}} }}
+[[Category:Molecule]]

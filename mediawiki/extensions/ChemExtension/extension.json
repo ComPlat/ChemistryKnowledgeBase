@@ -22,7 +22,8 @@
     },
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
-        "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay"
+        "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
+        "MultiContentSave": "DIQA\\ChemExtension\\MultiContentSave::onMultiContentSave"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"

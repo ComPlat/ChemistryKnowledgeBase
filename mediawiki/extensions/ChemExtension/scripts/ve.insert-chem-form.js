@@ -34,6 +34,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                         attrs: {
                                             'id': '',
                                             'smiles': '',
+                                            'isReaction': '',
                                             'height': "200px",
                                             'width': "300px",
                                             'float': 'none'
