@@ -34,6 +34,11 @@ class addUser extends \Maintenance
         return \Maintenance::DB_ADMIN;
     }
 
+    private function getConnection()
+    {
+        return $this->getDB(DB_MASTER);
+    }
+
     /**
      * @see Maintenance::execute
      *

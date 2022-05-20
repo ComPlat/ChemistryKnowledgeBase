@@ -23,6 +23,9 @@ class ChemScannerSpecialpage extends SpecialPage
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
+        if (!is_writable($cache)) {
+            throw new Exception("cache folder for blade engine is not writeable: $cache");
+        }
         $this->blade = new Blade ($views, $cache);
 
     }
@@ -40,8 +43,12 @@ class ChemScannerSpecialpage extends SpecialPage
             $tmpFolder = $this->checkPrerequisites();
 
             if (isset($_FILES["chemfile"]["name"])) {
-                $createPages = $this->processUpload($tmpFolder);
-                $output->addHTML($this->renderChemScannerUploadResult($createPages[0]));
+                try {
+                    $createPages = $this->processUpload($tmpFolder);
+                    $output->addHTML($this->renderChemScannerUploadResult($createPages[0]));
+                } catch(Exception $e) {
+                    $output->addHTML($e->getMessage());
+                }
                 return;
             }
 

@@ -12,6 +12,7 @@ use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
+use Exception;
 
 class SpecialCreateWiki extends \SpecialPage {
 
@@ -23,6 +24,9 @@ class SpecialCreateWiki extends \SpecialPage {
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
+        if (!is_writable($cache)) {
+            throw new Exception("cache folder for blade engine is not writeable: $cache");
+        }
         $this->blade = new Blade ( $views, $cache );
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
