@@ -375,5 +375,7 @@ define('NS_REACTION', 3302);
 define('NS_REACTION_TALK', 3303);
 $wgExtraNamespaces[NS_REACTION] = 'Reaction';
 $wgExtraNamespaces[NS_REACTION_TALK] = 'Reaction_talk';
-
+$smwgNamespacesWithSemanticLinks[NS_MOLECULE] = true;
+$smwgNamespacesWithSemanticLinks[NS_REACTION] = true;
+$smwgNamespacesWithSemanticLinks[NS_TEMPLATE] = true;
 wfLoadExtension('ChemExtension');

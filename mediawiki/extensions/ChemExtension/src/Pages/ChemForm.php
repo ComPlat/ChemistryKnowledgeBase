@@ -8,6 +8,8 @@ class ChemForm {
     private $molOrRxn;
     private $isReaction;
     private $smiles;
+    private $inchi;
+    private $inchiKey;
     private $width;
     private $height;
     private $float;
@@ -20,12 +22,14 @@ class ChemForm {
      * @param $height
      * @param $float
      */
-    public function __construct($id, $molOrRxn, $reaction, $smiles, $width, $height, $float)
+    public function __construct($id, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
     {
         $this->id = $id;
         $this->molOrRxn = $molOrRxn;
         $this->isReaction = $reaction;
         $this->smiles = $smiles;
+        $this->inchi = $inchi;
+        $this->inchiKey = $inchiKey;
         $this->width = $width;
         $this->height = $height;
         $this->float = $float;
@@ -61,6 +65,22 @@ class ChemForm {
     public function getSmiles()
     {
         return $this->smiles;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getInchi()
+    {
+        return $this->inchi;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getInchiKey()
+    {
+        return $this->inchiKey;
     }
 
     /**

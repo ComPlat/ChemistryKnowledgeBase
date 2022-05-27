@@ -32,7 +32,14 @@ window.parent.onload = function(e){
             formula = formula + "\n";
         }
     }
+    initRDKitModule().then(function(instance) {
+        console.log('RDKIT version: ' + instance.version());
+        ketcher.rdkit = instance;
+    });
+
     ketcher.setMolecule(formula);
 }
 
 window.onload = window.parent.onload;
+
+

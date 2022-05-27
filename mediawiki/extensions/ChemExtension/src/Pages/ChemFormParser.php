@@ -23,6 +23,8 @@ class ChemFormParser
                 $formulas[$i],
                 $attributes['isReaction'],
                 $attributes['smiles'],
+                $attributes['inchi'],
+                $attributes['inchikey'],
                 $attributes['width'],
                 $attributes['height'],
                 $attributes['float']);

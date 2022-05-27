@@ -51,6 +51,8 @@ class PageCreator
         $pageContent .= "\n|id={$chemForm->getId()}";
         $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
         $pageContent .= "\n|smiles={$chemForm->getSmiles()}";
+        $pageContent .= "\n|inchi={$chemForm->getInchi()}";
+        $pageContent .= "\n|inchikey={$chemForm->getInchiKey()}";
         $pageContent .= "\n|width={$chemForm->getWidth()}";
         $pageContent .= "\n|height={$chemForm->getHeight()}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";

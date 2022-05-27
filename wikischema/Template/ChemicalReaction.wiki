@@ -1,3 +1,9 @@
+<noinclude>Template for ChemicalReaction</noinclude>
+‎<includeonly>
 * Smiles: [[Smiles::{{{smiles}}}|{{{smiles}}}]]
-{{#tag:chemform|{{{molOrRxn}}} }}
+{{#tag:chemform|
+{{{molOrRxn}}}
+}}
+{{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Reaction]]
+‎<includeonly>

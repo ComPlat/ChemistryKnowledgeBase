@@ -39,12 +39,23 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         return null;
     }
 
-    function updatePage(node, formula) {
+    function fixMol(formula) {
+        //FIXME: formula contains Smiles at the beginning. bug in ketcher?
+        return "\n" + formula.substr(formula.indexOf("Ketcher"));
+    }
+
+    function updatePage(node, formula, inchi, inchikey) {
         let ketcher = getKetcher();
         ketcher.getSmilesAsync().then(function (smiles) {
             //TODO: replace this with a custom transaction
             node.element.attributes.mw.body.extsrc = formula;
             node.element.attributes.mw.attrs.smiles = smiles;
+            if (inchi) {
+                node.element.attributes.mw.attrs.inchi = inchi;
+            }
+            if (inchikey) {
+                node.element.attributes.mw.attrs.inchikey = inchikey;
+            }
             node.element.attributes.mw.attrs.isReaction = ketcher.containsReaction();
             ve.init.target.getSurface().getModel().getDocument().rebuildTree();
             ve.init.target.fromEditedState = true;
@@ -76,8 +87,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         });
                     } else {
                         ketcher.getMolfileAsync().then(function (formula) {
-                            formula = formula.substr(formula.indexOf("Ketcher")); //FIXME: formula contains Smiles at the beginning. bug in ketcher?
-                            updatePage(nodes[0], formula);
+                            formula = fixMol(formula);
+                            let mol = ketcher.rdkit.get_mol(formula);
+                            let inchi = mol.get_inchi();
+                            let inchikey = ketcher.rdkit.get_inchikey_for_inchi(inchi);
+
+                            updatePage(nodes[0], formula, inchi, inchikey);
                         });
                     }
                 } catch(e) {
