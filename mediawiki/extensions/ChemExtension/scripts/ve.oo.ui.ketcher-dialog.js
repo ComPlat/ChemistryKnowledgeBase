@@ -72,10 +72,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     let ketcher = getKetcher();
                     if (ketcher.containsReaction()) {
                         ketcher.getRxnAsync().then(function (formula) {
+                            formula = formula.substr(formula.indexOf("Ketcher")); //FIXME: formula contains Smiles at the beginning. bug in ketcher?
                             updatePage(nodes[0], formula);
                         });
                     } else {
                         ketcher.getMolfileAsync().then(function (formula) {
+                            formula = formula.substr(formula.indexOf("Ketcher")); //FIXME: formula contains Smiles at the beginning. bug in ketcher?
                             updatePage(nodes[0], formula);
                         });
                     }
