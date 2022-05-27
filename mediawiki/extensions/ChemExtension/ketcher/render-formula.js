@@ -7,11 +7,13 @@ window.onload = function(e){
     }
     let enc_formula = window.frameElement.getAttribute("formula")
     let formula = atob(enc_formula);
-    if (!formula.startsWith("\n")) {
-        formula = "\n" + formula;
-    }
-    if (!formula.endsWith("\n")) {
-        formula = formula + "\n";
+    if (!formula.startsWith("$RXN")) {
+        if (!formula.startsWith("\n")) {
+            formula = "\n" + formula;
+        }
+        if (!formula.endsWith("\n")) {
+            formula = formula + "\n";
+        }
     }
     ketcher.setMolecule(formula);
     renderFormula();

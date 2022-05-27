@@ -24,11 +24,13 @@ window.parent.onload = function(e){
     var ketcher = window.ketcher;
     ketcher.isEditor = true;
     var formula = getKetcherFrameElement(window.parent).getAttribute("formula")
-    if (!formula.startsWith("\n")) {
-        formula = "\n" + formula;
-    }
-    if (!formula.endsWith("\n")) {
-        formula = formula + "\n";
+    if (!formula.startsWith("$RXN")) {
+        if (!formula.startsWith("\n")) {
+            formula = "\n" + formula;
+        }
+        if (!formula.endsWith("\n")) {
+            formula = formula + "\n";
+        }
     }
     ketcher.setMolecule(formula);
 }
