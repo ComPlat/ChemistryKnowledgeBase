@@ -1,0 +1,19 @@
+Index: mediawiki/extensions/VisualEditor/lib/ve/src/ui/contexts/ve.ui.DesktopContext.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contexts/ve.ui.DesktopContext.js b/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contexts/ve.ui.DesktopContext.js
+--- a/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contexts/ve.ui.DesktopContext.js	(revision d46cc9204b9f26dad6ec12bfcd73530398eff7e6)
++++ b/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contexts/ve.ui.DesktopContext.js	(date 1653753890802)
+@@ -300,7 +300,9 @@
+  * @param {jQuery.Event} e Scroll event
+  */
+ ve.ui.DesktopContext.prototype.onWindowScroll = function () {
+-	this.setPopupSizeAndPosition( true );
++	if (this.lastSelectedNode && this.lastSelectedNode.type !== 'mwAlienInlineExtension') {
++		this.setPopupSizeAndPosition(true);
++	}
+ };
+ 
+ /**
