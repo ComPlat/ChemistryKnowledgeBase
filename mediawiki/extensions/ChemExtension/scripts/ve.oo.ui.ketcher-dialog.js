@@ -31,7 +31,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     function getKetcher() {
         for(var i = 0; i < window.frames.length; i++) {
-            if (window.frames[i].window.ketcher.isEditor) {
+            if (window.frames[i].window.ketcher && window.frames[i].window.ketcher.isEditor) {
                 return window.frames[i].window.ketcher;
             }
         }

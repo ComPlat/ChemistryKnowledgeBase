@@ -28,6 +28,12 @@ class Setup {
 
         $out->addModules('ext.diqa.chemextension');
 
+        global $wgScriptPath;
+        $random = uniqid();
+        $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-ketcher.html?random=$random";
+        $output = "<iframe style=\"display: none;\" id=\"ketcher-renderer\" src=\"$path\"></iframe>";
+        $out->addHTML($output);
+
     }
 
     public static function onParserFirstCallInit( \Parser $parser ) {
@@ -47,12 +53,13 @@ class Setup {
         if ($float !== 'none') {
             $style = "style=\"float: $float;\"";
         }
+        $smiles = $arguments['smiles'] ?? '';
+        $smiles = base64_encode($smiles);
 
         global $wgScriptPath;
         $random = uniqid();
-        $formula = base64_encode($formula);
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?width=$width&height=$height&random=$random";
-        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' formula='$formula'></iframe>";
+        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' smiles='$smiles'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 
