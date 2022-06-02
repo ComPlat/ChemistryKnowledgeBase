@@ -20,4 +20,9 @@ iframe.chemformula-nofloat {
 
 }
 
+.chemformula-tooltip {
+    background: lightyellow;
+    max-width: 600px !important;
+    max-height: 420px !important;
+}
 

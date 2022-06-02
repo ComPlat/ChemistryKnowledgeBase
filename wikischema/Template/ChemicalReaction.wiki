@@ -1,6 +1,6 @@
 <noinclude>Template for ChemicalReaction</noinclude>
 ‎<includeonly>
-* Smiles: [[Smiles::{{{smiles}}}|{{{smiles}}}]]
+* Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
 {{#tag:chemform|
 {{{molOrRxn}}}
 }}

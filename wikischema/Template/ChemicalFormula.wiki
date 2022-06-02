@@ -1,11 +1,13 @@
 <noinclude>Template for ChemicalFormula</noinclude>
 ‎<includeonly>
-* Smiles: [[Smiles::{{{smiles}}}|{{{smiles}}}]]
-* InChI: [[InChI::{{{inchi}}}|{{{inchi}}}]]
-* InChIKey: [[InChIKey::{{{inchikey}}}|{{{inchikey}}}]]
+* Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
+* InChI: {{#set: InChI={{{inchi}}} }} {{{inchi}}}
+* InChIKey: {{#set: InChIKey={{{inchikey}}} }} {{{inchikey}}}
 {{#tag:chemform|
 {{{molOrRxn}}}
+|smiles={{{smiles}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Molecule]]
 ‎<includeonly>
+

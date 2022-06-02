@@ -14,13 +14,25 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
+                $baseScript . '/render-chemform-tooltip.js',
                 $baseScript . '/ve.extend.js',
                 $baseScript . '/ve.insert-chem-form.js',
                 $baseScript . '/ve.oo.ui.ketcher-widget.js',
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
             ],
-            'styles' => [ 'skins/main.css'],
-            'dependencies' => ['ext.visualEditor.core'],
+            'styles' => [ 'skins/main.css' ],
+            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip'],
+        );
+
+        $wgResourceModules['ext.diqa.qtip'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/libs/jquery.qtip.js',
+            ],
+            'styles' => [ 'scripts/libs/jquery.qtip.css' ],
+            'dependencies' => [],
         );
     }
 
@@ -53,6 +65,7 @@ class Setup {
         if ($float !== 'none') {
             $style = "style=\"float: $float;\"";
         }
+
         $smiles = $arguments['smiles'] ?? '';
         $smiles = base64_encode($smiles);
 
