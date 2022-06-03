@@ -20,7 +20,7 @@ window.onload = function(e){
         if (imgAlreadyRendered()) {
             return;
         }
-        window.parent.ketcher.generateImageAsync(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
+        window.parent.ketcher.generateImage(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
             if (imgAlreadyRendered()) {
                 return;
             }

@@ -23,7 +23,7 @@
             return;
         }
         let smilesFormula = atob(enc_formula);
-        ketcher.generateImageAsync(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
+        ketcher.generateImage(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
             const img = new Image();
             img.src = URL.createObjectURL(svgBlob);
             img.style.width = "600px";

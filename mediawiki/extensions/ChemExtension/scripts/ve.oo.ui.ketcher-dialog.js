@@ -46,7 +46,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     function updatePage(node, formula, inchi, inchikey) {
         let ketcher = getKetcher();
-        ketcher.getSmilesAsync().then(function (smiles) {
+        ketcher.getSmiles().then(function (smiles) {
             //TODO: replace this with a custom transaction
             node.element.attributes.mw.body.extsrc = formula;
             node.element.attributes.mw.attrs.smiles = smiles;
@@ -86,8 +86,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                             updatePage(nodes[0], formula);
                         });
                     } else {
-                        ketcher.getMolfileAsync('v3000').then(function (formulaV3000) {
-                            ketcher.getMolfileAsync().then(function (formulaV2000) {
+                        ketcher.getMolfile('v3000').then(function (formulaV3000) {
+                            ketcher.getMolfile().then(function (formulaV2000) {
                                 formulaV2000 = fixMol(formulaV2000);
                                 let mol = ketcher.rdkit.get_mol(formulaV2000);
                                 let inchi = mol.get_inchi();
