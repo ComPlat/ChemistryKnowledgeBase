@@ -86,13 +86,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                             updatePage(nodes[0], formula);
                         });
                     } else {
-                        ketcher.getMolfileAsync().then(function (formula) {
-                            formula = fixMol(formula);
-                            let mol = ketcher.rdkit.get_mol(formula);
-                            let inchi = mol.get_inchi();
-                            let inchikey = ketcher.rdkit.get_inchikey_for_inchi(inchi);
+                        ketcher.getMolfileAsync('v3000').then(function (formulaV3000) {
+                            ketcher.getMolfileAsync().then(function (formulaV2000) {
+                                formulaV2000 = fixMol(formulaV2000);
+                                let mol = ketcher.rdkit.get_mol(formulaV2000);
+                                let inchi = mol.get_inchi();
+                                let inchikey = ketcher.rdkit.get_inchikey_for_inchi(inchi);
 
-                            updatePage(nodes[0], formula, inchi, inchikey);
+                                updatePage(nodes[0], formulaV3000, inchi, inchikey);
+
+                            });
                         });
                     }
                 } catch(e) {
