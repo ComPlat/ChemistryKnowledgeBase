@@ -32,7 +32,10 @@ class Setup {
     }
 
     public static function onBeforePageDisplay( \OutputPage $out, \Skin $skin ) {
-        $out->addModules('ext.diqa.wikifarm');
+        global $wgTitle;
+        if (!is_null($wgTitle) && $wgTitle->getDBkey() == 'SpecialCreateWiki') {
+            $out->addModules('ext.diqa.wikifarm');
+        }
         self::checkPrivileges();
     }
 
