@@ -82,7 +82,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 try {
                     let ketcher = getKetcher();
                     if (ketcher.containsReaction()) {
-                        ketcher.getRxnAsync().then(function (formula) {
+                        ketcher.getRxn().then(function (formula) {
                             updatePage(nodes[0], formula);
                         });
                     } else {

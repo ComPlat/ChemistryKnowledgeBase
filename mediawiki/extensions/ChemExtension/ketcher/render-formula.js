@@ -6,13 +6,13 @@ window.onload = function(e){
         return;
     }
 
-    let enc_formula = window.frameElement.getAttribute("smiles")
+    let enc_formula = window.frameElement.getAttribute("formula")
     if (enc_formula == '') {
         console.log("formula empty")
         return;
     }
 
-    let smilesFormula = atob(enc_formula);
+    let formula = atob(enc_formula);
 
     render();
 
@@ -20,7 +20,7 @@ window.onload = function(e){
         if (imgAlreadyRendered()) {
             return;
         }
-        window.parent.ketcher.generateImage(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
+        window.parent.ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
             if (imgAlreadyRendered()) {
                 return;
             }

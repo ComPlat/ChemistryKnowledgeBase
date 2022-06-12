@@ -69,10 +69,14 @@ class Setup {
         $smiles = $arguments['smiles'] ?? '';
         $smiles = base64_encode($smiles);
 
+        $formula = base64_encode($formula);
+
+        $isReaction = $arguments['isReaction'] ? "true" : "false";
+
         global $wgScriptPath;
         $random = uniqid();
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?width=$width&height=$height&random=$random";
-        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' smiles='$smiles'></iframe>";
+        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' smiles='$smiles' formula='$formula' isreaction='$isReaction'></iframe>";
         return array( $output, 'noparse' => true, 'isHTML' => true );
     }
 
