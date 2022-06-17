@@ -52,9 +52,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             node.element.attributes.mw.attrs.smiles = smiles;
             if (inchi) {
                 node.element.attributes.mw.attrs.inchi = inchi;
+            } else {
+                node.element.attributes.mw.attrs.inchi = '';
             }
             if (inchikey) {
                 node.element.attributes.mw.attrs.inchikey = inchikey;
+            } else {
+                node.element.attributes.mw.attrs.inchikey = '';
             }
             node.element.attributes.mw.attrs.isReaction = ketcher.containsReaction();
             ve.init.target.getSurface().getModel().getDocument().rebuildTree();

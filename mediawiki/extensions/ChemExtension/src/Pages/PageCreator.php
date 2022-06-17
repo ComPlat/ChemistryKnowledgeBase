@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Pages;
 
 use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
 use Title;
 use Exception;
 
@@ -14,11 +15,23 @@ class PageCreator
      */
     public function createNewMoleculePage(ChemForm $chemForm): ?Title
     {
-        $hash = md5($chemForm->getSmiles());
-        if ($chemForm->isReaction()) {
-            $title = Title::newFromText("Reaction:$hash");
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
+            DB_MASTER
+        );
+
+        $chemFormRepository = new ChemFormRepository($dbr);
+        if (is_null($chemForm->getInchiKey()) || $chemForm->getInchiKey() === '') {
+            $key = $chemForm->getSmiles();
         } else {
-            $title = Title::newFromText("Molecule:$hash");
+            $key = $chemForm->getInchiKey();
+        }
+        $id = $chemFormRepository->addChemForm($key);
+        $chemForm->setId($id);
+
+        if ($chemForm->isReaction()) {
+            $title = Title::newFromText("Reaction:Reaction_$id");
+        } else {
+            $title = Title::newFromText("Molecule:Molecule_$id");
         }
         if ($title->exists()) {
             // TODO: temporarily save always for debugging

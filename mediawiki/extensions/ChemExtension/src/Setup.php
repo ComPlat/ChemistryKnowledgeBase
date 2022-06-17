@@ -1,6 +1,9 @@
 <?php
 namespace DIQA\ChemExtension;
 
+use DIQA\ChemExtension\Pages\ChemFormRepository;
+use MediaWiki\MediaWikiServices;
+
 class Setup {
 
     public static function initModules() {
@@ -53,31 +56,52 @@ class Setup {
     }
 
     public static function renderIframe( $formula, array $arguments, \Parser $parser, \PPFrame $frame ) {
-        $cssClass = "chemformula";
-        $width = $arguments['width'] ?? "800px";
-        $height = $arguments['height'] ?? "400px";
-        $nofloat = $arguments['nofloat'] ?? false;
-        if ($nofloat == "true") {
-            $cssClass = "chemformula-nofloat";
-        }
+
+        $attributes = [];
+
+        $attributes['class'] = "chemformula";
+        $attributes['width'] = $arguments['width'] ?? "300px";
+        $attributes['height'] = $arguments['height'] ?? "200px";
         $float = $arguments['float'] ?? 'none';
-        $style = '';
         if ($float !== 'none') {
-            $style = "style=\"float: $float;\"";
+            $attributes['style'] = "float: $float;";
         }
 
-        $smiles = $arguments['smiles'] ?? '';
-        $smiles = base64_encode($smiles);
+        $attributes['smiles'] = base64_encode($arguments['smiles'] ?? '');
+        $attributes['formula'] = base64_encode($formula);
+        $attributes['isreaction'] = $arguments['isreaction'] == '1' ? "true" : "false";
 
-        $formula = base64_encode($formula);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
+            DB_REPLICA
+        );
+        $chemFormRepo = new ChemFormRepository($dbr);
+        $key = $arguments['inchikey'];
+        if (is_null($key) || $key === '') {
+            $key = $arguments['smiles'];
+        }
+        $attributes['chemFormId'] = $chemFormRepo->getChemFormId($key);
 
-        $isReaction = $arguments['isReaction'] ? "true" : "false";
-
+        $queryString = http_build_query([
+            'width' => $attributes['width'],
+            'height' => $attributes['height'],
+            'random' => uniqid()
+        ] );
         global $wgScriptPath;
-        $random = uniqid();
-        $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?width=$width&height=$height&random=$random";
-        $output = "<iframe $style class=\"$cssClass\" src=\"$path\" width='$width' height='$height' smiles='$smiles' formula='$formula' isreaction='$isReaction'></iframe>";
+        $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
+        $serializedAttributes = self::serializeAttributes($attributes);
+        $output = "<iframe $serializedAttributes></iframe>";
+
         return array( $output, 'noparse' => true, 'isHTML' => true );
+    }
+
+    private static function serializeAttributes(array $attributes): string
+    {
+        $html = '';
+        foreach($attributes as $key => $value) {
+            $value = str_replace('"', '&quot;', $value);
+            $html .= " $key='" . $value . "'";
+        }
+        return $html;
     }
 
 }

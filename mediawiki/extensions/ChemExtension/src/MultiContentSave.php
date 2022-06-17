@@ -35,7 +35,7 @@ class MultiContentSave
             try {
                 $title = $pageCreator->createNewMoleculePage($chemForm);
                 $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
-            } catch(Exception $e) {
+            } catch(\Exception $e) {
                 $logger->error($e->getMessage());
             }
         }

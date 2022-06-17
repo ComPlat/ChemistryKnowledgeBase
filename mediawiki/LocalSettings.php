@@ -358,8 +358,8 @@ $sfgRenameEditTabs = true;
 #
 # $wgArticlePath = '/mediawiki/$1';
 # $wgOverrideHostname = 'chemwiki.local';
-# require_once ("extensions/WikiFarm/WikiSwitch.php");
-# wfLoadExtension('WikiFarm');
+ require_once ("extensions/WikiFarm/WikiSwitch.php");
+ wfLoadExtension('WikiFarm');
 
 
 #################################################################

@@ -15,6 +15,17 @@
             }
         });
 
+        $('iframe.chemformula').each(function(i,e) {
+            let target = $(e);
+            let id = target.attr('chemformid');
+            let isreaction = target.attr('isreaction') == 'true';
+            let namespaceName = isreaction ? "Reaction" : "Molecule";
+            $('div', e.contentWindow.document.body).click(function(el) {
+                let url = mw.config.get('wgScriptPath')+"/index.php/"+namespaceName+":"+namespaceName+"_"+id;
+                window.open(url, '_blank').focus();
+            });
+        });
+
     });
 
     function renderFormula(iframe, tooltip) {

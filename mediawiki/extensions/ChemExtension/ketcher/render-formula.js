@@ -12,6 +12,9 @@ window.onload = function(e){
         return;
     }
 
+    let chemFormId = window.frameElement.getAttribute("chemFormId");
+    let isReaction = window.frameElement.getAttribute("isreaction") == 'true';
+
     let formula = atob(enc_formula);
 
     render();
@@ -29,8 +32,14 @@ window.onload = function(e){
             img.style.width = "100%";
             img.style.height = "95%";
 
-            document.body.append(img);
+            let image = document.getElementById("image");
+            image.append(img);
 
+            if (chemFormId != null && chemFormId != '') {
+                let caption = document.getElementById("caption");
+                let label = isReaction ? "Reaction" : "Molecule";
+                caption.append(label + " " + chemFormId);
+            }
         });
 
         setTimeout(render, 100);

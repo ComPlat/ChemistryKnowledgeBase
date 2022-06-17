@@ -22,9 +22,8 @@ class ChemForm {
      * @param $height
      * @param $float
      */
-    public function __construct($id, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
+    public function __construct($molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
     {
-        $this->id = $id;
         $this->molOrRxn = $molOrRxn;
         $this->isReaction = $reaction;
         $this->smiles = $smiles;
@@ -34,6 +33,16 @@ class ChemForm {
         $this->height = $height;
         $this->float = $float;
     }
+
+    /**
+     * @param mixed $id
+     */
+    public function setId($id): void
+    {
+        $this->id = $id;
+    }
+
+
 
     /**
      * @return mixed
