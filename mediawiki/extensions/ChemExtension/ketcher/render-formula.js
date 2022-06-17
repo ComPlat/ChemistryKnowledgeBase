@@ -17,7 +17,12 @@ window.onload = function(e){
 
     let formula = atob(enc_formula);
 
+    if (formula.indexOf('$RXN') !== -1) {
+        formula = formula.substr(formula.indexOf('$RXN'));
+    }
+
     render();
+
 
     function render() {
         if (imgAlreadyRendered()) {
@@ -42,7 +47,9 @@ window.onload = function(e){
             }
         });
 
+
         setTimeout(render, 100);
+
 
     }
 

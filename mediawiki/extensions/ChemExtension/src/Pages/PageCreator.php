@@ -68,6 +68,8 @@ class PageCreator
         $pageContent .= "\n|inchikey={$chemForm->getInchiKey()}";
         $pageContent .= "\n|width={$chemForm->getWidth()}";
         $pageContent .= "\n|height={$chemForm->getHeight()}";
+        $isReaction = $chemForm->isReaction()?"true":"false";
+        $pageContent .= "\n|isreaction={$isReaction}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";
         $pageContent .= "\n}}";
         return $pageContent;

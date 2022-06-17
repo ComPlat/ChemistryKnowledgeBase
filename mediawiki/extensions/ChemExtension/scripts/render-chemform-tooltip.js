@@ -33,8 +33,12 @@
         if (enc_formula == '') {
             return;
         }
-        let smilesFormula = atob(enc_formula);
-        ketcher.generateImage(smilesFormula, {outputFormat: 'svg'}).then(function (svgBlob) {
+        let formula = atob(enc_formula);
+
+        if (formula.indexOf('$RXN') !== -1) {
+            formula = formula.substr(formula.indexOf('$RXN'));
+        }
+        ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
             const img = new Image();
             img.src = URL.createObjectURL(svgBlob);
             img.style.width = "600px";
