@@ -18,7 +18,7 @@
     });
 
     function renderFormula(iframe, tooltip) {
-        let enc_formula = iframe.attr('smiles');
+        let enc_formula = iframe.attr('formula');
         if (enc_formula == '') {
             return;
         }
