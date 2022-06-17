@@ -84,6 +84,8 @@ class Setup {
         $queryString = http_build_query([
             'width' => $attributes['width'],
             'height' => $attributes['height'],
+            'chemformid' => $attributes['chemFormId'],
+            'isreaction' => $attributes['isreaction'],
             'random' => uniqid()
         ] );
         global $wgScriptPath;

@@ -1,5 +1,7 @@
 (function($) {
-    $(function() {
+
+    window.ChemExtension = window.ChemExtension || {};
+    window.ChemExtension.initTooltips = function() {
         $('iframe.chemformula').qtip({
             content: "<div></div>",
             style: { classes: 'chemformula-tooltip' },
@@ -15,17 +17,25 @@
             }
         });
 
-        $('iframe.chemformula').each(function(i,e) {
-            let target = $(e);
-            let id = target.attr('chemformid');
-            let isreaction = target.attr('isreaction') == 'true';
-            let namespaceName = isreaction ? "Reaction" : "Molecule";
-            $('div', e.contentWindow.document.body).click(function(el) {
-                let url = mw.config.get('wgScriptPath')+"/index.php/"+namespaceName+":"+namespaceName+"_"+id;
-                window.open(url, '_blank').focus();
-            });
-        });
+    }
 
+    window.ChemExtension.navigate = function(id, isreaction) {
+        let namespace = mw.config.get('wgCanonicalNamespace');
+        if (namespace == "Reaction" || namespace == "Molecule") {
+            return;
+        }
+
+        let namespaceName = isreaction == 'true' ? "Reaction" : "Molecule";
+        let url = mw.config.get('wgScriptPath')+"/index.php/"+namespaceName+":"+namespaceName+"_"+id;
+        window.open(url, '_blank').focus();
+    }
+
+    $(function() {
+        window.ChemExtension.initTooltips();
+    });
+
+    mw.hook( 'postEdit' ).add(function() {
+        window.ChemExtension.initTooltips();
     });
 
     function renderFormula(iframe, tooltip) {
