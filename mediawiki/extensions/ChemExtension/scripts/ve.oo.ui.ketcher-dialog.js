@@ -67,6 +67,15 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         });
     }
 
+    function getInchI(mol) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/inchi?mol=" + btoa(mol);
+        return $.ajax({
+            method: "GET",
+            url: url
+        });
+    }
+
     ve.ui.KetcherDialog = function( manager, config ) {
         // Parent constructor
         ve.ui.KetcherDialog.super.call( this, manager, config );
@@ -91,11 +100,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         });
                     } else {
                         ketcher.getMolfile('v3000').then(function (formulaV3000) {
-                            ketcher.getMolfile().then(function (formulaV2000) {
-                                formulaV2000 = fixMol(formulaV2000);
-                                let mol = ketcher.rdkit.get_mol(formulaV2000);
-                                let inchi = mol.get_inchi();
-                                let inchikey = ketcher.rdkit.get_inchikey_for_inchi(inchi);
+                            getInchI(formulaV3000).done(function (response) {
+
+                                let inchi = response.InChI;
+                                let inchikey = response.InChIKey;
 
                                 updatePage(nodes[0], formulaV3000, inchi, inchikey);
 

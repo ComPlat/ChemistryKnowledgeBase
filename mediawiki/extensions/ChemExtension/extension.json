@@ -43,6 +43,11 @@
             "path": "/ChemExtension/v1/rdkit",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetRDKit"
+        },
+        {
+            "path": "/ChemExtension/v1/inchi",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetInchI"
         }
     ],
     "JobClasses": {
