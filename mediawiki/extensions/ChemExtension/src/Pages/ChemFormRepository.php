@@ -26,7 +26,7 @@ class ChemFormRepository {
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         chem_form_key VARCHAR(255) NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_chem_form_key_unique UNIQUE (chem_form_key)');
+        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_chem_form_key_unique UNIQUE IF NOT EXISTS (chem_form_key)');
 
         return [ 'chem_form' ];
     }

@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Maintenance;
 
 
+use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 
 /**
@@ -44,7 +45,12 @@ class setupStore extends \Maintenance
     {
         $tables = (new ChemFormRepository($db))->setupTables();
         foreach ($tables as $t) {
-            print ("\nCreated table $t.");
+            print ("\nCreated/updated table $t.");
+
+        }
+        $tables = (new LiteratureRepository($db))->setupTables();
+        foreach ($tables as $t) {
+            print ("\nCreated/updated table $t.");
 
         }
     }
@@ -83,6 +89,11 @@ class setupStore extends \Maintenance
     {
         $db = $this->getConnection();
         $tables = (new ChemFormRepository($db))->dropTables();
+        foreach ($tables as $t) {
+            print ("\nRemoved table $t.");
+
+        }
+        $tables = (new LiteratureRepository($db))->dropTables();
         foreach ($tables as $t) {
             print ("\nRemoved table $t.");
 

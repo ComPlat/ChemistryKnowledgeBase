@@ -70,4 +70,68 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.AddChemForm.static.icon = 'chemform';
         ve.ui.AddChemForm.static.commandName = 'addChemForm';
         ve.ui.toolFactory.register(ve.ui.AddChemForm);
+
+
+    ve.ui.AddLiteratureCommand = function veUiAddLiteratureCommand(name, action, method, options) {
+
+        // Parent constructor
+        ve.ui.AddLiteratureCommand.super.call(this, name, action, method, options);
+
+    };
+
+    /* Setup */
+
+    OO.inheritClass(ve.ui.AddLiteratureCommand, ve.ui.Command);
+    ve.ui.commandRegistry.register(
+        new ve.ui.AddLiteratureCommand(
+            // Command name
+            'addLiterature',
+            // Type and name of the action to execute
+            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
+            {
+                // Extra arguments for the action
+                args: [
+                    // Content to insert
+                    [
+                        {
+                            type: 'mwTransclusionBlock',
+                            attributes: {
+                                mw: {
+                                    parts:  [
+                                        {
+                                            template: {
+                                                i: 0,
+                                                params: {
+                                                    doi: { wt: "" }
+                                                },
+                                                target: { wt: "#literature:", "function": "literature"}
+                                            }
+                                        }
+                                    ]
+                                },
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#literature:","function":"literature"},"params":{"doi":{"wt":""}},"i":0}}]}"'
+                            }
+                        }
+
+                    ],
+                    // Annotate content to match surrounding annotations?
+                    true,
+                    // Move cursor to after the new content? (otherwise - select it)
+                    true
+                ],
+                supportedSelections: ['linear']
+            }
+        )
+    );
+
+    ve.ui.AddLiterature = function VeUiAddLiterature() {
+        ve.ui.AddLiterature.super.apply(this, arguments);
+    };
+    OO.inheritClass(ve.ui.AddLiterature, ve.ui.Tool);
+    ve.ui.AddLiterature.static.name = 'addLiterature';
+    ve.ui.AddLiterature.static.group = 'insert';
+    ve.ui.AddLiterature.static.title = 'Literature reference';
+    ve.ui.AddLiterature.static.icon = 'literature';
+    ve.ui.AddLiterature.static.commandName = 'addLiterature';
+    ve.ui.toolFactory.register(ve.ui.AddLiterature);
 });

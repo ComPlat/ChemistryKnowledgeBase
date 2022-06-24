@@ -16,9 +16,26 @@ iframe.chemformula {
 
 }
 
+.oo-ui-icon-literature {
+    background-image: url( images/open-book.png );
+
+}
+
 .chemformula-tooltip {
     background: lightyellow;
     max-width: 600px !important;
     max-height: 420px !important;
+}
+
+.chem-extension-literature-title {
+    font-weight: bold;
+}
+
+span.chem-extension-literature-author {
+    font-size: smaller;
+}
+
+span.chem-extension-literature-year {
+    font-size: smaller;
 }
 

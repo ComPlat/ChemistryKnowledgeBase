@@ -10,7 +10,7 @@ $magicWords = [];
  * @author Your Name (YourUserName)
  */
 $magicWords['en'] = [
-
+    'literature' => [ 0, 'literature' ],
 ];
 
 $magicWords['de'] = $magicWords['en'];
