@@ -2,12 +2,16 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\Utils\MolfileProcessor;
+
 class InchIGenerator {
 
     public function getInchI($mol) {
         global $IP;
         $results = ['InChI' => '', 'InChIKey' => ''];
         $inchToolPath = "$IP/extensions/ChemExtension/resources/inchi/inchi-1";
+
+        $mol = MolfileProcessor::cleanUp($mol);
 
         $tmpFile = tempnam("/tmp/", uniqid());
         file_put_contents($tmpFile, $mol);
