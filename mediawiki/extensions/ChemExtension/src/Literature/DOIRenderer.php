@@ -6,7 +6,7 @@ use Philo\Blade\Blade;
 
 class DOIRenderer {
 
-    public function render($doiData) {
+    public function render($doiData, $index) {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
@@ -16,12 +16,34 @@ class DOIRenderer {
         }, $doiData->author);
 
         $year = $doiData->issued->{"date-parts"}[0][0] ?? "";
+        $journal = $doiData->{"container-title"} ?? "";
+        $volume = $doiData->volume ?? "";
+        $pages = $doiData->page ?? "";
 
         $html = $blade->view ()->make ( "doi-rendered",
             [
+                'index' => $index,
                 'title'  => $doiData->title,
                 'authors' => $authors,
-                'year' => $year
+                'journal' => $journal,
+                'volume' => $volume,
+                'pages' => $pages,
+                'year' => $year,
+                'doi' => $doiData->DOI
+            ]
+        )->render ();
+
+        return str_replace("\n", "", $html);
+    }
+
+    public function renderReference($index) {
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $blade = new Blade ( $views, $cache );
+
+        $html = $blade->view ()->make ( "doi-reference",
+            [
+                'index' => $index,
             ]
         )->render ();
 

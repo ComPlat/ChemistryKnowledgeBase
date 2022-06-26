@@ -31,11 +31,11 @@ iframe.chemformula {
     font-weight: bold;
 }
 
-span.chem-extension-literature-author {
+span.chem-extension-literature-small {
     font-size: smaller;
 }
 
-span.chem-extension-literature-year {
-    font-size: smaller;
+div.chem_ext_literature:hover {
+    background: lightblue;
 }
 

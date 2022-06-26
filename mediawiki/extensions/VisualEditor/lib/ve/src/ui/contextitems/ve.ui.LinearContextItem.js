@@ -89,6 +89,11 @@ ve.ui.LinearContextItem = function VeUiLinearContextItem( context, model, config
 		this.actionButtons.addItems( [ this.editButton ] );
 	}
 
+	// Patch: KK to extend edit panel
+	if (ve.ui.LinearContextItemExtension) {
+		ve.ui.LinearContextItemExtension.extend(this, context, model);
+	}
+
 	// Events
 	this.editButton.connect( this, { click: 'onEditButtonClick' } );
 	this.deleteButton.connect( this, { click: 'onDeleteButtonClick' } );

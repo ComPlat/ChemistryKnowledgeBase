@@ -1,6 +1,7 @@
 <?php
 namespace DIQA\ChemExtension;
 
+use DIQA\ChemExtension\Literature\DOIRenderer;
 use OutputPage;
 use Skin;
 use Parser;
@@ -44,6 +45,7 @@ class Setup {
 
         $out->addModules('ext.diqa.chemextension');
         self::outputKetcher($out);
+        self::outputLiteratureReferences($out);
 
     }
 
@@ -58,6 +60,19 @@ class Setup {
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-ketcher.html?random=$random";
         $output = "<iframe style=\"display: none;\" id=\"ketcher-renderer\" src=\"$path\"></iframe>";
         $out->addHTML($output);
+    }
+
+    /**
+     * @param OutputPage $out
+     */
+    private static function outputLiteratureReferences(OutputPage $out): void
+    {
+        $out->addHTML("<h2>Literature</h2>");
+        $doiRenderer = new DOIRenderer();
+        foreach (ParserFunctions::$LITERATURE_REFS as $l) {
+            $output = $doiRenderer->render($l['data'], $l['index']);
+            $out->addHTML($output);
+        }
     }
 
 }

@@ -36,7 +36,7 @@ class LiteratureRepository {
 
     public function addLiterature($doi, $data): int
     {
-        $this->db->startAtomic( __METHOD__ );
+
         $res = $this->db->select('literature', ['id'],
             ['doi' => $doi ]);
         if ($res->numRows() > 0) {
@@ -50,7 +50,7 @@ class LiteratureRepository {
                 ]);
             $id = $this->db->insertId();
         }
-        $this->db->endAtomic( __METHOD__ );
+
         return $id;
     }
 

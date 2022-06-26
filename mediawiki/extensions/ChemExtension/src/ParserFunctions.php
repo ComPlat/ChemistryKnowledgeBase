@@ -11,15 +11,30 @@ use MediaWiki\MediaWikiServices;
 use Parser;
 use PPFrame;
 
-class ParserFunctions {
+class ParserFunctions
+{
 
-    public static function renderLiterature( \Parser $parser, $param1, $doiParameter = '') {
+    public static $LITERATURE_REFS = [];
+    private static $LITERATURE_REF_COUNTER = 0;
 
-        $doiResolver = new DOIResolver();
-        $doiRenderer = new DOIRenderer();
-        $parts = explode('=', $doiParameter);
-        $doi = $parts[1];
+    /**
+     * @throws Exception
+     */
+    public static function renderLiterature(\Parser $parser, $param1, $doiParameter = '')
+    {
+
         try {
+            $doiResolver = new DOIResolver();
+
+            $parts = explode('=', $doiParameter);
+            $doiParameterValue = $parts[1];
+            $urlParts = parse_url($doiParameterValue);
+            if (!array_key_exists('path', $urlParts)) {
+                throw new Exception("DOI could not be interpreted: $doiParameterValue");
+            }
+            $doi = $urlParts['path'];
+            $doi = strpos($doi, '/') === 0 ? substr($doi, 1) : $doi;
+
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
                 DB_REPLICA
             );
@@ -31,15 +46,30 @@ class ParserFunctions {
             } else {
                 $doiData = $literature['data'];
             }
-            $output = $doiRenderer->render($doiData);
 
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $output = $e->getMessage();
+            return [$output, 'noparse' => true, 'isHTML' => true];
         }
-        return [ $output, 'noparse' => true, 'isHTML' => true ];
+        if (!array_key_exists($doi, self::$LITERATURE_REFS)) {
+            self::$LITERATURE_REF_COUNTER++;
+            self::$LITERATURE_REFS[$doi] = ['data' => $doiData, 'index' => self::$LITERATURE_REF_COUNTER];
+        }
+
+        $doiRenderer = new DOIRenderer();
+        global $wgRequest;
+
+        if (strpos($wgRequest->getText( 'title' ), '/v3/page/html/') !== false) {
+            $output = "[" . self::$LITERATURE_REFS[$doi]['index'] . "]";
+        } else {
+            $output = $doiRenderer->renderReference(self::$LITERATURE_REFS[$doi]['index']);
+
+        }
+        return [ $output, 'noparse' => true, 'isHTML' => true];
     }
 
-    public static function renderIframe( $formula, array $arguments, Parser $parser, PPFrame $frame ) {
+    public static function renderIframe($formula, array $arguments, Parser $parser, PPFrame $frame)
+    {
 
         $attributes = [];
 
@@ -71,19 +101,19 @@ class ParserFunctions {
             'chemformid' => $attributes['chemFormId'],
             'isreaction' => $attributes['isreaction'],
             'random' => uniqid()
-        ] );
+        ]);
         global $wgScriptPath;
         $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
         $serializedAttributes = self::serializeAttributes($attributes);
         $output = "<iframe $serializedAttributes></iframe>";
 
-        return array( $output, 'noparse' => true, 'isHTML' => true );
+        return array($output, 'noparse' => true, 'isHTML' => true);
     }
 
     private static function serializeAttributes(array $attributes): string
     {
         $html = '';
-        foreach($attributes as $key => $value) {
+        foreach ($attributes as $key => $value) {
             $value = str_replace('"', '&quot;', $value);
             $html .= " $key='" . $value . "'";
         }
