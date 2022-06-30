@@ -94,7 +94,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     // Content to insert
                     [
                         {
-                            type: 'mwTransclusionBlock',
+                            type: 'mwTransclusionInline',
                             attributes: {
                                 mw: {
                                     parts:  [
