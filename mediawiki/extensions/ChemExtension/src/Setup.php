@@ -54,19 +54,18 @@ class Setup {
         $parser->setFunctionHook( 'literature', [ ParserFunctions::class, 'renderLiterature' ] );
     }
 
-    private static function outputKetcher(OutputPage $out) {
+    private static function outputKetcher(OutputPage $out): void {
         global $wgScriptPath;
         $random = uniqid();
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-ketcher.html?random=$random";
-        $output = "<iframe style=\"display: none;\" id=\"ketcher-renderer\" src=\"$path\"></iframe>";
+        $output = sprintf('<iframe style="display: none;" id="ketcher-renderer" src="%s"></iframe>', $path);
         $out->addHTML($output);
     }
 
-    /**
-     * @param OutputPage $out
-     */
-    private static function outputLiteratureReferences(OutputPage $out): void
-    {
+    private static function outputLiteratureReferences(OutputPage $out): void {
+        if (count(ParserFunctions::$LITERATURE_REFS) === 0) {
+            return;
+        }
         $out->addHTML("<h2>Literature</h2>");
         $doiRenderer = new DOIRenderer();
         foreach (ParserFunctions::$LITERATURE_REFS as $l) {
@@ -74,5 +73,4 @@ class Setup {
             $out->addHTML($output);
         }
     }
-
 }
