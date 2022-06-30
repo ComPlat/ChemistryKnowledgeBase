@@ -59,7 +59,7 @@ class ParserFunctions
         $doiRenderer = new DOIRenderer();
 
         if (self::isInVisualEditor()) {
-            $output = "[" . self::$LITERATURE_REFS[$doi]['index'] . "]";
+            $output = "<span>[" . self::$LITERATURE_REFS[$doi]['index'] . "]</span>";
         } else {
             $output = $doiRenderer->renderReference(self::$LITERATURE_REFS[$doi]['index']);
 
