@@ -57,15 +57,21 @@ class ParserFunctions
         }
 
         $doiRenderer = new DOIRenderer();
-        global $wgRequest;
 
-        if (strpos($wgRequest->getText( 'title' ), '/v3/page/html/') !== false) {
+        if (self::isInVisualEditor()) {
             $output = "[" . self::$LITERATURE_REFS[$doi]['index'] . "]";
         } else {
             $output = $doiRenderer->renderReference(self::$LITERATURE_REFS[$doi]['index']);
 
         }
         return [ $output, 'noparse' => true, 'isHTML' => true];
+    }
+
+    private static function isInVisualEditor()
+    {
+        global $wgRequest;
+        return (strpos($wgRequest->getText( 'title' ), '/v3/page/html/') !== false
+            || strpos($wgRequest->getText( 'title' ), '/v3/transform/wikitext/to/html/') !== false);
     }
 
     public static function renderIframe($formula, array $arguments, Parser $parser, PPFrame $frame)
