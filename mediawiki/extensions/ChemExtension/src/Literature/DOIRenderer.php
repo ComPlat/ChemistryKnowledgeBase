@@ -23,7 +23,7 @@ class DOIRenderer {
         $html = $blade->view ()->make ( "doi-rendered",
             [
                 'index' => $index,
-                'title'  => $doiData->title,
+                'title'  => strip_tags($doiData->title,"<sub><sup><b><i>"),
                 'authors' => $authors,
                 'journal' => $journal,
                 'volume' => $volume,
