@@ -28,8 +28,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.LinearContextItemExtension = {};
     ve.ui.LinearContextItemExtension.extend = function(panel, context, model) {
 
-
-        if (model.element.attributes.mw.parts[0].template.target.wt != '#literature:') {
+        let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+        if (template == null || template.target == null || template.target.wt != '#literature:') {
             return;
         }
 
