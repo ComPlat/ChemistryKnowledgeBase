@@ -39,23 +39,28 @@
     });
 
     function renderFormula(iframe, tooltip) {
-        let enc_formula = iframe.attr('formula');
-        if (enc_formula == '') {
+        let downloadURL = decodeURIComponent(iframe.attr('downloadurl'));
+        if (downloadURL == '') {
             return;
         }
-        let formula = atob(enc_formula);
+        fetch(downloadURL).then(r => {
 
-        if (formula.indexOf('$RXN') !== -1) {
-            formula = formula.substr(formula.indexOf('$RXN'));
-        }
-        ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
-            const img = new Image();
-            img.src = URL.createObjectURL(svgBlob);
-            img.style.width = "600px";
-            img.style.height = "400px";
+            if (r.status != 200) {
+                image.append('Image does not exist. Please re-save in editor.');
+                return;
+            }
+            r.blob().then(function (blob) {
+                const img = new Image();
+                img.src = URL.createObjectURL(blob);
+                img.style.width = "100%";
+                img.style.height = "95%";
 
-            tooltip.append(img);
+                tooltip.append(img);
+
+            });
+
         });
+
     }
 
 })(jQuery);
