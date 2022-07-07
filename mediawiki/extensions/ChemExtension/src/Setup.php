@@ -44,7 +44,6 @@ class Setup {
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
 
         $out->addModules('ext.diqa.chemextension');
-        self::outputKetcher($out);
         self::outputLiteratureReferences($out);
 
     }
@@ -52,14 +51,6 @@ class Setup {
     public static function onParserFirstCallInit( Parser $parser ) {
         $parser->setHook( 'chemform', [ ParserFunctions::class, 'renderIframe' ] );
         $parser->setFunctionHook( 'literature', [ ParserFunctions::class, 'renderLiterature' ] );
-    }
-
-    private static function outputKetcher(OutputPage $out): void {
-        global $wgScriptPath;
-        $random = uniqid();
-        $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-ketcher.html?random=$random";
-        $output = sprintf('<iframe style="display: none;" id="ketcher-renderer" src="%s"></iframe>', $path);
-        $out->addHTML($output);
     }
 
     private static function outputLiteratureReferences(OutputPage $out): void {

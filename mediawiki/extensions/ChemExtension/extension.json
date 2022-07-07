@@ -48,6 +48,16 @@
             "path": "/ChemExtension/v1/inchi",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetInchI"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/upload",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\UploadChemFormImage"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetChemFormImage"
         }
     ],
     "JobClasses": {

@@ -76,7 +76,7 @@ class ParserFunctions
 
     public static function renderIframe($formula, array $arguments, Parser $parser, PPFrame $frame)
     {
-
+        global $wgScriptPath;
         $attributes = [];
 
         $attributes['class'] = "chemformula";
@@ -100,6 +100,8 @@ class ParserFunctions
             $key = $arguments['smiles'];
         }
         $attributes['chemFormId'] = $chemFormRepo->getChemFormId($key);
+
+        $attributes['downloadURL'] = urlencode($wgScriptPath ."/rest.php/ChemExtension/v1/chemform?id=$key");
 
         $queryString = http_build_query([
             'width' => $attributes['width'],
