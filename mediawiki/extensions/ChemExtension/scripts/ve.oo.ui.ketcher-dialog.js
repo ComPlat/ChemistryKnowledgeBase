@@ -9,28 +9,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
 
     /* end of translations */
-    function extractChemFormNode(model, id) {
-        let nodes = [];
-
-        function getNodes(obj) {
-            var i;
-
-            for (i = 0; i < obj.children.length; i++) {
-                if (obj.children[i].type == 'mwAlienInlineExtension') {
-                    if (obj.children[i].element.attributes.mw.attrs.id == id) {
-                        nodes.push(obj.children[i]);
-                    }
-                }
-
-                if (obj.children[i].children) {
-                    getNodes(obj.children[i]);
-                }
-            }
-        }
-
-        getNodes(model.getDocument().getDocumentNode());
-        return nodes;
-    }
 
     function getKetcher() {
         for (var i = 0; i < window.frames.length; i++) {
@@ -119,7 +97,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         if (action === 'apply') {
             return new OO.ui.Process(function () {
                 var model = ve.init.target.getSurface().getModel();
-                let nodes = extractChemFormNode(model, this.iframe.id);
+                let tools = new OO.VisualEditorTools();
+                let nodes = tools.extractChemFormNode(model, this.iframe.id);
 
                 try {
                     let ketcher = getKetcher();

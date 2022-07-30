@@ -20,10 +20,14 @@ class Setup {
             'position' => 'bottom',
             'scripts' => [
                 $baseScript . '/render-chemform-tooltip.js',
+                $baseScript . '/ve.oo.model.tools.js',
                 $baseScript . '/ve.extend.js',
                 $baseScript . '/ve.insert-chem-form.js',
                 $baseScript . '/ve.oo.ui.ketcher-widget.js',
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
+                $baseScript . '/ve.oo.ui.molecule-rests-widget.js',
+                $baseScript . '/ve.oo.ui.molecule-rests-dialog.js',
+
             ],
             'styles' => [ 'skins/main.css' ],
             'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip'],

@@ -22,6 +22,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         panel.$attributes.append(button.$element);
 
+        button = new OO.ui.ButtonWidget({
+            label: 'Define rests'
+        });
+
+        let tools = new OO.VisualEditorTools();
+        button.on('click', function () {
+            ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rests', {
+                id: id,
+                attrs: panel.originalMwData.attrs,
+                numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm)
+            });
+        });
+
+        panel.$attributes.append(button.$element);
+
         panel.title.setLabel(panel.selectedNode.getExtensionName());
     }
 
