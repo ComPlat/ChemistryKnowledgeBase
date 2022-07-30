@@ -16,8 +16,12 @@
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }</script>
-<div style="height:82%" id="image" onclick="window.parent.ChemExtension.navigate(getParameterByName('chemformid'), getParameterByName('isreaction'));"></div>
-<p style="text-align: center; font-weight: bold" id="caption"></p>
+<div style="height:82%" id="image"></div>
+
+<a href="#" onclick="window.parent.ChemExtension.navigate(getParameterByName('chemformid'), getParameterByName('isreaction'));">
+    <p style="text-align: center; font-weight: bold" id="caption"></p>
+</a>
+
 <script>
     let height = parseInt(getParameterByName('height')) - 60;
     document.getElementById('image').setAttribute('style', 'height: '+height+'px');
