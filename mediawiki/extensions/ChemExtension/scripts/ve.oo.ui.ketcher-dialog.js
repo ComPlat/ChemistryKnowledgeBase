@@ -11,12 +11,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     /* end of translations */
 
     function getKetcher() {
+        if (window.ketcher) {
+            return window.ketcher;
+        }
         for (var i = 0; i < window.frames.length; i++) {
-            if (window.frames[i].window.ketcher && window.frames[i].window.ketcher.isEditor) {
+            if (window.frames[i].window.ketcher) {
                 return window.frames[i].window.ketcher;
             }
         }
-        console.log("Ketcher not found");
         return null;
     }
 
@@ -102,6 +104,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
                 try {
                     let ketcher = getKetcher();
+                    if (ketcher == null) {
+                        console.error("Ketcher not found.");
+                        return;
+                    }
                     if (ketcher.containsReaction()) {
                         ketcher.getRxn().then(function (formula) {
                             updatePage(nodes[0], formula);

@@ -22,7 +22,7 @@ function getKetcherFrameElement(base) {
 
 window.parent.onload = function(e){
     var ketcher = window.ketcher;
-    ketcher.isEditor = true;
+
     var formula = getKetcherFrameElement(window.parent).getAttribute("formula")
     if (!formula.startsWith("$RXN")) {
         if (!formula.startsWith("\n")) {
