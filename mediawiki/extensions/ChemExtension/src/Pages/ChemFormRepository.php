@@ -85,6 +85,14 @@ class ChemFormRepository {
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $id = $row->id;
+            $this->db->update('chem_form_img',
+                [
+                    'img_data' => $imgData
+
+                ], [
+                    'chem_form_key' => $chemFormKey
+                ]);
+
         } else {
             $this->db->insert('chem_form_img',
                 [

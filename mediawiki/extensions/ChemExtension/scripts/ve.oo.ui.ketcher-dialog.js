@@ -49,9 +49,15 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
             svgBlob.text().then(function (imgData) {
                 ketcher.getSmiles().then(function (smiles) {
-                    uploadImage(inchikey ? inchikey : smiles, btoa(imgData), function () {
+                    let tools = new OO.VisualEditorTools();
+                    let id = node.element.attributes.mw.attrs.id;
+                    if (id == '') {
+                        node.element.attributes.mw.attrs.id = tools.newID();
+                    }
+                    uploadImage(inchikey ? inchikey : id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
                         node.element.attributes.mw.body.extsrc = formula;
+
                         node.element.attributes.mw.attrs.smiles = smiles;
                         if (inchi) {
                             node.element.attributes.mw.attrs.inchi = inchi;
@@ -98,10 +104,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.KetcherDialog.prototype.getActionProcess = function (action) {
         if (action === 'apply') {
             return new OO.ui.Process(function () {
-                var model = ve.init.target.getSurface().getModel();
-                let tools = new OO.VisualEditorTools();
-                let nodes = tools.extractChemFormNode(model, this.iframe.id);
 
+                let node = this.selectedNode;
                 try {
                     let ketcher = getKetcher();
                     if (ketcher == null) {
@@ -110,7 +114,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     }
                     if (ketcher.containsReaction()) {
                         ketcher.getRxn().then(function (formula) {
-                            updatePage(nodes[0], formula);
+                            updatePage(node, formula);
                         });
                     } else {
                         ketcher.getMolfile('v3000').then(function (formulaV3000) {
@@ -119,7 +123,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                 let inchi = response.InChI;
                                 let inchikey = response.InChIKey;
 
-                                updatePage(nodes[0], formulaV3000, inchi, inchikey);
+                                updatePage(node, formulaV3000, inchi, inchikey);
 
                             });
                         });
@@ -136,6 +140,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.KetcherDialog.prototype.setup = function (data) {
 
         this.iframe.setData(data.formula, data.id);
+        this.selectedNode = data.node;
         return ve.ui.KetcherDialog.super.prototype.setup.call(this, data);
     };
 

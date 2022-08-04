@@ -21,10 +21,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.MoleculeRestsDialog.prototype.getActionProcess = function (action) {
         if (action === 'apply') {
             return new OO.ui.Process(function () {
-                var model = ve.init.target.getSurface().getModel();
-                let tools = new OO.VisualEditorTools();
-                let nodes = tools.extractChemFormNode(model, this.moleculeRests.id);
-                let node = nodes[0];
+
+                let node = this.selectedNode
                 let rests = this.moleculeRests.getRestsAsAttributes();
                 for(let r in rests) {
                     node.element.attributes.mw.attrs[r] = rests[r];
@@ -40,6 +38,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.MoleculeRestsDialog.prototype.setup = function (data) {
 
         this.moleculeRests.setData(data.attrs, data.id, data.numberOfMoleculeRests);
+        this.selectedNode = data.node;
         return ve.ui.MoleculeRestsDialog.super.prototype.setup.call(this, data);
     };
 

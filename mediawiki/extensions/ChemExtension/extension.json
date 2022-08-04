@@ -40,11 +40,6 @@
             "class": "DIQA\\ChemExtension\\ChemScanner\\NotifyChemScannerEndpoint"
         },
         {
-            "path": "/ChemExtension/v1/rdkit",
-            "method": "GET",
-            "class": "DIQA\\ChemExtension\\Endpoints\\GetRDKit"
-        },
-        {
             "path": "/ChemExtension/v1/inchi",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetInchI"
@@ -61,7 +56,8 @@
         }
     ],
     "JobClasses": {
-        "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob"
+        "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
+        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRestBuilder\\MoleculesImportJob"
     },
     "manifest_version": 2
 }

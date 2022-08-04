@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\Pages;
 class ChemForm {
 
     private $id;
+    private $chemFormId;
     private $molOrRxn;
     private $isReaction;
     private $smiles;
@@ -22,8 +23,9 @@ class ChemForm {
      * @param $height
      * @param $float
      */
-    public function __construct($molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
+    public function __construct($chemFormId, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
     {
+        $this->chemFormId = $chemFormId;
         $this->molOrRxn = $molOrRxn;
         $this->isReaction = $reaction;
         $this->smiles = $smiles;
@@ -51,6 +53,15 @@ class ChemForm {
     {
         return $this->id;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getChemFormId()
+    {
+        return $this->chemFormId;
+    }
+
 
     /**
      * @return mixed

@@ -8,27 +8,8 @@
 
     };
 
-    OO.VisualEditorTools.prototype.extractChemFormNode = function(model, id) {
-        let nodes = [];
-
-        function getNodes(obj) {
-            var i;
-
-            for (i = 0; i < obj.children.length; i++) {
-                if (obj.children[i].type == 'mwAlienInlineExtension') {
-                    if (obj.children[i].element.attributes.mw.attrs.id == id) {
-                        nodes.push(obj.children[i]);
-                    }
-                }
-
-                if (obj.children[i].children) {
-                    getNodes(obj.children[i]);
-                }
-            }
-        }
-
-        getNodes(model.getDocument().getDocumentNode());
-        return nodes;
+    OO.VisualEditorTools.prototype.newID = function() {
+        return Math.random().toString(16).slice(2);
     }
 
     OO.VisualEditorTools.prototype.getNumberOfMoleculeRests = function(formula) {

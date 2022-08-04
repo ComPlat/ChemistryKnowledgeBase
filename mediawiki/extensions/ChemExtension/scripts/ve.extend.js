@@ -17,7 +17,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
                 formula: chemForm,
-                id: id
+                id: id,
+                node: panel.selectedNode
             });
         });
 
@@ -32,11 +33,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rests', {
                 id: id,
                 attrs: panel.originalMwData.attrs,
-                numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm)
+                numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm),
+                node: panel.selectedNode
             });
         });
 
-        //panel.$attributes.append(button.$element);
+        panel.$attributes.append(button.$element);
 
         panel.title.setLabel(panel.selectedNode.getExtensionName());
     }

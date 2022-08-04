@@ -19,6 +19,7 @@ class ChemFormParser
         for ($i = 0; $i < count($formulas); $i++) {
             $attributes = $this->parseAttributes($attributeStrings[$i]);
             $results[] = new ChemForm(
+                $attributes['id'],
                 $formulas[$i],
                 $attributes['isReaction'],
                 $attributes['smiles'],

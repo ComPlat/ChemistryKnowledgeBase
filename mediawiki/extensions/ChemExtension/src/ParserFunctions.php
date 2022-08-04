@@ -97,7 +97,7 @@ class ParserFunctions
         $chemFormRepo = new ChemFormRepository($dbr);
         $key = $arguments['inchikey'];
         if (is_null($key) || $key === '') {
-            $key = $arguments['smiles'];
+            $key = $arguments['id'];
         }
         $attributes['chemFormId'] = $chemFormRepo->getChemFormId($key);
 

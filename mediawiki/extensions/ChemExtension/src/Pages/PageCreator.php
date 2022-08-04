@@ -21,7 +21,7 @@ class PageCreator
 
         $chemFormRepository = new ChemFormRepository($dbr);
         if (is_null($chemForm->getInchiKey()) || $chemForm->getInchiKey() === '') {
-            $key = $chemForm->getSmiles();
+            $key = $chemForm->getChemFormId();
         } else {
             $key = $chemForm->getInchiKey();
         }

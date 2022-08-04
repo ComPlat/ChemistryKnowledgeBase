@@ -1,35 +1,6 @@
 ( function ( OO ) {
     'use strict';
 
-    ve.trackSubscribe('activity.clipboard', function(event, data) {
-
-        if (data.action && data.action == 'paste') {
-            var model = ve.init.target.getSurface().getModel();
-            let alreadySeen = [];
-            iterateNodesAndMakeIdUnique(model.getDocument().getDocumentNode());
-            function iterateNodesAndMakeIdUnique( obj ) {
-                var i;
-
-                for ( i = 0; i < obj.children.length; i++ ) {
-                    if ( obj.children[i].type == 'mwAlienInlineExtension'){
-
-                        let id = obj.children[i].element.attributes.mw.attrs.id;
-                        if (alreadySeen.indexOf(id) == -1) {
-                            alreadySeen.push(id);
-                        } else {
-                            obj.children[i].element.attributes.mw.attrs.id = Math.random().toString(16).slice(2);
-                        }
-                    }
-
-                    if ( obj.children[i].children ) {
-                        iterateNodesAndMakeIdUnique( obj.children[i] );
-                    }
-                }
-            }
-
-        }
-    });
-
 
     OO.ui.KetcherWidget = function OoUiKetcherWidget( config ) {
         // Configuration initialization
