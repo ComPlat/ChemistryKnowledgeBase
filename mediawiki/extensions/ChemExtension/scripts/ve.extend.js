@@ -34,6 +34,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 id: id,
                 attrs: panel.originalMwData.attrs,
                 numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm),
+                restIds: tools.getRestIds(chemForm),
                 node: panel.selectedNode
             });
         });

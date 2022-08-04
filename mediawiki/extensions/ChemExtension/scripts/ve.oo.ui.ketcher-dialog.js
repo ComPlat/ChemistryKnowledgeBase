@@ -56,8 +56,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     }
                     uploadImage(inchikey ? inchikey : id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
-
-                        tools.removeAllRests(node.element.attributes.mw.attrs);
+                        let restIds = tools.getRestIds(formula);
+                        tools.removeAllNonExistingRests(node.element.attributes.mw.attrs, restIds);
                         node.element.attributes.mw.body.extsrc = formula;
 
                         node.element.attributes.mw.attrs.smiles = smiles;

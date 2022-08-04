@@ -19,10 +19,22 @@
         return i;
     }
 
-    OO.VisualEditorTools.prototype.removeAllRests = function(attrs) {
-        for(let i = 1; i < 100; i++) {
-            if (attrs['r'+i]) {
-                delete attrs['r'+i];
+    OO.VisualEditorTools.prototype.getRestIds = function(formula) {
+        let m = formula.matchAll(/RGROUPS=\((\d+)\s*(\d+)/g);
+        let restIds = [];
+        let next = m.next().value;
+        while(next) {
+            restIds.push("r"+next[2]);
+            next = m.next().value;
+        }
+
+        return restIds.sort();
+    }
+
+    OO.VisualEditorTools.prototype.removeAllNonExistingRests = function(attrs, restIds) {
+        for(let a in attrs) {
+            if (a.match(/r\d+/) && restIds.indexOf(a) === -1) {
+                delete attrs[a];
             }
         }
     }

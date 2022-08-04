@@ -28,9 +28,10 @@
      */
     OO.ui.MoleculeRestsWidget.static.tagName = 'div';
 
-    OO.ui.MoleculeRestsWidget.prototype.setData = function(attrs, id, numberOfMoleculeRests) {
+    OO.ui.MoleculeRestsWidget.prototype.setData = function(attrs, id, numberOfMoleculeRests, restIds) {
 
         this.id = id;
+        this.restIds = restIds;
         this.moleculeRestTable = this.readRestsAsAttributes(attrs);
         this.numberOfMoleculeRests = numberOfMoleculeRests;
 
@@ -61,10 +62,10 @@
 
     OO.ui.MoleculeRestsWidget.prototype.header = function() {
         let row = $('<tr>');
-        for(let i = 1; i <= this.numberOfMoleculeRests; i++) {
+        for(let i = 0; i < this.restIds.length; i++) {
             let column = $('<th>');
             let labelWidget = new OO.ui.LabelWidget( {
-                label: "R"+i
+                label: this.restIds[i].toUpperCase()
             } );
             column.append(labelWidget.$element);
             row.append(column);
@@ -75,7 +76,7 @@
     OO.ui.MoleculeRestsWidget.prototype.newLine = function(line) {
         let row = $('<tr>');
         row.addClass('molecule-rest')
-        for(let i = 0; i < this.numberOfMoleculeRests; i++) {
+        for(let i = 0; i < this.restIds.length; i++) {
             let column = $('<td>');
             let textWidget = new ve.ui.WhitespacePreservingTextInputWidget( {
                 autosize: true,
@@ -103,11 +104,12 @@
     }
 
     OO.ui.MoleculeRestsWidget.prototype.readRestsAsAttributes = function(attributes) {
-        let i = 1;
+
         let restsArray = [];
-        while(attributes['r'+i]) {
-            restsArray.push(attributes['r'+i].split(','))
-            i++;
+        for(let i = 0; i < this.restIds.length; i++) {
+            if (attributes[this.restIds[i]]) {
+                restsArray.push(attributes[this.restIds[i]].split(','))
+            }
         }
         return restsArray.length > 0 ? restsArray[0].map((_, colIndex) => restsArray.map(row => row[colIndex])) : [];
 
@@ -118,8 +120,9 @@
         let restAttributes = {};
         // transpose array (exchange rows and columns)
         let transposedArray = restArray[0].map((_, colIndex) => restArray.map(row => row[colIndex]));
+
         for(let i = 0; i < transposedArray.length; i++) {
-            restAttributes['r'+(i+1)] = transposedArray[i].join(',');
+            restAttributes[this.restIds[i]] = transposedArray[i].join(',');
         }
         return restAttributes;
     }

@@ -37,16 +37,16 @@ class ChemFormParser
         $result = [];
         for($i = 1; $i < self::MAX_RESTS; $i++) {
             if (!array_key_exists("r$i", $attributes)) {
-                break;
+                continue;
             }
             $rests = explode(',', $attributes["r$i"]);
             $rests = array_map(function ($e) {
                 return trim($e);
             }, $rests);
-            $result[] = $rests;
+            $result["r$i"] = $rests;
         }
-        // transposes the array (switch rows/columns)
-        return count($result) > 0 ? array_map(null, ...$result) : $result;
+
+        return $result;
     }
 
     private function parseAttributes($attributeString): array

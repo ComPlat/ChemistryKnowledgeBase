@@ -94,10 +94,7 @@ class PageCreator
         if (count($chemForm->getRests()) === 0) {
             return '';
         }
-        $columns = count($chemForm->getRests()[0]);
-        $restHeaders = array_map(function($e) {
-            return "R$e";
-        }, range(1, $columns));
+        $restHeaders = array_map(function($e) { return strtoupper($e); }, array_keys($chemForm->getRests()));
         sort($restHeaders);
         $table = <<<WIKITEXT
 {| class="wikitable" 
@@ -105,12 +102,25 @@ class PageCreator
 WIKITEXT;
         $table .= "\n! Molecule !! " . implode(" !! ", $restHeaders);
         $table .= "\n|-";
-        foreach($chemForm->getRests() as $row) {
-            $table .= "\n| [[Molecule]] || " . implode(" || ", $row);
+        $rows = self::transpose($chemForm->getRests());
+        foreach($rows as $row) {
+            ksort($row);
+            $table .= "\n| [[Molecule]] || " . implode(" || ", array_values($row));
             $table .= "\n|-";
         }
         $table .= "\n|-";
         $table .= "\n|}";
         return $table;
+    }
+
+    private static function transpose($arr) {
+        $result = [];
+        $keys = array_keys($arr);
+        for ($row = 0,  $rows = count(reset($arr)); $row < $rows; $row++) {
+            foreach ($keys as $key) {
+                $result[$row][$key] = $arr[$key][$row];
+            }
+        }
+        return $result;
     }
 }

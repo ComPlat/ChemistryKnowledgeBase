@@ -40,7 +40,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
     ve.ui.MoleculeRestsDialog.prototype.setup = function (data) {
 
-        this.moleculeRests.setData(data.attrs, data.id, data.numberOfMoleculeRests);
+        this.moleculeRests.setData(data.attrs, data.id, data.numberOfMoleculeRests, data.restIds);
         this.selectedNode = data.node;
         return ve.ui.MoleculeRestsDialog.super.prototype.setup.call(this, data);
     };
