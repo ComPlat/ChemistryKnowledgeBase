@@ -6,6 +6,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         if (panel.originalMwData.name != 'chemform') {
             return;
         }
+        let tools = new OO.VisualEditorTools();
 
         var chemForm = panel.originalMwData.body.extsrc;
         var id = panel.originalMwData.attrs.id;
@@ -23,10 +24,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         panel.$attributes.append(button.$element);
 
         button = new OO.ui.ButtonWidget({
-            label: 'Define rests'
+            label: 'Define rests',
+            disabled: tools.getNumberOfMoleculeRests(chemForm) === 0
         });
 
-        let tools = new OO.VisualEditorTools();
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rests', {
                 id: id,
@@ -35,7 +36,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             });
         });
 
-        panel.$attributes.append(button.$element);
+        //panel.$attributes.append(button.$element);
 
         panel.title.setLabel(panel.selectedNode.getExtensionName());
     }
