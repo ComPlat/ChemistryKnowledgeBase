@@ -24,11 +24,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
                 let node = this.selectedNode
                 let rests = this.moleculeRests.getRestsAsAttributes();
+
                 for(let r in rests) {
                     node.element.attributes.mw.attrs[r] = rests[r];
                 }
 
                 console.log(rests);
+                ve.init.target.fromEditedState = true;
+                ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
                 ve.ui.MWMediaDialog.super.prototype.close.call(this);
 
             }, this);

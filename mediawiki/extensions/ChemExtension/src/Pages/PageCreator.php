@@ -26,7 +26,7 @@ class PageCreator
             $key = $chemForm->getInchiKey();
         }
         $id = $chemFormRepository->addChemForm($key);
-        $chemForm->setId($id);
+        $chemForm->setDatabaseId($id);
 
         if ($chemForm->isReaction()) {
             $title = Title::newFromText("Reaction:Reaction_$id");
@@ -55,23 +55,62 @@ class PageCreator
      */
     private function getPageContent(ChemForm $chemForm): string
     {
+        $pageContent = $this->getTemplate($chemForm);
+        if (count($chemForm->getRests()) > 0) {
+            $pageContent .= "\n\n==Molecule rests==";
+            $pageContent .= "\n" . $this->getRestsTable($chemForm);
+        }
+        return $pageContent;
+    }
+
+    /**
+     * @param ChemForm $chemForm
+     * @return string
+     */
+    private function getTemplate(ChemForm $chemForm): string
+    {
         if ($chemForm->isReaction()) {
             $template = "ChemicalReaction";
         } else {
             $template = "ChemicalFormula";
         }
-        $pageContent = "{{".$template;
-        $pageContent .= "\n|id={$chemForm->getId()}";
+        $pageContent = "{{" . $template;
+        $pageContent .= "\n|databaseId={$chemForm->getDatabaseId()}";
+        $pageContent .= "\n|chemFormId={$chemForm->getChemFormId()}";
         $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
         $pageContent .= "\n|smiles={$chemForm->getSmiles()}";
         $pageContent .= "\n|inchi={$chemForm->getInchi()}";
         $pageContent .= "\n|inchikey={$chemForm->getInchiKey()}";
         $pageContent .= "\n|width={$chemForm->getWidth()}";
         $pageContent .= "\n|height={$chemForm->getHeight()}";
-        $isReaction = $chemForm->isReaction()?"true":"false";
+        $isReaction = $chemForm->isReaction() ? "true" : "false";
         $pageContent .= "\n|isreaction={$isReaction}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";
         $pageContent .= "\n}}";
         return $pageContent;
+    }
+
+    private function getRestsTable($chemForm) {
+        if (count($chemForm->getRests()) === 0) {
+            return '';
+        }
+        $columns = count($chemForm->getRests()[0]);
+        $restHeaders = array_map(function($e) {
+            return "R$e";
+        }, range(1, $columns));
+        sort($restHeaders);
+        $table = <<<WIKITEXT
+{| class="wikitable" 
+|-
+WIKITEXT;
+        $table .= "\n! Molecule !! " . implode(" !! ", $restHeaders);
+        $table .= "\n|-";
+        foreach($chemForm->getRests() as $row) {
+            $table .= "\n| [[Molecule]] || " . implode(" || ", $row);
+            $table .= "\n|-";
+        }
+        $table .= "\n|-";
+        $table .= "\n|}";
+        return $table;
     }
 }

@@ -19,6 +19,14 @@
         return i;
     }
 
+    OO.VisualEditorTools.prototype.removeAllRests = function(attrs) {
+        for(let i = 1; i < 100; i++) {
+            if (attrs['r'+i]) {
+                delete attrs['r'+i];
+            }
+        }
+    }
+
 OO.initClass( OO.VisualEditorTools );
 
 

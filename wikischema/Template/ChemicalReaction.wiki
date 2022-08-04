@@ -6,6 +6,7 @@
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
 |isreaction={{{isreaction}}}
+|id={{{chemFormId}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Reaction]]

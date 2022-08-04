@@ -7,6 +7,7 @@
 {{{molOrRxn}}}
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
+|id={{{chemFormId}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Molecule]]

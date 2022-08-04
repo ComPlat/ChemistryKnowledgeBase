@@ -105,8 +105,8 @@
     OO.ui.MoleculeRestsWidget.prototype.readRestsAsAttributes = function(attributes) {
         let i = 1;
         let restsArray = [];
-        while(attributes['R'+i]) {
-            restsArray.push(attributes['R'+i].split(','))
+        while(attributes['r'+i]) {
+            restsArray.push(attributes['r'+i].split(','))
             i++;
         }
         return restsArray.length > 0 ? restsArray[0].map((_, colIndex) => restsArray.map(row => row[colIndex])) : [];
@@ -119,7 +119,7 @@
         // transpose array (exchange rows and columns)
         let transposedArray = restArray[0].map((_, colIndex) => restArray.map(row => row[colIndex]));
         for(let i = 0; i < transposedArray.length; i++) {
-            restAttributes['R'+(i+1)] = transposedArray[i].join(',');
+            restAttributes['r'+(i+1)] = transposedArray[i].join(',');
         }
         return restAttributes;
     }

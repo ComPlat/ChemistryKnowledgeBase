@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Pages;
 
 class ChemForm {
 
-    private $id;
+    private $databaseId;
     private $chemFormId;
     private $molOrRxn;
     private $isReaction;
@@ -14,6 +14,7 @@ class ChemForm {
     private $width;
     private $height;
     private $float;
+    private $rests;
 
     /**
      * @param $id
@@ -23,7 +24,8 @@ class ChemForm {
      * @param $height
      * @param $float
      */
-    public function __construct($chemFormId, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float)
+    public function __construct($chemFormId, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float,
+                                $rests)
     {
         $this->chemFormId = $chemFormId;
         $this->molOrRxn = $molOrRxn;
@@ -34,14 +36,15 @@ class ChemForm {
         $this->width = $width;
         $this->height = $height;
         $this->float = $float;
+        $this->rests = $rests;
     }
 
     /**
-     * @param mixed $id
+     * @param mixed $databaseId
      */
-    public function setId($id): void
+    public function setDatabaseId($databaseId): void
     {
-        $this->id = $id;
+        $this->databaseId = $databaseId;
     }
 
 
@@ -49,9 +52,9 @@ class ChemForm {
     /**
      * @return mixed
      */
-    public function getId()
+    public function getDatabaseId()
     {
-        return $this->id;
+        return $this->databaseId;
     }
 
     /**
@@ -127,9 +130,20 @@ class ChemForm {
         return $this->float;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getRests()
+    {
+        return $this->rests;
+    }
+
+
+
     public function __toString()
     {
-        return "{$this->id} ({$this->smiles}, {$this->width}, {$this->height}, {$this->float}): {$this->molOrRxn}";
+        return "{$this->databaseId} ({$this->chemFormId} {$this->smiles}, {$this->width}, {$this->height},"
+            ." {$this->float}): {$this->molOrRxn} | {$this->rests}";
     }
 
 
