@@ -1,8 +1,7 @@
 
-window.parent.onload = function(e){
-    var ketcher = window.ketcher;
+window.onload = function(e){
 
-    var formula = window.frameElement.getAttribute('formula');
+    let formula = window.frameElement.getAttribute('formula');
     if (!formula.startsWith("$RXN")) {
         if (!formula.startsWith("\n")) {
             formula = "\n" + formula;
@@ -12,10 +11,16 @@ window.parent.onload = function(e){
         }
     }
 
-
-    ketcher.setMolecule(formula);
+    let f = function() {
+        if (window.ketcher) {
+            window.ketcher.setMolecule(formula);
+        } else {
+            setTimeout(f, 100);
+        }
+    }
+    f();
 }
 
-window.onload = window.parent.onload;
+
 
 
