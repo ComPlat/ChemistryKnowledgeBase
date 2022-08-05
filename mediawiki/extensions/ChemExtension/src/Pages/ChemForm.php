@@ -2,7 +2,8 @@
 
 namespace DIQA\ChemExtension\Pages;
 
-class ChemForm {
+class ChemForm
+{
 
     private $databaseId;
     private $chemFormId;
@@ -46,7 +47,6 @@ class ChemForm {
     {
         $this->databaseId = $databaseId;
     }
-
 
 
     /**
@@ -131,6 +131,12 @@ class ChemForm {
     }
 
     /**
+     * Hash array mapping rests to array of molecules
+     * [
+     *  'R1' => [ 'CH2', 'OH', ... ],
+     *  'R2' => [ 'OH', 'SO4', ... ],
+     *   ...
+     * ]
      * @return mixed
      */
     public function getRests()
@@ -138,12 +144,19 @@ class ChemForm {
         return $this->rests;
     }
 
+    public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey)
+    {
+        $isReaction = strpos(trim($molOrRxn), '$RXN') === 0;
+        return new ChemForm($inchikey, $molOrRxn, $isReaction,
+            '', $inchi, $inchikey, 200, 200, 'none', null);
 
+
+    }
 
     public function __toString()
     {
         return "{$this->databaseId} ({$this->chemFormId} {$this->smiles}, {$this->width}, {$this->height},"
-            ." {$this->float}): {$this->molOrRxn} | {$this->rests}";
+            . " {$this->float}): {$this->molOrRxn} | {$this->rests}";
     }
 
 

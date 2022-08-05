@@ -8,6 +8,7 @@
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
 |id={{{chemFormId}}}
+|isreaction={{{isreaction}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Molecule]]

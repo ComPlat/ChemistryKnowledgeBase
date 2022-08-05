@@ -8,8 +8,13 @@ use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use Exception;
 use MediaWiki\MediaWikiServices;
+use OOUI\ButtonWidget;
+use OOUI\FormLayout;
+use OOUI\LabelWidget;
+use OOUI\Tag;
 use Parser;
 use PPFrame;
+use OutputPage;
 
 class ParserFunctions
 {
@@ -64,14 +69,14 @@ class ParserFunctions
             $output = $doiRenderer->renderReference(self::$LITERATURE_REFS[$doi]['index']);
 
         }
-        return [ $output, 'noparse' => true, 'isHTML' => true];
+        return [$output, 'noparse' => true, 'isHTML' => true];
     }
 
     private static function isInVisualEditor()
     {
         global $wgRequest;
-        return (strpos($wgRequest->getText( 'title' ), '/v3/page/html/') !== false
-            || strpos($wgRequest->getText( 'title' ), '/v3/transform/wikitext/to/html/') !== false);
+        return (strpos($wgRequest->getText('title'), '/v3/page/html/') !== false
+            || strpos($wgRequest->getText('title'), '/v3/transform/wikitext/to/html/') !== false);
     }
 
     public static function renderIframe($formula, array $arguments, Parser $parser, PPFrame $frame)
@@ -101,7 +106,7 @@ class ParserFunctions
         }
         $attributes['chemFormId'] = $chemFormRepo->getChemFormId($key);
 
-        $attributes['downloadURL'] = urlencode($wgScriptPath ."/rest.php/ChemExtension/v1/chemform?id=$key");
+        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$key");
 
         $queryString = http_build_query([
             'width' => $attributes['width'],
@@ -114,6 +119,7 @@ class ParserFunctions
         $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
         $serializedAttributes = self::serializeAttributes($attributes);
         $output = "<iframe $serializedAttributes></iframe>";
+        $output .= self::getRenderButtonIfNecessary($chemFormRepo, $key, $formula);
 
         return array($output, 'noparse' => true, 'isHTML' => true);
     }
@@ -126,5 +132,45 @@ class ParserFunctions
             $html .= " $key='" . $value . "'";
         }
         return $html;
+    }
+
+    private static function getRenderButtonIfNecessary($chemFormRepo, $chemFormId, $formula)
+    {
+
+        global $wgTitle;
+        if (is_null($wgTitle) || ($wgTitle->getNamespace() !== NS_MOLECULE && $wgTitle->getNamespace() !== NS_REACTION)) {
+            return '';
+        }
+        if (!is_null($chemFormRepo->getChemFormImage($chemFormId))) {
+            return '';
+        }
+
+        OutputPage::setupOOUI();
+        self::outputKetcher();
+
+        $label = new LabelWidget();
+        $label->setLabel('');
+        $saveButton = new ButtonWidget([
+            'classes' => [],
+            'id' => 'render-formula-button',
+            'label' => 'render',
+            'flags' => ['primary', 'progressive'],
+            'data' => [ 'inchikey' => $chemFormId, 'formula' => $formula ],
+            'infusable' => true
+        ]);
+
+        $section = new FormLayout(['items' => [$label, $saveButton]]);
+        $div = new Tag('div');
+        $div->appendContent($section);
+        return $div;
+
+    }
+
+    private static function outputKetcher(): void {
+        global $wgScriptPath, $wgOut;
+        $random = uniqid();
+        $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-editor.html?random=$random";
+        $output = sprintf('<iframe style="display: none;" id="ketcher-renderer" src="%s"></iframe>', $path);
+        $wgOut->addHTML($output);
     }
 }

@@ -2,10 +2,13 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\MoleculeRestBuilder\MoleculesImportJob;
+use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use Title;
 use Exception;
+use JobQueueGroup;
 
 class PageCreator
 {
@@ -45,6 +48,7 @@ class PageCreator
         if (!$successful) {
             throw new Exception("Could not create molecule/reaction page");
         }
+        $this->addJobsIfNecessary($chemForm, $title);
 
         return $title;
     }
@@ -56,7 +60,7 @@ class PageCreator
     private function getPageContent(ChemForm $chemForm): string
     {
         $pageContent = $this->getTemplate($chemForm);
-        if (count($chemForm->getRests()) > 0) {
+        if (!is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0) {
             $pageContent .= "\n\n==Molecule rests==";
             $pageContent .= "\n" . $this->getRestsTable($chemForm);
         }
@@ -102,7 +106,7 @@ class PageCreator
 WIKITEXT;
         $table .= "\n! Molecule !! " . implode(" !! ", $restHeaders);
         $table .= "\n|-";
-        $rows = self::transpose($chemForm->getRests());
+        $rows = ArrayTools::transpose($chemForm->getRests());
         foreach($rows as $row) {
             ksort($row);
             $table .= "\n| [[Molecule]] || " . implode(" || ", array_values($row));
@@ -113,14 +117,20 @@ WIKITEXT;
         return $table;
     }
 
-    private static function transpose($arr) {
-        $result = [];
-        $keys = array_keys($arr);
-        for ($row = 0,  $rows = count(reset($arr)); $row < $rows; $row++) {
-            foreach ($keys as $key) {
-                $result[$row][$key] = $arr[$key][$row];
-            }
+
+    /**
+     * @param ChemForm $chemForm
+     * @param Title|null $title
+     */
+    private function addJobsIfNecessary(ChemForm $chemForm, ?Title $title): void
+    {
+        if (count($chemForm->getRests()) === 0) {
+            return;
         }
-        return $result;
+        $jobParams = [];
+        $jobParams['formula'] = $chemForm->getMolOrRxn();
+        $jobParams['rests'] = $chemForm->getRests();
+        $job = new MoleculesImportJob($title, $jobParams);
+        //JobQueueGroup::singleton()->push($job);
     }
 }

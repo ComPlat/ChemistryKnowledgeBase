@@ -27,6 +27,7 @@ class Setup {
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-rests-widget.js',
                 $baseScript . '/ve.oo.ui.molecule-rests-dialog.js',
+                $baseScript . '/rerender-chemform.js',
 
             ],
             'styles' => [ 'skins/main.css' ],

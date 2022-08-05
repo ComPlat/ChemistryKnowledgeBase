@@ -10,51 +10,18 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     /* end of translations */
 
-    function getKetcher() {
-        if (window.ketcher) {
-            return window.ketcher;
-        }
-        for (var i = 0; i < window.frames.length; i++) {
-            if (window.frames[i].window.ketcher) {
-                return window.frames[i].window.ketcher;
-            }
-        }
-        return null;
-    }
-
-    function fixMol(formula) {
-        //FIXME: formula contains Smiles at the beginning. bug in ketcher?
-        return "\n" + formula.substr(formula.indexOf("Ketcher"));
-    }
-
-    function uploadImage(id, imgData, callback) {
-        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/upload?id=" + id;
-
-        return $.ajax({
-            method: "POST",
-            url: url,
-            contentType: "application/x-www-form-urlencoded",
-            data: {
-                'imgData': imgData,
-            },
-            success: function () {
-                callback();
-            }
-        });
-    }
-
     function updatePage(node, formula, inchi, inchikey) {
-        let ketcher = getKetcher();
+        let tools = new OO.VisualEditorTools();
+        let ketcher = tools.getKetcher();
         ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
             svgBlob.text().then(function (imgData) {
                 ketcher.getSmiles().then(function (smiles) {
-                    let tools = new OO.VisualEditorTools();
+
                     let id = node.element.attributes.mw.attrs.id;
                     if (id == '') {
                         node.element.attributes.mw.attrs.id = tools.newID();
                     }
-                    uploadImage(inchikey ? inchikey : id, btoa(imgData), function () {
+                    tools.uploadImage(inchikey ? inchikey : id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
                         let restIds = tools.getRestIds(formula);
                         tools.removeAllNonExistingRests(node.element.attributes.mw.attrs, restIds);
