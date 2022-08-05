@@ -23,8 +23,8 @@ iframe.chemformula {
 
 .chemformula-tooltip {
     background: lightyellow;
-    max-width: 600px !important;
-    max-height: 420px !important;
+    max-width: 1000px !important;
+    max-height: 1000px !important;
 }
 
 
