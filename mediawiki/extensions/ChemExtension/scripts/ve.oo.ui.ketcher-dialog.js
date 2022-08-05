@@ -73,10 +73,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.KetcherDialog.prototype.getActionProcess = function (action) {
         if (action === 'apply') {
             return new OO.ui.Process(function () {
-
+                let tools = new OO.VisualEditorTools();
                 let node = this.selectedNode;
                 try {
-                    let ketcher = getKetcher();
+                    let ketcher = tools.getKetcher();
                     if (ketcher == null) {
                         console.error("Ketcher not found.");
                         return;
