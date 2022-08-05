@@ -37,6 +37,7 @@
 
         this.$element.empty();
         this.table = $('<table>');
+        this.table.attr('id', 'molecule-rest');
         let headerRow = this.header();
         this.table.append(headerRow);
 
@@ -53,7 +54,8 @@
         this.$element.append(this.table);
 
         let newLineButton = new OO.ui.ButtonWidget({
-            label: 'New line...',
+            id: 'new-molecule',
+            label: 'New molecule...',
             flags: ['primary', 'progressive']
         });
         newLineButton.on('click', this.addNewLine.bind(this));
@@ -62,6 +64,8 @@
 
     OO.ui.MoleculeRestsWidget.prototype.header = function() {
         let row = $('<tr>');
+        let firstColumn = $('<th>');
+        row.append(firstColumn);
         for(let i = 0; i < this.restIds.length; i++) {
             let column = $('<th>');
             let labelWidget = new OO.ui.LabelWidget( {
@@ -75,7 +79,11 @@
 
     OO.ui.MoleculeRestsWidget.prototype.newLine = function(line) {
         let row = $('<tr>');
-        row.addClass('molecule-rest')
+        row.addClass('molecule-rest');
+        let firstColumn = $('<td>');
+        let label = $('<span>').append("Molecule").attr('title', 'Each row defines all rests for a molecule');
+        firstColumn.append(label);
+        row.append(firstColumn);
         for(let i = 0; i < this.restIds.length; i++) {
             let column = $('<td>');
             let textWidget = new ve.ui.WhitespacePreservingTextInputWidget( {

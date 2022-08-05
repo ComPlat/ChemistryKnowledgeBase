@@ -36,3 +36,14 @@ div.chem_ext_literature:hover {
     background: lightblue;
 }
 
+table#molecule-rest {
+    width: 100%
+}
+
+table#molecule-rest td {
+    vertical-align: middle;
+}
+
+span#new-molecule {
+    margin-top: 10px;
+}
