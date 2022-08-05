@@ -24,7 +24,9 @@
         let restIds = [];
         let next = m.next().value;
         while(next) {
-            restIds.push("r"+next[2]);
+            if (restIds.indexOf("r"+next[2]) === -1) {
+                restIds.push("r" + next[2]);
+            }
             next = m.next().value;
         }
 
