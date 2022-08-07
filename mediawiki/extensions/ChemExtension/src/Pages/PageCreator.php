@@ -23,11 +23,7 @@ class PageCreator
         );
 
         $chemFormRepository = new ChemFormRepository($dbr);
-        if (is_null($chemForm->getInchiKey()) || $chemForm->getInchiKey() === '') {
-            $key = $chemForm->getChemFormId();
-        } else {
-            $key = $chemForm->getInchiKey();
-        }
+        $key = $chemForm->getChemFormId();
         $id = $chemFormRepository->addChemForm($key);
         $chemForm->setDatabaseId($id);
 

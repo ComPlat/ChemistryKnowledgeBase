@@ -12,6 +12,11 @@
         return Math.random().toString(16).slice(2);
     }
 
+    OO.VisualEditorTools.prototype.createIdForMoleculeTemplates = function(formula, smiles) {
+        let restIds = this.getRestIds(formula);
+        return smiles + restIds.join('');
+    }
+
     OO.VisualEditorTools.prototype.getNumberOfMoleculeRests = function (formula) {
         let m = formula.matchAll(/RGROUPS=/g);
         let i = 0;

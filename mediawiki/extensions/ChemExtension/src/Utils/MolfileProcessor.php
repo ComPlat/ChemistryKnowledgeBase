@@ -48,4 +48,21 @@ class MolfileProcessor
         }
         return implode("\n", $result);
     }
+
+    public static function getRestIds($formula) {
+
+        preg_match_all('/RGROUPS=\((\d+)\s*(\d+)/', $formula, $matches);
+
+        $restIds = [];
+        if (!isset($matches[2])) {
+            return [];
+        }
+        foreach($matches[2] as $m) {
+            if (!in_array("r$m", $restIds)) {
+                $restIds[] = "r$m";
+            }
+        }
+        sort($restIds);
+        return $restIds;
+    }
 }

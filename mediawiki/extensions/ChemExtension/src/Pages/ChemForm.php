@@ -2,11 +2,12 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\Utils\MolfileProcessor;
+
 class ChemForm
 {
 
     private $databaseId;
-    private $chemFormId;
     private $molOrRxn;
     private $isReaction;
     private $smiles;
@@ -25,10 +26,9 @@ class ChemForm
      * @param $height
      * @param $float
      */
-    public function __construct($chemFormId, $molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float,
+    public function __construct($molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float,
                                 $rests)
     {
-        $this->chemFormId = $chemFormId;
         $this->molOrRxn = $molOrRxn;
         $this->isReaction = $reaction;
         $this->smiles = $smiles;
@@ -62,7 +62,12 @@ class ChemForm
      */
     public function getChemFormId()
     {
-        return $this->chemFormId;
+        if (is_null($this->getInchiKey()) || $this->getInchiKey() === '') {
+            $chemFormId = $this->getSmiles() . implode(MolfileProcessor::getRestIds($this->getMolOrRxn()));
+        } else {
+            $chemFormId = $this->getInchiKey();
+        }
+        return $chemFormId;
     }
 
 
@@ -155,8 +160,7 @@ class ChemForm
 
     public function __toString()
     {
-        return "{$this->databaseId} ({$this->chemFormId} {$this->smiles}, {$this->width}, {$this->height},"
-            . " {$this->float}): {$this->molOrRxn} | {$this->rests}";
+        return print_r($this, true);
     }
 
 

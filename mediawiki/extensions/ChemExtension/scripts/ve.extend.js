@@ -9,7 +9,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         let tools = new OO.VisualEditorTools();
 
         var chemForm = panel.originalMwData.body.extsrc;
-        var id = panel.originalMwData.attrs.id;
+
         var button = new OO.ui.ButtonWidget({
             label: 'Open Ketcher'
         });
@@ -17,7 +17,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
                 formula: chemForm,
-                id: id,
                 node: panel.selectedNode
             });
         });
@@ -31,7 +30,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rests', {
-                id: id,
                 attrs: panel.originalMwData.attrs,
                 numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm),
                 restIds: tools.getRestIds(chemForm),

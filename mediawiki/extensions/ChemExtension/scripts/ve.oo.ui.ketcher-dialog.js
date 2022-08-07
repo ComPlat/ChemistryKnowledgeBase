@@ -17,11 +17,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             svgBlob.text().then(function (imgData) {
                 ketcher.getSmiles().then(function (smiles) {
 
-                    let id = node.element.attributes.mw.attrs.id;
-                    if (id == '') {
-                        node.element.attributes.mw.attrs.id = tools.newID();
+                    let id;
+                    if (tools.getNumberOfMoleculeRests(formula) > 0) {
+                        id = tools.createIdForMoleculeTemplates(formula, smiles);
+                    } else {
+                        id = inchikey;
                     }
-                    tools.uploadImage(inchikey ? inchikey : id, btoa(imgData), function () {
+                    tools.uploadImage(id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
                         let restIds = tools.getRestIds(formula);
                         tools.removeAllNonExistingRests(node.element.attributes.mw.attrs, restIds);
@@ -108,7 +110,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
     ve.ui.KetcherDialog.prototype.setup = function (data) {
 
-        this.iframe.setData(data.formula, data.id);
+        this.iframe.setData(data.formula);
         this.selectedNode = data.node;
         return ve.ui.KetcherDialog.super.prototype.setup.call(this, data);
     };

@@ -27,7 +27,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                     mw: {
                                         name: 'chemform',
                                         attrs: {
-                                            'id': '',
                                             'smiles': '',
                                             'isReaction': '',
                                             'inchi': '',

@@ -30,16 +30,13 @@
      */
     OO.ui.KetcherWidget.static.tagName = 'iframe';
 
-    OO.ui.KetcherWidget.prototype.setData = function(formula, id) {
+    OO.ui.KetcherWidget.prototype.setData = function(formula) {
 
         let scriptPath = mw.config.get('wgScriptPath');
         let path = scriptPath + "/extensions/ChemExtension/ketcher";
 
-        this.id = id;
         this.$element.attr("formula", formula);
-        this.$element.attr("id", id);
-
-        this.$element.attr("src", path + "/index-editor.html?id="+id+"&random="+Math.random());
+        this.$element.attr("src", path + "/index-editor.html?random="+Math.random());
 
     }
 

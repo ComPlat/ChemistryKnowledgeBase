@@ -14,6 +14,13 @@ use User;
 
 class WikiTools {
 
+    public static function isInVisualEditor()
+    {
+        global $wgRequest;
+        return (strpos($wgRequest->getText('title'), '/v3/page/html/') !== false
+            || strpos($wgRequest->getText('title'), '/v3/transform/wikitext/to/html/') !== false);
+    }
+
     public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null) {
 
 

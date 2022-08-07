@@ -47,3 +47,12 @@ table#molecule-rest td {
 span#new-molecule {
     margin-top: 10px;
 }
+
+div.ce-show-rests-container {
+    width: 600px;
+}
+
+span.ce-show-rests-button {
+    font-size: smaller;
+    cursor: pointer;
+}

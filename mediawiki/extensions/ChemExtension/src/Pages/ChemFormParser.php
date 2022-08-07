@@ -19,7 +19,6 @@ class ChemFormParser
         for ($i = 0; $i < count($formulas); $i++) {
             $attributes = $this->parseAttributes($attributeStrings[$i]);
             $results[] = new ChemForm(
-                $attributes['id'],
                 $formulas[$i],
                 $attributes['isReaction'],
                 $attributes['smiles'],
@@ -28,12 +27,12 @@ class ChemFormParser
                 $attributes['width'],
                 $attributes['height'],
                 $attributes['float'],
-                $this->parseRests($attributes));
+                self::parseRests($attributes));
         }
         return $results;
     }
 
-    private function parseRests(array $attributes) : array {
+    public static function parseRests(array $attributes) : array {
         $result = [];
         for($i = 1; $i < self::MAX_RESTS; $i++) {
             if (!array_key_exists("r$i", $attributes)) {

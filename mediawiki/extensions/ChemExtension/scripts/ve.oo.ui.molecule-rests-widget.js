@@ -28,9 +28,8 @@
      */
     OO.ui.MoleculeRestsWidget.static.tagName = 'div';
 
-    OO.ui.MoleculeRestsWidget.prototype.setData = function(attrs, id, numberOfMoleculeRests, restIds) {
+    OO.ui.MoleculeRestsWidget.prototype.setData = function(attrs, numberOfMoleculeRests, restIds) {
 
-        this.id = id;
         this.restIds = restIds;
         this.moleculeRestTable = this.readRestsAsAttributes(attrs);
         this.numberOfMoleculeRests = numberOfMoleculeRests;
@@ -86,10 +85,10 @@
         row.append(firstColumn);
         for(let i = 0; i < this.restIds.length; i++) {
             let column = $('<td>');
-            let textWidget = new ve.ui.WhitespacePreservingTextInputWidget( {
-                autosize: true,
-                valueAndWhitespace: line ? line[i] : ''
+            let textWidget = new OO.ui.RGroupsLookupTextInputWidget( {
+                value: line ? line[i] : ''
             } );
+
             column.append(textWidget.$element);
             row.append(column);
         }
@@ -140,8 +139,8 @@
         $('tr.molecule-rest', this.table).each(function(i, row) {
             let rowEl = $(row);
             let columns = [];
-            $('textarea[aria-hidden!="true"]', rowEl).each(function(j, textarea) {
-                columns.push($(textarea).val());
+            $('input', rowEl).each(function(j, input) {
+                columns.push($(input).val());
             });
             rows.push(columns);
         });
