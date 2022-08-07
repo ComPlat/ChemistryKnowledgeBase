@@ -152,7 +152,7 @@ class ChemForm
     public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey)
     {
         $isReaction = strpos(trim($molOrRxn), '$RXN') === 0;
-        return new ChemForm($inchikey, $molOrRxn, $isReaction,
+        return new ChemForm($molOrRxn, $isReaction,
             '', $inchi, $inchikey, 200, 200, 'none', null);
 
 

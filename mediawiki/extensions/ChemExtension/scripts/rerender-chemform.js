@@ -8,7 +8,7 @@
       let rerenderButton = OO.ui.infuse(button);
       let inchikey = rerenderButton.data.inchikey;
       let formula = rerenderButton.data.formula;
-      button.click(function() {
+      $('#render-formula-button').click(function() {
           let tools = new OO.VisualEditorTools();
           let ketcher = tools.getKetcher();
 

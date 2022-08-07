@@ -15,6 +15,7 @@ use OOUI\Tag;
 use Parser;
 use Philo\Blade\Blade;
 use PPFrame;
+use OutputPage;
 
 class RenderFormula {
 
