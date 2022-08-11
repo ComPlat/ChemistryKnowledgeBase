@@ -3,7 +3,7 @@ namespace DIQA\ChemExtension\MoleculeRestBuilder;
 
 class MoleculeRestServiceClientMock implements MoleculeRestServiceClient {
 
-    function buildMolecules($molfile, $moleculeRests)
+    function buildMolecules(string $molfile, array $moleculeRests)
     {
         $molfile = <<<MOLFILE
 
@@ -33,9 +33,14 @@ M  END
 
 MOLFILE;
         $o = new \stdClass();
-        $molecule = new \stdClass();
-        $molecule->molfile = $molfile;
-        $o->molecules = [$molecule];
+
+        $o->molecules = [];
+        for($i = 0; $i < count($moleculeRests); $i++) {
+            $molecule = new \stdClass();
+            $molecule->rests = $moleculeRests[$i];
+            $molecule->molfile = $molfile;
+            $o->molecules[] = $molecule;
+        }
         return $o;
     }
 }

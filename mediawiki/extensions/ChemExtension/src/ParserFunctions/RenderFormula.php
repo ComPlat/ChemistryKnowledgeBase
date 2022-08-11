@@ -16,6 +16,7 @@ use Parser;
 use Philo\Blade\Blade;
 use PPFrame;
 use OutputPage;
+use Title;
 
 class RenderFormula {
 
@@ -42,7 +43,7 @@ class RenderFormula {
         );
         $chemFormRepo = new ChemFormRepository($dbr);
         $chemFormId = self::generateUniqueId($formula, $arguments);
-        $attributes['chemFormId'] = $chemFormRepo->getChemFormId($chemFormId);
+        $attributes['chemFormId'] = $chemFormRepo->getChemFormId($chemFormId) + ChemFormRepository::BASE_ID;
 
         $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$chemFormId");
 
@@ -72,7 +73,7 @@ class RenderFormula {
                 $output .= self::getRenderButton($chemFormId, $formula);
             } else {
                 if (count(MolfileProcessor::getRestIds($formula)) > 0) {
-                    $output .= self::getRestTable($chemFormId, $formula, $arguments);
+                    $output .= self::getRestTable($arguments);
                 }
                 $output .= "<iframe $serializedAttributes></iframe>";
             }
@@ -88,10 +89,7 @@ class RenderFormula {
         $chemFormRepo = new ChemFormRepository($dbr);
 
         global $wgTitle;
-        if (is_null($wgTitle) || (
-                $wgTitle->getNamespace() !== NS_MOLECULE
-                && $wgTitle->getNamespace() !== NS_REACTION
-            )) {
+        if (!self::isMoleculeOrReaction($wgTitle)) {
             return false;
         }
         return is_null($chemFormRepo->getChemFormImage($chemFormId));
@@ -132,8 +130,13 @@ class RenderFormula {
 
     }
 
-    private static function getRestTable($chemFormId, $formula, $arguments): string
+    private static function getRestTable($arguments): string
     {
+        global $wgTitle;
+        if (self::isMoleculeOrReaction($wgTitle)) {
+            return '';
+        }
+
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
@@ -175,5 +178,17 @@ class RenderFormula {
 
         }
         return $key;
+    }
+
+    /**
+     * @param \Title $wgTitle
+     * @return bool
+     */
+    private static function isMoleculeOrReaction(?Title $wgTitle): bool
+    {
+        return !is_null($wgTitle) && (
+                $wgTitle->getNamespace() === NS_MOLECULE
+                || $wgTitle->getNamespace() === NS_REACTION
+            );
     }
 }

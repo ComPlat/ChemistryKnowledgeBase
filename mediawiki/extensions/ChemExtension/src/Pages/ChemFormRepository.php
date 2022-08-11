@@ -2,13 +2,12 @@
 namespace DIQA\ChemExtension\Pages;
 
 use IMaintainableDatabase;
-use MediaWiki\MediaWikiServices;
-use User;
+use Title;
 
 
 class ChemFormRepository {
 
-    const BASE_ID = 100000;
+    public const BASE_ID = 100000;
 
      private $db;
 
@@ -34,15 +33,26 @@ class ChemFormRepository {
                      
                         img_data MEDIUMBLOB NOT NULL
                     )  ENGINE=INNODB;');
-        return [ 'chem_form', 'chem_form_img' ];
+
+        $this->db->query('CREATE TABLE IF NOT EXISTS molecule_collection (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        publication_id INT(10) UNSIGNED NOT NULL,
+                        molecule_collection_id INT(10) UNSIGNED NOT NULL,
+                        molecule_id INT NOT NULL,
+                        rests MEDIUMTEXT NOT NULL
+                    )  ENGINE=INNODB;');
+        $this->db->query('CREATE INDEX molecule_collection_id_index ON molecule_collection (molecule_collection_id);');
+        $this->db->query('CREATE INDEX publication_id_index ON molecule_collection (publication_id);');
+        return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
     }
 
     public function dropTables()
     {
         $this->db->query('DROP TABLE IF EXISTS chem_form;');
         $this->db->query('DROP TABLE IF EXISTS chem_form_img;');
+        $this->db->query('DROP TABLE IF EXISTS molecule_collection;');
 
-        return [ 'chem_form', 'chem_form_img' ];
+        return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
     }
 
     public function addChemForm($chemFormKey): int
@@ -61,7 +71,7 @@ class ChemFormRepository {
             $id = $this->db->insertId();
         }
         $this->db->endAtomic( __METHOD__ );
-        return self::BASE_ID + $id;
+        return $id;
     }
 
     public function getChemFormId($chemFormKey)
@@ -70,7 +80,7 @@ class ChemFormRepository {
             ['chem_form_key' => $chemFormKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
-            return self::BASE_ID + $row->id;
+            return $row->id;
         }
         return null;
     }
@@ -115,5 +125,41 @@ class ChemFormRepository {
             return $row->img_data;
         }
         return null;
+    }
+
+    public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, $moleculeId, $rests) {
+        $this->db->insert('molecule_collection',
+            [
+                'publication_id' => $publicationPage->getArticleID(),
+                'molecule_collection_id' => $moleculeCollectionPage->getArticleID(),
+                'molecule_id' => $moleculeId,
+                'rests' => json_encode($rests),
+
+            ]);
+    }
+
+    public function deleteAllConcreteMolecule(Title $publicationPage) {
+        $this->db->delete('molecule_collection',
+            [
+                'publication_id' => $publicationPage->getArticleID(),
+            ]);
+    }
+
+    public function getConcreteMolecules(Title $moleculeCollectionPage): array
+    {
+        $results = [];
+        $res = $this->db->select('molecule_collection', ['publication_id', 'molecule_id', 'rests'],
+            ['molecule_collection_id' => $moleculeCollectionPage->getArticleID() ]);
+        foreach ( $res as $row ) {
+            $results[] =
+                [
+                    'publication_id' => $row->publication_id,
+                    'molecule_id' => $row->molecule_id,
+                    'rests' => $row->rests,
+
+                ];
+
+        }
+        return $results;
     }
 }

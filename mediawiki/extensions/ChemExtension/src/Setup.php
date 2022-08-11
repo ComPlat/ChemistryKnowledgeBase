@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
+use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use OutputPage;
 use Skin;
 use Parser;
@@ -61,6 +62,7 @@ class Setup {
     public static function onParserFirstCallInit( Parser $parser ) {
         $parser->setHook( 'chemform', [ RenderFormula::class, 'renderFormula' ] );
         $parser->setFunctionHook( 'literature', [ RenderLiterature::class, 'renderLiterature' ] );
+        $parser->setFunctionHook( 'showMoleculeCollection', [ ShowMoleculeCollection::class, 'renderMoleculeCollectionTable' ] );
     }
 
     private static function outputLiteratureReferences(OutputPage $out): void {

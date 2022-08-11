@@ -15,4 +15,12 @@ class ArrayTools {
         return $result;
     }
 
+    public static function propertiesToArray($obj) {
+        $result = [];
+        foreach($obj as $property => $value) {
+            $result[$property] = $value;
+        }
+        return $result;
+    }
+
 }

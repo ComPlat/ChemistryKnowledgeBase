@@ -11,6 +11,7 @@ $magicWords = [];
  */
 $magicWords['en'] = [
     'literature' => [ 0, 'literature' ],
+    'showMoleculeCollection' => [ 0, 'showMoleculeCollection' ],
 ];
 
 $magicWords['de'] = $magicWords['en'];

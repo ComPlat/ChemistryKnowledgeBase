@@ -27,10 +27,11 @@ class PageCreator
         $id = $chemFormRepository->addChemForm($key);
         $chemForm->setDatabaseId($id);
 
+        $idWithBase = $id + ChemFormRepository::BASE_ID;
         if ($chemForm->isReaction()) {
-            $title = Title::newFromText("Reaction:Reaction_$id");
+            $title = Title::newFromText("Reaction:Reaction_$idWithBase");
         } else {
-            $title = Title::newFromText("Molecule:Molecule_$id");
+            $title = Title::newFromText("Molecule:Molecule_$idWithBase");
         }
         if ($title->exists()) {
             // TODO: temporarily save always for debugging
@@ -44,7 +45,7 @@ class PageCreator
         if (!$successful) {
             throw new Exception("Could not create molecule/reaction page");
         }
-        $this->addJobsIfNecessary($chemForm, $title);
+
 
         return $title;
     }
@@ -94,39 +95,7 @@ class PageCreator
         if (count($chemForm->getRests()) === 0) {
             return '';
         }
-        $restHeaders = array_map(function($e) { return strtoupper($e); }, array_keys($chemForm->getRests()));
-        sort($restHeaders);
-        $table = <<<WIKITEXT
-{| class="wikitable" 
-|-
-WIKITEXT;
-        $table .= "\n! Molecule !! " . implode(" !! ", $restHeaders);
-        $table .= "\n|-";
-        $rows = ArrayTools::transpose($chemForm->getRests());
-        foreach($rows as $row) {
-            ksort($row);
-            $table .= "\n| [[Molecule]] || " . implode(" || ", array_values($row));
-            $table .= "\n|-";
-        }
-        $table .= "\n|-";
-        $table .= "\n|}";
-        return $table;
+        return "\n{{#showMoleculeCollection: }}";
     }
 
-
-    /**
-     * @param ChemForm $chemForm
-     * @param Title|null $title
-     */
-    private function addJobsIfNecessary(ChemForm $chemForm, ?Title $title): void
-    {
-        if (count($chemForm->getRests()) === 0) {
-            return;
-        }
-        $jobParams = [];
-        $jobParams['formula'] = $chemForm->getMolOrRxn();
-        $jobParams['rests'] = $chemForm->getRests();
-        $job = new MoleculesImportJob($title, $jobParams);
-        //JobQueueGroup::singleton()->push($job);
-    }
 }
