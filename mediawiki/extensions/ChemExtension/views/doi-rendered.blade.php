@@ -1,5 +1,9 @@
-<div id="literature_{{$index}}" class="chem_ext_literature"><span>[{{$index}}] </span><span
-            class="chem-extension-literature-title">{!! $title !!}.</span>
+<div id="literature_{{$index}}" class="chem_ext_literature"><span>[{{$index}}] </span>
+    <a target="_blank" href="{{$wgScriptPath}}/Special:Literature?doi={{$doi}}">
+        <span
+            class="chem-extension-literature-title">{!! $title !!}.
+        </span>
+    </a>
     @foreach($authors as $author)
         <span class="chem-extension-literature-small">{{$author}}, </span>
     @endforeach

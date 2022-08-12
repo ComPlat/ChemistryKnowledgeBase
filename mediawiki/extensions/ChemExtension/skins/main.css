@@ -61,3 +61,15 @@ span.ce-show-rests-button {
     width: 50% !important;
     height: 50% !important;
 }
+
+.ce-literature-table {
+    width: 100%;
+}
+
+.ce-literature-table td:nth-child(1){
+    width: 200px;
+}
+
+#submit-doi {
+    margin-top: 10px;
+}

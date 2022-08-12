@@ -19,6 +19,7 @@ class DOIRenderer {
         $journal = $doiData->{"container-title"} ?? "";
         $volume = $doiData->volume ?? "";
         $pages = $doiData->page ?? "";
+        global $wgScriptPath;
 
         $html = $blade->view ()->make ( "doi-rendered",
             [
@@ -29,7 +30,8 @@ class DOIRenderer {
                 'volume' => $volume,
                 'pages' => $pages,
                 'year' => $year,
-                'doi' => $doiData->DOI
+                'doi' => $doiData->DOI,
+                'wgScriptPath' => $wgScriptPath,
             ]
         )->render ();
 

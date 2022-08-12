@@ -14,7 +14,7 @@
     },
     "callback" : "DIQA\\ChemExtension\\Setup::initModules",
     "SpecialPages": {
-        "KetcherEditor": "DIQA\\ChemExtension\\SpecialKetcherEditor",
+        "Literature": "DIQA\\ChemExtension\\Literature\\SpecialLiterature",
         "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage"
     },
     "AutoloadNamespaces": {

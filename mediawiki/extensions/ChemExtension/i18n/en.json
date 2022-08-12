@@ -5,7 +5,11 @@
 		]
 	},
 	"ketchereditor": "Ketcher-Editor",
+	"literature": "Literature",
 	"specialuploadtochemscanner": "Upload To Chemscanner",
 	"ce-upload-to-chemscanner": "Upload",
-	"ce-choose-file" : "Choose a file to upload to ChemScanner"
+	"ce-choose-file" : "Choose a file to upload to ChemScanner",
+	"submit-doi": "Resolve DOI",
+	"doi-hint": "Enter DOI...",
+	"enter-doi": "Digital object identifier (DOI) is required"
 }
