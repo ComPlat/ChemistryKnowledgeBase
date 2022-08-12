@@ -60,6 +60,10 @@ ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function ( data ) {
 			var key, attributeInput, field,
 				attributes = this.selectedNode.getAttribute( 'mw' ).attrs;
 
+			// Patch: KK to extend tag edit panel
+			if (ve.ui.MWAlienExtensionInspectorExtension) {
+				ve.ui.MWAlienExtensionInspectorExtension.extend(this);
+			}
 			if ( attributes && !ve.isEmptyObject( attributes ) ) {
 				for ( key in attributes ) {
 					attributeInput = new OO.ui.TextInputWidget( {
@@ -75,10 +79,6 @@ ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function ( data ) {
 						}
 					);
 					this.$attributes.append( field.$element );
-				}
-				// Patch: KK to extend tag edit panel
-				if (ve.ui.MWAlienExtensionInspectorExtension) {
-					ve.ui.MWAlienExtensionInspectorExtension.extend(this);
 				}
 			}
 

@@ -4,16 +4,16 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js b/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js
---- a/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js	(revision 89d015a015ca31868daaa6fff6f189a8eb8a0033)
-+++ b/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js	(date 1652456281070)
-@@ -76,6 +76,10 @@
- 					);
- 					this.$attributes.append( field.$element );
- 				}
-+				// Patch: KK to extend tag edit panel
-+				if (ve.ui.MWAlienExtensionInspectorExtension) {
-+					ve.ui.MWAlienExtensionInspectorExtension.extend(this);
-+				}
- 			}
- 
- 			this.title.setLabel( this.selectedNode.getExtensionName() );
+--- a/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js	(revision 1a2ec45b6ccacb87caf49058f93dd105def2afd4)
++++ b/mediawiki/extensions/VisualEditor/modules/ve-mw/ui/inspectors/ve.ui.MWAlienExtensionInspector.js	(date 1660290113317)
+@@ -60,6 +60,10 @@
+ 			var key, attributeInput, field,
+ 				attributes = this.selectedNode.getAttribute( 'mw' ).attrs;
+
++			// Patch: KK to extend tag edit panel
++			if (ve.ui.MWAlienExtensionInspectorExtension) {
++				ve.ui.MWAlienExtensionInspectorExtension.extend(this);
++			}
+ 			if ( attributes && !ve.isEmptyObject( attributes ) ) {
+ 				for ( key in attributes ) {
+ 					attributeInput = new OO.ui.TextInputWidget( {

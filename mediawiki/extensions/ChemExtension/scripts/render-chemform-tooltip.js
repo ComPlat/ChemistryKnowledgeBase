@@ -14,6 +14,9 @@
                     renderFormula(iframe, tooltip);
 
                 }
+            },
+            position: {
+                at: 'top right'
             }
         });
 

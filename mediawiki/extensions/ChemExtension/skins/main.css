@@ -56,3 +56,8 @@ span.ce-show-rests-button {
     font-size: smaller;
     cursor: pointer;
 }
+
+.chemformula-tooltip img {
+    width: 50% !important;
+    height: 50% !important;
+}
