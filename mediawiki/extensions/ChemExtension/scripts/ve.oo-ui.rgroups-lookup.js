@@ -24,15 +24,20 @@ OO.mixinClass( OO.ui.RGroupsLookupTextInputWidget, OO.ui.mixin.LookupElement );
 OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupRequest = function () {
     var
         value = this.getValue(),
-        deferred = $.Deferred();
+        deferred = $.Deferred(),
+        handle;
 
     this.getValidity().then( function () {
-        // Resolve with results after a faked delay
+
         let valueLower = value.toLowerCase();
-        let result = $.grep(window.ChemExtension.RGroups, function(e) {
-            return e.data.indexOf(valueLower) > -1;
-        });
-        deferred.resolve( result );
+        if (handle) clearTimeout(handle);
+        handle = setTimeout(function() {
+            let result = $.grep(window.ChemExtension.RGroups, function(e) {
+                return e.data.indexOf(valueLower) > -1;
+            });
+            deferred.resolve( result );
+        }, 300);
+
     }, function () {
         // No results when the input contains invalid content
         deferred.resolve( [] );
