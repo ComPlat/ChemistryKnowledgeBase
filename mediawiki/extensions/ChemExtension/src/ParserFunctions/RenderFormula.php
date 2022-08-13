@@ -72,10 +72,10 @@ class RenderFormula {
             if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
                 $output .= self::getRenderButton($chemFormId, $formula);
             } else {
-                if (count(MolfileProcessor::getRestIds($formula)) > 0) {
-                    $output .= self::getRestTable($arguments);
-                }
                 $output .= "<iframe $serializedAttributes></iframe>";
+                if (count(MolfileProcessor::getRestIds($formula)) > 0) {
+                    $output .= self::getRestTable($formula, $arguments);
+                }
             }
 
         }
@@ -130,7 +130,7 @@ class RenderFormula {
 
     }
 
-    private static function getRestTable($arguments): string
+    private static function getRestTable($formula, $arguments): string
     {
         global $wgTitle;
         if (self::isMoleculeOrReaction($wgTitle)) {
@@ -141,12 +141,23 @@ class RenderFormula {
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
 
+        $id = self::generateUniqueId($formula, $arguments);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $chemFormRepo = new ChemFormRepository($dbr);
+        $concreteMolecules = $chemFormRepo->getConcreteMoleculesByKey($id);
+
         $restsAsColumns = ChemFormParser::parseRests($arguments);
-        $restsAsRows = ArrayTools::transpose($restsAsColumns);
+
+        $moleculesToDisplay = [];
+        foreach($concreteMolecules as $m) {
+            $moleculesToDisplay['moleculePage'] = Title::newFromID($m['molecule_page_id']);
+            $moleculesToDisplay['rests'] = ArrayTools::propertiesToArray($m['rests']);
+        }
+
         return $blade->view ()->make ( "show-rests",
             [
                 'headers' => array_keys($restsAsColumns),
-                'rests' => $restsAsRows,
+                'moleculesToDisplay' => $moleculesToDisplay,
             ]
         )->render ();
 

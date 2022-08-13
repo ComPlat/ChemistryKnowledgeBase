@@ -36,13 +36,14 @@ class ChemFormRepository {
 
         $this->db->query('CREATE TABLE IF NOT EXISTS molecule_collection (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        publication_id INT(10) UNSIGNED NOT NULL,
-                        molecule_collection_id INT(10) UNSIGNED NOT NULL,
-                        molecule_id INT NOT NULL,
+                        publication_page_id INT(10) UNSIGNED NOT NULL,
+                        molecule_collection_page_id INT(10) UNSIGNED NOT NULL,
+                        molecule_page_id INT NOT NULL,
+                        molecule_collection_id INT NOT NULL,
                         rests MEDIUMTEXT NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('CREATE INDEX molecule_collection_id_index ON molecule_collection (molecule_collection_id);');
-        $this->db->query('CREATE INDEX publication_id_index ON molecule_collection (publication_id);');
+        $this->db->query('CREATE INDEX molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
+        $this->db->query('CREATE INDEX publication_page_id_index ON molecule_collection (publication_page_id);');
         return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
     }
 
@@ -127,12 +128,13 @@ class ChemFormRepository {
         return null;
     }
 
-    public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, $moleculeId, $rests) {
+    public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, Title $moleculePage, $moleculeCollectionId, $rests) {
         $this->db->insert('molecule_collection',
             [
-                'publication_id' => $publicationPage->getArticleID(),
-                'molecule_collection_id' => $moleculeCollectionPage->getArticleID(),
-                'molecule_id' => $moleculeId,
+                'publication_page_id' => $publicationPage->getArticleID(),
+                'molecule_collection_page_id' => $moleculeCollectionPage->getArticleID(),
+                'molecule_page_id' => $moleculePage->getArticleID(),
+                'molecule_collection_id' => $moleculeCollectionId,
                 'rests' => json_encode($rests),
 
             ]);
@@ -141,21 +143,43 @@ class ChemFormRepository {
     public function deleteAllConcreteMolecule(Title $publicationPage) {
         $this->db->delete('molecule_collection',
             [
-                'publication_id' => $publicationPage->getArticleID(),
+                'publication_page_id' => $publicationPage->getArticleID(),
             ]);
     }
 
     public function getConcreteMolecules(Title $moleculeCollectionPage): array
     {
         $results = [];
-        $res = $this->db->select('molecule_collection', ['publication_id', 'molecule_id', 'rests'],
-            ['molecule_collection_id' => $moleculeCollectionPage->getArticleID() ]);
+        $res = $this->db->select('molecule_collection', ['publication_page_id', 'molecule_page_id', 'rests'],
+            ['molecule_collection_page_id' => $moleculeCollectionPage->getArticleID() ]);
         foreach ( $res as $row ) {
             $results[] =
                 [
-                    'publication_id' => $row->publication_id,
-                    'molecule_id' => $row->molecule_id,
-                    'rests' => $row->rests,
+                    'publication_page_id' => $row->publication_page_id,
+                    'molecule_page_id' => $row->molecule_page_id,
+                    'rests' => json_decode($row->rests),
+
+                ];
+
+        }
+        return $results;
+    }
+
+    public function getConcreteMoleculesByKey($key): array
+    {
+        $results = [];
+        $res = $this->db->select(['molecule_collection', 'chem_form'],
+            ['publication_page_id', 'molecule_page_id', 'rests'],
+            [
+                'chem_form_key' => $key,
+                'chem_form.id = molecule_collection.molecule_collection_id'
+            ]);
+        foreach ( $res as $row ) {
+            $results[] =
+                [
+                    'publication_page_id' => $row->publication_page_id,
+                    'molecule_page_id' => $row->molecule_page_id,
+                    'rests' => json_decode($row->rests),
 
                 ];
 

@@ -5,10 +5,10 @@
         $('span.ce-show-rests-button').click(function (e) {
             let span = $(e.target);
             $('div.ce-show-table', span.parent()).toggle();
-            if (span.text() == '[Hide rests]') {
-                span.text('[Show rests]')
+            if (span.text() == '[Hide R-Groups]') {
+                span.text('[Show R-Groups]')
             } else {
-                span.text('[Hide rests]')
+                span.text('[Hide R-Groups]')
             }
         });
 

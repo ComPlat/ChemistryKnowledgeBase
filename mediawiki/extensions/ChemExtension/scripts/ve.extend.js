@@ -24,7 +24,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         panel.$attributes.append(button.$element);
 
         button = new OO.ui.ButtonWidget({
-            label: 'Define rests',
+            label: 'Define R-Groups',
             disabled: tools.getNumberOfMoleculeRests(chemForm) === 0
         });
 

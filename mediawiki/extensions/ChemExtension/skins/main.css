@@ -50,6 +50,9 @@ span#new-molecule {
 
 div.ce-show-rests-container {
     width: 600px;
+    margin-top: -20px;
+    margin-bottom: 10px;
+    font-size: small;
 }
 
 span.ce-show-rests-button {
@@ -68,6 +71,7 @@ span.ce-show-rests-button {
 
 .ce-literature-table td:nth-child(1){
     width: 200px;
+    vertical-align: top;
 }
 
 #submit-doi {

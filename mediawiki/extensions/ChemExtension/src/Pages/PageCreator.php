@@ -58,7 +58,7 @@ class PageCreator
     {
         $pageContent = $this->getTemplate($chemForm);
         if (!is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0) {
-            $pageContent .= "\n\n==Molecule rests==";
+            $pageContent .= "\n\n==R-Groups==";
             $pageContent .= "\n" . $this->getRestsTable($chemForm);
         }
         return $pageContent;

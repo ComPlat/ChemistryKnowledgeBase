@@ -57,7 +57,7 @@ class MoleculesImportJob extends Job
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
                         . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getChemFormId()}");
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
-                        $title->getArticleID(), $molecule->rests);
+                        $title, $collection['chemForm']->getDatabaseId(), $molecule->rests);
 
                 }
             } catch (Exception $e) {
