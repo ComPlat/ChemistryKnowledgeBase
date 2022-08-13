@@ -148,7 +148,7 @@ class RenderFormula
         $id = self::generateUniqueId($formula, $arguments);
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $chemFormRepo = new ChemFormRepository($dbr);
-        $concreteMolecules = $chemFormRepo->getConcreteMoleculesByKey($id);
+        $concreteMolecules = $chemFormRepo->getConcreteMoleculesByKey($id, $wgTitle);
 
         $restsAsColumns = ChemFormParser::parseRests($arguments);
 
