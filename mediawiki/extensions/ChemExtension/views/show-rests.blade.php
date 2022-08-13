@@ -1,4 +1,4 @@
-<div class="ce-show-rests-container"><span class="ce-show-rests-button">[Show R-Groups]</span>
+<div class="ce-show-rests-container" style="float:{{$arguments['float']}};"><span class="ce-show-rests-button">[Show R-Groups]</span>
     <div class="ce-show-table" style="display: none;">
         <table width="100%">
             @if(count($moleculesToDisplay) === 0)

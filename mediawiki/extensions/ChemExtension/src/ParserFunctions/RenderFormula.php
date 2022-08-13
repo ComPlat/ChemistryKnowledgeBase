@@ -18,7 +18,8 @@ use PPFrame;
 use OutputPage;
 use Title;
 
-class RenderFormula {
+class RenderFormula
+{
 
 
     public static function renderFormula($formula, array $arguments, Parser $parser, PPFrame $frame): array
@@ -68,23 +69,24 @@ class RenderFormula {
         $output = '';
         if (WikiTools::isInVisualEditor()) {
             $output .= "<iframe $serializedAttributes></iframe>";
-        } else {
-            if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
-                $output .= self::getRenderButton($chemFormId, $formula);
-            } else {
-                $output .= "<div>";
-                $output .= "<iframe $serializedAttributes></iframe>";
-                if (count(MolfileProcessor::getRestIds($formula)) > 0) {
-                    $output .= self::getRestTable($formula, $arguments);
-                }
-                $output .= "</div>";
+        } elseif (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
+            $output .= self::getRenderButton($chemFormId, $formula);
+        } elseif (count(MolfileProcessor::getRestIds($formula)) > 0) {
+            $output .= "<div style='width:{$arguments['width']};float:{$arguments['float']};'>";
+            $output .= "<iframe $serializedAttributes></iframe>";
+            if (count(MolfileProcessor::getRestIds($formula)) > 0) {
+                $output .= self::getRestTable($formula, $arguments);
             }
-
+            $output .= "</div>";
+        } else {
+            $output .= "<iframe $serializedAttributes></iframe>";
         }
+
         return $output;
     }
 
-    private static function isOnMoleculePageAndImageDoesNotExist($chemFormId) {
+    private static function isOnMoleculePageAndImageDoesNotExist($chemFormId)
+    {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
         );
@@ -121,7 +123,7 @@ class RenderFormula {
             'id' => 'render-formula-button',
             'label' => 'render',
             'flags' => ['primary', 'progressive'],
-            'data' => [ 'inchikey' => $chemFormId, 'formula' => $formula ],
+            'data' => ['inchikey' => $chemFormId, 'formula' => $formula],
             'infusable' => true
         ]);
 
@@ -151,23 +153,25 @@ class RenderFormula {
         $restsAsColumns = ChemFormParser::parseRests($arguments);
 
         $moleculesToDisplay = [];
-        foreach($concreteMolecules as $m) {
+        foreach ($concreteMolecules as $m) {
             $moleculesToDisplay[] = [
                 'moleculePage' => Title::newFromID($m['molecule_page_id']),
                 'rests' => ArrayTools::propertiesToArray($m['rests'])
             ];
         }
 
-        return $blade->view ()->make ( "show-rests",
+        return $blade->view()->make("show-rests",
             [
                 'headers' => array_keys($restsAsColumns),
                 'moleculesToDisplay' => $moleculesToDisplay,
+                'arguments' => $arguments,
             ]
-        )->render ();
+        )->render();
 
     }
 
-    private static function outputKetcher(): void {
+    private static function outputKetcher(): void
+    {
         global $wgScriptPath, $wgOut;
         $random = uniqid();
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-editor.html?random=$random";
