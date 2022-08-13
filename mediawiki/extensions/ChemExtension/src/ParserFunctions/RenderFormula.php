@@ -67,14 +67,12 @@ class RenderFormula
     {
 
         $output = '';
-        if (WikiTools::isInVisualEditor()) {
-            $output .= "<iframe $serializedAttributes></iframe>";
-        } elseif (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
+        if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
             $output .= self::getRenderButton($chemFormId, $formula);
         } elseif (count(MolfileProcessor::getRestIds($formula)) > 0) {
             $output .= "<div style='width:{$arguments['width']};float:{$arguments['float']};'>";
             $output .= "<iframe $serializedAttributes></iframe>";
-            if (count(MolfileProcessor::getRestIds($formula)) > 0) {
+            if (count(MolfileProcessor::getRestIds($formula)) > 0 && !WikiTools::isInVisualEditor()) {
                 $output .= self::getRestTable($formula, $arguments);
             }
             $output .= "</div>";
