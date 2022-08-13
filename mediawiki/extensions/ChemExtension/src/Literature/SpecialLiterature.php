@@ -75,7 +75,7 @@ class SpecialLiterature extends SpecialPage {
         $html = $this->blade->view ()->make ( "doi-special-literature",
             [
                 'doi' => $data->DOI,
-                'title' => $data->title,
+                'title' => strip_tags($data->title,"<sub><sup><b><i>"),
                 'authors' => $this->formatAuthors($data->author),
                 'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
                 'publishedOnlineAt' => $this->parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),

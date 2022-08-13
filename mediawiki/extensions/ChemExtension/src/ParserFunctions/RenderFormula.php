@@ -72,10 +72,12 @@ class RenderFormula {
             if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
                 $output .= self::getRenderButton($chemFormId, $formula);
             } else {
+                $output .= "<div>";
                 $output .= "<iframe $serializedAttributes></iframe>";
                 if (count(MolfileProcessor::getRestIds($formula)) > 0) {
                     $output .= self::getRestTable($formula, $arguments);
                 }
+                $output .= "</div>";
             }
 
         }

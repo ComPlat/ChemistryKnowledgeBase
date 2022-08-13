@@ -5,7 +5,7 @@
     </tr>
     <tr>
         <td>Title</td>
-        <td>{{$title}}</td>
+        <td>{!! $title !!}</td>
     </tr>
     <tr>
         <td>Authors</td>
