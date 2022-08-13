@@ -31,9 +31,9 @@ class RenderFormula
         $attributes['width'] = $arguments['width'] ?? "300px";
         $attributes['height'] = $arguments['height'] ?? "200px";
         $float = $arguments['float'] ?? 'none';
-        if ($float !== 'none') {
-            $attributes['style'] = "float: $float;";
-        }
+
+        $attributes['style'] = "float: $float;";
+
 
         $attributes['smiles'] = base64_encode($arguments['smiles'] ?? '');
         $attributes['formula'] = base64_encode($formula);
@@ -67,7 +67,9 @@ class RenderFormula
     {
 
         $output = '';
-        if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
+        if (WikiTools::isInVisualEditor()) {
+            $output .= "<iframe $serializedAttributes></iframe>";
+        } elseif (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
             $output .= self::getRenderButton($chemFormId, $formula);
         } elseif (count(MolfileProcessor::getRestIds($formula)) > 0) {
             $output .= "<div style='width:{$arguments['width']};float:{$arguments['float']};'>";
