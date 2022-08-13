@@ -13,8 +13,8 @@
             @foreach($moleculesToDisplay as $row)
                 <tr>
 
-                    <td><a target="_blank" href="{{$moleculesToDisplay['moleculePage']->getFullURL()}}">{{$moleculesToDisplay['moleculePage']->getText()}}</a></td>
-                    @foreach($moleculesToDisplay['rests'] as $column => $value)
+                    <td><a target="_blank" href="{{$row['moleculePage']->getFullURL()}}">{{$row['moleculePage']->getText()}}</a></td>
+                    @foreach($row['rests'] as $column => $value)
                         <td>{{$value}}</td>
                     @endforeach
                 </tr>

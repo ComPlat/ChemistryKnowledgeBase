@@ -150,8 +150,10 @@ class RenderFormula {
 
         $moleculesToDisplay = [];
         foreach($concreteMolecules as $m) {
-            $moleculesToDisplay['moleculePage'] = Title::newFromID($m['molecule_page_id']);
-            $moleculesToDisplay['rests'] = ArrayTools::propertiesToArray($m['rests']);
+            $moleculesToDisplay[] = [
+                'moleculePage' => Title::newFromID($m['molecule_page_id']),
+                'rests' => ArrayTools::propertiesToArray($m['rests'])
+            ];
         }
 
         return $blade->view ()->make ( "show-rests",
