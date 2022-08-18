@@ -32,6 +32,8 @@ class Setup {
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-rests-widget.js',
                 $baseScript . '/ve.oo.ui.molecule-rests-dialog.js',
+                $baseScript . '/oo.ui.rgroups-display-widget.js',
+                $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/rerender-chemform.js',
                 $baseScript . '/show-rests.js',
 

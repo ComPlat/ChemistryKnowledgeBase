@@ -5,6 +5,7 @@ window.onload = function (e) {
     let downloadURL = decodeURIComponent(window.frameElement.getAttribute("downloadurl"));
 
     render();
+    addRGroupsButtonListener();
 
     function render() {
 
@@ -32,6 +33,29 @@ window.onload = function (e) {
         });
 
 
+    }
+
+    function addRGroupsButtonListener() {
+        let rGroupsBtn = document.getElementById("show_rgroups");
+        if (rGroupsBtn == null) {
+            return;
+        }
+        rGroupsBtn.addEventListener('click', function (event) {
+            let inchiKey = getParameterByName('inchikey');
+            let publicationpageid = getParameterByName('publicationpageid');
+
+
+            var myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
+                size: 'large'
+            } );
+
+            let windowManager = new window.parent.OO.ui.WindowManager();
+            window.parent.document.body.append( windowManager.$element['0']);
+
+            windowManager.addWindows( [ myDialog ] );
+            windowManager.openWindow( myDialog, {inchiKey: inchiKey, publicationpageid: publicationpageid} );
+
+        });
     }
 
 }

@@ -24,7 +24,7 @@ class RenderFormula
 
     public static function renderFormula($formula, array $arguments, Parser $parser, PPFrame $frame): array
     {
-        global $wgScriptPath;
+        global $wgScriptPath, $wgTitle;
         $attributes = [];
 
         $attributes['class'] = "chemformula";
@@ -43,22 +43,25 @@ class RenderFormula
             DB_REPLICA
         );
         $chemFormRepo = new ChemFormRepository($dbr);
-        $chemFormId = self::generateUniqueId($formula, $arguments);
-        $attributes['chemFormId'] = $chemFormRepo->getChemFormId($chemFormId) + ChemFormRepository::BASE_ID;
+        $inchiKey = self::generateUniqueId($formula, $arguments);
+        $moleculeId = $chemFormRepo->getChemFormId($inchiKey);
+        $attributes['chemFormId'] = $moleculeId + ChemFormRepository::BASE_ID;
 
-        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$chemFormId");
+        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$inchiKey");
 
         $queryString = http_build_query([
             'width' => $attributes['width'],
             'height' => $attributes['height'],
             'chemformid' => $attributes['chemFormId'],
             'isreaction' => $attributes['isreaction'],
+            'inchikey' => $inchiKey,
+            'publicationpageid' => $wgTitle->getArticleID(),
             'random' => uniqid()
         ]);
         global $wgScriptPath;
         $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
         $serializedAttributes = self::serializeAttributes($attributes);
-        $output = self::renderFormulaInContext($chemFormId, $formula, $arguments, $serializedAttributes);
+        $output = self::renderFormulaInContext($inchiKey, $formula, $arguments, $serializedAttributes);
 
         return array($output, 'noparse' => true, 'isHTML' => true);
     }
@@ -67,17 +70,8 @@ class RenderFormula
     {
 
         $output = '';
-        if (WikiTools::isInVisualEditor()) {
-            $output .= "<iframe $serializedAttributes></iframe>";
-        } elseif (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
+        if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
             $output .= self::getRenderButton($chemFormId, $formula);
-        } elseif (count(MolfileProcessor::getRestIds($formula)) > 0) {
-            $output .= "<div style='width:{$arguments['width']};float:{$arguments['float']};'>";
-            $output .= "<iframe $serializedAttributes></iframe>";
-            if (count(MolfileProcessor::getRestIds($formula)) > 0 && !WikiTools::isInVisualEditor()) {
-                $output .= self::getRestTable($formula, $arguments);
-            }
-            $output .= "</div>";
         } else {
             $output .= "<iframe $serializedAttributes></iframe>";
         }

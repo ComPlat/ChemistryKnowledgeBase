@@ -53,6 +53,11 @@
             "path": "/ChemExtension/v1/chemform",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetChemFormImage"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/rgroups",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetRGroups"
         }
     ],
     "JobClasses": {

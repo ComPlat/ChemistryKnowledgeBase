@@ -3,7 +3,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     if (!mw.messages.exists('ve-MoleculeRestsDialog-title')) {
         mw.messages.set({
-            've-MoleculeRestsDialog-title': 'Molecule rests',
+            've-MoleculeRestsDialog-title': 'R-Groups',
 
         });
     }

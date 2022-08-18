@@ -18,9 +18,12 @@
 }</script>
 <div style="height:82%" id="image"></div>
 
+    <div>
+    <span style="text-align: left; font-weight: bold; cursor: pointer;" id="show_rgroups">[Show R-Groups]</span>
 <a href="#" onclick="window.parent.ChemExtension.navigate(getParameterByName('chemformid'), getParameterByName('isreaction'));">
-    <p style="text-align: center; font-weight: bold" id="caption"></p>
+    <span style="text-align: right; font-weight: bold" id="caption"></span>
 </a>
+    </div>
 
 <script>
     let height = parseInt(getParameterByName('height')) - 60;
