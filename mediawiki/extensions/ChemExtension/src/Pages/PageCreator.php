@@ -16,7 +16,7 @@ class PageCreator
     /**
      * @throws Exception
      */
-    public function createNewMoleculePage(ChemForm $chemForm): ?Title
+    public function createNewMoleculePage(ChemForm $chemForm, ?Title $parent = null): ?Title
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_MASTER
@@ -38,7 +38,7 @@ class PageCreator
             //return $title;
         }
 
-        $pageContent = $this->getPageContent($chemForm);
+        $pageContent = $this->getPageContent($chemForm, $parent);
 
         $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated",
             $title->exists() ? EDIT_UPDATE : EDIT_NEW);
@@ -54,9 +54,9 @@ class PageCreator
      * @param ChemForm $chemForm
      * @return string
      */
-    private function getPageContent(ChemForm $chemForm): string
+    private function getPageContent(ChemForm $chemForm, ?Title $parent = null): string
     {
-        $pageContent = $this->getTemplate($chemForm);
+        $pageContent = $this->getTemplate($chemForm, $parent);
         if (!is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0) {
             $pageContent .= "\n\n==R-Groups==";
             $pageContent .= "\n" . $this->getRestsTable($chemForm);
@@ -68,8 +68,9 @@ class PageCreator
      * @param ChemForm $chemForm
      * @return string
      */
-    private function getTemplate(ChemForm $chemForm): string
+    private function getTemplate(ChemForm $chemForm, ?Title $parent = null): string
     {
+
         if ($chemForm->isReaction()) {
             $template = "ChemicalReaction";
         } else {
@@ -87,11 +88,16 @@ class PageCreator
         $isReaction = $chemForm->isReaction() ? "true" : "false";
         $pageContent .= "\n|isreaction={$isReaction}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";
+        $hasRGroups = !is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0 ? 'true' : '';
+        $pageContent .= "\n|iscollection=$hasRGroups";
+        $parentArticle = !is_null($parent) ? $parent->getPrefixedText() : '';
+        $pageContent .= "\n|parent={$parentArticle}";
         $pageContent .= "\n}}";
         return $pageContent;
     }
 
-    private function getRestsTable($chemForm) {
+    private function getRestsTable($chemForm)
+    {
         if (count($chemForm->getRests()) === 0) {
             return '';
         }

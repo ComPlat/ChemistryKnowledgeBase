@@ -49,13 +49,16 @@ class RenderFormula
 
         $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$inchiKey");
 
+        $hasRGroups = count(MolfileProcessor::getRestIds($formula)) > 0;
+        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
+
         $queryString = http_build_query([
             'width' => $attributes['width'],
             'height' => $attributes['height'],
             'chemformid' => $attributes['chemFormId'],
             'isreaction' => $attributes['isreaction'],
             'inchikey' => $inchiKey,
-            'publicationpageid' => $wgTitle->getArticleID(),
+            'pageid' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
             'random' => uniqid()
         ]);
         global $wgScriptPath;

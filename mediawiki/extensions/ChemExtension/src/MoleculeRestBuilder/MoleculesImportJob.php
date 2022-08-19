@@ -53,7 +53,7 @@ class MoleculesImportJob extends Job
                     $inchi = $this->getInchi($molecule->molfile);
                     $chemForm = ChemForm::fromMolOrRxn($molecule->molfile, $inchi['InChI'], $inchi['InChIKey']);
 
-                    $title = $pageCreator->createNewMoleculePage($chemForm);
+                    $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
                         . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getChemFormId()}");
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],

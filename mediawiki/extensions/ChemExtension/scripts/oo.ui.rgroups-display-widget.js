@@ -31,13 +31,13 @@
     OO.ui.RGroupsDisplayWidget.prototype.setData = function (data) {
 
         let inchiKey = data.inchiKey;
-        let publicationpageid = data.publicationpageid;
+        let pageid = data.pageid;
 
         this.content = new OO.ui.PanelLayout({padded: true, expanded: false});
         this.content.$element.append('<p>Press Escape key to ' +
             'close.</p>');
 
-        this.getRGroups(inchiKey, publicationpageid, this.addTable.bind(this));
+        this.getRGroups(inchiKey, pageid, this.addTable.bind(this));
 
     }
 
@@ -45,9 +45,9 @@
         return this.content.$element.outerHeight(true);
     };
 
-    OO.ui.RGroupsDisplayWidget.prototype.getRGroups = function (key, publicationpageid, callback) {
+    OO.ui.RGroupsDisplayWidget.prototype.getRGroups = function (key, pageid, callback) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/rgroups?key=" + key + "&publicationpageid=" + publicationpageid;
+        let url = baseUrl + "/v1/chemform/rgroups?key=" + key + "&pageid=" + pageid;
 
         return $.ajax({
             method: "GET",

@@ -3,6 +3,7 @@ window.onload = function (e) {
     let chemFormId = window.frameElement.getAttribute("chemFormId");
     let isReaction = window.frameElement.getAttribute("isreaction") == 'true';
     let downloadURL = decodeURIComponent(window.frameElement.getAttribute("downloadurl"));
+    let showrgroups = window.frameElement.getAttribute("showrgroups") == 'true';
 
     render();
     addRGroupsButtonListener();
@@ -36,13 +37,14 @@ window.onload = function (e) {
     }
 
     function addRGroupsButtonListener() {
-        let rGroupsBtn = document.getElementById("show_rgroups");
-        if (rGroupsBtn == null) {
+        if (!showrgroups) {
             return;
         }
+        let rGroupsBtn = document.getElementById("show_rgroups");
+        rGroupsBtn.append("[Show RGroups]");
         rGroupsBtn.addEventListener('click', function (event) {
             let inchiKey = getParameterByName('inchikey');
-            let publicationpageid = getParameterByName('publicationpageid');
+            let pageid = getParameterByName('pageid');
 
 
             var myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
@@ -53,7 +55,7 @@ window.onload = function (e) {
             window.parent.document.body.append( windowManager.$element['0']);
 
             windowManager.addWindows( [ myDialog ] );
-            windowManager.openWindow( myDialog, {inchiKey: inchiKey, publicationpageid: publicationpageid} );
+            windowManager.openWindow( myDialog, {inchiKey: inchiKey, pageid: pageid} );
 
         });
     }
