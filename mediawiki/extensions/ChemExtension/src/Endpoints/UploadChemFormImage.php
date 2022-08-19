@@ -18,7 +18,7 @@ class UploadChemFormImage extends SimpleHandler {
             DB_REPLICA
         );
         $chemFormRepo = new ChemFormRepository($dbr);
-        return $chemFormRepo->addChemFormImage($params['id'], $params['imgData']);
+        return $chemFormRepo->addChemFormImage($params['moleculeKey'], $params['imgData']);
 
     }
 
@@ -28,7 +28,7 @@ class UploadChemFormImage extends SimpleHandler {
 
     public function getParamSettings() {
         return [
-            'id' => [
+            'moleculeKey' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,

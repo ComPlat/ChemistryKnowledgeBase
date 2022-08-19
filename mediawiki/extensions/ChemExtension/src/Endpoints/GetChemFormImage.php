@@ -19,7 +19,7 @@ class GetChemFormImage extends SimpleHandler {
         );
 
         $chemFormRepo = new ChemFormRepository($dbr);
-        $inchikey = $params['id'];
+        $inchikey = $params['moleculeKey'];
         $chemFormImage64 = $chemFormRepo->getChemFormImage($inchikey);
         if (is_null($chemFormImage64)) {
             $res = new Response("chemical formula does not exist: $inchikey");
@@ -39,7 +39,7 @@ class GetChemFormImage extends SimpleHandler {
 
     public function getParamSettings() {
         return [
-            'id' => [
+            'moleculeKey' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,

@@ -43,11 +43,11 @@ class RenderFormula
             DB_REPLICA
         );
         $chemFormRepo = new ChemFormRepository($dbr);
-        $inchiKey = self::generateUniqueId($formula, $arguments);
-        $moleculeId = $chemFormRepo->getChemFormId($inchiKey);
-        $attributes['chemFormId'] = $moleculeId + ChemFormRepository::BASE_ID;
+        $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'], $arguments['inchikey']);
+        $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
+        $attributes['chemFormId'] = $chemFormId + ChemFormRepository::BASE_ID;
 
-        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?id=$inchiKey");
+        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=$moleculeKey");
 
         $hasRGroups = count(MolfileProcessor::getRestIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
@@ -57,14 +57,14 @@ class RenderFormula
             'height' => $attributes['height'],
             'chemformid' => $attributes['chemFormId'],
             'isreaction' => $attributes['isreaction'],
-            'inchikey' => $inchiKey,
+            'moleculekey' => $moleculeKey,
             'pageid' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
             'random' => uniqid()
         ]);
         global $wgScriptPath;
         $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
         $serializedAttributes = self::serializeAttributes($attributes);
-        $output = self::renderFormulaInContext($inchiKey, $formula, $arguments, $serializedAttributes);
+        $output = self::renderFormulaInContext($moleculeKey, $formula, $arguments, $serializedAttributes);
 
         return array($output, 'noparse' => true, 'isHTML' => true);
     }
@@ -131,42 +131,6 @@ class RenderFormula
 
     }
 
-    private static function getRestTable($formula, $arguments): string
-    {
-        global $wgTitle;
-        if (self::isMoleculeOrReaction($wgTitle)) {
-            return '';
-        }
-
-        $views = __DIR__ . '/../../views';
-        $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
-
-        $id = self::generateUniqueId($formula, $arguments);
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
-        $chemFormRepo = new ChemFormRepository($dbr);
-        $concreteMolecules = $chemFormRepo->getConcreteMoleculesByKey($id, $wgTitle);
-
-        $restsAsColumns = ChemFormParser::parseRests($arguments);
-
-        $moleculesToDisplay = [];
-        foreach ($concreteMolecules as $m) {
-            $moleculesToDisplay[] = [
-                'moleculePage' => Title::newFromID($m['molecule_page_id']),
-                'rests' => ArrayTools::propertiesToArray($m['rests'])
-            ];
-        }
-
-        return $blade->view()->make("show-rests",
-            [
-                'headers' => array_keys($restsAsColumns),
-                'moleculesToDisplay' => $moleculesToDisplay,
-                'arguments' => $arguments,
-            ]
-        )->render();
-
-    }
-
     private static function outputKetcher(): void
     {
         global $wgScriptPath, $wgOut;
@@ -174,26 +138,6 @@ class RenderFormula
         $path = "$wgScriptPath/extensions/ChemExtension/ketcher/index-editor.html?random=$random";
         $output = sprintf('<iframe style="display: none;" id="ketcher-renderer" src="%s"></iframe>', $path);
         $wgOut->addHTML($output);
-    }
-
-    /**
-     * Returns the unique ID for a molecule.
-     * For a concrete molecule this is always the inchiKey. For a molecule template this is
-     * the smiles string + the rests in sorted order
-     *
-     * @param string $formula
-     * @param array $arguments
-     * @return mixed|string
-     */
-    private static function generateUniqueId(string $formula, array $arguments)
-    {
-        $key = $arguments['inchikey'];
-        if (is_null($key) || $key === '') {
-
-            $key = $arguments['smiles'] . implode('', MolfileProcessor::getRestIds($formula));
-
-        }
-        return $key;
     }
 
     /**

@@ -165,13 +165,13 @@ class ChemFormRepository {
         return $results;
     }
 
-    public function getConcreteMoleculesByKey($key, Title $publicationPage): array
+    public function getConcreteMoleculesByKey($moleculeKey, Title $publicationPage): array
     {
         $results = [];
         $res = $this->db->select(['molecule_collection', 'chem_form'],
             ['publication_page_id', 'molecule_page_id', 'rests'],
             [
-                'chem_form_key' => $key,
+                'chem_form_key' => $moleculeKey,
                 'publication_page_id' => $publicationPage->getArticleID(),
                 'chem_form.id = molecule_collection.molecule_collection_id'
             ]);

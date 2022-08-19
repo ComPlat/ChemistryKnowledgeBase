@@ -30,14 +30,14 @@
 
     OO.ui.RGroupsDisplayWidget.prototype.setData = function (data) {
 
-        let inchiKey = data.inchiKey;
+        let moleculeKey = data.moleculeKey;
         let pageid = data.pageid;
 
         this.content = new OO.ui.PanelLayout({padded: true, expanded: false});
         this.content.$element.append('<p>Press Escape key to ' +
             'close.</p>');
 
-        this.getRGroups(inchiKey, pageid, this.addTable.bind(this));
+        this.getRGroups(moleculeKey, pageid, this.addTable.bind(this));
 
     }
 
@@ -47,7 +47,7 @@
 
     OO.ui.RGroupsDisplayWidget.prototype.getRGroups = function (key, pageid, callback) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/rgroups?key=" + key + "&pageid=" + pageid;
+        let url = baseUrl + "/v1/chemform/rgroups?moleculekey=" + key + "&pageid=" + pageid;
 
         return $.ajax({
             method: "GET",

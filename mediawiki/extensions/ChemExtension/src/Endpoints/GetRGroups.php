@@ -13,12 +13,12 @@ class GetRGroups extends SimpleHandler {
 
         $params = $this->getValidatedParams();
 
-        $key = $params['key'];
-        $pageid = $params['pageid'];
+        $moleculeKey = $params['moleculekey'];
+        $pageId = $params['pageid'];
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $chemFormRepo = new ChemFormRepository($dbr);
 
-        $result = $chemFormRepo->getConcreteMoleculesByKey($key, Title::newFromId($pageid));
+        $result = $chemFormRepo->getConcreteMoleculesByKey($moleculeKey, Title::newFromId($pageId));
         return array_map(function($row) {
             $moleculePage = Title::newFromID($row['molecule_page_id']);
             return  [
@@ -38,7 +38,7 @@ class GetRGroups extends SimpleHandler {
     public function getParamSettings() {
         return [
 
-            'key' => [
+            'moleculekey' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,

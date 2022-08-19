@@ -55,7 +55,7 @@ class MoleculesImportJob extends Job
 
                     $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
-                        . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getChemFormId()}");
+                        . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getMoleculeKey()}");
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
                         $title, $collection['chemForm']->getDatabaseId(), $molecule->rests);
 

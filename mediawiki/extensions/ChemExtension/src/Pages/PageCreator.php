@@ -23,7 +23,7 @@ class PageCreator
         );
 
         $chemFormRepository = new ChemFormRepository($dbr);
-        $key = $chemForm->getChemFormId();
+        $key = $chemForm->getMoleculeKey();
         $id = $chemFormRepository->addChemForm($key);
         $chemForm->setDatabaseId($id);
 
@@ -78,7 +78,7 @@ class PageCreator
         }
         $pageContent = "{{" . $template;
         $pageContent .= "\n|databaseId={$chemForm->getDatabaseId()}";
-        $pageContent .= "\n|chemFormId={$chemForm->getChemFormId()}";
+        $pageContent .= "\n|chemFormId={$chemForm->getMoleculeKey()}";
         $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
         $pageContent .= "\n|smiles={$chemForm->getSmiles()}";
         $pageContent .= "\n|inchi={$chemForm->getInchi()}";

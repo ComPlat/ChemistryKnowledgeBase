@@ -60,14 +60,9 @@ class ChemForm
     /**
      * @return mixed
      */
-    public function getChemFormId()
+    public function getMoleculeKey()
     {
-        if (is_null($this->getInchiKey()) || $this->getInchiKey() === '') {
-            $chemFormId = $this->getSmiles() . implode(MolfileProcessor::getRestIds($this->getMolOrRxn()));
-        } else {
-            $chemFormId = $this->getInchiKey();
-        }
-        return $chemFormId;
+        return MolfileProcessor::generateMoleculeKey($this->molOrRxn, $this->smiles, $this->inchiKey);
     }
 
 

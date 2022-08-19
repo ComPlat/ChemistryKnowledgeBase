@@ -43,7 +43,7 @@ window.onload = function (e) {
         let rGroupsBtn = document.getElementById("show_rgroups");
         rGroupsBtn.append("[Show RGroups]");
         rGroupsBtn.addEventListener('click', function (event) {
-            let inchiKey = getParameterByName('inchikey');
+            let moleculeKey = getParameterByName('moleculekey');
             let pageid = getParameterByName('pageid');
 
 
@@ -55,7 +55,7 @@ window.onload = function (e) {
             window.parent.document.body.append( windowManager.$element['0']);
 
             windowManager.addWindows( [ myDialog ] );
-            windowManager.openWindow( myDialog, {inchiKey: inchiKey, pageid: pageid} );
+            windowManager.openWindow( myDialog, {moleculeKey: moleculeKey, pageid: pageid} );
 
         });
     }

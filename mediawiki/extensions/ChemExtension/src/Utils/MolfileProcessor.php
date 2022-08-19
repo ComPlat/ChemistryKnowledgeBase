@@ -65,4 +65,22 @@ class MolfileProcessor
         sort($restIds);
         return $restIds;
     }
+
+    /**
+     * Returns the unique ID for a molecule.
+     * For a concrete molecule this is always the inchiKey. For a molecule template this is
+     * the smiles string + the rests in sorted order
+     *
+     * @param $formula molfile or RXN
+     * @param $smiles smiles
+     * @param $inchiKey inchiKey
+     * @return mixed|string
+     */
+    public static function generateMoleculeKey($formula, $smiles, $inchiKey) {
+        $key = $inchiKey;
+        if (is_null($inchiKey) || $inchiKey === '') {
+            $key = $smiles . implode('', MolfileProcessor::getRestIds($formula));
+        }
+        return $key;
+    }
 }

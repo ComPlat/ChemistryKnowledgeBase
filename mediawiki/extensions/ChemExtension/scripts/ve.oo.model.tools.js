@@ -62,9 +62,9 @@
 
     }
 
-    OO.VisualEditorTools.prototype.uploadImage = function (id, imgData, callback) {
+    OO.VisualEditorTools.prototype.uploadImage = function (moleculeKey, imgData, callback) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/upload?id=" + id;
+        let url = baseUrl + "/v1/chemform/upload?moleculeKey=" + moleculeKey;
 
         return $.ajax({
             method: "POST",
