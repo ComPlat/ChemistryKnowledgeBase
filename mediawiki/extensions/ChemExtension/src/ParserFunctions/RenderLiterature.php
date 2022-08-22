@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\Literature\DOIResolver;
+use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
@@ -44,17 +45,18 @@ class RenderLiterature {
             $output = $e->getMessage();
             return [$output, 'noparse' => true, 'isHTML' => true];
         }
+
         if (!array_key_exists($doi, self::$LITERATURE_REFS)) {
             self::$LITERATURE_REF_COUNTER++;
-            self::$LITERATURE_REFS[$doi] = ['data' => $doiData, 'index' => self::$LITERATURE_REF_COUNTER];
+            self::$LITERATURE_REFS[$doi] = ['data' => $doiData ];
         }
 
         $doiRenderer = new DOIRenderer();
 
         if (WikiTools::isInVisualEditor()) {
-            $output = "<span>[" . self::$LITERATURE_REFS[$doi]['index'] . "]</span>";
+            $output = "<span>[" . DOITools::generateReferenceIndex($doiData) . "]</span>";
         } else {
-            $output = $doiRenderer->renderReference(self::$LITERATURE_REFS[$doi]['index']);
+            $output = $doiRenderer->renderReference($doiData);
 
         }
         return [$output, 'noparse' => true, 'isHTML' => true];

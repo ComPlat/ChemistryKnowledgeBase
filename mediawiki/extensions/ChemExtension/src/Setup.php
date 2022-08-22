@@ -74,7 +74,7 @@ class Setup {
         $out->addHTML("<h2>Literature</h2>");
         $doiRenderer = new DOIRenderer();
         foreach (RenderLiterature::$LITERATURE_REFS as $l) {
-            $output = $doiRenderer->render($l['data'], $l['index']);
+            $output = $doiRenderer->render($l['data']);
             $out->addHTML($output);
         }
     }

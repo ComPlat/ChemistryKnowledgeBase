@@ -6,7 +6,7 @@ use Philo\Blade\Blade;
 
 class DOIRenderer {
 
-    public function render($doiData, $index) {
+    public function render($doiData) {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
@@ -23,7 +23,7 @@ class DOIRenderer {
 
         $html = $blade->view ()->make ( "doi-rendered",
             [
-                'index' => $index,
+                'index' => DOITools::generateReferenceIndex($doiData),
                 'title'  => strip_tags($doiData->title,"<sub><sup><b><i>"),
                 'authors' => $authors,
                 'journal' => $journal,
@@ -38,14 +38,14 @@ class DOIRenderer {
         return str_replace("\n", "", $html);
     }
 
-    public function renderReference($index) {
+    public function renderReference($doiData) {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
 
         $html = $blade->view ()->make ( "doi-reference",
             [
-                'index' => $index,
+                'index' => DOITools::generateReferenceIndex($doiData),
             ]
         )->render ();
 
