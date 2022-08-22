@@ -47,7 +47,7 @@
 
     OO.ui.RGroupsDisplayWidget.prototype.getRGroups = function (key, pageid, callback) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/rgroups?moleculekey=" + key + "&pageid=" + pageid;
+        let url = baseUrl + "/v1/chemform/rgroups?moleculekey=" + encodeURIComponent(key) + "&pageid=" + pageid;
 
         return $.ajax({
             method: "GET",
