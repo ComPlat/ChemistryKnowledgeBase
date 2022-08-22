@@ -41,7 +41,7 @@ window.onload = function (e) {
             return;
         }
         let rGroupsBtn = document.getElementById("show_rgroups");
-        rGroupsBtn.append("[Show RGroups]");
+        rGroupsBtn.append("[Show R-Groups]");
         rGroupsBtn.addEventListener('click', function (event) {
             let moleculeKey = getParameterByName('moleculekey');
             let pageid = getParameterByName('pageid');
