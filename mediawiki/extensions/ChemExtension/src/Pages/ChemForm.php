@@ -82,6 +82,10 @@ class ChemForm
         return $this->isReaction === '1';
     }
 
+    public function hasRGroupDefinitions() {
+        return !is_null($this->getRests()) && count($this->getRests()) > 0;
+    }
+
     /**
      * @return mixed
      */

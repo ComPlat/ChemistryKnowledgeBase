@@ -19,16 +19,24 @@ class GetRGroups extends SimpleHandler {
         $chemFormRepo = new ChemFormRepository($dbr);
 
         $result = $chemFormRepo->getConcreteMoleculesByKey($moleculeKey, Title::newFromId($pageId));
-        return array_map(function($row) {
+        return array_map(function($row) use ($chemFormRepo) {
             $moleculePage = Title::newFromID($row['molecule_page_id']);
+            $chemFormId = $this->getChemFormIdFromTitle($moleculePage);
+            $moleculeKey = $chemFormRepo->getMoleculeKey($chemFormId);
             return  [
                 'publication_page_id' => $row['publication_page_id'],
                 'molecule_page_name' => $moleculePage->getText(),
                 'molecule_page_url' => $moleculePage->getFullURL(),
+                'moleculeKey' => $moleculeKey,
                 'rests' => $row['rests'],
 
             ];
         }, $result);
+    }
+
+    private function getChemFormIdFromTitle(Title $title) {
+        preg_match('/\d+/', $title->getDBkey(), $matches);
+        return $matches[0] - ChemFormRepository::BASE_ID;
     }
 
     public function needsWriteAccess() {

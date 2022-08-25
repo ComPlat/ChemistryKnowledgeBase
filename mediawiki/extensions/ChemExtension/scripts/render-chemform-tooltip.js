@@ -11,7 +11,8 @@
                     // Grab the tooltip element from the API
                     let tooltip = api.elements.tooltip;
                     let iframe = api.elements.target;
-                    renderFormula(iframe, tooltip);
+                    let downloadURL = decodeURIComponent(iframe.attr('downloadurl'));
+                    renderFormula(downloadURL, tooltip);
 
                 }
             },
@@ -22,14 +23,13 @@
 
     }
 
-    window.ChemExtension.navigate = function(id, isreaction) {
+    window.ChemExtension.navigate = function(pageDbkey) {
         let namespace = mw.config.get('wgCanonicalNamespace');
         if (namespace == "Reaction" || namespace == "Molecule") {
             return;
         }
 
-        let namespaceName = isreaction == 'true' ? "Reaction" : "Molecule";
-        let url = mw.config.get('wgScriptPath')+"/index.php/"+namespaceName+":"+namespaceName+"_"+id;
+        let url = mw.config.get('wgScriptPath')+"/index.php/"+pageDbkey;
         window.open(url, '_blank').focus();
     }
 
@@ -41,8 +41,7 @@
         window.ChemExtension.initTooltips();
     });
 
-    function renderFormula(iframe, tooltip) {
-        let downloadURL = decodeURIComponent(iframe.attr('downloadurl'));
+    function renderFormula(downloadURL, tooltip) {
         if (downloadURL == '') {
             return;
         }

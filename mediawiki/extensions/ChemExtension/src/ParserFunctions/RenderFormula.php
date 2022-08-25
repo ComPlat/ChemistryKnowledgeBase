@@ -2,20 +2,17 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
-use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Pages\PageCreator;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
-use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FormLayout;
 use OOUI\LabelWidget;
 use OOUI\Tag;
-use Parser;
-use Philo\Blade\Blade;
-use PPFrame;
 use OutputPage;
+use Parser;
+use PPFrame;
 use Title;
 
 class RenderFormula
@@ -52,13 +49,13 @@ class RenderFormula
         $hasRGroups = count(MolfileProcessor::getRestIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
 
+        $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $attributes['isreaction'] === 'true', $formula);
         $queryString = http_build_query([
             'width' => $attributes['width'],
             'height' => $attributes['height'],
-            'chemformid' => $attributes['chemFormId'],
-            'isreaction' => $attributes['isreaction'],
             'moleculekey' => $moleculeKey,
             'pageid' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
+            'chemformpage' => $chemFormPage->getPrefixedDBkey(),
             'random' => uniqid()
         ]);
         global $wgScriptPath;

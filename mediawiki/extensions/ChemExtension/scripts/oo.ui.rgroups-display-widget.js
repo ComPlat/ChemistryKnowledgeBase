@@ -82,11 +82,13 @@
         let headerRow = this.header(restIds);
         table.append(headerRow);
 
+        let that = this;
         $(response).each(function (i, e) {
             let row = $('<tr>');
-            let textWidget = $('<a>').attr('href', e.molecule_page_url).attr('target', '_blank').text(e.molecule_page_name);
+            let linkToMoleculePage = $('<a>').attr('href', e.molecule_page_url).attr('target', '_blank').text(e.molecule_page_name);
+            that.addToolTip(linkToMoleculePage, e.moleculeKey);
             let column = $('<td>');
-            column.append(textWidget);
+            column.append(linkToMoleculePage);
             row.append(column);
             for (let i = 0; i < restIds.length; i++) {
                 let column = $('<td>');
@@ -118,5 +120,42 @@
         }
         return row;
     }
+
+    OO.ui.RGroupsDisplayWidget.prototype.addToolTip = function(div, moleculeKey) {
+        div.qtip({
+            content: "<div></div>",
+            style: { classes: 'chemformula-tooltip' },
+            events: {
+
+                render: function(event, api) {
+                    // Grab the tooltip element from the API
+                    let tooltip = api.elements.tooltip;
+                    let downloadURL = mw.config.get('wgScriptPath') + "/rest.php/ChemExtension/v1/chemform?moleculeKey="+encodeURIComponent(moleculeKey);
+                    fetch(downloadURL).then(r => {
+
+                        if (r.status != 200) {
+                            image.append('Image does not exist. Please re-save in editor.');
+                            return;
+                        }
+                        r.blob().then(function (blob) {
+                            const img = new Image();
+                            img.src = URL.createObjectURL(blob);
+                            img.style.width = "100%";
+                            img.style.height = "95%";
+
+                            tooltip.append(img);
+
+                        });
+
+                    });
+
+                }
+            },
+            position: {
+                at: 'top right'
+            }
+        });
+    }
+
 
 }(OO));

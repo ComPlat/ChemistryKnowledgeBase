@@ -86,6 +86,17 @@ class ChemFormRepository {
         return null;
     }
 
+    public function getMoleculeKey($chemFormId)
+    {
+        $res = $this->db->select('chem_form', ['chem_form_key'],
+            ['id' => $chemFormId ]);
+        if ($res->numRows() > 0) {
+            $row = $res->fetchObject();
+            return $row->chem_form_key;
+        }
+        return null;
+    }
+
     public function addChemFormImage($chemFormKey, $imgData): int
     {
         $this->db->startAtomic( __METHOD__ );

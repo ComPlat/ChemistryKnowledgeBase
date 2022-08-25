@@ -66,6 +66,11 @@ class MolfileProcessor
         return $restIds;
     }
 
+    public static function hasRests($formula) {
+        preg_match_all('/RGROUPS=\((\d+)\s*(\d+)/', $formula, $matches);
+        return count($matches[0]) > 0;
+    }
+
     /**
      * Returns the unique ID for a molecule.
      * For a concrete molecule this is always the inchiKey. For a molecule template this is
