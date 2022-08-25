@@ -1,0 +1,1 @@
+<a target="_blank" href="{{$url}}">{{$label}}</a>

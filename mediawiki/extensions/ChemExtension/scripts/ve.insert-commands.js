@@ -1,4 +1,8 @@
 mw.loader.using('ext.visualEditor.core').then(function () {
+
+// -----------------------------------------------------------------------------------------------------------
+// insert chemical formula command
+// -----------------------------------------------------------------------------------------------------------
         ve.ui.ChemFormCommand = function veUiChemFormCommand(name, action, method, options) {
 
             // Parent constructor
@@ -65,6 +69,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.AddChemForm.static.commandName = 'addChemForm';
         ve.ui.toolFactory.register(ve.ui.AddChemForm);
 
+// -----------------------------------------------------------------------------------------------------------
+// insert Literature command
+// -----------------------------------------------------------------------------------------------------------
 
     ve.ui.AddLiteratureCommand = function veUiAddLiteratureCommand(name, action, method, options) {
 
@@ -128,4 +135,70 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.AddLiterature.static.icon = 'literature';
     ve.ui.AddLiterature.static.commandName = 'addLiterature';
     ve.ui.toolFactory.register(ve.ui.AddLiterature);
+
+// -----------------------------------------------------------------------------------------------------------
+// add molecule link command
+// -----------------------------------------------------------------------------------------------------------
+    ve.ui.AddMoleculeLinkCommand = function veUiAddMoleculeLinkCommand(name, action, method, options) {
+
+        // Parent constructor
+        ve.ui.AddMoleculeLinkCommand.super.call(this, name, action, method, options);
+
+    };
+
+    /* Setup */
+
+    OO.inheritClass(ve.ui.AddMoleculeLinkCommand, ve.ui.Command);
+    ve.ui.commandRegistry.register(
+        new ve.ui.AddMoleculeLinkCommand(
+            // Command name
+            'addMoleculeLink',
+            // Type and name of the action to execute
+            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
+            {
+                // Extra arguments for the action
+                args: [
+                    // Content to insert
+                    [
+                        {
+                            type: 'mwTransclusionInline',
+                            attributes: {
+                                mw: {
+                                    parts:  [
+                                        {
+                                            template: {
+                                                i: 0,
+                                                params: {
+                                                    chemformid: { wt: "" }
+                                                },
+                                                target: { wt: "#moleculelink:", "function": "moleculelink"}
+                                            }
+                                        }
+                                    ]
+                                },
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#moleculelink:","function":"moleculelink"},"params":{"chemformid":{"wt":""}},"i":0}}]}"'
+                            }
+                        }
+
+                    ],
+                    // Annotate content to match surrounding annotations?
+                    true,
+                    // Move cursor to after the new content? (otherwise - select it)
+                    true
+                ],
+                supportedSelections: ['linear']
+            }
+        )
+    );
+
+    ve.ui.AddMoleculeLink = function VeUiAddMoleculeLink() {
+        ve.ui.AddMoleculeLink.super.apply(this, arguments);
+    };
+    OO.inheritClass(ve.ui.AddMoleculeLink, ve.ui.Tool);
+    ve.ui.AddMoleculeLink.static.name = 'addMoleculeLink';
+    ve.ui.AddMoleculeLink.static.group = 'insert';
+    ve.ui.AddMoleculeLink.static.title = 'Molecule Link';
+    ve.ui.AddMoleculeLink.static.icon = 'link';
+    ve.ui.AddMoleculeLink.static.commandName = 'addMoleculeLink';
+    ve.ui.toolFactory.register(ve.ui.AddMoleculeLink);
 });
