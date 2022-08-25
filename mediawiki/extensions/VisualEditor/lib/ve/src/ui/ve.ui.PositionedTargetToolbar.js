@@ -100,7 +100,8 @@ ve.ui.PositionedTargetToolbar.prototype.onWindowResize = function () {
 	if ( this.floating ) {
 		this.$bar.css( {
 			left: this.elementOffset.left,
-			right: this.elementOffset.right
+			right: this.elementOffset.right,
+			top: '50px'
 		} );
 	}
 
@@ -149,7 +150,8 @@ ve.ui.PositionedTargetToolbar.prototype.float = function () {
 			.addClass( 've-ui-toolbar-floating' );
 		this.$bar.css( {
 			left: this.elementOffset.left,
-			right: this.elementOffset.right
+			right: this.elementOffset.right,
+			top: '50px'
 		} );
 		this.floating = true;
 		this.emit( 'resize' );
@@ -166,7 +168,7 @@ ve.ui.PositionedTargetToolbar.prototype.unfloat = function () {
 		this.$element
 			.css( 'height', '' )
 			.removeClass( 've-ui-toolbar-floating' );
-		this.$bar.css( { left: '', right: '' } );
+		this.$bar.css( { left: '', right: '', top: '' } );
 		this.floating = false;
 		this.emit( 'resize' );
 		this.onViewportResize();
