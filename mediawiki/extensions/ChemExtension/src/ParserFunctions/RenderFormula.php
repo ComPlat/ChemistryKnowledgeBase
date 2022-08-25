@@ -41,7 +41,7 @@ class RenderFormula
         );
         $chemFormRepo = new ChemFormRepository($dbr);
         $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'], $arguments['inchikey']);
-        $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
+        $chemFormId = $chemFormRepo->addChemForm($moleculeKey);
         $attributes['chemFormId'] = $chemFormId + ChemFormRepository::BASE_ID;
 
         $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=$moleculeKey");
@@ -55,7 +55,7 @@ class RenderFormula
             'height' => $attributes['height'],
             'moleculekey' => $moleculeKey,
             'pageid' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
-            'chemformpage' => $chemFormPage->getPrefixedDBkey(),
+            'chemformpage' => !is_null($chemFormPage) ? $chemFormPage->getPrefixedDBkey() : '',
             'random' => uniqid()
         ]);
         global $wgScriptPath;
@@ -66,12 +66,12 @@ class RenderFormula
         return array($output, 'noparse' => true, 'isHTML' => true);
     }
 
-    private static function renderFormulaInContext($chemFormId, $formula, $arguments, $serializedAttributes): string
+    private static function renderFormulaInContext($moleculeKey, $formula, $arguments, $serializedAttributes): string
     {
 
         $output = '';
-        if (self::isOnMoleculePageAndImageDoesNotExist($chemFormId)) {
-            $output .= self::getRenderButton($chemFormId, $formula);
+        if (self::isOnMoleculePageAndImageDoesNotExist($moleculeKey)) {
+            $output .= self::getRenderButton($moleculeKey, $formula);
         } else {
             $output .= "<iframe $serializedAttributes></iframe>";
         }
@@ -79,7 +79,7 @@ class RenderFormula
         return $output;
     }
 
-    private static function isOnMoleculePageAndImageDoesNotExist($chemFormId)
+    private static function isOnMoleculePageAndImageDoesNotExist($moleculeKey)
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -90,7 +90,7 @@ class RenderFormula
         if (!self::isMoleculeOrReaction($wgTitle)) {
             return false;
         }
-        return is_null($chemFormRepo->getChemFormImage($chemFormId));
+        return is_null($chemFormRepo->getChemFormImage($moleculeKey));
 
     }
 
