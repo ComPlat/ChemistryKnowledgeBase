@@ -34,7 +34,6 @@ class RenderFormula
 
         $attributes['smiles'] = base64_encode($arguments['smiles'] ?? '');
         $attributes['formula'] = base64_encode($formula);
-        $attributes['isreaction'] = $arguments['isreaction'] == '1' || $arguments['isreaction'] == 'true' ? "true" : "false";
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -49,7 +48,7 @@ class RenderFormula
         $hasRGroups = count(MolfileProcessor::getRestIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
 
-        $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $attributes['isreaction'] === 'true', $formula);
+        $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $formula);
         $attributes['chemFormPageText'] = !is_null($chemFormPage) ? $chemFormPage->getText() : '';
 
         $queryString = http_build_query([

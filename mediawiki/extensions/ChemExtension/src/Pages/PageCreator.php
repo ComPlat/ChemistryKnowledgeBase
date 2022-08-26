@@ -25,7 +25,7 @@ class PageCreator
         $id = $chemFormRepository->addChemForm($key);
         $chemForm->setDatabaseId($id);
 
-        $title = self::getPageTitleToCreate($id, $chemForm->isReaction(), $chemForm->getMolOrRxn());
+        $title = self::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 
         if ($title->exists()) {
             // TODO: temporarily save always for debugging
@@ -79,8 +79,6 @@ class PageCreator
         $pageContent .= "\n|inchikey={$chemForm->getInchiKey()}";
         $pageContent .= "\n|width={$chemForm->getWidth()}";
         $pageContent .= "\n|height={$chemForm->getHeight()}";
-        $isReaction = $chemForm->isReaction() ? "true" : "false";
-        $pageContent .= "\n|isreaction={$isReaction}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";
         $hasRGroups = !is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0 ? 'true' : '';
         $pageContent .= "\n|iscollection=$hasRGroups";
@@ -103,10 +101,10 @@ class PageCreator
      * @param ChemForm $chemForm
      * @return Title|null
      */
-    public static function getPageTitleToCreate(int $id, $isReaction, $formula): ?Title
+    public static function getPageTitleToCreate(int $id, $formula): ?Title
     {
         $idWithBase = $id + ChemFormRepository::BASE_ID;
-        if ($isReaction) {
+        if (MolfileProcessor::isReactionFormula($formula)) {
             $title = Title::newFromText("Reaction:Reaction_$idWithBase");
         } else {
             if (MolfileProcessor::hasRests($formula)) {

@@ -9,7 +9,6 @@
 {{{molOrRxn}}}
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
-|isreaction={{{isreaction}}}
 }}
 {{#if: {{{parent}}} | {{DISPLAYTITLE:{{{smiles}}} }} | }}
 [[Category:Molecule]]

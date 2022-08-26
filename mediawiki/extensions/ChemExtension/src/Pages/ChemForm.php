@@ -9,7 +9,6 @@ class ChemForm
 
     private $databaseId;
     private $molOrRxn;
-    private $isReaction;
     private $smiles;
     private $inchi;
     private $inchiKey;
@@ -26,11 +25,10 @@ class ChemForm
      * @param $height
      * @param $float
      */
-    public function __construct($molOrRxn, $reaction, $smiles, $inchi, $inchiKey, $width, $height, $float,
+    public function __construct($molOrRxn, $smiles, $inchi, $inchiKey, $width, $height, $float,
                                 $rests)
     {
         $this->molOrRxn = $molOrRxn;
-        $this->isReaction = $reaction;
         $this->smiles = $smiles;
         $this->inchi = $inchi;
         $this->inchiKey = $inchiKey;
@@ -79,10 +77,13 @@ class ChemForm
      */
     public function isReaction()
     {
-        return $this->isReaction === '1';
+        return MolfileProcessor::isReactionFormula($this->molOrRxn);
     }
 
-    public function hasRGroupDefinitions() {
+
+
+    public function hasRGroupDefinitions()
+    {
         return !is_null($this->getRests()) && count($this->getRests()) > 0;
     }
 
@@ -150,9 +151,7 @@ class ChemForm
 
     public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey)
     {
-        $isReaction = strpos(trim($molOrRxn), '$RXN') === 0;
-        return new ChemForm($molOrRxn, $isReaction,
-            '', $inchi, $inchikey, 200, 200, 'none', null);
+        return new ChemForm($molOrRxn, '', $inchi, $inchikey, 200, 200, 'none', null);
 
 
     }

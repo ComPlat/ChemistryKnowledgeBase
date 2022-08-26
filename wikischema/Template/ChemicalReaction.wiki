@@ -5,7 +5,6 @@
 {{{molOrRxn}}}
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
-|isreaction={{{isreaction}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Reaction]]

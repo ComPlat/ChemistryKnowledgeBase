@@ -88,4 +88,15 @@ class MolfileProcessor
         }
         return $key;
     }
+
+    /**
+     * Returns true if the formula contains a reaction.
+     *
+     * @param $molOrRxn
+     * @return bool
+     */
+    public static function isReactionFormula($molOrRxn): bool
+    {
+        return strpos(trim(str_replace(["\n", "\r"], "", $molOrRxn)), '$RXN') === 0;
+    }
 }

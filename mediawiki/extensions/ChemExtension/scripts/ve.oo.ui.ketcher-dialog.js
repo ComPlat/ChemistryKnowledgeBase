@@ -18,7 +18,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 ketcher.getSmiles().then(function (smiles) {
 
                     let id;
-                    if (tools.getNumberOfMoleculeRests(formula) > 0) {
+                    if (tools.getNumberOfMoleculeRests(formula) > 0 || ketcher.containsReaction()) {
                         id = tools.createMoleculeKey(formula, smiles);
                     } else {
                         id = inchikey;
@@ -40,7 +40,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         } else {
                             node.element.attributes.mw.attrs.inchikey = '';
                         }
-                        node.element.attributes.mw.attrs.isReaction = ketcher.containsReaction();
                         ve.init.target.getSurface().getModel().getDocument().rebuildTree();
                         ve.init.target.fromEditedState = true;
                         ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
