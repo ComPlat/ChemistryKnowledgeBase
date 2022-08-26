@@ -62,7 +62,7 @@
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
-        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRestBuilder\\MoleculesImportJob"
+        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob"
     },
     "manifest_version": 2
 }

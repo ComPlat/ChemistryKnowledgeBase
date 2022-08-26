@@ -8,11 +8,7 @@
 
     };
 
-    OO.VisualEditorTools.prototype.newID = function () {
-        return Math.random().toString(16).slice(2);
-    }
-
-    OO.VisualEditorTools.prototype.createIdForMoleculeTemplates = function(formula, smiles) {
+    OO.VisualEditorTools.prototype.createMoleculeKey = function(formula, smiles) {
         let restIds = this.getRestIds(formula);
         return smiles + restIds.join('');
     }

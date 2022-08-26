@@ -1,8 +1,8 @@
 <?php
 
-namespace DIQA\ChemExtension\MoleculeRestBuilder;
+namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
-class MoleculeRestServiceClientImpl implements MoleculeRestServiceClient {
+class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
 
     private $moleculeRestServiceUrl;
 

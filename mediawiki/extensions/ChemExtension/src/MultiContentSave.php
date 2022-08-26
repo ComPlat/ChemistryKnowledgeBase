@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension;
 
 use CommentStoreComment;
-use DIQA\ChemExtension\MoleculeRestBuilder\MoleculesImportJob;
+use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\PageCreator;

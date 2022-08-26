@@ -19,7 +19,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
                     let id;
                     if (tools.getNumberOfMoleculeRests(formula) > 0) {
-                        id = tools.createIdForMoleculeTemplates(formula, smiles);
+                        id = tools.createMoleculeKey(formula, smiles);
                     } else {
                         id = inchikey;
                     }

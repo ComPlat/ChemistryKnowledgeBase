@@ -36,7 +36,6 @@ class Setup {
                 $baseScript . '/oo.ui.rgroups-display-widget.js',
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/rerender-chemform.js',
-                $baseScript . '/show-rests.js',
 
             ],
             'styles' => [ 'skins/main.css' ],
@@ -58,7 +57,7 @@ class Setup {
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
 
         $out->addModules('ext.diqa.chemextension');
-        self::outputLiteratureReferences($out);
+        DOIRenderer::outputLiteratureReferences($out);
 
     }
 
@@ -69,15 +68,5 @@ class Setup {
         $parser->setFunctionHook( 'showMoleculeCollection', [ ShowMoleculeCollection::class, 'renderMoleculeCollectionTable' ] );
     }
 
-    private static function outputLiteratureReferences(OutputPage $out): void {
-        if (count(RenderLiterature::$LITERATURE_REFS) === 0) {
-            return;
-        }
-        $out->addHTML("<h2>Literature</h2>");
-        $doiRenderer = new DOIRenderer();
-        foreach (RenderLiterature::$LITERATURE_REFS as $l) {
-            $output = $doiRenderer->render($l['data']);
-            $out->addHTML($output);
-        }
-    }
+
 }

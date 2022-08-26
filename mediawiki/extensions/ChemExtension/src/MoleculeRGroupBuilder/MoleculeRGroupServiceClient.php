@@ -1,8 +1,8 @@
 <?php
 
-namespace DIQA\ChemExtension\MoleculeRestBuilder;
+namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
-interface MoleculeRestServiceClient {
+interface MoleculeRGroupServiceClient {
 
     /**
      * Transforms a molecule with rests into concrete molecules using the given molecule rests.

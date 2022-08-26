@@ -2,14 +2,11 @@
 
 namespace DIQA\ChemExtension\Pages;
 
-use DIQA\ChemExtension\MoleculeRestBuilder\MoleculesImportJob;
-use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
+use Exception;
 use MediaWiki\MediaWikiServices;
 use Title;
-use Exception;
-use JobQueueGroup;
 
 class PageCreator
 {

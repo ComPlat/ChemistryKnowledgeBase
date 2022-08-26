@@ -1,7 +1,7 @@
 <?php
-namespace DIQA\ChemExtension\MoleculeRestBuilder;
+namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
-class MoleculeRestServiceClientMock implements MoleculeRestServiceClient {
+class MoleculeRGroupServiceClientMock implements MoleculeRGroupServiceClient {
 
     function buildMolecules(string $molfile, array $moleculeRests)
     {

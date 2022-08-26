@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\MoleculeRestBuilder;
+namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
@@ -25,8 +25,8 @@ class MoleculesImportJob extends Job
         parent::__construct('MoleculesImportJob', $title, $params);
 
         global $wgCEUseMoleculeRestsClientMock;
-        $this->client = $wgCEUseMoleculeRestsClientMock ? new MoleculeRestServiceClientMock()
-            : new MoleculeRestServiceClientImpl();
+        $this->client = $wgCEUseMoleculeRestsClientMock ? new MoleculeRGroupServiceClientMock()
+            : new MoleculeRGroupServiceClientImpl();
         $this->publicationPage = $title;
         $this->inchiGenerator = new InchIGenerator();
     }

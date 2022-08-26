@@ -2,7 +2,9 @@
 
 namespace DIQA\ChemExtension\Literature;
 
+use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use Philo\Blade\Blade;
+use OutputPage;
 
 class DOIRenderer {
 
@@ -50,5 +52,17 @@ class DOIRenderer {
         )->render ();
 
         return str_replace("\n", "", $html);
+    }
+
+    public static function outputLiteratureReferences(OutputPage $out): void {
+        if (count(RenderLiterature::$LITERATURE_REFS) === 0) {
+            return;
+        }
+        $out->addHTML("<h2>Literature</h2>");
+        $doiRenderer = new self();
+        foreach (RenderLiterature::$LITERATURE_REFS as $l) {
+            $output = $doiRenderer->render($l['data']);
+            $out->addHTML($output);
+        }
     }
 }
