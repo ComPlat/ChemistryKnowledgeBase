@@ -1,7 +1,6 @@
 window.onload = function (e) {
 
-    let chemFormId = window.frameElement.getAttribute("chemFormId");
-    let isReaction = window.frameElement.getAttribute("isreaction") == 'true';
+    let chemFormPageText = window.frameElement.getAttribute("chemFormPageText");
     let downloadURL = decodeURIComponent(window.frameElement.getAttribute("downloadurl"));
     let showrgroups = window.frameElement.getAttribute("showrgroups") == 'true';
 
@@ -24,10 +23,9 @@ window.onload = function (e) {
 
                 image.append(img);
 
-                if (chemFormId != null && chemFormId != '') {
+                if (chemFormPageText != null && chemFormPageText != '') {
                     let caption = document.getElementById("caption");
-                    let label = isReaction ? "Reaction" : "Molecule";
-                    caption.append(label + " " + chemFormId);
+                    caption.append(chemFormPageText);
                 }
             });
 

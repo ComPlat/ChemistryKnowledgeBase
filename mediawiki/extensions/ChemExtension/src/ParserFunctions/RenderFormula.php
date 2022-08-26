@@ -50,6 +50,8 @@ class RenderFormula
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
 
         $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $attributes['isreaction'] === 'true', $formula);
+        $attributes['chemFormPageText'] = !is_null($chemFormPage) ? $chemFormPage->getText() : '';
+
         $queryString = http_build_query([
             'width' => $attributes['width'],
             'height' => $attributes['height'],
