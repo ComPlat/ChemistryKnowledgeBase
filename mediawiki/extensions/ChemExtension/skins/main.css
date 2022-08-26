@@ -48,14 +48,14 @@ span#new-molecule {
     margin-top: 10px;
 }
 
-div.ce-show-rests-container {
+div.ce-show-rgroups-container {
     width: 600px;
     margin-top: -20px;
     margin-bottom: 10px;
     font-size: small;
 }
 
-span.ce-show-rests-button {
+span.ce-show-rgroups-button {
     font-size: smaller;
     cursor: pointer;
 }

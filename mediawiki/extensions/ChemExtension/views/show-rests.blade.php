@@ -1,4 +1,4 @@
-<div class="ce-show-rests-container" style="float:{{$arguments['float']}};"><span class="ce-show-rests-button">[Show R-Groups]</span>
+<div class="ce-show-rgroups-container" style="float:{{$arguments['float']}};"><span class="ce-show-rgroups-button">[Show R-Groups]</span>
     <div class="ce-show-table" style="display: none;">
         <table width="100%">
             @if(count($moleculesToDisplay) === 0)
@@ -14,7 +14,7 @@
                 <tr>
 
                     <td><a target="_blank" href="{{$row['moleculePage']->getFullURL()}}">{{$row['moleculePage']->getText()}}</a></td>
-                    @foreach($row['rests'] as $column => $value)
+                    @foreach($row['rGroups'] as $column => $value)
                         <td>{{$value}}</td>
                     @endforeach
                 </tr>

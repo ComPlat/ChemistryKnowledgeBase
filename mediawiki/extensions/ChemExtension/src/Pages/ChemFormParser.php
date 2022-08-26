@@ -37,11 +37,11 @@ class ChemFormParser
             if (!array_key_exists("r$i", $attributes)) {
                 continue;
             }
-            $rests = explode(',', $attributes["r$i"]);
-            $rests = array_map(function ($e) {
+            $rGroups = explode(',', $attributes["r$i"]);
+            $rGroups = array_map(function ($e) {
                 return trim($e);
-            }, $rests);
-            $result["r$i"] = $rests;
+            }, $rGroups);
+            $result["r$i"] = $rGroups;
         }
 
         return $result;

@@ -3,7 +3,7 @@
         <tr>
             <th>Molecule</th>
             <th>Publication</th>
-            @foreach($rests as $r)
+            @foreach($rGroups as $r)
                 <th>{{strtoupper($r)}}</th>
             @endforeach
         </tr>
@@ -22,9 +22,9 @@
                     @endif
 
                 </td>
-                @foreach($rests as $r)
+                @foreach($rGroups as $r)
                     <td>
-                        {{$row['rests'][$r]}}
+                        {{$row['rGroups'][$r]}}
                     </td>
                 @endforeach
             </tr>

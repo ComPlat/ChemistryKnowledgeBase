@@ -66,7 +66,8 @@ class MolfileProcessor
         return $restIds;
     }
 
-    public static function hasRests($formula) {
+    public static function hasRGroups($formula): bool
+    {
         preg_match_all('/RGROUPS=\((\d+)\s*(\d+)/', $formula, $matches);
         return count($matches[0]) > 0;
     }
@@ -74,7 +75,7 @@ class MolfileProcessor
     /**
      * Returns the unique ID for a molecule.
      * For a concrete molecule this is always the inchiKey. For a molecule template this is
-     * the smiles string + the rests in sorted order
+     * the smiles string + the R-Groups in sorted order
      *
      * @param $formula molfile or RXN
      * @param $smiles smiles

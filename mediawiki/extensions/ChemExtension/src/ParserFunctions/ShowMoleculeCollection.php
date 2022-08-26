@@ -27,15 +27,15 @@ class ShowMoleculeCollection {
 
         $molecules = $chemFormRepo->getConcreteMolecules($wgTitle);
 
-        $rests = count($molecules) > 0 ? array_keys(ArrayTools::propertiesToArray($molecules[0]['rests'])) : [];
-        sort($rests);
+        $rGroups = count($molecules) > 0 ? array_keys(ArrayTools::propertiesToArray($molecules[0]['rGroups'])) : [];
+        sort($rGroups);
 
         $moleculesToDisplay = [];
         foreach($molecules as $m) {
             if (array_key_exists($m['molecule_page_id'], $moleculesToDisplay)) {
                 $moleculesToDisplay[$m['molecule_page_id']]['publications'][] = $m['publication_page_id'];
             } else {
-                $moleculesToDisplay[$m['molecule_page_id']] = [ 'publications' => [$m['publication_page_id']], 'rests' => $m['rests']];
+                $moleculesToDisplay[$m['molecule_page_id']] = [ 'publications' => [$m['publication_page_id']], 'rGroups' => $m['rGroups']];
             }
         }
 
@@ -44,13 +44,13 @@ class ShowMoleculeCollection {
             $rows[] = [
                 'molecule' => Title::newFromID($moleculeId),
                 'publications' => array_map(function($e) { return Title::newFromID($e); }, $data['publications']),
-                'rests' => ArrayTools::propertiesToArray($data['rests'])
+                'rGroups' => ArrayTools::propertiesToArray($data['rGroups'])
             ];
 
         }
         $html = $blade->view ()->make ( "molecule-collection-table",
             [
-                'rests' => $rests,
+                'rGroups' => $rGroups,
                 'rows' => $rows,
             ]
         )->render ();

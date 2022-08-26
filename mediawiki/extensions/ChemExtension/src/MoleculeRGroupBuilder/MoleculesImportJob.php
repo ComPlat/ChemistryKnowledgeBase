@@ -8,10 +8,9 @@ use DIQA\ChemExtension\Pages\InchIGenerator;
 use DIQA\ChemExtension\Pages\PageCreator;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use Exception;
 use Job;
 use MediaWiki\MediaWikiServices;
-use Title;
-use Exception;
 
 class MoleculesImportJob extends Job
 {
@@ -24,8 +23,8 @@ class MoleculesImportJob extends Job
     {
         parent::__construct('MoleculesImportJob', $title, $params);
 
-        global $wgCEUseMoleculeRestsClientMock;
-        $this->client = $wgCEUseMoleculeRestsClientMock ? new MoleculeRGroupServiceClientMock()
+        global $wgCEUseMoleculeRGroupsClientMock;
+        $this->client = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()
             : new MoleculeRGroupServiceClientImpl();
         $this->publicationPage = $title;
         $this->inchiGenerator = new InchIGenerator();
@@ -44,10 +43,10 @@ class MoleculesImportJob extends Job
         foreach ($this->params['moleculeCollections'] as $collection) {
 
             $logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
-            $restsTransposed = ArrayTools::transpose($collection['chemForm']->getRGroups());
+            $rGroupsTransposed = ArrayTools::transpose($collection['chemForm']->getRGroups());
 
             try {
-                $response = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $restsTransposed);
+                $response = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $rGroupsTransposed);
                 $molecules = $response->molecules;
                 foreach ($molecules as $molecule) {
                     $inchi = $this->getInchi($molecule->molfile);
@@ -55,7 +54,7 @@ class MoleculesImportJob extends Job
 
                     $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
-                        . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getMoleculeKey()}");
+                        . "molfile: {$chemForm->getMolOrRxn()}, moleculeKey: {$chemForm->getMoleculeKey()}");
 
                     $moleculeCollectionId = $chemFormRepo->getChemFormId($collection['chemForm']->getMoleculeKey());
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
@@ -70,8 +69,8 @@ class MoleculesImportJob extends Job
     }
 
     private function getInchi($molfile) {
-        global $wgCEUseMoleculeRestsClientMock;
-        $mock = $wgCEUseMoleculeRestsClientMock ?? false;
+        global $wgCEUseMoleculeRGroupsClientMock;
+        $mock = $wgCEUseMoleculeRGroupsClientMock ?? false;
         if ($mock) {
             return ['InChI' => md5(uniqid()), 'InChIKey' => md5(uniqid())];
         } else {

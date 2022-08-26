@@ -103,7 +103,7 @@ class PageCreator
         if (MolfileProcessor::isReactionFormula($formula)) {
             $title = Title::newFromText("Reaction:Reaction_$idWithBase");
         } else {
-            if (MolfileProcessor::hasRests($formula)) {
+            if (MolfileProcessor::hasRGroups($formula)) {
                 $title = Title::newFromText("Molecule:Collection_$idWithBase");
             } else {
                 $title = Title::newFromText("Molecule:Molecule_$idWithBase");

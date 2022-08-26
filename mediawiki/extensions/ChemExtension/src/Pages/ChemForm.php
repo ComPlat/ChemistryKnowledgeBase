@@ -110,7 +110,7 @@ class ChemForm
     }
 
     /**
-     * Hash array mapping rests to array of molecules
+     * Hash array mapping R-Groups to array of molecules
      * [
      *  'R1' => [ 'CH2', 'OH', ... ],
      *  'R2' => [ 'OH', 'SO4', ... ],

@@ -28,7 +28,7 @@ class GetRGroups extends SimpleHandler {
                 'molecule_page_name' => $moleculePage->getText(),
                 'molecule_page_url' => $moleculePage->getFullURL(),
                 'moleculeKey' => $moleculeKey,
-                'rests' => $row['rests'],
+                'rGroups' => $row['rGroups'],
 
             ];
         }, $result);

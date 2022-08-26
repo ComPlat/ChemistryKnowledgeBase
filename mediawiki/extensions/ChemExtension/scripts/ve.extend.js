@@ -25,13 +25,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         button = new OO.ui.ButtonWidget({
             label: 'Define R-Groups',
-            disabled: tools.getNumberOfMoleculeRests(chemForm) === 0
+            disabled: tools.getNumberOfMoleculeRGroups(chemForm) === 0
         });
 
         button.on('click', function () {
-            ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rests', {
+            ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rgroups', {
                 attrs: panel.originalMwData.attrs,
-                numberOfMoleculeRests: tools.getNumberOfMoleculeRests(chemForm),
+                numberOfMoleculeRGroups: tools.getNumberOfMoleculeRGroups(chemForm),
                 restIds: tools.getRestIds(chemForm),
                 node: panel.selectedNode
             });

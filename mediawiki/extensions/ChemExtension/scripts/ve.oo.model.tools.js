@@ -13,7 +13,7 @@
         return smiles + restIds.join('');
     }
 
-    OO.VisualEditorTools.prototype.getNumberOfMoleculeRests = function (formula) {
+    OO.VisualEditorTools.prototype.getNumberOfMoleculeRGroups = function (formula) {
         let m = formula.matchAll(/RGROUPS=/g);
         let i = 0;
         while (m.next().value) {
@@ -36,7 +36,7 @@
         return restIds.sort();
     }
 
-    OO.VisualEditorTools.prototype.removeAllNonExistingRests = function (attrs, restIds) {
+    OO.VisualEditorTools.prototype.removeAllNonExistingRGroups = function (attrs, restIds) {
         for (let a in attrs) {
             if (a.match(/r\d+/) && restIds.indexOf(a) === -1) {
                 delete attrs[a];

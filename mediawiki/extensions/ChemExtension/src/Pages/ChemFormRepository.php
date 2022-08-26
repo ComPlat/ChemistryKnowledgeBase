@@ -139,14 +139,14 @@ class ChemFormRepository {
         return null;
     }
 
-    public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, Title $moleculePage, $moleculeCollectionId, $rests) {
+    public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, Title $moleculePage, $moleculeCollectionId, $rGroups) {
         $this->db->insert('molecule_collection',
             [
                 'publication_page_id' => $publicationPage->getArticleID(),
                 'molecule_collection_page_id' => $moleculeCollectionPage->getArticleID(),
                 'molecule_page_id' => $moleculePage->getArticleID(),
                 'molecule_collection_id' => $moleculeCollectionId,
-                'rests' => json_encode($rests),
+                'rests' => json_encode($rGroups),
 
             ]);
     }
@@ -168,7 +168,7 @@ class ChemFormRepository {
                 [
                     'publication_page_id' => $row->publication_page_id,
                     'molecule_page_id' => $row->molecule_page_id,
-                    'rests' => json_decode($row->rests),
+                    'rGroups' => json_decode($row->rests),
 
                 ];
 
@@ -191,7 +191,7 @@ class ChemFormRepository {
                 [
                     'publication_page_id' => $row->publication_page_id,
                     'molecule_page_id' => $row->molecule_page_id,
-                    'rests' => json_decode($row->rests),
+                    'rGroups' => json_decode($row->rests),
 
                 ];
 

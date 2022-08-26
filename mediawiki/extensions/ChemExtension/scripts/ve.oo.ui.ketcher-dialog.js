@@ -18,7 +18,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 ketcher.getSmiles().then(function (smiles) {
 
                     let id;
-                    if (tools.getNumberOfMoleculeRests(formula) > 0 || ketcher.containsReaction()) {
+                    if (tools.getNumberOfMoleculeRGroups(formula) > 0 || ketcher.containsReaction()) {
                         id = tools.createMoleculeKey(formula, smiles);
                     } else {
                         id = inchikey;
@@ -26,7 +26,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     tools.uploadImage(id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
                         let restIds = tools.getRestIds(formula);
-                        tools.removeAllNonExistingRests(node.element.attributes.mw.attrs, restIds);
+                        tools.removeAllNonExistingRGroups(node.element.attributes.mw.attrs, restIds);
                         node.element.attributes.mw.body.extsrc = formula;
 
                         node.element.attributes.mw.attrs.smiles = smiles;

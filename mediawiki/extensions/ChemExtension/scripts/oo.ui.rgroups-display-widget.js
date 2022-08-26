@@ -75,7 +75,7 @@
             this.addContent();
             return;
         }
-        let restIds = Object.keys(response[0].rests);
+        let restIds = Object.keys(response[0].rGroups);
         this.$element.empty();
         let table = $('<table>');
         table.attr('id', 'molecule-rest');
@@ -93,7 +93,7 @@
             for (let i = 0; i < restIds.length; i++) {
                 let column = $('<td>');
                 let textWidget = new OO.ui.LabelWidget({
-                    label: e.rests[restIds[i]]
+                    label: e.rGroups[restIds[i]]
                 });
 
                 column.append(textWidget.$element);

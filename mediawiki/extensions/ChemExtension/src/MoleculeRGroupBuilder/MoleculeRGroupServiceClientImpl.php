@@ -4,16 +4,16 @@ namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
 class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
 
-    private $moleculeRestServiceUrl;
+    private $moleculeRGroupServiceUrl;
 
     public function __construct() {
-        global $wgMoleculeRestServiceUrl;
-        $moleculeRestServiceUrl = $wgMoleculeRestServiceUrl ?? null;
-        if (is_null($moleculeRestServiceUrl)) {
-            throw new Exception('Molecule rests service is not properly configured. Set $wgMoleculeRestServiceUrl.');
+        global $wgMoleculeRGroupServiceUrl;
+        $moleculeRGroupServiceUrl = $wgMoleculeRGroupServiceUrl ?? null;
+        if (is_null($moleculeRGroupServiceUrl)) {
+            throw new Exception('Molecule R-Groups service is not properly configured. Set $wgMoleculeRGroupServiceUrl.');
         }
 
-        $this->moleculeRestServiceUrl = $moleculeRestServiceUrl;
+        $this->moleculeRGroupServiceUrl = $moleculeRGroupServiceUrl;
     }
     function buildMolecules(string $molfile, array $rGroups)
     {
@@ -22,7 +22,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
             $headerFields[] = "Content-Type: application/json";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $ch = curl_init();
-            $url = $this->moleculeRestServiceUrl . "/api/v1/..."; // TODO: change path
+            $url = $this->moleculeRGroupServiceUrl . "/api/v1/..."; // TODO: change path
             $payload = new \stdClass();
             $payload->molfile = $molfile;
             $payload->rests = $rGroups;

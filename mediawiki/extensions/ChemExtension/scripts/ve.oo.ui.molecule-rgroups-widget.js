@@ -1,12 +1,12 @@
 ( function ( OO ) {
     'use strict';
 
-    OO.ui.MoleculeRestsWidget = function OoUiMoleculeRestsWidget( config ) {
+    OO.ui.MoleculeRGroupsWidget = function OoUiMoleculeRGroupsWidget( config ) {
         // Configuration initialization
         config = config || {};
 
         // Parent constructor
-        OO.ui.MoleculeRestsWidget.super.call( this, config );
+        OO.ui.MoleculeRGroupsWidget.super.call( this, config );
 
         // Properties
         this.input = config.input;
@@ -18,7 +18,7 @@
 
     /* Setup */
 
-    OO.inheritClass( OO.ui.MoleculeRestsWidget, OO.ui.Widget );
+    OO.inheritClass( OO.ui.MoleculeRGroupsWidget, OO.ui.Widget );
 
     /* Static Properties */
 
@@ -26,13 +26,13 @@
      * @static
      * @inheritdoc
      */
-    OO.ui.MoleculeRestsWidget.static.tagName = 'div';
+    OO.ui.MoleculeRGroupsWidget.static.tagName = 'div';
 
-    OO.ui.MoleculeRestsWidget.prototype.setData = function(attrs, numberOfMoleculeRests, restIds) {
+    OO.ui.MoleculeRGroupsWidget.prototype.setData = function(attrs, numberOfMoleculeRGroups, restIds) {
 
         this.restIds = restIds;
-        this.moleculeRestTable = this.readRestsAsAttributes(attrs);
-        this.numberOfMoleculeRests = numberOfMoleculeRests;
+        this.moleculeRGroupsTable = this.readRGroupsAsAttributes(attrs);
+        this.numberOfMoleculeRGroups = numberOfMoleculeRGroups;
 
         this.$element.empty();
         this.table = $('<table>');
@@ -40,12 +40,12 @@
         let headerRow = this.header();
         this.table.append(headerRow);
 
-        if (this.moleculeRestTable.length === 0) {
+        if (this.moleculeRGroupsTable.length === 0) {
             let row = this.newLine();
             this.table.append(row);
         } else {
-            for(let i = 0; i < this.moleculeRestTable.length; i++) {
-                let row = this.newLine(this.moleculeRestTable[i]);
+            for(let i = 0; i < this.moleculeRGroupsTable.length; i++) {
+                let row = this.newLine(this.moleculeRGroupsTable[i]);
                 this.table.append(row);
             }
         }
@@ -61,7 +61,7 @@
         this.$element.append(newLineButton.$element);
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.header = function() {
+    OO.ui.MoleculeRGroupsWidget.prototype.header = function() {
         let row = $('<tr>');
         let firstColumn = $('<th>');
         row.append(firstColumn);
@@ -76,11 +76,11 @@
         return row;
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.newLine = function(line) {
+    OO.ui.MoleculeRGroupsWidget.prototype.newLine = function(line) {
         let row = $('<tr>');
         row.addClass('molecule-rest');
         let firstColumn = $('<td>');
-        let label = $('<span>').append("Molecule").attr('title', 'Each row defines all rests for a molecule');
+        let label = $('<span>').append("Molecule").attr('title', 'Each row defines all R-Groups for a molecule');
         firstColumn.append(label);
         row.append(firstColumn);
         for(let i = 0; i < this.restIds.length; i++) {
@@ -105,25 +105,25 @@
         return row;
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.addNewLine = function() {
+    OO.ui.MoleculeRGroupsWidget.prototype.addNewLine = function() {
         let row = this.newLine();
         this.table.append(row);
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.readRestsAsAttributes = function(attributes) {
+    OO.ui.MoleculeRGroupsWidget.prototype.readRGroupsAsAttributes = function(attributes) {
 
-        let restsArray = [];
+        let rGroupsArray = [];
         for(let i = 0; i < this.restIds.length; i++) {
             if (attributes[this.restIds[i]]) {
-                restsArray.push(attributes[this.restIds[i]].split(','))
+                rGroupsArray.push(attributes[this.restIds[i]].split(','))
             }
         }
-        return restsArray.length > 0 ? restsArray[0].map((_, colIndex) => restsArray.map(row => row[colIndex])) : [];
+        return rGroupsArray.length > 0 ? rGroupsArray[0].map((_, colIndex) => rGroupsArray.map(row => row[colIndex])) : [];
 
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.getRestsAsAttributes = function() {
-        let restArray = this.getRestsFromModel();
+    OO.ui.MoleculeRGroupsWidget.prototype.getRGroupsAsAttributes = function() {
+        let restArray = this.getRGroupsFromModel();
         let restAttributes = {};
         // transpose array (exchange rows and columns)
         let transposedArray = restArray[0].map((_, colIndex) => restArray.map(row => row[colIndex]));
@@ -134,7 +134,7 @@
         return restAttributes;
     }
 
-    OO.ui.MoleculeRestsWidget.prototype.getRestsFromModel = function() {
+    OO.ui.MoleculeRGroupsWidget.prototype.getRGroupsFromModel = function() {
         let rows = [];
         $('tr.molecule-rest', this.table).each(function(i, row) {
             let rowEl = $(row);
