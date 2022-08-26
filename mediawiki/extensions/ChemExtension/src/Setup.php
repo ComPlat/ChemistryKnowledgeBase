@@ -24,6 +24,7 @@ class Setup {
             'position' => 'bottom',
             'scripts' => [
                 $baseScript . '/rgroups.js',
+                $baseScript . '/client-ajax-endpoints.js',
                 $baseScript . '/render-chemform-tooltip.js',
                 $baseScript . '/ve.oo.model.tools.js',
                 $baseScript . '/ve.extend.js',

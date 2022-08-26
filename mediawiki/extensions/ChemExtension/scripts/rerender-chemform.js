@@ -11,12 +11,13 @@
       OO.ui.confirm("The molecule was not yet rendered. This will be done now.").done(function(confirm) {
           if (!confirm) return;
           let tools = new OO.VisualEditorTools();
+          let ajax = new window.ChemExtension.AjaxEndpoints();
           let ketcher = tools.getKetcher();
 
           ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
               svgBlob.text().then(function (imgData) {
 
-                  tools.uploadImage(inchikey, btoa(imgData), function () {
+                  ajax.uploadImage(inchikey, btoa(imgData), function () {
                       location.reload();
 
                   });

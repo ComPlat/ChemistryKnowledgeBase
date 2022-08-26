@@ -10,61 +10,11 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     /* end of translations */
 
-    function updatePage(node, formula, inchi, inchikey) {
-        let tools = new OO.VisualEditorTools();
-        let ketcher = tools.getKetcher();
-        ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
-            svgBlob.text().then(function (imgData) {
-                ketcher.getSmiles().then(function (smiles) {
-
-                    let id;
-                    if (tools.getNumberOfMoleculeRGroups(formula) > 0 || ketcher.containsReaction()) {
-                        id = tools.createMoleculeKey(formula, smiles);
-                    } else {
-                        id = inchikey;
-                    }
-                    tools.uploadImage(id, btoa(imgData), function () {
-                        //TODO: replace this with a custom transaction
-                        let rGroupIds = tools.getRGroupIds(formula);
-                        tools.removeAllNonExistingRGroups(node.element.attributes.mw.attrs, rGroupIds);
-                        node.element.attributes.mw.body.extsrc = formula;
-
-                        node.element.attributes.mw.attrs.smiles = smiles;
-                        if (inchi) {
-                            node.element.attributes.mw.attrs.inchi = inchi;
-                        } else {
-                            node.element.attributes.mw.attrs.inchi = '';
-                        }
-                        if (inchikey) {
-                            node.element.attributes.mw.attrs.inchikey = inchikey;
-                        } else {
-                            node.element.attributes.mw.attrs.inchikey = '';
-                        }
-                        ve.init.target.getSurface().getModel().getDocument().rebuildTree();
-                        ve.init.target.fromEditedState = true;
-                        ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
-                    });
-
-                });
-
-            });
-        });
-
-    }
-
-    function getInchI(mol) {
-        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/inchi?mol=" + btoa(mol);
-        return $.ajax({
-            method: "GET",
-            url: url
-        });
-    }
 
     ve.ui.KetcherDialog = function (manager, config) {
         // Parent constructor
         ve.ui.KetcherDialog.super.call(this, manager, config);
-
+        this.tools = new OO.VisualEditorTools();
     };
     /* Inheritance */
 
@@ -74,29 +24,18 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.KetcherDialog.prototype.getActionProcess = function (action) {
         if (action === 'apply') {
             return new OO.ui.Process(function () {
-                let tools = new OO.VisualEditorTools();
+
                 let node = this.selectedNode;
                 try {
-                    let ketcher = tools.getKetcher();
+                    let ketcher = this.tools.getKetcher();
                     if (ketcher == null) {
                         console.error("Ketcher not found.");
                         return;
                     }
                     if (ketcher.containsReaction()) {
-                        ketcher.getRxn().then(function (formula) {
-                            updatePage(node, formula);
-                        });
+                        ketcher.getRxn().then(this.updateReaction.bind(this, node));
                     } else {
-                        ketcher.getMolfile('v3000').then(function (formulaV3000) {
-                            getInchI(formulaV3000).done(function (response) {
-
-                                let inchi = response.InChI;
-                                let inchikey = response.InChIKey;
-
-                                updatePage(node, formulaV3000, inchi, inchikey);
-
-                            });
-                        });
+                        ketcher.getMolfile('v3000').then(this.updateMolecule.bind(this, node));
                     }
                 } catch (e) {
                     mw.notify('Problem occured: ' + e, {type: 'error'});
@@ -107,6 +46,94 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         }
         return ve.ui.MWMediaDialog.super.prototype.getActionProcess.call(this, action);
     }
+
+    ve.ui.KetcherDialog.prototype.updateReaction = function (node, formulaV3000) {
+        this.updatePage(node, formulaV3000);
+    }
+
+    ve.ui.KetcherDialog.prototype.updateMolecule = function (node, formulaV3000) {
+        let that = this;
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        ajax.getInchiKey(node, formulaV3000).done(function(response) {
+            that.updatePage(node, formulaV3000, response.InChI, response.InChIKey);
+            that.openRGroupsDialogIfNoRGroupsDefined(node, formulaV3000);
+        });
+
+    }
+
+    ve.ui.KetcherDialog.prototype.openRGroupsDialogIfNoRGroupsDefined = function (node, formulaV3000) {
+
+        let rGroupIds = this.tools.getRGroupIds(formulaV3000);
+        let attrs = node.element.attributes.mw.attrs;
+        let open = false;
+        for (let i = 0; i < rGroupIds.length; i++) {
+            if (!attrs[rGroupIds[i]] || attrs[rGroupIds[i]] == '') {
+                open = true;
+            }
+        }
+        if (!open) return;
+        ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rgroups', {
+            attrs: node.element.attributes.mw.attrs,
+            numberOfMoleculeRGroups: this.tools.getNumberOfMoleculeRGroups(formulaV3000),
+            rGroupIds: this.tools.getRGroupIds(formulaV3000),
+            node: node
+        });
+    }
+
+    ve.ui.KetcherDialog.prototype.updatePage = function (node, formula, inchi, inchikey) {
+
+        let ketcher = this.tools.getKetcher();
+        let createMoleculeKeyAndUploadImage = this.createMoleculeKeyAndUploadImage.bind(this);
+        ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
+            svgBlob.text().then(function (imgData) {
+                ketcher.getSmiles().then(function (smiles) {
+                    createMoleculeKeyAndUploadImage(node, {
+                        formula: formula,
+                        inchi: inchi,
+                        inchikey: inchikey,
+                        smiles: smiles,
+                        containsReaction: ketcher.containsReaction()
+                    }, imgData)
+                });
+            });
+        });
+
+    }
+
+    ve.ui.KetcherDialog.prototype.createMoleculeKeyAndUploadImage = function(node, formulaData, imgData) {
+        let moleculeKey;
+        if (this.tools.getNumberOfMoleculeRGroups(formulaData.formula) > 0 || formulaData.containsReaction) {
+            moleculeKey = this.tools.createMoleculeKey(formulaData.formula, formulaData.smiles);
+        } else {
+            moleculeKey = formulaData.inchikey;
+        }
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        ajax.uploadImage(moleculeKey, btoa(imgData), this.updateModelAfterUpload.bind(this, node, {
+            formula: formulaData.formula,
+            smiles: formulaData.smiles,
+            inchi: formulaData.inchi,
+            inchikey: formulaData.inchikey
+        }));
+
+    }
+
+    ve.ui.KetcherDialog.prototype.updateModelAfterUpload = function (node, formulaData) {
+
+        //TODO: replace this with a custom transaction
+        let rGroupIds = this.tools.getRGroupIds(formulaData.formula);
+        this.tools.removeAllNonExistingRGroups(node.element.attributes.mw.attrs, rGroupIds);
+        node.element.attributes.mw.body.extsrc = formulaData.formula;
+
+        node.element.attributes.mw.attrs.smiles = formulaData.smiles;
+        node.element.attributes.mw.attrs.inchi = formulaData.inchi ? formulaData.inchi : '';
+        node.element.attributes.mw.attrs.inchikey = formulaData.inchikey ? formulaData.inchikey : '';
+
+        ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+        ve.init.target.fromEditedState = true;
+        ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
+
+    }
+
     ve.ui.KetcherDialog.prototype.setup = function (data) {
 
         this.iframe.setData(data.formula);
