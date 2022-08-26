@@ -56,18 +56,18 @@ class ChemFormRepository {
         return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
     }
 
-    public function addChemForm($chemFormKey): int
+    public function addChemForm($moleculeKey): int
     {
         $this->db->startAtomic( __METHOD__ );
         $res = $this->db->select('chem_form', ['id'],
-            ['chem_form_key' => $chemFormKey ]);
+            ['chem_form_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $id = $row->id;
         } else {
             $this->db->insert('chem_form',
                 [
-                    'chem_form_key' => $chemFormKey,
+                    'chem_form_key' => $moleculeKey,
                 ]);
             $id = $this->db->insertId();
         }
@@ -75,10 +75,10 @@ class ChemFormRepository {
         return $id;
     }
 
-    public function getChemFormId($chemFormKey)
+    public function getChemFormId($moleculeKey)
     {
         $res = $this->db->select('chem_form', ['id'],
-            ['chem_form_key' => $chemFormKey ]);
+            ['chem_form_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             return $row->id;
@@ -97,11 +97,11 @@ class ChemFormRepository {
         return null;
     }
 
-    public function addChemFormImage($chemFormKey, $imgData): int
+    public function addChemFormImage($moleculeKey, $imgData): int
     {
         $this->db->startAtomic( __METHOD__ );
         $res = $this->db->select('chem_form_img', ['id'],
-            ['chem_form_key' => $chemFormKey,
+            ['chem_form_key' => $moleculeKey,
               ]
         );
         if ($res->numRows() > 0) {
@@ -112,13 +112,13 @@ class ChemFormRepository {
                     'img_data' => $imgData
 
                 ], [
-                    'chem_form_key' => $chemFormKey
+                    'chem_form_key' => $moleculeKey
                 ]);
 
         } else {
             $this->db->insert('chem_form_img',
                 [
-                    'chem_form_key' => $chemFormKey,
+                    'chem_form_key' => $moleculeKey,
                     'img_data' => $imgData,
 
                 ]);
@@ -128,10 +128,10 @@ class ChemFormRepository {
         return $id;
     }
 
-    public function getChemFormImage($chemFormKey)
+    public function getChemFormImage($moleculeKey)
     {
         $res = $this->db->select('chem_form_img', ['img_data'],
-            ['chem_form_key' => $chemFormKey ]);
+            ['chem_form_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             return $row->img_data;

@@ -15,7 +15,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
 
         $this->moleculeRestServiceUrl = $moleculeRestServiceUrl;
     }
-    function buildMolecules(string $molfile, array $moleculeRests)
+    function buildMolecules(string $molfile, array $rGroups)
     {
         try {
             $headerFields = [];
@@ -25,7 +25,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
             $url = $this->moleculeRestServiceUrl . "/api/v1/..."; // TODO: change path
             $payload = new \stdClass();
             $payload->molfile = $molfile;
-            $payload->rests = $moleculeRests;
+            $payload->rests = $rGroups;
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS,  json_encode($payload));

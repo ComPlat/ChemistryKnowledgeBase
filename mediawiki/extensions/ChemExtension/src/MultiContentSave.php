@@ -38,7 +38,7 @@ class MultiContentSave
         foreach ($chemForms as $chemForm) {
             try {
                 $title = $pageCreator->createNewMoleculePage($chemForm);
-                if (count($chemForm->getRests()) > 0) {
+                if (count($chemForm->getRGroups()) > 0) {
                     $moleculeCollections[] = ['title' => $title, 'chemForm' => $chemForm];
                     $logger->log("Created molecule collection page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
                 } else {

@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Pages;
 
 class ChemFormParser
 {
-    const MAX_RESTS = 100;
+    const MAX_RGROUPS = 100;
     const CHEM_FORM_REGEX = '/<chemform([^>]*)>([^<]*)<\/chemform>/m';
     const ATTRIBUTES = '/(\w+)="([^"]*)"/m';
 
@@ -26,14 +26,14 @@ class ChemFormParser
                 $attributes['width'],
                 $attributes['height'],
                 $attributes['float'],
-                self::parseRests($attributes));
+                self::parseRGroups($attributes));
         }
         return $results;
     }
 
-    public static function parseRests(array $attributes) : array {
+    public static function parseRGroups(array $attributes) : array {
         $result = [];
-        for($i = 1; $i < self::MAX_RESTS; $i++) {
+        for($i = 1; $i < self::MAX_RGROUPS; $i++) {
             if (!array_key_exists("r$i", $attributes)) {
                 continue;
             }

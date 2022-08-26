@@ -5,10 +5,10 @@ namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 interface MoleculeRGroupServiceClient {
 
     /**
-     * Transforms a molecule with rests into concrete molecules using the given molecule rests.
+     * Transforms a molecule with rGroups into concrete molecules using the given molecule rGroups.
      *
      * @param $molfile string Molecule in molfile V3000 format
-     * @param $moleculeRests array of molecule rests
+     * @param $rGroups array of molecule rGroups
      * [
      *      [ R1 => "...", R2 => "..."],
      *      [ R1 => "...", R2 => "..."],
@@ -16,6 +16,6 @@ interface MoleculeRGroupServiceClient {
      * ]
      * @return mixed
      */
-    function buildMolecules(string $molfile, array $moleculeRests);
+    function buildMolecules(string $molfile, array $rGroups);
 
 }

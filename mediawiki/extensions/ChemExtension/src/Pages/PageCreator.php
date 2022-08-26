@@ -23,7 +23,6 @@ class PageCreator
         $chemFormRepository = new ChemFormRepository($dbr);
         $key = $chemForm->getMoleculeKey();
         $id = $chemFormRepository->addChemForm($key);
-        $chemForm->setDatabaseId($id);
 
         $title = self::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 
@@ -53,7 +52,7 @@ class PageCreator
         $pageContent = $this->getTemplate($chemForm, $parent);
         if ($chemForm->hasRGroupDefinitions()) {
             $pageContent .= "\n\n==R-Groups==";
-            $pageContent .= "\n" . $this->getRestsTable($chemForm);
+            $pageContent .= "\n" . $this->getRGroupTable($chemForm);
         }
         return $pageContent;
     }
@@ -71,8 +70,7 @@ class PageCreator
             $template = "ChemicalFormula";
         }
         $pageContent = "{{" . $template;
-        $pageContent .= "\n|databaseId={$chemForm->getDatabaseId()}";
-        $pageContent .= "\n|chemFormId={$chemForm->getMoleculeKey()}";
+        $pageContent .= "\n|moleculeKey={$chemForm->getMoleculeKey()}";
         $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
         $pageContent .= "\n|smiles={$chemForm->getSmiles()}";
         $pageContent .= "\n|inchi={$chemForm->getInchi()}";
@@ -80,17 +78,15 @@ class PageCreator
         $pageContent .= "\n|width={$chemForm->getWidth()}";
         $pageContent .= "\n|height={$chemForm->getHeight()}";
         $pageContent .= "\n|float={$chemForm->getFloat()}";
-        $hasRGroups = !is_null($chemForm->getRests()) && count($chemForm->getRests()) > 0 ? 'true' : '';
-        $pageContent .= "\n|iscollection=$hasRGroups";
         $parentArticle = !is_null($parent) ? $parent->getPrefixedText() : '';
         $pageContent .= "\n|parent={$parentArticle}";
         $pageContent .= "\n}}";
         return $pageContent;
     }
 
-    private function getRestsTable($chemForm)
+    private function getRGroupTable(ChemForm $chemForm): string
     {
-        if (count($chemForm->getRests()) === 0) {
+        if (count($chemForm->getRGroups()) === 0) {
             return '';
         }
         return "\n{{#showMoleculeCollection: }}";

@@ -1,14 +1,15 @@
 (function($) {
 
   $(function () {
-      let button = $('#render-formula-button');
-      if (button.length == 0) {
+      let note = $('#render-formula-note');
+      if (note.length == 0) {
           return;
       }
-      let rerenderButton = OO.ui.infuse(button);
-      let inchikey = rerenderButton.data.inchikey;
-      let formula = rerenderButton.data.formula;
-      $('#render-formula-button').click(function() {
+      let rerenderNote = OO.ui.infuse(note);
+      let inchikey = rerenderNote.data.inchikey;
+      let formula = rerenderNote.data.formula;
+      OO.ui.confirm("The molecule was not yet rendered. This will be done now.").done(function(confirm) {
+          if (!confirm) return;
           let tools = new OO.VisualEditorTools();
           let ketcher = tools.getKetcher();
 
@@ -22,7 +23,8 @@
 
               });
           });
-      })
+      });
+
   });
 
 })(jQuery);

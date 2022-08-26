@@ -7,7 +7,6 @@ use DIQA\ChemExtension\Utils\MolfileProcessor;
 class ChemForm
 {
 
-    private $databaseId;
     private $molOrRxn;
     private $smiles;
     private $inchi;
@@ -15,18 +14,10 @@ class ChemForm
     private $width;
     private $height;
     private $float;
-    private $rests;
+    private $rGroups;
 
-    /**
-     * @param $id
-     * @param $molOrRxn
-     * @param $smiles
-     * @param $width
-     * @param $height
-     * @param $float
-     */
     public function __construct($molOrRxn, $smiles, $inchi, $inchiKey, $width, $height, $float,
-                                $rests)
+                                $rGroups)
     {
         $this->molOrRxn = $molOrRxn;
         $this->smiles = $smiles;
@@ -35,24 +26,7 @@ class ChemForm
         $this->width = $width;
         $this->height = $height;
         $this->float = $float;
-        $this->rests = $rests;
-    }
-
-    /**
-     * @param mixed $databaseId
-     */
-    public function setDatabaseId($databaseId): void
-    {
-        $this->databaseId = $databaseId;
-    }
-
-
-    /**
-     * @return mixed
-     */
-    public function getDatabaseId()
-    {
-        return $this->databaseId;
+        $this->rGroups = $rGroups;
     }
 
     /**
@@ -84,7 +58,7 @@ class ChemForm
 
     public function hasRGroupDefinitions()
     {
-        return !is_null($this->getRests()) && count($this->getRests()) > 0;
+        return !is_null($this->getRGroups()) && count($this->getRGroups()) > 0;
     }
 
     /**
@@ -144,12 +118,12 @@ class ChemForm
      * ]
      * @return mixed
      */
-    public function getRests()
+    public function getRGroups()
     {
-        return $this->rests;
+        return $this->rGroups;
     }
 
-    public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey)
+    public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey): ChemForm
     {
         return new ChemForm($molOrRxn, '', $inchi, $inchikey, 200, 200, 'none', null);
 

@@ -3,7 +3,7 @@ namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
 class MoleculeRGroupServiceClientMock implements MoleculeRGroupServiceClient {
 
-    function buildMolecules(string $molfile, array $moleculeRests)
+    function buildMolecules(string $molfile, array $rGroups)
     {
         $molfile = <<<MOLFILE
 
@@ -35,9 +35,9 @@ MOLFILE;
         $o = new \stdClass();
 
         $o->molecules = [];
-        for($i = 0; $i < count($moleculeRests); $i++) {
+        for($i = 0; $i < count($rGroups); $i++) {
             $molecule = new \stdClass();
-            $molecule->rests = $moleculeRests[$i];
+            $molecule->rests = $rGroups[$i];
             $molecule->molfile = $molfile;
             $o->molecules[] = $molecule;
         }

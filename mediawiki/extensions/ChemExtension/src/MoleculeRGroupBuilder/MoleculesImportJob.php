@@ -44,7 +44,7 @@ class MoleculesImportJob extends Job
         foreach ($this->params['moleculeCollections'] as $collection) {
 
             $logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
-            $restsTransposed = ArrayTools::transpose($collection['chemForm']->getRests());
+            $restsTransposed = ArrayTools::transpose($collection['chemForm']->getRGroups());
 
             try {
                 $response = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $restsTransposed);
@@ -56,8 +56,10 @@ class MoleculesImportJob extends Job
                     $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
                         . "molfile: {$chemForm->getMolOrRxn()}, chemFormId: {$chemForm->getMoleculeKey()}");
+
+                    $moleculeCollectionId = $chemFormRepo->getChemFormId($collection['chemForm']->getMoleculeKey());
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
-                        $title, $collection['chemForm']->getDatabaseId(), $molecule->rests);
+                        $title, $moleculeCollectionId, $molecule->rests);
 
                 }
             } catch (Exception $e) {

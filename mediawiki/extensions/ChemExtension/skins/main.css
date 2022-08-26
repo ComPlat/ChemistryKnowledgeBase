@@ -77,3 +77,9 @@ span.ce-show-rests-button {
 #submit-doi {
     margin-top: 10px;
 }
+
+#render-formula-note {
+    margin-top: 15px;
+    color: orange;
+    font-weight: bold;
+}

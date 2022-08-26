@@ -111,18 +111,16 @@ class RenderFormula
         OutputPage::setupOOUI();
         self::outputKetcher();
 
-        $label = new LabelWidget();
-        $label->setLabel('');
-        $saveButton = new ButtonWidget([
+        $label = new LabelWidget([
             'classes' => [],
-            'id' => 'render-formula-button',
-            'label' => 'render',
+            'id' => 'render-formula-note',
+            'label' => 'Image of molecule was not yet rendered',
             'flags' => ['primary', 'progressive'],
             'data' => ['inchikey' => $chemFormId, 'formula' => $formula],
             'infusable' => true
         ]);
 
-        $section = new FormLayout(['items' => [$label, $saveButton]]);
+        $section = new FormLayout(['items' => [$label]]);
         $div = new Tag('div');
         $div->appendContent($section);
         return $div;
