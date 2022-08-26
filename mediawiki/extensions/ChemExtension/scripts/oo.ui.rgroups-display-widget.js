@@ -75,11 +75,11 @@
             this.addContent();
             return;
         }
-        let restIds = Object.keys(response[0].rGroups);
+        let rGroupIds = Object.keys(response[0].rGroups);
         this.$element.empty();
         let table = $('<table>');
         table.attr('id', 'molecule-rest');
-        let headerRow = this.header(restIds);
+        let headerRow = this.header(rGroupIds);
         table.append(headerRow);
 
         let that = this;
@@ -90,10 +90,10 @@
             let column = $('<td>');
             column.append(linkToMoleculePage);
             row.append(column);
-            for (let i = 0; i < restIds.length; i++) {
+            for (let i = 0; i < rGroupIds.length; i++) {
                 let column = $('<td>');
                 let textWidget = new OO.ui.LabelWidget({
-                    label: e.rGroups[restIds[i]]
+                    label: e.rGroups[rGroupIds[i]]
                 });
 
                 column.append(textWidget.$element);
@@ -106,14 +106,14 @@
         this.addContent();
     };
 
-    OO.ui.RGroupsDisplayWidget.prototype.header = function (restIds) {
+    OO.ui.RGroupsDisplayWidget.prototype.header = function (rGroupIds) {
         let row = $('<tr>');
         let firstColumn = $('<th>');
         row.append(firstColumn);
-        for (let i = 0; i < restIds.length; i++) {
+        for (let i = 0; i < rGroupIds.length; i++) {
             let column = $('<th>');
             let labelWidget = new OO.ui.LabelWidget({
-                label: restIds[i].toUpperCase()
+                label: rGroupIds[i].toUpperCase()
             });
             column.append(labelWidget.$element);
             row.append(column);

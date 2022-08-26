@@ -25,8 +25,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     }
                     tools.uploadImage(id, btoa(imgData), function () {
                         //TODO: replace this with a custom transaction
-                        let restIds = tools.getRestIds(formula);
-                        tools.removeAllNonExistingRGroups(node.element.attributes.mw.attrs, restIds);
+                        let rGroupIds = tools.getRGroupIds(formula);
+                        tools.removeAllNonExistingRGroups(node.element.attributes.mw.attrs, rGroupIds);
                         node.element.attributes.mw.body.extsrc = formula;
 
                         node.element.attributes.mw.attrs.smiles = smiles;

@@ -39,7 +39,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
     ve.ui.MoleculeRGroupsDialog.prototype.setup = function (data) {
 
-        this.moleculeRGroupsWidget.setData(data.attrs, data.numberOfMoleculeRGroups, data.restIds);
+        this.moleculeRGroupsWidget.setData(data.attrs, data.numberOfMoleculeRGroups, data.rGroupIds);
         this.selectedNode = data.node;
         return ve.ui.MoleculeRGroupsDialog.super.prototype.setup.call(this, data);
     };

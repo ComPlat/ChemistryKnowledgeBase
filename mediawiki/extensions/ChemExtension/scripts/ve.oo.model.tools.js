@@ -9,8 +9,8 @@
     };
 
     OO.VisualEditorTools.prototype.createMoleculeKey = function(formula, smiles) {
-        let restIds = this.getRestIds(formula);
-        return smiles + restIds.join('');
+        let rGroupIds = this.getRGroupIds(formula);
+        return smiles + rGroupIds.join('');
     }
 
     OO.VisualEditorTools.prototype.getNumberOfMoleculeRGroups = function (formula) {
@@ -22,23 +22,23 @@
         return i;
     }
 
-    OO.VisualEditorTools.prototype.getRestIds = function (formula) {
+    OO.VisualEditorTools.prototype.getRGroupIds = function (formula) {
         let m = formula.matchAll(/RGROUPS=\((\d+)\s*(\d+)/g);
-        let restIds = [];
+        let rGroupIds = [];
         let next = m.next().value;
         while (next) {
-            if (restIds.indexOf("r" + next[2]) === -1) {
-                restIds.push("r" + next[2]);
+            if (rGroupIds.indexOf("r" + next[2]) === -1) {
+                rGroupIds.push("r" + next[2]);
             }
             next = m.next().value;
         }
 
-        return restIds.sort();
+        return rGroupIds.sort();
     }
 
-    OO.VisualEditorTools.prototype.removeAllNonExistingRGroups = function (attrs, restIds) {
+    OO.VisualEditorTools.prototype.removeAllNonExistingRGroups = function (attrs, rGroupIds) {
         for (let a in attrs) {
-            if (a.match(/r\d+/) && restIds.indexOf(a) === -1) {
+            if (a.match(/r\d+/) && rGroupIds.indexOf(a) === -1) {
                 delete attrs[a];
             }
         }

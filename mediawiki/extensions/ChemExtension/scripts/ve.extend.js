@@ -32,7 +32,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rgroups', {
                 attrs: panel.originalMwData.attrs,
                 numberOfMoleculeRGroups: tools.getNumberOfMoleculeRGroups(chemForm),
-                restIds: tools.getRestIds(chemForm),
+                rGroupIds: tools.getRGroupIds(chemForm),
                 node: panel.selectedNode
             });
         });

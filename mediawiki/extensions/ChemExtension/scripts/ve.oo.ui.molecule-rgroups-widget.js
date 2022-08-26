@@ -28,9 +28,9 @@
      */
     OO.ui.MoleculeRGroupsWidget.static.tagName = 'div';
 
-    OO.ui.MoleculeRGroupsWidget.prototype.setData = function(attrs, numberOfMoleculeRGroups, restIds) {
+    OO.ui.MoleculeRGroupsWidget.prototype.setData = function(attrs, numberOfMoleculeRGroups, rGroupIds) {
 
-        this.restIds = restIds;
+        this.rGroupIds = rGroupIds;
         this.moleculeRGroupsTable = this.readRGroupsAsAttributes(attrs);
         this.numberOfMoleculeRGroups = numberOfMoleculeRGroups;
 
@@ -65,10 +65,10 @@
         let row = $('<tr>');
         let firstColumn = $('<th>');
         row.append(firstColumn);
-        for(let i = 0; i < this.restIds.length; i++) {
+        for(let i = 0; i < this.rGroupIds.length; i++) {
             let column = $('<th>');
             let labelWidget = new OO.ui.LabelWidget( {
-                label: this.restIds[i].toUpperCase()
+                label: this.rGroupIds[i].toUpperCase()
             } );
             column.append(labelWidget.$element);
             row.append(column);
@@ -83,7 +83,7 @@
         let label = $('<span>').append("Molecule").attr('title', 'Each row defines all R-Groups for a molecule');
         firstColumn.append(label);
         row.append(firstColumn);
-        for(let i = 0; i < this.restIds.length; i++) {
+        for(let i = 0; i < this.rGroupIds.length; i++) {
             let column = $('<td>');
             let textWidget = new OO.ui.RGroupsLookupTextInputWidget( {
                 value: line ? line[i] : ''
@@ -113,9 +113,9 @@
     OO.ui.MoleculeRGroupsWidget.prototype.readRGroupsAsAttributes = function(attributes) {
 
         let rGroupsArray = [];
-        for(let i = 0; i < this.restIds.length; i++) {
-            if (attributes[this.restIds[i]]) {
-                rGroupsArray.push(attributes[this.restIds[i]].split(','))
+        for(let i = 0; i < this.rGroupIds.length; i++) {
+            if (attributes[this.rGroupIds[i]]) {
+                rGroupsArray.push(attributes[this.rGroupIds[i]].split(','))
             }
         }
         return rGroupsArray.length > 0 ? rGroupsArray[0].map((_, colIndex) => rGroupsArray.map(row => row[colIndex])) : [];
@@ -129,7 +129,7 @@
         let transposedArray = restArray[0].map((_, colIndex) => restArray.map(row => row[colIndex]));
 
         for(let i = 0; i < transposedArray.length; i++) {
-            restAttributes[this.restIds[i]] = transposedArray[i].join(',');
+            restAttributes[this.rGroupIds[i]] = transposedArray[i].join(',');
         }
         return restAttributes;
     }

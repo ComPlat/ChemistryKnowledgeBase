@@ -49,21 +49,21 @@ class MolfileProcessor
         return implode("\n", $result);
     }
 
-    public static function getRestIds($formula) {
+    public static function getRGroupIds($formula) {
 
         preg_match_all('/RGROUPS=\((\d+)\s*(\d+)/', $formula, $matches);
 
-        $restIds = [];
+        $rGroupIds = [];
         if (!isset($matches[2])) {
             return [];
         }
         foreach($matches[2] as $m) {
-            if (!in_array("r$m", $restIds)) {
-                $restIds[] = "r$m";
+            if (!in_array("r$m", $rGroupIds)) {
+                $rGroupIds[] = "r$m";
             }
         }
-        sort($restIds);
-        return $restIds;
+        sort($rGroupIds);
+        return $rGroupIds;
     }
 
     public static function hasRGroups($formula): bool
@@ -85,7 +85,7 @@ class MolfileProcessor
     public static function generateMoleculeKey($formula, $smiles, $inchiKey) {
         $key = $inchiKey;
         if (is_null($inchiKey) || $inchiKey === '') {
-            $key = $smiles . implode('', MolfileProcessor::getRestIds($formula));
+            $key = $smiles . implode('', MolfileProcessor::getRGroupIds($formula));
         }
         return $key;
     }

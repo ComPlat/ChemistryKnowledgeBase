@@ -45,7 +45,7 @@ class RenderFormula
 
         $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=$moleculeKey");
 
-        $hasRGroups = count(MolfileProcessor::getRestIds($formula)) > 0;
+        $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
 
         $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $formula);
