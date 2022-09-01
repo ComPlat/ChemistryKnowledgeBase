@@ -23,7 +23,7 @@ class RenderLiterature
         try {
             $parametersAsStringArray = func_get_args();
             array_shift($parametersAsStringArray); // get rid of Parser
-            $parameters = ParserfunctionParser::parseArguments($parametersAsStringArray);
+            $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
             $doiParameterValue = $parameters['doi'] ?? null;
             $doi = DOITools::parseDOI($doiParameterValue);
             if (is_null($doi)) {

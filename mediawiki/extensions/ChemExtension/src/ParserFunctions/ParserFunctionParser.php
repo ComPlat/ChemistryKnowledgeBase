@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
-class ParserfunctionParser {
+class ParserFunctionParser {
 
     const PARSER_FUNCTION_REGEX = '/\{\{#__fn_name__:([^}]*)\}\}/m';
 

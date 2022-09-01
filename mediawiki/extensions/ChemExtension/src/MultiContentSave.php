@@ -10,7 +10,7 @@ use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
-use DIQA\ChemExtension\ParserFunctions\ParserfunctionParser;
+use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use MediaWiki\Revision\RenderedRevision;
@@ -43,7 +43,7 @@ class MultiContentSave
     private static function parseParserFunctions($wikitext)
     {
         $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
-        $parser = new ParserfunctionParser();
+        $parser = new ParserFunctionParser();
         $creator = new LiteraturePageCreator();
         $literatureFunctions = $parser->parseFunction('literature', $wikitext);
 
