@@ -7,39 +7,30 @@ use DIQA\ChemExtension\Literature\DOIResolver;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Utils\WikiTools;
+use Exception;
 use MediaWiki\MediaWikiServices;
+use Parser;
 
-class RenderLiterature {
+class RenderLiterature
+{
 
     public static $LITERATURE_REFS = [];
     private static $LITERATURE_REF_COUNTER = 0;
 
-    public static function renderLiterature(\Parser $parser, $param1, $doiParameter = '')
+    public static function renderLiterature(Parser $parser)
     {
 
         try {
-            $doiResolver = new DOIResolver();
-
-            $parts = explode('=', $doiParameter);
-            $doiParameterValue = $parts[1];
-            $urlParts = parse_url($doiParameterValue);
-            if (!array_key_exists('path', $urlParts)) {
-                throw new Exception("DOI could not be interpreted: $doiParameterValue");
+            $parametersAsStringArray = func_get_args();
+            array_shift($parametersAsStringArray); // get rid of Parser
+            $parameters = ParserfunctionParser::parseArguments($parametersAsStringArray);
+            $doiParameterValue = $parameters['doi'] ?? null;
+            $doi = DOITools::parseDOI($doiParameterValue);
+            if (is_null($doi)) {
+                throw new Exception("DOI is empty");
             }
-            $doi = $urlParts['path'];
-            $doi = strpos($doi, '/') === 0 ? substr($doi, 1) : $doi;
 
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-                DB_REPLICA
-            );
-            $repo = new LiteratureRepository($dbr);
-            $literature = $repo->getLiterature($doi);
-
-            if (is_null($literature)) {
-                $doiData = $doiResolver->resolve($doi);
-            } else {
-                $doiData = $literature['data'];
-            }
+            $doiData = self::resolveDOI($doi);
 
         } catch (Exception $e) {
             $output = $e->getMessage();
@@ -48,7 +39,7 @@ class RenderLiterature {
 
         if (!array_key_exists($doi, self::$LITERATURE_REFS)) {
             self::$LITERATURE_REF_COUNTER++;
-            self::$LITERATURE_REFS[$doi] = ['data' => $doiData ];
+            self::$LITERATURE_REFS[$doi] = ['data' => $doiData];
         }
 
         $doiRenderer = new DOIRenderer();
@@ -61,4 +52,25 @@ class RenderLiterature {
         }
         return [$output, 'noparse' => true, 'isHTML' => true];
     }
+
+    /**
+     * @param $doi
+     * @return mixed
+     * @throws Exception
+     */
+    public static function resolveDOI($doi)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $repo = new LiteratureRepository($dbr);
+        $literature = $repo->getLiterature($doi);
+
+        if (is_null($literature)) {
+            $doiResolver = new DOIResolver();
+            $doiData = $doiResolver->resolve($doi);
+        } else {
+            $doiData = $literature['data'];
+        }
+        return $doiData;
+    }
+
 }

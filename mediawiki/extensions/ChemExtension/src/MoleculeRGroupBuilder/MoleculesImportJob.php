@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\InchIGenerator;
-use DIQA\ChemExtension\Pages\PageCreator;
+use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
@@ -38,7 +38,7 @@ class MoleculesImportJob extends Job
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $chemFormRepo->deleteAllConcreteMolecule($this->publicationPage);
-        $pageCreator = new PageCreator();
+        $pageCreator = new MoleculePageCreator();
 
         foreach ($this->params['moleculeCollections'] as $collection) {
 

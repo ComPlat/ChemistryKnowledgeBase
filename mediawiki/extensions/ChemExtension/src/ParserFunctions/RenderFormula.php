@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Pages\PageCreator;
+use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
@@ -48,7 +48,7 @@ class RenderFormula
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
 
-        $chemFormPage = PageCreator::getPageTitleToCreate($chemFormId, $formula);
+        $chemFormPage = MoleculePageCreator::getPageTitleToCreate($chemFormId, $formula);
         $attributes['chemFormPageText'] = !is_null($chemFormPage) ? $chemFormPage->getText() : '';
 
         $queryString = http_build_query([

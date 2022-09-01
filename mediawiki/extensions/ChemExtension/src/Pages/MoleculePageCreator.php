@@ -2,15 +2,21 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Title;
 
-class PageCreator
+class MoleculePageCreator
 {
 
+    private $logger;
+
+    public function __construct() {
+        $this->logger = new LoggerUtils('PageCreator', 'ChemExtension');
+    }
     /**
      * @throws Exception
      */
@@ -38,7 +44,11 @@ class PageCreator
         if (!$successful) {
             throw new Exception("Could not create molecule/reaction page");
         }
-
+        if (count($chemForm->getRGroups()) > 0) {
+            $this->logger->log("Created molecule collection page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
+        } else {
+            $this->logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
+        }
 
         return $title;
     }
