@@ -36,7 +36,7 @@ class GetRGroups extends SimpleHandler {
 
     private function getChemFormIdFromTitle(Title $title) {
         preg_match('/\d+/', $title->getDBkey(), $matches);
-        return $matches[0] - ChemFormRepository::BASE_ID;
+        return $matches[0];
     }
 
     public function needsWriteAccess() {

@@ -10,8 +10,8 @@ interface MoleculeRGroupServiceClient {
      * @param $molfile string Molecule in molfile V3000 format
      * @param $rGroups array of molecule rGroups
      * [
-     *      [ R1 => "...", R2 => "..."],
-     *      [ R1 => "...", R2 => "..."],
+     *      [ r1 => "...", r2 => "...", ...],
+     *      [ r1 => "...", r2 => "...", ...],
      *      ...
      * ]
      * @return mixed

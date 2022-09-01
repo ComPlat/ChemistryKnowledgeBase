@@ -32,14 +32,20 @@ M  V30 END CTAB
 M  END
 
 MOLFILE;
-        $o = new \stdClass();
+        $o = [];
 
-        $o->molecules = [];
         for($i = 0; $i < count($rGroups); $i++) {
             $molecule = new \stdClass();
-            $molecule->rests = $rGroups[$i];
-            $molecule->molfile = $molfile;
-            $o->molecules[] = $molecule;
+
+            foreach($rGroups[$i] as $r => $value) {
+                $molecule->{$r} = $value;
+            }
+            $molecule->mdl = $molfile;
+            $molecule->smiles = 'C1C=CC=CC=1';
+            $molecule->inchikey = md5(uniqid());
+            $molecule->inchi = md5(uniqid());
+
+            $o[] = $molecule;
         }
         return $o;
     }

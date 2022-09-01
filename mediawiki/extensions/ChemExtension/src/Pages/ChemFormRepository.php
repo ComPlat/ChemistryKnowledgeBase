@@ -7,8 +7,6 @@ use Title;
 
 class ChemFormRepository {
 
-    public const BASE_ID = 100000;
-
      private $db;
 
     /**
@@ -23,16 +21,11 @@ class ChemFormRepository {
     {
         $this->db->query('CREATE TABLE IF NOT EXISTS chem_form (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        chem_form_key VARCHAR(255) NOT NULL
-                    )  ENGINE=INNODB;');
-        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_chem_form_key_unique UNIQUE IF NOT EXISTS (chem_form_key)');
-
-        $this->db->query('CREATE TABLE IF NOT EXISTS chem_form_img (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        chem_form_key VARCHAR(255) NOT NULL,
-                     
+                        molecule_key VARCHAR(255) NOT NULL,
                         img_data MEDIUMBLOB NOT NULL
                     )  ENGINE=INNODB;');
+        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_molecule_key_unique UNIQUE IF NOT EXISTS (molecule_key)');
+        $this->db->query('ALTER TABLE chem_form AUTO_INCREMENT=100000');
 
         $this->db->query('CREATE TABLE IF NOT EXISTS molecule_collection (
                         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -40,34 +33,33 @@ class ChemFormRepository {
                         molecule_collection_page_id INT(10) UNSIGNED NOT NULL,
                         molecule_page_id INT NOT NULL,
                         molecule_collection_id INT NOT NULL,
-                        rests MEDIUMTEXT NOT NULL
+                        rgroups MEDIUMTEXT NOT NULL
                     )  ENGINE=INNODB;');
         $this->db->query('CREATE INDEX molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
         $this->db->query('CREATE INDEX publication_page_id_index ON molecule_collection (publication_page_id);');
-        return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
+        return [ 'chem_form', 'molecule_collection' ];
     }
 
     public function dropTables()
     {
         $this->db->query('DROP TABLE IF EXISTS chem_form;');
-        $this->db->query('DROP TABLE IF EXISTS chem_form_img;');
         $this->db->query('DROP TABLE IF EXISTS molecule_collection;');
 
-        return [ 'chem_form', 'chem_form_img', 'molecule_collection' ];
+        return [ 'chem_form', 'molecule_collection' ];
     }
 
     public function addChemForm($moleculeKey): int
     {
         $this->db->startAtomic( __METHOD__ );
         $res = $this->db->select('chem_form', ['id'],
-            ['chem_form_key' => $moleculeKey ]);
+            ['molecule_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $id = $row->id;
         } else {
             $this->db->insert('chem_form',
                 [
-                    'chem_form_key' => $moleculeKey,
+                    'molecule_key' => $moleculeKey,
                 ]);
             $id = $this->db->insertId();
         }
@@ -78,7 +70,7 @@ class ChemFormRepository {
     public function getChemFormId($moleculeKey)
     {
         $res = $this->db->select('chem_form', ['id'],
-            ['chem_form_key' => $moleculeKey ]);
+            ['molecule_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             return $row->id;
@@ -88,11 +80,11 @@ class ChemFormRepository {
 
     public function getMoleculeKey($chemFormId)
     {
-        $res = $this->db->select('chem_form', ['chem_form_key'],
+        $res = $this->db->select('chem_form', ['molecule_key'],
             ['id' => $chemFormId ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
-            return $row->chem_form_key;
+            return $row->molecule_key;
         }
         return null;
     }
@@ -100,25 +92,24 @@ class ChemFormRepository {
     public function addChemFormImage($moleculeKey, $imgData): int
     {
         $this->db->startAtomic( __METHOD__ );
-        $res = $this->db->select('chem_form_img', ['id'],
-            ['chem_form_key' => $moleculeKey,
-              ]
+        $res = $this->db->select('chem_form', ['id'],
+            ['molecule_key' => $moleculeKey]
         );
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $id = $row->id;
-            $this->db->update('chem_form_img',
+            $this->db->update('chem_form',
                 [
                     'img_data' => $imgData
 
                 ], [
-                    'chem_form_key' => $moleculeKey
+                    'molecule_key' => $moleculeKey
                 ]);
 
         } else {
-            $this->db->insert('chem_form_img',
+            $this->db->insert('chem_form',
                 [
-                    'chem_form_key' => $moleculeKey,
+                    'molecule_key' => $moleculeKey,
                     'img_data' => $imgData,
 
                 ]);
@@ -130,8 +121,8 @@ class ChemFormRepository {
 
     public function getChemFormImage($moleculeKey)
     {
-        $res = $this->db->select('chem_form_img', ['img_data'],
-            ['chem_form_key' => $moleculeKey ]);
+        $res = $this->db->select('chem_form', ['img_data'],
+            ['molecule_key' => $moleculeKey ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             return $row->img_data;
@@ -146,7 +137,7 @@ class ChemFormRepository {
                 'molecule_collection_page_id' => $moleculeCollectionPage->getArticleID(),
                 'molecule_page_id' => $moleculePage->getArticleID(),
                 'molecule_collection_id' => $moleculeCollectionId,
-                'rests' => json_encode($rGroups),
+                'rgroups' => json_encode($rGroups),
 
             ]);
     }
@@ -161,14 +152,14 @@ class ChemFormRepository {
     public function getConcreteMolecules(Title $moleculeCollectionPage): array
     {
         $results = [];
-        $res = $this->db->select('molecule_collection', ['publication_page_id', 'molecule_page_id', 'rests'],
+        $res = $this->db->select('molecule_collection', ['publication_page_id', 'molecule_page_id', 'rgroups'],
             ['molecule_collection_page_id' => $moleculeCollectionPage->getArticleID() ]);
         foreach ( $res as $row ) {
             $results[] =
                 [
                     'publication_page_id' => $row->publication_page_id,
                     'molecule_page_id' => $row->molecule_page_id,
-                    'rGroups' => json_decode($row->rests),
+                    'rGroups' => json_decode($row->rgroups),
 
                 ];
 
@@ -180,9 +171,9 @@ class ChemFormRepository {
     {
         $results = [];
         $res = $this->db->select(['molecule_collection', 'chem_form'],
-            ['publication_page_id', 'molecule_page_id', 'rests'],
+            ['publication_page_id', 'molecule_page_id', 'rgroups'],
             [
-                'chem_form_key' => $moleculeKey,
+                'molecule_key' => $moleculeKey,
                 'publication_page_id' => $publicationPage->getArticleID(),
                 'chem_form.id = molecule_collection.molecule_collection_id'
             ]);
@@ -191,7 +182,7 @@ class ChemFormRepository {
                 [
                     'publication_page_id' => $row->publication_page_id,
                     'molecule_page_id' => $row->molecule_page_id,
-                    'rGroups' => json_decode($row->rests),
+                    'rGroups' => json_decode($row->rgroups),
 
                 ];
 

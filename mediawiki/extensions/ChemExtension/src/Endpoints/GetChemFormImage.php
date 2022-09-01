@@ -1,4 +1,5 @@
 <?php
+
 namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
@@ -8,36 +9,38 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use Wikimedia\ParamValidator\ParamValidator;
 
-class GetChemFormImage extends SimpleHandler {
+class GetChemFormImage extends SimpleHandler
+{
 
-    public function run() {
+    public function run()
+    {
 
         $params = $this->getValidatedParams();
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
-        );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
 
         $chemFormRepo = new ChemFormRepository($dbr);
-        $inchikey = $params['moleculeKey'];
-        $chemFormImage64 = $chemFormRepo->getChemFormImage($inchikey);
-        if (is_null($chemFormImage64)) {
-            $res = new Response("chemical formula does not exist: $inchikey");
+        $moleculeKey = $params['moleculeKey'];
+        $imgDataBase64 = $chemFormRepo->getChemFormImage($moleculeKey);
+        if (is_null($imgDataBase64) || $imgDataBase64 == '') {
+            $res = new Response("chemical formula does not exist: $moleculeKey");
             $res->setStatus(400);
             return $res;
         }
-        $chemFormImage = base64_decode($chemFormImage64);
+        $imgData = base64_decode($imgDataBase64);
 
-        $response = new Response($chemFormImage);
+        $response = new Response($imgData);
         $response->setHeader('Content-Type', 'image/svg+xml');
         return $response;
     }
 
-    public function needsWriteAccess() {
+    public function needsWriteAccess()
+    {
         return false;
     }
 
-    public function getParamSettings() {
+    public function getParamSettings()
+    {
         return [
             'moleculeKey' => [
                 self::PARAM_SOURCE => 'query',

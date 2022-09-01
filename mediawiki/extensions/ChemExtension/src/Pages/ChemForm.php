@@ -123,9 +123,9 @@ class ChemForm
         return $this->rGroups;
     }
 
-    public static function fromMolOrRxn($molOrRxn, $inchi, $inchikey): ChemForm
+    public static function fromMolOrRxn($molOrRxn, $smiles, $inchi, $inchikey): ChemForm
     {
-        return new ChemForm($molOrRxn, '', $inchi, $inchikey, 200, 200, 'none', null);
+        return new ChemForm($molOrRxn, $smiles, $inchi, $inchikey, 200, 200, 'none', null);
 
 
     }

@@ -99,14 +99,13 @@ class PageCreator
      */
     public static function getPageTitleToCreate(int $id, $formula): ?Title
     {
-        $idWithBase = $id + ChemFormRepository::BASE_ID;
         if (MolfileProcessor::isReactionFormula($formula)) {
-            $title = Title::newFromText("Reaction:Reaction_$idWithBase");
+            $title = Title::newFromText("Reaction:Reaction_$id");
         } else {
             if (MolfileProcessor::hasRGroups($formula)) {
-                $title = Title::newFromText("Molecule:Collection_$idWithBase");
+                $title = Title::newFromText("Molecule:Collection_$id");
             } else {
-                $title = Title::newFromText("Molecule:Molecule_$idWithBase");
+                $title = Title::newFromText("Molecule:Molecule_$id");
             }
         }
         return $title;

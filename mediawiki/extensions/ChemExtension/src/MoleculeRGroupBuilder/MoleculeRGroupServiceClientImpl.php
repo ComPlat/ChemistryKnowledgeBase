@@ -2,19 +2,25 @@
 
 namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
-class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
+use DIQA\ChemExtension\Utils\LoggerUtils;
+
+class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
+{
 
     private $moleculeRGroupServiceUrl;
+    private $logger;
 
-    public function __construct() {
+    public function __construct()
+    {
         global $wgMoleculeRGroupServiceUrl;
         $moleculeRGroupServiceUrl = $wgMoleculeRGroupServiceUrl ?? null;
         if (is_null($moleculeRGroupServiceUrl)) {
             throw new Exception('Molecule R-Groups service is not properly configured. Set $wgMoleculeRGroupServiceUrl.');
         }
-
+        $this->logger = new LoggerUtils('MoleculeRGroupServiceClientImpl', 'ChemExtension');
         $this->moleculeRGroupServiceUrl = $moleculeRGroupServiceUrl;
     }
+
     function buildMolecules(string $molfile, array $rGroups)
     {
         try {
@@ -22,15 +28,16 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
             $headerFields[] = "Content-Type: application/json";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $ch = curl_init();
-            $url = $this->moleculeRGroupServiceUrl . "/api/v1/..."; // TODO: change path
+            $url = $this->moleculeRGroupServiceUrl . "/api/v1/rgroup/";
             $payload = new \stdClass();
-            $payload->molfile = $molfile;
-            $payload->rests = $rGroups;
+            $payload->mdl = $molfile;
+            $payload->rgroups = self::makeRGroupsUppercase($rGroups);
+            $this->logger->log("Request: " . print_r($payload, true));
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS,  json_encode($payload));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
             curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields );
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
             $response = curl_exec($ch);
@@ -42,6 +49,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
 
             list($header, $body) = self::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
+                $this->logger->log("Result: " . print_r($body, true));
                 return json_decode($body);
             }
             throw new Exception("Error on upload. HTTP status " . $httpcode . ". Message: " . $body);
@@ -49,6 +57,19 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient {
         } finally {
             curl_close($ch);
         }
+    }
+
+    private static function makeRGroupsUppercase($rGroups): array
+    {
+        $results = [];
+        foreach ($rGroups as $group) {
+            $result = [];
+            foreach ($group as $r => $value) {
+                $result[strtoupper($r)] = $value;
+            }
+            $results[] = $result;
+        }
+        return $results;
     }
 
     protected static function splitResponse($res): array

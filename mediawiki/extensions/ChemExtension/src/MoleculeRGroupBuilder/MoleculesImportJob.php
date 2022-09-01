@@ -46,19 +46,25 @@ class MoleculesImportJob extends Job
             $rGroupsTransposed = ArrayTools::transpose($collection['chemForm']->getRGroups());
 
             try {
-                $response = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $rGroupsTransposed);
-                $molecules = $response->molecules;
+
+                $molecules = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $rGroupsTransposed);
+
                 foreach ($molecules as $molecule) {
-                    $inchi = $this->getInchi($molecule->molfile);
-                    $chemForm = ChemForm::fromMolOrRxn($molecule->molfile, $inchi['InChI'], $inchi['InChIKey']);
+
+                    $chemForm = ChemForm::fromMolOrRxn($molecule->mdl, $molecule->smiles, $molecule->inchi, $molecule->inchikey);
+                    if (is_null($molecule->inchikey) || $molecule->inchikey === '') {
+                        $logger->error("Can not create molecule page. Inchikey is empty. {$chemForm->__toString()}");
+                        continue;
+                    }
 
                     $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
                     $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
-                        . "molfile: {$chemForm->getMolOrRxn()}, moleculeKey: {$chemForm->getMoleculeKey()}");
+                        . "chemform: {$chemForm->__toString()}, moleculeKey: {$chemForm->getMoleculeKey()}");
 
                     $moleculeCollectionId = $chemFormRepo->getChemFormId($collection['chemForm']->getMoleculeKey());
+
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
-                        $title, $moleculeCollectionId, $molecule->rests);
+                        $title, $moleculeCollectionId, $this->makeRGroupsLowercase($molecule));
 
                 }
             } catch (Exception $e) {
@@ -68,13 +74,15 @@ class MoleculesImportJob extends Job
         }
     }
 
-    private function getInchi($molfile) {
-        global $wgCEUseMoleculeRGroupsClientMock;
-        $mock = $wgCEUseMoleculeRGroupsClientMock ?? false;
-        if ($mock) {
-            return ['InChI' => md5(uniqid()), 'InChIKey' => md5(uniqid())];
-        } else {
-            return $this->inchiGenerator->getInchI($molfile);
+    private function makeRGroupsLowercase($molecule) {
+        $result = [];
+        $arr = ArrayTools::propertiesToArray($molecule);
+        foreach($arr as $key => $value) {
+            if (preg_match("/^r\d+/i", $key)) {
+                $result[strtolower($key)] = $value;
+            }
         }
+        return $result;
     }
+
 }
