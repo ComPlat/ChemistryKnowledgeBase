@@ -11,7 +11,7 @@
                     // Grab the tooltip element from the API
                     let tooltip = api.elements.tooltip;
                     let iframe = api.elements.target;
-                    let downloadURL = decodeURIComponent(iframe.attr('downloadurl'));
+                    let downloadURL = iframe.attr('downloadurl');
                     renderFormula(downloadURL, tooltip);
 
                 }

@@ -2,6 +2,7 @@
 window.onload = function(e){
 
     let formula = window.frameElement.getAttribute('formula');
+    if (formula == null) return;
     if (!formula.startsWith("$RXN")) {
         if (formula.trim() === '') {
             // try smiles

@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
+use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FormLayout;
@@ -43,7 +44,7 @@ class RenderFormula
         $chemFormId = $chemFormRepo->addChemForm($moleculeKey);
         $attributes['chemFormId'] = $chemFormId;
 
-        $attributes['downloadURL'] = urlencode($wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=$moleculeKey");
+        $attributes['downloadURL'] = $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=".urlencode($moleculeKey);
 
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
@@ -71,7 +72,7 @@ class RenderFormula
     {
 
         $output = '';
-        if (self::isOnMoleculePageAndImageDoesNotExist($moleculeKey)) {
+        if (self::imageNotExists($moleculeKey) && !WikiTools::isInVisualEditor()) {
             $output .= self::getRenderButton($moleculeKey, $formula);
         } else {
             $output .= "<iframe $serializedAttributes></iframe>";
@@ -80,7 +81,7 @@ class RenderFormula
         return $output;
     }
 
-    private static function isOnMoleculePageAndImageDoesNotExist($moleculeKey)
+    private static function imageNotExists($moleculeKey): bool
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $chemFormRepo = new ChemFormRepository($dbr);

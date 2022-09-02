@@ -1,7 +1,7 @@
 window.onload = function (e) {
 
     let chemFormPageText = window.frameElement.getAttribute("chemFormPageText");
-    let downloadURL = decodeURIComponent(window.frameElement.getAttribute("downloadurl"));
+    let downloadURL = window.frameElement.getAttribute("downloadurl");
     let showrgroups = window.frameElement.getAttribute("showrgroups") == 'true';
 
     render();
