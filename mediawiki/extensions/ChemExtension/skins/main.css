@@ -78,7 +78,7 @@ span.ce-show-rgroups-button {
     margin-top: 10px;
 }
 
-#render-formula-note {
+.render-formula-note {
     margin-top: 15px;
     color: orange;
     font-weight: bold;

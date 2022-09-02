@@ -25,6 +25,7 @@ class ShowMoleculeCollection {
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
 
+        if (is_null($wgTitle)) return;
         $molecules = $chemFormRepo->getConcreteMolecules($wgTitle);
 
         $rGroups = count($molecules) > 0 ? array_keys(ArrayTools::propertiesToArray($molecules[0]['rGroups'])) : [];

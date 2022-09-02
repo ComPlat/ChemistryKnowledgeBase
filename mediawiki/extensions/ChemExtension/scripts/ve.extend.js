@@ -8,7 +8,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         }
         let tools = new OO.VisualEditorTools();
 
-        var chemForm = panel.originalMwData.body.extsrc;
+        var molfile = panel.originalMwData.body.extsrc;
+        var smiles = panel.originalMwData.attrs.smiles;
 
         var button = new OO.ui.ButtonWidget({
             label: 'Open Ketcher'
@@ -16,7 +17,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                formula: chemForm,
+                formula: molfile,
+                smiles: smiles,
                 node: panel.selectedNode
             });
         });
@@ -25,14 +27,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         button = new OO.ui.ButtonWidget({
             label: 'Define R-Groups',
-            disabled: tools.getNumberOfMoleculeRGroups(chemForm) === 0
+            disabled: tools.getNumberOfMoleculeRGroups(molfile) === 0
         });
 
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-rgroups', {
                 attrs: panel.originalMwData.attrs,
-                numberOfMoleculeRGroups: tools.getNumberOfMoleculeRGroups(chemForm),
-                rGroupIds: tools.getRGroupIds(chemForm),
+                numberOfMoleculeRGroups: tools.getNumberOfMoleculeRGroups(molfile),
+                rGroupIds: tools.getRGroupIds(molfile),
                 node: panel.selectedNode
             });
         });

@@ -1,16 +1,14 @@
 <noinclude>Template for ChemicalFormula</noinclude>
 ‎<includeonly>
-{{#if: {{{parent}}} | | This is a collection of molecules }}
 * Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
-* InChI: {{#set: InChI={{{inchi}}} }} {{{inchi}}}
-* InChIKey: {{#set: InChIKey={{{inchikey}}} }} {{{inchikey}}}
+{{#if: {{{inchi}}} |* InChI: {{#set: InChI={{{inchi}}} }} {{{inchi}}} | }}
+{{#if: {{{inchikey}}} |* InChI: {{#set: InChI={{{inchikey}}} }} {{{inchikey}}} | }}
 {{#if: {{{parent}}} |* Belongs to molecule collection: [[{{{parent}}}]] | }}
 {{#tag:chemform|
 {{{molOrRxn}}}
 |smiles={{{smiles}}}
 |inchikey={{{inchikey}}}
 }}
-{{#if: {{{parent}}} | {{DISPLAYTITLE:{{{smiles}}} }} | }}
 [[Category:Molecule]]
 ‎<includeonly>
 

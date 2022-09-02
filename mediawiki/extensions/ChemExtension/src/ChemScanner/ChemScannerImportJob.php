@@ -54,7 +54,7 @@ class ChemScannerImportJob extends Job {
         foreach($chemScannerResult->molecules as $m) {
             $wikitext .= "\n=== {$m->label}===";
             $wikitext .= "\nDescription: {$m->text}";
-            $wikitext .= "\n<chemform>\n{$m->cano_smiles}\n</chemform>";
+            $wikitext .= "\n<chemform>\n{$m->mdl}\n</chemform>";
             $wikitext .= "\n";
         }
         return $wikitext;
@@ -76,21 +76,21 @@ class ChemScannerImportJob extends Job {
             foreach($reaction->reactants as $r) {
                 $wikitext .= "\n* Name: {$r->label}";
                 $wikitext .= "\n* Description: {$r->text}";
-                $wikitext .= "\n<chemform>\n{$r->smiles}\n</chemform>";
+                $wikitext .= "\n<chemform smiles=\"{$r->smiles}\"></chemform>";
                 $wikitext .= "\n";
             }
             $wikitext .= "\n=== Reagents ===";
             foreach($reaction->reagents as $r) {
                 $wikitext .= "\n* Name: {$r->label}";
                 $wikitext .= "\n* Description: {$r->text}";
-                $wikitext .= "\n<chemform>\n{$r->smiles}\n</chemform>";
+                $wikitext .= "\n<chemform smiles=\"{$r->smiles}\"></chemform>";
                 $wikitext .= "\n";
             }
             $wikitext .= "\n=== Products ===";
             foreach($reaction->products as $product) {
                 $wikitext .= "\n* Name: {$product->label}";
                 $wikitext .= "\n* Description: {$product->text}";
-                $wikitext .= "\n<chemform>\n{$product->smiles}\n</chemform>";
+                $wikitext .= "\n<chemform smiles=\"{$product->smiles}\"></chemform>";
                 $wikitext .= "\n";
             }
             $wikitext .= "\n=== Steps ===";
@@ -104,7 +104,7 @@ class ChemScannerImportJob extends Job {
                     $wikitext .= "\nTemperature: {$step->temperature}";
                 }
                 foreach($step->reagents as $reagent) {
-                    $wikitext .= "\n<chemform>\n{$reagent}\n</chemform>";
+                    $wikitext .= "\n<chemform smiles=\"{$reagent}\"></chemform>";
                 }
                 $wikitext .= "\n";
             }

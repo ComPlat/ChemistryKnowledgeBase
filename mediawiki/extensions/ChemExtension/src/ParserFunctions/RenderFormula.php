@@ -82,17 +82,9 @@ class RenderFormula
 
     private static function isOnMoleculePageAndImageDoesNotExist($moleculeKey)
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
-        );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $chemFormRepo = new ChemFormRepository($dbr);
-
-        global $wgTitle;
-        if (!self::isMoleculeOrReaction($wgTitle)) {
-            return false;
-        }
         return $chemFormRepo->getChemFormImage($moleculeKey) == '';
-
     }
 
     private static function serializeAttributes(array $attributes): string
@@ -112,8 +104,7 @@ class RenderFormula
         self::outputKetcher();
 
         $label = new LabelWidget([
-            'classes' => [],
-            'id' => 'render-formula-note',
+            'classes' => ['render-formula-note'],
             'label' => 'Image of molecule was not yet rendered',
             'flags' => ['primary', 'progressive'],
             'data' => ['inchikey' => $chemFormId, 'formula' => $formula],
