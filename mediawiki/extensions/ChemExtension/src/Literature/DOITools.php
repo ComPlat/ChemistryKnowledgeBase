@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension\Literature;
 
+use DateTime;
+
 class DOITools {
 
     /**
@@ -46,4 +48,120 @@ class DOITools {
         $doi = $urlParts['path'];
         return strpos($doi, '/') === 0 ? substr($doi, 1) : $doi;
     }
+
+    public static function formatLicenses($licenses): array
+    {
+        if ($licenses == '') {
+            return [];
+        }
+        $result = [];
+        foreach ($licenses as $license) {
+            $date = self::parseDateFromDateParts($license->start->{'date-parts'});
+            $result[] = ['date' => $date, 'URL' => $license->URL];
+        }
+        return $result;
+    }
+
+    public static function parseDateFromDateParts($dateParts)
+    {
+        if ($dateParts == '') {
+            return '-';
+        }
+        $first = $dateParts[0]; // why several at all??
+        if (count($first) === 1) {
+            return $first[0]; // year
+        } else if (count($first) === 2) {
+            $year = $first[0];
+            $dateObj = DateTime::createFromFormat('!m', $first[1]);
+            $monthName = $dateObj->format('F');
+            return "$monthName $year";
+        } else {
+            return date('d.m.Y', strtotime("{$first[0]}/{$first[1]}/{$first[2]}"));
+        }
+    }
+
+    public static function formatAuthors($authors): array
+    {
+        if ($authors == '') {
+            return [];
+        }
+        $result = [];
+        foreach ($authors as $author) {
+            $affiliation = implode(", ", array_map(function ($e) {
+                return $e->name;
+            }, $author->affiliation));
+            $name = "{$author->given} {$author->family}";
+            $result[] = ['nameAndAfiliation' => "$name, $affiliation", 'orcidUrl' => $author->ORCID];
+        }
+        return $result;
+    }
+
+    public static function getTypeLabel($typeId): string
+    {
+        switch ($typeId) {
+
+            case "book-section":
+                return "Book Section";
+            case "monograph":
+                return "Monograph";
+            case "report":
+                return "Report";
+            case "peer-review":
+                return "Peer Review";
+            case "book-track":
+                return "Book Track";
+            case "journal-article":
+                return "Journal Article";
+            case "book-part":
+                return "Part";
+            case "other":
+                return "Other";
+            case "book":
+                return "Book";
+            case "journal-volume":
+                return "Journal Volume";
+            case "book-set":
+                return "Book Set";
+            case "reference-entry":
+                return "Reference Entry";
+            case "proceedings-article":
+                return "Proceedings Article";
+            case "journal":
+                return "Journal";
+            case "component":
+                return "Component";
+            case "book-chapter":
+                return "Book Chapter";
+            case "proceedings-series":
+                return "Proceedings Series";
+            case "report-series":
+                return "Report Series";
+            case "proceedings":
+                return "Proceedings";
+            case "standard":
+                return "Standard";
+            case "reference-book":
+                return "Reference Book";
+            case "posted-content":
+                return "Posted Content";
+            case "journal-issue":
+                return "Journal Issue";
+            case "dissertation":
+                return "Dissertation";
+            case "grant":
+                return "Grant";
+            case "dataset":
+                return "Dataset";
+            case "book-series":
+                return "Book Series";
+            case "edited-book":
+                return "Edited Book";
+            case "standard-series":
+                return "Standard Series";
+            default: {
+                return is_null($typeId) || $typeId == '' ? '-' : $typeId;
+            }
+        }
+    }
+
 }

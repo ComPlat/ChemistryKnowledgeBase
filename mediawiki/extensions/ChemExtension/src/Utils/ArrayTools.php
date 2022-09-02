@@ -23,4 +23,7 @@ class ArrayTools {
         return $result;
     }
 
+    public static function getFirstIfArray($value) {
+        return is_array($value) ? reset($value):$value;
+    }
 }

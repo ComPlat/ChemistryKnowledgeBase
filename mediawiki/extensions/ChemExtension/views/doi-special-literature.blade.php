@@ -8,6 +8,10 @@
         <td>{!! $title !!}</td>
     </tr>
     <tr>
+        <td>Type</td>
+        <td>{{$type}}</td>
+    </tr>
+    <tr>
         <td>Authors</td>
         <td>
             @if(count($authors) === 0)

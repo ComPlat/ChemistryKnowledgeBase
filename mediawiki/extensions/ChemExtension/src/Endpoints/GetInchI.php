@@ -2,8 +2,10 @@
 namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\Pages\InchIGenerator;
+use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use Wikimedia\ParamValidator\ParamValidator;
+use Exception;
 
 class GetInchI extends SimpleHandler {
 
@@ -13,10 +15,16 @@ class GetInchI extends SimpleHandler {
 
         $mol = base64_decode($params['mol']);
 
-        $inchiGenerator = new InchIGenerator();
-        $inchi = $inchiGenerator->getInchI($mol);
+        try {
 
-        return $inchi;
+            $inchIGenerator = new InchIGenerator();
+            return $inchIGenerator->getInchI($mol);
+
+        } catch(Exception $e) {
+            $res = new Response($e->getMessage());
+            $res->setStatus(500);
+            return $res;
+        }
     }
 
     public function needsWriteAccess() {

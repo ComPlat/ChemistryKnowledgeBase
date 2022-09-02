@@ -2,7 +2,8 @@
 
 namespace DIQA\ChemExtension\Literature;
 
-use DateTime;
+use DIQA\ChemExtension\Utils\ArrayTools;
+use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
@@ -11,9 +12,9 @@ use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
 use SpecialPage;
-use Exception;
 
-class SpecialLiterature extends SpecialPage {
+class SpecialLiterature extends SpecialPage
+{
 
     /**
      * @var LiteratureRepository
@@ -24,15 +25,16 @@ class SpecialLiterature extends SpecialPage {
      */
     private $blade;
 
-    public function __construct() {
+    public function __construct()
+    {
 
-        parent::__construct ( 'Literature', '', true);
+        parent::__construct('Literature', '', true);
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ( $views, $cache );
-        
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $this->blade = new Blade ($views, $cache);
+
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $this->repo = new LiteratureRepository($dbr);
 
     }
@@ -42,7 +44,8 @@ class SpecialLiterature extends SpecialPage {
      * {@inheritDoc}
      * @see SpecialPage::execute()
      */
-    public function execute($subPage) {
+    public function execute($subPage)
+    {
 
         $this->getOutput()->setPageTitle('Literature');
 
@@ -72,69 +75,29 @@ class SpecialLiterature extends SpecialPage {
             $data = $literature['data'];
         }
 
-        $html = $this->blade->view ()->make ( "doi-special-literature",
+        $html = $this->blade->view()->make("doi-special-literature",
             [
                 'doi' => $data->DOI,
-                'title' => strip_tags($data->title,"<sub><sup><b><i>"),
-                'authors' => $this->formatAuthors($data->author),
+                'type' => DOITools::getTypeLabel($data->type),
+                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
+                'authors' => DOITools::formatAuthors($data->author),
                 'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
-                'publishedOnlineAt' => $this->parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),
-                'publishedPrintAt' => $this->parseDateFromDateParts($data->{'published-print'}->{'date-parts'}),
+                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),
+                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'}),
                 'publisher' => $data->publisher,
-                'licenses' => $this->formatLicenses($data->license),
+                'licenses' => DOITools::formatLicenses($data->license),
                 'issue' => $data->issue,
                 'volume' => $data->volume,
                 'pages' => $data->page,
                 'subjects' => $data->subject,
-                'funders' => count($data->funder) === 0 ? "-" : array_map(function($e) { return $e->name; }, $data->funder),
+                'funders' => count($data->funder) === 0 ? "-" : array_map(function ($e) {
+                    return $e->name;
+                }, $data->funder),
             ]
-        )->render ();
+        )->render();
 
         $html = str_replace("\n", "", $html);
         $this->getOutput()->addHTML($html);
-    }
-
-    private function formatLicenses($licenses): array
-    {
-        if ($licenses == '') {
-            return [];
-        }
-        $result = [];
-        foreach($licenses as $license) {
-            $date = $this->parseDateFromDateParts($license->start->{'date-parts'});
-            $result[] = [ 'date' => $date, 'URL' => $license->URL];
-        }
-        return $result;
-    }
-
-    private function parseDateFromDateParts($dateParts) {
-        if ($dateParts == '') {
-            return '-';
-        }
-        $first = $dateParts[0]; // why several at all??
-        if (count($first) === 1) {
-            return $first[0]; // year
-        } else if (count($first) === 2) {
-            $year = $first[0];
-            $dateObj   = DateTime::createFromFormat('!m', $first[1]);
-            $monthName = $dateObj->format('F');
-            return "$monthName $year";
-        } else {
-            return date('d.m.Y', strtotime("{$first[0]}/{$first[1]}/{$first[2]}"));
-        }
-    }
-    private function formatAuthors($authors): array
-    {
-        if ($authors == '') {
-            return [];
-        }
-        $result = [];
-        foreach($authors as $author) {
-            $affiliation = implode(", ", array_map(function($e) { return $e->name; }, $author->affiliation));
-            $name = "{$author->given} {$author->family}";
-            $result[] = [ 'nameAndAfiliation' => "$name, $affiliation", 'orcidUrl' => $author->ORCID];
-        }
-        return $result;
     }
 
     private function getWikiGUIControls(): string
@@ -154,7 +117,7 @@ class SpecialLiterature extends SpecialPage {
                 'label' => $this->msg('enter-doi')->text()
             ]
         );
-        return new FormLayout(['items' => [$wikiNameInput, $resolveDOIButton] ]);
+        return new FormLayout(['items' => [$wikiNameInput, $resolveDOIButton]]);
 
     }
 }

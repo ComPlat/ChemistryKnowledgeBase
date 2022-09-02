@@ -3,14 +3,20 @@
 namespace DIQA\ChemExtension\Pages;
 
 use DIQA\ChemExtension\Utils\MolfileProcessor;
+use Exception;
 
 class InchIGenerator {
 
+    /**
+     * @throws Exception
+     */
     public function getInchI($mol) {
         global $IP;
         $results = ['InChI' => '', 'InChIKey' => ''];
         $inchToolPath = "$IP/extensions/ChemExtension/resources/inchi/inchi-1";
-
+        if (!is_executable($inchToolPath)) {
+            throw new Exception("$inchToolPath is not executable");
+        }
         $mol = MolfileProcessor::cleanUp($mol);
 
         $tmpFile = tempnam("/tmp/", uniqid());

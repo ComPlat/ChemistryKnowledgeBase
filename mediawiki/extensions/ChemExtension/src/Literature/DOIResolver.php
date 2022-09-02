@@ -8,51 +8,70 @@ use MediaWiki\MediaWikiServices;
 class DOIResolver
 {
 
+    /**
+     * @throws Exception
+     */
     public function resolve($doi)
     {
-        try {
-            $curl = null;
 
-            $doi = trim($doi);
-            if ($doi === '') {
-                throw new Exception("DOI is empty");
-            }
+        $doi = trim($doi);
+        if ($doi === '') {
+            throw new Exception("DOI is empty");
+        }
 
-            $curl = curl_init();
-
-            curl_setopt_array($curl, array(
-                CURLOPT_NOBODY => false,
-                CURLOPT_HTTPGET => true,
-                CURLOPT_URL => "https://dx.doi.org/$doi",
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HEADER => false,
-                CURLOPT_HTTPHEADER => [
-                    'Accept: application/vnd.citationstyles.csl+json'
-                ]
-            ));
-
-            $responseBody = curl_exec($curl);
-            $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
+        list($responseBody, $statusCode) = $this->request($doi, 'https://dx.doi.org/', 'application/vnd.citationstyles.csl+json');
+        if ($statusCode == 404) {
+            list($responseBody, $statusCode) = $this->request($doi, 'https://api.crossref.org/works/');
             if ($statusCode == 404) {
                 throw new Exception("DOI could not be found: $doi");
-            }
-            if ($statusCode != 200) {
+            } elseif ($statusCode != 200) {
                 throw new Exception("resolving DOI failed with status code: $statusCode");
             }
-
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-                DB_MASTER
-            );
-            $repo = new LiteratureRepository($dbr);
-            $repo->addLiterature($doi, $responseBody);
-
-            return json_decode($responseBody);
-        } finally {
-            if (!is_null($curl)) {
-                curl_close($curl);
-            }
+            $result = json_decode($responseBody);
+            $result = $result->message;
+        } elseif ($statusCode != 200) {
+            throw new Exception("resolving DOI failed with status code: $statusCode");
+        } else {
+            $result = json_decode($responseBody);
         }
+
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
+            DB_MASTER
+        );
+        $repo = new LiteratureRepository($dbr);
+        $repo->addLiterature($doi, json_encode($result));
+
+        return $result;
+
+    }
+
+    /**
+     * @param string $doi
+     * @return array
+     */
+    private function request(string $doi, string $baseUrl, string $acceptHeader = null): array
+    {
+        $curl = curl_init();
+
+        $header = [];
+        if (!is_null($acceptHeader)) {
+            $header[] = "Accept: $acceptHeader";
+        }
+        curl_setopt_array($curl, array(
+            CURLOPT_NOBODY => false,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_URL => "$baseUrl$doi",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HEADER => false,
+            CURLOPT_HTTPHEADER => $header
+        ));
+
+        $responseBody = curl_exec($curl);
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        if (!is_null($curl)) {
+            curl_close($curl);
+        }
+        return array($responseBody, $statusCode);
     }
 }

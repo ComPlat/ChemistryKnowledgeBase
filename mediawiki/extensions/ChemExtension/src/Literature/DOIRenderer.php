@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Literature;
 
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
+use DIQA\ChemExtension\Utils\ArrayTools;
 use Philo\Blade\Blade;
 use OutputPage;
 
@@ -26,7 +27,7 @@ class DOIRenderer {
         $html = $blade->view ()->make ( "doi-rendered",
             [
                 'index' => DOITools::generateReferenceIndex($doiData),
-                'title'  => strip_tags($doiData->title,"<sub><sup><b><i>"),
+                'title'  => strip_tags(ArrayTools::getFirstIfArray($doiData->title),"<sub><sup><b><i>"),
                 'authors' => $authors,
                 'journal' => $journal,
                 'volume' => $volume,
