@@ -33,17 +33,62 @@
         let moleculeKey = data.moleculeKey;
         let pageid = data.pageid;
 
+        this.controls = new OO.ui.PanelLayout({ expanded: false});
+        this.image = new OO.ui.PanelLayout({expanded: false});
         this.content = new OO.ui.PanelLayout({padded: true, expanded: false});
-        this.content.$element.append('<p>Press Escape key to ' +
-            'close.</p>');
+        this.content.$element.addClass('rgroups-molecule');
+        this.content.$element.append(this.controls.$element);
+        this.content.$element.append(this.image.$element);
+        var closeButton = new OO.ui.ButtonWidget({
+            label: 'close'
+        });
+        let closeHandler =  function () {
+            this.dialog.div.remove();
+        };
+        closeButton.on('click', closeHandler.bind(this));
+        this.controls.$element.append(closeButton.$element);
 
+        this.right = new OO.ui.PanelLayout({padded: true, expanded: false});
+        this.right.$element.addClass('rgroups-list');
+
+        this.$element.append(this.content.$element);
+        this.$element.append(this.right.$element);
+        this.getMoleculeTemplateImage(moleculeKey);
         this.getRGroups(moleculeKey, pageid, this.addTable.bind(this));
-
+        this.isJobPending(pageid);
     }
 
-    OO.ui.RGroupsDisplayWidget.prototype.getBodyHeight = function () {
-        return this.content.$element.outerHeight(true);
-    };
+    OO.ui.RGroupsDisplayWidget.prototype.isJobPending = function(pageid) {
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        ajax.isJobPending(pageid).done((response) => {
+            if (response.jobPending) {
+                this.content.$element.append($('<span>').addClass('hint-blinking').text('Job is pending'));
+            }
+        });
+    }
+
+    OO.ui.RGroupsDisplayWidget.prototype.getMoleculeTemplateImage = function(moleculeKey) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let downloadURL = baseUrl + "/v1/chemform?moleculeKey=" + encodeURIComponent(moleculeKey);
+        let that = this;
+        fetch(downloadURL).then(r => {
+
+            if (r.status != 200) {
+                that.image.$element.append("Could not load molecule image");
+                return;
+            }
+            r.blob().then(function (blob) {
+                const img = new Image();
+                img.src = URL.createObjectURL(blob);
+                img.style.width = "200px";
+                img.style.height = "300px";
+
+                that.image.$element.append(img);
+
+            });
+
+        });
+    }
 
     OO.ui.RGroupsDisplayWidget.prototype.getRGroups = function (key, pageid, callback) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
@@ -58,25 +103,16 @@
         });
     }
 
-    OO.ui.RGroupsDisplayWidget.prototype.addContent = function () {
-        this.$element.append(this.content.$element);
-        this.dialog.setDimensions({
-            'width': '800px',
-            'minWidth': '800px',
-            'height': '400px',
-            'minHeight': '400px'
-        });
-    };
 
     OO.ui.RGroupsDisplayWidget.prototype.addTable = function (response) {
 
         if (response.length === 0) {
-            this.content.$element.append('<p>Can not find any molecules</p>');
-            this.addContent();
+            this.right.$element.append('<p>Can not find any molecules</p>');
+
             return;
         }
         let rGroupIds = Object.keys(response[0].rGroups);
-        this.$element.empty();
+        this.right.$element.empty();
         let table = $('<table>');
         table.attr('id', 'molecule-rest');
         let headerRow = this.header(rGroupIds);
@@ -102,8 +138,8 @@
             table.append(row);
         });
 
-        this.content.$element.append(table);
-        this.addContent();
+        this.right.$element.append(table);
+
     };
 
     OO.ui.RGroupsDisplayWidget.prototype.header = function (rGroupIds) {

@@ -83,3 +83,33 @@ span.ce-show-rgroups-button {
     color: orange;
     font-weight: bold;
 }
+
+.rgroup-draggable {
+    width: 1000px;
+    height: 500px;
+    padding: 0.5em;
+    z-index: 1000;
+}
+
+.rgroups-molecule {
+    width: 30%;
+    height: 450px;
+    float:left;
+}
+
+.rgroups-list {
+    width: 70%;
+    height: 450px;
+    float:left;
+    overflow: auto;
+}
+
+.hint-blinking {
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}

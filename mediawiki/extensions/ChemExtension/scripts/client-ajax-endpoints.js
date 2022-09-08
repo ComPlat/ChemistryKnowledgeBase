@@ -35,6 +35,15 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.isJobPending = function (pageId) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/job/pending?pageId=" + pageId;
+        return $.ajax({
+            method: "GET",
+            url: url
+        });
+    }
+
     OO.initClass(window.ChemExtension.AjaxEndpoints);
 
 

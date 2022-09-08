@@ -44,16 +44,16 @@ window.onload = function (e) {
             let moleculeKey = getParameterByName('moleculekey');
             let pageid = getParameterByName('pageid');
 
-
-            var myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
+            let $ = window.parent.$;
+            let draggable = $('<div>').addClass('ui-widget-content rgroup-draggable');
+            let myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
                 size: 'large'
-            } );
+            }, draggable );
+            myDialog.initialize({moleculeKey: moleculeKey, pageid: pageid});
 
-            let windowManager = new window.parent.OO.ui.WindowManager();
-            window.parent.document.body.append( windowManager.$element['0']);
-
-            windowManager.addWindows( [ myDialog ] );
-            windowManager.openWindow( myDialog, {moleculeKey: moleculeKey, pageid: pageid} );
+            draggable.draggable();
+            ;
+            $('body').prepend($('<div>').height('0px').append(draggable));
 
         });
     }

@@ -40,7 +40,7 @@ class Setup {
 
             ],
             'styles' => [ 'skins/main.css' ],
-            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip'],
+            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui'],
         );
 
         $wgResourceModules['ext.diqa.qtip'] = array(
