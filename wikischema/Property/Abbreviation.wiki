@@ -1,0 +1,5 @@
+;Purpose
+* Contains the abbreviation of the molecule
+
+;Datatype
+* [[Has type::String]]

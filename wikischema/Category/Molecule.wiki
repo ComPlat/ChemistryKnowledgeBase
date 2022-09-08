@@ -1,1 +1,2 @@
 == Molecule category ==
+{{#default_form:Molecule}}

@@ -3,8 +3,8 @@
 * Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
 {{#tag:chemform|
 {{{molOrRxn}}}
-|smiles={{{smiles}}}
-|inchikey={{{inchikey}}}
+|smiles={{{smiles|}}}
+|inchikey={{{inchikey|}}}
 }}
 {{DISPLAYTITLE:{{{smiles}}} }}
 [[Category:Reaction]]
