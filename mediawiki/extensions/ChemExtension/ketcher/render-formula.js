@@ -51,11 +51,22 @@ window.onload = function (e) {
             }, draggable );
             myDialog.initialize({moleculeKey: moleculeKey, pageid: pageid});
 
+            draggable.css({
+                top: getScrollPos() + Math.floor((window.parent.innerHeight - 450) / 2),
+                left: Math.floor((window.parent.innerWidth - 1000) / 2)
+            });
             draggable.draggable();
             ;
             $('body').prepend($('<div>').height('0px').append(draggable));
 
         });
+    }
+
+    function getScrollPos() {
+        let parent = window.parent;
+        let doc = parent.document.documentElement;
+        return (parent.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+
     }
 
 }
