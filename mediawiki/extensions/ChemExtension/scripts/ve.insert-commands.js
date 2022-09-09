@@ -200,4 +200,70 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.AddMoleculeLink.static.icon = 'link';
     ve.ui.AddMoleculeLink.static.commandName = 'addMoleculeLink';
     ve.ui.toolFactory.register(ve.ui.AddMoleculeLink);
+
+// -----------------------------------------------------------------------------------------------------------
+// add form input command
+// -----------------------------------------------------------------------------------------------------------
+    ve.ui.AddFormInputCommandCommand = function veUiAddFormInputCommandCommand(name, action, method, options) {
+
+        // Parent constructor
+        ve.ui.AddFormInputCommandCommand.super.call(this, name, action, method, options);
+
+    };
+
+    /* Setup */
+
+    OO.inheritClass(ve.ui.AddFormInputCommandCommand, ve.ui.Command);
+    ve.ui.commandRegistry.register(
+        new ve.ui.AddFormInputCommandCommand(
+            // Command name
+            'AddFormInputCommand',
+            // Type and name of the action to execute
+            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
+            {
+                // Extra arguments for the action
+                args: [
+                    // Content to insert
+                    [
+                        {
+                            type: 'mwTransclusionInline',
+                            attributes: {
+                                mw: {
+                                    parts:  [
+                                        {
+                                            template: {
+                                                i: 0,
+                                                params: {
+                                                    form: { wt: "" }
+                                                },
+                                                target: { wt: "#veforminput:", "function": "veforminput"}
+                                            }
+                                        }
+                                    ]
+                                },
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#veforminput:","function":"veforminput"},"params":{"form":{"wt":""}},"i":0}}]}"'
+                            }
+                        }
+
+                    ],
+                    // Annotate content to match surrounding annotations?
+                    true,
+                    // Move cursor to after the new content? (otherwise - select it)
+                    true
+                ],
+                supportedSelections: ['linear']
+            }
+        )
+    );
+
+    ve.ui.AddFormInputCommand = function VeUiAddFormInputCommand() {
+        ve.ui.AddFormInputCommand.super.apply(this, arguments);
+    };
+    OO.inheritClass(ve.ui.AddFormInputCommand, ve.ui.Tool);
+    ve.ui.AddFormInputCommand.static.name = 'AddFormInputCommand';
+    ve.ui.AddFormInputCommand.static.group = 'insert';
+    ve.ui.AddFormInputCommand.static.title = 'Add experiment';
+    ve.ui.AddFormInputCommand.static.icon = '';
+    ve.ui.AddFormInputCommand.static.commandName = 'AddFormInputCommand';
+    ve.ui.toolFactory.register(ve.ui.AddFormInputCommand);
 });

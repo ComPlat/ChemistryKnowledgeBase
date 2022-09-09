@@ -6,6 +6,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
+use DIQA\ChemExtension\ParserFunctions\VEFormInput;
 use OutputPage;
 use Skin;
 use Parser;
@@ -40,7 +41,7 @@ class Setup {
 
             ],
             'styles' => [ 'skins/main.css' ],
-            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui'],
+            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit'],
         );
 
         $wgResourceModules['ext.diqa.qtip'] = array(
@@ -67,6 +68,7 @@ class Setup {
         $parser->setFunctionHook( 'literature', [ RenderLiterature::class, 'renderLiterature' ] );
         $parser->setFunctionHook( 'moleculelink', [ RenderMoleculeLink::class, 'renderMoleculeLink' ] );
         $parser->setFunctionHook( 'showMoleculeCollection', [ ShowMoleculeCollection::class, 'renderMoleculeCollectionTable' ] );
+        $parser->setFunctionHook( 'veforminput', [ VEFormInput::class, 'renderVEFormInput' ] );
     }
 
 

@@ -13,6 +13,7 @@ $magicWords['en'] = [
     'literature' => [ 0, 'literature' ],
     'moleculelink' => [ 0, 'moleculelink' ],
     'showMoleculeCollection' => [ 0, 'showMoleculeCollection' ],
+    'veforminput' => [ 0, 'veforminput' ],
 ];
 
 $magicWords['de'] = $magicWords['en'];

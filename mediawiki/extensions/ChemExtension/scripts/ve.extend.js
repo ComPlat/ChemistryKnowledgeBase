@@ -48,10 +48,35 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.LinearContextItemExtension.extend = function(panel, context, model) {
 
         let template = ve.ui.LinearContextItemExtension.getTemplate(model);
-        if (template == null || template.target == null || template.target.wt != '#literature:') {
+        if (template == null || template.target == null) {
             return;
         }
 
+        if (template.target.wt == '#literature:') {
+            ve.ui.LinearContextItemExtension.extendForLiterature(panel, context, model);
+        } else if (template.target.wt == '#veforminput:') {
+            ve.ui.LinearContextItemExtension.extendForVEFormInput(panel, context, model);
+        }
+    }
+
+    ve.ui.LinearContextItemExtension.extendForVEFormInput = function(panel, context, model) {
+        let button = new OO.ui.ButtonWidget({
+            label: 'Add experiment'
+        });
+
+        button.on('click', function () {
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+            if (!template || !template.params || !template.params.form) return;
+            let form = template.params.form.wt;
+            let wgScriptPath = mw.config.get('wgScriptPath')
+            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form, button.$element );
+
+        });
+
+        panel.$actions.append(button.$element);
+    }
+
+    ve.ui.LinearContextItemExtension.extendForLiterature = function(panel, context, model) {
         let button = new OO.ui.ButtonWidget({
             label: 'Open DOI'
         });
