@@ -23,8 +23,10 @@ iframe.chemformula {
 
 .chemformula-tooltip {
     background: lightyellow;
-    max-width: 1000px !important;
-    max-height: 1000px !important;
+    width: 500px;
+    height: 500px;
+    max-width: 500px !important;
+    max-height: 500px !important;
 }
 
 
@@ -36,8 +38,12 @@ div.chem_ext_literature:hover {
     background: lightblue;
 }
 
-table#molecule-rest {
+table.molecule-rest {
     width: 100%
+}
+
+table.molecule-rest td:nth-child(1) {
+    width: 150px;
 }
 
 table#molecule-rest td {
@@ -61,8 +67,7 @@ span.ce-show-rgroups-button {
 }
 
 .chemformula-tooltip img {
-    width: 50% !important;
-    height: 50% !important;
+
 }
 
 .ce-literature-table {
@@ -85,22 +90,24 @@ span.ce-show-rgroups-button {
 }
 
 .rgroup-draggable {
-    width: 1000px;
-    height: 500px;
+    width: 700px;
+    height: 700px;
     padding: 0.5em;
     z-index: 1000;
 }
 
 .rgroups-molecule {
     width: 30%;
-    height: 450px;
-    float:left;
+    height: 250px;
+}
+
+.rgroups-molecule-controls {
+    margin-top: 15px;
 }
 
 .rgroups-list {
     width: 70%;
-    height: 450px;
-    float:left;
+    height: 430px;
     overflow: auto;
 }
 

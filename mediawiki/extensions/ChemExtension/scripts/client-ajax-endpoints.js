@@ -9,7 +9,7 @@
 
     };
 
-    window.ChemExtension.AjaxEndpoints.prototype.uploadImage = function (moleculeKey, imgData, callback) {
+    window.ChemExtension.AjaxEndpoints.prototype.uploadImage = function (moleculeKey, imgData) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/chemform/upload?moleculeKey=" + encodeURIComponent(moleculeKey);
 
@@ -19,9 +19,6 @@
             contentType: "application/x-www-form-urlencoded",
             data: {
                 'imgData': imgData,
-            },
-            success: function () {
-                callback();
             }
         });
     }

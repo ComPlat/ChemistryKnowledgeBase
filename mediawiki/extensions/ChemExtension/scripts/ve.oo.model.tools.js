@@ -58,6 +58,30 @@
 
     }
 
+    OO.VisualEditorTools.prototype.renderFormula = function(downloadURL, tooltip) {
+        if (downloadURL === '') {
+            return;
+        }
+        fetch(downloadURL).then(r => {
+
+            if (r.status != 200) {
+                tooltip.append('Image does not exist. Please re-save in editor.');
+                return;
+            }
+            r.blob().then(function (blob) {
+                const img = new Image();
+                img.src = URL.createObjectURL(blob);
+                img.style.width = "100%";
+                img.style.height = "95%";
+
+                tooltip.append(img);
+
+            });
+
+        });
+
+    }
+
     OO.initClass(OO.VisualEditorTools);
 
 

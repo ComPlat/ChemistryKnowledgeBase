@@ -21,7 +21,7 @@
                 ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
                     svgBlob.text().then(function (imgData) {
 
-                        ajax.uploadImage(inchikey, btoa(imgData), function () {
+                        ajax.uploadImage(inchikey, btoa(imgData)).done(function () {
                             totalRendered++;
                             if (totalRendered === notes.length) {
                                 location.reload();

@@ -38,14 +38,15 @@
         this.content = new OO.ui.PanelLayout({padded: true, expanded: false});
         this.content.$element.addClass('rgroups-molecule');
         this.content.$element.append(this.controls.$element);
-        this.content.$element.append(this.image.$element);
-        var closeButton = new OO.ui.ButtonWidget({
+
+        let closeButton = new OO.ui.ButtonWidget({
             label: 'close'
         });
         let closeHandler =  function () {
             this.dialog.div.remove();
         };
         closeButton.on('click', closeHandler.bind(this));
+        closeButton.$element.addClass('rgroups-molecule-controls');
         this.controls.$element.append(closeButton.$element);
 
         this.right = new OO.ui.PanelLayout({padded: true, expanded: false});
@@ -80,10 +81,10 @@
             r.blob().then(function (blob) {
                 const img = new Image();
                 img.src = URL.createObjectURL(blob);
-                img.style.width = "200px";
-                img.style.height = "300px";
+                img.style.width = "300px";
+                img.style.height = "200px";
 
-                that.image.$element.append(img);
+                that.controls.$element.prepend(img);
 
             });
 
@@ -114,7 +115,7 @@
         let rGroupIds = Object.keys(response[0].rGroups);
         this.right.$element.empty();
         let table = $('<table>');
-        table.attr('id', 'molecule-rest');
+        table.addClass('molecule-rest');
         let headerRow = this.header(rGroupIds);
         table.append(headerRow);
 
@@ -167,23 +168,9 @@
                     // Grab the tooltip element from the API
                     let tooltip = api.elements.tooltip;
                     let downloadURL = mw.config.get('wgScriptPath') + "/rest.php/ChemExtension/v1/chemform?moleculeKey="+encodeURIComponent(moleculeKey);
-                    fetch(downloadURL).then(r => {
+                    let tools = new OO.VisualEditorTools();
+                    tools.renderFormula(downloadURL, tooltip);
 
-                        if (r.status != 200) {
-                            image.append('Image does not exist. Please re-save in editor.');
-                            return;
-                        }
-                        r.blob().then(function (blob) {
-                            const img = new Image();
-                            img.src = URL.createObjectURL(blob);
-                            img.style.width = "100%";
-                            img.style.height = "95%";
-
-                            tooltip.append(img);
-
-                        });
-
-                    });
 
                 }
             },

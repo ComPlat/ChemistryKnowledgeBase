@@ -108,7 +108,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             moleculeKey = formulaData.inchikey;
         }
         let ajax = new window.ChemExtension.AjaxEndpoints();
-        ajax.uploadImage(moleculeKey, btoa(imgData), this.updateModelAfterUpload.bind(this, node, {
+        ajax.uploadImage(moleculeKey, btoa(imgData)).done(this.updateModelAfterUpload.bind(this, node, {
             formula: formulaData.formula,
             smiles: formulaData.smiles,
             inchi: formulaData.inchi,
