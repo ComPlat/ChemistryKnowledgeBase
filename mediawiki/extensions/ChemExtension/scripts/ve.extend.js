@@ -52,9 +52,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             return;
         }
 
-        if (template.target.wt == '#literature:') {
+        if (template.target.wt.trim() == '#literature:') {
             ve.ui.LinearContextItemExtension.extendForLiterature(panel, context, model);
-        } else if (template.target.wt == '#veforminput:') {
+        } else if (template.target.wt.trim() == '#veforminput:') {
             ve.ui.LinearContextItemExtension.extendForVEFormInput(panel, context, model);
         }
     }
@@ -68,7 +68,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             let template = ve.ui.LinearContextItemExtension.getTemplate(model);
             if (!template || !template.params || !template.params.form) return;
             let form = template.params.form.wt;
-            let wgScriptPath = mw.config.get('wgScriptPath')
+            let wgScriptPath = mw.config.get('wgScriptPath');
             ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form, button.$element );
 
         });

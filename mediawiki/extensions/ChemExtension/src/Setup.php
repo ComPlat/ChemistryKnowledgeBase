@@ -38,6 +38,9 @@ class Setup {
                 $baseScript . '/oo.ui.rgroups-display-widget.js',
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/rerender-chemform.js',
+                $baseScript . '/ve-form-input.js',
+                $baseScript . '/ve-form-input-dialog.js',
+                $baseScript . '/ve-form-input-widget.js',
 
             ],
             'styles' => [ 'skins/main.css' ],

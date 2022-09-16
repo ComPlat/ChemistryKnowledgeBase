@@ -2,6 +2,7 @@
 namespace DIQA\ChemExtension\Utils;
 
 use Article;
+use SMW\Query\QueryContext;
 use Title;
 use SMWDataItem;
 use SMWDIWikiPage;
@@ -55,6 +56,20 @@ class QueryUtils {
         $smwStore = ServicesFactory::getInstance()->getStore();
 
         return $smwStore->getQueryResult( $smwQueryObject );
+    }
+
+    public static function executeBasicQueryCount($queryString, $printouts = [], $parameters = []) {
+        SMWQueryProcessor::addThisPrintout($printouts, $parameters);
+
+        $smwQueryObject = SMWQueryProcessor::createQuery(
+            $queryString,
+            SMWQueryProcessor::getProcessedParams($parameters, $printouts),
+            QueryContext::SPECIAL_PAGE,
+            'count',
+            $printouts
+        );
+        $smwStore = ServicesFactory::getInstance()->getStore();
+        return $smwStore->getQueryResult($smwQueryObject);
     }
 
     /**
@@ -289,39 +304,6 @@ class QueryUtils {
        }
     }
 
-    /**
-     * Get value(s) of query constraint 'Gemeinde'
-     * @param QueryResult $queryResult
-     * @return array string
-     */
-    public static function getGemeinden($queryResult) {
-        $titleProperty = new DIProperty( DIProperty::TYPE_DISPLAYTITLE );
-
-        $store = StoreFactory::getStore ();
-
-        $queryString = $queryResult->getQueryString ();
-        preg_match_all ( '/Gemeinde\s*::\s*([^]]*)/', $queryString, $matches );
-
-        $results = [ ];
-        if (isset ( $matches [1] )) {
-            foreach ( $matches [1] as $gemeindeID ) {
-                $parts = explode ( "||", $gemeindeID );
-                foreach ( $parts as $p ) {
-                    $subject = SMWDIWikiPage::newFromTitle ( Title::newFromText ( trim ( $p ) ) );
-                    $values = $store->getPropertyValues ( $subject, $titleProperty );
-                    $first = reset ( $values );
-                    if ($first !== false) {
-                        $results [] = $first->getString ();
-                    }
-                }
-            }
-        }
-        if (count ( $results ) === 0) {
-            $results [] = 'Keine Gemeinde';
-        }
-        return $results;
-    }
-     
     /**
      * 
      * @param String|Title $page

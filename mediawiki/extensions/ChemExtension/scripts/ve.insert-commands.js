@@ -3,70 +3,70 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 // -----------------------------------------------------------------------------------------------------------
 // insert chemical formula command
 // -----------------------------------------------------------------------------------------------------------
-        ve.ui.ChemFormCommand = function veUiChemFormCommand(name, action, method, options) {
+    ve.ui.ChemFormCommand = function veUiChemFormCommand(name, action, method, options) {
 
-            // Parent constructor
-            ve.ui.ChemFormCommand.super.call(this, name, action, method, options);
+        // Parent constructor
+        ve.ui.ChemFormCommand.super.call(this, name, action, method, options);
 
-        };
+    };
 
-        /* Setup */
+    /* Setup */
 
-        OO.inheritClass(ve.ui.ChemFormCommand, ve.ui.Command);
+    OO.inheritClass(ve.ui.ChemFormCommand, ve.ui.Command);
 
-        ve.ui.commandRegistry.register(
-            new ve.ui.ChemFormCommand(
-                // Command name
-                'addChemForm',
-                // Type and name of the action to execute
-                'content', 'insert', // Calls the ve.ui.ContentAction#insert method
-                {
-                    // Extra arguments for the action
-                    args: [
-                        // Content to insert
-                        [
-                            {
-                                type: 'mwAlienInlineExtension',
-                                attributes: {
-                                    mw: {
-                                        name: 'chemform',
-                                        attrs: {
-                                            'smiles': '',
-                                            'inchi': '',
-                                            'inchikey': '',
-                                            'height': "200px",
-                                            'width': "300px",
-                                            'float': 'none'
-                                        },
-                                        body: {
-                                            extsrc: ''
-                                        }
+    ve.ui.commandRegistry.register(
+        new ve.ui.ChemFormCommand(
+            // Command name
+            'addChemForm',
+            // Type and name of the action to execute
+            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
+            {
+                // Extra arguments for the action
+                args: [
+                    // Content to insert
+                    [
+                        {
+                            type: 'mwAlienInlineExtension',
+                            attributes: {
+                                mw: {
+                                    name: 'chemform',
+                                    attrs: {
+                                        'smiles': '',
+                                        'inchi': '',
+                                        'inchikey': '',
+                                        'height': "200px",
+                                        'width': "300px",
+                                        'float': 'none'
                                     },
-                                    originalMw: '{"name":"chemform","attrs":{},"body":{"extsrc":""}}'
-                                }
+                                    body: {
+                                        extsrc: ''
+                                    }
+                                },
+                                originalMw: '{"name":"chemform","attrs":{},"body":{"extsrc":""}}'
                             }
+                        }
 
-                        ],
-                        // Annotate content to match surrounding annotations?
-                        true,
-                        // Move cursor to after the new content? (otherwise - select it)
-                        true
                     ],
-                    supportedSelections: ['linear']
-                }
-            )
-        );
+                    // Annotate content to match surrounding annotations?
+                    true,
+                    // Move cursor to after the new content? (otherwise - select it)
+                    true
+                ],
+                supportedSelections: ['linear']
+            }
+        )
+    );
 
-        ve.ui.AddChemForm = function VeUiAddChemForm() {
-            ve.ui.AddChemForm.super.apply(this, arguments);
-        };
-        OO.inheritClass(ve.ui.AddChemForm, ve.ui.Tool);
-        ve.ui.AddChemForm.static.name = 'addChemForm';
-        ve.ui.AddChemForm.static.group = 'insert';
-        ve.ui.AddChemForm.static.title = 'Chemical formula';
-        ve.ui.AddChemForm.static.icon = 'chemform';
-        ve.ui.AddChemForm.static.commandName = 'addChemForm';
-        ve.ui.toolFactory.register(ve.ui.AddChemForm);
+    ve.ui.AddChemForm = function VeUiAddChemForm() {
+        ve.ui.AddChemForm.super.apply(this, arguments);
+    };
+    OO.inheritClass(ve.ui.AddChemForm, ve.ui.Tool);
+    ve.ui.AddChemForm.static.name = 'addChemForm';
+    ve.ui.AddChemForm.static.group = 'insert';
+    ve.ui.AddChemForm.static.title = 'Chemical formula';
+    ve.ui.AddChemForm.static.icon = 'chemform';
+    ve.ui.AddChemForm.static.commandName = 'addChemForm';
+    ve.ui.toolFactory.register(ve.ui.AddChemForm);
 
 // -----------------------------------------------------------------------------------------------------------
 // insert Literature command
@@ -97,14 +97,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                             type: 'mwTransclusionInline',
                             attributes: {
                                 mw: {
-                                    parts:  [
+                                    parts: [
                                         {
                                             template: {
                                                 i: 0,
                                                 params: {
-                                                    doi: { wt: "" }
+                                                    doi: {wt: ""}
                                                 },
-                                                target: { wt: "#literature:", "function": "literature"}
+                                                target: {wt: "#literature:", "function": "literature"}
                                             }
                                         }
                                     ]
@@ -163,14 +163,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                             type: 'mwTransclusionInline',
                             attributes: {
                                 mw: {
-                                    parts:  [
+                                    parts: [
                                         {
                                             template: {
                                                 i: 0,
                                                 params: {
-                                                    chemformid: { wt: "" }
+                                                    chemformid: {wt: ""}
                                                 },
-                                                target: { wt: "#moleculelink:", "function": "moleculelink"}
+                                                target: {wt: "#moleculelink:", "function": "moleculelink"}
                                             }
                                         }
                                     ]
@@ -204,66 +204,33 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 // -----------------------------------------------------------------------------------------------------------
 // add form input command
 // -----------------------------------------------------------------------------------------------------------
-    ve.ui.AddFormInputCommandCommand = function veUiAddFormInputCommandCommand(name, action, method, options) {
+
+    ve.ui.ChooseExperimentDialogCommand = function veUiChooseExperimentDialogCommand(name, action, method, options) {
 
         // Parent constructor
-        ve.ui.AddFormInputCommandCommand.super.call(this, name, action, method, options);
+        ve.ui.ChooseExperimentDialogCommand.super.call(this, name, action, method, options);
+        ve.ui.ChooseExperimentDialogCommand.prototype.execute = function (surface, args, source) {
 
+            ve.init.target.getSurface().execute('window', 'open', 'choose-experiments', {
+                surface: surface,
+            });
+
+        }
     };
+    OO.inheritClass(ve.ui.ChooseExperimentDialogCommand, ve.ui.Command);
+    ve.ui.commandRegistry.register(new ve.ui.ChooseExperimentDialogCommand('ChooseExperimentDialog', '', '', {}));
 
     /* Setup */
 
-    OO.inheritClass(ve.ui.AddFormInputCommandCommand, ve.ui.Command);
-    ve.ui.commandRegistry.register(
-        new ve.ui.AddFormInputCommandCommand(
-            // Command name
-            'AddFormInputCommand',
-            // Type and name of the action to execute
-            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
-            {
-                // Extra arguments for the action
-                args: [
-                    // Content to insert
-                    [
-                        {
-                            type: 'mwTransclusionInline',
-                            attributes: {
-                                mw: {
-                                    parts:  [
-                                        {
-                                            template: {
-                                                i: 0,
-                                                params: {
-                                                    form: { wt: "" }
-                                                },
-                                                target: { wt: "#veforminput:", "function": "veforminput"}
-                                            }
-                                        }
-                                    ]
-                                },
-                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#veforminput:","function":"veforminput"},"params":{"form":{"wt":""}},"i":0}}]}"'
-                            }
-                        }
 
-                    ],
-                    // Annotate content to match surrounding annotations?
-                    true,
-                    // Move cursor to after the new content? (otherwise - select it)
-                    true
-                ],
-                supportedSelections: ['linear']
-            }
-        )
-    );
-
-    ve.ui.AddFormInputCommand = function VeUiAddFormInputCommand() {
-        ve.ui.AddFormInputCommand.super.apply(this, arguments);
+    ve.ui.ChooseExperimentDialogTool = function VeUiChooseExperimentDialogTool() {
+        ve.ui.ChooseExperimentDialogTool.super.apply(this, arguments);
     };
-    OO.inheritClass(ve.ui.AddFormInputCommand, ve.ui.Tool);
-    ve.ui.AddFormInputCommand.static.name = 'AddFormInputCommand';
-    ve.ui.AddFormInputCommand.static.group = 'insert';
-    ve.ui.AddFormInputCommand.static.title = 'Add experiment';
-    ve.ui.AddFormInputCommand.static.icon = '';
-    ve.ui.AddFormInputCommand.static.commandName = 'AddFormInputCommand';
-    ve.ui.toolFactory.register(ve.ui.AddFormInputCommand);
+    OO.inheritClass(ve.ui.ChooseExperimentDialogTool, ve.ui.Tool);
+    ve.ui.ChooseExperimentDialogTool.static.name = 'ChooseExperimentDialogTool';
+    ve.ui.ChooseExperimentDialogTool.static.group = 'insert';
+    ve.ui.ChooseExperimentDialogTool.static.title = 'Add experiment';
+    ve.ui.ChooseExperimentDialogTool.static.icon = '';
+    ve.ui.ChooseExperimentDialogTool.static.commandName = 'ChooseExperimentDialog';
+    ve.ui.toolFactory.register(ve.ui.ChooseExperimentDialogTool);
 });
