@@ -13,8 +13,10 @@ use OOUI\TabPanelLayout;
 use OOUI\Widget;
 use OutputPage;
 use Parser;
+use ParserOptions;
 use SMWQueryProcessor;
 use Exception;
+use Title;
 
 class VEFormInput
 {
@@ -30,7 +32,7 @@ class VEFormInput
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
         if (WikiTools::isInVisualEditor()) {
-            $html = self::renderInVisualEditor($parameters);
+            $html = self::renderInVisualEditor($parser, $parameters);
         } else {
             $html = self::renderInViewMode($parameters, $parser);
         }
@@ -54,15 +56,18 @@ class VEFormInput
             SMWQueryProcessor::INLINE_QUERY);
     }
 
-    private static function getTabContent($experiment, $data): string
+    private static function getTabContent($data, $form, $baseTemplate = null): string
     {
+
         if (array_key_exists('template', $data)) {
             global $wgTitle;
-            //$subPage = $wgTitle->getText().'/'.$experiment->getTemplate();
-            $subPage = "Objekt_7";
-            $text = WikiTools::getText(\Title::newFromText($subPage));
+            $subPage = $wgTitle->getText().'/'.$form;
+            $text = WikiTools::getText(Title::newFromText($subPage));
+            if (!is_null($baseTemplate)) {
+                $text = str_replace($baseTemplate, $data['template'], $text);
+            }
             $parser = new Parser();
-            $parserOutput = $parser->parse($text, $wgTitle, new \ParserOptions());
+            $parserOutput = $parser->parse($text, $wgTitle, new ParserOptions());
             return $parserOutput->getText();
 
         } else {
@@ -79,13 +84,24 @@ class VEFormInput
     /**
      * @return string
      */
-    private static function renderInVisualEditor($parameters): string
+    private static function renderInVisualEditor(Parser $parser, $parameters): string
     {
         $repo = ExperimentRepository::getInstance();
         $experiment = $repo->getExperiment($parameters['form']);
-        $queryResults = QueryUtils::executeBasicQueryCount($experiment->getVEModeQuery(), [], []);
-        $smwCount = $queryResults->getCountValue();
-        return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $smwCount";
+
+        if (array_key_exists('base-template', $experiment)) {
+
+            $subPage = $parser->getTitle()->getText().'/'.$parameters['form'];
+            $text = WikiTools::getText(Title::newFromText($subPage));
+
+            $num = substr_count ($text, $experiment['base-template']);
+
+            return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $num";
+        } else {
+            $queryResults = QueryUtils::executeBasicQueryCount($experiment['ve-mode-query'], [], []);
+            $smwCount = $queryResults->getCountValue();
+            return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $smwCount";
+        }
     }
 
     /**
@@ -102,12 +118,14 @@ class VEFormInput
         $repo = ExperimentRepository::getInstance();
         $experiment = $repo->getExperiment($parameters['form']);
 
-        if (count($experiment->getTabs()) === 1) {
-            return self::getTabContent($experiment, $experiment->getFirstTab());
+        $baseTemplate = $experiment['base-template'] ?? null;
+        if (count($experiment['tabs']) === 1) {
+            $firstTab = reset($experiment['tabs']);
+            return self::getTabContent($firstTab, $parameters['form'], $baseTemplate);
         }
 
         $tabPanels = [];
-        foreach ($experiment->getTabs() as $tab => $data) {
+        foreach ($experiment['tabs'] as $tab => $data) {
 
             $tabPanels[] = new TabPanelLayout($tab, [
                 'classes' => [],
@@ -117,7 +135,7 @@ class VEFormInput
                     'label' => $data['label'],
                     'items' => [
                         new Widget([
-                            'content' => new HtmlSnippet(self::getTabContent($experiment, $data))
+                            'content' => new HtmlSnippet(self::getTabContent($data, $parameters['form'], $baseTemplate))
                         ]),
                     ],
                 ]),

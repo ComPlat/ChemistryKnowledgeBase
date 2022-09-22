@@ -69,7 +69,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             if (!template || !template.params || !template.params.form) return;
             let form = template.params.form.wt;
             let wgScriptPath = mw.config.get('wgScriptPath');
-            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form, button.$element );
+            let wgPageName = mw.config.get('wgPageName');
+            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + form, button.$element );
 
         });
 

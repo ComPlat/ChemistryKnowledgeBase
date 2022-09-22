@@ -35,15 +35,15 @@
             menu: {
                 items: [
                     new OO.ui.MenuOptionWidget( {
-                        data: 'Experiment',
-                        label: 'Experiment 1'
+                        data: 'DemoPublication',
+                        label: 'DemoPublication'
                     } ),
                     new OO.ui.MenuOptionWidget( {
-                        data: 'DemoPublication',
+                        data: 'Experiment2',
                         label: 'Experiment 2'
                     } ),
                     new OO.ui.MenuOptionWidget( {
-                        data: 'experiment3',
+                        data: 'Experiment3',
                         label: 'Experiment 3'
                     }
                     )

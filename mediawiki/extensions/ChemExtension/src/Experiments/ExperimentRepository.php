@@ -4,14 +4,44 @@ namespace DIQA\ChemExtension\Experiments;
 
 use Exception;
 
-class ExperimentRepository {
+class ExperimentRepository
+{
 
     private $experiments;
     private static $INSTANCE;
 
     public function __construct()
     {
-        $this->experiments = [new Experiment1(), new Experiment2()];
+
+        $this->experiments = [
+            'DemoPublication' => [
+
+                'base-template' => 'DemoInvestigationEmbed',
+                'tabs' => [
+                    [
+                    'label' => 'Tab 1',
+                    'template' => 'DemoInvestigationEmbed',
+                    ]
+                ],
+
+            ],
+            'experiment2' => [
+
+                'tabs' => [
+                    [
+                        'label' => 'Tab 1',
+                        'query' => '[[Category:Experiment]]',
+                        'printouts' => ['Field1']
+                    ], [
+                        'label' => 'Tab 2',
+                        'query' => '[[Category:Experiment]]',
+                        'printouts' => ['Field2']
+                    ]
+                ],
+                've-mode-query' => '[[Category:Experiment2]]'
+
+            ]
+        ];
     }
 
     public static function getInstance(): ExperimentRepository
@@ -27,14 +57,21 @@ class ExperimentRepository {
      * @return Experiment
      * @throws Exception
      */
-    public function getExperiment($template): Experiment
+    public function getExperiment($template): array
     {
-        $experiments = array_filter($this->experiments, function($e) use ($template) { return $e->getTemplate() === $template; });
-        if (count($experiments) === 0) {
+        if (!array_key_exists($template, $this->experiments)) {
             throw new Exception("Experiment does not exist: $template");
         }
-        return reset($experiments);
+        return $this->experiments[$template];
     }
 
+    /**
+     * @throws Exception
+     */
+    public function getFirstTab($template)
+    {
+        $experiment = $this->getExperiment($template);
+        return reset($experiment['tabs']);
+    }
 
 }
