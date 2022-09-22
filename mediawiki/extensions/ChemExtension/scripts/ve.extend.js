@@ -71,7 +71,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             let wgScriptPath = mw.config.get('wgScriptPath');
             let wgPageName = mw.config.get('wgPageName');
             ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + form, button.$element );
-
+            ve.init.target.fromEditedState = true;
+            ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
         });
 
         panel.$actions.append(button.$element);
