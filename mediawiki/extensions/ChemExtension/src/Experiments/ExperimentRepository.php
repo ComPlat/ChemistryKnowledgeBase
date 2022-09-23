@@ -3,6 +3,8 @@
 namespace DIQA\ChemExtension\Experiments;
 
 use Exception;
+use MediaWiki\Config\ConfigRepository;
+use MediaWiki\MediaWikiServices;
 
 class ExperimentRepository
 {
@@ -14,18 +16,38 @@ class ExperimentRepository
     {
 
         $this->experiments = [
-            'DemoPublication' => [
-
-                'base-template' => 'DemoInvestigationEmbed',
+            'DemoExperiment1' => [
+                'label' => 'DemoExperiment 1',
+                'type' => 'template',
+                'base-row-template' => 'DemoExperiment1Row',
                 'tabs' => [
                     [
                     'label' => 'Tab 1',
-                    'template' => 'DemoInvestigationEmbed',
+                    'header-template' => 'DemoExperiment1',
+                    'row-template' => 'DemoExperiment1Row',
                     ]
                 ],
 
             ],
-            'experiment2' => [
+            'DemoExperiment2' => [
+                'label' => 'DemoExperiment 2',
+                'type' => 'template',
+                'base-row-template' => 'DemoExperiment2Row',
+                'tabs' => [
+                    [
+                        'label' => 'Tab 1',
+                        'header-template' => 'DemoExperiment2Tab1Header',
+                        'row-template' => 'DemoExperiment2RowTab1',
+                    ],
+                    [
+                        'label' => 'Tab 2',
+                        'header-template' => 'DemoExperiment2Tab2Header',
+                        'row-template' => 'DemoExperiment2RowTab2',
+                    ]
+                ],
+
+            ],
+            /*'experiment2' => [
 
                 'tabs' => [
                     [
@@ -40,8 +62,9 @@ class ExperimentRepository
                 ],
                 've-mode-query' => '[[Category:Experiment2]]'
 
-            ]
+            ]*/
         ];
+
     }
 
     public static function getInstance(): ExperimentRepository
@@ -52,12 +75,16 @@ class ExperimentRepository
         return self::$INSTANCE;
     }
 
+    public function getAll() {
+        return $this->experiments;
+    }
+
     /**
      * @param $template
      * @return Experiment
      * @throws Exception
      */
-    public function getExperiment($template): array
+    public function getExperimentType($template): array
     {
         if (!array_key_exists($template, $this->experiments)) {
             throw new Exception("Experiment does not exist: $template");
@@ -70,7 +97,7 @@ class ExperimentRepository
      */
     public function getFirstTab($template)
     {
-        $experiment = $this->getExperiment($template);
+        $experiment = $this->getExperimentType($template);
         return reset($experiment['tabs']);
     }
 

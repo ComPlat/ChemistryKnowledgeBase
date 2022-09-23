@@ -1,6 +1,7 @@
 <?php
 namespace DIQA\ChemExtension;
 
+use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
@@ -8,8 +9,8 @@ use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\ParserFunctions\VEFormInput;
 use OutputPage;
-use Skin;
 use Parser;
+use Skin;
 
 class Setup {
 
@@ -62,8 +63,8 @@ class Setup {
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
 
         $out->addModules('ext.diqa.chemextension');
+        $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
-
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

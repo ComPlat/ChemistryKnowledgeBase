@@ -16,6 +16,11 @@ iframe.chemformula {
 
 }
 
+.oo-ui-icon-experiment {
+    background-image: url( images/experiment.png );
+
+}
+
 .oo-ui-icon-literature {
     background-image: url( images/open-book.png );
 

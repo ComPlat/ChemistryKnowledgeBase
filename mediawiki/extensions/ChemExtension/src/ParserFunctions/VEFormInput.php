@@ -56,19 +56,20 @@ class VEFormInput
             SMWQueryProcessor::INLINE_QUERY);
     }
 
-    private static function getTabContent($data, $form, $baseTemplate = null): string
+    private static function getTabContent($type, $data, $baseHeaderTemplate, $baseRowTemplate): string
     {
 
-        if (array_key_exists('template', $data)) {
+        if ($type === 'template') {
+
             global $wgTitle;
-            $subPage = $wgTitle->getText().'/'.$form;
+            $subPage = $wgTitle->getText().'/'.$baseHeaderTemplate;
             $text = WikiTools::getText(Title::newFromText($subPage));
-            if (!is_null($baseTemplate)) {
-                $text = str_replace($baseTemplate, $data['template'], $text);
-            }
+
+            $text = preg_replace("/$baseHeaderTemplate(\s|$)/", $data['header-template'], $text);
+            $text = preg_replace("/$baseRowTemplate(\s|$)/", $data['row-template'], $text);
             $parser = new Parser();
             $parserOutput = $parser->parse($text, $wgTitle, new ParserOptions());
-            return $parserOutput->getText();
+            return $parserOutput->getText(['enableSectionEditLinks' => false]);
 
         } else {
             $query = $data['query'];
@@ -87,14 +88,14 @@ class VEFormInput
     private static function renderInVisualEditor(Parser $parser, $parameters): string
     {
         $repo = ExperimentRepository::getInstance();
-        $experiment = $repo->getExperiment($parameters['form']);
-
-        if (array_key_exists('base-template', $experiment)) {
+        $experiment = $repo->getExperimentType($parameters['form']);
+        $type = $experiment['type'] ?? '';
+        if ($type === 'template') {
 
             $subPage = $parser->getTitle()->getText().'/'.$parameters['form'];
             $text = WikiTools::getText(Title::newFromText($subPage));
 
-            $num = substr_count ($text, $experiment['base-template']);
+            $num = substr_count ($text, $experiment['base-row-template']);
 
             return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $num";
         } else {
@@ -116,12 +117,14 @@ class VEFormInput
         OutputPage::setupOOUI();
 
         $repo = ExperimentRepository::getInstance();
-        $experiment = $repo->getExperiment($parameters['form']);
+        $experiment = $repo->getExperimentType($parameters['form']);
 
-        $baseTemplate = $experiment['base-template'] ?? null;
+        $baseHeaderTemplate = $parameters['form'];
+        $baseRowTemplate = $experiment['base-row-template'];
+        $type = $experiment['type'] ?? '';
         if (count($experiment['tabs']) === 1) {
             $firstTab = reset($experiment['tabs']);
-            return self::getTabContent($firstTab, $parameters['form'], $baseTemplate);
+            return self::getTabContent($type, $firstTab, $baseHeaderTemplate, $baseRowTemplate);
         }
 
         $tabPanels = [];
@@ -135,7 +138,7 @@ class VEFormInput
                     'label' => $data['label'],
                     'items' => [
                         new Widget([
-                            'content' => new HtmlSnippet(self::getTabContent($data, $parameters['form'], $baseTemplate))
+                            'content' => new HtmlSnippet(self::getTabContent($type, $data, $baseHeaderTemplate, $baseRowTemplate))
                         ]),
                     ],
                 ]),

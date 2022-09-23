@@ -1,0 +1,12 @@
+<noinclude>
+This is the DemoExperiment2RowTab2 template.
+</noinclude>
+<includeonly>
+|-
+| {{{cat|}}}
+| {{{solvent_ratio|}}}
+| {{{pH|}}}
+| {{{temperature|}}}
+| {{{lexc|}}}
+| {{{include|}}}
+</includeonly>

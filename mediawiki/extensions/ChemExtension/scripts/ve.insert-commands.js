@@ -229,8 +229,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     OO.inheritClass(ve.ui.ChooseExperimentDialogTool, ve.ui.Tool);
     ve.ui.ChooseExperimentDialogTool.static.name = 'ChooseExperimentDialogTool';
     ve.ui.ChooseExperimentDialogTool.static.group = 'insert';
-    ve.ui.ChooseExperimentDialogTool.static.title = 'Add experiment';
-    ve.ui.ChooseExperimentDialogTool.static.icon = '';
+    ve.ui.ChooseExperimentDialogTool.static.title = 'Experiment';
+    ve.ui.ChooseExperimentDialogTool.static.icon = 'experiment';
     ve.ui.ChooseExperimentDialogTool.static.commandName = 'ChooseExperimentDialog';
     ve.ui.toolFactory.register(ve.ui.ChooseExperimentDialogTool);
 });

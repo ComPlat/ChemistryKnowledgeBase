@@ -1,0 +1,16 @@
+<noinclude>
+This is the DemoExperiment1Row template.
+</noinclude>
+<includeonly>
+|-
+| {{{cat|}}}
+| {{{cat_abb|}}}
+| {{{cat_conc|}}}
+| {{{solvent_A|}}}
+| {{{solvent_B|}}}
+| {{{solvent_ratio|}}}
+| {{{pH|}}}
+| {{{temperature|}}}
+| {{{lexc|}}}
+| {{{include|}}}
+</includeonly>
