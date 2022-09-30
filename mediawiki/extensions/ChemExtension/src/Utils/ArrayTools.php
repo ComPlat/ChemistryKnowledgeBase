@@ -26,4 +26,11 @@ class ArrayTools {
     public static function getFirstIfArray($value) {
         return is_array($value) ? reset($value):$value;
     }
+
+    public static function flatten(array $array): array
+    {
+        $return = [];
+        array_walk_recursive($array, function($a) use (&$return) { $return[] = $a; });
+        return $return;
+    }
 }

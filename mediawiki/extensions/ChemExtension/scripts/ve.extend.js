@@ -54,12 +54,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         if (template.target.wt.trim() == '#literature:') {
             ve.ui.LinearContextItemExtension.extendForLiterature(panel, context, model);
-        } else if (template.target.wt.trim() == '#veforminput:') {
-            ve.ui.LinearContextItemExtension.extendForVEFormInput(panel, context, model);
+        } else if (template.target.wt.trim() == '#experimentlist:') {
+            ve.ui.LinearContextItemExtension.extendForExperimentList(panel, context, model);
         }
     }
 
-    ve.ui.LinearContextItemExtension.extendForVEFormInput = function(panel, context, model) {
+    ve.ui.LinearContextItemExtension.extendForExperimentList = function(panel, context, model) {
         let button = new OO.ui.ButtonWidget({
             label: 'Add experiment'
         });

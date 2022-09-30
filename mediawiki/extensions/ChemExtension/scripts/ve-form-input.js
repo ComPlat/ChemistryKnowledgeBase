@@ -2,9 +2,9 @@
     'use strict';
 
     function initialize() {
-        let veFormInputs = $('.veforminput');
-        if (veFormInputs.length === 0) return;
-        OO.ui.infuse(veFormInputs);
+        let experimentList = $('.experimentlist');
+        if (experimentList.length === 0) return;
+        OO.ui.infuse(experimentList);
     }
 
     $(function() {

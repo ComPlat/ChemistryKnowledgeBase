@@ -3,8 +3,6 @@
 namespace DIQA\ChemExtension\Experiments;
 
 use Exception;
-use MediaWiki\Config\ConfigRepository;
-use MediaWiki\MediaWikiServices;
 
 class ExperimentRepository
 {
@@ -47,22 +45,7 @@ class ExperimentRepository
                 ],
 
             ],
-            /*'experiment2' => [
 
-                'tabs' => [
-                    [
-                        'label' => 'Tab 1',
-                        'query' => '[[Category:Experiment]]',
-                        'printouts' => ['Field1']
-                    ], [
-                        'label' => 'Tab 2',
-                        'query' => '[[Category:Experiment]]',
-                        'printouts' => ['Field2']
-                    ]
-                ],
-                've-mode-query' => '[[Category:Experiment2]]'
-
-            ]*/
         ];
 
     }
@@ -75,7 +58,8 @@ class ExperimentRepository
         return self::$INSTANCE;
     }
 
-    public function getAll() {
+    public function getAll(): array
+    {
         return $this->experiments;
     }
 
@@ -84,21 +68,12 @@ class ExperimentRepository
      * @return Experiment
      * @throws Exception
      */
-    public function getExperimentType($template): array
+    public function getExperimentType($template): ExperimentType
     {
         if (!array_key_exists($template, $this->experiments)) {
             throw new Exception("Experiment does not exist: $template");
         }
-        return $this->experiments[$template];
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function getFirstTab($template)
-    {
-        $experiment = $this->getExperimentType($template);
-        return reset($experiment['tabs']);
+        return new ExperimentType($template, $this->experiments[$template]);
     }
 
 }

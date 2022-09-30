@@ -35,12 +35,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                             params: {
                                                 form: { wt: selectedExperiment }
                                             },
-                                            target: { wt: "#veforminput:", "function": "veforminput"}
+                                            target: { wt: "#experimentlist:", "function": "experimentlist"}
                                         }
                                     }
                                 ]
                             },
-                            originalMw: '"{"parts":[{"template":{"target":{"wt":"#veforminput:","function":"veforminput"},"params":{"form":{"wt":""}},"i":0}}]}"'
+                            originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlist:","function":"experimentlist"},"params":{"form":{"wt":""}},"i":0}}]}"'
                         }
                     }
 

@@ -3,11 +3,12 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
-use DIQA\ChemExtension\ParserFunctions\VEFormInput;
+use DIQA\ChemExtension\ParserFunctions\ExperimentList;
 use OutputPage;
 use Parser;
 use Skin;
@@ -72,7 +73,8 @@ class Setup {
         $parser->setFunctionHook( 'literature', [ RenderLiterature::class, 'renderLiterature' ] );
         $parser->setFunctionHook( 'moleculelink', [ RenderMoleculeLink::class, 'renderMoleculeLink' ] );
         $parser->setFunctionHook( 'showMoleculeCollection', [ ShowMoleculeCollection::class, 'renderMoleculeCollectionTable' ] );
-        $parser->setFunctionHook( 'veforminput', [ VEFormInput::class, 'renderVEFormInput' ] );
+        $parser->setFunctionHook( 'experimentlist', [ ExperimentList::class, 'renderExperimentList'] );
+        $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
     }
 
 
