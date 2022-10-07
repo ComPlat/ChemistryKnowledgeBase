@@ -120,6 +120,13 @@ span.ce-show-rgroups-button {
     animation: blinker 1s linear infinite;
 }
 
+table.wikitable tr td.experiment-editable-column, th.experiment-editable-column {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    word-break: break-all;
+}
+
 @keyframes blinker {
     50% {
         opacity: 0;

@@ -4,6 +4,8 @@ namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\TemplateParser\TemplateNode;
 use DIQA\ChemExtension\TemplateParser\TemplateParser;
+use DIQA\ChemExtension\TemplateParser\TemplateTextNode;
+use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use OOUI\HtmlSnippet;
@@ -128,7 +130,13 @@ class ExperimentRenderer {
 
             $parser = new Parser();
             $parserOutput = $parser->parse($newText, $pageTitle, new ParserOptions());
-            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+            $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+            if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
+                $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
+                return $htmlTableEditor->addEditButtonsAsFirstColumn();
+            } else {
+                return $html;
+            }
 
         } else {
             throw new Exception("Not implemented yet");
@@ -152,10 +160,11 @@ class ExperimentRenderer {
         $root->removeNodes(function ($node) use ($baseRowTemplate) {
             if ($node instanceof TemplateNode) {
                 return $node->getTemplateName() === $baseRowTemplate
-                    && in_array($node->getTemplateIndex(), $this->context['index']);
+                    && !in_array($node->getTemplateIndex(), $this->context['index']);
             }
             return false;
         });
+
         return $root->serialize();
     }
 

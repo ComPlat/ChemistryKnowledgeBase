@@ -17,6 +17,10 @@ abstract class AbstractTemplateNode {
         $this->childNodes[] = $node;
     }
 
+    public function getFirstChild() {
+        return reset($this->childNodes);
+    }
+
     public function removeNodes(callable $condition) {
         for($i = 0; $i < count($this->childNodes); $i++) {
             $this->childNodes[$i]->removeNodes($condition);
@@ -25,5 +29,12 @@ abstract class AbstractTemplateNode {
             }
         }
         $this->childNodes = array_values($this->childNodes);
+    }
+
+    public function visitNodes(callable $action) {
+        for($i = 0; $i < count($this->childNodes); $i++) {
+            $this->childNodes[$i]->visitNodes($action);
+            $action($this->childNodes[$i]);
+        }
     }
 }

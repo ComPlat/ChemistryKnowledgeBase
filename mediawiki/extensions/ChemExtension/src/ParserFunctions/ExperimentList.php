@@ -24,13 +24,15 @@ class ExperimentList
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        global $wgTitle;
+
         $renderer = new ExperimentRenderer([
-            'page' => $wgTitle,
-            'form' => $parameters['form']
+            'page' => WikiTools::getCurrentTitle(),
+            'form' => $parameters['form'],
+            'showEditLink' => true
         ]);
         if (WikiTools::isInVisualEditor()) {
-            $html = $renderer->renderInVisualEditor($parser, $parameters);
+            $html = $renderer->renderInViewMode($parameters, $parser);
+            $html = str_replace(array("<tbody>","</tbody>"), "", $html);
         } else {
             $html = $renderer->renderInViewMode($parameters, $parser);
         }

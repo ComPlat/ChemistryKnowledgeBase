@@ -439,6 +439,9 @@ ve.ce.FocusableNode.prototype.onFocusableMouseDown = function ( e ) {
 		selection = surfaceModel.getSelection(),
 		nodeRange = this.model.getOuterRange();
 
+	if (ve.ce.FocusableNodeExtension) {
+		ve.ce.FocusableNodeExtension.extend(this);
+	}
 	if ( e.type === 'touchend' && this.touchMoved ) {
 		return;
 	}

@@ -1623,10 +1623,29 @@ $(document).ready( function() {
 
 		// We are all done - remove the loading spinner.
 		$('.loadingImage').remove();
+		preSelectByIndex();
+
 	}, 0 );
 
 	mw.hook('pf.formSetupAfter').fire();
 });
+
+function preSelectByIndex() {
+	let queryParams = {};
+	let search = window.location.search;
+	search = search.length > 0 ? search.substring(1) : '';
+	let params = search.split("&");
+	for(let i = 0; i < params.length;i++) {
+		let keyValue = params[i].split("=");
+		if (keyValue.length != 2) {
+			continue;
+		}
+		queryParams[keyValue[0]] = decodeURIComponent(keyValue[1]);
+	}
+	if (queryParams['expand']) {
+		$('.multipleTemplateInstance').eq(queryParams['expand']).trigger('click');
+	}
+}
 
 // If some part of the form is clicked, minimize any multiple-instance
 // template instances that need minimizing, and move the "focus" to the current

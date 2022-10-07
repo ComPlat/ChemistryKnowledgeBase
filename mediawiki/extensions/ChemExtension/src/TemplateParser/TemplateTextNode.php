@@ -24,6 +24,14 @@ class TemplateTextNode extends AbstractTemplateNode
         return $this->text;
     }
 
+    /**
+     * @param mixed $text
+     */
+    public function setText($text): void
+    {
+        $this->text = $text;
+    }
+
     public function serialize(): string
     {
         return $this->text;;

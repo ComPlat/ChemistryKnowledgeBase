@@ -22,6 +22,26 @@ class WikiTools {
             || $wgRequest->getText('veaction') == 'edit';
     }
 
+    /**
+     * Returns the current title. Works also in VisualEditor during REST-calls.
+     *
+     * @return Title|null
+     */
+    public static function getCurrentTitle(): ?Title
+    {
+        global $wgRequest;
+        $titleParam = $wgRequest->getVal('title');
+        $res = preg_match('/v3\/page\/html\/(\w+)/', $titleParam, $matches);
+        if ($res === 0) {
+            $res = preg_match('/v3\/transform\/wikitext\/to\/html\/(\w+)/', $titleParam, $matches);
+            if ($res === 0) {
+                global $wgTitle;
+                return  $wgTitle;
+            }
+        }
+        return Title::newFromText($matches[1]);
+    }
+
     public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null) {
 
 

@@ -35,10 +35,14 @@ class ExperimentLink {
         $renderer = new ExperimentRenderer([
             'page' => Title::newFromText($page),
             'form' => $parameters['form'],
-            'index' => $indices !== false ? self::parseIndices($indices) : null
+            'index' => $indices !== false ? self::parseIndices($indices) : null,
+            'showEditLink' => false
         ]);
         if (WikiTools::isInVisualEditor()) {
-            $html = self::renderInVisualEditor($parser, $parameters);
+            //$html = self::renderInVisualEditor($parser, $parameters);
+            $html = $renderer->renderInViewMode($parameters, $parser);
+            $html = str_replace(array("<tbody>","</tbody>"), "", $html);
+
         } else {
             $html = $renderer->renderInViewMode($parameters, $parser);
         }
