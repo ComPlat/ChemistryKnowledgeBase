@@ -16,7 +16,7 @@ class ExperimentRepository
         $this->experiments = [
             'DemoExperiment1' => [
                 'label' => 'DemoExperiment 1',
-                'type' => 'template',
+                'type' => 'assay',
                 'base-row-template' => 'DemoExperiment1Row',
                 'tabs' => [
                     [
@@ -29,7 +29,7 @@ class ExperimentRepository
             ],
             'DemoExperiment2' => [
                 'label' => 'DemoExperiment 2',
-                'type' => 'template',
+                'type' => 'molecule-process',
                 'base-row-template' => 'DemoExperiment2Row',
                 'tabs' => [
                     [

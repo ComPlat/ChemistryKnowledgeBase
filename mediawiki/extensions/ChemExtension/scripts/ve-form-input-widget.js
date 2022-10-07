@@ -9,10 +9,8 @@
         OO.ui.ChooseExperimentsWidget.super.call(this, config);
 
         // Properties
-        this.input = config.input;
 
         // Initialization
-
 
     };
 
@@ -28,20 +26,38 @@
      */
     OO.ui.ChooseExperimentsWidget.static.tagName = 'div';
 
-    OO.ui.ChooseExperimentsWidget.prototype.setData = function (attrs, numberOfMoleculeRGroups, rGroupIds) {
+    OO.ui.ChooseExperimentsWidget.prototype.setData = function () {
         this.$element.empty();
         let experiments = mw.config.get('experiments');
-        let items = [];
+        this.allExperiments = [];
         for(let e in experiments) {
-            items.push({ data: e, label: experiments[e].label});
+            this.allExperiments.push({ data: e, label: experiments[e].label, type: experiments[e].type });
         }
+        this.chooseTypeDropDown = new OO.ui.DropdownInputWidget({
+            options: [
+                { label: "Assay", data: 'assay'},
+                { label: "Molecule process", data: 'molecule-process'}
+            ]
+
+        });
+        this.chooseTypeDropDown.on('change', (item) => {
+            let menuOptions = this.findMenuOptionsOfType(item);
+            this.chooseExperimentDropDown.getMenu().clearItems().addItems(menuOptions);
+        });
+
         this.chooseExperimentDropDown = new OO.ui.DropdownWidget({
-            label: 'Select one',
+            label: 'Select a experiment type',
             menu: {
-                items: $.map(items, function (e) { return new OO.ui.MenuOptionWidget(e); })
+                items:  this.findMenuOptionsOfType('assay')
             }
         });
+        this.$element.append(this.chooseTypeDropDown.$element);
         this.$element.append(this.chooseExperimentDropDown.$element);
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfType = function(type) {
+        let itemsOfType = $.grep(this.allExperiments, function(e) { return e.type === type });
+        return $.map(itemsOfType, function (e) { return new OO.ui.MenuOptionWidget(e); });
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedExperiment = function () {

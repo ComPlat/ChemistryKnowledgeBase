@@ -18,7 +18,8 @@ use Parser;
 use ParserOptions;
 use Title;
 
-class ExperimentRenderer {
+class ExperimentRenderer
+{
 
     private $context;
 
@@ -41,17 +42,13 @@ class ExperimentRenderer {
         $repo = ExperimentRepository::getInstance();
         $experiment = $repo->getExperimentType($parameters['form']);
 
-        if ($experiment->getType() === 'template') {
+        $subPage = $parser->getTitle()->getText() . '/' . $parameters['form'];
+        $text = WikiTools::getText(Title::newFromText($subPage));
 
-            $subPage = $parser->getTitle()->getText().'/'.$parameters['form'];
-            $text = WikiTools::getText(Title::newFromText($subPage));
+        $num = substr_count($text, $experiment->getBaseRowTemplate());
 
-            $num = substr_count ($text, $experiment->getBaseRowTemplate());
+        return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $num";
 
-            return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $num";
-        } else {
-            throw new Exception("Not implemented yet.");
-        }
     }
 
     /**
@@ -113,33 +110,27 @@ class ExperimentRenderer {
     private function getTabContent(ExperimentType $experimentType, $tabIndex): string
     {
 
-        if ($experimentType->getType() === 'template') {
+        $pageTitle = $this->context['page'];
+        $subPage = $pageTitle->getText() . '/' . $experimentType->getBaseHeaderTemplate();
+        $text = WikiTools::getText(Title::newFromText($subPage));
 
-            $pageTitle = $this->context['page'];
-            $subPage = $pageTitle->getText().'/'.$experimentType->getBaseHeaderTemplate();
-            $text = WikiTools::getText(Title::newFromText($subPage));
-
-            $baseHeaderTemplate = $experimentType->getBaseHeaderTemplate();
-            $baseRowTemplate = $experimentType->getBaseRowTemplate();
-            $tab = $experimentType->getTab($tabIndex);
-            $text = preg_replace("/$baseHeaderTemplate(\s|$)/", $tab['header-template'], $text);
-            $text = preg_replace("/$baseRowTemplate(\s|$)/", $tab['row-template'], $text);
+        $baseHeaderTemplate = $experimentType->getBaseHeaderTemplate();
+        $baseRowTemplate = $experimentType->getBaseRowTemplate();
+        $tab = $experimentType->getTab($tabIndex);
+        $text = preg_replace("/$baseHeaderTemplate(\s|$)/", $tab['header-template'], $text);
+        $text = preg_replace("/$baseRowTemplate(\s|$)/", $tab['row-template'], $text);
 
 
-            $newText = $this->filterRows($text, $baseRowTemplate);
+        $newText = $this->filterRows($text, $baseRowTemplate);
 
-            $parser = new Parser();
-            $parserOutput = $parser->parse($newText, $pageTitle, new ParserOptions());
-            $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
-            if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
-                $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
-                return $htmlTableEditor->addEditButtonsAsFirstColumn();
-            } else {
-                return $html;
-            }
-
+        $parser = new Parser();
+        $parserOutput = $parser->parse($newText, $pageTitle, new ParserOptions());
+        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
+            $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
+            return $htmlTableEditor->addEditButtonsAsFirstColumn();
         } else {
-            throw new Exception("Not implemented yet");
+            return $html;
         }
 
     }

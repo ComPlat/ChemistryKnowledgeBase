@@ -38,13 +38,9 @@ class ExperimentLink {
             'index' => $indices !== false ? self::parseIndices($indices) : null,
             'showEditLink' => false
         ]);
+        $html = $renderer->renderInViewMode($parameters, $parser);
         if (WikiTools::isInVisualEditor()) {
-            //$html = self::renderInVisualEditor($parser, $parameters);
-            $html = $renderer->renderInViewMode($parameters, $parser);
             $html = str_replace(array("<tbody>","</tbody>"), "", $html);
-
-        } else {
-            $html = $renderer->renderInViewMode($parameters, $parser);
         }
         return [str_replace("\n", "", $html), 'noparse' => true, 'isHTML' => true];
     }
@@ -62,11 +58,6 @@ class ExperimentLink {
             }
         }, $indicesArray);
         return ArrayTools::flatten($indicesWithAllNumbers);
-    }
-
-    private static function renderInVisualEditor(Parser $parser, $parameters): string
-    {
-        return "not yet implemented.";
     }
 
 
