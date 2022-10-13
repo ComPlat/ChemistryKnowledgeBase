@@ -38,14 +38,15 @@ class ExperimentLink {
             'index' => $indices !== false ? self::parseIndices($indices) : null,
             'showEditLink' => false
         ]);
-        $html = $renderer->renderInViewMode($parameters, $parser);
+        $html = $renderer->renderInViewMode();
         if (WikiTools::isInVisualEditor()) {
             $html = str_replace(array("<tbody>","</tbody>"), "", $html);
         }
         return [str_replace("\n", "", $html), 'noparse' => true, 'isHTML' => true];
     }
 
-    private static function parseIndices($indicesAsString) {
+    private static function parseIndices($indicesAsString): array
+    {
         $indicesArray = explode(",", $indicesAsString);
         $indicesWithAllNumbers = array_map(function($e) {
             $parts = explode("-", $e);

@@ -4,7 +4,6 @@ namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\TemplateParser\TemplateNode;
 use DIQA\ChemExtension\TemplateParser\TemplateParser;
-use DIQA\ChemExtension\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
@@ -32,32 +31,12 @@ class ExperimentRenderer
         $this->context = $context;
     }
 
-
     /**
-     * @return string
-     * @throws Exception
-     */
-    public function renderInVisualEditor(Parser $parser, $parameters): string
-    {
-        $repo = ExperimentRepository::getInstance();
-        $experiment = $repo->getExperimentType($parameters['form']);
-
-        $subPage = $parser->getTitle()->getText() . '/' . $parameters['form'];
-        $text = WikiTools::getText(Title::newFromText($subPage));
-
-        $num = substr_count($text, $experiment->getBaseRowTemplate());
-
-        return "Experiment Typ: {$parameters['form']}<br/>Anzahl der Experimente: $num";
-
-    }
-
-    /**
-     * @param array $parameters
      * @param PanelLayout $form
      * @return PanelLayout or string
      * @throws Exception
      */
-    public function renderInViewMode(array $parameters)
+    public function renderInViewMode()
     {
 
         OutputPage::setupOOUI();
@@ -65,7 +44,7 @@ class ExperimentRenderer
         $repo = ExperimentRepository::getInstance();
         $experiment = $repo->getExperimentType($this->context['form']);
 
-        if ($experiment->hasOnlyOneTab()) {
+        if ($experiment->hasOnlyOneTab() || WikiTools::isInVisualEditor()) {
             return $this->getTabContent($experiment, 0);
         }
 
@@ -114,40 +93,31 @@ class ExperimentRenderer
         $subPage = $pageTitle->getText() . '/' . $experimentType->getBaseHeaderTemplate();
         $text = WikiTools::getText(Title::newFromText($subPage));
 
-        $baseHeaderTemplate = $experimentType->getBaseHeaderTemplate();
-        $baseRowTemplate = $experimentType->getBaseRowTemplate();
-        $tab = $experimentType->getTab($tabIndex);
-        $text = preg_replace("/$baseHeaderTemplate(\s|$)/", $tab['header-template'], $text);
-        $text = preg_replace("/$baseRowTemplate(\s|$)/", $tab['row-template'], $text);
+        $templateParser = new TemplateParser($text);
+        $root = $templateParser->parse();
 
-
-        $newText = $this->filterRows($text, $baseRowTemplate);
+        $this->replaceTemplates($root, $experimentType, $tabIndex, $text);
+        $this->filterRows($root, $experimentType->getBaseRowTemplate());
+        $text = $root->serialize();
 
         $parser = new Parser();
-        $parserOutput = $parser->parse($newText, $pageTitle, new ParserOptions());
+        $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
-        if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
-            $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
-            return $htmlTableEditor->addEditButtonsAsFirstColumn();
-        } else {
-            return $html;
-        }
+        return $this->addEditLinksIfNeeded($html);
 
     }
 
     /**
+     * @param $root
      * @param $text
      * @param $baseRowTemplate
-     * @return string
+     * @return void
      */
-    private function filterRows($text, $baseRowTemplate): string
+    private function filterRows($root, $baseRowTemplate): void
     {
         if (is_null($this->context['index'])) {
-            return $text;
+            return;
         }
-        $templateParser = new TemplateParser($text);
-        $root = new TemplateNode(true);
-        $templateParser->parse($root);
         $root->removeNodes(function ($node) use ($baseRowTemplate) {
             if ($node instanceof TemplateNode) {
                 return $node->getTemplateName() === $baseRowTemplate
@@ -156,8 +126,43 @@ class ExperimentRenderer
             return false;
         });
 
-        return $root->serialize();
     }
 
+    /**
+     * @param $root
+     * @param ExperimentType $experimentType
+     * @param $tabIndex
+     * @return void
+     */
+    private function replaceTemplates($root, ExperimentType $experimentType, $tabIndex): void
+    {
+        if (WikiTools::isInVisualEditor()) {
+            return;
+        }
+
+        $root->visitNodes(function ($node) use ($experimentType, $tabIndex) {
+            if ($node instanceof TemplateNode) {
+                $tab = $experimentType->getTab($tabIndex);
+                if ($node->getTemplateName() === $experimentType->getBaseRowTemplate()) {
+                    $node->setTemplateName($tab['row-template']);
+                } else if ($node->getTemplateName() === $experimentType->getBaseHeaderTemplate()) {
+                    $node->setTemplateName($tab['header-template']);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param string $html
+     * @return false|string
+     */
+    private function addEditLinksIfNeeded(string $html)
+    {
+        if (!WikiTools::isInVisualEditor() || !$this->context['showEditLink']) {
+            return $html;
+        }
+        $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
+        return $htmlTableEditor->addEditButtonsAsFirstColumn();
+    }
 
 }

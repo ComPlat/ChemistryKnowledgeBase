@@ -29,7 +29,7 @@ class ExperimentList
             'form' => $parameters['form'],
             'showEditLink' => true
         ]);
-        $html = $renderer->renderInViewMode($parameters, $parser);
+        $html = $renderer->renderInViewMode();
         if (WikiTools::isInVisualEditor()) {
             $html = str_replace(array("<tbody>","</tbody>"), "", $html);
         }

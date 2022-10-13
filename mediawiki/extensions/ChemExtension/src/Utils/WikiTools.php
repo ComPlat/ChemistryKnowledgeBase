@@ -14,7 +14,7 @@ use User;
 
 class WikiTools {
 
-    public static function isInVisualEditor()
+    public static function isInVisualEditor(): bool
     {
         global $wgRequest;
         return (strpos($wgRequest->getText('title'), '/v3/page/html/') !== false
