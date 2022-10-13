@@ -73,7 +73,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             let iterate = function(node) {
                 for(let i = 0; i < node.children.length; i++) {
                     let child = node.children[i];
-                    if (child.type === 'mwTransclusionBlock') {
+                    if (child.type === 'mwTransclusionBlock' || child.type === 'mwTransclusionInline') {
                         child.forceUpdate();
                     }
                     iterate(child);

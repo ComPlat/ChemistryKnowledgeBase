@@ -51,15 +51,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         }
         return ve.ui.MWMediaDialog.super.prototype.getActionProcess.call(this, action);
     }
-    ve.ui.ChooseExperimentDialog.prototype.setup = function (data) {
 
+    ve.ui.ChooseExperimentDialog.prototype.attachActions = function() {
+        ve.ui.ChooseExperimentDialog.super.prototype.attachActions.call(this);
+        //this.getActions().list[0].setDisabled(true);
+    }
+
+    ve.ui.ChooseExperimentDialog.prototype.setup = function (data) {
         this.chooseExperimentsWidget.setData(data);
         this.surface = data.surface;
-        return ve.ui.ChooseExperimentDialog.super.prototype.setup.call(this, data);
+        let setup = ve.ui.ChooseExperimentDialog.super.prototype.setup.call(this, data);
+        return setup;
     };
 
     ve.ui.ChooseExperimentDialog.prototype.getBodyHeight = function () {
-        return 600;
+        return 200;
     };
 
     /* Static Properties */
@@ -85,8 +91,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.ChooseExperimentDialog.super.prototype.initialize.call(this);
 
         this.panel = new OO.ui.PanelLayout({'$': this.$, 'scrollable': true, 'padded': true});
-
-        this.chooseExperimentsWidget = new OO.ui.ChooseExperimentsWidget();
+        this.chooseExperimentsWidget = new OO.ui.ChooseExperimentsWidget(this);
         this.panel.$element.append(this.chooseExperimentsWidget.$element);
 
         this.$body.append(this.panel.$element);
