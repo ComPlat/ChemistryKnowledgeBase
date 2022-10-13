@@ -96,8 +96,8 @@ class ExperimentRenderer
         $templateParser = new TemplateParser($text);
         $root = $templateParser->parse();
 
-        $this->replaceTemplates($root, $experimentType, $tabIndex, $text);
         $this->filterRows($root, $experimentType->getBaseRowTemplate());
+        $this->replaceTemplates($root, $experimentType, $tabIndex, $text);
         $text = $root->serialize();
 
         $parser = new Parser();

@@ -37,7 +37,7 @@ class TemplateParser
                 $templateIndex = $this->incrementTemplateIndex($templateIndices, $templateName);
                 $newNode->setTemplateName($templateName);
                 $newNode->setTemplateIndex($templateIndex);
-                $index = $this->parse_($newNode, $i+2);
+                $index = $this->parse_($newNode, $i+2+strlen($templateName));
                 $node->addNode($newNode);
                 $i = $index+1;
             } else if ($this->isTemplateEnd($i)) {

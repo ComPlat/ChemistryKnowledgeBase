@@ -53,7 +53,7 @@ class TemplateNode extends AbstractTemplateNode {
 
     public function serialize(): string
     {
-        $s = $this->isRoot ? '' : '{{';
+        $s = $this->isRoot ? '' : '{{' . $this->templateName;
         $s .= implode('', array_map(function($node) { return $node->serialize();}, $this->childNodes));
         $s .= $this->isRoot ? '' : '}}';
         return $s;
