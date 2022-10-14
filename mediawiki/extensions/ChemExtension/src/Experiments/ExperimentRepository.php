@@ -14,7 +14,7 @@ class ExperimentRepository
     {
 
         $this->experiments = [
-            'DemoExperiment1' => [
+           'DemoExperiment1' => [
                 'label' => 'DemoExperiment 1',
                 'type' => 'assay',
                 'base-row-template' => 'DemoExperiment1Row',
@@ -71,7 +71,7 @@ class ExperimentRepository
     public function getExperimentType($template): ExperimentType
     {
         if (!array_key_exists($template, $this->experiments)) {
-            throw new Exception("Experiment does not exist: $template");
+            return ExperimentType::fromForm($template);
         }
         return new ExperimentType($template, $this->experiments[$template]);
     }

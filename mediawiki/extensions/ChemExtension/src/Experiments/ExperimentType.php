@@ -2,7 +2,8 @@
 
 namespace DIQA\ChemExtension\Experiments;
 
-class ExperimentType {
+class ExperimentType
+{
 
     private $type;
     private $label;
@@ -23,7 +24,21 @@ class ExperimentType {
         $this->tabs = $experimentType['tabs'] ?? [];
     }
 
-    public function getFirstTab() {
+    public static function fromForm($formName): ExperimentType
+    {
+        $experimentType = [
+            'label' => $formName,
+            'tabs' => [
+                [
+                'label' => 'Tab 1',
+                'header-template' => $formName
+                ]
+            ]];
+        return new ExperimentType($formName, $experimentType);
+    }
+
+    public function getFirstTab()
+    {
         return reset($this->tabs);
     }
 
@@ -59,7 +74,8 @@ class ExperimentType {
         return $this->tabs;
     }
 
-    public function getTab($index) {
+    public function getTab($index)
+    {
         return $this->tabs[$index];
     }
 
