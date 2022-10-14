@@ -160,6 +160,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         setTimeout(function() {
            if (!ve.init.target) {
                f();
+               return;
            }
             ve.init.target.on('deactivate', function() {
                 $('.experiment-editable-column').remove();
