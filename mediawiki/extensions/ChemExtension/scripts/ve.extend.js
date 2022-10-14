@@ -156,4 +156,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         });
     }
 
+    let f = function() {
+        setTimeout(function() {
+           if (!ve.init.target) {
+               f();
+           }
+            ve.init.target.on('deactivate', function() {
+                $('.experiment-editable-column').remove();
+            });
+        }, 100);
+    }
+    f();
+
 } );
