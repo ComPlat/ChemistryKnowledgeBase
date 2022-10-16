@@ -41,7 +41,7 @@
         this.chooseTypeDropDown = new OO.ui.DropdownInputWidget({
             options: [
                 { label: "Assay", data: 'assay'},
-                { label: "Molecule process", data: 'molecule-process'}
+                { label: "Molecular process", data: 'molecular-process'}
             ]
 
         });

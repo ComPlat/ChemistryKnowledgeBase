@@ -11,5 +11,5 @@
 |smiles={{{smiles|}}}
 |inchikey={{{inchikey|}}}
 }}
-[[Category:Molecule]]
+[[Category:Molecule collection]]
 ‎<includeonly>

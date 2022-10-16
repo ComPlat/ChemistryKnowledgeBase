@@ -7,39 +7,27 @@ class ExperimentType
 
     private $type;
     private $label;
-    private $baseRowTemplate;
-    private $baseHeaderTemplate;
     private $tabs;
 
     /**
      * ExperimentType constructor.
      * @param $experimentType array data from config
      */
-    public function __construct($formName, array $experimentType)
+    public function __construct(array $experimentType)
     {
         $this->type = $experimentType['type'] ?? null;
         $this->label = $experimentType['label'] ?? null;
-        $this->baseRowTemplate = $experimentType['base-row-template'] ?? null;
-        $this->baseHeaderTemplate = $formName;
-        $this->tabs = $experimentType['tabs'] ?? [];
+        $this->tabs = $experimentType['tabs'] ?? null;
     }
 
     public static function fromForm($formName): ExperimentType
     {
         $experimentType = [
             'label' => $formName,
-            'tabs' => [
-                [
-                'label' => 'Tab 1',
-                'header-template' => $formName
-                ]
-            ]];
-        return new ExperimentType($formName, $experimentType);
-    }
-
-    public function getFirstTab()
-    {
-        return reset($this->tabs);
+            'type' => 'assay',
+            'tabs' => null
+        ];
+        return new ExperimentType($experimentType);
     }
 
     /**
@@ -58,13 +46,7 @@ class ExperimentType
         return $this->label;
     }
 
-    /**
-     * @return mixed|null
-     */
-    public function getBaseRowTemplate()
-    {
-        return $this->baseRowTemplate;
-    }
+
 
     /**
      * @return array|mixed
@@ -79,16 +61,10 @@ class ExperimentType
         return $this->tabs[$index];
     }
 
-    /**
-     * @return mixed
-     */
-    public function getBaseHeaderTemplate()
-    {
-        return $this->baseHeaderTemplate;
-    }
+
 
     public function hasOnlyOneTab(): bool
     {
-        return count($this->tabs) === 1;
+        return $this->tabs === null;
     }
 }

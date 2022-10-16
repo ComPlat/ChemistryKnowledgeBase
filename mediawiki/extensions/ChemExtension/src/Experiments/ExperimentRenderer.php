@@ -45,18 +45,18 @@ class ExperimentRenderer
         $experiment = $repo->getExperimentType($this->context['form']);
 
         if ($experiment->hasOnlyOneTab() || WikiTools::isInVisualEditor()) {
-            return $this->getTabContent($experiment, 0);
+            return $this->getTabContent($this->context['form'], 0);
         }
 
         $tabPanels = [];
         $i = 0;
-        foreach ($experiment->getTabs() as $tab => $data) {
+        foreach ($experiment->getTabs() as $tab) {
 
             $tabPanels[] = new TabPanelLayout($tab, [
                 'classes' => [],
-                'label' => $data['label'],
+                'label' => $tab,
                 'content' => new Widget([
-                    'content' => new HtmlSnippet($this->getTabContent($experiment, $i))
+                    'content' => new HtmlSnippet($this->getTabContent($this->context['form'], $i))
                 ]),
                 'expanded' => false,
                 'framed' => true,
@@ -86,83 +86,30 @@ class ExperimentRenderer
     /**
      * @throws Exception
      */
-    private function getTabContent(ExperimentType $experimentType, $tabIndex): string
+    private function getTabContent($formName, $tabIndex): string
     {
 
         $pageTitle = $this->context['page'];
-        $subPage = $pageTitle->getText() . '/' . $experimentType->getBaseHeaderTemplate();
+        $subPage = $pageTitle->getText() . '/' . $formName;
         $text = WikiTools::getText(Title::newFromText($subPage));
-
-        $templateParser = new TemplateParser($text);
-        $root = $templateParser->parse();
-
-        $this->filterRows($root, $experimentType->getBaseRowTemplate());
-        $this->replaceTemplates($root, $experimentType, $tabIndex, $text);
-        $text = $root->serialize();
 
         $parser = new Parser();
         $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
-        return $this->addEditLinksIfNeeded($html);
 
-    }
-
-    /**
-     * @param $root
-     * @param $text
-     * @param $baseRowTemplate
-     * @return void
-     */
-    private function filterRows($root, $baseRowTemplate): void
-    {
-        if (is_null($this->context['index'])) {
-            return;
-        }
-        $root->removeNodes(function ($node) use ($baseRowTemplate) {
-            if ($node instanceof TemplateNode) {
-                return $node->getTemplateName() === $baseRowTemplate
-                    && !in_array($node->getTemplateIndex(), $this->context['index']);
-            }
-            return false;
-        });
-
-    }
-
-    /**
-     * @param $root
-     * @param ExperimentType $experimentType
-     * @param $tabIndex
-     * @return void
-     */
-    private function replaceTemplates($root, ExperimentType $experimentType, $tabIndex): void
-    {
-        if (WikiTools::isInVisualEditor()) {
-            return;
-        }
-
-        $root->visitNodes(function ($node) use ($experimentType, $tabIndex) {
-            if ($node instanceof TemplateNode) {
-                $tab = $experimentType->getTab($tabIndex);
-                if ($node->getTemplateName() === $experimentType->getBaseRowTemplate()) {
-                    $node->setTemplateName($tab['row-template']);
-                } else if ($node->getTemplateName() === $experimentType->getBaseHeaderTemplate()) {
-                    $node->setTemplateName($tab['header-template']);
-                }
-            }
-        });
-    }
-
-    /**
-     * @param string $html
-     * @return false|string
-     */
-    private function addEditLinksIfNeeded(string $html)
-    {
-        if (!WikiTools::isInVisualEditor() || !$this->context['showEditLink']) {
-            return $html;
-        }
         $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
-        return $htmlTableEditor->addEditButtonsAsFirstColumn();
+        if (!WikiTools::isInVisualEditor()) {
+            $htmlTableEditor->removeOtherColumns($tabIndex);
+        }
+        if (!is_null($this->context['index'])) {
+            $htmlTableEditor->retainRows($this->context['index']);
+        }
+        if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
+            $htmlTableEditor->addEditButtonsAsFirstColumn();
+        }
+        return $htmlTableEditor->toHtml();
+
     }
+
 
 }

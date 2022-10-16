@@ -1,0 +1,2 @@
+== Molecule collection category ==
+{{#default_form:Molecule_collection}}

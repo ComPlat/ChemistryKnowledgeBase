@@ -14,9 +14,11 @@ class MoleculePageCreator
 
     private $logger;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->logger = new LoggerUtils('PageCreator', 'ChemExtension');
     }
+
     /**
      * @throws Exception
      */
@@ -76,9 +78,12 @@ class MoleculePageCreator
 
         if ($chemForm->isReaction()) {
             $template = "ChemicalReaction";
+        } else if ($chemForm->hasRGroupDefinitions()) {
+            $template = "MoleculeCollection";
         } else {
             $template = "ChemicalFormula";
         }
+
         $pageContent = "{{" . $template;
         $pageContent .= "\n|moleculeKey={$chemForm->getMoleculeKey()}";
         $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";

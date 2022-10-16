@@ -17,32 +17,13 @@ class ExperimentRepository
            'DemoExperiment1' => [
                 'label' => 'DemoExperiment 1',
                 'type' => 'assay',
-                'base-row-template' => 'DemoExperiment1Row',
-                'tabs' => [
-                    [
-                    'label' => 'Tab 1',
-                    'header-template' => 'DemoExperiment1',
-                    'row-template' => 'DemoExperiment1Row',
-                    ]
-                ],
+                'tabs' => null
 
             ],
             'DemoExperiment2' => [
                 'label' => 'DemoExperiment 2',
-                'type' => 'molecule-process',
-                'base-row-template' => 'DemoExperiment2Row',
-                'tabs' => [
-                    [
-                        'label' => 'Tab 1',
-                        'header-template' => 'DemoExperiment2Tab1Header',
-                        'row-template' => 'DemoExperiment2RowTab1',
-                    ],
-                    [
-                        'label' => 'Tab 2',
-                        'header-template' => 'DemoExperiment2Tab2Header',
-                        'row-template' => 'DemoExperiment2RowTab2',
-                    ]
-                ],
+                'type' => 'molecular-process',
+                'tabs' => ['tab1', 'tab2'],
 
             ],
 
@@ -73,7 +54,7 @@ class ExperimentRepository
         if (!array_key_exists($template, $this->experiments)) {
             return ExperimentType::fromForm($template);
         }
-        return new ExperimentType($template, $this->experiments[$template]);
+        return new ExperimentType($this->experiments[$template]);
     }
 
 }
