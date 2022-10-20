@@ -43,6 +43,8 @@ class Setup {
                 $baseScript . '/ve-form-input.js',
                 $baseScript . '/ve-form-input-dialog.js',
                 $baseScript . '/ve-form-input-widget.js',
+                $baseScript . '/ve.oo.ui.molecule-link-dialog.js',
+                $baseScript . '/ve.oo.ui.molecule-link-widget.js',
 
             ],
             'styles' => [ 'skins/main.css' ],

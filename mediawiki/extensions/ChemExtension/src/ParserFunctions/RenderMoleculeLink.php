@@ -10,7 +10,8 @@ use Parser;
 use Philo\Blade\Blade;
 use Title;
 
-class RenderMoleculeLink {
+class RenderMoleculeLink
+{
 
     public static function renderMoleculeLink(Parser $parser)
     {
@@ -18,19 +19,16 @@ class RenderMoleculeLink {
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        if (!isset($parameters['moleculelink'])) {
-            return ["-missing moleculelink-", 'noparse' => true, 'isHTML' => true];
-        }
-
-        if (preg_match('/^\d+$/', $parameters['moleculelink'], $matches) === 1) {
-            // assume it's a molecule number
-            $chemformId = $parameters['moleculelink'];
-        } else {
+        if (isset($parameters['link'])) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
             $chemFormRepo = new ChemFormRepository($dbr);
-            $chemformId = $chemFormRepo->getChemFormId($parameters['moleculelink']);
-
+            $chemformId = $chemFormRepo->getChemFormId($parameters['link']);
+        } else if (isset($parameters['chemformid'])) {
+            $chemformId = $parameters['chemformid'];
+        } else {
+            return ["-missing link parameter-", 'noparse' => true, 'isHTML' => true];
         }
+
         if (is_null($chemformId)) {
             return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
         }
@@ -40,23 +38,28 @@ class RenderMoleculeLink {
             $page = Title::newFromText("Collection_$chemformId", NS_MOLECULE);
             if (!$page->exists()) {
                 $page = Title::newFromText("Reaction_$chemformId", NS_REACTION);
+                if (!$page->exists()) {
+                    return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
+                }
             }
         }
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new Blade ($views, $cache);
 
         if (WikiTools::isInVisualEditor()) {
-            $html = "<span>[" . $page->getText() . "]</span>";
+
+            $html = $page->getText();
+
         } else {
 
-            $html = $blade->view ()->make ( "molecule-link",
+            $html = $blade->view()->make("molecule-link",
                 [
                     'url' => $page->getFullURL(),
                     'label' => $page->getText()
                 ]
-            )->render ();
+            )->render();
 
         }
 

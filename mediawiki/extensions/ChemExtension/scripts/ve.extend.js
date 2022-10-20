@@ -56,6 +56,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.ui.LinearContextItemExtension.extendForLiterature(panel, context, model);
         } else if (template.target.wt.trim() == '#experimentlist:') {
             ve.ui.LinearContextItemExtension.extendForExperimentList(panel, context, model);
+        } else if (template.target.wt.trim() == '#moleculelink:') {
+            ve.ui.LinearContextItemExtension.extendForMoleculeLink(panel, context, model);
         }
     }
 
@@ -118,6 +120,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         });
 
         panel.$actions.append(button.$element);
+    }
+
+    ve.ui.LinearContextItemExtension.extendForMoleculeLink = function(panel, context, model) {
+        let editButton = new OO.ui.ButtonWidget({
+            label: 'Edit link'
+        });
+        editButton.on('click', function () {
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+            ve.init.target.getSurface().execute('window', 'open', 'choose-molecule', {
+                //attrs: panel.originalMwData.attrs,
+                template: template,
+                node: model
+            });
+        });
+        panel.$actions.append(editButton.$element);
     }
 
     ve.ui.LinearContextItemExtension.getTemplate = function(model) {
