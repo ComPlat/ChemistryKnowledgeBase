@@ -18,13 +18,19 @@ class RenderMoleculeLink {
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        if (!isset($parameters['inchikey'])) {
-            return ["-missing inchikey-", 'noparse' => true, 'isHTML' => true];
+        if (!isset($parameters['moleculelink'])) {
+            return ["-missing moleculelink-", 'noparse' => true, 'isHTML' => true];
         }
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
-        $chemFormRepo = new ChemFormRepository($dbr);
-        $chemformId = $chemFormRepo->getChemFormId($parameters['inchikey']);
+        if (preg_match('/^\d+$/', $parameters['moleculelink'], $matches) === 1) {
+            // assume it's a molecule number
+            $chemformId = $parameters['moleculelink'];
+        } else {
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+            $chemFormRepo = new ChemFormRepository($dbr);
+            $chemformId = $chemFormRepo->getChemFormId($parameters['moleculelink']);
+
+        }
         if (is_null($chemformId)) {
             return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
         }

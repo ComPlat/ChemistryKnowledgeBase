@@ -49,7 +49,7 @@ class ExperimentRenderer
         }
 
         $tabPanels = [];
-        $i = 0;
+        $i = 1;
         foreach ($experiment->getTabs() as $tab) {
 
             $tabPanels[] = new TabPanelLayout($tab, [
