@@ -19,11 +19,11 @@ class RenderMoleculeLink
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        if (isset($parameters['link'])) {
+        if (isset($parameters['link']) && $parameters['link'] != '') {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
             $chemFormRepo = new ChemFormRepository($dbr);
             $chemformId = $chemFormRepo->getChemFormId($parameters['link']);
-        } else if (isset($parameters['chemformid'])) {
+        } else if (isset($parameters['chemformid']) && $parameters['chemformid'] != '') {
             $chemformId = $parameters['chemformid'];
         } else {
             return ["-missing link parameter-", 'noparse' => true, 'isHTML' => true];
