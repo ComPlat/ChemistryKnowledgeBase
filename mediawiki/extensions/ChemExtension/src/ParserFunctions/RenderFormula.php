@@ -70,14 +70,14 @@ class RenderFormula
 
     private static function renderFormulaInContext($moleculeKey, $formula, $arguments, $serializedAttributes): string
     {
-
-        $output = '';
-        if (self::imageNotExists($moleculeKey) && !WikiTools::isInVisualEditor()) {
-            $output .= self::getRenderButton($moleculeKey, $formula);
-        } else {
-            $output .= "<iframe $serializedAttributes></iframe>";
+        if ($moleculeKey == '') {
+            return '';
         }
-
+        if (self::imageNotExists($moleculeKey) && !WikiTools::isInVisualEditor()) {
+            $output = self::getRenderButton($moleculeKey, $formula);
+        } else {
+            $output = "<iframe $serializedAttributes></iframe>";
+        }
         return $output;
     }
 
