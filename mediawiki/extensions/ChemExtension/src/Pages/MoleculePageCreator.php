@@ -148,6 +148,7 @@ class MoleculePageCreator
         $pubChemData = $this->getPubChemData($chemForm->getInchiKey());
         if (!is_null($pubChemData)) {
             $pubChemTemplate .= "{{PubChem";
+            $pubChemTemplate .= "\n|cid={$pubChemData['cid']}";
             $pubChemTemplate .= "\n|cas={$pubChemData['cas']}";
             $pubChemTemplate .= "\n|iupacName={$pubChemData['iupac_name']}";
             $firstSynonym = reset($pubChemData['synonyms']);

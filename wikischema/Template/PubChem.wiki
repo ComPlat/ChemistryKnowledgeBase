@@ -1,5 +1,6 @@
 <noinclude>Template for PubChem</noinclude>
 <includeonly>
+{{#if: {{{cid|}}} |* PubChem: [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|}}
 {{#if: {{{cas|}}} |* CAS: {{#set: CAS={{{cas}}} }} {{{cas}}}|}}
 {{#if: {{{iupacName|}}} |* IUPAC-Name: {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|}}
 {{#if: {{{abbrev|}}} |* Abbreviation: {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
