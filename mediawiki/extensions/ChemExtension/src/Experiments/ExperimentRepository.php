@@ -15,13 +15,13 @@ class ExperimentRepository
 
         $this->experiments = [
            'DemoExperiment1' => [
-                'label' => 'DemoExperiment 1',
+                'label' => 'DemoInvestigation 1',
                 'type' => 'assay',
                 'tabs' => null
 
             ],
             'DemoExperiment2' => [
-                'label' => 'DemoExperiment 2',
+                'label' => 'DemoInvestigation 2',
                 'type' => 'molecular-process',
                 'tabs' => ['tab1', 'tab2'],
 

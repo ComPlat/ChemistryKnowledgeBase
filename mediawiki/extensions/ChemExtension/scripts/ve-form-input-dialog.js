@@ -3,7 +3,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     if (!mw.messages.exists('ve-ChooseExperimentDialog-title')) {
         mw.messages.set({
-            've-ChooseExperimentDialog-title': 'Choose experiment type',
+            've-ChooseExperimentDialog-title': 'Choose investigation type',
 
         });
     }

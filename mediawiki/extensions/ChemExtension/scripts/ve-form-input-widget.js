@@ -46,7 +46,7 @@
 
         });
         let labelExperimentType = new OO.ui.LabelWidget({
-            label: "Experiment-Type",
+            label: "Investigation-Type",
 
         });
         this.chooseTypeDropDown.on('change', (item) => {
@@ -55,7 +55,7 @@
         });
 
         this.chooseExperimentDropDown = new OO.ui.DropdownInputWidget({
-            label: 'Select a experiment type',
+            label: 'Select a investigation type',
             options: this.findMenuOptionsOfType('assay')
         });
         this.chooseExperimentDropDown.on('change', (item) => {
