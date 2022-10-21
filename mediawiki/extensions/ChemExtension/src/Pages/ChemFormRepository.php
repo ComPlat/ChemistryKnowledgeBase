@@ -35,8 +35,8 @@ class ChemFormRepository {
                         molecule_collection_id INT NOT NULL,
                         rgroups MEDIUMTEXT NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('CREATE INDEX molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
-        $this->db->query('CREATE INDEX publication_page_id_index ON molecule_collection (publication_page_id);');
+        $this->db->query('CREATE INDEX IF NOT EXISTS molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
+        $this->db->query('CREATE INDEX IF NOT EXISTS publication_page_id_index ON molecule_collection (publication_page_id);');
         return [ 'chem_form', 'molecule_collection' ];
     }
 

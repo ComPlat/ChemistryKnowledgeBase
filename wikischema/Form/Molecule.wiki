@@ -1,10 +1,10 @@
 <noinclude>
-Add a new Molecule:
+Edit a Molecule:
 {{#forminput:form=Molecule}}
 </noinclude>
 
 <includeonly>
-{{{for template|ChemicalFormula}}}
+{{{for template|PubChem}}}
 {| class="formtable"
 ! Abbreviation:
 | {{{field|abbrev|input type=sting}}}

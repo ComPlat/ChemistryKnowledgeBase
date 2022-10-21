@@ -5,6 +5,10 @@ namespace DIQA\ChemExtension\Maintenance;
 
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\PubChem\PubChemRepository;
+use DatabaseUpdater;
+use DIQA\ChemExtension\Utils\ArrayTools;
+use IMaintainableDatabase;
 
 /**
  * Load the required class
@@ -31,7 +35,7 @@ class setupStore extends \Maintenance
 
     }
 
-    public static function onLoadExtensionSchemaUpdates( \DatabaseUpdater $updater ) {
+    public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ) {
         print ("=== ChemExtension =============================================================");
         $db = $updater->getDB();
         self::setupTables($db);
@@ -41,14 +45,14 @@ class setupStore extends \Maintenance
     /**
      * @param \Wikimedia\Rdbms\IMaintainableDatabase $db
      */
-    private static function setupTables(\Wikimedia\Rdbms\IMaintainableDatabase $db): void
+    private static function setupTables(IMaintainableDatabase $db): void
     {
-        $tables = (new ChemFormRepository($db))->setupTables();
-        foreach ($tables as $t) {
-            print ("\nCreated/updated table $t.");
-
-        }
-        $tables = (new LiteratureRepository($db))->setupTables();
+        $tables = [
+            (new ChemFormRepository($db))->setupTables(),
+            (new PubChemRepository($db))->setupTables(),
+            (new LiteratureRepository($db))->setupTables()
+        ];
+        $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {
             print ("\nCreated/updated table $t.");
 
@@ -88,16 +92,17 @@ class setupStore extends \Maintenance
     private function dropStore()
     {
         $db = $this->getConnection();
-        $tables = (new ChemFormRepository($db))->dropTables();
+        $tables = [
+            (new ChemFormRepository($db))->dropTables(),
+            (new PubChemRepository($db))->dropTables(),
+            (new LiteratureRepository($db))->dropTables()
+        ];
+        $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {
             print ("\nRemoved table $t.");
 
         }
-        $tables = (new LiteratureRepository($db))->dropTables();
-        foreach ($tables as $t) {
-            print ("\nRemoved table $t.");
 
-        }
     }
 
     private function reportMessage($message)

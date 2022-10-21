@@ -1,0 +1,5 @@
+;Purpose
+* Denotes if a chemical can be purchased commercially.
+
+;Datatype
+* [[Has type::Boolean]]

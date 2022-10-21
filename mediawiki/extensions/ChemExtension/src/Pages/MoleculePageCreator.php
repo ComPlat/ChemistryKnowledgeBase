@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\PubChem\PubChemRepository;
+use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -76,27 +78,10 @@ class MoleculePageCreator
     private function getTemplate(ChemForm $chemForm, ?Title $parent = null): string
     {
 
-        if ($chemForm->isReaction()) {
-            $template = "ChemicalReaction";
-        } else if ($chemForm->hasRGroupDefinitions()) {
-            $template = "MoleculeCollection";
-        } else {
-            $template = "ChemicalFormula";
-        }
+        $pubChemTemplate = $this->getPubChemTemplate($chemForm);
+        $formulaTemplate = $this->getFormulaTemplate($chemForm, $parent);
 
-        $pageContent = "{{" . $template;
-        $pageContent .= "\n|moleculeKey={$chemForm->getMoleculeKey()}";
-        $pageContent .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
-        $pageContent .= "\n|smiles={$chemForm->getSmiles()}";
-        $pageContent .= "\n|inchi={$chemForm->getInchi()}";
-        $pageContent .= "\n|inchikey={$chemForm->getInchiKey()}";
-        $pageContent .= "\n|width={$chemForm->getWidth()}";
-        $pageContent .= "\n|height={$chemForm->getHeight()}";
-        $pageContent .= "\n|float={$chemForm->getFloat()}";
-        $parentArticle = !is_null($parent) ? $parent->getPrefixedText() : '';
-        $pageContent .= "\n|parent={$parentArticle}";
-        $pageContent .= "\n}}";
-        return $pageContent;
+        return $pubChemTemplate . "\n\n" . $formulaTemplate;
     }
 
     private function getRGroupTable(ChemForm $chemForm): string
@@ -105,6 +90,33 @@ class MoleculePageCreator
             return '';
         }
         return "\n{{#showMoleculeCollection: }}";
+    }
+
+    private function getPubChemData($inchiKey) {
+        try {
+            if (is_null($inchiKey)) return null;
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+            $repo = new PubChemRepository($dbr);
+            $result = $repo->getPubChemResult($inchiKey);
+            $record = $result['record'];
+            $synonyms = $result['synonyms'];
+            $categories = $result['categories'];
+            return [
+                'cid' => $record->getCID(),
+                'iupac_name' => $record->getIUPACName(),
+                'molecular_mass' => $record->getMolecularMass(),
+                'molecular_formula' => $record->getMolecularFormula(),
+                'log_p' => $record->getLogP(),
+                'synonyms' => array_slice($synonyms->getSynonyms(), 0, min(10, count($synonyms->getSynonyms()))),
+                'cas' => $synonyms->getCAS(),
+                'has_vendors' => $categories->hasVendors(),
+
+            ];
+
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -124,6 +136,70 @@ class MoleculePageCreator
             }
         }
         return $title;
+    }
+
+    /**
+     * @param ChemForm $chemForm
+     * @return string
+     */
+    private function getPubChemTemplate(ChemForm $chemForm): string
+    {
+        $pubChemTemplate = '';
+        $pubChemData = $this->getPubChemData($chemForm->getInchiKey());
+        if (!is_null($pubChemData)) {
+            $pubChemTemplate .= "{{PubChem";
+            $pubChemTemplate .= "\n|cas={$pubChemData['cas']}";
+            $pubChemTemplate .= "\n|iupacName={$pubChemData['iupac_name']}";
+            $firstSynonym = reset($pubChemData['synonyms']);
+            $firstSynonym = $firstSynonym === false ? '' : self::sanitize($firstSynonym);
+            $pubChemTemplate .= "\n|trivialname={$firstSynonym}";
+            $pubChemTemplate .= "\n|abbrev=";
+            $pubChemTemplate .= "\n|molecularMass={$pubChemData['molecular_mass']}";
+            $formula = HtmlTools::formatSumFormula($pubChemData['molecular_formula']);
+            $pubChemTemplate .= "\n|molecularFormula={$formula}";
+            $pubChemTemplate .= "\n|logP={$pubChemData['log_p']}";
+            $synonyms = implode(',', array_map(function ($e) {
+                return self::sanitize($e);
+            }, $pubChemData['synonyms']));
+            $pubChemTemplate .= "\n|synonyms={$synonyms}";
+            $hasVendors = $pubChemData['has_vendors'] ? 'true' : 'false';
+            $pubChemTemplate .= "\n|hasVendors={$hasVendors}";
+            $pubChemTemplate .= "\n}}";
+        }
+        return $pubChemTemplate;
+    }
+
+    private static function sanitize($s) {
+        return str_replace([',', '[', ']'], '', $s);
+    }
+
+    /**
+     * @param ChemForm $chemForm
+     * @param Title|null $parent
+     * @return string
+     */
+    private function getFormulaTemplate(ChemForm $chemForm, ?Title $parent): string
+    {
+        if ($chemForm->isReaction()) {
+            $template = "ChemicalReaction";
+        } else if ($chemForm->hasRGroupDefinitions()) {
+            $template = "MoleculeCollection";
+        } else {
+            $template = "ChemicalFormula";
+        }
+        $formulaTemplate = "{{" . $template;
+        $formulaTemplate .= "\n|moleculeKey={$chemForm->getMoleculeKey()}";
+        $formulaTemplate .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
+        $formulaTemplate .= "\n|smiles={$chemForm->getSmiles()}";
+        $formulaTemplate .= "\n|inchi={$chemForm->getInchi()}";
+        $formulaTemplate .= "\n|inchikey={$chemForm->getInchiKey()}";
+        $formulaTemplate .= "\n|width={$chemForm->getWidth()}";
+        $formulaTemplate .= "\n|height={$chemForm->getHeight()}";
+        $formulaTemplate .= "\n|float={$chemForm->getFloat()}";
+        $parentArticle = !is_null($parent) ? $parent->getPrefixedText() : '';
+        $formulaTemplate .= "\n|parent={$parentArticle}";
+        $formulaTemplate .= "\n}}";
+        return $formulaTemplate;
     }
 
 }
