@@ -1,0 +1,19 @@
+<noinclude>
+Edit a Molecule:
+{{#forminput:form=Molecule}}
+</noinclude>
+
+<includeonly>
+{{{for template|PubChem}}}
+{| class="formtable"
+! Abbreviation:
+| {{{field|abbrev|input type=sting}}}
+|-
+! Trivial name:
+| {{{field|trivialname|input type=sting}}}
+|-
+|}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

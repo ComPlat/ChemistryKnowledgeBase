@@ -1,0 +1,5 @@
+;Purpose
+* Contains the formula in canonical InChI-syntax
+
+;Datatype
+* [[Has type::String]]

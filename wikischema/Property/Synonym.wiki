@@ -1,0 +1,5 @@
+;Purpose
+* Contains the synonym of a chemical
+
+;Datatype
+* [[Has type::String]]

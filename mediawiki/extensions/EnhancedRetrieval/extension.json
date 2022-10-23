@@ -1,0 +1,28 @@
+{
+	"name": "EnhancedRetrieval",
+	"author": [
+		"Vulcan Inc. Maintained by [http://www.diqa-pm.com DIQA]"
+	],
+	"url": "https://github.com/kkthek/enhanced-retrieval",
+	"descriptionmsg": "facetedsearch-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"version": "2.3",
+	"requires": {
+		"MediaWiki": ">= 1.35",
+		"platform": {
+			"php": ">= 7.3"
+		}
+	},
+	"AutoloadNamespaces": {
+		"DIQA\\FacetedSearch\\": "src/FacetedSearch/"
+	},
+	"RestRoutes": [
+		{
+			"path": "/EnhancedRetrieval/v1/proxy",
+            "method": "GET",
+			"class": "DIQA\\FacetedSearch\\ProxyRestEndpoint"
+		}
+	],
+	"manifest_version": 2
+}

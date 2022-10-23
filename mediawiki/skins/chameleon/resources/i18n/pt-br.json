@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"!Silent",
+			"Eduardo Addad de Oliveira",
+			"Eduardoaddad",
+			"Felipe L. Ewald",
+			"Jaideraf"
+		]
+	},
+	"skinname-chameleon": "Chameleon",
+	"chameleon-desc": "Um tema responsivo altamente flexível usando o Bootstrap 4",
+	"chameleon-loggedin": "Você está logado como $1.",
+	"chameleon-notloggedin": "Você não está logado.",
+	"chameleon-newmessages": "Você tem novas mensagens.",
+	"chameleon-nonewmessages": "Você não tem novas mensagens.",
+	"chameleon-search-aria-label": "Ir para página",
+	"chameleon-toggler": "Menu"
+}

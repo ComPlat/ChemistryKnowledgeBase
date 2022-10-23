@@ -1,0 +1,5 @@
+;Purpose
+* Contains the formula/reaction in canonical Smiles-syntax
+
+;Datatype
+* [[Has type::String]]

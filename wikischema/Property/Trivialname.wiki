@@ -1,0 +1,5 @@
+;Purpose
+* Contains the trivial name of the molecule
+
+;Datatype
+* [[Has type::String]]

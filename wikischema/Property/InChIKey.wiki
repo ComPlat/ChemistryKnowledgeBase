@@ -1,0 +1,5 @@
+;Purpose
+* Contains the formula as canonical InChI-Key
+
+;Datatype
+* [[Has type::String]]

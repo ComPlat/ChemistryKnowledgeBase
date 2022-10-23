@@ -1,0 +1,134 @@
+iframe.chemformula {
+    border: none;
+
+}
+
+#ce-upload-to-chemscanner {
+    margin-top: 15px;
+}
+
+.ketcher-editor {
+    width: 100%;
+}
+
+.oo-ui-icon-chemform {
+    background-image: url( images/chemistry.png );
+
+}
+
+.oo-ui-icon-experiment {
+    background-image: url( images/experiment.png );
+
+}
+
+.oo-ui-icon-literature {
+    background-image: url( images/open-book.png );
+
+}
+
+.chemformula-tooltip {
+    background: lightyellow;
+    width: 500px;
+    height: 500px;
+    max-width: 500px !important;
+    max-height: 500px !important;
+}
+
+
+span.chem-extension-literature-small {
+    font-size: smaller;
+}
+
+div.chem_ext_literature:hover {
+    background: lightblue;
+}
+
+table.molecule-rest {
+    width: 100%
+}
+
+table.molecule-rest td:nth-child(1) {
+    width: 150px;
+}
+
+table#molecule-rest td {
+    vertical-align: middle;
+}
+
+span#new-molecule {
+    margin-top: 10px;
+}
+
+div.ce-show-rgroups-container {
+    width: 600px;
+    margin-top: -20px;
+    margin-bottom: 10px;
+    font-size: small;
+}
+
+span.ce-show-rgroups-button {
+    font-size: smaller;
+    cursor: pointer;
+}
+
+.chemformula-tooltip img {
+
+}
+
+.ce-literature-table {
+    width: 100%;
+}
+
+.ce-literature-table td:nth-child(1){
+    width: 200px;
+    vertical-align: top;
+}
+
+#submit-doi {
+    margin-top: 10px;
+}
+
+.render-formula-note {
+    margin-top: 15px;
+    color: orange;
+    font-weight: bold;
+}
+
+.rgroup-draggable {
+    width: 700px;
+    height: 700px;
+    padding: 0.5em;
+    z-index: 1000;
+}
+
+.rgroups-molecule {
+    width: 30%;
+    height: 250px;
+}
+
+.rgroups-molecule-controls {
+    margin-top: 15px;
+}
+
+.rgroups-list {
+    width: 70%;
+    height: 430px;
+    overflow: auto;
+}
+
+.hint-blinking {
+    animation: blinker 1s linear infinite;
+}
+
+table.wikitable tr td.experiment-editable-column, th.experiment-editable-column {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    word-break: break-all;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}

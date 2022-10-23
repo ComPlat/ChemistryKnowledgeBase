@@ -1,0 +1,30 @@
+{
+	"name": "diqa/util",
+	"type": "mediawiki-extension",
+	"description": "Utility extension which contains widely used helper classes",
+	"keywords": [
+		"DIQA", "Utilities"
+	],
+		
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Kai Kühn"
+			
+		}
+	],
+	"require": {
+		"composer/installers": "1.*,>=1.0.1",
+		"mediawiki/semantic-media-wiki": "~3.2"
+	},
+	
+	"autoload": {
+		"psr-4": {
+			"DIQA\\": "src/"
+		},
+		"files" : [
+			"DIQAutil.php"
+		]
+		
+	}
+}

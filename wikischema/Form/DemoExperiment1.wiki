@@ -1,0 +1,55 @@
+<noinclude>
+Add a new publication: 
+{{#forminput:form=DemoExperiment1}}
+</noinclude>
+
+<includeonly>
+{{{for template|DemoExperiment1}}}
+Title: {{{field|title|input type=text}}}
+
+Investigations:
+{{{field|investigations|holds template}}}
+{{{end template}}}
+
+{{{for template|DemoExperiment1Row|multiple|embed in field=DemoExperiment1[investigations]}}}
+{| class="formtable"
+! cat:
+| {{{field|cat|input type=combobox|values from category=Molecule}}}
+|-
+! cat_abb:
+| {{{field|cat_abb|input type=sting}}}
+|-
+! cat conc [mM]:
+| {{{field|cat_conc|label=cat conc [mM]|input type=regexp|regexp=^[+-]?([0-9]*[.])?[0-9]+$}}}
+|-
+! solvent A:
+| {{{field|solvent_A|label=solvent A|input type=combobox|values from category=Solvent}}}
+|-
+! solvent B:
+| {{{field|solvent_B|label=solvent B|input type=combobox|values from category=Solvent}}}
+|-
+! solvent-ratio [SolvA/SolvB]:
+| {{{field|solvent_ratio|label=solvent-ratio [SolvA/SolvB]|input type=string}}}
+|-
+! pH:
+| {{{field|pH|input type=regexp|regexp=^[+-]?([0-9]*[.])?[0-9]+$}}}
+|-
+! Temperature [° C] (can be range):
+| {{{field|temperature|label=Temperature [° C]|input type=regexp|regexp=^[+-]?([0-9]*[.])?[0-9]+$}}}
+|-
+! λexc [nm] (qualifier, range, light type/source):
+| {{{field|lexc|label=λexc [nm]|input type=regexp|regexp=^[<>]?[+-]?[0-9]+$}}}
+|-
+! include:
+| {{{field|include|input type=checkbox}}}
+|-
+|}
+{{#set:
+ publication={{PAGENAME}}
+}}
+{{{end template}}}
+
+{{{info|create title=Experiment anlegen|edit title=Experiment bearbeiten|page name=Objekt_<unique number;start=1;>}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

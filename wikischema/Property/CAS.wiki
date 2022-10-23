@@ -1,0 +1,5 @@
+;Purpose
+* Contains the CAS number of a chemical
+
+;Datatype
+* [[Has type::String]]

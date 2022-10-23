@@ -1,0 +1,5 @@
+/env.php
+/logs/
+/images/
+!/images/.htaccess
+!/images/README

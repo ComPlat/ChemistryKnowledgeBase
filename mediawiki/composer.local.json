@@ -1,0 +1,12 @@
+{
+    "require": {
+        "mediawiki/chameleon-skin": "~3.0"
+    },
+    "extra": {
+        "merge-plugin": {
+            "include": [
+
+            ]
+        }
+    }
+}

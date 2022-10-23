@@ -1,0 +1,17 @@
+<noinclude>
+This is the DemoExperiment1Row template.
+</noinclude>
+<includeonly>
+<tr>
+<td>{{{cat|}}}</td>
+<td>{{{cat_abb|}}}</td>
+<td>{{{cat_conc|}}}</td>
+<td>{{{solvent_A|}}}</td>
+<td>{{{solvent_B|}}}</td>
+<td>{{{solvent_ratio|}}}</td>
+<td>{{{pH|}}}</td>
+<td>{{{temperature|}}}</td>
+<td>{{{lexc|}}}</td>
+<td>{{{include|}}}</td>
+</tr>
+</includeonly>

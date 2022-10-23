@@ -1,0 +1,20 @@
+@media screen and (min-width: 768px) and (max-width: 991px) {
+	.modal-dialog-fs {
+		width: 750px;
+		max-width: 90%;
+	}
+}
+
+@media screen and (min-width: 992px) {
+	.modal-dialog-fs {
+		width: 900px;
+		max-width: 90%;
+	}
+}
+
+#fs-facet-value-dialog div.facet {
+	margin-left: 5px;
+	padding: 5px;
+	float: left;
+	width: 30%;
+}

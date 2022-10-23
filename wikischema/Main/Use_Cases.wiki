@@ -1,0 +1,121 @@
+Annahme:
+
+* es gibt nur ein Wiki und alle Aktivitäten passieren hierin
+* es gibt keine geschützten Bereiche
+* Später werden wir uns um die Separierung von Beitragserstellung und -veröffentlichung kümmern. Das ist eine nachgelagerte/unabhängige Problemstellung.
+
+=== Wiki-Inhalte ===
+* Es gibt mind. 2 Arten von Wiki-Seiten
+** Zusammenfassungsseiten
+** Einzelbeiträge
+* Seiten enthalten 
+** Texte
+** Moleküle 
+** Reaktionen
+* Zusammenfassungsseiten
+** werden von der Community gepflegt und stellen den State of the Art für ein bestimmtes Thema dar.
+** enthalten die wichtigsten Ergebnisse der wichtigsten Publikationen
+** wiederholen evtl. Texte und Bilder aus Einzelbeiträgen
+** enthalten Links auf diese Einzelbeiträge
+** enthält evtl. Liste von Einzelbeiträgen die noch nicht integriert sind (aber integriert werden sollen)
+** enthält evtl. Liste von Einzelbeiträgen die schon zum Zwecke der Integration betrachtet wurden aber als nicht integrationswürdig oder nicht zum Thema passend bewertet wurde
+* Einzelbeiträge
+** entsprechen einzelnen Publikationen
+** haben Autoren, Titel und Referenz auf Journal/Konferenz o.ä.
+** wurde evtl. durch ChemScanner (automatisch) erzeugt
+** werden von den Original-Autoren angelegt und gepflegt (oder von dritten)
+** können Links zu Zusammenfassungsseiten enthalten, um zu markieren, dass dieser Beitrag in den State of the Art integriert werden sollte/könnte
+
+== Authoring Use Cases ==
+
+=== Use Case: Einzelbeitrag mittels ChemScanner importieren ===
+
+* Input: Word Dokument
+* Wiki-Funktion, um ChemScanner zu triggern
+* ChemScanner UI öffnet sich
+* User lädt Dokument hoch
+* ChemScanner analysiert Dokument
+* User wählt beste Variante für den Import ins Wiki aus
+* ChemScanner triggert Import in Wiki
+* Wiki legt WikiSeite für Paper an
+** inkl. Texten
+** inkl. Reaktionen und Molekülen (MolFile3000, genaues Wiki-Format noch offen)
+*** @Kai bespricht erste technische Integration mit Anh
+** inkl. Bilder
+** inkl. Referenzen
+*** wie werden Sie innerhalb der Seite durch Querverweise verlinkt
+*** DOI dereferenzieren (@Nicole und @UniBib besprechen Möglichkeiten)
+
+=== Use Case: Einzelbeitrag per ChemScanner aktualisieren -- ''OPTIONAL'' ===
+
+* In Kontext der WikiSeite für ein Paper kann der User eine Aktualisierung triggern
+** Input: Word Document
+** Rest, wie oben
+** WikiSeite für Paper wurde aktualisiert
+
+=== Use Case: Einzelbeitrag manuell anlegen ===
+
+* ja
+* copy und paste aus Word wäre toll und funktioniert mit VisualEditor (VE) schon gut
+
+=== Use Case: Einzelbeitrag manuell editieren ===
+
+* ja
+* es ist OK, wenn Änderungen durch ChemScanner-Aktualisierungen verloren gehen
+
+=== Use Case: Zusammenfassungsseite manuell anlegen ===
+
+* ja, vollständig manuelle Aufgabe
+* Eingabe von
+** Texten
+** Reaktionen und Molekülen (via Tool)
+** Bilder
+** Referenzen (wie genau?)
+
+=== Use Case: Zusammenfassungsseite editieren ===
+
+* ok
+
+=== Use Case: Molekül/Reaktion in Wiki-Seite einfügen oder editieren ===
+
+* Format: 
+** molfile3000 (für Moleküle)
+** Reaktionen: @Nicole findet das raus
+
+* Tools: ketcher / ketcher2 / chemdraw / MarvinJS
+** Ketcher kann keine Reaktionen
+
+=== Use Case: Verlinkung zwischen Wiki-Seiten ===
+
+* ok
+
+== Metadata Use Cases ==
+
+=== Use Case: Metadaten erfassen ===
+
+* Alle Seitentypen können Metadaten haben
+
+* @Nicole findet raus, welche relevanten Metadaten an ein Paper oder ein Topic gehängt werden können
+** technische und inhaltliche
+** Ziel ist es, ein paar wichtige zu finden, um sie evtl. im Editor oder per Form oder automatisch zu füllen
+* @Im nächsten Meeting mit AIFB besprechen
+
+=== Use Case: Verlinkung zu Wiki-Data-Objekten ===
+
+=== Use Case: Tagging von Seiten ===
+
+=== Use Case: Semantische Annotation von Eigenschaften von Wiki-Seiten ===
+=== Use Case: Datengetriebene Suche / Abfrage ===
+
+== Weitere Use Cases ==
+
+=== Use Case: Volltextsuche ===
+
+* ok
+
+=== Use Case: Bibliographie automatisch erstellen -- ''OPTIONAL'' ===
+
+* Input: Liste von DOIs
+* https://www.zotero.org/ o.ä. integrieren
+
+[[Category:Design]]

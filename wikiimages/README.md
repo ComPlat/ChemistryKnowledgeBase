@@ -1,0 +1,1 @@
+This directory contains images that can be preloaded into the wiki.

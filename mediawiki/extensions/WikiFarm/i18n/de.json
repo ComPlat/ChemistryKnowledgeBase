@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"DIQA Projektmanagement GmbH"
+		]
+	},
+	"specialcreatewiki": "Wiki erzeugen",
+	"wfarm-wikis-created-by-you": "Wikis, die von dir erzeugt wurden",
+	"wfarm-create-wiki" : "Neues Wiki erzeugen",
+	"wfarm-no-wikis-found" : "Keine Wikis gefunden",
+	"wfarm-save-users" : "Benutzer speichern",
+	"wfarm-wiki-name": "Wiki-Name",
+	"wfarm-wiki-url": "Wiki-URL",
+	"wfarm-wiki-creation-date": "Erzeugt am",
+	"wfarm-recent": "kürzlich erzeugt",
+	"wfarm-ajax-error": "Ein Fehler ist passiert",
+	"wfarm-must-be-logged-in-with-edit": "Du musst eingeloggt sein und das Editierrecht besitzen um ein Wiki zu erzeugen.",
+	"wfarm-wiki-in-creation": "(wird erzeugt)",
+	"wfarm-remove-wiki": "Wiki löschen",
+	"wfarm-remove-wiki-confirm": "Wiki wirklich löschen? Kann nicht rückgängig gemacht werden",
+	"wfarm-wiki-to-be-deleted": "(wird gelöscht)"
+}

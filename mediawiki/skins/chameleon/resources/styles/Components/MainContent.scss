@@ -1,0 +1,145 @@
+//
+// Styles for the MainContent component
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+.mw-body {
+
+	@include media-breakpoint-up($cmln-search-bar-collapse-point) {
+		padding: 0 2rem;
+		margin-bottom: 1rem;
+	}
+
+	#siteSub {
+		display: none
+	}
+
+	.firstHeading {
+		border-bottom: $cmln-first-heading-underline-width solid $cmln-first-heading-underline-color;
+		margin-bottom: $cmln-first-heading-margin-bottom;
+		overflow: visible;
+	}
+
+	h1, h2 {
+		margin-top: 1rem;
+	}
+
+	div.thumbinner {
+
+		// MW is hard-coding element widths. Calculations are done assuming content-box.
+		box-sizing: content-box;
+
+		// This assumes padding and border width values used by MW 1.33, resources/src/mediawiki.skinning/content.css
+		// FIXME: Reset MW core styles, then apply styles for Bootstrap thumbnails (e.g. .img-thumbnail)
+		$thumbpadding: 3px;
+		$thumbborder: 1px;
+
+		max-width: calc( 100% - #{2 * $thumbpadding + 2 * $thumbborder} );
+		height: auto;
+
+	}
+
+	div.thumb, img.thumbimage {
+		max-width: 100%;
+		height: auto;
+	}
+
+	.jump-to-nav {
+		@extend .sr-only;
+	}
+
+	.mw-indicators {
+		float: right;
+		line-height: 1.6;
+		@include font-size( $font-size-sm );
+		position: relative;
+		z-index: 1;
+	}
+
+	.mw-indicator {
+		display: inline-block;
+		zoom: 1;
+		*display: inline;
+	}
+
+	.mw-editsection {
+		@include mw-editsection-like;
+	}
+
+	.catlinks {
+
+		margin: 2rem 0 0;
+
+		ul {
+			@extend .list-inline;
+			display: inline-block;
+			margin-left: $list-inline-padding;
+
+			> li {
+				@extend .list-inline-item
+			}
+		}
+	}
+
+	// Table of contents
+	.toc {
+
+		.toctitle {
+
+			h2 {
+				display: inline;
+				@include font-size( $cmln-toc-title-font-size );
+			}
+
+			.toctogglespan {
+				@include mw-editsection-like;
+			}
+		}
+
+		ul {
+			@extend .list-unstyled;
+
+			margin: {
+				top: $cmln-toc-group-margin-y;
+				bottom: $cmln-toc-group-margin-y;
+			}
+
+			li {
+				a .tocnumber {
+						display: inline-block;
+						text-align: right;
+						padding-right: $cmln-toc-entry-number-padding-right;
+				}
+
+				ul {
+					margin-left: $cmln-toc-subgroup-margin-left;
+				}
+			}
+
+		}
+
+		// - 1 digit = .5 rem, 1 dot = .25 rem
+		// - width of an element includes the padding
+		// => level 1: 1 rem + padding (2 digits)
+		// => level 2: 1.75 rem + padding (2 digits, 1 dot, 1 digit)
+		// => ...
+		//
+		// there is wiggle room to allow for one level with a 2-digit toc number
+		// before the min-width is exceeded, e.g. 12.3.4.5 or 1.23.4.5
+		$selector: "";
+		@for $i from 1 through 6 {
+			$selector: "#{$selector} ul li";
+			#{$selector} a .tocnumber { min-width: $cmln-toc-entry-number-padding-right + 0.25rem + 0.75rem * $i; }
+		}
+	}
+
+
+	// action=edit
+	#wpTextbox1 {
+		width: 100%;
+	}
+
+}

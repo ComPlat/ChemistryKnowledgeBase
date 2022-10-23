@@ -1,0 +1,5 @@
+;Purpose
+* Contains logP ??
+
+;Datatype
+* [[Has type::Number]]

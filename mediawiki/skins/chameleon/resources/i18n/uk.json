@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alex Khimich",
+			"DDPAT",
+			"Ата"
+		]
+	},
+	"skinname-chameleon": "Хамелеон",
+	"chameleon-desc": "Тема оформлення \"Хамелеон\"",
+	"chameleon-loggedin": "Ви увійшли як  $1.",
+	"chameleon-notloggedin": "Ви не ввійшли в систему",
+	"chameleon-newmessages": "У Вас є нові повідомлення.",
+	"chameleon-nonewmessages": "У вас немає нових повідомлень.",
+	"chameleon-search-aria-label": "Перейти на сторінку",
+	"chameleon-toggler": "Меню"
+}

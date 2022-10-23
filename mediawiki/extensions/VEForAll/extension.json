@@ -1,0 +1,55 @@
+{
+	"name": "VEForAll",
+	"version": "0.3",
+	"author": [
+		"Pierre Boutet", "Clément Flipo", "Ike Hecht", "Yaron Koren", "Cindy Cicalese"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:VEForAll",
+	"descriptionmsg": "veforall-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.29.0",
+		"extensions": {
+			"VisualEditor": "*"
+		}
+	},
+	"callback": "VEForAll\\VEForAllHooks::registerClasses",
+	"AutoloadClasses": {
+		"VEForAll\\VEForAllHooks": "includes/VEForAllHooks.php"
+	},
+	"Hooks": {
+		"BeforePageDisplay": "VEForAll\\VEForAllHooks::onBeforePageDisplay",
+		"MakeGlobalVariablesScript": "VEForAll\\VEForAllHooks::onMakeGlobalVariablesScript",
+		"ResourceLoaderRegisterModules": "VEForAll\\VEForAllHooks::onResourceLoaderRegisterModules"
+	},
+	"MessagesDirs": {
+		"VEForAll": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"ext.veforall.main": {
+			"scripts": [
+				"resources/VEForAll.js"
+			],
+			"styles": [
+				"resources/VEForAll.css"
+			],
+			"messages": [
+				"visualeditor-welcomedialog-switch-ve",
+				"veforall-switch-editor-tool-title",
+				"veforall-form-instances-not-minimized"
+			],
+			"dependencies": [
+				"ext.veforall.core",
+				"mediawiki.confirmCloseWindow"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "VEForAll"
+	},
+	"manifest_version": 1
+}

@@ -1,0 +1,5 @@
+;Purpose
+* Contains the systematic IUPAC-name of a chemical
+
+;Datatype
+* [[Has type::String]]

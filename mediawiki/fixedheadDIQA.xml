@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+<?xml-model href="https://cmln.github.io/chameleon/schema/1.0/layout.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+This file is part of the MediaWiki skin Chameleon.
+
+@copyright 2013 - 2016, Stephan Gambke
+@license   GNU General Public License, version 3 (or any later version)
+
+The Chameleon skin is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+The Chameleon skin is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with this program. If not, see <http://www.gnu.org/licenses/>.
+
+@author Stephan Gambke
+@since 1.0
+@ingroup Skins
+
+basiert auf fixedhead.xml
+-->
+<structure xmlns="https://cmln.github.io/chameleon/schema/1.0/layout.rng">
+
+    <component type="NavbarHorizontal">
+        <modification type="Sticky"/>
+
+        <component type="Logo" position="head"/>
+        <component type="NavMenu" flatten="navigation" position="left" showTools="no" showLanguages="no"/>
+        <component type="Menu" message="riskmanagermenue">
+            <modification type="ShowOnlyFor" permission="viewrisksmenu" namespace="" />
+        </component>
+        <component type="Menu" message="kpimanagermenue">
+            <modification type="ShowOnlyFor" permission="viewkpimenu" namespace="" />
+        </component>
+        <component type="Menu" message="wikiadminmenue">
+            <modification type="ShowOnlyFor" permission="viewadminmenu" namespace="" />
+        </component>
+        <component type="PageTools" position="right" hideSelectedNameSpace="yes">
+            <modification type="ShowOnlyFor" permission="edit" namespace="" />
+        </component>
+        <component type="SearchBar" position="right"/>
+        <component type="PersonalTools" position="right"/>
+    </component>
+
+
+    <grid>
+        <row>
+            <cell span="12">
+                <component type="SiteNotice"/>
+            </cell>
+        </row>
+
+        <row>
+            <cell span="12">
+                <component type="MainContent"/>
+            </cell>
+        </row>
+
+
+        <row>
+            <cell span="12">
+                <component type="FooterInfo"/>
+            </cell>
+        </row>
+
+        <row>
+            <cell span="6">
+
+            </cell>
+            <cell span="6">
+                <component type="FooterIcons"/>
+            </cell>
+        </row>
+    </grid>
+</structure>

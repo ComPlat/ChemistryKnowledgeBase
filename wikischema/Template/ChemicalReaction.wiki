@@ -1,0 +1,11 @@
+<noinclude>Template for ChemicalReaction</noinclude>
+‎<includeonly>
+* Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
+{{#tag:chemform|
+{{{molOrRxn}}}
+|smiles={{{smiles|}}}
+|inchikey={{{inchikey|}}}
+}}
+{{DISPLAYTITLE:{{{smiles}}} }}
+[[Category:Reaction]]
+‎<includeonly>

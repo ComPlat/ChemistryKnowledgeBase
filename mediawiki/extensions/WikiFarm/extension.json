@@ -1,0 +1,63 @@
+{
+  "name": "WikiFarm",
+  "author": "DIQA Projektmanagement GmbH",
+  "url": "https://www.diqa.de",
+  "description": "This extension allows to run several wiki besides each other using the same codebase.",
+  "version": "0.1",
+  "license-name": "GPL-2.0-or-later",
+  "type": "extension",
+  "requires": {
+    "MediaWiki": ">= 1.35.0",
+    "extensions": {
+
+    }
+  },
+  "callback" : "DIQA\\WikiFarm\\Setup::initModules",
+  "SpecialPages": {
+    "SpecialCreateWiki": "DIQA\\WikiFarm\\Special\\SpecialCreateWiki"
+  },
+  "AutoloadNamespaces": {
+    "DIQA\\WikiFarm\\": "src/",
+    "DIQA\\WikiFarm\\Maintenance\\": "maintenance/"
+  },
+  "Hooks": {
+    "BeforePageDisplay": "DIQA\\WikiFarm\\Setup::onBeforePageDisplay",
+    "LoadExtensionSchemaUpdates": "DIQA\\WikiFarm\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
+  },
+  "RestRoutes": [
+    {
+      "path": "/WikiFarm/v1/wikis",
+      "method": "POST",
+      "class": "DIQA\\WikiFarm\\Endpoints\\CreateWikiEndpoint"
+    },{
+      "path": "/WikiFarm/v1/wikis/{wikiId}",
+      "method": "DELETE",
+      "class": "DIQA\\WikiFarm\\Endpoints\\RemoveWikiEndpoint"
+    },
+    {
+      "path": "/WikiFarm/v1/wikis",
+      "method": "GET",
+      "class": "DIQA\\WikiFarm\\Endpoints\\GetWikisEndpoint"
+    },
+    {
+      "path": "/WikiFarm/v1/wikis/{wikiId}/users",
+      "method": "POST",
+      "class": "DIQA\\WikiFarm\\Endpoints\\UpdateUserOfWiki"
+    },
+    {
+      "path": "/WikiFarm/v1/wikis/{wikiId}/users",
+      "method": "GET",
+      "class": "DIQA\\WikiFarm\\Endpoints\\GetWikiUsersEndpoint"
+    }
+  ],
+  "JobClasses": {
+    "CreateWikiJob": "DIQA\\WikiFarm\\CreateWikiJob",
+    "RemoveWikiJob": "DIQA\\WikiFarm\\RemoveWikiJob"
+  },
+  "MessagesDirs": {
+    "ChemExtension": [
+      "i18n"
+    ]
+  },
+  "manifest_version": 2
+}

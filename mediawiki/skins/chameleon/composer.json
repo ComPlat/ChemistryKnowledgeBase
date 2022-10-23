@@ -1,0 +1,61 @@
+{
+	"name": "mediawiki/chameleon-skin",
+	"type": "mediawiki-skin",
+	"description": "A highly flexible MediaWiki skin using Bootstrap 4",
+	"keywords": [
+		"wiki",
+		"MediaWiki",
+		"skin",
+		"Twitter",
+		"Bootstrap"
+	],
+	"homepage"   : "https://github.com/ProfessionalWiki/chameleon",
+	"license"    : "GPL-3.0-or-later",
+	"authors"    : [
+		{
+			"name": "Stephan Gambke",
+			"email": "s7eph4n@protonmail.com",
+			"role": "Creator"
+		},
+		{
+			"name": "Professional.Wiki",
+			"email": "info@professional.wiki",
+			"homepage": "https://professional.wiki",
+			"role": "Maintainer"
+		}
+	],
+	"support": {
+		"docs": "https://github.com/ProfessionalWiki/chameleon",
+		"source": "https://github.com/ProfessionalWiki/chameleon.git",
+		"issues": "https://github.com/ProfessionalWiki/chameleon/issues",
+		"irc": "irc://libera.chat:6667/mediawiki"
+	},
+	"require": {
+		"php": ">=7.1",
+		"ext-dom": "*",
+		"ext-filter": "*",
+		"composer/installers": "^1.0.12",
+		"mediawiki/bootstrap": "^4.2"
+	},
+	"require-dev": {
+		"php": ">=7.2",
+		"mediawiki/mediawiki-codesniffer": "36.0.0",
+		"mediawiki/mediawiki-phan-config": "0.10.6"
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "4.x-dev"
+		}
+	},
+	"scripts": {
+		"test": [
+			"phpcs -p -s"
+		],
+		"fix": "phpcbf",
+		"phpunit": "php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist",
+		"phpunit-test": [
+			"@phpunit"
+		],
+		"build": "npm run build"
+	}
+}

@@ -1,0 +1,37 @@
+.wfarm-button {
+    margin-top: 15px;
+}
+
+div.wfarm-createdwikis-table {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+div.wfarm-createdwikis-table table {
+    max-width: 50em;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.5em;
+}
+
+div.wfarm-createdwikis-table th {
+    background: #36c;
+    color: white;
+}
+
+div.wfarm-createdwikis-table tr:hover {
+    background: aliceblue;
+}
+
+div.wfarm-createdwikis-table td {
+    padding: 5px;
+}
+
+div.wfarm-createdwikis-table tr.wfarm-table-selected {
+    background: powderblue;
+}
+
+tr.wfarm-recent {
+    background: papayawhip;
+}

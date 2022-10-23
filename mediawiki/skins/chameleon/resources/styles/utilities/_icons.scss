@@ -1,0 +1,24 @@
+//
+// Icon-related classes
+//
+// This file is part of the MediaWiki skin Chameleon.
+// @copyright 2013 - 2019, Stephan Gambke, GNU General Public License, version 3 (or any later version)
+//
+// @since 2.0
+
+
+@each $icon-class, $fa-class in $cmln-icons {
+
+	.#{$icon-class} {
+		@include icon($fa-class);
+	}
+
+	a.#{$icon-class} {
+
+		&:before {
+			margin-right: $cmln-icon-margin;
+			display: inline-block;
+			text-decoration: none;
+		}
+	}
+}

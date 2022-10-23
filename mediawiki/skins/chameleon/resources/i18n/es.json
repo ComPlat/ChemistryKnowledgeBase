@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"DannyS712",
+			"Fitoschido"
+		]
+	},
+	"skinname-chameleon": "Chameleon",
+	"chameleon-desc": "La apariencia Chameleon.",
+	"chameleon-loggedin": "Has accedido como $1.",
+	"chameleon-notloggedin": "No has accedido",
+	"chameleon-newmessages": "Tienes mensajes nuevos.",
+	"chameleon-nonewmessages": "No tienes mensajes nuevos.",
+	"chameleon-search-aria-label": "Ir a la página",
+	"chameleon-toggler": "Menú"
+}

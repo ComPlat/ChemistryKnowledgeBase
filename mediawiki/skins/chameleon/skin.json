@@ -1,0 +1,56 @@
+{
+	"name": "chameleon",
+	"namemsg": "skinname-chameleon",
+	"type": "skin",
+	"author": [
+		"[https://www.mediawiki.org/wiki/User:F.trott Stephan Gambke]",
+		"[https://professional.wiki/ Professional.Wiki]"
+	],
+	"version": "3.4.0",
+	"url": "https://www.mediawiki.org/wiki/Skin:Chameleon",
+	"descriptionmsg": "chameleon-desc",
+	"license-name": "GPL-3.0-or-later",
+	"requires": {
+		"MediaWiki": ">= 1.31.0",
+		"extensions": {
+			"Bootstrap": "~4.2"
+		}
+	},
+	"AutoloadNamespaces": {
+		"Skins\\Chameleon\\": "src/",
+		"Skins\\Chameleon\\Tests\\": "tests/phpunit/"
+	},
+	"MessagesDirs": {
+		"Chameleon": "resources/i18n"
+	},
+	"config_prefix": "eg",
+	"config": {
+		"ChameleonLayoutFile": {
+			"path": true,
+			"value": "layouts/standard.xml"
+		},
+		"ChameleonThemeFile": {
+			"path": true,
+			"value": "resources/styles/themes/_light.scss"
+		},
+		"ChameleonEnableVisualEditor": {
+			"value": true
+		},
+		"ChameleonEnableExternalLinkIcons": {
+			"value": false
+		}
+	},
+	"ResourceModules": {
+		"skins.chameleon": {
+			"class": "ResourceLoaderSkinModule",
+			"features": [ "elements", "content", "legacy" ],
+			"targets": [
+				"desktop",
+				"mobile"
+			]
+		}
+	},
+	"callback": "Skins\\Chameleon\\Chameleon::init",
+	"load_composer_autoloader": true,
+	"manifest_version": 2
+}

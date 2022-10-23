@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "prebuild": "npm install",
+    "build:fontawesome": "mkdir -p resources/fontawesome && cp -R node_modules/@fortawesome/fontawesome-free/scss resources/fontawesome && cp -R node_modules/@fortawesome/fontawesome-free/webfonts resources/fontawesome",
+    "build:docs": "grep -rl 'docs/' -e '<!-- START doctoc'|xargs doctoc --title '**Contents**' --maxlevel 3 --notitle",
+    "build": "npm run build:fontawesome && npm run build:docs"
+  },
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5",
+    "doctoc": "^1.4.0"
+  },
+  "dependencies": {}
+}

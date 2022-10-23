@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"DIQA Projektmanagement GmbH"
+		]
+	},
+	"ketchereditor": "Ketcher-Editor",
+	"literature": "Literatur",
+	"specialuploadtochemscanner": "Zu Chemscanner hochladen",
+	"ce-upload-to-chemscanner": "Hochladen",
+	"ce-choose-file" : "Wählen Sie eine Datei aus die Sie hochladen wollen",
+	"submit-doi": "DOI auflösen",
+	"doi-hint": "DOI eingeben...",
+	"enter-doi": "Digital object identifier (DOI) wird benötigt"
+}

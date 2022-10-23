@@ -1,0 +1,14 @@
+<noinclude>Template for PubChem</noinclude>
+<includeonly>
+{{#if: {{{cid|}}} |* PubChem: [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|}}
+{{#if: {{{cas|}}} |* CAS: {{#set: CAS={{{cas}}} }} {{{cas}}}|}}
+{{#if: {{{iupacName|}}} |* IUPAC-Name: {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|}}
+{{#if: {{{abbrev|}}} |* Abbreviation: {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
+{{#if: {{{trivialname|}}} |* Trivialname: {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
+{{#if: {{{molecularMass|}}} |* Molecular mass: {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
+{{#if: {{{molecularFormula|}}} |* Molecular formula: {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|}}
+{{#if: {{{logP|}}} |* LogP: {{#set: LogP={{{logP}}} }} {{{logP}}}|}}
+{{#if: {{{hasVendors|}}} |* Has vendors: {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|}}
+{{#if: {{{synonyms|}}} |* Synonyms: {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |}}
+
+<includeonly>

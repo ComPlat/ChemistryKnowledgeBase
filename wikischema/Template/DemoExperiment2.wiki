@@ -1,0 +1,22 @@
+<noinclude>
+This is the DemoExperiment2 template.
+</noinclude>
+<includeonly>
+[[Category:DemoExperiment]]
+=== {{{title|}}} ===
+
+<table class="wikitable">
+<tr>
+<th>cat</th>
+<th resource="tab1">cat_abb</th>
+<th resource="tab1">cat conc [mM]</th>
+<th resource="tab1">solvent A</th>
+<th resource="tab1">solvent B</th>
+<th resource="tab1">solvent-ratio [SolvA/SolvB]</th>
+<th resource="tab2">pH</th>
+<th resource="tab2">Temperature [° C]</th>
+<th resource="tab2">λexc [nm]</th>
+<th resource="tab2">include</th>
+</tr>
+{{{investigations|}}}
+</table>

@@ -1,0 +1,62 @@
+.ve-area-wrapper .ve-init-target {
+	border: 0;
+}
+
+.ve-area-wrapper {
+	display: block;
+	border: 1px solid #ccc;
+	background: white;
+}
+
+.ve-area-wrapper textarea {
+	border: 0;
+}
+
+.ve-area-wrapper .oo-ui-toolbar-bar {
+	border-bottom: 0;
+	border-top: 1px solid #ccc;
+	background: #f9f9f9;
+	font-size: 0.9em;
+}
+
+.ve-ce-branchNode:focus {
+	border-color: #52bad5;
+	box-shadow: 0 0 7px rgba(39, 128, 248, .15);
+}
+
+.ve-area-wrapper .ve-ce-documentNode {
+	padding: 0.6em 0.8em;
+	min-height: 130px;
+}
+
+.ve-area-wrapper .oo-ui-toolbar-bar .oo-ui-toolbar-actions .oo-ui-toolbar-bar {
+	border-top: 0;
+}
+
+.ve-area-wrapper .oo-ui-toolGroup {
+	border-right: 0;
+}
+
+.ve-area-wrapper .oo-ui-toolbar-bar .oo-ui-tool-name-ve4aSwitchEditor .oo-ui-tool-link {
+	/*padding:9px;*/
+	padding-bottom: 2px;
+	padding-right: 4px;
+}
+
+/*.ve-area-wrapper .oo-ui-toolbar {
+	z-index: 0;
+}*/
+
+.ve-area-wrapper .ve-ui-overlay {
+	z-index: 3;
+}
+
+.ve-area-wrapper .oo-ui-popupWidget-body.oo-ui-clippableElement-clippable {
+	min-height: 9em;
+}
+
+#pfForm .ve4all--disabled,
+#sfForm .ve4all--disabled {
+	pointer-events: none;
+	color: gray;
+}
