@@ -6,7 +6,7 @@ namespace DIQA\ChemExtension\Maintenance;
 use DIQA\ChemExtension\ChemScanner\ChemScannerRequest;
 use DIQA\ChemExtension\PubChem\PubChemRecordResult;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
-use DIQA\ChemExtension\PubChem\PubChemService;
+use DIQA\ChemExtension\PubChem\PubChemClient;
 use DIQA\ChemExtension\WikiRepository;
 use ExtensionRegistry;
 use Exception;

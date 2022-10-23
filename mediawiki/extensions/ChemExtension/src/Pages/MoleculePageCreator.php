@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Pages;
 
 use DIQA\ChemExtension\PubChem\PubChemRepository;
+use DIQA\ChemExtension\PubChem\PubChemService;
 use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
@@ -92,12 +93,12 @@ class MoleculePageCreator
         return "\n{{#showMoleculeCollection: }}";
     }
 
-    private function getPubChemData($inchiKey) {
+    private function getPubChemData($inchiKey): ?array
+    {
         try {
             if (is_null($inchiKey)) return null;
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
-            $repo = new PubChemRepository($dbr);
-            $result = $repo->getPubChemResult($inchiKey);
+            $service = new PubChemService();
+            $result = $service->getPubChem($inchiKey);
             $record = $result['record'];
             $synonyms = $result['synonyms'];
             $categories = $result['categories'];
