@@ -39,7 +39,7 @@ class PubChemRepository
         return ['pub_chem'];
     }
 
-    private function addPubChemResult($moleculeKey, $record = null, $synonyms = null, $categories = null): int
+    public function addPubChemResult($moleculeKey, $record = null, $synonyms = null, $categories = null): int
     {
         $this->db->startAtomic(__METHOD__);
         $res = $this->db->select('pub_chem', ['id'],
@@ -72,24 +72,12 @@ class PubChemRepository
         return $id;
     }
 
-    public function getPubChemResult($moleculeKey): array
+    public function getPubChemResult($moleculeKey): ?array
     {
         $res = $this->db->select('pub_chem', ['record', 'synonyms', 'categories'],
             ['molecule_key' => $moleculeKey]);
         if ($res->numRows() === 0) {
-            $service = new PubChemService();
-            $record = new PubChemRecordResult($service->getRecord($moleculeKey));
-            $synonyms = new PubChemSynonymsResult($service->getSynonyms($moleculeKey));
-            $categories = new PubChemCategoriesResult($service->getCategories($record->getCID()));
-            $this->addPubChemResult($moleculeKey,
-                json_encode($record->getRawResult()),
-                json_encode($synonyms->getRawResult()),
-                json_encode($categories->getRawResult()));
-            return [
-                'record' => $record,
-                'synonyms' => $synonyms,
-                'categories' => $categories
-            ];
+            return null;
         }
 
         $row = $res->fetchObject();

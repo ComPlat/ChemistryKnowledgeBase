@@ -2,9 +2,10 @@
 
 namespace DIQA\ChemExtension\PubChem;
 
+use DIQA\ChemExtension\Utils\ChemTools;
+
 class PubChemSynonymsResult extends PubChemAbstractResult
 {
-    const CAS_PATTERN = '/\d{2,7}-\d{2}-\d/';
 
     /**
      * PubChemSynonymsResult constructor.
@@ -19,7 +20,7 @@ class PubChemSynonymsResult extends PubChemAbstractResult
     {
         $synonyms = $this->getSynonyms();
         foreach($synonyms as $synonym) {
-            if (preg_match(self::CAS_PATTERN, $synonym, $matches) === 1) {
+            if (ChemTools::isCASNumber($synonym)) {
                 return $synonym;
             }
         }

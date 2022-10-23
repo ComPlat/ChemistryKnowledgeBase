@@ -2,79 +2,41 @@
 
 namespace DIQA\ChemExtension\PubChem;
 
-use DIQA\ChemExtension\Utils\LoggerUtils;
-use Exception;
+use MediaWiki\MediaWikiServices;
 
 class PubChemService {
-    private $moleculeRGroupServiceUrl;
-    private $logger;
-
-    public function __construct()
-    {
-        $this->logger = new LoggerUtils('PubChemService', 'ChemExtension');
-        $this->moleculeRGroupServiceUrl = 'https://pubchem.ncbi.nlm.nih.gov';
-    }
-
-    public function getRecord(string $inchiKey) {
-        return $this->getJsonData("/rest/pug/compound/inchikey/$inchiKey/record/JSON");
-    }
-
-    public function getSynonyms(string $inchiKey) {
-        return $this->getJsonData("/rest/pug/compound/inchikey/$inchiKey/synonyms/JSON");
-    }
-
-    public function getCategories(string $cid) {
-        if (is_null($cid)) {
-            return new \stdClass();
-        }
-        return $this->getJsonData("/rest/pug_view/categories/compound/$cid/JSON");
-    }
 
     /**
-     * @throws Exception
+     * Requests PubChem data if necessary and adds it into local DB. If it's already local, it's read from DB.
+     *
+     * @param $moleculeKey
+     * @return array
      */
-    private function getJsonData(string $url)
+    public function getPubChem($moleculeKey): array
     {
-        try {
-            $headerFields = [];
-            $headerFields[] = "Expect:"; // disables 100 CONTINUE
-            $ch = curl_init();
-            $url = $this->moleculeRGroupServiceUrl . $url;
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-            $response = curl_exec($ch);
-            if (curl_errno($ch)) {
-                $error_msg = curl_error($ch);
-                throw new Exception("Error on request: " . $error_msg);
-            }
-            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            list($header, $body) = self::splitResponse($response);
-            $parsedBody = json_decode($body);
-            if ($httpcode >= 200 && $httpcode <= 299) {
-                $this->logger->log("Result: " . print_r($parsedBody, true));
-                if (isset($parsedBody->Fault)) {
-                    throw new Exception($parsedBody->Fault->Message ?? 'Unknown Error');
-                }
-                return $parsedBody;
-            }
-            if (isset($parsedBody->Fault)) {
-                throw new Exception($parsedBody->Fault->Message ?? 'Unknown Error');
-            }
-            throw new Exception("Error on pubchem request. HTTP status " . $httpcode . ". Message: " . $body);
-
-        } finally {
-            curl_close($ch);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $repo = new PubChemRepository($dbr);
+        $pubChemResult = $repo->getPubChemResult($moleculeKey);
+        if (!is_null($pubChemResult)) {
+            return $pubChemResult;
         }
-    }
 
-    protected static function splitResponse($res): array
-    {
-        $bodyBegin = strpos($res, "\r\n\r\n");
-        list($header, $res) = $bodyBegin !== false ? array(substr($res, 0, $bodyBegin), substr($res, $bodyBegin + 4)) : array($res, "");
-        return array($header, str_replace("%0A%0D%0A%0D", "\r\n\r\n", $res));
+        $service = new PubChemClient();
+        $record = new PubChemRecordResult($service->getRecord($moleculeKey));
+        $synonyms = new PubChemSynonymsResult($service->getSynonyms($moleculeKey));
+        $categories = new PubChemCategoriesResult($service->getCategories($record->getCID()));
+
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $repo = new PubChemRepository($dbr);
+        $repo->addPubChemResult($moleculeKey,
+            json_encode($record->getRawResult()),
+            json_encode($synonyms->getRawResult()),
+            json_encode($categories->getRawResult()));
+        return [
+            'record' => $record,
+            'synonyms' => $synonyms,
+            'categories' => $categories
+        ];
     }
 }
