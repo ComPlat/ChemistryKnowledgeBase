@@ -18,7 +18,7 @@ class PubChemSynonymsResult extends PubChemAbstractResult
 
     public function getCAS()
     {
-        $synonyms = $this->getSynonyms();
+        $synonyms = $this->getRawSynonyms();
         foreach($synonyms as $synonym) {
             if (ChemTools::isCASNumber($synonym)) {
                 return $synonym;
@@ -27,11 +27,15 @@ class PubChemSynonymsResult extends PubChemAbstractResult
         return '';
     }
 
-    public function getSynonyms()
-    {
+    private function getRawSynonyms() {
         $info = $this->result->InformationList->Information[0] ?? null;
         if (is_null($info)) return [];
-        $synonyms = $info->Synonym ?? [];
+        return $info->Synonym ?? [];
+    }
+
+    public function getSynonyms(): array
+    {
+        $synonyms = $this->getRawSynonyms();
         return array_filter($synonyms, function($e) { return !ChemTools::isCASNumber($e); });
     }
 }
