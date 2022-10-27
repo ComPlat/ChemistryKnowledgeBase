@@ -31,6 +31,7 @@ class PubChemSynonymsResult extends PubChemAbstractResult
     {
         $info = $this->result->InformationList->Information[0] ?? null;
         if (is_null($info)) return [];
-        return $info->Synonym ?? [];
+        $synonyms = $info->Synonym ?? [];
+        return array_filter($synonyms, function($e) { return !ChemTools::isCASNumber($e); });
     }
 }

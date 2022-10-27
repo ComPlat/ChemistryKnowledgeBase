@@ -65,11 +65,13 @@
             i;
         for ( i = 0; i < data.length; i++ ) {
             let labelToShow = data[ i ].Trivialname;
-            if (data[i].CAS != '') labelToShow += ", "+data[i].CAS;
-            if (data[i].IUPACName != '') labelToShow += ", "+data[i].IUPACName;
+            if (data[i].CAS != '') labelToShow += ", CAS: "+data[i].CAS;
+            //if (data[i].IUPACName != '') labelToShow += ", Systematic "+data[i].IUPACName;
             items.push( new OO.ui.MenuOptionWidget( {
                 data: data[i].InChIKey,
-                label: labelToShow
+                label: labelToShow,
+                classes: ['search-for-molecule']
+
             } ) );
         }
         return items;

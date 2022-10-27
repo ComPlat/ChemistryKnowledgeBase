@@ -70,9 +70,9 @@ class SearchForMolecule extends SimpleHandler
     {
 
         $results = QueryUtils::executeBasicQuery(
-            "[[Category:Molecule]][[IUPACName::~$searchText*]] 
-                        OR [[Category:Molecule]][[Synonym::~$searchText*]]
-                        OR [[Category:Molecule]][[Trivialname::~$searchText*]]", [
+            "[[Category:Molecule]][[IUPACName::~*$searchText*]] 
+                        OR [[Category:Molecule]][[Synonym::~*$searchText*]]
+                        OR [[Category:Molecule]][[Trivialname::~*$searchText*]]", [
             $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
         ]);
         return $this->readResults($results);

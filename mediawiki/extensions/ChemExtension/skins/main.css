@@ -132,3 +132,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
         opacity: 0;
     }
 }
+
+.search-for-molecule {
+    font-size: smaller;
+}
