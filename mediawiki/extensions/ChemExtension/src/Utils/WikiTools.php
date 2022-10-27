@@ -11,6 +11,7 @@ use WikiPage;
 use RecentChange;
 use EmailNotification;
 use User;
+use Parser;
 
 class WikiTools {
 
@@ -27,7 +28,7 @@ class WikiTools {
      *
      * @return Title|null
      */
-    public static function getCurrentTitle(): ?Title
+    public static function getCurrentTitle(Parser $parser): ?Title
     {
         global $wgRequest;
         $titleParam = $wgRequest->getVal('title');
@@ -36,7 +37,7 @@ class WikiTools {
             $res = preg_match('/v3\/transform\/wikitext\/to\/html\/(\w+)/', $titleParam, $matches);
             if ($res === 0) {
                 global $wgTitle;
-                return  $wgTitle;
+                return is_null($wgTitle) ? $parser->getTitle() : $wgTitle;
             }
         }
         return Title::newFromText($matches[1]);

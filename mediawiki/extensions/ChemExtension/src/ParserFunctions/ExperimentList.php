@@ -24,8 +24,12 @@ class ExperimentList
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
+        $title = WikiTools::getCurrentTitle($parser);
+        if (is_null($title)) {
+            return ['', 'noparse' => true, 'isHTML' => true];
+        }
         $renderer = new ExperimentRenderer([
-            'page' => WikiTools::getCurrentTitle($parser),
+            'page' => $title,
             'form' => $parameters['form'],
             'showEditLink' => true,
             'index' => null
