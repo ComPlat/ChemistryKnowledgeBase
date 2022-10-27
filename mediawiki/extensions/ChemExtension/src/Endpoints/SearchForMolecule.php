@@ -15,6 +15,7 @@ class SearchForMolecule extends SimpleHandler
     private $iupacNameProp;
     private $casProp;
     private $trivialnameProp;
+    private $inchiKey;
 
     /**
      * SearchForMolecule constructor.
@@ -24,6 +25,7 @@ class SearchForMolecule extends SimpleHandler
         $this->iupacNameProp = QueryUtils::newPropertyPrintRequest("IUPACName");
         $this->casProp = QueryUtils::newPropertyPrintRequest("CAS");
         $this->trivialnameProp = QueryUtils::newPropertyPrintRequest("Trivialname");
+        $this->inchiKey = QueryUtils::newPropertyPrintRequest("InChIKey");
     }
 
     public function run()
@@ -71,7 +73,7 @@ class SearchForMolecule extends SimpleHandler
             "[[Category:Molecule]][[IUPACName::~$searchText*]] 
                         OR [[Category:Molecule]][[Synonym::~$searchText*]]
                         OR [[Category:Molecule]][[Trivialname::~$searchText*]]", [
-            $this->iupacNameProp, $this->casProp, $this->trivialnameProp
+            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
         ]);
         return $this->readResults($results);
     }
@@ -79,7 +81,7 @@ class SearchForMolecule extends SimpleHandler
     private function searchForCAS($casNumber) {
         $results = QueryUtils::executeBasicQuery(
             "[[Category:Molecule]][[CAS::$casNumber]]", [
-            $this->iupacNameProp, $this->casProp, $this->trivialnameProp
+            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
         ]);
         return $this->readResults($results);
     }
@@ -94,6 +96,7 @@ class SearchForMolecule extends SimpleHandler
         $obj['IUPACName'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'IUPACName');
         $obj['CAS'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'CAS');
         $obj['Trivialname'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Trivialname');
+        $obj['InChIKey'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'InChIKey');
         return [$obj];
     }
 
@@ -122,6 +125,10 @@ class SearchForMolecule extends SimpleHandler
             $column = next($row);
             $dataItem = $column->getNextDataItem();
             $obj['Trivialname'] = $dataItem !== false ? $dataItem->getString() : '';
+
+            $column = next($row);
+            $dataItem = $column->getNextDataItem();
+            $obj['InChIKey'] = $dataItem !== false ? $dataItem->getString() : '';
 
             $searchResults[] = $obj;
 

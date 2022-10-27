@@ -102,13 +102,15 @@ class MoleculePageCreator
             $record = $result['record'];
             $synonyms = $result['synonyms'];
             $categories = $result['categories'];
+            $synonymsLower = array_map(function($e) { return strtolower($e); }, $synonyms->getSynonyms());
+
             return [
                 'cid' => $record->getCID(),
-                'iupac_name' => $record->getIUPACName(),
+                'iupac_name' => strtolower($record->getIUPACName()),
                 'molecular_mass' => $record->getMolecularMass(),
                 'molecular_formula' => $record->getMolecularFormula(),
                 'log_p' => $record->getLogP(),
-                'synonyms' => array_slice($synonyms->getSynonyms(), 0, min(10, count($synonyms->getSynonyms()))),
+                'synonyms' => array_slice($synonymsLower, 0, min(10, count($synonymsLower))),
                 'cas' => $synonyms->getCAS(),
                 'has_vendors' => $categories->hasVendors(),
 

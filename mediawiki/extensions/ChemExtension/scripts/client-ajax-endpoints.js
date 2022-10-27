@@ -50,6 +50,15 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.searchForMolecule = function (searchText) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/search-molecule?searchText=" + encodeURIComponent(searchText);
+        return $.ajax({
+            method: "GET",
+            url: url
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.isJobPending = function (pageId) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/job/pending?pageId=" + pageId;

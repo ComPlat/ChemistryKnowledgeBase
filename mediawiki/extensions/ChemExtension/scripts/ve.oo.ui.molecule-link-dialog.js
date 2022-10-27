@@ -22,22 +22,15 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         if (action === 'apply') {
             return new OO.ui.Process(() => {
                 let node = ve.init.target.getSurface().getModel().getSelectedNode();
-                let chemFormId = this.chooseMoleculeWidget.getChemFormId();
-                let ajax = new window.ChemExtension.AjaxEndpoints();
-                ajax.getMoleculeKey(chemFormId).then((response) => {
-                    let link = node.element.attributes.mw.parts[0].template.params.link;
-                    if (!link) {
-                        node.element.attributes.mw.parts[0].template.params.link = { wt: response.moleculeKey}
-                    } else {
-                        node.element.attributes.mw.parts[0].template.params.link.wt = response.moleculeKey;
-                    }
-                    ve.init.target.getSurface().getModel().getDocument().rebuildTree();
-                    ve.init.target.fromEditedState = true;
-                    ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
-                    ve.ui.MWMediaDialog.super.prototype.close.call(this);
-                }).catch((response) => {
-                    this.chooseMoleculeWidget.getErrorLabel().setLabel(response.responseText);
-                });
+                let inchiKey = this.chooseMoleculeWidget.getChemFormId();
+                let params = node.element.attributes.mw.parts[0].template.params;
+                params.link = params.link || {};
+                params.link.wt = inchiKey;
+
+                ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+                ve.init.target.fromEditedState = true;
+                ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
+                ve.ui.MWMediaDialog.super.prototype.close.call(this);
 
             }, this);
         }

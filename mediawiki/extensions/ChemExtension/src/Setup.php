@@ -33,6 +33,7 @@ class Setup {
                 $baseScript . '/ve.extend.js',
                 $baseScript . '/ve.insert-commands.js',
                 $baseScript . '/ve.oo-ui.rgroups-lookup.js',
+                $baseScript . '/ve.oo-ui.inchikey-lookup.js',
                 $baseScript . '/ve.oo.ui.ketcher-widget.js',
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-rgroups-widget.js',
