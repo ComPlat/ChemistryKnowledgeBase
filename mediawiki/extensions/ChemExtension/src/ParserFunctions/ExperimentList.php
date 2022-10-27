@@ -25,9 +25,10 @@ class ExperimentList
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
         $renderer = new ExperimentRenderer([
-            'page' => WikiTools::getCurrentTitle(),
+            'page' => WikiTools::getCurrentTitle($parser),
             'form' => $parameters['form'],
-            'showEditLink' => true
+            'showEditLink' => true,
+            'index' => null
         ]);
         $html = $renderer->renderInViewMode();
         if (WikiTools::isInVisualEditor()) {

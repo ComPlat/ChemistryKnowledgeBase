@@ -40,14 +40,15 @@ class RenderFormula
             DB_REPLICA
         );
         $chemFormRepo = new ChemFormRepository($dbr);
-        $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'], $arguments['inchikey']);
+        $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'] ?? '', $arguments['inchikey'] ?? '');
+
         $chemFormId = $chemFormRepo->addChemForm($moleculeKey);
         $attributes['chemFormId'] = $chemFormId;
 
-        $attributes['downloadURL'] = $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=".urlencode($moleculeKey);
+        $attributes['downloadURL'] = $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey);
 
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
-        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false' ;
+        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false';
 
         $chemFormPage = MoleculePageCreator::getPageTitleToCreate($chemFormId, $formula);
         $attributes['chemFormPageText'] = !is_null($chemFormPage) ? $chemFormPage->getText() : '';

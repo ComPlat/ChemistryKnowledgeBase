@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Literature;
 
 use DateTime;
+use DIQA\ChemExtension\Utils\ArrayTools;
 
 class DOITools {
 
@@ -22,7 +23,7 @@ class DOITools {
             $year = $doiData->{'published-online'}->{'date-parts'}[0] ?? '';
         }
 
-        preg_match_all('/([A-zöäüÖÄÜ])\w*/', strip_tags($doiData->title), $matches);
+        preg_match_all('/([A-zöäüÖÄÜ])\w*/', strip_tags(ArrayTools::getFirstIfArray($doiData->title)), $matches);
         $capitals = implode('', $matches[1]);
         $titleAbbrev = substr($capitals, 0, 3);
 
