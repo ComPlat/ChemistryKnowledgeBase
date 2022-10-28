@@ -37,12 +37,14 @@ class MoleculePageCreator
 
         $title = self::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 
+        $pageContent = $this->getPageContent($chemForm, $parent);
         if ($title->exists()) {
-            // TODO: temporarily save always for debugging
-            //return $title;
+            $templateComparer = new MoleculePageComparer($pageContent, WikiTools::getText($title));
+            if ($templateComparer->isEqual()) {
+                return $title;
+            }
         }
 
-        $pageContent = $this->getPageContent($chemForm, $parent);
 
         $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated",
             $title->exists() ? EDIT_UPDATE : EDIT_NEW);
@@ -102,7 +104,9 @@ class MoleculePageCreator
             $record = $result['record'];
             $synonyms = $result['synonyms'];
             $categories = $result['categories'];
-            $synonymsLower = array_map(function($e) { return strtolower($e); }, $synonyms->getSynonyms());
+            $synonymsLower = array_map(function ($e) {
+                return strtolower($e);
+            }, $synonyms->getSynonyms());
 
             return [
                 'cid' => $record->getCID(),
@@ -173,7 +177,8 @@ class MoleculePageCreator
         return $pubChemTemplate;
     }
 
-    private static function sanitize($s) {
+    private static function sanitize($s)
+    {
         return str_replace([',', '[', ']'], '', $s);
     }
 
