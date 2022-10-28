@@ -45,7 +45,7 @@ class setupStore extends \Maintenance
     /**
      * @param \Wikimedia\Rdbms\IMaintainableDatabase $db
      */
-    private static function setupTables(IMaintainableDatabase $db): void
+    public static function setupTables(IMaintainableDatabase $db): void
     {
         $tables = [
             (new ChemFormRepository($db))->setupTables(),

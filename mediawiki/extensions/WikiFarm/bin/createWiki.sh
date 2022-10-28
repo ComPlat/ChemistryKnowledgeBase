@@ -23,6 +23,7 @@ fi
 
 export BASE=/var/www/html
 export MEDIAWIKI=/var/www/html/mediawiki
+export WIKISCHEMA=/home/vagrant/wikischema
 
 echo 'Create www folder...'
 sudo mkdir $BASE/$1
@@ -58,5 +59,5 @@ php $MEDIAWIKI/maintenance/update.php --quick >> $BASE/$1/creation.log
 echo 'done.'
 
 echo '#################### Import wiki schema'
-bash /vagrant/initialImport.sh >> $BASE/$1/creation.log
+php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiImport.php --directory=$WIKISCHEMA >> $BASE/$1/creation.log
 

@@ -18,12 +18,14 @@
         "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage"
     },
     "AutoloadNamespaces": {
-        "DIQA\\ChemExtension\\": "src/"
+        "DIQA\\ChemExtension\\": "src/",
+        "DIQA\\ChemExtension\\Maintenance\\": "maintenance/"
     },
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
-        "MultiContentSave": "DIQA\\ChemExtension\\MultiContentSave::onMultiContentSave"
+        "MultiContentSave": "DIQA\\ChemExtension\\MultiContentSave::onMultiContentSave",
+        "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"
