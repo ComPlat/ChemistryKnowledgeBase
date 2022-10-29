@@ -17,8 +17,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         button.on('click', function () {
             ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                formula: molfile,
-                smiles: smiles,
+                formula: panel.input.value,
+                smiles: panel.attributeInputs.smiles.value,
+                inchikey: panel.attributeInputs.inchikey.value,
                 node: panel.selectedNode
             });
         });

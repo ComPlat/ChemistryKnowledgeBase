@@ -27,7 +27,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 params.link = params.link || {};
                 params.link.wt = inchiKey;
 
-                ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+                let tools = new OO.VisualEditorTools();
+                tools.refreshTransclusionNode((node) => {
+                    let params = node.model.element.attributes.mw.parts[0].template.params;
+                    return (params.link && params.link.wt == inchiKey);
+                });
+
                 ve.init.target.fromEditedState = true;
                 ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
                 ve.ui.MWMediaDialog.super.prototype.close.call(this);

@@ -19,7 +19,7 @@ class MoleculePageCreator
 
     public function __construct()
     {
-        $this->logger = new LoggerUtils('PageCreator', 'ChemExtension');
+        $this->logger = new LoggerUtils('MoleculePageCreator', 'ChemExtension');
     }
 
     /**

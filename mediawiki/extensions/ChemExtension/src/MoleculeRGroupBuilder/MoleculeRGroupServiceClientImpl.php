@@ -32,7 +32,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             $payload = new \stdClass();
             $payload->mdl = $molfile;
             $payload->rgroups = self::makeRGroupsUppercase($rGroups);
-            $this->logger->log("Request: " . print_r($payload, true));
+            $this->logger->log("Request payload: " . json_encode($payload));
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));

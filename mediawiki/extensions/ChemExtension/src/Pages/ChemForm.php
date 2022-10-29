@@ -58,7 +58,7 @@ class ChemForm
 
     public function hasRGroupDefinitions()
     {
-        return !is_null($this->getRGroups()) && count($this->getRGroups()) > 0;
+        return count($this->getRGroups()) > 0;
     }
 
     /**
@@ -120,7 +120,7 @@ class ChemForm
      */
     public function getRGroups()
     {
-        return $this->rGroups;
+        return is_null($this->rGroups) ? [] : $this->rGroups;
     }
 
     public static function fromMolOrRxn($molOrRxn, $smiles, $inchi, $inchikey): ChemForm

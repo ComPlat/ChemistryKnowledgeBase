@@ -30,13 +30,16 @@
      */
     OO.ui.KetcherWidget.static.tagName = 'iframe';
 
-    OO.ui.KetcherWidget.prototype.setData = function(formula, smiles) {
+    OO.ui.KetcherWidget.prototype.setData = function(data) {
 
         let scriptPath = mw.config.get('wgScriptPath');
         let path = scriptPath + "/extensions/ChemExtension/ketcher";
 
-        this.$element.attr("formula", formula);
-        this.$element.attr("smiles", smiles);
+        if (data.formula == '' && data.smiles == '' && data.inchikey != '') {
+            //TODO: read smiles from pubchem
+        }
+        this.$element.attr("formula", data.formula);
+        this.$element.attr("smiles", data.smiles);
         this.$element.attr("src", path + "/index-editor.html?random="+Math.random());
 
     }

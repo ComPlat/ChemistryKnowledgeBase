@@ -136,7 +136,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.KetcherDialog.prototype.setup = function (data) {
 
-        this.iframe.setData(data.formula, data.smiles);
+        this.iframe.setData(data);
         this.selectedNode = data.node;
         return ve.ui.KetcherDialog.super.prototype.setup.call(this, data);
     };

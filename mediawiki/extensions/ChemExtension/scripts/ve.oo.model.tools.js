@@ -82,6 +82,27 @@
 
     }
 
+    OO.VisualEditorTools.prototype.refreshTransclusionNode = function(predicate) {
+        let nodesToUpdate = [];
+        let documentNode = ve.init.target.getSurface().getView().getDocument().getDocumentNode();
+        let iterate = function(node) {
+            if (!node.children) return;
+            for(let i = 0; i < node.children.length; i++) {
+                let child = node.children[i];
+                if (child.type === 'mwTransclusionBlock' || child.type === 'mwTransclusionInline') {
+                    if (predicate(child)) {
+                        nodesToUpdate.push(child);
+                    }
+                }
+                iterate(child);
+            }
+        }
+        iterate(documentNode);
+        for(let i = 0; i < nodesToUpdate.length; i++) {
+            nodesToUpdate[i].forceUpdate();
+        }
+    }
+
     OO.initClass(OO.VisualEditorTools);
 
 
