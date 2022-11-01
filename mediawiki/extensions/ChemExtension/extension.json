@@ -24,7 +24,7 @@
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
-        "MultiContentSave": "DIQA\\ChemExtension\\MultiContentSave::onMultiContentSave",
+        "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
     },
     "ExtensionMessagesFiles": {

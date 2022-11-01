@@ -69,6 +69,7 @@ class Setup {
         $out->addModules('ext.diqa.chemextension');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
+        RenderFormula::outputMoleculeReferences($out);
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

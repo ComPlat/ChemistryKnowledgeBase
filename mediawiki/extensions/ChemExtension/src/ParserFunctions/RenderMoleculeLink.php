@@ -30,19 +30,17 @@ class RenderMoleculeLink
         }
 
         if (is_null($chemformId)) {
-            return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
+            return ["Molecule with key {$parameters['link']} does not exist.", 'noparse' => true, 'isHTML' => true];
         }
 
-        $page = Title::newFromText("Molecule_$chemformId", NS_MOLECULE);
+        $page = Title::newFromText("$chemformId", NS_MOLECULE);
         if (!$page->exists()) {
-            $page = Title::newFromText("Collection_$chemformId", NS_MOLECULE);
+            $page = Title::newFromText("$chemformId", NS_REACTION);
             if (!$page->exists()) {
-                $page = Title::newFromText("Reaction_$chemformId", NS_REACTION);
-                if (!$page->exists()) {
-                    return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
-                }
+                return ["Molecule with ID $chemformId does not exist.", 'noparse' => true, 'isHTML' => true];
             }
         }
+
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';

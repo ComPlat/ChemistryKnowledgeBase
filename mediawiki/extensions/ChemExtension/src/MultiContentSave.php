@@ -2,47 +2,47 @@
 
 namespace DIQA\ChemExtension;
 
-use CommentStoreComment;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteraturePageCreator;
-
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
+use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\LoggerUtils;
-use MediaWiki\Revision\RenderedRevision;
-use MediaWiki\Revision\SlotRecord;
-use MediaWiki\User\UserIdentity;
-use Status;
-use JobQueueGroup;
 use Exception;
+use JobQueueGroup;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Storage\EditResult;
+use MediaWiki\User\UserIdentity;
+use WikiPage;
 
 class MultiContentSave
 {
 
 
-    public static function onMultiContentSave(RenderedRevision $renderedRevision,
-                                              UserIdentity $user, CommentStoreComment $summary, $flags,
-                                              Status $hookStatus)
+    public static function onPageSaveComplete( WikiPage $wikiPage, UserIdentity $user,
+        string $summary, int $flags, RevisionRecord $revisionRecord, EditResult $editResult )
     {
 
-        $revision = $renderedRevision->getRevision();
-        if ($revision == null || $revision->getContent(SlotRecord::MAIN) == null) {
+
+        if ($revisionRecord == null || $revisionRecord->getContent(SlotRecord::MAIN) == null) {
             // something is wrong. there is no revision
             return;
         }
-        $wikitext = $revision->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
+        $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
 
-        self::parseChemicalFormulas($wikitext);
+        self::parseChemicalFormulas($wikitext, $revisionRecord->getPageAsLinkTarget());
         self::parseParserFunctions($wikitext);
     }
 
     private static function parseParserFunctions($wikitext)
     {
-        $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
+        $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $parser = new ParserFunctionParser();
         $creator = new LiteraturePageCreator();
         $literatureFunctions = $parser->parseFunction('literature', $wikitext);
@@ -66,7 +66,7 @@ class MultiContentSave
     /**
      * @param $wikitext
      */
-    private static function parseChemicalFormulas($wikitext): void
+    private static function parseChemicalFormulas($wikitext, $pageTitle): void
     {
         $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
         $chemFormParser = new ChemFormParser();
@@ -74,11 +74,13 @@ class MultiContentSave
 
         $pageCreator = new MoleculePageCreator();
         $moleculeCollections = [];
+        self::removeAllFromChemFormIndex($pageTitle);
         foreach ($chemForms as $chemForm) {
             try {
-                $title = $pageCreator->createNewMoleculePage($chemForm);
+                $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
+                self::addToChemFormIndex($pageTitle, $moleculePage['chemformId']);
                 if ($chemForm->hasRGroupDefinitions()) {
-                    $moleculeCollections[] = ['title' => $title, 'chemForm' => $chemForm];
+                    $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
                 }
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
@@ -103,5 +105,19 @@ class MultiContentSave
         $job = new MoleculesImportJob($wgTitle, $jobParams);
         JobQueueGroup::singleton()->push($job);
 
+    }
+
+    private static function addToChemFormIndex($pageTitle, $chemformId)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $repo = new ChemFormRepository($dbr);
+        $repo->addChemFormToIndex($pageTitle, $chemformId);
+    }
+
+    private static function removeAllFromChemFormIndex($pageTitle)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $repo = new ChemFormRepository($dbr);
+        $repo->deleteAllChemFormIndexByPageId($pageTitle);
     }
 }

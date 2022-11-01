@@ -84,9 +84,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         let ketcher = this.tools.getKetcher();
         let createMoleculeKeyAndUploadImage = this.createMoleculeKeyAndUploadImage.bind(this);
-        ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
-            svgBlob.text().then(function (imgData) {
-                ketcher.getSmiles().then(function (smiles) {
+        ketcher.generateImage(formula, {outputFormat: 'svg'}).then((svgBlob) => {
+            svgBlob.text().then((imgData) => {
+                ketcher.getSmiles().then((smiles) => {
                     createMoleculeKeyAndUploadImage(node, {
                         formula: formula,
                         inchi: inchi,

@@ -33,8 +33,10 @@ class ParserFunctionParser {
             $keyValue = explode('=', $p);
             if (count($keyValue) === 1) {
                 $parameters[''] = trim($keyValue[0]);
-            } else {
+            } else if (count($keyValue) === 2){
                 $parameters[trim($keyValue[0])] = trim($keyValue[1]);
+            } else {
+                $parameters[trim($keyValue[0])] = trim(implode('=', array_slice($keyValue, 1)));
             }
         }
         return $parameters;

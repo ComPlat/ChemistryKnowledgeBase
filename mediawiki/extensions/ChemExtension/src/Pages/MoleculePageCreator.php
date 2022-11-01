@@ -25,7 +25,7 @@ class MoleculePageCreator
     /**
      * @throws Exception
      */
-    public function createNewMoleculePage(ChemForm $chemForm, ?Title $parent = null): ?Title
+    public function createNewMoleculePage(ChemForm $chemForm, ?Title $parent = null): array
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_MASTER
@@ -41,7 +41,7 @@ class MoleculePageCreator
         if ($title->exists()) {
             $templateComparer = new MoleculePageComparer($pageContent, WikiTools::getText($title));
             if ($templateComparer->isEqual()) {
-                return $title;
+                return [ 'title' => $title, 'chemformId' => $id ];
             }
         }
 
@@ -57,7 +57,7 @@ class MoleculePageCreator
             $this->logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
         }
 
-        return $title;
+        return [ 'title' => $title, 'chemformId' => $id ];
     }
 
     /**
@@ -134,13 +134,9 @@ class MoleculePageCreator
     public static function getPageTitleToCreate(int $id, $formula): ?Title
     {
         if (MolfileProcessor::isReactionFormula($formula)) {
-            $title = Title::newFromText("Reaction:Reaction_$id");
+            $title = Title::newFromText("Reaction:$id");
         } else {
-            if (MolfileProcessor::hasRGroups($formula)) {
-                $title = Title::newFromText("Molecule:Collection_$id");
-            } else {
-                $title = Title::newFromText("Molecule:Molecule_$id");
-            }
+            $title = Title::newFromText("Molecule:$id");
         }
         return $title;
     }
@@ -196,12 +192,14 @@ class MoleculePageCreator
         } else {
             $template = "ChemicalFormula";
         }
+
+        $inchiKey = $chemForm->getInchiKey() == '' ? $chemForm->getMoleculeKey() : $chemForm->getInchiKey();
         $formulaTemplate = "{{" . $template;
         $formulaTemplate .= "\n|moleculeKey={$chemForm->getMoleculeKey()}";
         $formulaTemplate .= "\n|molOrRxn={$chemForm->getMolOrRxn()}";
         $formulaTemplate .= "\n|smiles={$chemForm->getSmiles()}";
         $formulaTemplate .= "\n|inchi={$chemForm->getInchi()}";
-        $formulaTemplate .= "\n|inchikey={$chemForm->getInchiKey()}";
+        $formulaTemplate .= "\n|inchikey={$inchiKey}";
         $formulaTemplate .= "\n|width={$chemForm->getWidth()}";
         $formulaTemplate .= "\n|height={$chemForm->getHeight()}";
         $formulaTemplate .= "\n|float={$chemForm->getFloat()}";

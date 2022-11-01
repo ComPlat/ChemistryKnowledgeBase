@@ -87,7 +87,7 @@ class SearchForMolecule extends SimpleHandler
     }
 
     private function searchForChemFormId($chemFormId) {
-        $moleculePage = Title::newFromText("Molecule $chemFormId", NS_MOLECULE);
+        $moleculePage = Title::newFromText("$chemFormId", NS_MOLECULE);
         if (!$moleculePage->exists()) {
             return [];
         }

@@ -2,8 +2,11 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
+use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
@@ -13,6 +16,7 @@ use OOUI\LabelWidget;
 use OOUI\Tag;
 use OutputPage;
 use Parser;
+use Philo\Blade\Blade;
 use PPFrame;
 use Title;
 
@@ -136,5 +140,27 @@ class RenderFormula
                 $wgTitle->getNamespace() === NS_MOLECULE
                 || $wgTitle->getNamespace() === NS_REACTION
             );
+    }
+
+    public static function outputMoleculeReferences(OutputPage $out): void {
+        global $wgTitle;
+        if (!self::isMoleculeOrReaction($wgTitle)) {
+            return;
+        }
+
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $repo = new ChemFormRepository($dbr);
+        $pagesThatUseFormula = $repo->getPageFromChemFormIndex(ChemTools::getChemFormIdFromTitle($wgTitle));
+
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $blade = new Blade ( $views, $cache );
+
+        $html = $blade->view ()->make ( "molecule-list",
+            [
+                'pages' => $pagesThatUseFormula,
+            ]
+        )->render ();
+        $out->addHTML($html);
     }
 }

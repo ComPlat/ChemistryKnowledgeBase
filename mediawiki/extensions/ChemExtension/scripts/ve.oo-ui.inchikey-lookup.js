@@ -64,7 +64,7 @@
             items = [],
             i;
         for ( i = 0; i < data.length; i++ ) {
-            let labelToShow = data[ i ].Trivialname;
+            let labelToShow = data[i].Trivialname == '' ? data[i].wikiTitle : data[i].Trivialname;
             if (data[i].CAS != '') labelToShow += ", CAS: "+data[i].CAS;
             //if (data[i].IUPACName != '') labelToShow += ", Systematic "+data[i].IUPACName;
             let menuOptionWidget = new OO.ui.MenuOptionWidget( {
