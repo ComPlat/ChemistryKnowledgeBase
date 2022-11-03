@@ -51,6 +51,10 @@ class TemplateEditor {
 		return array_key_exists($templateName, $this->templateParams) ? $this->templateParams[$templateName] : [];
 	}
 
+	public function exists($templateName) {
+        return array_key_exists($templateName, $this->templateParams);
+    }
+
 	/**
 	 * @param  string  $templateName name of the template for which to update the parameters
 	 * @param  array   $params attribute/value mapping for new or updated template parameters
@@ -60,6 +64,9 @@ class TemplateEditor {
 		
 		$this->wikitext = preg_replace_callback ( static::TEMPLATE_PATTERN, function (array $matches) use($templateName, $params) {
 			$currentTemplateName = $matches [1];
+            if ($templateName != $currentTemplateName) {
+                return $matches[0];
+            }
 			$newParams = $this->templateParams[$templateName];
 			
 			if ($templateName == $currentTemplateName) {

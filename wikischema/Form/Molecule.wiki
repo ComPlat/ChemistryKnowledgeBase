@@ -4,7 +4,7 @@ Edit a Molecule:
 </noinclude>
 
 <includeonly>
-{{{for template|PubChem}}}
+{{{for template|Molecule}}}
 {| class="formtable"
 ! Abbreviation:
 | {{{field|abbrev|input type=sting}}}
