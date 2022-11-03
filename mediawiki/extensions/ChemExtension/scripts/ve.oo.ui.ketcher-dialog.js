@@ -15,6 +15,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         // Parent constructor
         ve.ui.KetcherDialog.super.call(this, manager, config);
         this.tools = new OO.VisualEditorTools();
+        this.ajax = new window.ChemExtension.AjaxEndpoints();
     };
     /* Inheritance */
 
@@ -52,11 +53,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
 
     ve.ui.KetcherDialog.prototype.updateMolecule = function (node, formulaV3000) {
-        let that = this;
-        let ajax = new window.ChemExtension.AjaxEndpoints();
-        ajax.getInchiKey(node, formulaV3000).done(function(response) {
-            that.updatePage(node, formulaV3000, response.InChI, response.InChIKey);
-            that.openRGroupsDialogIfNoRGroupsDefined(node, formulaV3000);
+
+        this.ajax.getInchiKey(node, formulaV3000).then((response) => {
+            this.updatePage(node, formulaV3000, response.InChI, response.InChIKey);
+            this.openRGroupsDialogIfNoRGroupsDefined(node, formulaV3000);
+        }).catch((response) => {
+            mw.notify('Problem occured on getting inchikey: ' + response.responseText, {type: 'error'});
         });
 
     }
@@ -107,13 +109,17 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         } else {
             moleculeKey = formulaData.inchikey;
         }
-        let ajax = new window.ChemExtension.AjaxEndpoints();
-        ajax.uploadImage(moleculeKey, btoa(imgData)).done(this.updateModelAfterUpload.bind(this, node, {
-            formula: formulaData.formula,
-            smiles: formulaData.smiles,
-            inchi: formulaData.inchi,
-            inchikey: formulaData.inchikey
-        }));
+
+        this.ajax.uploadImage(moleculeKey, btoa(imgData)).then(() => {
+            this.updateModelAfterUpload(node, {
+                formula: formulaData.formula,
+                smiles: formulaData.smiles,
+                inchi: formulaData.inchi,
+                inchikey: formulaData.inchikey
+            });
+        }).catch((response) => {
+            mw.notify('Problem occured on uploading image: ' + response.responseText, {type: 'error'});
+        });
 
     }
 
@@ -128,7 +134,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         node.element.attributes.mw.attrs.inchi = formulaData.inchi ? formulaData.inchi : '';
         node.element.attributes.mw.attrs.inchikey = formulaData.inchikey ? formulaData.inchikey : '';
 
-        ve.init.target.getSurface().getModel().getDocument().rebuildTree();
+        this.tools.refreshVENode((node) => {
+            if (node.type === 'mwAlienInlineExtension' || node.type === 'mwAlienBlockExtension') {
+                let formula = node.model.element.attributes.mw.body.extsrc;
+                return (formula == formulaData.formula);
+            }
+            return false;
+        });
+
         ve.init.target.fromEditedState = true;
         ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
 

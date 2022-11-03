@@ -28,9 +28,12 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 params.link.wt = inchiKey;
 
                 let tools = new OO.VisualEditorTools();
-                tools.refreshTransclusionNode((node) => {
-                    let params = node.model.element.attributes.mw.parts[0].template.params;
-                    return (params.link && params.link.wt == inchiKey);
+                tools.refreshVENode((node) => {
+                    if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
+                        let params = node.model.element.attributes.mw.parts[0].template.params;
+                        return (params.link && params.link.wt == inchiKey);
+                    }
+                    return false;
                 });
 
                 ve.init.target.fromEditedState = true;

@@ -8,7 +8,7 @@
 
     };
 
-    OO.VisualEditorTools.prototype.createMoleculeKey = function(formula, smiles) {
+    OO.VisualEditorTools.prototype.createMoleculeKey = function (formula, smiles) {
         let rGroupIds = this.getRGroupIds(formula);
         return smiles + rGroupIds.join('');
     }
@@ -58,7 +58,7 @@
 
     }
 
-    OO.VisualEditorTools.prototype.renderFormula = function(downloadURL, tooltip) {
+    OO.VisualEditorTools.prototype.renderFormula = function (downloadURL, tooltip) {
         if (downloadURL === '') {
             return;
         }
@@ -82,23 +82,21 @@
 
     }
 
-    OO.VisualEditorTools.prototype.refreshTransclusionNode = function(predicate) {
+    OO.VisualEditorTools.prototype.refreshVENode = function (predicate) {
         let nodesToUpdate = [];
         let documentNode = ve.init.target.getSurface().getView().getDocument().getDocumentNode();
-        let iterate = function(node) {
+        let iterate = function (node) {
             if (!node.children) return;
-            for(let i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 let child = node.children[i];
-                if (child.type === 'mwTransclusionBlock' || child.type === 'mwTransclusionInline') {
-                    if (predicate(child)) {
-                        nodesToUpdate.push(child);
-                    }
+                if (predicate(child)) {
+                    nodesToUpdate.push(child);
                 }
                 iterate(child);
             }
         }
         iterate(documentNode);
-        for(let i = 0; i < nodesToUpdate.length; i++) {
+        for (let i = 0; i < nodesToUpdate.length; i++) {
             nodesToUpdate[i].forceUpdate();
         }
     }
