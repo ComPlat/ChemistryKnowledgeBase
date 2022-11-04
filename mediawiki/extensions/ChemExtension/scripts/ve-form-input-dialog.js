@@ -22,7 +22,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         if (action === 'apply') {
             return new OO.ui.Process(() => {
                 let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
-
+                let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
                 let toInsert = [ [
                     {
                         type: 'mwTransclusionInline',
@@ -33,7 +33,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                         template: {
                                             i: 0,
                                             params: {
-                                                form: { wt: selectedExperiment }
+                                                form: { wt: selectedExperiment },
+                                                name: { wt: selectedExperimentName }
                                             },
                                             target: { wt: "#experimentlist:", "function": "experimentlist"}
                                         }
@@ -54,7 +55,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.ChooseExperimentDialog.prototype.attachActions = function() {
         ve.ui.ChooseExperimentDialog.super.prototype.attachActions.call(this);
-        //this.getActions().list[0].setDisabled(true);
+        this.getActions().list[0].setDisabled(true);
     }
 
     ve.ui.ChooseExperimentDialog.prototype.setup = function (data) {
@@ -65,7 +66,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentDialog.prototype.getBodyHeight = function () {
-        return 200;
+        return 250;
     };
 
     /* Static Properties */

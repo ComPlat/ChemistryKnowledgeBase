@@ -31,6 +31,7 @@ class ExperimentList
         $renderer = new ExperimentRenderer([
             'page' => $title,
             'form' => $parameters['form'],
+            'name' => $parameters['name'],
             'showEditLink' => true,
             'index' => null
         ]);

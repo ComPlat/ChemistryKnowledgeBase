@@ -1,0 +1,43 @@
+<noinclude>
+This is the Photocatalytic CO2 conversion experiments template.
+</noinclude>
+<includeonly>
+{| class="wikitable"
+! cat
+! cat conc [mM]
+! PS
+! PS conc [mM]
+! e-D
+! e-D conc [M]
+! H-D
+! H-D conc [M]
+! solvent A
+! solvent B
+! solvent C
+! solvent-ratio [SolvA/SolvB]
+! additives, e.g. for buffer
+! additives conc [M]
+! pH
+! Temperature [°C]
+! λexc [nm]
+! irr time [h]
+! TON CO
+! TOF CO
+! Φ CO [%]
+! TON CH4
+! TOF CH4
+! Φ CH4 [%]
+! TON H2
+! TOF H2
+! Φ H2 [%]
+! TON HCOOH
+! TOF HCOOH
+! Φ HCOOH [%]
+! TON MeOH
+! TOF MeOH
+! Φ MeOH [%]
+! selectivity [%] [CO;CH4;H2;HCOOH;MeOH]
+! Φ all [%]
+! include
+{{{experiments|}}}
+|}

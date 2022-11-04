@@ -62,8 +62,17 @@
             //this.parent.getActions().list[0].setDisabled(false);
         });
 
+        let experimentNameLabel = new OO.ui.LabelWidget({
+            label: "Investigation-Name",
+        });
+        this.experimentName = new OO.ui.TextInputWidget({});
+        this.experimentName.on('change', (item) => {
+            this.parent.getActions().list[0].setDisabled(item == '');
+        });
+
         let formLayout = new OO.ui.FormLayout({
-            items: [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown]
+            items: [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown,
+                experimentNameLabel, this.experimentName]
         });
         this.$element.append(formLayout.$element);
 
@@ -75,6 +84,10 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedExperiment = function () {
         return this.chooseExperimentDropDown.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getSelectedExperimentName = function () {
+        return this.experimentName.getValue();
     }
 
 

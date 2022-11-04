@@ -89,9 +89,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             let template = ve.ui.LinearContextItemExtension.getTemplate(model);
             if (!template || !template.params || !template.params.form) return;
             let form = template.params.form.wt;
+            let name = template.params.name.wt;
             let wgScriptPath = mw.config.get('wgScriptPath');
             let wgPageName = mw.config.get('wgPageName');
-            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + form, addButton.$element );
+            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + name, addButton.$element );
             ve.init.target.fromEditedState = true;
             ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
         });

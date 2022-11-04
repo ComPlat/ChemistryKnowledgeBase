@@ -26,7 +26,11 @@ class ExperimentRepository
                 'tabs' => ['tab1', 'tab2'],
 
             ],
-
+            'Photocatalytic_CO2_conversion_experiments' => [
+                'label' => 'Photocatalytic CO2 conversion',
+                'type' => 'molecular-process',
+                'tabs' => null,
+            ]
         ];
 
     }

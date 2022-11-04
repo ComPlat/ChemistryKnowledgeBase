@@ -25,7 +25,7 @@ class ExperimentLink {
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        if (!isset($parameters['page']) || !isset($parameters['form'])) {
+        if (!isset($parameters['page']) || !isset($parameters['form']) || !isset($parameters['name'])) {
             return ["missing parameters: 'page' and/or 'form'", 'noparse' => true, 'isHTML' => true];
         }
 
@@ -35,6 +35,7 @@ class ExperimentLink {
         $renderer = new ExperimentRenderer([
             'page' => Title::newFromText($page),
             'form' => $parameters['form'],
+            'name' => $parameters['name'],
             'index' => $indices !== false ? self::parseIndices($indices) : null,
             'showEditLink' => false
         ]);

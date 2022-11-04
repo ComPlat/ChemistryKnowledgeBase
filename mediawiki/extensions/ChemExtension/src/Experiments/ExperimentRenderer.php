@@ -45,7 +45,7 @@ class ExperimentRenderer
         $experiment = $repo->getExperimentType($this->context['form']);
 
         if ($experiment->hasOnlyOneTab() || WikiTools::isInVisualEditor()) {
-            return $this->getTabContent($this->context['form'], 0);
+            return $this->getTabContent($this->context['name'], 0);
         }
 
         $tabPanels = [];
@@ -56,7 +56,7 @@ class ExperimentRenderer
                 'classes' => [],
                 'label' => $tab,
                 'content' => new Widget([
-                    'content' => new HtmlSnippet($this->getTabContent($this->context['form'], $i))
+                    'content' => new HtmlSnippet($this->getTabContent($this->context['name'], $i))
                 ]),
                 'expanded' => false,
                 'framed' => true,
@@ -86,11 +86,11 @@ class ExperimentRenderer
     /**
      * @throws Exception
      */
-    private function getTabContent($formName, $tabIndex): string
+    private function getTabContent($experimentName, $tabIndex): string
     {
 
         $pageTitle = $this->context['page'];
-        $subPage = $pageTitle->getText() . '/' . $formName;
+        $subPage = $pageTitle->getText() . '/' . $experimentName;
         $text = WikiTools::getText(Title::newFromText($subPage));
 
         $parser = new Parser();
@@ -107,7 +107,8 @@ class ExperimentRenderer
         if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
             $htmlTableEditor->addEditButtonsAsFirstColumn();
         }
-        return $htmlTableEditor->toHtml();
+        $nameTag = 'Experiment-Name: ' . $experimentName;
+        return $htmlTableEditor->toHtml() . $nameTag;
 
     }
 
