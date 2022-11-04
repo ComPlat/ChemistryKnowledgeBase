@@ -6,6 +6,7 @@
         config = config || {};
 
         this.parent = parent;
+        this.mode = config.mode || '';
         // Parent constructor
         OO.ui.ChooseExperimentsWidget.super.call(this, config);
 
@@ -70,9 +71,28 @@
             this.parent.getActions().list[0].setDisabled(item == '');
         });
 
+        let items = [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown,
+            experimentNameLabel, this.experimentName];
+        if (this.mode == 'link') {
+
+            let indicesLabel = new OO.ui.LabelWidget({
+                label: "Indices of experiments",
+            });
+            this.indices = new OO.ui.TextInputWidget({});
+
+            let pageLabel = new OO.ui.LabelWidget({
+                label: "Page containing the investigation",
+            });
+            this.page = new OO.ui.TextInputWidget({});
+            items.push(indicesLabel);
+            items.push(this.indices);
+            items.push(pageLabel);
+            items.push(this.page);
+        }
+
+
         let formLayout = new OO.ui.FormLayout({
-            items: [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown,
-                experimentNameLabel, this.experimentName]
+            items: items
         });
         this.$element.append(formLayout.$element);
 
@@ -88,6 +108,14 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedExperimentName = function () {
         return this.experimentName.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getSelectedIndices = function () {
+        return this.indices.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getSelectedPage = function () {
+        return this.page.getValue();
     }
 
 

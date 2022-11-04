@@ -41,9 +41,10 @@ class Setup {
                 $baseScript . '/oo.ui.rgroups-display-widget.js',
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/rerender-chemform.js',
-                $baseScript . '/ve-form-input.js',
-                $baseScript . '/ve-form-input-dialog.js',
-                $baseScript . '/ve-form-input-widget.js',
+                $baseScript . '/ve.oo-ui.initialize.js',
+                $baseScript . '/ve.oo-ui.add-experiment-dialog.js',
+                $baseScript . '/ve.oo-ui.add-experiment-widget.js',
+                $baseScript . '/ve.oo-ui.add-experiment-link-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-link-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-link-widget.js',
 

@@ -202,7 +202,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.toolFactory.register(ve.ui.AddMoleculeLink);
 
 // -----------------------------------------------------------------------------------------------------------
-// add form input command
+// add experiment command
 // -----------------------------------------------------------------------------------------------------------
 
     ve.ui.ChooseExperimentDialogCommand = function veUiChooseExperimentDialogCommand(name, action, method, options) {
@@ -212,7 +212,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.ChooseExperimentDialogCommand.prototype.execute = function (surface, args, source) {
 
             ve.init.target.getSurface().execute('window', 'open', 'choose-experiments', {
-                surface: surface,
+                surface: surface
             });
 
         }
@@ -233,4 +233,76 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.ChooseExperimentDialogTool.static.icon = 'experiment';
     ve.ui.ChooseExperimentDialogTool.static.commandName = 'ChooseExperimentDialog';
     ve.ui.toolFactory.register(ve.ui.ChooseExperimentDialogTool);
+
+
+// -----------------------------------------------------------------------------------------------------------
+// add experiment link command
+// -----------------------------------------------------------------------------------------------------------
+    ve.ui.AddExperimentLinkCommand = function veUiAddExperimentLinkCommand(name, action, method, options) {
+
+        // Parent constructor
+        ve.ui.AddExperimentLinkCommand.super.call(this, name, action, method, options);
+
+    };
+
+    /* Setup */
+
+    OO.inheritClass(ve.ui.AddExperimentLinkCommand, ve.ui.Command);
+    ve.ui.commandRegistry.register(
+        new ve.ui.AddExperimentLinkCommand(
+            // Command name
+            'addExperimentLink',
+            // Type and name of the action to execute
+            'content', 'insert', // Calls the ve.ui.ContentAction#insert method
+            {
+                // Extra arguments for the action
+                args: [
+                    // Content to insert
+                    [
+                        {
+                            type: 'mwTransclusionInline',
+                            attributes: {
+                                mw: {
+                                    parts: [
+                                        {
+                                            template: {
+                                                i: 0,
+                                                params: {
+                                                    page: {wt: ""},
+                                                    form: {wt: ""},
+                                                    name: {wt: ""},
+                                                    index: {wt: ""}
+                                                },
+                                                target: {wt: "#experimentlink:", "function": "experimentlink"}
+                                            }
+                                        }
+                                    ]
+                                },
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlink:","function":"experimentlink"},"params":{"link":{"wt":""}, "form":{"wt":""}, "name":{"wt":""}, "index":{"wt":""}},"i":0}}]}"'
+                            }
+                        }
+
+                    ],
+                    // Annotate content to match surrounding annotations?
+                    true,
+                    // Move cursor to after the new content? (otherwise - select it)
+                    true
+                ],
+                supportedSelections: ['linear']
+            }
+        )
+    );
+
+    ve.ui.AddExperimentLink = function VeUiAddExperimentLink() {
+        ve.ui.AddExperimentLink.super.apply(this, arguments);
+    };
+    OO.inheritClass(ve.ui.AddExperimentLink, ve.ui.Tool);
+    ve.ui.AddExperimentLink.static.name = 'addExperimentLink';
+    ve.ui.AddExperimentLink.static.group = 'insert';
+    ve.ui.AddExperimentLink.static.title = 'Investigation Link';
+    ve.ui.AddExperimentLink.static.icon = 'link';
+    ve.ui.AddExperimentLink.static.commandName = 'addExperimentLink';
+    ve.ui.toolFactory.register(ve.ui.AddExperimentLink);
+
 });
+

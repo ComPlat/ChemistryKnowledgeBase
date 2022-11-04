@@ -30,7 +30,7 @@ class ExperimentLink {
         }
 
         $page = $parameters['page'];
-        $indices = $parameters['index'] ?? false;
+        $indices = isset($parameters['index']) && $parameters['index'] != '' ? $parameters['index'] : false;
 
         $renderer = new ExperimentRenderer([
             'page' => Title::newFromText($page),
