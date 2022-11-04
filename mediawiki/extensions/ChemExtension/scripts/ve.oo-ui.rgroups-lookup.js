@@ -1,69 +1,73 @@
-( function ( OO ) {
+(function (OO) {
     'use strict';
-/**
- * OO.ui for RGroups lookup.
- *
- * @class
- * @extends OO.ui.TextInputWidget
- * @mixins OO.ui.mixin.LookupElement
- *
- * @constructor
- * @param {Object} config Configuration options
- */
-OO.ui.RGroupsLookupTextInputWidget = function RGroupsLookupTextInputWidget( config ) {
-    // Parent constructor
-    OO.ui.TextInputWidget.call( this, $.extend( { validate: 'string' }, config ) );
-    // Mixin constructors
-    OO.ui.mixin.LookupElement.call( this, config );
-};
-OO.inheritClass( OO.ui.RGroupsLookupTextInputWidget, OO.ui.TextInputWidget );
-OO.mixinClass( OO.ui.RGroupsLookupTextInputWidget, OO.ui.mixin.LookupElement );
-/**
- * @inheritdoc
- */
-OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupRequest = function () {
-    var
-        value = this.getValue(),
-        deferred = $.Deferred(),
-        handle;
+    /**
+     * OO.ui for RGroups lookup.
+     *
+     * @class
+     * @extends OO.ui.TextInputWidget
+     * @mixins OO.ui.mixin.LookupElement
+     *
+     * @constructor
+     * @param {Object} config Configuration options
+     */
+    OO.ui.RGroupsLookupTextInputWidget = function RGroupsLookupTextInputWidget(config) {
+        // Parent constructor
+        OO.ui.TextInputWidget.call(this, $.extend({validate: 'string'}, config));
+        // Mixin constructors
+        OO.ui.mixin.LookupElement.call(this, config);
+    };
+    OO.inheritClass(OO.ui.RGroupsLookupTextInputWidget, OO.ui.TextInputWidget);
+    OO.mixinClass(OO.ui.RGroupsLookupTextInputWidget, OO.ui.mixin.LookupElement);
 
-    this.getValidity().then( function () {
+    var handle;
+    var deferred = $.Deferred();
 
-        let valueLower = value.toLowerCase();
-        if (handle) clearTimeout(handle);
+    /**
+     * @inheritdoc
+     */
+    OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupRequest = function () {
+        let value = this.getValue();
+
+        if (deferred) {
+            deferred.reject();
+            deferred = $.Deferred();
+        }
+        if (handle) {
+            clearTimeout(handle);
+            handle = null;
+        }
+
         handle = setTimeout(function() {
-            let result = $.grep(window.ChemExtension.RGroups, function(e) {
+            let valueLower = value.toLowerCase();
+            let result = $.grep(window.ChemExtension.RGroups, function (e) {
                 return e.data.indexOf(valueLower) > -1;
             });
             deferred.resolve( result );
         }, 300);
 
-    }, function () {
-        // No results when the input contains invalid content
-        deferred.resolve( [] );
-    } );
-    return deferred.promise( { abort: function () {} } );
-};
-/**
- * @inheritdoc
- */
-OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupCacheDataFromResponse = function ( response ) {
-    return response || [];
-};
-/**
- * @inheritdoc
- */
-OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupMenuOptionsFromData = function ( data ) {
-    var
-        items = [],
-        i;
-    for ( i = 0; i < data.length; i++ ) {
+        return deferred.promise( { abort: function () {} } );
 
-        items.push( new OO.ui.MenuOptionWidget( {
-            data: data[ i ].label,
-            label: data[ i ].label
-        } ) );
-    }
-    return items;
-};
-}( OO ) );
+    };
+    /**
+     * @inheritdoc
+     */
+    OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupCacheDataFromResponse = function (response) {
+        return response || [];
+    };
+    /**
+     * @inheritdoc
+     */
+    OO.ui.RGroupsLookupTextInputWidget.prototype.getLookupMenuOptionsFromData = function (data) {
+        var
+            items = [],
+            i;
+        for (i = 0; i < data.length; i++) {
+
+            items.push(new OO.ui.MenuOptionWidget({
+                data: data[i].label,
+                label: data[i].label
+            }));
+        }
+        return items;
+    };
+}(OO));
