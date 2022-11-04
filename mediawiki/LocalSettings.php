@@ -361,6 +361,7 @@ $sfgRenameEditTabs = true;
  require_once ("extensions/WikiFarm/WikiSwitch.php");
  wfLoadExtension('WikiFarm');
 
+$wgPageFormsAutocompletionURLs['molecule_lookup'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>';
 
 #################################################################
 # Chemistry

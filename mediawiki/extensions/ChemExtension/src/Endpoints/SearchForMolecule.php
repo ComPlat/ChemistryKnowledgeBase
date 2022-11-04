@@ -41,7 +41,7 @@ class SearchForMolecule extends SimpleHandler
             $searchResults = $this->generalSearch($searchText);
         }
 
-        return [ 'results' => $searchResults ];
+        return ['pfautocomplete' => $searchResults];
     }
 
     public function needsWriteAccess()
@@ -78,7 +78,8 @@ class SearchForMolecule extends SimpleHandler
         return $this->readResults($results);
     }
 
-    private function searchForCAS($casNumber) {
+    private function searchForCAS($casNumber)
+    {
         $results = QueryUtils::executeBasicQuery(
             "[[Category:Molecule]][[CAS::$casNumber]]", [
             $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
@@ -86,17 +87,19 @@ class SearchForMolecule extends SimpleHandler
         return $this->readResults($results);
     }
 
-    private function searchForChemFormId($chemFormId) {
+    private function searchForChemFormId($chemFormId)
+    {
         $moleculePage = Title::newFromText("$chemFormId", NS_MOLECULE);
         if (!$moleculePage->exists()) {
             return [];
         }
         $obj = [];
-        $obj['wikiTitle'] = $moleculePage->getPrefixedText();
+        $obj['title'] = $moleculePage->getPrefixedText();
         $obj['IUPACName'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'IUPACName');
         $obj['CAS'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'CAS');
         $obj['Trivialname'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Trivialname');
         $obj['InChIKey'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'InChIKey');
+        $obj['label'] = $this->makeLabel($obj);
         return [$obj];
     }
 
@@ -112,7 +115,7 @@ class SearchForMolecule extends SimpleHandler
             $obj = [];
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
-            $obj['wikiTitle'] = $dataItem->getTitle()->getPrefixedText();
+            $obj['title'] = $dataItem->getTitle()->getPrefixedText();
 
             $column = next($row);
             $dataItem = $column->getNextDataItem();
@@ -130,9 +133,17 @@ class SearchForMolecule extends SimpleHandler
             $dataItem = $column->getNextDataItem();
             $obj['InChIKey'] = $dataItem !== false ? $dataItem->getString() : '';
 
+            $obj['label'] = $this->makeLabel($obj);
             $searchResults[] = $obj;
 
         }
         return $searchResults;
+    }
+
+    private function makeLabel($obj)
+    {
+        $labelToShow = $obj['Trivialname'] == '' ? $obj['title'] : $obj['Trivialname'];
+        if ($obj['CAS'] != '') $labelToShow .= ", CAS: " . $obj['CAS'];
+        return $labelToShow;
     }
 }

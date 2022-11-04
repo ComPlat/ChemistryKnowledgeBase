@@ -42,7 +42,7 @@
             let valueLower = value.toLowerCase();
             let ajax = new window.ChemExtension.AjaxEndpoints();
             ajax.searchForMolecule(valueLower).then((response) => {
-                deferred.resolve( response.results );
+                deferred.resolve( response.pfautocomplete );
             }).catch((e) => {
                 deferred.resolve( [] );
             })
@@ -64,15 +64,12 @@
             items = [],
             i;
         for ( i = 0; i < data.length; i++ ) {
-            let labelToShow = data[i].Trivialname == '' ? data[i].wikiTitle : data[i].Trivialname;
-            if (data[i].CAS != '') labelToShow += ", CAS: "+data[i].CAS;
-            //if (data[i].IUPACName != '') labelToShow += ", Systematic "+data[i].IUPACName;
             let menuOptionWidget = new OO.ui.MenuOptionWidget( {
                 data: data[i].InChIKey,
                 classes: ['search-for-molecule']
 
             } );
-            menuOptionWidget.setHighlightedQuery(labelToShow, this.getValue());
+            menuOptionWidget.setHighlightedQuery( data[i].label, this.getValue());
             items.push( menuOptionWidget );
         }
         return items;
