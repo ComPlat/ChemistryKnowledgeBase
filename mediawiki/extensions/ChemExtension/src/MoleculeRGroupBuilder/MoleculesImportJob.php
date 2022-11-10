@@ -57,14 +57,14 @@ class MoleculesImportJob extends Job
                         continue;
                     }
 
-                    $title = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
-                    $logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, "
+                    $result = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
+                    $logger->log("Created molecule/reaction page: {$result['title']->getPrefixedText()}, "
                         . "chemform: {$chemForm->__toString()}, moleculeKey: {$chemForm->getMoleculeKey()}");
 
                     $moleculeCollectionId = $chemFormRepo->getChemFormId($collection['chemForm']->getMoleculeKey());
 
                     $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
-                        $title, $moleculeCollectionId, $this->makeRGroupsLowercase($molecule));
+                        $result['title'], $moleculeCollectionId, $this->makeRGroupsLowercase($molecule));
 
                 }
             } catch (Exception $e) {

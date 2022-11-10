@@ -63,7 +63,7 @@
         let ajax = new window.ChemExtension.AjaxEndpoints();
         ajax.isJobPending(pageid).done((response) => {
             if (response.jobPending) {
-                this.content.$element.append($('<span>').addClass('hint-blinking').text('Job is pending'));
+                this.$element.prepend($('<span>').addClass('hint-blinking').text('Job is pending'));
             }
         });
     }

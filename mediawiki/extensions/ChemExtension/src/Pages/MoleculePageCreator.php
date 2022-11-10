@@ -152,6 +152,15 @@ class MoleculePageCreator
     private function getSanitizedPubChemData(ChemForm $chemForm): array
     {
         $pubChemData = $this->getRawPubChemData($chemForm->getInchiKey());
+        if (is_null($pubChemData)) {
+            $pubChemData = [];
+            $pubChemData['trivialname'] = '';
+            $pubChemData['abbrev'] = '';
+            $pubChemData['molecularFormula'] = '';
+            $pubChemData['synonyms'] = '';
+            $pubChemData['hasVendors'] = '';
+            return $pubChemData;
+        }
 
         // sanitize and format data
         $firstSynonym = reset($pubChemData['synonyms']);

@@ -21,7 +21,8 @@ class IsJobPending extends SimpleHandler {
             $res = $dbr->select(['job', 'page'], ['job_id'],
                 [
                     'page.page_id' => $pageId,
-                    'page.page_namespace = job.job_namespace', 'page.page_title = job.job_title'
+                    'page.page_namespace = job.job_namespace', 'page.page_title = job.job_title',
+                    'job.job_attempts' => 0
                 ]);
             return [ 'jobPending' => ($res->numRows() > 0) ];
 
