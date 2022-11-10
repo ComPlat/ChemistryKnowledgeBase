@@ -48,23 +48,21 @@ class PubChemClient {
             $response = curl_exec($ch);
             if (curl_errno($ch)) {
                 $error_msg = curl_error($ch);
-                throw new Exception("Error on request: " . $error_msg);
+                throw new Exception("Error on request: $error_msg for $url");
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             list($header, $body) = self::splitResponse($response);
             $parsedBody = json_decode($body);
-            if ($httpcode >= 200 && $httpcode <= 299) {
-                $this->logger->log("Result: " . print_r($parsedBody, true));
-                if (isset($parsedBody->Fault)) {
-                    throw new Exception($parsedBody->Fault->Message ?? 'Unknown Error');
-                }
+            if ($httpcode >= 200 && $httpcode <= 299 && !isset($parsedBody->Fault)) {
                 return $parsedBody;
             }
             if (isset($parsedBody->Fault)) {
-                throw new Exception($parsedBody->Fault->Message ?? 'Unknown Error');
+                $errMsg = $parsedBody->Fault->Message ?? 'Unknown Error';
+                $errMsg .= " for $url";
+                throw new Exception($errMsg);
             }
-            throw new Exception("Error on pubchem request. HTTP status " . $httpcode . ". Message: " . $body);
+            throw new Exception("Error on PubChem request. HTTP status: $httpcode. Message: $body for $url");
 
         } finally {
             curl_close($ch);

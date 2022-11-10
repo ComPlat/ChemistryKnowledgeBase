@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use Exception;
 
 class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
 {
@@ -21,6 +22,9 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
         $this->moleculeRGroupServiceUrl = $moleculeRGroupServiceUrl;
     }
 
+    /**
+     * @throws Exception
+     */
     function buildMolecules(string $molfile, array $rGroups)
     {
         try {
@@ -43,7 +47,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             $response = curl_exec($ch);
             if (curl_errno($ch)) {
                 $error_msg = curl_error($ch);
-                throw new Exception("Error on request: " . $error_msg);
+                throw new Exception("Error on request: $error_msg");
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
@@ -52,7 +56,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
                 $this->logger->log("Result: " . print_r($body, true));
                 return json_decode($body);
             }
-            throw new Exception("Error on upload. HTTP status " . $httpcode . ". Message: " . $body);
+            throw new Exception("Error on upload. HTTP status: $httpcode. Message: $body");
 
         } finally {
             curl_close($ch);

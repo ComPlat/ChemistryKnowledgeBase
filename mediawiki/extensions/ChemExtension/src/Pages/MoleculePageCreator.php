@@ -46,12 +46,12 @@ class MoleculePageCreator
         $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated",
             $title->exists() ? EDIT_UPDATE : EDIT_NEW);
         if (!$successful) {
-            throw new Exception("Could not create molecule/reaction page");
+            throw new Exception("Could not create/update molecule/reaction page");
         }
         if (count($chemForm->getRGroups()) > 0) {
-            $this->logger->log("Created molecule collection page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
+            $this->logger->log("Created/updated molecule collection page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
         } else {
-            $this->logger->log("Created molecule/reaction page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
+            $this->logger->log("Created/updated molecule/reaction page with RGroups: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
         }
 
         return [ 'title' => $title, 'chemformId' => $id ];
@@ -167,7 +167,7 @@ class MoleculePageCreator
         $firstSynonym = $firstSynonym === false ? '' : self::sanitize($firstSynonym);
         $pubChemData['trivialname'] = $firstSynonym;
         $pubChemData['abbrev'] = '';
-        $pubChemData['molecularFormula'] = HtmlTools::formatSumFormula($pubChemData['molecular_formula']);
+        $pubChemData['molecularFormula'] = HtmlTools::formatSumFormula($pubChemData['molecularFormula']);
         $pubChemData['synonyms'] = implode(',', array_map(function ($e) {
             return self::sanitize($e);
         }, $pubChemData['synonyms']));

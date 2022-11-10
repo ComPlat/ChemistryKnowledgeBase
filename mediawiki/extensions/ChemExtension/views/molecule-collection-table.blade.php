@@ -1,4 +1,7 @@
 <div class="ce-show-molecule-collection">
+    @if(count($rows) === 0)
+        <p>No molecules found.</p>
+    @else
     <table width="100%">
         <tr>
             <th>Molecule</th>
@@ -30,5 +33,5 @@
             </tr>
         @endforeach
     </table>
-
+    @endif
 </div>
