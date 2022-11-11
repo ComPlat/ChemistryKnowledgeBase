@@ -8,7 +8,7 @@ use Title;
 class SpecialLimitedPageCreator extends SpecialPage {
 
     public function __construct() {
-        parent::__construct ( 'CreatePage', '', true);
+        parent::__construct ( 'LimitedPageCreator', '', true);
     }
 
     /**

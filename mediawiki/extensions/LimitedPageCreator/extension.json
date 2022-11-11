@@ -12,7 +12,7 @@
         }
     },
     "SpecialPages": {
-        "CreatePage": "DIQA\\Extension\\LimitedPageCreator\\SpecialLimitedPageCreator"
+        "LimitedPageCreator": "DIQA\\Extension\\LimitedPageCreator\\SpecialLimitedPageCreator"
     },
     "AutoloadNamespaces": {
         "DIQA\\Extension\\LimitedPageCreator\\": "src/"
