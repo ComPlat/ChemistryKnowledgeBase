@@ -10,7 +10,9 @@
 	"ce-upload-to-chemscanner": "Upload",
 	"ce-choose-file" : "Choose a file to upload to ChemScanner",
 	"submit-doi": "Resolve DOI",
+	"doi-label": "Digital object identifier (DOI)",
 	"doi-hint": "Enter DOI...",
 	"enter-doi": "Digital object identifier (DOI) is required",
-	"createnewpaper": "Create new paper"
+	"createnewpaper": "Create new paper",
+	"chemext-create-paper": "Create paper"
 }

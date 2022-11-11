@@ -136,3 +136,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 .search-for-molecule {
     font-size: smaller;
 }
+
+#chemext-create-paper {
+    margin-top: 10px;
+}

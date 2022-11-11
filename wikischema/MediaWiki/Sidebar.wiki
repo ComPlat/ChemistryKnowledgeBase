@@ -1,6 +1,6 @@
 * Authoring
 ** Import a Paper with ChemScanner|Import a Paper with ChemScanner
-** Create a new Paper|Create a new Paper
+** Special:CreateNewPaper|Create a new Paper
 ** Create a new Topic Page|Create a new Topic Page
 * Tools
 ** Browse Topics|Browse Topics
