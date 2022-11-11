@@ -74,17 +74,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         });
 
         refreshButton.on('click', function () {
-            let documentNode = ve.init.target.getSurface().getView().getDocument().getDocumentNode();
-            let iterate = function(node) {
-                for(let i = 0; i < node.children.length; i++) {
-                    let child = node.children[i];
-                    if (child.type === 'mwTransclusionBlock' || child.type === 'mwTransclusionInline') {
-                        child.forceUpdate();
-                    }
-                    iterate(child);
+            let tools = new OO.VisualEditorTools();
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+            if (!template || !template.params || !template.params.form) return;
+            let experimentName = template.params.name.wt;
+            tools.refreshVENode((node) => {
+                if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
+                    let params = node.model.element.attributes.mw.parts[0].template.params;
+                    return (params.name && params.name.wt == experimentName);
                 }
-            }
-            iterate(documentNode);
+            });
         });
 
         addButton.on('click', function () {

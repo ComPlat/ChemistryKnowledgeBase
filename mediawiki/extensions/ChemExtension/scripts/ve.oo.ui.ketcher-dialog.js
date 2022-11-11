@@ -102,7 +102,30 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     }
 
-    ve.ui.KetcherDialog.prototype.createMoleculeKeyAndUploadImage = function(node, formulaData, imgData) {
+    // FIXME: unused atm
+    ve.ui.KetcherDialog.prototype.updatePageWithExternalRendering = function (node, formula, inchi, inchikey) {
+
+        let ketcher = this.tools.getKetcher();
+        let createMoleculeKeyAndUploadImage = this.createMoleculeKeyAndUploadImage.bind(this);
+        this.ajax.renderImage(formula).then((response) => {
+            let imgData = response.svg;
+            ketcher.getSmiles().then((smiles) => {
+                createMoleculeKeyAndUploadImage(node, {
+                    formula: formula,
+                    inchi: inchi,
+                    inchikey: inchikey,
+                    smiles: smiles,
+                    containsReaction: ketcher.containsReaction()
+                }, imgData)
+            });
+        }).catch((response) => {
+            console.log("Error on rendering image: " + response.responseText);
+            mw.notify('Problem occured on rendering image: ' + response.responseText, {type: 'error'});
+        });
+
+    }
+
+    ve.ui.KetcherDialog.prototype.createMoleculeKeyAndUploadImage = function (node, formulaData, imgData) {
         let moleculeKey;
         if (this.tools.getNumberOfMoleculeRGroups(formulaData.formula) > 0 || formulaData.containsReaction) {
             moleculeKey = this.tools.createMoleculeKey(formulaData.formula, formulaData.smiles);

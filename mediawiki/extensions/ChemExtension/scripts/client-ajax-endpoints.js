@@ -68,6 +68,19 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.renderImage = function (molfile) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/chemform/render";
+        let data = { molfile: molfile};
+        return $.ajax({
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json",
+            url: url,
+            data: JSON.stringify(data)
+        });
+    }
+
     OO.initClass(window.ChemExtension.AjaxEndpoints);
 
 
