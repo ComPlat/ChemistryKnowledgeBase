@@ -71,6 +71,44 @@ class HtmlTableEditor
 
     }
 
+    public function removeEmptyColumns()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $notEmptyColumns = [];
+        $rows = $xpath->query('//tr');
+        if (count($rows) === 0) {
+            return;
+        }
+        array_shift($rows); // ignore header
+        $numberOfColumns = count($xpath->query('//tr[1]/th'));
+        foreach ($rows as $tr) {
+            $columns = $xpath->query('td', $tr);
+            $numberOfColumns = count($columns);
+            $i = 0;
+            foreach($columns as $td) {
+                if ($td->nodeValue != '' && !in_array($i, $notEmptyColumns)) {
+                    $notEmptyColumns[] = $i;
+                }
+                $i++;
+            }
+        }
+        $allColumns = range(0, $numberOfColumns);
+        $emptyColumns = array_diff($allColumns, $notEmptyColumns);
+
+        $rows = $xpath->query('//tr');
+        foreach ($rows as $tr) {
+            $columns = $xpath->query('th|td', $tr);
+
+            $i = 0;
+            foreach($columns as $td) {
+                if (in_array($i, $emptyColumns)) {
+                    $tr->removeChild($td);
+                }
+                $i++;
+            }
+        }
+    }
+
     public function addEditButtonsAsFirstColumn()
     {
         $xpath = new DOMXPath($this->doc);

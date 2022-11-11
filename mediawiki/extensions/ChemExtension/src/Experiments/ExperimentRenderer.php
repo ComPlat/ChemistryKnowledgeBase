@@ -100,6 +100,7 @@ class ExperimentRenderer
         $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
         if (!WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeOtherColumns($tabIndex);
+            $htmlTableEditor->removeEmptyColumns();
         }
         if (!is_null($this->context['index'])) {
             $htmlTableEditor->retainRows($this->context['index']);
