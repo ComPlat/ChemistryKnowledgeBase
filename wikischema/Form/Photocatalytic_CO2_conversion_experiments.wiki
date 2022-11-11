@@ -15,7 +15,7 @@ Experiments:
 | (should be automatically set)
 |-
 ! cat:
-| {{{field|catalyst|input type=Catalyst|values from url=molecule_lookup}}}
+| {{{field|catalyst|input type=combobox|values from url=molecule_lookup}}}
 |-
 ! cat conc [mM]:
 | {{{field|cat conc [mM]|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
