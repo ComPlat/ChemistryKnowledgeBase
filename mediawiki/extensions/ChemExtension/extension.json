@@ -15,7 +15,8 @@
     "callback" : "DIQA\\ChemExtension\\Setup::initModules",
     "SpecialPages": {
         "Literature": "DIQA\\ChemExtension\\Literature\\SpecialLiterature",
-        "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage"
+        "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage",
+        "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper"
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",
@@ -80,6 +81,11 @@
             "path": "/ChemExtension/v1/job/pending",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\IsJobPending"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/render",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\RenderMolecule"
         }
     ],
     "JobClasses": {

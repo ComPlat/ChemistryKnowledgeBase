@@ -11,5 +11,6 @@
 	"ce-choose-file" : "Choose a file to upload to ChemScanner",
 	"submit-doi": "Resolve DOI",
 	"doi-hint": "Enter DOI...",
-	"enter-doi": "Digital object identifier (DOI) is required"
+	"enter-doi": "Digital object identifier (DOI) is required",
+	"createnewpaper": "Create new paper"
 }
