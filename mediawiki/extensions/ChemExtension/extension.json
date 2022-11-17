@@ -16,7 +16,9 @@
     "SpecialPages": {
         "Literature": "DIQA\\ChemExtension\\Literature\\SpecialLiterature",
         "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage",
-        "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper"
+        "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper",
+        "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic"
+
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",

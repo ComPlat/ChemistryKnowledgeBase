@@ -212,7 +212,9 @@ if (file_exists(__DIR__ . '/env.php')) {
 #################################################################
 enableSemantics(explode( '://', $wgServer)[1]);
 
+$smwgChangePropagationProtection = false;
 $smwgNamespacesWithSemanticLinks[NS_USER] = true;
+$smwgNamespacesWithSemanticLinks[NS_CATEGORY] = true;
 $smwgShowFactbox = SMW_FACTBOX_HIDDEN;
 $smwgShowFactboxEdit = SMW_FACTBOX_HIDDEN;
 $smwgBrowseFeatures = SMW_BROWSE_TLINK | SMW_BROWSE_SHOW_INCOMING | SMW_BROWSE_SHOW_GROUP | SMW_BROWSE_SHOW_SORTKEY | SMW_BROWSE_USE_API;
@@ -380,3 +382,5 @@ $smwgNamespacesWithSemanticLinks[NS_MOLECULE] = true;
 $smwgNamespacesWithSemanticLinks[NS_REACTION] = true;
 $smwgNamespacesWithSemanticLinks[NS_TEMPLATE] = true;
 wfLoadExtension('ChemExtension');
+wfLoadExtension( 'CategoryTree' );
+$wgCategoryTreeMaxDepth=4;

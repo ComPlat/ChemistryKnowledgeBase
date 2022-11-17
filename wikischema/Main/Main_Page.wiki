@@ -1,9 +1,6 @@
-* [[Use Cases]]
-* [[Test:Synthesis_of_new_pyrazolo123triazines_by_cyclative_cleavage_of_pyrazolo-triazenes]]
-* [[Moelkül]]
-* 
 
-
+== Available Topics ==
+<categorytree mode="pages">Topic</categorytree>
 
 
 

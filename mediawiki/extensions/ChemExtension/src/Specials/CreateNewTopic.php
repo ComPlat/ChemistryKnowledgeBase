@@ -2,29 +2,25 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
-use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
-use OOUI\HtmlSnippet;
-use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
-use SpecialPage;
 use Title;
 
-class CreateNewPaper extends PageCreationSpecial
+class CreateNewTopic extends PageCreationSpecial
 {
 
     private $blade;
 
     function __construct()
     {
-        parent::__construct('CreateNewPaper');
+        parent::__construct('CreateNewTopic');
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
@@ -40,28 +36,18 @@ class CreateNewPaper extends PageCreationSpecial
      */
     function execute($par)
     {
+
         try {
 
             $output = $this->getOutput();
             $this->setHeaders();
 
             global $wgRequest;
-            $doi = $wgRequest->getText('doi', '');
-            $paperTitle = $wgRequest->getText('paper-title', '');
-            if ($doi != '') {
-                try {
-                    $data = RenderLiterature::resolveDOI($doi);
-                    $paperTitleObj = Title::newFromText(ArrayTools::getFirstIfArray($data->title));
-                    $topicSuper = $wgRequest->getText('topic-super', '');
-                    $this->createPageAndRedirect($paperTitleObj, $topicSuper);
-                } catch (Exception $e) {
-                    $this->getOutput()->addHTML($e->getMessage());
-                    return;
-                }
-            } else if ($paperTitle != '') {
-                $paperTitleObj =  Title::newFromText($paperTitle);
+            $topicTitle = $wgRequest->getText('topic-title', '');
+            if ($topicTitle != '') {
+                $topicTitleObj =  Title::newFromText($topicTitle, NS_CATEGORY);
                 $topicSuper = $wgRequest->getText('topic-super', '');
-                $this->createPageAndRedirect($paperTitleObj, $topicSuper);
+                $this->createPageAndRedirect($topicTitleObj, $topicSuper);
                 return;
             }
 
@@ -84,25 +70,27 @@ class CreateNewPaper extends PageCreationSpecial
     {
         global $wgScriptPath;
 
+
+
         $createPaperButton = new ButtonInputWidget([
             'classes' => ['chemext-button'],
-            'id' => 'chemext-create-paper',
+            'id' => 'chemext-create-topic',
             'type' => 'submit',
-            'label' => $this->msg('chemext-create-paper')->text(),
+            'label' => $this->msg('chemext-create-topic')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true
         ]);
 
-        $paperTitle = new FieldLayout(
+        $topicTitle = new FieldLayout(
             new TextInputWidget([
                 'id' => 'chemext-topic-title',
                 'infusable' => true,
-                'name' => 'paper-title',
-                'placeholder' => $this->msg('paper-hint')
+                'name' => 'topic-title',
+                'placeholder' => $this->msg('topic-hint')
             ]),
             [
                 'align' => 'top',
-                'label' => $this->msg('paper-label')->text()
+                'label' => $this->msg('topic-label')->text()
             ]
         );
 
@@ -121,22 +109,17 @@ class CreateNewPaper extends PageCreationSpecial
         );
 
 
-        $doiInput = new FieldLayout(
-            new TextInputWidget(['id' => 'chemext-doi', 'name' => 'doi', 'placeholder' => $this->msg('doi-hint')]),
-            [
-                'align' => 'top',
-                'label' => $this->msg('doi-label')->text()
-            ]
-        );
+        $helpSection = $this->getHelpSection('Help:Create_new_topic');
 
-        $helpSection = $this->getHelpSection('Help:Create_new_paper');
 
-        return new FormLayout(['items' => [$paperTitle, $topicCategory, $createPaperButton, $helpSection],
+        return new FormLayout(['items' => [ $topicTitle, $topicCategory, $createPaperButton, $helpSection],
             'method' => 'post',
-            'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
+            'action' => "$wgScriptPath/index.php/Special:".$this->getName(),
             'enctype' => 'multipart/form-data',
         ]);
     }
+
+
 
 
 }

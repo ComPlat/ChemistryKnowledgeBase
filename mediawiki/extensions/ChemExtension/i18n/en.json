@@ -14,5 +14,14 @@
 	"doi-hint": "Enter DOI...",
 	"enter-doi": "Digital object identifier (DOI) is required",
 	"createnewpaper": "Create new paper",
-	"chemext-create-paper": "Create paper"
+	"createnewtopic": "Create new topic",
+	"chemext-create-paper": "Create paper",
+	"topic-hint": "Enter new topic",
+	"topic-label": "Topic",
+	"topic-super-hint": "Topic category",
+	"topic-super-label": "Topic category (or empty)",
+	"chemext-create-topic": "Create new topic",
+	"paper-hint": "Enter new paper title",
+	"paper-label": "Paper title"
+
 }

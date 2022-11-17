@@ -26,6 +26,7 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
+                $baseScript . '/special.create-topic.js',
                 $baseScript . '/rgroups.js',
                 $baseScript . '/client-ajax-endpoints.js',
                 $baseScript . '/render-chemform-tooltip.js',
@@ -50,7 +51,8 @@ class Setup {
 
             ],
             'styles' => [ 'skins/main.css' ],
-            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit'],
+            'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit',
+                'mediawiki.widgets.TitlesMultiselectWidget'],
         );
 
         $wgResourceModules['ext.diqa.qtip'] = array(

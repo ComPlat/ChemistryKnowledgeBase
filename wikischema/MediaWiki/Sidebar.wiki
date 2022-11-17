@@ -1,7 +1,7 @@
 * Authoring
 ** Import a Paper with ChemScanner|Import a Paper with ChemScanner
 ** Special:CreateNewPaper|Create a new Paper
-** Create a new Topic Page|Create a new Topic Page
+** Special:CreateNewTopic|Create a new Topic Page
 * Tools
 ** Browse Topics|Browse Topics
 ** Search for Molecules|Search for Molecules
