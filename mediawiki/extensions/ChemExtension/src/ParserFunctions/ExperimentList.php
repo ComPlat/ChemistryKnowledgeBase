@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Experiments\ExperimentListRenderer;
 use DIQA\ChemExtension\Experiments\ExperimentRenderer;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Parser;
@@ -20,26 +21,32 @@ class ExperimentList
      */
     public static function renderExperimentList(Parser $parser): array
     {
-        $parametersAsStringArray = func_get_args();
-        array_shift($parametersAsStringArray); // get rid of Parser
-        $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
+        try {
+            $parametersAsStringArray = func_get_args();
+            array_shift($parametersAsStringArray); // get rid of Parser
+            $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-        $title = WikiTools::getCurrentTitle($parser);
-        if (is_null($title)) {
-            return ['', 'noparse' => true, 'isHTML' => true];
+            if (!isset($parameters['form']) || !isset($parameters['name'])) {
+                throw new Exception("required parameters: 'name' and 'form'");
+            }
+
+            $title = WikiTools::getCurrentTitle($parser);
+            if (is_null($title)) {
+                throw new Exception("could not identify current title");
+            }
+            $renderer = new ExperimentListRenderer([
+                'page' => $title,
+                'form' => $parameters['form'],
+                'name' => $parameters['name'],
+                'index' => null
+            ]);
+            $html = $renderer->render();
+            return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
+
+        } catch (Exception $e) {
+            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
+            return [$html, 'noparse' => true, 'isHTML' => true];
         }
-        $renderer = new ExperimentRenderer([
-            'page' => $title,
-            'form' => $parameters['form'],
-            'name' => $parameters['name'],
-            'showEditLink' => true,
-            'index' => null
-        ]);
-        $html = $renderer->renderInViewMode();
-        if (WikiTools::isInVisualEditor()) {
-            $html = str_replace(array("<tbody>","</tbody>"), "", $html);
-        }
-        return [str_replace("\n", "", $html), 'noparse' => true, 'isHTML' => true];
     }
 
 }

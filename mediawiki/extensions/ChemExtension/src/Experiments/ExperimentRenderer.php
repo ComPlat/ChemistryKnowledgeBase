@@ -15,28 +15,33 @@ use OOUI\Widget;
 use OutputPage;
 use Parser;
 use ParserOptions;
+use Philo\Blade\Blade;
 use Title;
 
-class ExperimentRenderer
+abstract class ExperimentRenderer
 {
 
-    private $context;
+    private $blade;
+    protected $context;
 
     /**
      * ExperimentRenderer constructor.
      * @param $context
      */
-    public function __construct($context)
+    protected function __construct($context)
     {
         $this->context = $context;
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $this->blade = new Blade ( $views, $cache );
     }
 
     /**
      * @param PanelLayout $form
-     * @return PanelLayout or string
+     * @return PanelLayout | string
      * @throws Exception
      */
-    public function renderInViewMode()
+    public function render()
     {
 
         OutputPage::setupOOUI();
@@ -90,28 +95,43 @@ class ExperimentRenderer
     {
 
         $pageTitle = $this->context['page'];
-        $subPage = $pageTitle->getText() . '/' . $experimentName;
-        $text = WikiTools::getText(Title::newFromText($subPage));
+        $experimentPage = $pageTitle->getText() . '/' . $experimentName;
+        $experimentPageTitle = Title::newFromText($experimentPage);
+        if (!$experimentPageTitle->exists()) {
+            throw new Exception("Experiment '$experimentPage' does not exist.");
+        }
+        $text = WikiTools::getText($experimentPageTitle);
+
+        $text = $this->preProcessTemplate($text);
 
         $parser = new Parser();
         $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
-        $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
-        if (!WikiTools::isInVisualEditor()) {
-            $htmlTableEditor->removeOtherColumns($tabIndex);
-            $htmlTableEditor->removeEmptyColumns();
-        }
-        if (!is_null($this->context['index'])) {
-            $htmlTableEditor->retainRows($this->context['index']);
-        }
-        if (WikiTools::isInVisualEditor() && $this->context['showEditLink']) {
-            $htmlTableEditor->addEditButtonsAsFirstColumn();
-        }
-        $nameTag = 'Experiment-Name: ' . $experimentName;
-        return $htmlTableEditor->toHtml() . $nameTag;
+        $htmlTableEditor = $this->postProcessTable($html, $tabIndex);
+
+        return $this->blade->view ()->make ( "experiment-table", [
+            'htmlTableEditor' => $htmlTableEditor,
+            'experimentName' => $experimentName
+        ])->render ();
 
     }
 
+    /**
+     * Preprocesses template content before rendering
+     *
+     * @param $text
+     * @return mixed
+     */
+    protected abstract function preProcessTemplate($text);
+
+    /**
+     * Postprocesses HTML table after rendering
+     *
+     * @param $html
+     * @param $tabIndex
+     * @return mixed
+     */
+    protected abstract function postProcessTable($html, $tabIndex);
 
 }

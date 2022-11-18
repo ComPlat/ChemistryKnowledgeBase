@@ -128,6 +128,12 @@ class HtmlTableEditor
 
     }
 
+    public function getNumberOfRows() {
+        $xpath = new DOMXPath($this->doc);
+        $rows = $xpath->query('//tr');
+        return count($rows);
+    }
+
     /**
      * @param int $i
      * @return \DOMElement|false

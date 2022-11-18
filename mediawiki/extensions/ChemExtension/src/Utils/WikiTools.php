@@ -15,6 +15,13 @@ use Parser;
 
 class WikiTools {
 
+    public static function sanitizeHTML($html) {
+        if (self::isInVisualEditor()) {
+            $html = str_replace(array("<tbody>", "</tbody>"), "", $html);
+        }
+        return str_replace("\n", "", $html);
+    }
+
     public static function isInVisualEditor(): bool
     {
         global $wgRequest;
