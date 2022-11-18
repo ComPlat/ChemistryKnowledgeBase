@@ -16,8 +16,12 @@
 $wgSharedDB = "chemmain";
 $wgSharedTables[] = 'wiki_farm';
 $wgSharedTables[] = 'wiki_farm_user';
-$callingurl = strtolower($_SERVER['REQUEST_URI']);
-$wiki = parseWikiUrl($callingurl);
+if (!isset($_SERVER['REQUEST_URI'])) {
+    $wiki = "main";
+} else {
+    $callingurl = strtolower($_SERVER['REQUEST_URI']);
+    $wiki = parseWikiUrl($callingurl);
+}
 
 if (is_null($wiki)) {
     header('HTTP/1.1 404 Not Found');
