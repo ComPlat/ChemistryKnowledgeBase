@@ -2,7 +2,6 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
@@ -43,12 +42,14 @@ class CreateNewTopic extends PageCreationSpecial
             $this->setHeaders();
 
             global $wgRequest;
-            $topicTitle = $wgRequest->getText('topic-title', '');
-            if ($topicTitle != '') {
-                $topicTitleObj =  Title::newFromText($topicTitle, NS_CATEGORY);
-                $topicSuper = $wgRequest->getText('topic-super', '');
-                $this->createPageAndRedirect($topicTitleObj, $topicSuper);
-                return;
+            if ($wgRequest->getMethod() == 'POST') {
+                try {
+                    $this->processRequest($wgRequest);
+                    return;
+                } catch (Exception $e) {
+                    $this->getOutput()->addHTML($this->showErrorHint($e->getMessage()));
+                }
+
             }
 
             OutputPage::setupOOUI();
@@ -68,8 +69,7 @@ class CreateNewTopic extends PageCreationSpecial
      */
     private function createGUI(): FormLayout
     {
-        global $wgScriptPath;
-
+        global $wgScriptPath, $wgRequest;
 
 
         $createPaperButton = new ButtonInputWidget([
@@ -86,6 +86,7 @@ class CreateNewTopic extends PageCreationSpecial
                 'id' => 'chemext-topic-title',
                 'infusable' => true,
                 'name' => 'topic-title',
+                'value' => $wgRequest->getText('topic-title', ''),
                 'placeholder' => $this->msg('topic-hint')
             ]),
             [
@@ -99,6 +100,7 @@ class CreateNewTopic extends PageCreationSpecial
                 'chemext-topic-super',
                 'infusable' => true,
                 'name' => 'topic-super',
+                'default' => $this->getPresetDataForTitleInput($wgRequest->getText('topic-super', '')),
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
             ]),
@@ -112,14 +114,28 @@ class CreateNewTopic extends PageCreationSpecial
         $helpSection = $this->getHelpSection('Help:Create_new_topic');
 
 
-        return new FormLayout(['items' => [ $topicTitle, $topicCategory, $createPaperButton, $helpSection],
+        return new FormLayout(['items' => [$topicTitle, $topicCategory, $createPaperButton, $helpSection],
             'method' => 'post',
-            'action' => "$wgScriptPath/index.php/Special:".$this->getName(),
+            'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',
         ]);
     }
 
+    /**
+     * @param $wgRequest
+     */
+    private function processRequest($wgRequest): void
+    {
+        $topicTitle = $wgRequest->getText('topic-title', '');
+        if ($topicTitle == '') {
+            throw new Exception("Topic title must be set.");
+        }
 
+        $topicTitleObj = Title::newFromText($topicTitle, NS_CATEGORY);
+        $topicSuper = $wgRequest->getText('topic-super', 'Topic');
+        $this->createPageAndRedirect($topicTitleObj, $topicSuper);
+
+    }
 
 
 }

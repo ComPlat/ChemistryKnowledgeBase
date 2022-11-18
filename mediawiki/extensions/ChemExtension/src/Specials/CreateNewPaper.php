@@ -9,13 +9,11 @@ use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
-use OOUI\HtmlSnippet;
-use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
-use SpecialPage;
 use Title;
+use WebRequest;
 
 class CreateNewPaper extends PageCreationSpecial
 {
@@ -46,24 +44,17 @@ class CreateNewPaper extends PageCreationSpecial
             $this->setHeaders();
 
             global $wgRequest;
-            $doi = $wgRequest->getText('doi', '');
-            $paperTitle = $wgRequest->getText('paper-title', '');
-            if ($doi != '') {
+            global $wgRequest;
+            if ($wgRequest->getMethod() == 'POST') {
                 try {
-                    $data = RenderLiterature::resolveDOI($doi);
-                    $paperTitleObj = Title::newFromText(ArrayTools::getFirstIfArray($data->title));
-                    $topicSuper = $wgRequest->getText('topic-super', '');
-                    $this->createPageAndRedirect($paperTitleObj, $topicSuper);
-                } catch (Exception $e) {
-                    $this->getOutput()->addHTML($e->getMessage());
+                    $this->processRequest($wgRequest);
                     return;
+                } catch (Exception $e) {
+                    $this->getOutput()->addHTML($this->showErrorHint($e->getMessage()));
                 }
-            } else if ($paperTitle != '') {
-                $paperTitleObj =  Title::newFromText($paperTitle);
-                $topicSuper = $wgRequest->getText('topic-super', '');
-                $this->createPageAndRedirect($paperTitleObj, $topicSuper);
-                return;
+
             }
+
 
             OutputPage::setupOOUI();
 
@@ -82,7 +73,7 @@ class CreateNewPaper extends PageCreationSpecial
      */
     private function createGUI(): FormLayout
     {
-        global $wgScriptPath;
+        global $wgScriptPath, $wgRequest;
 
         $createPaperButton = new ButtonInputWidget([
             'classes' => ['chemext-button'],
@@ -98,6 +89,7 @@ class CreateNewPaper extends PageCreationSpecial
                 'id' => 'chemext-topic-title',
                 'infusable' => true,
                 'name' => 'paper-title',
+                'value' => $wgRequest->getText('paper-title', ''),
                 'placeholder' => $this->msg('paper-hint')
             ]),
             [
@@ -111,6 +103,7 @@ class CreateNewPaper extends PageCreationSpecial
                 'chemext-topic-super',
                 'infusable' => true,
                 'name' => 'topic-super',
+                'default' => $this->getPresetDataForTitleInput($wgRequest->getText('topic-super', '')),
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
             ]),
@@ -136,6 +129,22 @@ class CreateNewPaper extends PageCreationSpecial
             'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',
         ]);
+    }
+
+    private function processRequest(WebRequest $wgRequest)
+    {
+        $doi = $wgRequest->getText('doi', '');
+        $paperTitle = $wgRequest->getText('paper-title', '');
+        $topicSuper = $wgRequest->getText('topic-super', 'Topic');
+        if ($doi != '') {
+            $data = RenderLiterature::resolveDOI($doi);
+            $paperTitleObj = Title::newFromText(ArrayTools::getFirstIfArray($data->title));
+        } else if ($paperTitle != '') {
+            $paperTitleObj = Title::newFromText($paperTitle);
+        } else {
+            throw new Exception("Paper title must be set.");
+        }
+        $this->createPageAndRedirect($paperTitleObj, $topicSuper);
     }
 
 

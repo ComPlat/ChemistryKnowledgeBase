@@ -6,6 +6,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use OOUI\Tag;
 use SpecialPage;
 use Title;
+use Exception;
 
 class PageCreationSpecial extends SpecialPage
 {
@@ -28,23 +29,33 @@ class PageCreationSpecial extends SpecialPage
         return $helpSection;
     }
 
-    protected function createPageAndRedirect(Title $topicTitle, string $topicSuper)
+    protected function createPageAndRedirect(Title $topicTitle, string $superTopics)
     {
-        try {
-            global $wgScriptPath;
-            $topicSuper = $topicSuper != '' ? $topicSuper : "Topic";
-            $pageContent = "[[Category:$topicSuper]]";
 
-            $successful = WikiTools::doEditContent($topicTitle, $pageContent, "auto-generated",
-                $topicTitle->exists() ? EDIT_UPDATE : EDIT_NEW);
+            global $wgScriptPath;
+            $superTopicsAsWikiText = array_map(function($topic) { return "[[Category:$topic]]";}, explode("\n", $superTopics));
+            $pageContent = implode("\n", $superTopicsAsWikiText);
+
+            if ($topicTitle->exists()) {
+                throw new Exception("Page creation failed because page already exists");
+            }
+            $successful = WikiTools::doEditContent($topicTitle, $pageContent, "auto-generated", EDIT_NEW);
             if ($successful) {
                 header("Location: $wgScriptPath/index.php/{$topicTitle->getPrefixedDBKey()}?veaction=edit");
             } else {
                 throw new Exception("Page creation failed. Try again");
             }
-        } catch (Exception $e) {
-            $this->getOutput()->addHTML($e->getMessage());
-            return;
+
+    }
+
+    protected function getPresetDataForTitleInput($paramValue) {
+        if ($paramValue == '') {
+            return [];
         }
+        return explode("\n", $paramValue);
+    }
+
+    protected function showErrorHint($message) {
+        return '<span class="error">'.$message.'</span>';
     }
 }
