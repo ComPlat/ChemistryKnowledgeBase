@@ -28,7 +28,10 @@
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
-        "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates"
+        "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates",
+        "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
+        "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds"
+
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"

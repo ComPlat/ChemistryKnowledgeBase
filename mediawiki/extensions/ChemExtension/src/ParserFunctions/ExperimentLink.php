@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Experiments\ExperimentLinkRenderer;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Parser;
@@ -28,18 +29,19 @@ class ExperimentLink
             array_shift($parametersAsStringArray); // get rid of Parser
             $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-            if (!isset($parameters['page']) || !isset($parameters['form']) || !isset($parameters['name'])) {
-                throw new Exception("required parameters: 'page', 'name' and 'form'");
+            if (!isset($parameters['page']) || !isset($parameters['name'])) {
+                throw new Exception("required parameters: 'page', and 'name'");
             }
 
+            $indices = self::getIndicesOfRowsToDisplay($parameters);
+
             $page = $parameters['page'];
-            $indices = isset($parameters['index']) && $parameters['index'] != '' ? $parameters['index'] : false;
+            $indices = isset($parameters['index']) && $parameters['index'] != '' ? $parameters['index'] : $indices;
 
             $renderer = new ExperimentLinkRenderer([
                 'page' => Title::newFromText($page),
-                'form' => $parameters['form'],
                 'name' => $parameters['name'],
-                'index' => $indices !== false ? self::parseIndices($indices) : null,
+                'index' => is_string($indices) ? self::parseIndices($indices) : $indices,
             ]);
             $html = $renderer->render();
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
@@ -76,5 +78,40 @@ class ExperimentLink
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
         return new Blade ( $views, $cache );
+    }
+
+    /**
+     * @param array $parameters
+     * @return array
+     */
+    private static function getIndicesOfRowsToDisplay(array $parameters): array
+    {
+        $experimentPage = $parameters['page'] . '/' . $parameters['name'];
+        $experimentPageTitle = Title::newFromText($experimentPage);
+        $queryToSelectExperiments = $parameters['query'] ?? '';
+        $query = self::buildQuery($experimentPageTitle, $queryToSelectExperiments);
+        $results = QueryUtils::executeBasicQuery($query);
+        $indices = [];
+        while ($row = $results->getNext()) {
+            $column = reset($row);
+            $dataItem = $column->getNextDataItem();
+            $indices[] = $dataItem->getSubobjectName();
+        }
+        return $indices;
+    }
+
+    /**
+     * @param Title|null $experimentPageTitle
+     * @param $queryToSelectExperiments
+     * @return string
+     */
+    private static function buildQuery(?Title $experimentPageTitle, $queryToSelectExperiments): string
+    {
+        $includeCondition = trim($queryToSelectExperiments) == '' ? "[[Included::true]]" : "";
+        $orPartQueries = array_map(function ($q) use ($experimentPageTitle, $includeCondition) {
+            return
+                "[[-Has subobject::{$experimentPageTitle->getPrefixedText()}]] $q $includeCondition";
+        }, explode(" OR ", $queryToSelectExperiments));
+        return implode(" OR ", $orPartQueries);
     }
 }

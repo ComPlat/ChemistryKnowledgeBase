@@ -142,12 +142,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.LinearContextItemExtension.extendForExperimentLink = function(panel, context, model) {
         let addButton = new OO.ui.ButtonWidget({
-            label: 'Add link'
+            label: 'Edit link'
         });
 
         addButton.on('click', function () {
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
             ve.init.target.getSurface().execute('window', 'open', 'choose-experiment-link', {
-
+                template: template,
+                node: model
             });
 
         });

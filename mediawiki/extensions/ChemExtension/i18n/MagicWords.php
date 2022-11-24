@@ -15,6 +15,9 @@ $magicWords['en'] = [
     'showMoleculeCollection' => [ 0, 'showMoleculeCollection' ],
     'experimentlist' => [ 0, 'experimentlist' ],
     'experimentlink' => [ 0, 'experimentlink' ],
+    'extractElements' => [ 0, 'extractElements' ],
+    'counter' => [ 0, 'counter' ],
+
 ];
 
 $magicWords['de'] = $magicWords['en'];

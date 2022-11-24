@@ -1,0 +1,5 @@
+;Purpose
+* Denotes if a experiment should be added into the topic page
+
+;Datatype
+* [[Has type::Boolean]]

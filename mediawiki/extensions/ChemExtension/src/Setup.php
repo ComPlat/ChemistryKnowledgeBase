@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension;
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
+use DIQA\ChemExtension\ParserFunctions\ExtractElements;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
@@ -82,7 +83,21 @@ class Setup {
         $parser->setFunctionHook( 'showMoleculeCollection', [ ShowMoleculeCollection::class, 'renderMoleculeCollectionTable' ] );
         $parser->setFunctionHook( 'experimentlist', [ ExperimentList::class, 'renderExperimentList'] );
         $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
+        $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
+
+
+    }
+
+    public static function assignValueToMagicWord( &$parser, &$cache, &$magicWordId, &$ret ) {
+        if ( $magicWordId === 'counter' ) {
+            static $counter = 1;
+            $ret = $counter++;
+        }
+        return true;
     }
 
 
+    public static function declareVarIds( &$customVariableIds ) {
+        $customVariableIds[] = 'counter';
+    }
 }

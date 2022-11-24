@@ -1,0 +1,5 @@
+;Purpose
+* Catalyst
+
+;Datatype
+* [[Has type::Page]]

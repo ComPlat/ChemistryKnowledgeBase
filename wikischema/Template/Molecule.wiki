@@ -23,5 +23,6 @@
 |smiles={{{smiles|}}}
 |inchikey={{{inchikey|}}}
 }}
+{{#arraymap:{{#extractElements:|formula={{{molecularFormula|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
 [[Category:Molecule]]
 ‎<includeonly>

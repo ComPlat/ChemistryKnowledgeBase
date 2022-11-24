@@ -24,18 +24,18 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let node = ve.init.target.getSurface().getModel().getSelectedNode();
                 let experimentType = this.chooseExperimentsWidget.getSelectedExperiment();
                 let experimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
-                let experimentIndices = this.chooseExperimentsWidget.getSelectedIndices();
+                let experimentQuery = this.chooseExperimentsWidget.getSelectedIndices();
                 let experimentPage = this.chooseExperimentsWidget.getSelectedPage();
                 let params = node.element.attributes.mw.parts[0].template.params;
                 params.page = params.page || {};
                 params.form = params.form || {};
                 params.name = params.name || {};
-                params.index = params.index || {};
+                params.query = params.query || {};
 
                 params.page.wt = experimentPage;
                 params.form.wt = experimentType;
                 params.name.wt = experimentName;
-                params.index.wt = experimentIndices;
+                params.query.wt = experimentQuery;
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {

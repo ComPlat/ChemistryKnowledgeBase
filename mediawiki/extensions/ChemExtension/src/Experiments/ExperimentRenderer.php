@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\Experiments;
 use DIQA\ChemExtension\TemplateParser\TemplateNode;
 use DIQA\ChemExtension\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use OOUI\HtmlSnippet;
@@ -100,6 +101,7 @@ abstract class ExperimentRenderer
         if (!$experimentPageTitle->exists()) {
             throw new Exception("Experiment '$experimentPage' does not exist.");
         }
+
         $text = WikiTools::getText($experimentPageTitle);
 
         $text = $this->preProcessTemplate($text);

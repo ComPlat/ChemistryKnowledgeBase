@@ -28,7 +28,7 @@
      */
     OO.ui.ChooseExperimentsWidget.static.tagName = 'div';
 
-    OO.ui.ChooseExperimentsWidget.prototype.setData = function () {
+    OO.ui.ChooseExperimentsWidget.prototype.setData = function (data) {
         this.$element.empty();
 
         let experiments = mw.config.get('experiments');
@@ -58,37 +58,46 @@
         this.chooseExperimentDropDown = new OO.ui.DropdownInputWidget({
             label: 'Select a investigation type',
             options: this.findMenuOptionsOfType('assay')
+
         });
         this.chooseExperimentDropDown.on('change', (item) => {
             //this.parent.getActions().list[0].setDisabled(false);
         });
-        let items = [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown];
-
+        let items = [];
+        if (this.mode != 'link') {
+            items.push(labelType);
+            items.push(this.chooseTypeDropDown);
+            items.push(labelExperimentType);
+            items.push(this.chooseExperimentDropDown);
+        }
         let experimentNameLabel = new OO.ui.LabelWidget({
             label: "Investigation-Name",
         });
-        this.experimentName = new OO.ui.TextInputWidget({});
+        let experimentNameValue = data.template ? data.template.params.name.wt : '';
+        this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue});
         this.experimentName.on('change', (item) => {
             this.parent.getActions().list[0].setDisabled(item == '');
         });
 
         if (this.mode == 'link') {
 
-            let indicesLabel = new OO.ui.LabelWidget({
-                label: "Indices of experiments (optional)",
+            let queryLabel = new OO.ui.LabelWidget({
+                label: "Query to select experiments (empty means all)",
             });
-            this.indices = new OO.ui.TextInputWidget({});
+            let queryValue = data.template ? data.template.params.query.wt : '';
+            this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
 
             let pageLabel = new OO.ui.LabelWidget({
                 label: "Page containing the investigation",
             });
-            this.page = new mw.widgets.TitleInputWidget({});
+            let pageValue = data.template ? data.template.params.page.wt : '';
+            this.page = new mw.widgets.TitleInputWidget({value: pageValue});
             items.push(pageLabel);
             items.push(this.page);
             items.push(experimentNameLabel);
             items.push(this.experimentName);
-            items.push(indicesLabel);
-            items.push(this.indices);
+            items.push(queryLabel);
+            items.push(this.query);
         } else {
             items.push(experimentNameLabel);
             items.push(this.experimentName);
@@ -115,7 +124,7 @@
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedIndices = function () {
-        return this.indices.getValue();
+        return this.query.getValue();
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedPage = function () {

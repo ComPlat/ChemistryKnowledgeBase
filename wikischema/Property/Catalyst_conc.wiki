@@ -1,0 +1,5 @@
+;Purpose
+* Denotes the catalyst concentration
+
+;Datatype
+* [[Has type::Number]]

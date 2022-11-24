@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Experiments\ExperimentRenderer;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Parser;
 use Exception;
+use Philo\Blade\Blade;
 
 class ExperimentList
 {
@@ -49,4 +50,16 @@ class ExperimentList
         }
     }
 
+    /**
+     * @throws Exception
+     */
+    private static function getBlade(): Blade
+    {
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        if (!is_writable($cache)) {
+            throw new Exception("cache folder for blade engine is not writeable: $cache");
+        }
+        return new Blade ( $views, $cache );
+    }
 }
