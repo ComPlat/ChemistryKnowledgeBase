@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Specials;
 
 use DIQA\ChemExtension\Utils\WikiTools;
 use OOUI\Tag;
+use Philo\Blade\Blade;
 use SpecialPage;
 use Title;
 use Exception;
@@ -11,10 +12,14 @@ use Exception;
 class PageCreationSpecial extends SpecialPage
 {
 
+    private $blade;
+
     protected function __construct($title)
     {
         parent::__construct($title);
-
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $this->blade = new Blade ( $views, $cache );
     }
 
     protected function getHelpSection($title): Tag
@@ -56,6 +61,6 @@ class PageCreationSpecial extends SpecialPage
     }
 
     protected function showErrorHint($message) {
-        return '<span class="error">'.$message.'</span>';
+        return $this->blade->view()->make("error", ['message' => $message])->render();
     }
 }
