@@ -62,6 +62,7 @@
         this.chooseExperimentDropDown.on('change', (item) => {
             //this.parent.getActions().list[0].setDisabled(false);
         });
+        let items = [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown];
 
         let experimentNameLabel = new OO.ui.LabelWidget({
             label: "Investigation-Name",
@@ -71,23 +72,26 @@
             this.parent.getActions().list[0].setDisabled(item == '');
         });
 
-        let items = [labelType,this.chooseTypeDropDown, labelExperimentType, this.chooseExperimentDropDown,
-            experimentNameLabel, this.experimentName];
         if (this.mode == 'link') {
 
             let indicesLabel = new OO.ui.LabelWidget({
-                label: "Indices of experiments",
+                label: "Indices of experiments (optional)",
             });
             this.indices = new OO.ui.TextInputWidget({});
 
             let pageLabel = new OO.ui.LabelWidget({
                 label: "Page containing the investigation",
             });
-            this.page = new OO.ui.TextInputWidget({});
-            items.push(indicesLabel);
-            items.push(this.indices);
+            this.page = new mw.widgets.TitleInputWidget({});
             items.push(pageLabel);
             items.push(this.page);
+            items.push(experimentNameLabel);
+            items.push(this.experimentName);
+            items.push(indicesLabel);
+            items.push(this.indices);
+        } else {
+            items.push(experimentNameLabel);
+            items.push(this.experimentName);
         }
 
 
