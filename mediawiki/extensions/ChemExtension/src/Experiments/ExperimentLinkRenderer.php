@@ -16,9 +16,9 @@ class ExperimentLinkRenderer extends ExperimentRenderer
     protected function postProcessTable($html, $tabIndex): HtmlTableEditor
     {
         $htmlTableEditor = new HtmlTableEditor($html, null);
+        $htmlTableEditor->removeEmptyColumns();
         if (!WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeOtherColumns($tabIndex);
-            $htmlTableEditor->removeEmptyColumns();
         }
         if (!is_null($this->context['index'])) {
             $htmlTableEditor->retainRows($this->context['index']);

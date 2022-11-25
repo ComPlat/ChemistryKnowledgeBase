@@ -86,6 +86,9 @@
             });
             let queryValue = data.template ? data.template.params.query.wt : '';
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
+            this.query.on('change', (item) => {
+                this.parent.getActions().list[0].setDisabled(item == '');
+            });
 
             let pageLabel = new OO.ui.LabelWidget({
                 label: "Page containing the investigation",
