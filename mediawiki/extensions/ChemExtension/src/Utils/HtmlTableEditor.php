@@ -86,7 +86,7 @@ class HtmlTableEditor
             $numberOfColumns = count($columns);
             $i = 0;
             foreach($columns as $td) {
-                if ($td->nodeValue != '' && !in_array($i, $notEmptyColumns)) {
+                if (trim($td->nodeValue) != '' && !in_array($i, $notEmptyColumns)) {
                     $notEmptyColumns[] = $i;
                 }
                 $i++;

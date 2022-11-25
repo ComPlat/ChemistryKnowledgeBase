@@ -15,9 +15,9 @@ class ExperimentListRenderer extends ExperimentRenderer {
     protected function postProcessTable($html, $tabIndex): HtmlTableEditor
     {
         $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
+        $htmlTableEditor->removeEmptyColumns();
         if (!WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeOtherColumns($tabIndex);
-            $htmlTableEditor->removeEmptyColumns();
         } else {
             $htmlTableEditor->addEditButtonsAsFirstColumn();
         }
