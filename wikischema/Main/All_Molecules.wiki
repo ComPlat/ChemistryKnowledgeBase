@@ -1,0 +1,66 @@
+== All Molecules that have a Trivial Name==
+{{#ask: [[Category:Molecule]] [[Trivialname::+]]
+ |?Trivialname
+ |?IUPACName
+ |?Synonym
+ |?Abbreviation
+ |?CAS
+ |?MolecularFormula
+ |?MolecularMass
+ |format=broadtable
+ |limit=200
+ |offset=0
+ |link=all
+ |sort=
+ |order=asc
+ |headers=show
+ |searchlabel=... further results
+ |class=sortable wikitable smwtable
+}}
+
+== All Molecules (incl. all their Properties) ==
+{{#ask: [[Category:Molecule]]
+ |?Trivialname
+ |?Synonym
+ |?Abbreviation
+ |?CAS
+ |?IUPACName
+ |?HasVendors
+ |?InChI
+ |?InChIKey
+ |?LogP
+ |?MolecularFormula
+ |?MolecularMass
+ |?Smiles
+ |format=broadtable
+ |limit=200
+ |offset=0
+ |link=all
+ |sort=
+ |order=asc
+ |headers=show
+ |searchlabel=... further results
+ |class=sortable wikitable smwtable
+}}
+
+== Only Names ==
+{{#ask: 
+[[Category:Molecule]] [[Trivialname::+]]
+OR
+[[Category:Molecule]] [[IUPACName::+]]
+OR
+[[Category:Molecule]] [[Abbreviation::+]]
+ |?Trivialname
+ |?IUPACName
+ |?Abbreviation
+ |?MolecularFormula
+ |format=broadtable
+ |limit=200
+ |offset=0
+ |link=all
+ |sort=
+ |order=asc
+ |headers=show
+ |searchlabel=... further results
+ |class=sortable wikitable smwtable
+}}

@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains the pH value for a an experiment or molecular process.The quantity pH is defined in terms of the activity of hydrogen(1+) ions (hydrogen ions) in solution.https://doi.org/10.1351/goldbook.P04524.@en]]
+
+; Datatype
+* [[Has type::Number]].
+
+; Values
+* Input fields should be restricted to numbers between 0 and 14 (<nowiki>regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14)$/</nowiki>).

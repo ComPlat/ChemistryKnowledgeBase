@@ -1,0 +1,21 @@
+== Best Practices ==
+* add documentation on each Category and each Property page
+* all used categories and properties must be defined
+* property pages must contain a Datatype annotation
+* property pages should contain a hint describing the objects for which they can be used
+* there should be one form for each category that should be manually created/modified
+** the name of the form should be similar/equal to the category name
+** e.g. [[Form:Molecule]]
+* there should be one template for each category/form that is populated by the form
+** the name of the template should be similar/equal to the category name
+** e.g. [[Template:Molecule]]
+* the template pages should be documented and the expected parameters should be described in the '''noinclude''' section
+* some forms have parameters that should not be modified, nevertheless it is often beneficial to show them in read-only mode in the form
+* ideally each page contains exactly one template and is fully specified by this template and all its parameters
+** exceptions are the publication and information pages, which are free text
+
+== Model Overview ==
+* http://chemwiki.scc.kit.edu/main/mediawiki/Special:Categories
+* http://chemwiki.scc.kit.edu/main/mediawiki/Special:Properties
+* http://chemwiki.scc.kit.edu/main/mediawiki/Special:Forms
+* http://chemwiki.scc.kit.edu/main/mediawiki/Special:Templates

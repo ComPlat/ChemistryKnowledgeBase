@@ -1,0 +1,11 @@
+; Purpose
+* [[Property description::Contains the molecule used as the photosensitizer in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Page]].
+
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].
+
+; Label
+* [[Has preferred property label::PS@en]]

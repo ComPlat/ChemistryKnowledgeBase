@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains the temperature value in ℃ for a an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Number]].
+
+; Values
+* A number.

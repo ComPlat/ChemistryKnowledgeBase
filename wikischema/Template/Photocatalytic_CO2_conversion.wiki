@@ -4,45 +4,45 @@ This is the Photocatalytic CO2 conversion template.
 <includeonly>
 |-
 | {{{catalyst|}}}
-| {{{cat_conc|}}}
+| {{{cat conc|}}}
 | {{{PS|}}}
-| {{{PS_conc|}}}
-| {{{e_D|}}}
-| {{{e_D_conc|}}}
-| {{{H_D|}}}
-| {{{H_D_conc|}}}
-| {{{solvent_A|}}}
-| {{{solvent_B|}}}
-| {{{solvent_C|}}}
-| {{{solvent_ratio|}}}
+| {{{PS conc|}}}
+| {{{e-D|}}}
+| {{{e-D conc|}}}
+| {{{H-D|}}}
+| {{{H-D conc|}}}
+| {{{solvent A|}}}
+| {{{solvent B|}}}
+| {{{solvent C|}}}
+| {{{solvent-ratio|}}}
 | {{{additives|}}}
-| {{{conc|}}}
+| {{{additives conc|}}}
 | {{{pH|}}}
 | {{{Temperature|}}}
-| {{{exc|}}}
-| {{{irr_time|}}}
-| {{{TON_CO|}}}
-| {{{TOF_CO|}}}
-| {{{CO|}}}
-| {{{TON_CH4|}}}
-| {{{TOF_CH4|}}}
-| {{{CH4|}}}
-| {{{TON_H2|}}}
-| {{{TOF_H2|}}}
-| {{{H2]|}}}
-| {{{TON_HCOOH|}}}
-| {{{TOF_HCOOH|}}}
-| {{{HCOOH|}}}
-| {{{TON_MeOH|}}}
-| {{{TOF_MeOH|}}}
-| {{{MeOH|}}}
-| {{{selectivity [%] [CO;CH4;H2;HCOOH;MeOH]|}}}
-| {{{Φ all [%]|}}}
+| {{{λexc|}}}
+| {{{irr time|}}}
+| {{{TON CO|}}}
+| {{{TOF CO|}}}
+| {{{Φ CO|}}}
+| {{{TON CH4|}}}
+| {{{TOF CH4|}}}
+| {{{Φ CH4|}}}
+| {{{TON H2|}}}
+| {{{TOF H2|}}}
+| {{{Φ H2|}}}
+| {{{TON HCOOH|}}}
+| {{{TOF HCOOH|}}}
+| {{{Φ HCOOH|}}}
+| {{{TON MeOH|}}}
+| {{{TOF MeOH|}}}
+| {{{Φ MeOH|}}}
+| {{{selectivity (CO;CH4;H2;HCOOH;MeOH)|}}}
+| {{{Φ all|}}}
 | {{{include|}}}
 {{#subobject:{{COUNTER}}
  |Catalyst={{{catalyst|}}}
- |Catalyst conc={{{cat_conc|}}}
+ |Catalyst conc={{{cat conc|}}}
  |Included={{{include|}}}
 }}
-
 </includeonly>
+

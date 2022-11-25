@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains a string describing the solvent ratio of an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::string]].
+
+; Values
+* A String.

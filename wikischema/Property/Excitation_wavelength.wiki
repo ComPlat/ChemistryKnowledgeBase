@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains the excitation wavelength of an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::String]].
+
+; Values
+* Input fields should be restricted to positive numbers, and can contain a leading greater/smaller than sign (<nowiki>regexp=/^[<>]?[0-9]+$/</nowiki>).

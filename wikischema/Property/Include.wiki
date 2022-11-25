@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains a boolean value determining if an experiment from a publication should be included in overview pages or not.@en]]
+
+; Datatype
+* [[Has type::Boolean]].
+
+; Values
+* Boolean.
