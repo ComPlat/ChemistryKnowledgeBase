@@ -88,7 +88,8 @@ class ExperimentLink
     {
         $experimentPage = $parameters['page'] . '/' . $parameters['name'];
         $experimentPageTitle = Title::newFromText($experimentPage);
-        $queryToSelectExperiments = $parameters['query'] ?? '';
+        $queryToSelectExperimentsEncoded = $parameters['query'] ?? '';
+        $queryToSelectExperiments = urldecode($queryToSelectExperimentsEncoded);
         $query = self::buildQuery($experimentPageTitle, $queryToSelectExperiments);
         $results = QueryUtils::executeBasicQuery($query);
         $indices = [];

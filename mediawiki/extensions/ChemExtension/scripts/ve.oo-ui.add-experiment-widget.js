@@ -84,7 +84,7 @@
             let queryLabel = new OO.ui.LabelWidget({
                 label: "Query to select experiments (empty means all)",
             });
-            let queryValue = data.template ? data.template.params.query.wt : '';
+            let queryValue = data.template ? decodeURIComponent(data.template.params.query.wt) : '';
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
             this.query.on('change', (item) => {
                 this.parent.getActions().list[0].setDisabled(item == '');

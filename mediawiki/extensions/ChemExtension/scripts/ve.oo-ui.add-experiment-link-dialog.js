@@ -35,7 +35,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 params.page.wt = experimentPage;
                 params.form.wt = experimentType;
                 params.name.wt = experimentName;
-                params.query.wt = experimentQuery;
+                params.query.wt = encodeURIComponent(experimentQuery);
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
