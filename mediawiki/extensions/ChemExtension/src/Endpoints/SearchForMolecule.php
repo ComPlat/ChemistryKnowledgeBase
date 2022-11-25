@@ -12,6 +12,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 class SearchForMolecule extends SimpleHandler
 {
 
+    const MAX_RESULTS = 500;
+
     private $iupacNameProp;
     private $casProp;
     private $trivialnameProp;
@@ -32,13 +34,14 @@ class SearchForMolecule extends SimpleHandler
     {
         $params = $this->getValidatedParams();
         $searchText = $params['searchText'];
+        $priorityProperties = $params['priorityProperties'] ?? [];
 
         if (ChemTools::isChemformId($searchText)) {
             $searchResults = $this->searchForChemFormId($searchText);
         } else if (ChemTools::isCASNumber($searchText)) {
             $searchResults = $this->searchForCAS($searchText);
         } else {
-            $searchResults = $this->generalSearch($searchText);
+            $searchResults = $this->generalSearch($searchText, $priorityProperties);
         }
 
         return ['pfautocomplete' => $searchResults];
@@ -57,26 +60,44 @@ class SearchForMolecule extends SimpleHandler
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
             ],
+            'priorityProperties' => [
+                self::PARAM_SOURCE => 'query',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => false,
+                ParamValidator::PARAM_ISMULTI => true
+            ],
 
         ];
     }
 
     /**
      * @param $searchText
-     * @param array $searchResults
+     * @param $priorityProperties
      * @return array
      */
-    private function generalSearch($searchText): array
+    private function generalSearch($searchText, $priorityProperties): array
     {
+        $propertyQueryParts = array_map(function($p) use($searchText) {
+            return "[[Category:Molecule]][[$p::~*$searchText*]]";
+            }, $priorityProperties);
 
-        $results = QueryUtils::executeBasicQuery(
-            "[[Category:Molecule]][[IUPACName::~*$searchText*]] 
-                        OR [[Category:Molecule]][[Synonym::~*$searchText*]]
-                        OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
-                        OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]", [
+        $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts),
+        [
             $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
         ]);
-        return $this->readResults($results);
+        $allResults = $this->readResults($prioritizedResults);
+        if (count($allResults) < self::MAX_RESULTS) {
+            $generalResults = QueryUtils::executeBasicQuery(
+                "[[Category:Molecule]][[IUPACName::~*$searchText*]] 
+                            OR [[Category:Molecule]][[Synonym::~*$searchText*]]
+                            OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
+                            OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]", [
+                $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
+            ]);
+            $allResults = array_merge($allResults, $this->readResults($generalResults));
+        }
+
+        return array_slice($allResults, 0, min(count($allResults), 500));
     }
 
     private function searchForCAS($casNumber)
