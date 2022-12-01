@@ -37,7 +37,7 @@ class ExperimentRepository
                     'Catalyst' => 'catalyst',
                     'Catalyst concentration' => 'cat conc',
                     'Photosensitizer' => 'PS',
-                    'Concentration' => 'PS conc',
+                    'Photosensitizer concentration' => 'PS conc',
                     'Electron donor' => 'e-D',
                     'Electron donor concentration' => 'e-D conc',
                     'Hydrogen donor' => 'H-D',
