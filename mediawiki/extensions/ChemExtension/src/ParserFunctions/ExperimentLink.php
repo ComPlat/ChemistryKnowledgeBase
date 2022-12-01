@@ -43,7 +43,7 @@ class ExperimentLink
             $renderer = new ExperimentLinkRenderer([
                 'page' => $title,
                 'form' => $parameters['form'],
-                'templateData' => self::getTemplateData($parameters, $selectExperimentQuery)
+                'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery))
             ]);
             $html = $renderer->render();
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
