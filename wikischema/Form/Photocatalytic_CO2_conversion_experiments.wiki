@@ -18,25 +18,25 @@ Experiments:
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup}}}
 |-
 ! cat conc [mM]:
-| {{{field|cat conc|input type=regexp|property=Concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! PS:
 | {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup}}}
 |-
 ! PS conc [mM]:
-| {{{field|PS conc|input type=regexp|property=Concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|PS conc|input type=regexp|property=Photosensitizer concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! e-D:
 | {{{field|e-D|input type=combobox|property=Electron donor|values from url=molecule_lookup}}}
 |-
 ! e-D conc [M]:
-| {{{field|e-D conc|input type=regexp|property=Concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|e-D conc|input type=regexp|property=Electron donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! H-D:
 | {{{field|H-D|input type=combobox|property=Hydrogen donor|values from url=molecule_lookup}}}
 |-
 ! H-D conc [M]:
-| {{{field|H-D conc|input type=regexp|property=Concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|H-D conc|input type=regexp|property=Hydrogen donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! solvent A:
 | {{{field|solvent A|input type=combobox|property=Solvent|values from url=molecule_lookup}}}
@@ -54,10 +54,10 @@ Experiments:
 | {{{field|additives|input type=string|property=Additives}}}
 |-
 ! additives conc [M]:
-| {{{field|additives conc|input type=regexp|property=Concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! pH:
-| {{{field|pH|input type=regexp|base type=Number|property=PH|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14)$/}}}
+| {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14)$/}}}
 |-
 ! Temperature [°C] (can be range):
 | {{{field|Temperature|input type=Number|property=Temperature}}}
@@ -69,55 +69,49 @@ Experiments:
 | {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]+$/}}}
 |-
 ! TON CO:
-| {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TOF CO:
-| {{{field|TOF CO|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TOF CO|input type=regexp|base type=Number|property=Turnover frequency CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! Φ CO [%]:
-| {{{field|Φ CO|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|Φ CO|input type=regexp|base type=Number|property=Quantum yield CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TON CH4:
-| {{{field|TON CH4|input type=regexp|base type=Number|property=Turnover number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TON CH4|input type=regexp|base type=Number|property=Turnover number CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TOF CH4:
-| {{{field|TOF CH4|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TOF CH4|input type=regexp|base type=Number|property=Turnover frequency CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! Φ CH4 [%]:
-| {{{field|Φ CH4|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|Φ CH4|input type=regexp|base type=Number|property=Quantum yield CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TON H2:
-| {{{field|TON H2|input type=regexp|base type=Number|property=Turnover number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TON H2|input type=regexp|base type=Number|property=Turnover number H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TOF H2:
-| {{{field|TOF H2|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TOF H2|input type=regexp|base type=Number|property=Turnover frequency H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! Φ H2 [%]:
-| {{{field|Φ H2|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|Φ H2|input type=regexp|base type=Number|property=Quantum yield H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TON HCOOH:
-| {{{field|TON HCOOH|input type=regexp|base type=Number|property=Turnover number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TON HCOOH|input type=regexp|base type=Number|property=Turnover number HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TOF HCOOH:
-| {{{field|TOF HCOOH|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TOF HCOOH|input type=regexp|base type=Number|property=Turnover frequency HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! Φ HCOOH [%]:
-| {{{field|Φ HCOOH|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|Φ HCOOH|input type=regexp|base type=Number|property=Quantum yield HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TON MeOH:
-| {{{field|TON MeOH|input type=regexp|base type=Number|property=Turnover number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TON MeOH|input type=regexp|base type=Number|property=Turnover number MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TOF MeOH:
-| {{{field|TOF MeOH|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+| {{{field|TOF MeOH|input type=regexp|base type=Number|property=Turnover frequency MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! Φ MeOH [%]:
-| {{{field|Φ MeOH|input type=regexp|base type=Number|property=Turnover frequency|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
-|-
-! selectivity [%] [CO;CH4;H2;HCOOH;MeOH]:
-| (should be automatically calculated)
-|-
-! Φ all [%]:
-| (should be automatically calculated)
+| {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}}
