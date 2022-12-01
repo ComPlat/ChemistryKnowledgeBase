@@ -23,25 +23,24 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             return new OO.ui.Process(() => {
                 let node = ve.init.target.getSurface().getModel().getSelectedNode();
                 let experimentType = this.chooseExperimentsWidget.getSelectedExperiment();
-                let experimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
-                let experimentQuery = this.chooseExperimentsWidget.getSelectedIndices();
-                let experimentPage = this.chooseExperimentsWidget.getSelectedPage();
-                let params = node.element.attributes.mw.parts[0].template.params;
-                params.page = params.page || {};
-                params.form = params.form || {};
-                params.name = params.name || {};
-                params.query = params.query || {};
+                let query = this.chooseExperimentsWidget.getQuery();
+                let restrictToPages = this.chooseExperimentsWidget.getRestrictToPages();
 
-                params.page.wt = experimentPage;
+                let params = node.element.attributes.mw.parts[0].template.params;
+                let target = node.element.attributes.mw.parts[0].template.target;
+
+                target.wt = '#experimentlink:' + query;
+                params.form = params.form || {};
+                params.restrictToPages = params.restrictToPages || {};
+
                 params.form.wt = experimentType;
-                params.name.wt = experimentName;
-                params.query.wt = encodeURIComponent(experimentQuery);
+                params.restrictToPages.wt = restrictToPages.join(',');
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
                     if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
                         let params = node.model.element.attributes.mw.parts[0].template.params;
-                        return (params.name && params.name.wt == experimentName);
+                        return (params.form && params.form.wt == experimentType);
                     }
                     return false;
                 });

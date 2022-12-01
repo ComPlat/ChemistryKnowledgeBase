@@ -268,17 +268,15 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                             template: {
                                                 i: 0,
                                                 params: {
-                                                    page: {wt: ""},
                                                     form: {wt: ""},
-                                                    name: {wt: ""},
-                                                    query: {wt: ""}
+                                                    restrictToPages: {wt: ""},
                                                 },
                                                 target: {wt: "#experimentlink:", "function": "experimentlink"}
                                             }
                                         }
                                     ]
                                 },
-                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlink:","function":"experimentlink"},"params":{"link":{"wt":""}, "form":{"wt":""}, "name":{"wt":""}, "query":{"wt":""}},"i":0}}]}"'
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlink:","function":"experimentlink"},"params":{ "form":{"wt":""}, "restrictToPages":{"wt":""}},"i":0}}]}"'
                             }
                         }
 

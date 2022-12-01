@@ -1,0 +1,5 @@
+;Purpose
+* Denotes the additives concentration
+
+;Datatype
+* [[Has type::Number]]

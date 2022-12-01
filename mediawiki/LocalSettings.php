@@ -386,6 +386,8 @@ $wgExtraNamespaces[NS_REACTION_TALK] = 'Reaction_talk';
 $smwgNamespacesWithSemanticLinks[NS_MOLECULE] = true;
 $smwgNamespacesWithSemanticLinks[NS_REACTION] = true;
 $smwgNamespacesWithSemanticLinks[NS_TEMPLATE] = true;
+# Enable subpages in the main namespace
+$wgNamespacesWithSubpages[NS_MAIN] = true;
 wfLoadExtension('ChemExtension');
 wfLoadExtension( 'CategoryTree' );
 $wgCategoryTreeMaxDepth=4;

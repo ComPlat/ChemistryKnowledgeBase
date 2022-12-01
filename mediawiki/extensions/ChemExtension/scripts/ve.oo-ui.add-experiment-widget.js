@@ -33,16 +33,16 @@
 
         let experiments = mw.config.get('experiments');
         this.allExperiments = [];
-        for(let e in experiments) {
-            this.allExperiments.push({ data: e, label: experiments[e].label, type: experiments[e].type });
+        for (let e in experiments) {
+            this.allExperiments.push({data: e, label: experiments[e].label, type: experiments[e].type});
         }
         let labelType = new OO.ui.LabelWidget({
             label: "Type"
         });
         this.chooseTypeDropDown = new OO.ui.DropdownInputWidget({
             options: [
-                { label: "Assay", data: 'assay'},
-                { label: "Molecular process", data: 'molecular-process'}
+                {label: "Assay", data: 'assay'},
+                {label: "Molecular process", data: 'molecular-process'}
             ]
 
         });
@@ -61,47 +61,64 @@
 
         });
         this.chooseExperimentDropDown.on('change', (item) => {
-            //this.parent.getActions().list[0].setDisabled(false);
+            if (this.parent.getActions().list[0]) {
+                this.parent.getActions().list[0].setDisabled(false);
+            }
         });
+        let form = data.template ? data.template.params.form.wt : '';
+        let selectedForm = this.findMenuOptionsOfForm(form);
+        this.chooseTypeDropDown.setValue(selectedForm[0].type);
+        this.chooseExperimentDropDown.setValue(selectedForm[0].data);
+
         let items = [];
-        if (this.mode != 'link') {
-            items.push(labelType);
-            items.push(this.chooseTypeDropDown);
-            items.push(labelExperimentType);
-            items.push(this.chooseExperimentDropDown);
-        }
-        let experimentNameLabel = new OO.ui.LabelWidget({
-            label: "Investigation-Name",
-        });
-        let experimentNameValue = data.template ? data.template.params.name.wt : '';
-        this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue});
-        this.experimentName.on('change', (item) => {
-            this.parent.getActions().list[0].setDisabled(item == '');
-        });
+
+        items.push(labelType);
+        items.push(this.chooseTypeDropDown);
+        items.push(labelExperimentType);
+        items.push(this.chooseExperimentDropDown);
 
         if (this.mode == 'link') {
+            let restrictToPagesLabel = new OO.ui.LabelWidget({
+                label: "Restrict to publication pages (empty means all pages)",
+            });
+            let restrictValue = data.template ? data.template.params.restrictToPages.wt : '';
+            let titles = restrictValue.trim() !== '' ? restrictValue.split(",") : [];
+            this.restrictInput = new mw.widgets.TitlesMultiselectWidget({selected: titles});
+            this.restrictInput.on('change', (item) => {
+                if (this.parent.getActions().list[0]) {
+                    this.parent.getActions().list[0].setDisabled(item == '');
+                }
+            });
 
             let queryLabel = new OO.ui.LabelWidget({
                 label: "Query to select experiments (empty means all)",
             });
-            let queryValue = data.template ? decodeURIComponent(data.template.params.query.wt) : '';
+            let queryValue = data.template ? data.template.target.wt : '';
+            queryValue = queryValue.replace("#experimentlink:", "");
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
             this.query.on('change', (item) => {
-                this.parent.getActions().list[0].setDisabled(item == '');
+                if (this.parent.getActions().list[0]) {
+                    this.parent.getActions().list[0].setDisabled(item == '');
+                }
             });
 
-            let pageLabel = new OO.ui.LabelWidget({
-                label: "Page containing the investigation",
-            });
-            let pageValue = data.template ? data.template.params.page.wt : '';
-            this.page = new mw.widgets.TitleInputWidget({value: pageValue});
-            items.push(pageLabel);
-            items.push(this.page);
-            items.push(experimentNameLabel);
-            items.push(this.experimentName);
             items.push(queryLabel);
             items.push(this.query);
+            items.push(restrictToPagesLabel);
+            items.push(this.restrictInput);
         } else {
+
+            let experimentNameLabel = new OO.ui.LabelWidget({
+                label: "Investigation-Name",
+            });
+            let experimentNameValue = data.template ? data.template.params.name.wt : '';
+            this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue});
+            this.experimentName.on('change', (item) => {
+                if (this.parent.getActions().list[0]) {
+                    this.parent.getActions().list[0].setDisabled(item == '');
+                }
+            });
+
             items.push(experimentNameLabel);
             items.push(this.experimentName);
         }
@@ -114,8 +131,16 @@
 
     }
 
-    OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfType = function(type) {
-        return $.grep(this.allExperiments, function(e) { return e.type === type });
+    OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfType = function (type) {
+        return $.grep(this.allExperiments, function (e) {
+            return e.type === type
+        });
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfForm = function (form) {
+        return $.grep(this.allExperiments, function (e) {
+            return e.data === form
+        });
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.getSelectedExperiment = function () {
@@ -126,12 +151,12 @@
         return this.experimentName.getValue();
     }
 
-    OO.ui.ChooseExperimentsWidget.prototype.getSelectedIndices = function () {
+    OO.ui.ChooseExperimentsWidget.prototype.getQuery = function () {
         return this.query.getValue();
     }
 
-    OO.ui.ChooseExperimentsWidget.prototype.getSelectedPage = function () {
-        return this.page.getValue();
+    OO.ui.ChooseExperimentsWidget.prototype.getRestrictToPages = function () {
+        return this.restrictInput.getValue();
     }
 
 

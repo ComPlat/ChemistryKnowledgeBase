@@ -6,3 +6,6 @@
 
 ; Values
 * A number.
+
+; Label
+* [[Has preferred property label::T [°C]@en]]

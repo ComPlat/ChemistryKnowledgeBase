@@ -1,0 +1,12 @@
+; Purpose
+* [[Property description::Contains the molecule used as a solvent B in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Page]].
+
+; Subproperty of
+* [[Subproperty of::Solvent]]
+
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].
+

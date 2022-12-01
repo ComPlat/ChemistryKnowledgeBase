@@ -59,7 +59,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.ui.LinearContextItemExtension.extendForExperimentList(panel, context, model);
         } else if (template.target.wt.trim() == '#moleculelink:') {
             ve.ui.LinearContextItemExtension.extendForMoleculeLink(panel, context, model);
-        } else if (template.target.wt.trim() == '#experimentlink:') {
+        } else if (template.target.wt.trim().indexOf('#experimentlink:') === 0) {
             ve.ui.LinearContextItemExtension.extendForExperimentLink(panel, context, model);
         }
     }

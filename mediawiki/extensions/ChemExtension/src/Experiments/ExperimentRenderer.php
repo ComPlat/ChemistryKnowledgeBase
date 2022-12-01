@@ -22,7 +22,7 @@ use Title;
 abstract class ExperimentRenderer
 {
 
-    private $blade;
+    protected $blade;
     protected $context;
 
     /**
@@ -89,35 +89,7 @@ abstract class ExperimentRenderer
 
     }
 
-    /**
-     * @throws Exception
-     */
-    private function getTabContent($experimentName, $tabIndex): string
-    {
-
-        $pageTitle = $this->context['page'];
-        $experimentPage = $pageTitle->getText() . '/' . $experimentName;
-        $experimentPageTitle = Title::newFromText($experimentPage);
-        if (!$experimentPageTitle->exists()) {
-            throw new Exception("Experiment '$experimentPage' does not exist.");
-        }
-
-        $text = WikiTools::getText($experimentPageTitle);
-
-        $text = $this->preProcessTemplate($text);
-
-        $parser = new Parser();
-        $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
-        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
-
-        $htmlTableEditor = $this->postProcessTable($html, $tabIndex);
-
-        return $this->blade->view ()->make ( "experiment-table", [
-            'htmlTableEditor' => $htmlTableEditor,
-            'experimentName' => $experimentName
-        ])->render ();
-
-    }
+    protected abstract function getTabContent($experimentName, $tabIndex): string;
 
     /**
      * Preprocesses template content before rendering

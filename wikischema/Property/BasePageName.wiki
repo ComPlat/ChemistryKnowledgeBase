@@ -1,0 +1,5 @@
+; Purpose
+* Refers to the base page of an experiment
+
+; Datatype
+* [[Has type::Page]].

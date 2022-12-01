@@ -18,7 +18,8 @@ class HtmlTableEditor
         $this->form = $form;
     }
 
-    public function retainRows($rowIndices) {
+    public function retainRows($rowIndices)
+    {
         $xpath = new DOMXPath($this->doc);
         $list = $xpath->query('//tr');
         $toRemove = [];
@@ -36,7 +37,8 @@ class HtmlTableEditor
         foreach ($toRemove as $tr) {
             try {
                 $tr->parentNode->removeChild($tr);
-            } catch(\DOMException $e) {}
+            } catch (\DOMException $e) {
+            }
         }
 
     }
@@ -65,7 +67,8 @@ class HtmlTableEditor
             foreach ($toRemove as $td) {
                 try {
                     $tr->removeChild($td);
-                } catch(\DOMException $e) {}
+                } catch (\DOMException $e) {
+                }
             }
         }
 
@@ -85,7 +88,7 @@ class HtmlTableEditor
             $columns = $xpath->query('td', $tr);
             $numberOfColumns = count($columns);
             $i = 0;
-            foreach($columns as $td) {
+            foreach ($columns as $td) {
                 if (trim($td->nodeValue) != '' && !in_array($i, $notEmptyColumns)) {
                     $notEmptyColumns[] = $i;
                 }
@@ -100,7 +103,7 @@ class HtmlTableEditor
             $columns = $xpath->query('th|td', $tr);
 
             $i = 0;
-            foreach($columns as $td) {
+            foreach ($columns as $td) {
                 if (in_array($i, $emptyColumns)) {
                     $tr->removeChild($td);
                 }
@@ -128,7 +131,30 @@ class HtmlTableEditor
 
     }
 
-    public function getNumberOfRows() {
+    public function addLinkAsLastColumn(array $links)
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+        $link = reset($links);
+        foreach ($list as $tr) {
+            if ($i === 0) {
+                $i++;
+                continue;
+            }
+            $td = $this->doc->createElement('td');
+            $linkElement = $this->createLink($link['url'], $link['label']);
+            $td->appendChild($linkElement);
+            $tr->appendChild($td);
+            $i++;
+            $link = next($links);
+            if ($link === false) break;
+        }
+
+    }
+
+    public function getNumberOfRows()
+    {
         $xpath = new DOMXPath($this->doc);
         $rows = $xpath->query('//tr');
         return count($rows);
@@ -146,6 +172,18 @@ class HtmlTableEditor
         $a->setAttribute("resource", $i - 1);
         $a->setAttribute("datatype", $this->form);
         $text = $this->doc->createTextNode('(edit)');
+        $a->appendChild($text);
+        return $a;
+    }
+
+    private function createLink(string $url, string $label)
+    {
+        $a = $this->doc->createElement('a');
+        $a->setAttribute("class", "experiment-link");
+        $a->setAttribute("href", $url);
+        $a->setAttribute("target", '_blank');
+
+        $text = $this->doc->createTextNode($label);
         $a->appendChild($text);
         return $a;
     }
