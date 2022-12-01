@@ -67,8 +67,10 @@
         });
         let form = data.template ? data.template.params.form.wt : '';
         let selectedForm = this.findMenuOptionsOfForm(form);
-        this.chooseTypeDropDown.setValue(selectedForm[0].type);
-        this.chooseExperimentDropDown.setValue(selectedForm[0].data);
+        if (selectedForm.length > 0) {
+            this.chooseTypeDropDown.setValue(selectedForm[0].type);
+            this.chooseExperimentDropDown.setValue(selectedForm[0].data);
+        }
 
         let items = [];
 

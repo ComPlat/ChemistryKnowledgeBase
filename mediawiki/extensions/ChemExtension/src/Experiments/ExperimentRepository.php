@@ -97,6 +97,9 @@ class ExperimentRepository
      */
     public function getExperimentType($mainTemplate): ExperimentType
     {
+        if ($mainTemplate === '') {
+            throw new Exception("Experiment type is empty. Please specify.");
+        }
         if (!array_key_exists($mainTemplate, $this->experiments)) {
             throw new Exception("Experiment type '{$mainTemplate}' does not exist.");
         }
