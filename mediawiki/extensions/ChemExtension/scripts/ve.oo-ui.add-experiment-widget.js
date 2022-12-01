@@ -97,6 +97,7 @@
             });
             let queryValue = data.template ? data.template.target.wt : '';
             queryValue = queryValue.replace("#experimentlink:", "");
+            queryValue = decodeURIComponent(queryValue);
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
             this.query.on('change', (item) => {
                 if (this.parent.getActions().list[0]) {

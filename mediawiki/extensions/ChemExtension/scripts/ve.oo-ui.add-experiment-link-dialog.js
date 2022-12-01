@@ -29,7 +29,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let params = node.element.attributes.mw.parts[0].template.params;
                 let target = node.element.attributes.mw.parts[0].template.target;
 
-                target.wt = '#experimentlink:' + query;
+                target.wt = '#experimentlink:' + encodeURIComponent(query);
                 params.form = params.form || {};
                 params.restrictToPages = params.restrictToPages || {};
 
