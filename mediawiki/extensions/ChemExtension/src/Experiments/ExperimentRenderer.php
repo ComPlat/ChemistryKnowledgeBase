@@ -47,27 +47,25 @@ abstract class ExperimentRenderer
 
         OutputPage::setupOOUI();
 
-        $repo = ExperimentRepository::getInstance();
-        $experiment = $repo->getExperimentType($this->context['form']);
+        $tabsWithRenderedContent = $this->getTabContent();
 
-        if ($experiment->hasOnlyOneTab() || WikiTools::isInVisualEditor()) {
-            return $this->getTabContent(0);
+        if (count($tabsWithRenderedContent) === 1 || WikiTools::isInVisualEditor()) {
+            return $this->getTabContent()[''];
         }
 
         $tabPanels = [];
-        $i = 1;
-        foreach ($experiment->getTabs() as $tab) {
-
-            $tabPanels[] = new TabPanelLayout($tab, [
+        foreach ($tabsWithRenderedContent as $tabName => $html) {
+            if ($tabName == '') continue;
+            $tabPanels[] = new TabPanelLayout($tabName, [
                 'classes' => [],
-                'label' => $tab,
+                'label' => $tabName,
                 'content' => new Widget([
-                    'content' => new HtmlSnippet($this->getTabContent($i))
+                    'content' => new HtmlSnippet($html)
                 ]),
                 'expanded' => false,
                 'framed' => true,
             ]);
-            $i++;
+
         }
 
         $indexLayout = new IndexLayout([
@@ -89,23 +87,8 @@ abstract class ExperimentRenderer
 
     }
 
-    protected abstract function getTabContent($tabIndex): string;
+    protected abstract function getTabContent(): array;
 
-    /**
-     * Preprocesses template content before rendering
-     *
-     * @param $text
-     * @return mixed
-     */
-    protected abstract function preProcessTemplate($text);
 
-    /**
-     * Postprocesses HTML table after rendering
-     *
-     * @param $html
-     * @param $tabIndex
-     * @return mixed
-     */
-    protected abstract function postProcessTable($html, $tabIndex);
 
 }

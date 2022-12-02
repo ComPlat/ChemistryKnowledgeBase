@@ -79,23 +79,4 @@ class ExperimentType
 
 
 
-    /**
-     * @return array|mixed
-     */
-    public function getTabs()
-    {
-        return $this->tabs;
-    }
-
-    public function getTab($index)
-    {
-        return $this->tabs[$index];
-    }
-
-
-
-    public function hasOnlyOneTab(): bool
-    {
-        return $this->tabs === null;
-    }
 }

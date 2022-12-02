@@ -18,7 +18,6 @@ class ExperimentRepository
                 'label' => 'DemoInvestigation 1',
                 'type' => 'assay',
                 'rowTemplate' => 'DemoExperiment1Row',
-                'tabs' => null,
                 'properties' => []
 
             ],
@@ -26,14 +25,12 @@ class ExperimentRepository
                 'label' => 'DemoInvestigation 2',
                 'type' => 'molecular-process',
                 'rowTemplate' => 'DemoExperiment2Row',
-                'tabs' => ['tab1', 'tab2'],
                 'properties' => []
             ],
             'Photocatalytic_CO2_conversion_experiments' => [
                 'label' => 'Photocatalytic CO2 conversion',
                 'type' => 'molecular-process',
                 'rowTemplate' => 'Photocatalytic_CO2_conversion',
-                'tabs' => null,
                 'properties' => [
                     'Catalyst' => 'catalyst',
                     'Catalyst concentration' => 'cat conc',

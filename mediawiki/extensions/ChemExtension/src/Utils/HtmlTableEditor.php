@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Utils;
 
 use DOMXPath;
 use DOMDocument;
+use DOMException;
 
 class HtmlTableEditor
 {
@@ -37,27 +38,27 @@ class HtmlTableEditor
         foreach ($toRemove as $tr) {
             try {
                 $tr->parentNode->removeChild($tr);
-            } catch (\DOMException $e) {
+            } catch (DOMException $e) {
             }
         }
 
     }
 
-    public function removeOtherColumns($tabIndex)
+    public function removeOtherColumns($tabName)
     {
         $xpath = new DOMXPath($this->doc);
         $list = $xpath->query('//td');
         $toRemove = [];
         foreach ($list as $td) {
             $tab = $td->getAttribute('resource');
-            if ($tab != '' && $tab != 'tab' . $tabIndex) {
+            if ($tab != '' && $tab != $tabName) {
                 $toRemove[] = $td;
             }
         }
         $list = $xpath->query('//th');
         foreach ($list as $th) {
             $tab = $th->getAttribute('resource');
-            if ($tab != '' && $tab != 'tab' . $tabIndex) {
+            if ($tab != '' && $tab != $tabName) {
                 $toRemove[] = $th;
             }
         }
@@ -67,7 +68,7 @@ class HtmlTableEditor
             foreach ($toRemove as $td) {
                 try {
                     $tr->removeChild($td);
-                } catch (\DOMException $e) {
+                } catch (DOMException $e) {
                 }
             }
         }
@@ -114,6 +115,19 @@ class HtmlTableEditor
                 $i++;
             }
         }
+    }
+
+    public function getTabs(): array
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//td[@resource]');
+        $allTabs = [];
+        foreach ($list as $td) {
+            $allTabs[] = $td->getAttribute('resource');
+        }
+        $uniqueTabs = array_unique($allTabs);
+        $uniqueTabs[] = ''; // this is the default tab that contains everything
+        return $uniqueTabs;
     }
 
     public function addEditButtonsAsFirstColumn()

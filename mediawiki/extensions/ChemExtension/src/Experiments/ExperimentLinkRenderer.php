@@ -16,35 +16,11 @@ class ExperimentLinkRenderer extends ExperimentRenderer
         parent::__construct($context);
     }
 
-    protected function postProcessTable($html, $tabIndex): HtmlTableEditor
-    {
-        $htmlTableEditor = new HtmlTableEditor($html, null);
-        $htmlTableEditor->removeEmptyColumns();
-        if (!WikiTools::isInVisualEditor()) {
-            $htmlTableEditor->removeOtherColumns($tabIndex);
-
-            $links = [];
-            $templateData = $this->context['templateData'];
-            foreach($templateData as $rows) {
-                $basePageTitle = Title::newFromText($rows['BasePageName']);
-                $links[] = ['url' => $basePageTitle->getFullURL(), 'label' => $basePageTitle->getText()];
-            }
-            $htmlTableEditor->addLinkAsLastColumn($links);
-        }
-
-
-        return $htmlTableEditor;
-    }
-
-    protected function preProcessTemplate($text)
-    {
-        return $text;
-    }
 
     /**
      * @throws Exception
      */
-    protected function getTabContent($tabIndex): string
+    protected function getTabContent(): array
     {
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $mainTemplate = $experimentType->getMainTemplate();
@@ -68,10 +44,30 @@ TEMPLATE;
         $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
-        $htmlTableEditor = $this->postProcessTable($html, $tabIndex);
-        return $this->blade->view ()->make ( "experiment-table", [
-            'htmlTableEditor' => $htmlTableEditor,
+        $results = [];
+        $htmlTableEditor = new HtmlTableEditor($html, null);
+        $tabs = $htmlTableEditor->getTabs();
 
-        ])->render ();
+        foreach($tabs as $tab) {
+            $htmlTableEditor = new HtmlTableEditor($html, null);
+            $htmlTableEditor->removeEmptyColumns();
+            if (!WikiTools::isInVisualEditor()) {
+                $htmlTableEditor->removeOtherColumns($tab);
+
+                $links = [];
+                $templateData = $this->context['templateData'];
+                foreach($templateData as $rows) {
+                    $basePageTitle = Title::newFromText($rows['BasePageName']);
+                    $links[] = ['url' => $basePageTitle->getFullURL(), 'label' => $basePageTitle->getText()];
+                }
+                $htmlTableEditor->addLinkAsLastColumn($links);
+            }
+            $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
+                'htmlTableEditor' => $htmlTableEditor,
+
+            ])->render ();
+        }
+
+        return $results;
     }
 }

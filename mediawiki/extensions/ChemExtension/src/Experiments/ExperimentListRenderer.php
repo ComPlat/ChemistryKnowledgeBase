@@ -16,28 +16,11 @@ class ExperimentListRenderer extends ExperimentRenderer {
         parent::__construct($context);
     }
 
-    protected function postProcessTable($html, $tabIndex): HtmlTableEditor
-    {
-        $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
-        $htmlTableEditor->removeEmptyColumns();
-        if (!WikiTools::isInVisualEditor()) {
-            $htmlTableEditor->removeOtherColumns($tabIndex);
-        } else {
-            $htmlTableEditor->addEditButtonsAsFirstColumn();
-        }
-
-        return $htmlTableEditor;
-    }
-
-    protected function preProcessTemplate($text)
-    {
-        return $text;
-    }
 
     /**
      * @throws Exception
      */
-    protected function getTabContent($tabIndex): string
+    protected function getTabContent(): array
     {
         $experimentName = $this->context['name'];
         $pageTitle = $this->context['page'];
@@ -49,18 +32,30 @@ class ExperimentListRenderer extends ExperimentRenderer {
 
         $text = WikiTools::getText($experimentPageTitle);
 
-        $text = $this->preProcessTemplate($text);
-
         $parser = new Parser();
         $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
 
-        $htmlTableEditor = $this->postProcessTable($html, $tabIndex);
+        $results = [];
+        $tabs = $htmlTableEditor->getTabs();
 
-        return $this->blade->view ()->make ( "experiment-table", [
-            'htmlTableEditor' => $htmlTableEditor,
-            'experimentName' => $experimentName
-        ])->render ();
+        foreach($tabs as $tab) {
+            $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
+            $htmlTableEditor->removeEmptyColumns();
+            if (!WikiTools::isInVisualEditor()) {
+                $htmlTableEditor->removeOtherColumns($tab);
+            } else {
+                $htmlTableEditor->addEditButtonsAsFirstColumn();
+            }
+            $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
+                'htmlTableEditor' => $htmlTableEditor,
+                'experimentName' => $experimentName
+            ])->render ();
+        }
+
+
+        return $results;
 
     }
 }
