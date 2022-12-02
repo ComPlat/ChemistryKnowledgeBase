@@ -683,8 +683,21 @@ window.ext.popupform = ( function () {
 				return false;
 			});
 
+			var f = function() {
+				if (!innerwdw.jQuery) {
+					setTimeout(f, 100);
+				} else {
+					innerwdw.jQuery(form[0])
+						.bind("submit", function (event) {
+							submitok = (event.result === undefined) ? true : event.result;
+							innersubmitprocessed = true;
+							return false;
+						});
+				}
+			}
+			setTimeout(f, 100);
 			// catch inner form submit event
-			if ( innerJ ) {
+			/*if ( innerJ ) {
 				innerwdw.jQuery(form[0])
 				.bind( "submit", function( event ) {
 						submitok = ( event.result === undefined ) ? true : event.result;
@@ -694,7 +707,7 @@ window.ext.popupform = ( function () {
 			} else {
 				submitok = true;
 				innersubmitprocessed = true;
-			}
+			}*/
 		}
 
 		if (innerJ) {
