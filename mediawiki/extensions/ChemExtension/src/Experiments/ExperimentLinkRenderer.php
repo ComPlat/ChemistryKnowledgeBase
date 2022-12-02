@@ -44,7 +44,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
     /**
      * @throws Exception
      */
-    protected function getTabContent($experimentName, $tabIndex): string
+    protected function getTabContent($tabIndex): string
     {
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $mainTemplate = $experimentType->getMainTemplate();

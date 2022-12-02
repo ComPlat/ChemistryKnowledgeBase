@@ -117,7 +117,7 @@
   <!-- 
       Fields for SMW
    -->
-  <field name="smwh_boost_dummy"        type="string"  indexed="true" stored="true" multiValued="false" omitNorms="false" />
+  <field name="smwh_boost_dummy"        type="float"  indexed="true" stored="true" multiValued="false" omitNorms="false" />
   <field name="smwh_categories"         type="text_ws" indexed="true" stored="true" multiValued="true"  omitNorms="true"  />
   <field name="smwh_directcategories"   type="text_ws" indexed="true" stored="true" multiValued="true"  omitNorms="true"  />
   <field name="smwh_properties"         type="text_ws" indexed="true" stored="true" multiValued="true"  omitNorms="true"  />

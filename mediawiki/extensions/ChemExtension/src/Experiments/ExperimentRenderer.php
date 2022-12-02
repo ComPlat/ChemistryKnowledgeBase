@@ -51,7 +51,7 @@ abstract class ExperimentRenderer
         $experiment = $repo->getExperimentType($this->context['form']);
 
         if ($experiment->hasOnlyOneTab() || WikiTools::isInVisualEditor()) {
-            return $this->getTabContent($this->context['name'], 0);
+            return $this->getTabContent(0);
         }
 
         $tabPanels = [];
@@ -62,7 +62,7 @@ abstract class ExperimentRenderer
                 'classes' => [],
                 'label' => $tab,
                 'content' => new Widget([
-                    'content' => new HtmlSnippet($this->getTabContent($this->context['name'], $i))
+                    'content' => new HtmlSnippet($this->getTabContent($i))
                 ]),
                 'expanded' => false,
                 'framed' => true,
@@ -89,7 +89,7 @@ abstract class ExperimentRenderer
 
     }
 
-    protected abstract function getTabContent($experimentName, $tabIndex): string;
+    protected abstract function getTabContent($tabIndex): string;
 
     /**
      * Preprocesses template content before rendering

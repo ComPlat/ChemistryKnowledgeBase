@@ -95,7 +95,7 @@ class ExperimentLink
             $column = reset($row);
             $oneRow = [];
             while($column !== false) {
-                $templateParam = $experimentType->getProperties()[$column->getPrintRequest()->getLabel()];
+                $templateParam = $experimentType->getProperties()[$column->getPrintRequest()->getLabel()] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $column = next($row);
                 if (is_null($templateParam)) continue;

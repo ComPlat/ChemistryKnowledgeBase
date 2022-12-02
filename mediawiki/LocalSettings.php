@@ -391,3 +391,31 @@ $wgNamespacesWithSubpages[NS_MAIN] = true;
 wfLoadExtension('ChemExtension');
 wfLoadExtension( 'CategoryTree' );
 $wgCategoryTreeMaxDepth=4;
+
+
+#
+# Boosting
+# changing these values will only take effect after RECREATING the index of the Wiki
+# additionally, set this in env.php: $fsgActivateBoosting = true;
+#
+$fsgActivateBoosting = true;
+$fsgDefaultBoost = 5.0;
+$fsgCategoryBoosts = [
+    'Topic' => 2
+];
+$fsgTemplateBoosts = [
+  // empty
+];
+$fsgNamespaceBoosts = [
+    0    => 2.0,   // Main
+    6    => 0.001, // Bild
+    8    => 0.001, // Mediawiki
+    10   => 0.001, // Vorlage
+    12   => 2.0,   // Hilfe
+    14   => 2.0, // Kategorie
+    102  => 0.001, // Attribut
+    106  => 0.001, // Formular
+    108  => 0.001, // Konzept
+    3300 => 1.5,    // Molekül
+    3302 => 1.5,    // Reaction
+];

@@ -82,9 +82,13 @@ class HtmlTableEditor
         if (count($rows) === 0) {
             return;
         }
-        array_shift($rows); // ignore header
         $numberOfColumns = count($xpath->query('//tr[1]/th'));
+        $firstRow = true;
         foreach ($rows as $tr) {
+            if ($firstRow) {
+                $firstRow = false; // ignore table header row
+                continue;
+            }
             $columns = $xpath->query('td', $tr);
             $numberOfColumns = count($columns);
             $i = 0;

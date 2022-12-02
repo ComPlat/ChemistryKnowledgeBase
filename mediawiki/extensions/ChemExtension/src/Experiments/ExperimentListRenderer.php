@@ -37,9 +37,9 @@ class ExperimentListRenderer extends ExperimentRenderer {
     /**
      * @throws Exception
      */
-    protected function getTabContent($experimentName, $tabIndex): string
+    protected function getTabContent($tabIndex): string
     {
-
+        $experimentName = $this->context['name'];
         $pageTitle = $this->context['page'];
         $experimentPage = $pageTitle->getText() . '/' . $experimentName;
         $experimentPageTitle = Title::newFromText($experimentPage);
