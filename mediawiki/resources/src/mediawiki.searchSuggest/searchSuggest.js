@@ -235,7 +235,7 @@
 
 					api = api || new mw.Api();
 
-					$.data( node, 'request', mw.searchSuggest.request( api, query, response, maxRows ) );
+					$.data( node, 'request', mw.searchSuggest.request( api, query, response, maxRows, mw.config.get('fsgNamespacesForSearchField') || undefined ) );
 				},
 				cancel: function () {
 					var node = this[ 0 ],

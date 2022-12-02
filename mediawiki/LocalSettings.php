@@ -419,3 +419,5 @@ $fsgNamespaceBoosts = [
     3300 => 1.5,    // Molekül
     3302 => 1.5,    // Reaction
 ];
+
+$fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
