@@ -2,6 +2,10 @@
 
 namespace DIQA\ChemExtension\Experiments;
 
+use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
+use DIQA\ChemExtension\Utils\WikiTools;
+use Title;
+
 class ExperimentType
 {
 
@@ -58,7 +62,22 @@ class ExperimentType
      */
     public function getProperties()
     {
-        return $this->properties;
+        $templateText = WikiTools::getText(Title::newFromText($this->rowTemplate, NS_TEMPLATE));
+        $parser = new TemplateParser($templateText);
+        $ast = $parser->parse();
+        $node = $ast->getFirstNodeOfType('#subobject');
+        if (is_null($node)) {
+            return [];
+        }
+        preg_match_all('/\|([A-z0-9_\s]+)=\{\{\{([A-z0-9_\s]+)\|?\}\}\}/', $node->getTextContent(), $matches);
+
+        $propertyMapping = [];
+        for($i = 0; $i < count($matches[0]); $i++) {
+            $propertyMapping[$matches[1][$i]] = $matches[2][$i];
+        }
+        $propertyMapping['BasePageName'] = 'BasePageName';
+
+        return $propertyMapping;
     }
 
     /**

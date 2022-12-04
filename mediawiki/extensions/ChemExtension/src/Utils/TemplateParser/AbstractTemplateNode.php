@@ -1,7 +1,9 @@
 <?php
+
 namespace DIQA\ChemExtension\Utils\TemplateParser;
 
-abstract class AbstractTemplateNode {
+abstract class AbstractTemplateNode
+{
 
     protected $childNodes;
 
@@ -13,16 +15,19 @@ abstract class AbstractTemplateNode {
         $this->childNodes = [];
     }
 
-    public function addNode($node) {
+    public function addNode($node)
+    {
         $this->childNodes[] = $node;
     }
 
-    public function getFirstChild() {
+    public function getFirstChild()
+    {
         return reset($this->childNodes);
     }
 
-    public function removeNodes(callable $condition) {
-        for($i = 0; $i < count($this->childNodes); $i++) {
+    public function removeNodes(callable $condition)
+    {
+        for ($i = 0; $i < count($this->childNodes); $i++) {
             $this->childNodes[$i]->removeNodes($condition);
             if ($condition($this->childNodes[$i])) {
                 unset($this->childNodes[$i]);
@@ -31,10 +36,24 @@ abstract class AbstractTemplateNode {
         $this->childNodes = array_values($this->childNodes);
     }
 
-    public function visitNodes(callable $action) {
-        for($i = 0; $i < count($this->childNodes); $i++) {
+    public function visitNodes(callable $action)
+    {
+        for ($i = 0; $i < count($this->childNodes); $i++) {
             $this->childNodes[$i]->visitNodes($action);
             $action($this->childNodes[$i]);
         }
+    }
+
+    public function getFirstNodeOfType($templateName)
+    {
+        for ($i = 0; $i < count($this->childNodes); $i++) {
+            if ($this->childNodes[$i] instanceof TemplateNode)
+                if ($this->childNodes[$i]->getTemplateName() === $templateName) {
+                    return $this->childNodes[$i];
+                } else {
+                    return $this->childNodes[$i]->getFirstNodeOfType($templateName);
+                }
+        }
+        return null;
     }
 }

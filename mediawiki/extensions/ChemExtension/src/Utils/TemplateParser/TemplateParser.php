@@ -56,7 +56,8 @@ class TemplateParser
      */
     private function isTemplateStart($i): bool
     {
-        return $this->text[$i] == '{' && $this->text[$i + 1] == '{';
+        return $this->text[$i] == '{' && $this->text[$i + 1] == '{'
+            && $this->text[$i + 2] !== '{' && $this->text[$i - 1] !== '{';
     }
 
     /**
@@ -65,11 +66,12 @@ class TemplateParser
      */
     private function isTemplateEnd($i): bool
     {
-        return $this->text[$i] == '}' && $this->text[$i + 1] == '}';
+        return $this->text[$i] == '}' && $this->text[$i + 1] == '}'
+            && $this->text[$i + 2] !== '}' && $this->text[$i -1] !== '}';
     }
 
     private function getTemplateName($i) {
-        $res = preg_match("/\w+/", substr($this->text, $i), $matches);
+        $res = preg_match("/[A-z_#]+/", substr($this->text, $i), $matches);
         return $res !== 0 && $res !== false ? $matches[0] : '';
     }
 

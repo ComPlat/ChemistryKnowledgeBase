@@ -85,7 +85,8 @@ class ExperimentLink
 
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($parameters['form']);
         $printRequests = [];
-        foreach($experimentType->getProperties() as $p => $templateParam) {
+        $properties = $experimentType->getProperties();
+        foreach($properties as $p => $templateParam) {
             $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery);
@@ -95,7 +96,7 @@ class ExperimentLink
             $column = reset($row);
             $oneRow = [];
             while($column !== false) {
-                $templateParam = $experimentType->getProperties()[$column->getPrintRequest()->getLabel()] ?? null;
+                $templateParam = $properties[$column->getPrintRequest()->getLabel()] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $column = next($row);
                 if (is_null($templateParam)) continue;
