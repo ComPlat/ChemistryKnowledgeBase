@@ -14,21 +14,19 @@
                 let inchikey = rerenderNote.data.inchikey;
                 let formula = rerenderNote.data.formula;
 
-                let tools = new OO.VisualEditorTools();
                 let ajax = new window.ChemExtension.AjaxEndpoints();
-                let ketcher = tools.getKetcher();
 
-                ketcher.generateImage(formula, {outputFormat: 'svg'}).then(function (svgBlob) {
-                    svgBlob.text().then(function (imgData) {
-
-                        ajax.uploadImage(inchikey, btoa(imgData)).done(function () {
-                            totalRendered++;
-                            if (totalRendered === notes.length) {
-                                location.reload();
-                            }
-                        });
-
+                ajax.renderImage(formula).then((response) => {
+                    let imgData = response.svg;
+                    ajax.uploadImage(inchikey, btoa(imgData)).done(function () {
+                        totalRendered++;
+                        if (totalRendered === notes.length) {
+                            location.reload();
+                        }
                     });
+                }).catch((response) => {
+                    console.log("Error on rendering image: " + response.responseText);
+                    mw.notify('Problem occured on rendering image: ' + response.responseText, {type: 'error'});
                 });
 
             });
