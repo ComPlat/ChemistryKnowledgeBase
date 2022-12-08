@@ -1,5 +1,5 @@
 ; Purpose
-* [[Property description::Contains the quantum yield (CH4) of an experiment or molecular process.@en]]
+* [[Property description::Contains the quantum yield for the product CH4 of an experiment or molecular process. The qantum yield of a photochemical process is defined as the amount of reactant consumed or product formed over the number of photons absorbed.@en]]
 
 ; Datatype
 * [[Has type::Number]].

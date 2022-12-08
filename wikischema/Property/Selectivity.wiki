@@ -1,5 +1,5 @@
 ; Purpose
-* [[Property description::Contains selectivity of an experiment or molecular process.@en]]
+* [[Property description::Contains selectivity of an experiment or molecular process. Selectivity refers to the ratio of products obtained from given reactants. This meaning is of importance for catalysts, which can have a wide range of selectivities. Selectivity is quantitatively expressed by ratios of rate constants for the alternative reactions, or by the decadic logarithms of such ratios. https://doi.org/10.1351/goldbook.S05563.  @en]]
 
 ; Datatype
 * [[Has type::Number]].

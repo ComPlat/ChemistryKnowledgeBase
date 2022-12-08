@@ -1,5 +1,5 @@
 ; Purpose
-* [[Property description::Contains the quantum yield (MeOH) of an experiment or molecular process.@en]]
+* [[Property description::Contains the turnover frequency of the product MeOH of an experiment or molecular process. The turnover frequency (TOF) is defined as turnover number per unit time. https://doi.org/10.1021/acscatal.6b00183.@en]]
 
 ; Datatype
 * [[Has type::Number]].

@@ -8,4 +8,4 @@
 * Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
 
 ; Label
-* [[Has preferred property label::t [h]@en]]
+* [[Has preferred property label::t &#91;h&#93;.@en]]

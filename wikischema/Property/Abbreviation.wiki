@@ -1,5 +1,5 @@
 ;Purpose
-* Contains the abbreviation of the molecule
+* Contains the abbreviation of the molecule. Abbreviations are either already well established ones like EtOH or will be added according to our wiki-internal system.
 
 ;Datatype
 * [[Has type::String]]

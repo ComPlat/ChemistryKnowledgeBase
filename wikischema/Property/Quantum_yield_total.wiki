@@ -1,5 +1,5 @@
 ; Purpose
-* [[Property description::Contains the quantum yield (total) of an experiment or molecular process.@en]]
+* [[Property description::Contains the quantum yield (total) of an experiment or molecular process. The qantum yield of a photochemical process is defined as the amount of reactant consumed or product formed over the number of photons absorbed. The total quantum yield is the sum over the quantum yields of every product in the experiment. https://doi.org/10.1351/goldbook.Q04991.@en]]
 
 ; Datatype
 * [[Has type::Number]].
