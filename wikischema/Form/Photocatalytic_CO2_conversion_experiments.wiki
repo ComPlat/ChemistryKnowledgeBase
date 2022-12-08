@@ -15,37 +15,37 @@ Experiments:
 | (should be automatically set)
 |-
 ! cat:
-| {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup}}}
+| {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
 |-
 ! cat conc [mM]:
 | {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! PS:
-| {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup}}}
+| {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup_ps}}}
 |-
 ! PS conc [mM]:
 | {{{field|PS conc|input type=regexp|property=Photosensitizer concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! e-D:
-| {{{field|e-D|input type=combobox|property=Electron donor|values from url=molecule_lookup}}}
+| {{{field|e-D|input type=combobox|property=Electron donor|values from url=molecule_lookup_ed}}}
 |-
 ! e-D conc [M]:
 | {{{field|e-D conc|input type=regexp|property=Electron donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! H-D:
-| {{{field|H-D|input type=combobox|property=Hydrogen donor|values from url=molecule_lookup}}}
+| {{{field|H-D|input type=combobox|property=Hydrogen donor|values from url=molecule_lookup_hd}}}
 |-
 ! H-D conc [M]:
 | {{{field|H-D conc|input type=regexp|property=Hydrogen donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! solvent A:
-| {{{field|solvent A|input type=combobox|property=Solvent|values from url=molecule_lookup}}}
+| {{{field|solvent A|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 |-
 ! solvent B:
-| {{{field|solvent B|input type=combobox|property=Solvent|values from url=molecule_lookup}}}
+| {{{field|solvent B|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 |-
 ! solvent C:
-| {{{field|solvent C|input type=combobox|property=Solvent|values from url=molecule_lookup}}}
+| {{{field|solvent C|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 |-
 ! solvent-ratio [SolvA/SolvB]:
 | {{{field|solvent-ratio|property=Solvent ratio|input type=string}}}
