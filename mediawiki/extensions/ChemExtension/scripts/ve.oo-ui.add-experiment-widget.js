@@ -87,9 +87,7 @@
             let titles = restrictValue.trim() !== '' ? restrictValue.split(",") : [];
             this.restrictInput = new mw.widgets.TitlesMultiselectWidget({selected: titles});
             this.restrictInput.on('change', (item) => {
-                if (this.parent.getActions().list[0]) {
-                    this.parent.getActions().list[0].setDisabled(item == '');
-                }
+                this.parent.getActions().list[0].setDisabled(false);
             });
 
             let queryLabel = new OO.ui.LabelWidget({
@@ -100,9 +98,7 @@
             queryValue = decodeURIComponent(queryValue);
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
             this.query.on('change', (item) => {
-                if (this.parent.getActions().list[0]) {
-                    this.parent.getActions().list[0].setDisabled(item == '');
-                }
+                this.parent.getActions().list[0].setDisabled(false);
             });
 
             items.push(queryLabel);
