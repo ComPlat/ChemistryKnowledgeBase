@@ -157,6 +157,10 @@ class HtmlTableEditor
         $link = reset($links);
         foreach ($list as $tr) {
             if ($i === 0) {
+                $td = $this->doc->createElement('th');
+                $text = $this->doc->createTextNode("Publication page");
+                $td->appendChild($text);
+                $tr->appendChild($td);
                 $i++;
                 continue;
             }
