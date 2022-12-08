@@ -29,7 +29,7 @@ class MoleculeRendererClientImpl {
             $headerFields[] = "Content-Type: application/json";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $ch = curl_init();
-            $url = $this->moleculeRendererServiceUrl . "/render";
+            $url = $this->moleculeRendererServiceUrl;
             $payload = new \stdClass();
             $payload->molfile = $molfile;
             $this->logger->log("Request payload: " . json_encode($payload));

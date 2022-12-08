@@ -55,7 +55,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.KetcherDialog.prototype.updateMolecule = function (node, formulaV3000) {
 
         this.ajax.getInchiKey(node, formulaV3000).then((response) => {
-            this.updatePage(node, formulaV3000, response.InChI, response.InChIKey);
+            this.updatePageWithExternalRendering(node, formulaV3000, response.InChI, response.InChIKey);
             this.openRGroupsDialogIfNoRGroupsDefined(node, formulaV3000);
         }).catch((response) => {
             mw.notify('Problem occured on getting inchikey: ' + response.responseText, {type: 'error'});
@@ -102,7 +102,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     }
 
-    // FIXME: unused atm
+
     ve.ui.KetcherDialog.prototype.updatePageWithExternalRendering = function (node, formula, inchi, inchikey) {
 
         let ketcher = this.tools.getKetcher();
