@@ -1,0 +1,18 @@
+This page helps you navigate through the topics that are included in the wiki and describes how to add new topics.
+
+== Topic pages ==
+
+Topic pages are used as summary over the information provided in the wiki. While the data is entered through [[Help:Create new paper]], the topic pages provide a summary and comparison of all important investigations conducted under this theme.
+Editing the summary investigation tables on topic pages requires knowledge of the Semantic MediaWiki query syntax.
+
+The topic tree is visible on the main page of the wiki. The subtopics can be shown by clicking the triangle on the left side of the topic name.
+By default, only the first layer of subtopics is shown and all subsequent layers are collapsed.
+
+=== Topics in the wiki ===
+
+The areas of interest in chemistry that are decribed within the wiki are curated by the team behind the project. They inital topics are selected according to relevance to modern chemistry and availability and interest of domain experts.
+The first hot topic to be introduced is the photocatalytic conversion of CO2 gas in homogeneous reactions. Adjacent to this topic there is the electrochemical utilization of CO2 and heterogeneous and homogeneous variants of both. They belong to the general topic CO2 conversion.
+
+=== Addition of topic pages ===
+
+New topics to be added into the wiki must either fit under an existing topic or be discussed with the team. The topic name can be chosen freely in the first line on the Create a new Topic page. The second line requires the selection of a fitting superior topic. All already available topics can be selected.
