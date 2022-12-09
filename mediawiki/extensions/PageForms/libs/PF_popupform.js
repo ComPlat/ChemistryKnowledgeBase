@@ -102,10 +102,11 @@ window.ext.popupform = ( function () {
 		var scrollLeft = scrollTgt.scrollLeft();
 
 		let popupWidth = jQuery(window).width() - 200;
+		let popupHeight = jQuery(window).height() - 100;
 		content
 		.css('position', 'absolute')
 		.width(popupWidth+"px" )
-		.height( 'auto' );
+		.height( popupHeight+"px");
 
 		// set max dimensions for layout of content
 		iframe

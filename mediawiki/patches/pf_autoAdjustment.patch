@@ -27,11 +27,13 @@ diff --git a/mediawiki/extensions/PageForms/libs/PF_popupform.js b/mediawiki/ext
  		var scrollLeft = scrollTgt.scrollLeft();
  
 +		let popupWidth = jQuery(window).width() - 200;
++       let popupHeight = jQuery(window).height() - 100;
  		content
  		.css('position', 'absolute')
 -		.width( 'auto' )
 +		.width(popupWidth+"px" )
- 		.height( 'auto' );
+- 		.height( 'auto' );
++       .height( popupHeight+"px");
  
  		// set max dimensions for layout of content
 @@ -239,6 +240,7 @@
