@@ -66,6 +66,15 @@ class Setup {
             'styles' => [ 'scripts/libs/jquery.qtip.css' ],
             'dependencies' => [],
         );
+
+        $wgResourceModules['ext.diqa.chemextension.pf'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [],
+            'styles' => [ 'skins/pf.css' ],
+            'dependencies' => [],
+        );
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
@@ -74,6 +83,10 @@ class Setup {
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
+
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
+            $out->addModules('ext.diqa.chemextension.pf');
+        }
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

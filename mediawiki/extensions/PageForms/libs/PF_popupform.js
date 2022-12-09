@@ -76,11 +76,11 @@ window.ext.popupform = ( function () {
 		var oldContW = content.width();
 		var oldContH = content.height();
 
-		var availW = Math.floor( jQuery(window).width() * 0.8 );
-		var availH = Math.floor( jQuery(window).height() * 0.8 );
+		var availW = Math.floor( jQuery(window).width() * 0.95 );
+		var availH = Math.floor( jQuery(window).height() * 0.95 );
 
-		var emergencyW = Math.floor( jQuery(window).width() * 0.85 );
-		var emergencyH = Math.floor( jQuery(window).height() * 0.85 );
+		var emergencyW = Math.floor( jQuery(window).width() * 0.99);
+		var emergencyH = Math.floor( jQuery(window).height() * 0.99 );
 
 		// FIXME: these might not be the true values
 		var scrollW = 25;
@@ -101,9 +101,10 @@ window.ext.popupform = ( function () {
 		var scrollTop = scrollTgt.scrollTop();
 		var scrollLeft = scrollTgt.scrollLeft();
 
+		let popupWidth = jQuery(window).width() - 200;
 		content
 		.css('position', 'absolute')
-		.width( 'auto' )
+		.width(popupWidth+"px" )
 		.height( 'auto' );
 
 		// set max dimensions for layout of content
@@ -239,6 +240,7 @@ window.ext.popupform = ( function () {
 				});
 
 			} else {
+				console.log('Container width: '+frameW);
 				container
 				.width( frameW )
 				.height ( frameH );
@@ -723,19 +725,19 @@ window.ext.popupform = ( function () {
 					if ( innerJ(this).queue().length > 0 ) {
 						foundQueue = true;
 						innerJ(this).queue( function(){
-							setTimeout( adjustFrameSize, 100, true );
+							//setTimeout( adjustFrameSize, 100, true );
 							innerJ(this).dequeue();
 						});
 					}
 				});
 				if ( ! foundQueue ) {
-					adjustFrameSize( true );
+					//adjustFrameSize( true );
 				}
 				return true;
 			});
 		} else {
 			content.bind( 'click', function() {
-					adjustFrameSize( true );
+					//adjustFrameSize( true );
 			});
 		}
 
