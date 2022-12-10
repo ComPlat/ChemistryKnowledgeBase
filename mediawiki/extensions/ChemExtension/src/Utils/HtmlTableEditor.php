@@ -15,7 +15,7 @@ class HtmlTableEditor
     public function __construct($tableHtml, $form)
     {
         $this->doc = new DOMDocument();
-        $this->doc->loadHTML($tableHtml);
+        $this->doc->loadHTML(mb_convert_encoding($tableHtml, 'HTML-ENTITIES', 'UTF-8'));
         $this->form = $form;
     }
 
