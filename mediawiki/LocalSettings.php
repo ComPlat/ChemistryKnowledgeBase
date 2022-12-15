@@ -366,8 +366,8 @@ $sfgRenameEditTabs = true;
 $wgPageFormsAutocompletionURLs['molecule_lookup'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>';
 $wgPageFormsAutocompletionURLs['molecule_lookup_cat'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Catalyst';
 $wgPageFormsAutocompletionURLs['molecule_lookup_ps'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Photosensitizer';
-$wgPageFormsAutocompletionURLs['molecule_lookup_ed'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Electron donor';
-$wgPageFormsAutocompletionURLs['molecule_lookup_hd'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Hydrogen donor';
+$wgPageFormsAutocompletionURLs['molecule_lookup_ed'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Electron_donor';
+$wgPageFormsAutocompletionURLs['molecule_lookup_hd'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Hydrogen_donor';
 $wgPageFormsAutocompletionURLs['molecule_lookup_solvent'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Solvent';
 
 #################################################################
