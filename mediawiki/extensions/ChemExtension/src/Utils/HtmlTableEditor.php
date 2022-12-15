@@ -50,15 +50,23 @@ class HtmlTableEditor
         $list = $xpath->query('//td');
         $toRemove = [];
         foreach ($list as $td) {
-            $tab = $td->getAttribute('resource');
-            if ($tab != '' && $tab != $tabName) {
+            $resourceAttribute = $td->getAttribute('resource');
+            if ($resourceAttribute == '') {
+                continue;
+            }
+            $tabs = explode(",", $resourceAttribute);
+            if (!in_array($tabName, $tabs)) {
                 $toRemove[] = $td;
             }
         }
         $list = $xpath->query('//th');
         foreach ($list as $th) {
-            $tab = $th->getAttribute('resource');
-            if ($tab != '' && $tab != $tabName) {
+            $resourceAttribute = $th->getAttribute('resource');
+            if ($resourceAttribute == '') {
+                continue;
+            }
+            $tabs = explode(",", $resourceAttribute);
+            if (!in_array($tabName, $tabs)) {
                 $toRemove[] = $th;
             }
         }
@@ -123,7 +131,12 @@ class HtmlTableEditor
         $list = $xpath->query('//td[@resource]');
         $allTabs = [];
         foreach ($list as $td) {
-            $allTabs[] = $td->getAttribute('resource');
+            $resourceAttribute = $td->getAttribute('resource');
+            if ($resourceAttribute == '') {
+                continue;
+            }
+            $tabs = explode(",", $resourceAttribute);
+            $allTabs = array_merge($allTabs, $tabs);
         }
         $uniqueTabs = array_unique($allTabs);
         $uniqueTabs[] = ''; // this is the default tab that contains everything
