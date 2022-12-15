@@ -692,7 +692,7 @@ window.ext.popupform = ( function () {
 				} else {
 					innerwdw.jQuery(form[0])
 						.bind("submit", function (event) {
-							submitok = (event.result === undefined) ? false : event.result;
+							submitok = innerwdw.validateAll();
 							innersubmitprocessed = true;
 							return false;
 						});
