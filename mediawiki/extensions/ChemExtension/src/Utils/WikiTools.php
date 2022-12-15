@@ -39,9 +39,9 @@ class WikiTools {
     {
         global $wgRequest;
         $titleParam = $wgRequest->getVal('title');
-        $res = preg_match('/v3\/page\/html\/(\w+)/', $titleParam, $matches);
+        $res = preg_match('/v3\/page\/html\/([^\/]+)/', $titleParam, $matches);
         if ($res === 0) {
-            $res = preg_match('/v3\/transform\/wikitext\/to\/html\/(\w+)/', $titleParam, $matches);
+            $res = preg_match('/v3\/transform\/wikitext\/to\/html\/([^\/]+)/', $titleParam, $matches);
             if ($res === 0) {
                 global $wgTitle;
                 return is_null($wgTitle) ? $parser->getTitle() : $wgTitle;
