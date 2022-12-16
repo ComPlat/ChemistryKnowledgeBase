@@ -57,16 +57,16 @@ Experiments:
 | {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! pH:
-| {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14)$/}}}
+| {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14!)$/}}}
 |-
 ! Temperature [°C] (can be range):
 | {{{field|Temperature|input type=Number|property=Temperature}}}
 |-
 ! λexc [nm] (qualifier, range, light type/source):
-| {{{field|λexc|input type=regexp|base type=String|property=Excitation wavelength|message=Input a positive integer|regexp=/^[<>]?[0-9]+$/}}}
+| {{{field|λexc|input type=string|property=Excitation wavelength}}}
 |-
 ! irr time [h]:
-| {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]+$/}}}
+| {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! TON CO:
 | {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}

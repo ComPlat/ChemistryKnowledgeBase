@@ -2,43 +2,45 @@
 This is the Photocatalytic CO2 conversion experiments template.
 </noinclude>
 <includeonly>
-{| class="wikitable"
-! cat
-! cat conc [mM]
-! PS
-! PS conc [mM]
-! e-D
-! e-D conc [M]
-! H-D
-! H-D conc [M]
-! solvent A
-! solvent B
-! solvent C
-! solvent-ratio [SolvA/SolvB]
-! additives, e.g. for buffer
-! additives conc [M]
-! pH
-! Temperature [°C]
-! λexc [nm]
-! irr time [h]
-! TON CO
-! TOF CO
-! Φ CO [%]
-! TON CH4
-! TOF CH4
-! Φ CH4 [%]
-! TON H2
-! TOF H2
-! Φ H2 [%]
-! TON HCOOH
-! TOF HCOOH
-! Φ HCOOH [%]
-! TON MeOH
-! TOF MeOH
-! Φ MeOH [%]
-! selectivity [%] [CO;CH4;H2;HCOOH;MeOH]
-! Φ all [%]
-! include
+<table class="wikitable">
+<tr>
+<th resource="General">cat</th>
+<th resource="General">cat conc [mM]</th>
+<th resource="General">PS</th>
+<th resource="General">PS conc [mM]</th>
+<th resource="General">e-D</th>
+<th resource="General">e-D conc [M]</th>
+<th resource="Additives and solvents">H-D</th>
+<th resource="Additives and solvents">H-D conc [M]</th>
+<th resource="General,Additives and solvents">solvent A</th>
+<th resource="Additives and solvents">solvent B</th>
+<th resource="Additives and solvents">solvent C</th>
+<th resource="Additives and solvents">solv A/B/C</th>
+<th resource="Additives and solvents">additives, e.g. for buffer</th>
+<th resource="Additives and solvents">additives conc [M]</th>
+<th resource="Physical data">pH</th>
+<th resource="Physical data">T [°C]</th>
+<th resource="General,Physical data">λexc [nm]</th>
+<th resource="Physical data">t [h]</th>
+<th resource="General,Products">TON CO</th>
+<th resource="Products">TOF CO</th>
+<th resource="Products">Φ CO [%]</th>
+<th resource="General,Products">TON CH4</th>
+<th resource="Products">TOF CH4</th>
+<th resource="Products">Φ CH4 [%]</th>
+<th resource="General,Products">TON H2</th>
+<th resource="Products">TOF H2</th>
+<th resource="Products">Φ H2 [%]</th>
+<th resource="General,Products">TON HCOOH</th>
+<th resource="Products">TOF HCOOH</th>
+<th resource="Products">Φ HCOOH [%]</th>
+<th resource="General,Products">TON MeOH</th>
+<th resource="Products">TOF MeOH</th>
+<th resource="Products">Φ MeOH [%]</th>
+<th resource="General,Products">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
+<th resource="Products">Φ all [%]</th>
+<th resource="General">include</th>
+</tr>
 {{{experiments|}}}
-|}
+</table>
 [[Category:Photocatalytic CO2 conversion experiments]]

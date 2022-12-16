@@ -2,43 +2,44 @@
 This is the Photocatalytic CO2 conversion template.
 </noinclude>
 <includeonly>
-|-
-| {{{catalyst|}}}
-| {{{cat conc|}}}
-| {{{PS|}}}
-| {{{PS conc|}}}
-| {{{e-D|}}}
-| {{{e-D conc|}}}
-| {{{H-D|}}}
-| {{{H-D conc|}}}
-| {{{solvent A|}}}
-| {{{solvent B|}}}
-| {{{solvent C|}}}
-| {{{solvent-ratio|}}}
-| {{{additives|}}}
-| {{{additives conc|}}}
-| {{{pH|}}}
-| {{{Temperature|}}}
-| {{{λexc|}}}
-| {{{irr time|}}}
-| {{{TON CO|}}}
-| {{{TOF CO|}}}
-| {{{Φ CO|}}}
-| {{{TON CH4|}}}
-| {{{TOF CH4|}}}
-| {{{Φ CH4|}}}
-| {{{TON H2|}}}
-| {{{TOF H2|}}}
-| {{{Φ H2|}}}
-| {{{TON HCOOH|}}}
-| {{{TOF HCOOH|}}}
-| {{{Φ HCOOH|}}}
-| {{{TON MeOH|}}}
-| {{{TOF MeOH|}}}
-| {{{Φ MeOH|}}}
-| {{{selectivity (CO;CH4;H2;HCOOH;MeOH)|}}}
-| {{{Φ all|}}}
-| {{{include|}}}
+<tr>
+<td resource="General">{{DisplayMolecule|{{{catalyst|}}} }}</td>
+<td resource="General">{{{cat conc|}}}</td>
+<td resource="General">{{DisplayMolecule|{{{PS|}}} }}</td>
+<td resource="General">{{{PS conc|}}}</td>
+<td resource="General">{{DisplayMolecule|{{{e-D|}}} }}</td>
+<td resource="General">{{{e-D conc|}}}</td>
+<td resource="Additives and solvents">{{DisplayMolecule|{{{H-D|}}} }}</td>
+<td resource="Additives and solvents">{{{H-D conc|}}}</td>
+<td resource="General,Additives and solvents">{{DisplayMolecule|{{{solvent A|}}} }}</td>
+<td resource="Additives and solvents">{{DisplayMolecule|{{{solvent B|}}} }}</td>
+<td resource="Additives and solvents">{{DisplayMolecule|{{{solvent C|}}} }}</td>
+<td resource="Additives and solvents">{{{solvent-ratio|}}}</td>
+<td resource="Additives and solvents">{{{additives|}}}</td>
+<td resource="Additives and solvents">{{{additives conc|}}}</td>
+<td resource="Physical data">{{{pH|}}}</td>
+<td resource="Physical data">{{{Temperature|}}}</td>
+<td resource="General,Physical data">{{{λexc|}}}</td>
+<td resource="Physical data">{{{irr time|}}}</td>
+<td resource="General,Products">{{{TON CO|}}}</td>
+<td resource="Products">{{{TOF CO|}}}</td>
+<td resource="Products">{{{Φ CO|}}}</td>
+<td resource="General,Products">{{{TON CH4|}}}</td>
+<td resource="Products">{{{TOF CH4|}}}</td>
+<td resource="Products">{{{Φ CH4|}}}</td>
+<td resource="General,Products">{{{TON H2|}}}</td>
+<td resource="Products">{{{TOF H2|}}}</td>
+<td resource="Products">{{{Φ H2|}}}</td>
+<td resource="General,Products">{{{TON HCOOH|}}}</td>
+<td resource="Products">{{{TOF HCOOH|}}}</td>
+<td resource="Products">{{{Φ HCOOH|}}}</td>
+<td resource="General,Products">{{{TON MeOH|}}}</td>
+<td resource="Products">{{{TOF MeOH|}}}</td>
+<td resource="Products">{{{Φ MeOH|}}}</td>
+<td resource="General,Products">{{{selectivity (CO;CH4;H2;HCOOH;MeOH)|}}}</td>
+<td resource="Products">{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }}</td>
+<td resource="General">{{{include|}}}</td>
+</tr>
 {{#subobject:
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}
@@ -79,4 +80,3 @@ This is the Photocatalytic CO2 conversion template.
  |BasePageName={{BASEPAGENAME}}
 }}
 </includeonly>
-

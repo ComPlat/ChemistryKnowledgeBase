@@ -18,6 +18,7 @@ class WikiTools {
     public static function sanitizeHTML($html) {
         if (self::isInVisualEditor()) {
             $html = str_replace(array("<tbody>", "</tbody>"), "", $html);
+            $html = strip_tags($html, '<table><tr><th><td>');
         }
         return str_replace("\n", "", $html);
     }

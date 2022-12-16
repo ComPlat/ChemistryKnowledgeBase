@@ -1,6 +1,5 @@
-
 == Available Topics ==
-<categorytree mode="pages">Topic</categorytree>
+<categorytree mode="pages" depth="3" hideroot="on">Topic</categorytree>
 
 
 
