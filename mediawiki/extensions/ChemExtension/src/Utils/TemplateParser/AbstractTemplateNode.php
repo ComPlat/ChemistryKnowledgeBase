@@ -51,7 +51,10 @@ abstract class AbstractTemplateNode
                 if ($this->childNodes[$i]->getTemplateName() === $templateName) {
                     return $this->childNodes[$i];
                 } else {
-                    return $this->childNodes[$i]->getFirstNodeOfType($templateName);
+                    $ret = $this->childNodes[$i]->getFirstNodeOfType($templateName);
+                    if (!is_null($ret)) {
+                        return $ret;
+                    }
                 }
         }
         return null;
