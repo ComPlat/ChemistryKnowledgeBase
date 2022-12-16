@@ -58,7 +58,11 @@ TEMPLATE;
                 $templateData = $this->context['templateData'];
                 foreach($templateData as $rows) {
                     $basePageTitle = Title::newFromText($rows['BasePageName']);
-                    $links[] = ['url' => $basePageTitle->getFullURL(), 'label' => $basePageTitle->getText()];
+                    if (!is_null($basePageTitle)) {
+                        $links[] = ['url' => $basePageTitle->getFullURL(), 'label' => $basePageTitle->getText()];
+                    } else {
+                        $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];
+                    }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
             }
