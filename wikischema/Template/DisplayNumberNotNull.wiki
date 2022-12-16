@@ -1,0 +1,6 @@
+<noinclude>
+Dislay a number not equal to zero.
+</noinclude>
+<includeonly>
+{{#ifeq: {{{1|}}}|0||{{{1|}}}}}
+</includeonly>

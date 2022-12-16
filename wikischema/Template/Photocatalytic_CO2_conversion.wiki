@@ -36,8 +36,8 @@ This is the Photocatalytic CO2 conversion template.
 <td resource="General,Products">{{{TON MeOH|}}}</td>
 <td resource="Products">{{{TOF MeOH|}}}</td>
 <td resource="Products">{{{Φ MeOH|}}}</td>
-<td resource="General,Products">{{{selectivity (CO;CH4;H2;HCOOH;MeOH)|}}}</td>
-<td resource="Products">{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }}</td>
+<td resource="General,Products">{{Selectivity|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
+<td resource="Products">{{DisplayNumberNotNull|{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }} }}</td>
 <td resource="General">{{{include|}}}</td>
 </tr>
 {{#subobject:
