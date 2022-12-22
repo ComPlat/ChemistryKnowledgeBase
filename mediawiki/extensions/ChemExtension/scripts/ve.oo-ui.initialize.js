@@ -4,7 +4,7 @@
     function initialize() {
         let experimentList = $('.experimentlist');
         if (experimentList.length === 0) return;
-        OO.ui.infuse(experimentList);
+        experimentList.each( (i,e) => OO.ui.infuse(e));
     }
 
     $(function() {
