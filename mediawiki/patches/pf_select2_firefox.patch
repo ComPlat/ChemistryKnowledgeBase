@@ -1,0 +1,28 @@
+Index: mediawiki/extensions/PageForms/libs/select2.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/select2.js b/mediawiki/extensions/PageForms/libs/select2.js
+--- a/mediawiki/extensions/PageForms/libs/select2.js	(revision 1ac166284f71eda15d0a2b645497b8bebfc3969e)
++++ b/mediawiki/extensions/PageForms/libs/select2.js	(date 1671711730967)
+@@ -4493,8 +4493,8 @@
+     };
+ 
+     var viewport = {
+-      top: $window.scrollTop(),
+-      bottom: $window.scrollTop() + $window.height()
++      top: window.document.body.scrollTop,
++      bottom: window.document.body.scrollTop + $window.height()
+     };
+ 
+     var enoughRoomAbove = viewport.top < (offset.top - dropdown.height);
+@@ -4527,6 +4527,8 @@
+     }
+ 
+     css.top -= parentOffset.top;
++    var ffOffset = $window.scrollTop() === 0 ? window.document.body.scrollTop : 0;
++    css.top += ffOffset;
+     css.left -= parentOffset.left;
+ 
+     if (!isCurrentlyAbove && !isCurrentlyBelow) {
