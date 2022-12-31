@@ -9,14 +9,14 @@ class MolfileProcessor
     const MOLFILE_BEGIN_BOND_BLOCK_LINE = 'M  V30 BEGIN BOND';
 
     /**
-     * clear bond lines with bond type 8(any), 9(coord), or 10(hydrogen)
+     * clear bond lines with bond type 8(any), 9(coord) and change 10(hydrogen) to 1
      * @param $mol
      * @return mixed|string
      */
     public static function cleanUp($mol)
     {
         $linesToRemove = [];
-        $lines = explode("\n", $mol);
+        $lines = preg_split('/\r\n|\n/', $mol);
         for($i = 0; $i < count($lines); $i++) {
             if (strpos($lines[$i], self::MOLFILE_COUNT_LINE_START) === 0) {
                 $countIndex = $i;
@@ -26,16 +26,25 @@ class MolfileProcessor
             }
         }
 
+        $modified = false;
         for($i = $bondIndex+1; $i < count($lines); $i++) {
-            if (preg_match('/^M\s+V30\s+\d+\s+(8|9|10)/', $lines[$i]) === 1) {
+            // remove bond type 8 and 9
+            if (preg_match('/^M\s+V30\s+\d+\s+(8|9)/', $lines[$i]) === 1) {
                 $linesToRemove[] = $i;
+            }
+
+            // change bond type 10 to 1
+            if (preg_match('/^M\s+V30\s+\d+\s+(10)/', $lines[$i]) === 1) {
+                $lines[$i] = preg_replace('/^(M\s+V30\s+\d+)\s+10\s+(.*)/', '$1 1 $2', $lines[$i]);
+                $modified = true;
             }
         }
 
-        if (count($linesToRemove) === 0) {
+        if (count($linesToRemove) === 0 && !$modified) {
             return $mol;
         }
 
+        // adjust COUNT line
         preg_match('/^(M\s+V30\s+COUNTS\s+\d+\s+)(\d+)(\s+.)*/', $lines[$countIndex], $matches);
         $newCount = ((int)$matches[2]) - count($linesToRemove);
         $lines[$countIndex] = preg_replace('/^(M\s+V30\s+COUNTS\s+\d+)\s+(\d+)\s+(.)*/', '$1 '.$newCount.' $3', $lines[$countIndex]);
