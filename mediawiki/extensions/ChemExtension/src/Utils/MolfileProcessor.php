@@ -9,7 +9,7 @@ class MolfileProcessor
     const MOLFILE_BEGIN_BOND_BLOCK_LINE = 'M  V30 BEGIN BOND';
 
     /**
-     * clear bond lines with bond type 8(any), 9(coord) and change 10(hydrogen) to 1
+     * clear bond lines with bond 9(coord), 10(hydrogen) and change type 8(any) to 1
      * @param $mol
      * @return mixed|string
      */
@@ -28,14 +28,14 @@ class MolfileProcessor
 
         $modified = false;
         for($i = $bondIndex+1; $i < count($lines); $i++) {
-            // remove bond type 8 and 9
-            if (preg_match('/^M\s+V30\s+\d+\s+(8|9)/', $lines[$i]) === 1) {
+            // remove bond type 9 and 10
+            if (preg_match('/^M\s+V30\s+\d+\s+(9|10)/', $lines[$i]) === 1) {
                 $linesToRemove[] = $i;
             }
 
-            // change bond type 10 to 1
-            if (preg_match('/^M\s+V30\s+\d+\s+(10)/', $lines[$i]) === 1) {
-                $lines[$i] = preg_replace('/^(M\s+V30\s+\d+)\s+10\s+(.*)/', '$1 1 $2', $lines[$i]);
+            // change bond type 8 to 1
+            if (preg_match('/^M\s+V30\s+\d+\s+(8)/', $lines[$i]) === 1) {
+                $lines[$i] = preg_replace('/^(M\s+V30\s+\d+)\s+8\s+(.*)/', '$1 1 $2', $lines[$i]);
                 $modified = true;
             }
         }
