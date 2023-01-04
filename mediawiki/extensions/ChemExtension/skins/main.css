@@ -144,3 +144,8 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 .chemext-help-link {
     margin-top: 10px;
 }
+
+.toggle-box {
+    cursor: pointer;
+    text-decoration: underline;
+}

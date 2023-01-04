@@ -1,28 +1,55 @@
 <noinclude>Template for Molecule</noinclude>
 ‎<includeonly>
-* Smiles: {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
 
-{{#if: {{{cid|}}} |* PubChem: [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|}}
-{{#if: {{{cas|}}} |* CAS: {{#set: CAS={{{cas}}} }} {{{cas}}}|}}
-{{#if: {{{iupacName|}}} |* IUPAC-Name: {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|}}
-{{#if: {{{abbrev|}}} |* Abbreviation: {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
-{{#if: {{{trivialname|}}} |* Trivialname: {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
-{{#if: {{{molecularMass|}}} |* Molecular mass: {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
-{{#if: {{{molecularFormula|}}} |* Molecular formula: {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|}}
-{{#if: {{{logP|}}} |* LogP: {{#set: LogP={{{logP}}} }} {{{logP}}}|}}
-{{#if: {{{hasVendors|}}} |* Has vendors: {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|}}
-{{#if: {{{synonyms|}}} |* Synonyms: {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |}}
+{| class="float-right infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;"
+|-
+!colspan="2" style="font-size:120%; text-align:center; " | Properties
+|-
+| CID || {{#if: {{{cid|}}} | [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|}}
+|-
+| CAS || {{#if: {{{cas|}}} | {{#set: CAS={{{cas}}} }} {{{cas}}}|}}
+|-
+| IUPAC-Name || {{#if: {{{iupacName|}}} | {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|}}
+|-
+| Abbreviation || {{#if: {{{abbrev|}}} | {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
+|-
+| Trivialname|| {{#if: {{{trivialname|}}} | {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
+|-
+| Molecular mass ||  {{#if: {{{molecularMass|}}} | {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
+|-
+| Molecular formula ||{{#if: {{{molecularFormula|}}} | {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|}}
+|-
+| LogP || {{#if: {{{logP|}}} | {{#set: LogP={{{logP}}} }} {{{logP}}}|}}
+|-
+| Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|}}
+|-
+| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |}}
+|-
+|}
 
-{{#if: {{{inchi|}}} |* InChI: {{#set: InChI={{{inchi}}} }} {{{inchi}}}|}}
-{{#if: {{{inchikey|}}} |* InChI-Key: {{#set: InChIKey={{{inchikey}}} }} {{{inchikey}}}|}}
-{{#if: {{{abbrev|}}} |* Abbreviation: {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
-{{#if: {{{trivialname|}}} |* Trivialname: {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
-{{#if: {{{parent|}}} |* Belongs to molecule collection: [[{{{parent}}}]] | }}
 {{#tag:chemform|
 {{{molOrRxn}}}
 |smiles={{{smiles|}}}
 |inchikey={{{inchikey|}}}
 }}
 {{#arraymap:{{#extractElements:|formula={{{smiles|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
+
+<div>
+<span class="toggle-box" resource="chemdata">Click here to show SMILES and InChi.</span>
+{| id="chemdata" class="infobox wikitable" style="display:none;"
+|-
+| InChI || {{#if: {{{inchi|}}} | {{#set: InChI={{{inchi}}} }} {{{inchi}}}|}}
+|-
+| InChI-Key || {{#if: {{{inchikey|}}} | {{#set: InChIKey={{{inchikey}}} }} {{{inchikey}}}|}}
+|-
+| SMILES || {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
+|-
+
+|}
+</div>
+
+{{#if: {{{parent|}}} | Belongs to molecule collection: [[{{{parent}}}]] | }}
+
+
 [[Category:Molecule]]
 ‎<includeonly>
