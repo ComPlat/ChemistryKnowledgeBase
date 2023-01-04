@@ -9,7 +9,7 @@ use OutputPage;
 
 class DOIRenderer {
 
-    public function render($doiData) {
+    public function renderReference($doiData) {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
@@ -41,7 +41,44 @@ class DOIRenderer {
         return str_replace("\n", "", $html);
     }
 
-    public function renderReference($doiData) {
+    public function renderDOIInfoTemplate($data): string
+    {
+        if (is_null($data)) return '';
+
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $blade = new Blade ( $views, $cache );
+
+        $wikitext = "{{DoiInfo\n";
+
+        $parameters = $blade->view ()->make ( "doi-infobox",
+            [
+                'doi' => $data->DOI,
+                'type' => DOITools::getTypeLabel($data->type),
+                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
+                'authors' => DOITools::formatAuthors($data->author),
+                'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
+                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),
+                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'}),
+                'publisher' => $data->publisher ?? '-',
+                'licenses' => DOITools::formatLicenses($data->license),
+                'issue' => $data->issue ?? '-',
+                'year' => $doiData->issued->{"date-parts"}[0][0] ?? "-",
+                'journal' =>  $doiData->{"container-title"} ?? "-",
+                'volume' => $data->volume ?? '-',
+                'pages' => $data->page ?? '-',
+                'subjects' => $data->subject ?? '-',
+                'funders' => count($data->funder) === 0 ? "-" : array_map(function ($e) {
+                    return $e->name;
+                }, $data->funder),
+            ]
+        )->render ();
+        $wikitext .= trim($parameters);
+        $wikitext .= "\n}}\n";
+        return $wikitext;
+    }
+
+    public function renderReferenceInText($doiData) {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );
@@ -62,7 +99,7 @@ class DOIRenderer {
         $out->addHTML("<h2>Literature</h2>");
         $doiRenderer = new self();
         foreach (RenderLiterature::$LITERATURE_REFS as $l) {
-            $output = $doiRenderer->render($l['data']);
+            $output = $doiRenderer->renderReference($l['data']);
             $out->addHTML($output);
         }
     }

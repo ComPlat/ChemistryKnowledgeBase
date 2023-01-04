@@ -61,7 +61,7 @@
             <ul>
             @foreach($licenses as $l)
                 <li>
-                    <a href="{{$a['URL']}}">{{$a['URL']}}</a> from {{$a['date']}}
+                    <a href="{{$l['URL']}}">{{$l['URL']}}</a> from {{$l['date']}}
                 </li>
             @endforeach
             </ul>

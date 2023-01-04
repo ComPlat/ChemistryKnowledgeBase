@@ -113,18 +113,17 @@ class CreateNewPaper extends PageCreationSpecial
             ]
         );
 
-
         $doiInput = new FieldLayout(
             new TextInputWidget(['id' => 'chemext-doi', 'name' => 'doi', 'placeholder' => $this->msg('doi-hint')]),
             [
                 'align' => 'top',
-                'label' => $this->msg('doi-label')->text()
+                'label' => $this->msg('doi-label')->text() . " " . $this->msg('optional')->text()
             ]
         );
 
         $helpSection = $this->getHelpSection('Help:Create_new_paper');
 
-        return new FormLayout(['items' => [$paperTitle, $topicCategory, $createPaperButton, $helpSection],
+        return new FormLayout(['items' => [$paperTitle, $topicCategory, $doiInput, $createPaperButton, $helpSection],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',
@@ -136,15 +135,16 @@ class CreateNewPaper extends PageCreationSpecial
         $doi = $wgRequest->getText('doi', '');
         $paperTitle = $wgRequest->getText('paper-title', '');
         $topicSuper = $wgRequest->getText('topic-super', 'Topic');
+        $doiData = null;
         if ($doi != '') {
-            $data = RenderLiterature::resolveDOI($doi);
-            $paperTitleObj = Title::newFromText(ArrayTools::getFirstIfArray($data->title));
-        } else if ($paperTitle != '') {
+            $doiData = RenderLiterature::resolveDOI($doi);
+        }
+        if ($paperTitle != '') {
             $paperTitleObj = Title::newFromText($paperTitle);
         } else {
             throw new Exception("Paper title must be set.");
         }
-        $this->createPageAndRedirect($paperTitleObj, $topicSuper);
+        $this->createPageAndRedirect($paperTitleObj, $topicSuper, $doiData);
     }
 
 

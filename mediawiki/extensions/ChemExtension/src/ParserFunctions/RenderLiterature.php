@@ -47,7 +47,7 @@ class RenderLiterature
         if (WikiTools::isInVisualEditor()) {
             $output = "<span>[" . DOITools::generateReferenceIndex($doiData) . "]</span>";
         } else {
-            $output = $doiRenderer->renderReference($doiData);
+            $output = $doiRenderer->renderReferenceInText($doiData);
 
         }
         return [$output, 'noparse' => true, 'isHTML' => true];

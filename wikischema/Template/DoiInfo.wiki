@@ -1,0 +1,38 @@
+<noinclude>Template for DOI Infobox</noinclude>
+<includeonly>
+{| class="float-right infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;"
+|-
+!colspan="2" style="font-size:120%; text-align:center; " | About
+|-
+| DOI || [https://dx.doi.org/{{{doi|}}} {{{doi|}}}]
+|-
+| Title || {{{title|}}}
+|-
+| Type || {{{type|}}}
+|-
+| Subjects || {{{subjects|}}}
+|-
+| Authors || {{{authors|}}}
+|-
+| Year || {{{year|}}}
+|-
+| Journal || {{{journal|}}}
+|-
+| Volume || {{{volume|}}}
+|-
+| Pages || {{{pages|}}}
+|-
+| Issue || {{{issue|}}}
+|-
+| Submitted || {{{submittedAt|}}}
+|-
+| Published online || {{{publishedOnlineAt|}}}
+|-
+| Publisher || {{{publisher|}}}
+|-
+| Licenses || {{{licenses|}}}
+|-
+| Funders || {{{funders|}}}
+|-
+|}
+</includeonly>

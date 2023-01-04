@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension\Specials;
 
+use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\WikiTools;
 use OOUI\Tag;
 use Philo\Blade\Blade;
@@ -34,16 +36,23 @@ class PageCreationSpecial extends SpecialPage
         return $helpSection;
     }
 
-    protected function createPageAndRedirect(Title $topicTitle, string $superTopics)
+    protected function createPageAndRedirect(Title $topicTitle, string $superTopics, $doiData)
     {
-
-            global $wgScriptPath;
-            $superTopicsAsWikiText = array_map(function($topic) { return "[[Category:$topic]]";}, explode("\n", $superTopics));
-            $pageContent = implode("\n", $superTopicsAsWikiText);
-
             if ($topicTitle->exists()) {
                 throw new Exception("Page creation failed because page already exists");
             }
+
+            global $wgScriptPath;
+            $superTopicsAsWikiText = '';
+            if (trim($superTopics) !== '') {
+                $superTopicsAsWikiText = array_map(function ($topic) {
+                    return "[[Category:$topic]]";
+                }, explode("\n", $superTopics));
+            }
+            $doiRenderer = new DOIRenderer();
+            $pageContent = $doiRenderer->renderDOIInfoTemplate($doiData);
+            $pageContent .= implode("\n", $superTopicsAsWikiText);
+
             $successful = WikiTools::doEditContent($topicTitle, $pageContent, "auto-generated", EDIT_NEW);
             if ($successful) {
                 header("Location: $wgScriptPath/index.php/{$topicTitle->getPrefixedDBKey()}?veaction=edit");
@@ -63,4 +72,5 @@ class PageCreationSpecial extends SpecialPage
     protected function showErrorHint($message) {
         return $this->blade->view()->make("error", ['message' => $message])->render();
     }
+
 }

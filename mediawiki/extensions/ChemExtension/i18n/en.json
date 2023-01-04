@@ -12,6 +12,7 @@
 	"submit-doi": "Resolve DOI",
 	"doi-label": "Digital object identifier (DOI)",
 	"doi-hint": "Enter DOI...",
+	"optional": "(optional)",
 	"enter-doi": "Digital object identifier (DOI) is required",
 	"createnewpaper": "Create new paper",
 	"createnewtopic": "Create new topic",
