@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
+use DIQA\ChemExtension\Pages\ChemForm;
+use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 
@@ -54,13 +56,32 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             list($header, $body) = self::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
                 $this->logger->log("Result: " . print_r($body, true));
-                return json_decode($body);
+                $result = json_decode($body);
+                $concreteMolecules = [];
+                foreach($result as $m) {
+                    $concreteMolecules[] = [
+                        'chemForm' => ChemForm::fromMolOrRxn($m->mdl, $m->smiles, $m->inchi, $m->inchikey),
+                        'rGroups' => self::makeRGroupsLowercase($m)
+                    ];
+                }
+                return $concreteMolecules;
             }
             throw new Exception("Error on upload. HTTP status: $httpcode. Message: $body");
 
         } finally {
             curl_close($ch);
         }
+    }
+
+    private static function makeRGroupsLowercase($molecule) {
+        $result = [];
+        $arr = ArrayTools::propertiesToArray($molecule);
+        foreach($arr as $key => $value) {
+            if (preg_match("/^r\d+/i", $key)) {
+                $result[strtolower($key)] = $value;
+            }
+        }
+        return $result;
     }
 
     private static function makeRGroupsUppercase($rGroups): array

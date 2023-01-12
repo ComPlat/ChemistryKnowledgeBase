@@ -1,6 +1,8 @@
 <?php
 namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
+use DIQA\ChemExtension\Pages\ChemForm;
+
 class MoleculeRGroupServiceClientMock implements MoleculeRGroupServiceClient {
 
     function buildMolecules(string $molfile, array $rGroups)
@@ -45,7 +47,10 @@ MOLFILE;
             $molecule->inchikey = md5(uniqid());
             $molecule->inchi = md5(uniqid());
 
-            $o[] = $molecule;
+            $o[] = [
+                'chemForm' => ChemForm::fromMolOrRxn($molecule->mdl, $molecule->smiles, $molecule->inchi, $molecule->inchikey),
+                'rGroups' =>  ['r1' => 'H']
+            ];
         }
         return $o;
     }

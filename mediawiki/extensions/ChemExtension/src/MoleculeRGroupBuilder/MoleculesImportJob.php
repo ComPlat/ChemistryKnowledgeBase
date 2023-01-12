@@ -2,9 +2,9 @@
 
 namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
+use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Pages\InchIGenerator;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
@@ -15,74 +15,101 @@ use MediaWiki\MediaWikiServices;
 class MoleculesImportJob extends Job
 {
 
-    private $client;
-    private $publicationPage;
-    private $inchiGenerator;
+    private $logger;
+    private $rGroupClient;
+    private $publicationPageTitle;
+    private $pageCreator;
+    private $moleculeRendererClient;
+    private $chemFormRepo;
 
     public function __construct($title, $params)
     {
         parent::__construct('MoleculesImportJob', $title, $params);
 
         global $wgCEUseMoleculeRGroupsClientMock;
-        $this->client = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()
+        $this->rGroupClient = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()
             : new MoleculeRGroupServiceClientImpl();
-        $this->publicationPage = $title;
-        $this->inchiGenerator = new InchIGenerator();
+        $this->publicationPageTitle = $title;
+        $this->pageCreator = new MoleculePageCreator();
+        $this->moleculeRendererClient = new MoleculeRendererClientImpl();
+        $this->logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $this->chemFormRepo = new ChemFormRepository($dbr);
     }
 
     public function run()
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
-        );
-
-        $chemFormRepo = new ChemFormRepository($dbr);
-        $chemFormRepo->deleteAllConcreteMolecule($this->publicationPage);
-        $pageCreator = new MoleculePageCreator();
+        $this->chemFormRepo->deleteAllConcreteMolecule($this->publicationPageTitle);
 
         foreach ($this->params['moleculeCollections'] as $collection) {
-
-            $logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
-            $rGroupsTransposed = ArrayTools::transpose($collection['chemForm']->getRGroups());
-
-            try {
-
-                $molecules = $this->client->buildMolecules($collection['chemForm']->getMolOrRxn(), $rGroupsTransposed);
-
-                foreach ($molecules as $molecule) {
-
-                    $chemForm = ChemForm::fromMolOrRxn($molecule->mdl, $molecule->smiles, $molecule->inchi, $molecule->inchikey);
-                    if (is_null($molecule->inchikey) || $molecule->inchikey === '') {
-                        $logger->error("Can not create molecule page. Inchikey is empty. {$chemForm->__toString()}");
-                        continue;
-                    }
-
-                    $result = $pageCreator->createNewMoleculePage($chemForm, $collection['title']);
-                    $logger->log("Created molecule/reaction page: {$result['title']->getPrefixedText()}, "
-                        . "chemform: {$chemForm->__toString()}, moleculeKey: {$chemForm->getMoleculeKey()}");
-
-                    $moleculeCollectionId = $chemFormRepo->getChemFormId($collection['chemForm']->getMoleculeKey());
-
-                    $chemFormRepo->addConcreteMolecule($this->publicationPage, $collection['title'],
-                        $result['title'], $moleculeCollectionId, $this->makeRGroupsLowercase($molecule));
-
-                }
-            } catch (Exception $e) {
-                $logger->error($e->getMessage());
-            }
-
+            $this->importMoleculeCollection($collection);
         }
     }
 
-    private function makeRGroupsLowercase($molecule) {
-        $result = [];
-        $arr = ArrayTools::propertiesToArray($molecule);
-        foreach($arr as $key => $value) {
-            if (preg_match("/^r\d+/i", $key)) {
-                $result[strtolower($key)] = $value;
+    /**
+     * Imports a molecule collection
+     *
+     * @param $collection array of ['chemform' => .., 'title' => ... ]
+     */
+    private function importMoleculeCollection(array $collection): void
+    {
+        try {
+
+            $moleculeCollection = $collection['chemForm'];
+            $rGroupsTransposed = ArrayTools::transpose($moleculeCollection->getRGroups());
+            $concreteMoleculeResults = $this->rGroupClient->buildMolecules($moleculeCollection->getMolOrRxn(), $rGroupsTransposed);
+            foreach ($concreteMoleculeResults as $m) {
+
+                $concreteMolecule = $m['chemForm'];
+                $rGroups = $m['rGroups'];
+                if (is_null($concreteMolecule->getInchi()) || $concreteMolecule->getInchiKey() === '') {
+                    $this->logger->error("Can not create molecule page. Inchikey is empty. {$concreteMolecule->__toString()}");
+                    continue;
+                }
+                $this->createMoleculePage($concreteMolecule, $collection, $rGroups);
+                $this->renderMolecule($concreteMolecule);
             }
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
         }
-        return $result;
+    }
+
+    /**
+     * Creates a page for the concrete molecule and add it to repo
+     *
+     * @param ChemForm $concreteMolecule
+     * @param array $collection Molecule collection ['chemform' => .., 'title' => ... ]
+     * @param array $rGroups RGroups [ 'r1' => ..., 'r2' => ..., ... ]
+     * @throws Exception
+     */
+    private function createMoleculePage(ChemForm $concreteMolecule, array $collection, array $rGroups): void
+    {
+        $moleculeCollection = $collection['chemForm'];
+        $moleculeCollectionTitle = $collection['title'];
+        $result = $this->pageCreator->createNewMoleculePage($concreteMolecule, $moleculeCollectionTitle);
+        $concreteMoleculeTitle = $result['title'];
+        $this->logger->log("Created molecule/reaction page: {$concreteMoleculeTitle->getPrefixedText()}, "
+            . "chemform: {$concreteMolecule->__toString()}, moleculeKey: {$concreteMolecule->getMoleculeKey()}");
+
+        $moleculeCollectionId = $this->chemFormRepo->getChemFormId($moleculeCollection->getMoleculeKey());
+        $this->chemFormRepo->addConcreteMolecule($this->publicationPageTitle, $moleculeCollectionTitle,
+            $concreteMoleculeTitle, $moleculeCollectionId, $rGroups);
+    }
+
+    /**
+     * Renders the molecule server-side and stores the image in DB. Fails silently, just log the error.
+     *
+     * @param ChemForm $concreteMolecule
+     */
+    private function renderMolecule(ChemForm $concreteMolecule): void
+    {
+        try {
+            $renderedMolecule = $this->moleculeRendererClient->render($concreteMolecule->getMolOrRxn());
+            $this->chemFormRepo->addChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
+            $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
+        }
     }
 
 }
