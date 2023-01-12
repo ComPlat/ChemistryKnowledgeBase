@@ -1,1 +1,7 @@
 [[Category:Photocatalytic CO2 conversion]]
+
+TON CO >5{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E5%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+
+TON HCOOH{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3E1%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+
+Cat conc 0.025, TON H2 <10{{#experimentlink:%5B%5BCatalyst%20concentration%3A%3A0.025%5D%5D%0A%5B%5BTurnover%20number%20H2%3A%3A%3C10%5D%5D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}Solvent A not NMP{{#experimentlink:%7B%7B%23ask%3A%0A%20%5B%5BSolvent%20A%3A%3A!Molecule%3A100532%5D%5D%0A%20%7C%3F%20Turnover%20number%20CH4%0A%20%7Csort%3DTurnover%20number%20CH4%0A%20%7Corder%3Ddesc%0A%7D%7D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}

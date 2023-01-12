@@ -2203,5 +2203,4 @@ M  END
 |
 |}
 __FORCETOC__
-
-[[Category:Photocatalytic CO2 conversion]]
+[[Category:Homogeneous photocatalytic CO2 conversion]]
