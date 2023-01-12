@@ -6,23 +6,7 @@
 |-
 | DOI || [https://dx.doi.org/{{{doi|}}} {{{doi|}}}]
 |-
-| Title || {{{title|}}}
-|-
-| Type || {{{type|}}}
-|-
-| Subjects || {{{subjects|}}}
-|-
 | Authors || {{{authors|}}}
-|-
-| Year || {{{year|}}}
-|-
-| Journal || {{{journal|}}}
-|-
-| Volume || {{{volume|}}}
-|-
-| Pages || {{{pages|}}}
-|-
-| Issue || {{{issue|}}}
 |-
 | Submitted || {{{submittedAt|}}}
 |-
@@ -32,7 +16,7 @@
 |-
 | Licenses || {{{licenses|}}}
 |-
-| Funders || {{{funders|}}}
+| Subjects || {{{subjects|}}}
 |-
 |}
 </includeonly>

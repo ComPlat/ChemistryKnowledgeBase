@@ -1,0 +1,6 @@
+/* CSS placed here will be applied to all skins */
+
+/* put a paper symbol in front of publication pages in the topic tree on the main page */
+div.CategoryTreeItem > a:not([href^="/main/mediawiki/Category:"])::before {
+  content: "\1F5CE\00A0";
+}
