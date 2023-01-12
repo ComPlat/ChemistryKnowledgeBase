@@ -421,3 +421,4 @@ $fsgNamespaceBoosts = [
 ];
 
 $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
+$wgExternalLinkTarget = '_blank';

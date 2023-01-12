@@ -18,5 +18,7 @@
 |-
 | Subjects || {{{subjects|}}}
 |-
+!colspan="2" style="font-size:80%; text-align:center; " | [{{fullurl:Special:Literature|doi={{{doi|}}} }} Show details]
+|-
 |}
 </includeonly>
