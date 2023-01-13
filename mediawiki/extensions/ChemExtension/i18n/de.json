@@ -16,5 +16,6 @@
 	"enter-doi": "Digital object identifier (DOI) wird benötigt",
 	"createnewpaper": "Neues Paper erstellen",
 	"createnewtopic": "Neues Topic erstellen",
-	"chemext-create-paper": "Paper erstellen"
+	"chemext-create-paper": "Paper erstellen",
+	"checkservices": "Prüfe services für Chemwiki"
 }

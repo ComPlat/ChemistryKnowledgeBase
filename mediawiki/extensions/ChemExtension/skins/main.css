@@ -149,3 +149,17 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     cursor: pointer;
     text-decoration: underline;
 }
+
+.check-service-state {
+    text-align: right;
+}
+
+.check-service-state-ok {
+    color: green;
+    font-weight: bold;
+}
+
+.check-service-state-not-ok {
+    color: red;
+    font-weight: bold;
+}

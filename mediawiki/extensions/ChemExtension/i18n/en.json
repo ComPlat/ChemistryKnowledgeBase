@@ -23,6 +23,6 @@
 	"topic-super-label": "Topic category (or empty)",
 	"chemext-create-topic": "Create new topic",
 	"paper-hint": "Enter new paper title",
-	"paper-label": "Paper title"
-
+	"paper-label": "Paper title",
+	"checkservices": "Check services for ChemWiki"
 }
