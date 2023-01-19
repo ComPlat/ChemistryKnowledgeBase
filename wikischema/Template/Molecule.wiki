@@ -15,7 +15,7 @@
 |-
 | Trivialname|| {{#if: {{{trivialname|}}} | {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
 |-
-| Molecular mass ||  {{#if: {{{molecularMass|}}} | {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
+| Exact mass ||  {{#if: {{{molecularMass|}}} | {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
 |-
 | Molecular formula ||{{#if: {{{molecularFormula|}}} | {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|}}
 |-
