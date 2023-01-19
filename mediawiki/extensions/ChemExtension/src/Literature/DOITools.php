@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Literature;
 
 use DateTime;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use Title;
 
 class DOITools {
 
@@ -34,6 +35,19 @@ class DOITools {
             $year = substr($year, -2);
         }
         return $titleAbbrev . $year;
+    }
+
+    /**
+     * Generates a literature reference link name.
+     *
+     * @param $doiData
+     * @return string
+     */
+    public static function generateReferenceIndexFromTitle(Title $title): string
+    {
+        preg_match_all('/([A-zöäüÖÄÜ])\w*/', strip_tags(ArrayTools::getFirstIfArray($title->getText())), $matches);
+        $capitals = implode('', $matches[1]);
+        return substr($capitals, 0, 3);
     }
 
     /**

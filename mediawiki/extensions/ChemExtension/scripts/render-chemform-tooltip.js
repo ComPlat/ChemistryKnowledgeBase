@@ -22,6 +22,31 @@
             }
         });
 
+        $('a[title]').each(function(i, e) {
+            let el = $(e);
+            let title = el.attr('title');
+            let parts = title.split(":");
+            if (parts[0] != 'Molecule') return;
+            el.qtip({
+                content: "<div></div>",
+                style: { classes: 'chemformula-tooltip' },
+                events: {
+
+                    render: function(event, api) {
+                        // Grab the tooltip element from the API
+                        let downloadURL = mw.config.get('wgScriptPath') + "/rest.php/ChemExtension/v1/chemform-by-id?chemFormId="+parts[1]
+                        let tooltip = api.elements.tooltip;
+                        let tools = new OO.VisualEditorTools();
+                        tools.renderFormula(downloadURL, tooltip);
+
+                    }
+                },
+                position: {
+                    at: 'top right'
+                }
+            });
+        });
+
     }
 
     window.ChemExtension.navigate = function(pageDbkey) {

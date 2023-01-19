@@ -143,6 +143,17 @@ class ChemFormRepository
         return null;
     }
 
+    public function getChemFormImageById($chemFormId)
+    {
+        $res = $this->db->select('chem_form', ['img_data'],
+            ['id' => $chemFormId]);
+        if ($res->numRows() > 0) {
+            $row = $res->fetchObject();
+            return $row->img_data;
+        }
+        return null;
+    }
+
     public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, Title $moleculePage, $moleculeCollectionId, $rGroups)
     {
         $this->db->insert('molecule_collection',

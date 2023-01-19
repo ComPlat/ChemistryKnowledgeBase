@@ -64,6 +64,11 @@
             "class": "DIQA\\ChemExtension\\Endpoints\\GetChemFormImage"
         },
         {
+            "path": "/ChemExtension/v1/chemform-by-id",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetChemFormImageById"
+        },
+        {
             "path": "/ChemExtension/v1/chemform-id",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetChemFormId"
