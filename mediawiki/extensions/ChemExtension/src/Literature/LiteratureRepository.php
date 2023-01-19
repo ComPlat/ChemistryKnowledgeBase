@@ -42,6 +42,12 @@ class LiteratureRepository {
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $id = $row->id;
+            $this->db->update('literature',
+                [
+                    'data' => $data,
+                ], [
+                    'doi' => $doi
+                ]);
         } else {
             $this->db->insert('literature',
                 [
@@ -54,13 +60,17 @@ class LiteratureRepository {
         return $id;
     }
 
+    public function addLiteraturePlaceholder($doi): int {
+        return $this->addLiterature($doi, '__placeholder__');
+    }
+
     public function getLiterature($doi)
     {
         $res = $this->db->select('literature', ['doi', 'data'],
             ['doi' => $doi ]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
-            return ['doi' => $row->doi, 'data' => json_decode($row->data)];
+            return ['doi' => $row->doi, 'data' => $row->data === '__placeholder__' ? $row->data : json_decode($row->data)];
         }
         return null;
     }

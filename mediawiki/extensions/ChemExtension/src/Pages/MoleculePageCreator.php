@@ -2,13 +2,9 @@
 
 namespace DIQA\ChemExtension\Pages;
 
-use DIQA\ChemExtension\PubChem\PubChemRepository;
-use DIQA\ChemExtension\PubChem\PubChemService;
-use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
-use DIQA\ChemExtension\Utils\MolfileProcessor;
-use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use Title;
 
@@ -35,184 +31,16 @@ class MoleculePageCreator
         $key = $chemForm->getMoleculeKey();
         $id = $chemFormRepository->addChemForm($key);
 
-        $title = self::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
+        $title = MoleculePageCreationJob::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 
-        $pageContent = $this->getPageContent($chemForm, $parent);
-        if ($title->exists()) {
-            $templateComparer = new MoleculePageComparer(WikiTools::getText($title), $pageContent);
-            $pageContent = $templateComparer->getUpdatedContent();
-        }
-
-        $successful = WikiTools::doEditContent($title, $pageContent, "auto-generated",
-            $title->exists() ? EDIT_UPDATE : EDIT_NEW);
-        if (!$successful) {
-            throw new Exception("Could not create/update molecule/reaction page");
-        }
-        if (count($chemForm->getRGroups()) > 0) {
-            $this->logger->log("Created/updated molecule collection page: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
-        } else {
-            $this->logger->log("Created/updated molecule/reaction page with RGroups: {$title->getPrefixedText()}, smiles: {$chemForm->getSmiles()}");
-        }
+        $jobParams = [];
+        $jobParams['chemForm'] = $chemForm;
+        $jobParams['parent'] = $parent;
+        $job = new MoleculePageCreationJob($title, $jobParams);
+        JobQueueGroup::singleton()->push($job);
 
         return [ 'title' => $title, 'chemformId' => $id ];
     }
 
-    /**
-     * @param ChemForm $chemForm
-     * @return string
-     */
-    private function getPageContent(ChemForm $chemForm, ?Title $parent = null): string
-    {
-        $pageContent = $this->getTemplate($chemForm, $parent);
-        if ($chemForm->hasRGroupDefinitions()) {
-            $pageContent .= "\n\n==R-Groups==";
-            $pageContent .= "\n" . $this->getRGroupTable($chemForm);
-        }
-        return $pageContent;
-    }
-
-    /**
-     * @param ChemForm $chemForm
-     * @return string
-     */
-    private function getTemplate(ChemForm $chemForm, ?Title $parent = null): string
-    {
-        if ($chemForm->isReaction()) {
-            $template = "ChemicalReaction";
-        } else if ($chemForm->hasRGroupDefinitions()) {
-            $template = "MoleculeCollection";
-        } else {
-            $template = "Molecule";
-        }
-
-        $pubChemTemplateData = $this->getSanitizedPubChemData($chemForm);
-        $formulaTemplateData = $this->getFormulaTemplateData($chemForm, $parent);
-
-        return $this->serializeTemplate($template, array_merge($pubChemTemplateData, $formulaTemplateData));
-    }
-
-    private function getRGroupTable(ChemForm $chemForm): string
-    {
-        if (count($chemForm->getRGroups()) === 0) {
-            return '';
-        }
-        return "\n{{#showMoleculeCollection: }}";
-    }
-
-    private function getRawPubChemData($inchiKey): ?array
-    {
-        try {
-            if (is_null($inchiKey)) return null;
-            $service = new PubChemService();
-            $result = $service->getPubChem($inchiKey);
-            $record = $result['record'];
-            $synonyms = $result['synonyms'];
-            $categories = $result['categories'];
-            $synonymsLower = array_map(function ($e) {
-                return strtolower($e);
-            }, $synonyms->getSynonyms());
-
-            return [
-                'cid' => $record->getCID(),
-                'iupacName' => strtolower($record->getIUPACName()),
-                'molecularMass' => $record->getMolecularMass(),
-                'molecularFormula' => $record->getMolecularFormula(),
-                'logP' => $record->getLogP(),
-                'synonyms' => array_slice($synonymsLower, 0, min(10, count($synonymsLower))),
-                'cas' => $synonyms->getCAS(),
-                'hasVendors' => $categories->hasVendors(),
-
-            ];
-
-        } catch (Exception $e) {
-            $this->logger->error($e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * @param int $id
-     * @param ChemForm $chemForm
-     * @return Title|null
-     */
-    public static function getPageTitleToCreate(int $id, $formula): ?Title
-    {
-        if (MolfileProcessor::isReactionFormula($formula)) {
-            $title = Title::newFromText("Reaction:$id");
-        } else {
-            $title = Title::newFromText("Molecule:$id");
-        }
-        return $title;
-    }
-
-    /**
-     * @param ChemForm $chemForm
-     * @return string
-     */
-    private function getSanitizedPubChemData(ChemForm $chemForm): array
-    {
-        $pubChemData = $this->getRawPubChemData($chemForm->getInchiKey());
-        if (is_null($pubChemData)) {
-            $pubChemData = [];
-            $pubChemData['trivialname'] = '';
-            $pubChemData['abbrev'] = '';
-            $pubChemData['molecularFormula'] = '';
-            $pubChemData['synonyms'] = '';
-            $pubChemData['hasVendors'] = '';
-            return $pubChemData;
-        }
-
-        // sanitize and format data
-        $firstSynonym = reset($pubChemData['synonyms']);
-        $firstSynonym = $firstSynonym === false ? '' : self::sanitize($firstSynonym);
-        $pubChemData['trivialname'] = $firstSynonym;
-        $pubChemData['abbrev'] = '';
-        $pubChemData['molecularFormula'] = HtmlTools::formatSumFormula($pubChemData['molecularFormula']);
-        $pubChemData['synonyms'] = implode(',', array_map(function ($e) {
-            return self::sanitize($e);
-        }, $pubChemData['synonyms']));
-        $pubChemData['hasVendors'] = $pubChemData['hasVendors'] ? 'true' : 'false';
-
-        return $pubChemData;
-    }
-
-    private static function sanitize($s)
-    {
-        return str_replace([',', '[', ']'], '', $s);
-    }
-
-    /**
-     * @param ChemForm $chemForm
-     * @param Title|null $parent
-     * @return string
-     */
-    private function getFormulaTemplateData(ChemForm $chemForm, ?Title $parent): array
-    {
-
-
-        $formulaTemplateData = [];
-        $formulaTemplateData['moleculeKey'] = $chemForm->getMoleculeKey();
-        $formulaTemplateData['molOrRxn'] = $chemForm->getMolOrRxn();
-        $formulaTemplateData['smiles'] = $chemForm->getSmiles();
-        $formulaTemplateData['inchi'] = $chemForm->getInchi();
-        $formulaTemplateData['inchikey'] = $chemForm->getMoleculeKey();
-        $formulaTemplateData['width'] = $chemForm->getWidth();
-        $formulaTemplateData['height'] = $chemForm->getMoleculeKey();
-        $formulaTemplateData['float'] = $chemForm->getFloat();
-        $parentArticle = !is_null($parent) ? $parent->getPrefixedText() : '';
-        $formulaTemplateData['parent'] = $parentArticle;
-
-        return $formulaTemplateData;
-    }
-
-    private function serializeTemplate(string $template, array $data): string
-    {
-        $text = "{{".$template;
-        foreach($data as $key => $value) {
-            $text .= "\n|$key=$value";
-        }
-        $text .= "\n}}";
-        return $text;
-    }
 
 }

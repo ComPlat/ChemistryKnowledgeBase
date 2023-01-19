@@ -23,5 +23,5 @@
     @if ($volume == '' && $pages != '')
         <span class="chem-extension-literature-small">Pages {{$pages}}.</span>
     @endif
-    <span>DOI: <a href="https://dx.doi.org/{{$doi}}" target="_blank">{{$doi}}</a></span>
+    <span>DOI2: <a href="https://dx.doi.org/{{$doi}}" target="_blank">{{$doi}}</a></span>
 </div>

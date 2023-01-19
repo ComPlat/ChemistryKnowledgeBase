@@ -3,7 +3,9 @@
 namespace DIQA\ChemExtension\Literature;
 
 use Exception;
+use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
+use Title;
 
 class DOIResolver
 {
@@ -43,6 +45,23 @@ class DOIResolver
 
         return $result;
 
+    }
+
+    public function resolveAsync($doi, Title $wikiPage) {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
+            DB_MASTER
+        );
+        $repo = new LiteratureRepository($dbr);
+        $data = $repo->getLiterature($doi);
+        if (!is_null($data) && $data['data'] !== '__placeholder__') {
+            return;
+        }
+        $repo->addLiteraturePlaceholder($doi);
+
+        $jobParams = [];
+        $jobParams['doi'] = $doi;
+        $job = new LiteratureResolverJob($wikiPage, $jobParams);
+        JobQueueGroup::singleton()->push($job);
     }
 
     /**

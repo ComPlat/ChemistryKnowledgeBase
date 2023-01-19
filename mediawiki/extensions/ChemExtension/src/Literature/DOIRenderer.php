@@ -10,6 +10,9 @@ use OutputPage;
 class DOIRenderer {
 
     public function renderReference($doiData) {
+        if ($doiData === '__placeholder__') {
+            return '<div class="chem_ext_literature">reference will be resolved</div>';
+        }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ( $views, $cache );

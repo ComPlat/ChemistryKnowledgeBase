@@ -30,7 +30,7 @@ class RenderLiterature
                 throw new Exception("DOI is empty");
             }
 
-            $doiData = self::resolveDOI($doi);
+            $doiData = self::resolveDOI($doi, $parser);
 
         } catch (Exception $e) {
             $output = $e->getMessage();
@@ -58,7 +58,7 @@ class RenderLiterature
      * @return mixed
      * @throws Exception
      */
-    public static function resolveDOI($doi)
+    public static function resolveDOI($doi, Parser $parser)
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new LiteratureRepository($dbr);
@@ -66,7 +66,11 @@ class RenderLiterature
 
         if (is_null($literature)) {
             $doiResolver = new DOIResolver();
-            $doiData = $doiResolver->resolve($doi);
+            if (WikiTools::isInVisualEditor()) {
+                $doiData = $doiResolver->resolve($doi);
+            } else {
+                $doiData = $doiResolver->resolveAsync($doi, $parser->getTitle());
+            }
         } else {
             $doiData = $literature['data'];
         }

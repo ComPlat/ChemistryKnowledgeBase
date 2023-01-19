@@ -2,15 +2,12 @@
 
 namespace DIQA\ChemExtension;
 
-use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteraturePageCreator;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
-use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
-use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use JobQueueGroup;
@@ -37,31 +34,8 @@ class MultiContentSave
         $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
 
         self::parseChemicalFormulas($wikitext, $revisionRecord->getPageAsLinkTarget());
-        self::parseParserFunctions($wikitext);
     }
 
-    private static function parseParserFunctions($wikitext)
-    {
-        $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
-        $parser = new ParserFunctionParser();
-        $creator = new LiteraturePageCreator();
-        $literatureFunctions = $parser->parseFunction('literature', $wikitext);
-
-        foreach ($literatureFunctions as $f) {
-            $doiAsText = $f['doi'] ?? null;
-            $doi = DOITools::parseDOI($doiAsText);
-            if (is_null($doi)) {
-                continue;
-            }
-
-            try {
-                $doiData = RenderLiterature::resolveDOI($doi);
-                $creator->createPage($doi, $doiData);
-            } catch (Exception $e) {
-                $logger->error($e->getMessage());
-            }
-        }
-    }
 
     /**
      * @param $wikitext

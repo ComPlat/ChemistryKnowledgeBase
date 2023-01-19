@@ -96,7 +96,9 @@
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
-        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob"
+        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob",
+        "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
+        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob"
     },
     "manifest_version": 2
 }

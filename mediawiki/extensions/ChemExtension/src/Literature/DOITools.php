@@ -15,6 +15,9 @@ class DOITools {
      */
     public static function generateReferenceIndex($doiData): string
     {
+        if ($doiData === '__placeholder__') {
+            return '__';
+        }
         $year = $doiData->issued->{"date-parts"}[0][0] ?? '';
         if ($year === '') {
             $year = $doiData->{'published-print'}->{'date-parts'}[0] ?? '';
