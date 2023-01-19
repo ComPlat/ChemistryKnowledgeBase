@@ -2,11 +2,13 @@
 
 namespace DIQA\ChemExtension\Experiments;
 
+use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Parser;
 use ParserOptions;
 use Title;
+use function DIQA\ChemExtension\Literature\DOITools;
 
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
@@ -59,7 +61,11 @@ TEMPLATE;
                 foreach($templateData as $rows) {
                     $basePageTitle = Title::newFromText($rows['BasePageName']);
                     if (!is_null($basePageTitle)) {
-                        $links[] = ['url' => $basePageTitle->getFullURL(), 'label' => $basePageTitle->getText()];
+                        $links[] = [
+                            'url' => $basePageTitle->getFullURL(),
+                            'tooltip' => $basePageTitle->getText(),
+                            'label' => "[".DOITools::generateReferenceIndexFromTitle($basePageTitle)."]"
+                        ];
                     } else {
                         $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];
                     }

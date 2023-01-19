@@ -178,7 +178,7 @@ class HtmlTableEditor
                 continue;
             }
             $td = $this->doc->createElement('td');
-            $linkElement = $this->createLink($link['url'], $link['label']);
+            $linkElement = $this->createLink($link['url'], $link['label'], $link['tooltip'] ?? '');
             $td->appendChild($linkElement);
             $tr->appendChild($td);
             $i++;
@@ -211,12 +211,13 @@ class HtmlTableEditor
         return $a;
     }
 
-    private function createLink(string $url, string $label)
+    private function createLink(string $url, string $label, string $tooltip)
     {
         $a = $this->doc->createElement('a');
         $a->setAttribute("class", "experiment-link");
         $a->setAttribute("href", $url);
         $a->setAttribute("target", '_blank');
+        $a->setAttribute("title", $tooltip);
 
         $text = $this->doc->createTextNode($label);
         $a->appendChild($text);
