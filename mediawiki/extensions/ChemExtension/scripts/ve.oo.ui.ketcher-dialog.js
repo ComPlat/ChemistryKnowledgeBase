@@ -133,7 +133,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             moleculeKey = formulaData.inchikey;
         }
 
-        this.ajax.uploadImage(moleculeKey, btoa(imgData)).then(() => {
+        this.ajax.uploadImage(moleculeKey, btoa(unescape(encodeURIComponent(imgData)))).then(() => {
             this.updateModelAfterUpload(node, {
                 formula: formulaData.formula,
                 smiles: formulaData.smiles,
