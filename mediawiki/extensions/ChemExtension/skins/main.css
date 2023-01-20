@@ -163,3 +163,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     color: red;
     font-weight: bold;
 }
+
+.experimentlist-panel {
+    clear: right;
+}

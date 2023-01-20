@@ -79,7 +79,7 @@ abstract class ExperimentRenderer
         $form = new PanelLayout([
             'framed' => true,
             'expanded' => false,
-            'classes' => [],
+            'classes' => ['experimentlist-panel'],
             'content' => $indexLayout
         ]);
 
