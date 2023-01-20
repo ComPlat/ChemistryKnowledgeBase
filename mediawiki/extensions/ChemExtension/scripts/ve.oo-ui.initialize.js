@@ -14,9 +14,17 @@
         });
     }
 
+    function initializeDOIInfoBoxToggle() {
+        $('.infobox th').click((e) => {
+            let table = $(e.target).closest('table');
+            $('tr', table).slice(1).toggle();
+        });
+    }
+
     $(function() {
         initialize();
         initializeToggleBoxes();
+        initializeDOIInfoBoxToggle();
     });
 
     mw.hook( 'postEdit' ).add(function() {

@@ -16,6 +16,7 @@ $magicWords['en'] = [
     'experimentlist' => [ 0, 'experimentlist' ],
     'experimentlink' => [ 0, 'experimentlink' ],
     'extractElements' => [ 0, 'extractElements' ],
+    'doiinfobox' => [ 0, 'doiinfobox' ],
     'counter' => [ 0, 'counter' ],
 
 ];

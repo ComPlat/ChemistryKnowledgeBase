@@ -3,6 +3,7 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
@@ -97,6 +98,7 @@ class Setup {
         $parser->setFunctionHook( 'experimentlist', [ ExperimentList::class, 'renderExperimentList'] );
         $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
+        $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
 
 
     }
