@@ -4,7 +4,9 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\Literature\DOIResolver;
+use DIQA\ChemExtension\Literature\LiteratureRepository;
 use Exception;
+use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
 use ParserOptions;
@@ -24,8 +26,15 @@ class DOIInfoBox
     {
         try {
 
-            $doiResolver = new DOIResolver();
-            $data = $doiResolver->resolve($doi);
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+            $repo = new LiteratureRepository($dbr);
+            $literature = $repo->getLiterature($doi);
+            if (is_null($literature)) {
+                $doiResolver = new DOIResolver();
+                $data = $doiResolver->resolve($doi);
+            } else {
+                $data = $literature['data'];
+            }
             $doiRenderer = new DOIRenderer();
             $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
 
