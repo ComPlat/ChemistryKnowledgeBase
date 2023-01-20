@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\Literature\DOIResolver;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
+use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
@@ -42,7 +43,7 @@ class DOIInfoBox
             $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions());
             $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
-            return [$html, 'noparse' => true, 'isHTML' => true];
+            return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
         } catch(Exception $e) {
             $html = self::getBlade()->view ()->make ( "error", ['message' => $e->getMessage()])->render ();
             return [$html, 'noparse' => true, 'isHTML' => true];

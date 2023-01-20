@@ -49,8 +49,9 @@ class PageCreationSpecial extends SpecialPage
                     return "[[Category:$topic]]";
                 }, explode("\n", $superTopics));
             }
-            $doiRenderer = new DOIRenderer();
-            $pageContent = $doiRenderer->renderDOIInfoTemplate($doiData);
+
+            $doi = $doiData->DOI;
+            $pageContent = "{{#doiinfobox: $doi}}\n";
             $pageContent .= implode("\n", $superTopicsAsWikiText);
 
             $successful = WikiTools::doEditContent($topicTitle, $pageContent, "auto-generated", EDIT_NEW);

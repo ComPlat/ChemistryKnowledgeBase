@@ -29,6 +29,8 @@
 
     mw.hook( 'postEdit' ).add(function() {
         initialize();
+        initializeToggleBoxes();
+        initializeDOIInfoBoxToggle();
     });
 
 }(jQuery));

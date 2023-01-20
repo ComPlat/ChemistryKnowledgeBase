@@ -2,8 +2,7 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
-use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Literature\DOIResolver;
 use Exception;
 use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
@@ -137,7 +136,8 @@ class CreateNewPaper extends PageCreationSpecial
         $topicSuper = $wgRequest->getText('topic-super', 'Topic');
         $doiData = null;
         if ($doi != '') {
-            $doiData = RenderLiterature::resolveDOI($doi);
+            $doiResolver = new DOIResolver();
+            $doiData = $doiResolver->resolve($doi);
         }
         if ($paperTitle != '') {
             $paperTitleObj = Title::newFromText($paperTitle);
