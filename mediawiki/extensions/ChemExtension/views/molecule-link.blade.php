@@ -1,1 +1,1 @@
-<a target="_blank" href="{{$url}}">{{$label}}</a>
+<a target="_blank" href="{{$url}}" title="{{$fullPageTitle}}">{{$label}}</a>

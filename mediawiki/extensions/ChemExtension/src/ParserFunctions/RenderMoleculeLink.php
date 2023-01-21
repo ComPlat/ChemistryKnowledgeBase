@@ -55,7 +55,8 @@ class RenderMoleculeLink
             $html = $blade->view()->make("molecule-link",
                 [
                     'url' => $page->getFullURL(),
-                    'label' => $page->getText()
+                    'label' => $page->getText(),
+                    'fullPageTitle' => $page->getPrefixedText()
                 ]
             )->render();
 
