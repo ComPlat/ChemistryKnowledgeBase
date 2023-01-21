@@ -9,6 +9,7 @@ use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Job;
 use Title;
+use Exception;
 
 class MoleculePageCreationJob extends Job
 {

@@ -5,25 +5,25 @@
 |-
 !colspan="2" style="font-size:120%; text-align:center; " | Properties
 |-
-| CID || {{#if: {{{cid|}}} | [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|}}
+| CID || {{#if: {{{cid|}}} | [https://pubchem.ncbi.nlm.nih.gov/compound/{{{cid}}} {{{cid}}}]|n/a}}
 |-
-| CAS || {{#if: {{{cas|}}} | {{#set: CAS={{{cas}}} }} {{{cas}}}|}}
+| CAS || {{#if: {{{cas|}}} | {{#set: CAS={{{cas}}} }} {{{cas}}}|n/a}}
 |-
-| IUPAC-Name || {{#if: {{{iupacName|}}} | {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|}}
+| IUPAC-Name || {{#if: {{{iupacName|}}} | {{#set: IUPACName={{{iupacName}}} }} {{{iupacName}}}|n/a}}
 |-
-| Abbreviation || {{#if: {{{abbrev|}}} | {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|}}
+| Abbreviation || {{#if: {{{abbrev|}}} | {{#set: Abbreviation={{{abbrev}}} }} {{{abbrev}}}|n/a}}
 |-
-| Trivialname|| {{#if: {{{trivialname|}}} | {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|}}
+| Trivialname|| {{#if: {{{trivialname|}}} | {{#set: Trivialname={{{trivialname}}} }} {{{trivialname}}}|n/a}}
 |-
-| Exact mass ||  {{#if: {{{molecularMass|}}} | {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|}}
+| Exact mass ||  {{#if: {{{molecularMass|}}} | {{#set: MolecularMass={{{molecularMass}}} }} {{{molecularMass}}}|n/a}}
 |-
-| Molecular formula ||{{#if: {{{molecularFormula|}}} | {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|}}
+| Molecular formula ||{{#if: {{{molecularFormula|}}} | {{#set: MolecularFormula={{{molecularFormula}}} }} {{{molecularFormula}}}|n/a}}
 |-
-| LogP || {{#if: {{{logP|}}} | {{#set: LogP={{{logP}}} }} {{{logP}}}|}}
+| LogP || {{#if: {{{logP|}}} | {{#set: LogP={{{logP}}} }} {{{logP}}}|n/a}}
 |-
-| Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|}}
+| Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|n/a}}
 |-
-| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |}}
+| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |n/a}}
 |-
 |}
 
