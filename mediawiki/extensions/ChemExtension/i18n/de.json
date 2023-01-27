@@ -17,5 +17,8 @@
 	"createnewpaper": "Neues Paper erstellen",
 	"createnewtopic": "Neues Topic erstellen",
 	"chemext-create-paper": "Paper erstellen",
-	"checkservices": "Prüfe services für Chemwiki"
+	"checkservices": "Prüfe services für Chemwiki",
+	"page-type-topic": "Topic",
+	"page-type-publication": "Publikationseite",
+	"page-type-investigation": "Experiment"
 }

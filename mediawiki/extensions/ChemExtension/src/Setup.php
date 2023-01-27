@@ -3,6 +3,7 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\Pages\Breadcrumb;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
@@ -50,6 +51,7 @@ class Setup {
                 $baseScript . '/ve.oo-ui.add-experiment-link-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-link-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-link-widget.js',
+                $baseScript . '/breadcrumb.js',
 
             ],
             'styles' => [ 'skins/main.css' ],
@@ -79,6 +81,8 @@ class Setup {
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
+        $b = new Breadcrumb();
+        $out->addSubtitle($b->showPageType($out->getTitle()));
 
         $out->addModules('ext.diqa.chemextension');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
@@ -88,6 +92,9 @@ class Setup {
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
             $out->addModules('ext.diqa.chemextension.pf');
         }
+
+        $b = new Breadcrumb();
+        $out->addHTML($b->getTree($out->getTitle()));
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

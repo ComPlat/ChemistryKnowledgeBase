@@ -167,3 +167,66 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 .experimentlist-panel {
     clear: right;
 }
+
+.ce-side-panel {
+    position: fixed;
+    border: 2px solid;
+    top: 60px;
+    left: 10px;
+    width: 60px;
+    height: 80%;
+    background: whitesmoke;
+    border-radius: 5px;
+}
+
+.ce-side-panel:hover {
+    background: navajowhite;
+}
+
+#ce-side-panel-content {
+    padding: 10px;
+    position: fixed;
+    border: 2px solid;
+    top: 60px;
+    left: 75px;
+    width: 800px;
+    height: 80%;
+    background: whitesmoke;
+    border-radius: 5px;
+}
+
+#ce-side-panel-content li {
+    list-style: none;
+}
+
+div.ce-side-panel-bar {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ce-side-panel div.ce-side-panel-text{
+
+    font-weight: bold;
+    transform: rotate(-90deg);
+}
+
+.ce-page-type {
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
+.ce-page-type-topic {
+    background: cornflowerblue;
+}
+
+.ce-page-type-publication {
+    background: palevioletred;
+}
+
+.ce-page-type-investigation {
+    background: mediumseagreen;
+}
