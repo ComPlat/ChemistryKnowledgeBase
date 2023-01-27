@@ -248,6 +248,7 @@ ResultPrinter::$maxRecursionDepth = 8;
 $smwgEnabledDeferredUpdate = false;
 //$smwgEnableUpdateJobs=false;
 //$smwgEnabledHttpDeferredJobRequest=false;
+$smwgFieldTypeFeatures = SMW_FIELDT_CHAR_NOCASE;
 
 
 #################################################################
