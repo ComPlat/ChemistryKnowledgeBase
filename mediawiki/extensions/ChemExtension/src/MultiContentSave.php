@@ -2,12 +2,12 @@
 
 namespace DIQA\ChemExtension;
 
-use DIQA\ChemExtension\Literature\LiteraturePageCreator;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
+use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use JobQueueGroup;
@@ -33,7 +33,9 @@ class MultiContentSave
         }
         $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
 
+        self::removeAllFromChemFormIndex($revisionRecord->getPageAsLinkTarget());
         self::parseChemicalFormulas($wikitext, $revisionRecord->getPageAsLinkTarget());
+        self::parseMoleculeLinks($wikitext, $revisionRecord->getPageAsLinkTarget());
     }
 
 
@@ -48,7 +50,7 @@ class MultiContentSave
 
         $pageCreator = new MoleculePageCreator();
         $moleculeCollections = [];
-        self::removeAllFromChemFormIndex($pageTitle);
+
         foreach ($chemForms as $chemForm) {
             try {
                 $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
@@ -93,5 +95,28 @@ class MultiContentSave
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPageId($pageTitle);
+    }
+
+    private static function parseMoleculeLinks($wikitext, $pageTitle)
+    {
+        $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
+        $parser = new ParserFunctionParser();
+        $moleculeLinks = $parser->parseFunction('moleculelink', $wikitext);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $repo = new ChemFormRepository($dbr);
+
+        foreach ($moleculeLinks as $f) {
+            $link = $f['link'] ?? null;
+            if (is_null($link)) {
+                continue;
+            }
+
+            try {
+                $chemFormId = $repo->getChemFormId($link);
+                $repo->addChemFormToIndex($pageTitle, $chemFormId);
+            } catch (Exception $e) {
+                $logger->error($e->getMessage());
+            }
+        }
     }
 }
