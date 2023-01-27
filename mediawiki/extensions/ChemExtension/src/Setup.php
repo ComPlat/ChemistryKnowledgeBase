@@ -81,8 +81,9 @@ class Setup {
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
+        global $wgTitle;
         $b = new Breadcrumb();
-        $out->addSubtitle($b->showPageType($out->getTitle()));
+        $out->addSubtitle($b->showPageType($wgTitle));
 
         $out->addModules('ext.diqa.chemextension');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
@@ -94,7 +95,9 @@ class Setup {
         }
 
         $b = new Breadcrumb();
-        $out->addHTML($b->getTree($out->getTitle()));
+        if (!$wgTitle->isSpecial('FormEdit')) {
+            $out->addHTML($b->getTree($wgTitle));
+        }
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

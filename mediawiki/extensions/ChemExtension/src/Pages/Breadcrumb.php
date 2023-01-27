@@ -27,7 +27,9 @@ class Breadcrumb
 
     public function getTree(Title $title)
     {
-
+        if (is_null($title)) {
+            return '';
+        }
         $parentCategoryTree = [];
         $parentCategoryTree[$title->getPrefixedText()] = $title->getParentCategoryTree();
 
@@ -73,7 +75,9 @@ class Breadcrumb
 
     public function showPageType(Title $title): string
     {
-
+        if (is_null($title)) {
+            return '';
+        }
         $basePage = $title;
         if ($title->isSubpage()) {
             $basePage = Title::newFromText($title->getBaseText());
