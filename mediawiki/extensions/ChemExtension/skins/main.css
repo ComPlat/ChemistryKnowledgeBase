@@ -230,3 +230,7 @@ div.ce-side-panel-bar {
 .ce-page-type-investigation {
     background: mediumseagreen;
 }
+
+.CategoryTreeTag {
+    overflow: auto
+}

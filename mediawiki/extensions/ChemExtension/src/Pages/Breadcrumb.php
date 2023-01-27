@@ -2,12 +2,12 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
-use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
-use Title;
 use Parser;
 use ParserOptions;
+use Philo\Blade\Blade;
+use Title;
 
 class Breadcrumb
 {
@@ -25,7 +25,7 @@ class Breadcrumb
     }
 
 
-    public function getTree(Title $title)
+    public function getNavigationLocation(Title $title)
     {
         if (is_null($title)) {
             return '';
@@ -38,14 +38,14 @@ class Breadcrumb
 
         $rootCategory = count($title->getParentCategories()) === 0 ? 'Topic' : $title->getText();
         $parser = new Parser();
-        $parserOutput = $parser->parse('<categorytree mode="pages" depth="3" hideprefix="categories">' . $rootCategory . '</categorytree>'
+        $parserOutput = $parser->parse('<categorytree mode="categories" depth="3" hideprefix="categories">' . $rootCategory . '</categorytree>'
             , $title, new ParserOptions());
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
         $html = $this->blade->view()->make("breadcrumb",
             [
                 'categories' => $this->makeTree($reversedCategories),
-                'categoryTree' => $html
+                'categoryTree' => $html,
             ]
         )->render();
 
@@ -73,7 +73,7 @@ class Breadcrumb
         }
     }
 
-    public function showPageType(Title $title): string
+    public function getPageType(Title $title): string
     {
         if (is_null($title)) {
             return '';
@@ -106,6 +106,25 @@ class Breadcrumb
         return $this->blade->view()->make("page-type",
             [
                 'type' => $type
+            ]
+        )->render();
+    }
+
+    private function getPublicationPages(Title $topic): string
+    {
+        $results = QueryUtils::executeBasicQuery("[[{$topic->getPrefixedText()}]]");
+        $searchResults = [];
+        while ($row = $results->getNext()) {
+            $obj = [];
+            $column = reset($row);
+            $dataItem = $column->getNextDataItem();
+            $obj['title'] = $dataItem->getTitle()->getPrefixedText();
+            $searchResults[] = $obj;
+
+        }
+        return $this->blade->view()->make("publication-list",
+            [
+                'list' => $searchResults
             ]
         )->render();
     }
