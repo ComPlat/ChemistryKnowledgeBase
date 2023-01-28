@@ -38,7 +38,7 @@ class MultiContentSave
         $pageTitle = $revisionRecord->getPageAsLinkTarget();
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle);
-        self::parseMoleculeLinks($wikitext, $pageTitle);
+        self::parseMoleculeLinks($wikitext);
 
         self::addMoleculesToIndex($pageTitle);
     }
@@ -107,7 +107,7 @@ class MultiContentSave
         $repo->deleteAllChemFormIndexByPageId($pageTitle);
     }
 
-    private static function parseMoleculeLinks($wikitext, $pageTitle)
+    private static function parseMoleculeLinks($wikitext)
     {
         $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $parser = new ParserFunctionParser();
@@ -123,7 +123,7 @@ class MultiContentSave
 
             try {
                 $chemFormId = $repo->getChemFormId($link);
-                $repo->addChemFormToIndex($pageTitle, $chemFormId);
+                self::collectMolecules($chemFormId);
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
