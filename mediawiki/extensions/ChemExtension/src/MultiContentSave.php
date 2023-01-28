@@ -64,7 +64,7 @@ class MultiContentSave
         foreach ($chemForms as $chemForm) {
             try {
                 $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
-                self::addToChemFormIndex($pageTitle, $moleculePage['chemformId']);
+                self::collectMolecules($moleculePage['chemformId']);
                 if ($chemForm->hasRGroupDefinitions()) {
                     $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
                 }
