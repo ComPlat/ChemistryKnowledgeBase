@@ -3,12 +3,13 @@
 namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\Literature\DOITools;
+use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Parser;
 use ParserOptions;
 use Title;
-use function DIQA\ChemExtension\Literature\DOITools;
+use Hooks;
 
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
@@ -33,6 +34,10 @@ class ExperimentLinkRenderer extends ExperimentRenderer
             $templateParams = '';
             foreach($rows as $key => $value) {
                 $templateParams .= "\n|$key=$value";
+                $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
+                if (!is_null($chemFormId)) {
+                    Hooks::run('CollectMolecules', [$chemFormId]);
+                }
             }
             $experiments .= "{{".$rowTemplate . $templateParams . "\n}}";
         }

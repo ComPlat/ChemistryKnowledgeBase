@@ -31,8 +31,8 @@
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates",
         "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
-        "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds"
-
+        "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
+        "CollectMolecules": "DIQA\\ChemExtension\\MultiContentSave::collectMolecules"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"

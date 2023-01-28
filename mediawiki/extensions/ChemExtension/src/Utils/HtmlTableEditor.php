@@ -224,6 +224,15 @@ class HtmlTableEditor
         return $a;
     }
 
+    public function iterateCells(callable $action)
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//td');
+        foreach ($list as $td) {
+            $action(trim($td->textContent));
+        }
+    }
+
     /**
      * @return false|string
      */

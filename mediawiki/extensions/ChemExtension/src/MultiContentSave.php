@@ -17,13 +17,15 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\User\UserIdentity;
 use WikiPage;
+use Title;
 
 class MultiContentSave
 {
 
+    private static $MOLECULES_FOUND = [];
 
-    public static function onPageSaveComplete( WikiPage $wikiPage, UserIdentity $user,
-        string $summary, int $flags, RevisionRecord $revisionRecord, EditResult $editResult )
+    public static function onPageSaveComplete(WikiPage $wikiPage, UserIdentity $user,
+                                              string $summary, int $flags, RevisionRecord $revisionRecord, EditResult $editResult)
     {
 
 
@@ -33,9 +35,17 @@ class MultiContentSave
         }
         $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
 
-        self::removeAllFromChemFormIndex($revisionRecord->getPageAsLinkTarget());
-        self::parseChemicalFormulas($wikitext, $revisionRecord->getPageAsLinkTarget());
-        self::parseMoleculeLinks($wikitext, $revisionRecord->getPageAsLinkTarget());
+        $pageTitle = $revisionRecord->getPageAsLinkTarget();
+        self::removeAllMoleculesFromChemFormIndex($pageTitle);
+        self::parseChemicalFormulas($wikitext, $pageTitle);
+        self::parseMoleculeLinks($wikitext, $pageTitle);
+
+        self::addMoleculesToIndex($pageTitle);
+    }
+
+    public static function collectMolecules($chemFormId)
+    {
+        self::$MOLECULES_FOUND[] = $chemFormId;
     }
 
 
@@ -85,14 +95,14 @@ class MultiContentSave
 
     private static function addToChemFormIndex($pageTitle, $chemformId)
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $repo->addChemFormToIndex($pageTitle, $chemformId);
     }
 
-    private static function removeAllFromChemFormIndex($pageTitle)
+    private static function removeAllMoleculesFromChemFormIndex($pageTitle)
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPageId($pageTitle);
     }
@@ -102,7 +112,7 @@ class MultiContentSave
         $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $parser = new ParserFunctionParser();
         $moleculeLinks = $parser->parseFunction('moleculelink', $wikitext);
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
 
         foreach ($moleculeLinks as $f) {
@@ -117,6 +127,19 @@ class MultiContentSave
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
+        }
+    }
+
+    /**
+     * @param Title $pageTitle
+     */
+    private static function addMoleculesToIndex(Title $pageTitle): void
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $repo = new ChemFormRepository($dbr);
+        self::$MOLECULES_FOUND = array_unique(self::$MOLECULES_FOUND);
+        foreach (self::$MOLECULES_FOUND as $chemFormId) {
+            $repo->addChemFormToIndex($pageTitle, $chemFormId);
         }
     }
 }
