@@ -42,8 +42,7 @@ class Breadcrumb
             return '';
         }
 
-        $rootCategories = count($this->title->getParentCategories()) === 0 ? 'Category:Topic' : array_keys($this->title->getParentCategories());
-        $rootCategories = array_map(function($e) {return Title::newFromText($e)->getText(); }, $rootCategories);
+        $rootCategories = $this->getRootCategoriesToDisplayAsTree();
         $parser = new Parser();
         $treeHTML = "";
         foreach($rootCategories as $category) {
@@ -57,7 +56,8 @@ class Breadcrumb
                 'title' => $this->title,
                 'categories' => $this->makeTree($this->storedCategories[$this->title->getPrefixedText()]),
                 'categoryTree' => $treeHTML,
-                'publicationList' => $this->getPublicationPages()
+                'publicationList' => $this->getPublicationPages(),
+                'investigationList' => $this->getInvestigations()
             ]
         )->render();
 
@@ -156,7 +156,7 @@ class Breadcrumb
             $obj = [];
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
-            $obj['title'] = $dataItem->getTitle()->getPrefixedText();
+            $obj['title'] = $dataItem->getTitle();
             $searchResults[] = $obj;
 
         }
@@ -169,6 +169,29 @@ class Breadcrumb
         )->render();
 
         return $filter . $publicationList;
+    }
+
+    private function getInvestigations(): string
+    {
+        $results = [];
+        $subPages = $this->title->getSubpages();
+        if (is_array($subPages) && count($subPages) === 0) {
+            return '';
+        }
+
+        while($subPages->current()) {
+            $results[] = $subPages->current();
+            $subPages->next();
+        }
+
+        //$filter = $this->createGUIForPublicationFilter();
+        $experimentList = $this->blade->view()->make("experiment-list",
+            [
+                'list' => $results,
+            ]
+        )->render();
+
+        return $experimentList;
     }
 
     /**
@@ -192,5 +215,20 @@ class Breadcrumb
             ]
         );
         return $filter;
+    }
+
+    /**
+     * @return array|string[]
+     */
+    private function getRootCategoriesToDisplayAsTree(): array
+    {
+        $title = $this->title;
+        if ($this->title->isSubpage()) {
+            $title = $this->title->getBaseTitle();
+        }
+        $rootCategories = count($title->getParentCategories()) === 0 ? ['Category:Topic'] : array_keys($title->getParentCategories());
+        return array_map(function ($e) {
+            return Title::newFromText($e)->getText();
+        }, $rootCategories);
     }
 }

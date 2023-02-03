@@ -5,8 +5,10 @@
 </div>
 <div id="ce-side-panel-content" style="float: left;display:none;">
     <div id="ce-topic-switch" class="ce-page-type ce-page-type-topic" style="float:left; cursor: pointer;">Topics</div>
+    @if($title->getNamespace() === NS_CATEGORY)
     <div id="ce-publication-switch" class="ce-page-type ce-page-type-publication" style="float:left; cursor: pointer;">Publications</div>
-    @if($title->getNamespace() === NS_MAIN)
+    @endif
+    @if($title->getNamespace() === NS_MAIN && !$title->isSubpage())
     <div id="ce-investigation-switch" class="ce-page-type ce-page-type-investigation" style="float:left; cursor: pointer;">Investigations</div>
     @endif
     <div style="clear: both;" id="ce-topic-content" class="ce-content-panel">
@@ -22,6 +24,7 @@
     </div>
     <div style="clear: both; display:none;" id="ce-investigation-content" class="ce-content-panel">
         <h3>Investigations</h3>
+        {!! $investigationList !!}
 
     </div>
 </div>

@@ -235,3 +235,12 @@ div.ce-side-panel-bar {
 .CategoryTreeTag {
     overflow: auto
 }
+
+#ce-publication-list, #ce-investigation-list {
+
+    overflow: auto;
+}
+
+#ce-publication-list li, #ce-investigation-list li {
+    list-style: circle;
+}

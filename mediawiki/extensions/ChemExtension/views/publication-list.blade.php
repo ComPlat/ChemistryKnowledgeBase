@@ -1,7 +1,11 @@
 <div id="ce-publication-list">
-<ul>
-    @foreach($list as $l)
-        <li>{{$l['title']}}</li>
-    @endforeach
-</ul>
+    @if(count($list) === 0)
+        none
+    @else
+        <ul>
+            @foreach($list as $l)
+                <li><a href="{{$l['title']->getFullURL()}}">{{$l['title']->getText()}}</a></li>
+            @endforeach
+        </ul>
+    @endif
 </div>
