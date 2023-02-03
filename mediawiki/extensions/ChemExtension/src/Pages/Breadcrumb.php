@@ -45,7 +45,7 @@ class Breadcrumb
         $rootCategories = $this->getRootCategoriesToDisplayAsTree();
         $parser = new Parser();
         $treeHTML = "";
-        foreach($rootCategories as $category) {
+        foreach ($rootCategories as $category) {
             $parserOutput = $parser->parse('<categorytree mode="categories" depth="3" hideprefix="categories" hideRoot="true">' . $category . '</categorytree>'
                 , $this->title, new ParserOptions());
             $treeHTML .= $parserOutput->getText(['enableSectionEditLinks' => false]);
@@ -57,7 +57,9 @@ class Breadcrumb
                 'categories' => $this->makeTree($this->storedCategories[$this->title->getPrefixedText()]),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $this->getPublicationPages(),
-                'investigationList' => $this->getInvestigations()
+                'investigationList' => $this->getInvestigations(),
+                'showPublications' => $this->showPublications(),
+                'showInvestigations' => $this->showInvestigations()
             ]
         )->render();
 
@@ -135,7 +137,8 @@ class Breadcrumb
         return in_array('Topic', $categoryTitles);
     }
 
-    private function storeAndReturnCategoryList(Title $title, $parentCategoryTree) {
+    private function storeAndReturnCategoryList(Title $title, $parentCategoryTree)
+    {
         if (!array_key_exists($title->getPrefixedText(), $this->storedCategories)) {
             $categories = [];
             $this->getReversedCategoryList($parentCategoryTree, $categories);
@@ -150,7 +153,11 @@ class Breadcrumb
      */
     private function getPublicationPages(): string
     {
-        $results = QueryUtils::executeBasicQuery("[[{$this->title->getPrefixedText()}]]", [], ['limit' => 500]);
+        $title = $this->title;
+        if (!$this->checkIfInTopicCategory($this->title)) {
+            $title = Title::newFromText("Topic", NS_CATEGORY);
+        }
+        $results = QueryUtils::executeBasicQuery("[[{$title->getPrefixedText()}]]", [], ['limit' => 500]);
         $searchResults = [];
         while ($row = $results->getNext()) {
             $obj = [];
@@ -179,7 +186,7 @@ class Breadcrumb
             return '';
         }
 
-        while($subPages->current()) {
+        while ($subPages->current()) {
             $results[] = $subPages->current();
             $subPages->next();
         }
@@ -192,6 +199,18 @@ class Breadcrumb
         )->render();
 
         return $experimentList;
+    }
+
+    private function showPublications()
+    {
+        return !($this->checkIfInTopicCategory($this->title)
+            && $this->title->getNamespace() == NS_MAIN);
+    }
+
+    private function showInvestigations()
+    {
+        return ($this->checkIfInTopicCategory($this->title)
+            && $this->title->getNamespace() == NS_MAIN && !$this->title->isSubpage());
     }
 
     /**
@@ -226,9 +245,13 @@ class Breadcrumb
         if ($this->title->isSubpage()) {
             $title = $this->title->getBaseTitle();
         }
-        $rootCategories = count($title->getParentCategories()) === 0 ? ['Category:Topic'] : array_keys($title->getParentCategories());
-        return array_map(function ($e) {
-            return Title::newFromText($e)->getText();
-        }, $rootCategories);
+        if ($title->getNamespace() === NS_CATEGORY) {
+            $rootCategories = count($title->getParentCategories()) === 0 ? ['Category:Topic'] : array_keys($title->getParentCategories());
+            return array_map(function ($e) {
+                return Title::newFromText($e)->getText();
+            }, $rootCategories);
+        } else {
+            return ["Topic"];
+        }
     }
 }

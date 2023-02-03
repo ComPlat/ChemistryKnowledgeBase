@@ -205,6 +205,8 @@
 	$( function () {
 		// Attach click handler for sidebar
 		attachHandler( $( '#p-categorytree-portlet' ) );
+
+		attachHandler( $('#mw-data-after-content') );
 	} );
 
 }() );
