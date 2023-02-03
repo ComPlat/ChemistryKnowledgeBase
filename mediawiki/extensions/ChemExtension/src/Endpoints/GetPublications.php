@@ -26,7 +26,7 @@ class GetPublications extends SimpleHandler
 
         $params = $this->getValidatedParams();
         $category = $params['category'];
-        $searchTerm = trim(strtolower($params['searchTerm']));
+        $searchTerm = trim(strtolower($params['searchTerm'] ?? ''));
 
         if ($searchTerm === '') {
             $query = "[[Category:$category]]";
@@ -73,7 +73,7 @@ class GetPublications extends SimpleHandler
             'searchTerm' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
-                ParamValidator::PARAM_REQUIRED => true,
+                ParamValidator::PARAM_REQUIRED => false,
             ],
         ];
     }
