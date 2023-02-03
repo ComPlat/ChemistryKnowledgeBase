@@ -239,6 +239,7 @@ div.ce-side-panel-bar {
 #ce-publication-list, #ce-investigation-list {
 
     overflow: auto;
+    height: 500px;
 }
 
 #ce-publication-list li, #ce-investigation-list li {

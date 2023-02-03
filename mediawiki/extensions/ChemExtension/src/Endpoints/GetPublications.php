@@ -37,7 +37,7 @@ class GetPublications extends SimpleHandler
             $obj = [];
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
-            $obj['title'] = $dataItem->getTitle()->getPrefixedText();
+            $obj['title'] = $dataItem->getTitle();
             $searchResults[] = $obj;
 
         }
