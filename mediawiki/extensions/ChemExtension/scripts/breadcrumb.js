@@ -26,7 +26,8 @@
         let filterInput = $('#ce-publication-filter input');
         filterInput.keydown((e) => {
             if (e.keyCode === 13) {
-                ajax.getPublications(mw.config.get('wgTitle'), filterInput.val()).done((result) => {
+                let category = mw.config.get('wgCanonicalNamespace') === 'Category' ?  mw.config.get('wgTitle') : 'Topic';
+                ajax.getPublications(category, filterInput.val()).done((result) => {
                     let list = $('#ce-publication-list');
                     list.empty();
                     list.append(result.html);
