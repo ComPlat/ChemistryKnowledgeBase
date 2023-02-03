@@ -133,7 +133,9 @@ class CreateNewPaper extends PageCreationSpecial
     {
         $doi = $wgRequest->getText('doi', '');
         $paperTitle = $wgRequest->getText('paper-title', '');
-        $topicSuper = $wgRequest->getText('topic-super', 'Topic');
+        $topicSuper = $wgRequest->getText('topic-super', '');
+        if ($topicSuper === '') $topicSuper = "Topic";
+
         $doiData = null;
         if ($doi != '') {
             $doiResolver = new DOIResolver();

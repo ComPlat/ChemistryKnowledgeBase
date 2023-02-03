@@ -218,7 +218,7 @@ $smwgNamespacesWithSemanticLinks[NS_CATEGORY] = true;
 $smwgShowFactbox = SMW_FACTBOX_HIDDEN;
 $smwgShowFactboxEdit = SMW_FACTBOX_HIDDEN;
 $smwgBrowseFeatures = SMW_BROWSE_TLINK | SMW_BROWSE_SHOW_INCOMING | SMW_BROWSE_SHOW_GROUP | SMW_BROWSE_SHOW_SORTKEY | SMW_BROWSE_USE_API;
-$smwgPageSpecialProperties = array( '_MDAT', '_LEDT', '_CDAT' );
+$smwgPageSpecialProperties = array( '_MDAT', '_LEDT', '_CDAT', '_DTITLE' );
 
 ## extend allowed complexity of queries
 ## cf. http://semantic-mediawiki.org/wiki/Help:Configuration#Query_settings
@@ -310,6 +310,7 @@ $fsgCreateNewPageLink = "/{article}?veaction=edit";
 wfLoadExtension( 'DisplayTitle' );
 $wgAllowDisplayTitle = true; // defaults to true
 $wgRestrictDisplayTitle = false; // defaults to true
+$wgDisplayTitleHideSubtitle = true;
 $fsgShowSortOrder = true;
 $fsgShowCategories = false;
 $fsgShowSolrScore = true;

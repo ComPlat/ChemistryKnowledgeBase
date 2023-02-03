@@ -12,6 +12,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
+use DIQA\ChemExtension\Utils\WikiTools;
 use OutputPage;
 use Parser;
 use Skin;
@@ -82,8 +83,8 @@ class Setup {
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
-        $b = new Breadcrumb();
-        $out->addSubtitle($b->getPageType($wgTitle));
+        $b = new Breadcrumb($wgTitle);
+        $out->addSubtitle($b->getPageType());
 
         $out->addModules('ext.diqa.chemextension');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
@@ -94,10 +95,10 @@ class Setup {
             $out->addModules('ext.diqa.chemextension.pf');
         }
 
-        $b = new Breadcrumb();
-        if (!$wgTitle->isSpecial('FormEdit')) {
-            $out->addHTML($b->getNavigationLocation($wgTitle));
+        if (!$wgTitle->isSpecial('FormEdit') && !WikiTools::isInVisualEditor()) {
+            $out->addHTML($b->getNavigationLocation());
         }
+
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {
@@ -109,7 +110,6 @@ class Setup {
         $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
-
 
     }
 

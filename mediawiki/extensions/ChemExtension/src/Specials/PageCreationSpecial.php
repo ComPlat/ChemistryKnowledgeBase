@@ -36,9 +36,9 @@ class PageCreationSpecial extends SpecialPage
         return $helpSection;
     }
 
-    protected function createPageAndRedirect(Title $topicTitle, string $superTopics, $doiData)
+    protected function createPageAndRedirect(Title $pageTitle, string $superTopics, $doiData)
     {
-            if ($topicTitle->exists()) {
+            if ($pageTitle->exists()) {
                 throw new Exception("Page creation failed because page already exists");
             }
 
@@ -50,13 +50,17 @@ class PageCreationSpecial extends SpecialPage
                 }, explode("\n", $superTopics));
             }
 
-            $doi = $doiData->DOI;
-            $pageContent = "{{#doiinfobox: $doi}}\n";
+            $pageContent = "";
+            if (!is_null($doiData)) {
+                $doi = $doiData->DOI;
+                $pageContent .= "{{#doiinfobox: $doi}}\n";
+            }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
+            $pageContent .="\n{{SetDisplayTitle}}";
 
-            $successful = WikiTools::doEditContent($topicTitle, $pageContent, "auto-generated", EDIT_NEW);
+            $successful = WikiTools::doEditContent($pageTitle, $pageContent, "auto-generated", EDIT_NEW);
             if ($successful) {
-                header("Location: $wgScriptPath/index.php/{$topicTitle->getPrefixedDBKey()}?veaction=edit");
+                header("Location: $wgScriptPath/index.php/{$pageTitle->getPrefixedDBKey()}?veaction=edit");
             } else {
                 throw new Exception("Page creation failed. Try again");
             }

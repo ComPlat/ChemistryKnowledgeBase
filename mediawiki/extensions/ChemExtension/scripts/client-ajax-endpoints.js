@@ -81,6 +81,19 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.getPublications = function (category, searchTerm) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/publications";
+        return $.ajax({
+            method: "GET",
+            url: url,
+            data: {
+                category: category,
+                searchTerm: searchTerm
+            },
+        });
+    }
+
     OO.initClass(window.ChemExtension.AjaxEndpoints);
 
 

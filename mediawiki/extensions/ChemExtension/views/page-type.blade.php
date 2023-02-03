@@ -1,1 +1,1 @@
-<div class="ce-page-type ce-page-type-{{$type}}">{{wfMessage('page-type-'.$type)}}</div>
+<div class="ce-page-type ce-page-type-{{$type}}">{{$text}}</div>

@@ -97,6 +97,10 @@
             "path": "/ChemExtension/v1/chemform/render",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\RenderMolecule"
+        },{
+            "path": "/ChemExtension/v1/publications",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetPublications"
         }
     ],
     "JobClasses": {
