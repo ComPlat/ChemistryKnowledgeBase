@@ -26,10 +26,16 @@ class GetPublications extends SimpleHandler
 
         $params = $this->getValidatedParams();
         $category = $params['category'];
-        $searchTerm = strtolower($params['searchTerm']);
+        $searchTerm = trim(strtolower($params['searchTerm']));
+
+        if ($searchTerm === '') {
+            $query = "[[Category:$category]]";
+        } else {
+            $query = "[[Category:$category]][[Display title of::~*$searchTerm*]]";
+        }
 
         $results = QueryUtils::executeBasicQuery(
-            "[[Category:$category]][[Display title of::~*$searchTerm*]]",
+            $query,
             [], ['limit' => 500]);
 
         $searchResults = [];
