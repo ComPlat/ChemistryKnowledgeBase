@@ -61,7 +61,7 @@ class Breadcrumb
             ]
         )->render();
 
-        return WikiTools::sanitizeHTML($html);
+        return str_replace("\n", "", $html);
     }
 
     public function getPageTitle(): string

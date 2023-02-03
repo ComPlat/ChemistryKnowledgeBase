@@ -3,12 +3,7 @@
 
     let initialized = false;
     function initialize() {
-        $('#ce-side-panel-content').mouseleave((e) => {
-            $('#ce-side-panel-content').hide();
-        })
-        $('.ce-side-panel-bar').click(() => {
-            $('#ce-side-panel-content').toggle();
-        });
+
 
         $('#ce-topic-switch').click((e) => {
             $('.ce-content-panel').hide();

@@ -187,9 +187,9 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     padding: 10px;
     position: fixed;
     border: 2px solid;
-    top: 60px;
-    left: 75px;
-    width: 800px;
+    top: 80px;
+    left: 15px;
+    width: 400px;
     height: 80%;
     background: whitesmoke;
     border-radius: 5px;

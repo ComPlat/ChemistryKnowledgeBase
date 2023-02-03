@@ -55,7 +55,7 @@ class Setup {
                 $baseScript . '/breadcrumb.js',
 
             ],
-            'styles' => [ 'skins/main.css' ],
+            'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
             'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit',
                 'mediawiki.widgets.TitlesMultiselectWidget'],
         );
@@ -95,8 +95,14 @@ class Setup {
             $out->addModules('ext.diqa.chemextension.pf');
         }
 
-        if (!$wgTitle->isSpecial('FormEdit') && !WikiTools::isInVisualEditor()) {
-            $out->addHTML($b->getNavigationLocation());
+
+    }
+
+    public static function onSkinAfterContent( &$data, Skin $skin ) {
+        global $wgTitle;
+        $b = new Breadcrumb($wgTitle);
+        if (!$wgTitle->isSpecial('FormEdit')) {
+            $data .= $b->getNavigationLocation();
         }
 
     }
