@@ -16,8 +16,11 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use OutputPage;
 use Parser;
 use Skin;
+use SMW\ApplicationFactory;
 
 class Setup {
+
+    private static $cachedQueries = [];
 
     public static function initModules() {
 
@@ -117,6 +120,7 @@ class Setup {
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
 
+        self::registerShowCachedHandler($parser);
     }
 
     public static function assignValueToMagicWord( &$parser, &$cache, &$magicWordId, &$ret ) {
@@ -130,5 +134,25 @@ class Setup {
 
     public static function declareVarIds( &$customVariableIds ) {
         $customVariableIds[] = 'counter';
+    }
+
+    /**
+     * @param Parser $parser
+     * @throws \MWException
+     */
+    private static function registerShowCachedHandler(Parser $parser): void
+    {
+        $applicationFactory = ApplicationFactory::getInstance();
+        $parserFunctionFactory = $applicationFactory->newParserFunctionFactory();
+        list($name, $definition, $flag) = $parserFunctionFactory->getShowParserFunctionDefinition();
+        $showCacheHandler = function (Parser $parser) use ($definition) {
+            $args = func_get_args();
+            $queryKey = $args[1] . $args[2];
+            if (!array_key_exists($queryKey, self::$cachedQueries)) {
+                self::$cachedQueries[$queryKey] = call_user_func_array($definition, $args);
+            }
+            return self::$cachedQueries[$queryKey];
+        };
+        $parser->setFunctionHook('showcache', $showCacheHandler, $flag);
     }
 }

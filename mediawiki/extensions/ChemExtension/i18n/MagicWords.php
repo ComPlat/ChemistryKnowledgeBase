@@ -18,6 +18,7 @@ $magicWords['en'] = [
     'extractElements' => [ 0, 'extractElements' ],
     'doiinfobox' => [ 0, 'doiinfobox' ],
     'counter' => [ 0, 'counter' ],
+    'showcache' => [ 0, 'showcache' ],
 
 ];
 
