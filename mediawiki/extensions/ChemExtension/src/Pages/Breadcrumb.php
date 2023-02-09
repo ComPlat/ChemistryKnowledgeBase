@@ -41,7 +41,7 @@ class Breadcrumb
         if (is_null($this->title)) {
             return '';
         }
-
+        OutputPage::setupOOUI();
         $rootCategories = $this->getRootCategoriesToDisplayAsTree();
         $parser = new Parser();
         $treeHTML = "";
@@ -58,8 +58,9 @@ class Breadcrumb
                 'categoryTree' => $treeHTML,
                 'publicationList' => $this->getPublicationPages(),
                 'investigationList' => $this->getInvestigations(),
+                'moleculesList' => $this->getMolecules(),
                 'showPublications' => $this->showPublications(),
-                'showInvestigations' => $this->showInvestigations()
+                'showInvestigations' => $this->showInvestigations(),
             ]
         )->render();
 
@@ -219,7 +220,6 @@ class Breadcrumb
      */
     private function createGUIForPublicationFilter(): FieldLayout
     {
-        OutputPage::setupOOUI();
         $filter = new FieldLayout(
             new TextInputWidget([
                 'id' => 'ce-publication-filter',
@@ -253,5 +253,34 @@ class Breadcrumb
         } else {
             return ["Topic"];
         }
+    }
+
+    private function getMolecules()
+    {
+        $filter = $this->createGUIForMoleculeFilter();
+        $moleculeList = $this->blade->view()->make("molecule-filter",
+            [
+
+            ]
+        )->render();
+
+        return $filter . $moleculeList;
+    }
+
+    private function createGUIForMoleculeFilter()
+    {
+        return new FieldLayout(
+            new TextInputWidget([
+                'id' => 'ce-molecules-filter',
+                'infusable' => true,
+                'name' => 'molecules-filter',
+                'value' => '',
+                'placeholder' => 'Filter for molecules...'
+            ]),
+            [
+                'align' => 'top',
+                'label' => 'Filter'
+            ]
+        );
     }
 }

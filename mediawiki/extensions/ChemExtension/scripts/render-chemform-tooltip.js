@@ -1,8 +1,8 @@
 (function($) {
 
     window.ChemExtension = window.ChemExtension || {};
-    window.ChemExtension.initTooltips = function() {
-        $('iframe.chemformula').qtip({
+    window.ChemExtension.initTooltips = function(container) {
+        $('iframe.chemformula', container).qtip({
             content: "<div></div>",
             style: { classes: 'chemformula-tooltip' },
             events: {
@@ -22,7 +22,7 @@
             }
         });
 
-        $('a[title]').each(function(i, e) {
+        $('a[title]', container).each(function(i, e) {
             let el = $(e);
             let title = el.attr('title');
             let parts = title.split(":");

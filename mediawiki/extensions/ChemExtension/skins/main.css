@@ -236,16 +236,20 @@ div.ce-side-panel-bar {
     background: lightgrey;
 }
 
+.ce-page-type-molecules {
+    background: lightyellow;
+}
+
 .CategoryTreeTag {
     overflow: auto
 }
 
-#ce-publication-list, #ce-investigation-list {
-
+#ce-publication-list, #ce-investigation-list, #ce-molecules-list {
+    margin-top: 15px;
     overflow: auto;
-    height: 500px;
+    height: 545px;
 }
 
-#ce-publication-list li, #ce-investigation-list li {
+#ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
     list-style: circle;
 }
