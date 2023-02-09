@@ -1,18 +1,14 @@
 <?php
 
-namespace DIQA\ChemExtension\Pages;
+namespace DIQA\ChemExtension\NavigationBar;
 
-use DIQA\ChemExtension\Utils\QueryUtils;
-use DIQA\ChemExtension\Utils\WikiTools;
-use OOUI\FieldLayout;
-use OOUI\TextInputWidget;
+use OutputPage;
 use Parser;
 use ParserOptions;
 use Philo\Blade\Blade;
 use Title;
-use OutputPage;
 
-class Breadcrumb
+class NavigationBar
 {
     private $blade;
 
@@ -51,14 +47,22 @@ class Breadcrumb
             $treeHTML .= $parserOutput->getText(['enableSectionEditLinks' => false]);
         }
 
-        $html = $this->blade->view()->make("breadcrumb",
+        $title = $this->title;
+        if (!$this->checkIfInTopicCategory($this->title)) {
+            $title = Title::newFromText("Topic", NS_CATEGORY);
+        }
+        $pubs = new PublicationList($title);
+        $investigations = new InvestigationList($this->title);
+        $molecules = new MoleculesList($this->title);
+
+        $html = $this->blade->view()->make("navigation.navigation-bar",
             [
                 'title' => $this->title,
                 'categories' => $this->makeTree($this->storedCategories[$this->title->getPrefixedText()]),
                 'categoryTree' => $treeHTML,
-                'publicationList' => $this->getPublicationPages(),
-                'investigationList' => $this->getInvestigations(),
-                'moleculesList' => $this->getMolecules(),
+                'publicationList' => $pubs->getPublicationPages(),
+                'investigationList' => $investigations->getInvestigations(),
+                'moleculesList' => $molecules->getMolecules(),
                 'showPublications' => $this->showPublications(),
                 'showInvestigations' => $this->showInvestigations(),
             ]
@@ -149,91 +153,16 @@ class Breadcrumb
         return $this->storedCategories[$title->getPrefixedText()];
     }
 
-    /**
-     * @throws \OOUI\Exception
-     */
-    private function getPublicationPages(): string
-    {
-        $title = $this->title;
-        if (!$this->checkIfInTopicCategory($this->title)) {
-            $title = Title::newFromText("Topic", NS_CATEGORY);
-        }
-        $results = QueryUtils::executeBasicQuery("[[{$title->getPrefixedText()}]]", [], ['limit' => 500]);
-        $searchResults = [];
-        while ($row = $results->getNext()) {
-            $obj = [];
-            $column = reset($row);
-            $dataItem = $column->getNextDataItem();
-            $obj['title'] = $dataItem->getTitle();
-            $searchResults[] = $obj;
-
-        }
-
-        $filter = $this->createGUIForPublicationFilter();
-        $publicationList = $this->blade->view()->make("publication-list",
-            [
-                'list' => $searchResults,
-            ]
-        )->render();
-
-        return $filter . $publicationList;
-    }
-
-    private function getInvestigations(): string
-    {
-        $results = [];
-        $subPages = $this->title->getSubpages();
-        if (is_array($subPages) && count($subPages) === 0) {
-            return '';
-        }
-
-        while ($subPages->current()) {
-            $results[] = $subPages->current();
-            $subPages->next();
-        }
-
-        //$filter = $this->createGUIForPublicationFilter();
-        $experimentList = $this->blade->view()->make("experiment-list",
-            [
-                'list' => $results,
-            ]
-        )->render();
-
-        return $experimentList;
-    }
-
-    private function showPublications()
+    private function showPublications(): bool
     {
         return !($this->checkIfInTopicCategory($this->title)
             && $this->title->getNamespace() == NS_MAIN);
     }
 
-    private function showInvestigations()
+    private function showInvestigations(): bool
     {
         return ($this->checkIfInTopicCategory($this->title)
             && $this->title->getNamespace() == NS_MAIN && !$this->title->isSubpage());
-    }
-
-    /**
-     * @return FieldLayout
-     * @throws \OOUI\Exception
-     */
-    private function createGUIForPublicationFilter(): FieldLayout
-    {
-        $filter = new FieldLayout(
-            new TextInputWidget([
-                'id' => 'ce-publication-filter',
-                'infusable' => true,
-                'name' => 'publication-filter',
-                'value' => '',
-                'placeholder' => 'Filter for publications...'
-            ]),
-            [
-                'align' => 'top',
-                'label' => 'Filter'
-            ]
-        );
-        return $filter;
     }
 
     /**
@@ -255,32 +184,5 @@ class Breadcrumb
         }
     }
 
-    private function getMolecules()
-    {
-        $filter = $this->createGUIForMoleculeFilter();
-        $moleculeList = $this->blade->view()->make("molecule-filter",
-            [
 
-            ]
-        )->render();
-
-        return $filter . $moleculeList;
-    }
-
-    private function createGUIForMoleculeFilter()
-    {
-        return new FieldLayout(
-            new TextInputWidget([
-                'id' => 'ce-molecules-filter',
-                'infusable' => true,
-                'name' => 'molecules-filter',
-                'value' => '',
-                'placeholder' => 'Filter for molecules...'
-            ]),
-            [
-                'align' => 'top',
-                'label' => 'Filter'
-            ]
-        );
-    }
 }

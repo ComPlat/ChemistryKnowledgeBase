@@ -48,7 +48,7 @@ class GetPublications extends SimpleHandler
 
         }
 
-        $publicationList = $this->blade->view()->make("publication-list",
+        $publicationList = $this->blade->view()->make("navigation.publication-list",
             [
                 'list' => $searchResults,
             ]

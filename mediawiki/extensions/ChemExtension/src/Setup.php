@@ -3,16 +3,15 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
-use DIQA\ChemExtension\Pages\Breadcrumb;
+use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
+use DIQA\ChemExtension\ParserFunctions\ExperimentList;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
-use DIQA\ChemExtension\ParserFunctions\ExperimentList;
-use DIQA\ChemExtension\Utils\WikiTools;
 use OutputPage;
 use Parser;
 use Skin;
@@ -86,7 +85,7 @@ class Setup {
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
-        $b = new Breadcrumb($wgTitle);
+        $b = new NavigationBar($wgTitle);
         $out->addSubtitle($b->getPageType());
 
         $out->addModules('ext.diqa.chemextension');
@@ -103,7 +102,7 @@ class Setup {
 
     public static function onSkinAfterContent( &$data, Skin $skin ) {
         global $wgTitle;
-        $b = new Breadcrumb($wgTitle);
+        $b = new NavigationBar($wgTitle);
         if (!$wgTitle->isSpecial('FormEdit')) {
             $data .= $b->getNavigationLocation();
         }

@@ -201,13 +201,13 @@ class UpdateBaseTemplate extends Maintenance
     private function update(Title $title)
     {
         if ($title->getNamespace() === NS_CATEGORY) {
-            $b = new \DIQA\ChemExtension\Pages\Breadcrumb($title);
+            $b = new \DIQA\ChemExtension\NavigationBar\NavigationBar($title);
             if ($b->checkIfInTopicCategory($title)) {
                 $this->updatePage($title);
                 print "\nupdate: " . $title->getPrefixedText();
             }
         } else if ($title->getNamespace() === NS_MAIN) {
-            $b = new \DIQA\ChemExtension\Pages\Breadcrumb($title);
+            $b = new \DIQA\ChemExtension\NavigationBar\NavigationBar($title);
             if ($b->checkIfInTopicCategory($title)) {
                 $this->updatePage($title);
             }

@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
-use DIQA\ChemExtension\Pages\Breadcrumb;
+use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreationJob;
 use DIQA\ChemExtension\Utils\ChemTools;
@@ -155,15 +155,15 @@ class RenderFormula
         }
 
         $topicPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new Breadcrumb($title);
+            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_CATEGORY && $b->checkIfInTopicCategory($title);
         });
         $publicationPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new Breadcrumb($title);
+            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_MAIN && !$title->isSubpage() && $b->checkIfInTopicCategory($title);
         });
         $investigationPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new Breadcrumb($title);
+            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_MAIN && $title->isSubpage() && $b->checkIfInTopicCategory($title->getBaseTitle());
         });
 
