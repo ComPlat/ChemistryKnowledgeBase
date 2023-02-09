@@ -56,7 +56,7 @@ class PageCreationSpecial extends SpecialPage
                 $pageContent .= "{{#doiinfobox: $doi}}\n";
             }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
-            $pageContent .="\n{{SetDisplayTitle}}";
+            $pageContent .="\n{{BaseTemplate}}";
 
             $successful = WikiTools::doEditContent($pageTitle, $pageContent, "auto-generated", EDIT_NEW);
             if ($successful) {
