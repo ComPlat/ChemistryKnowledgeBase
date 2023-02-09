@@ -21,5 +21,7 @@
 |}
 </div>
 
+{{DISPLAYTITLE: Molecule collection {{PAGENAME}} }}
+
 [[Category:Molecule collection]]
 ‎<includeonly>
