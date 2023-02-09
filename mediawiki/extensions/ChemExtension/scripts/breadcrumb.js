@@ -38,6 +38,8 @@
                 let list = $('#ce-publication-list');
                 list.empty();
                 list.append(result.html);
+            }).error(()=> {
+                input.popPending();
             });
         });
     }
@@ -57,10 +59,14 @@
                     return;
                 }
                 for (let i = 0; i < results.length; i++) {
+                    let text = results[i].Trivialname !== '' ? results[i].Trivialname : results[i].IUPACName;
+                    if (results[i].Abbreviation !== '') {
+                        text += ' (' +  results[i].Abbreviation + ')';
+                    }
                     let a = $('<a>')
                         .attr('href', mw.config.get('wgScriptPath') + '/' + results[i].title)
                         .attr('title', results[i].title)
-                        .append(results[i].Trivialname);
+                        .append(text);
                     list.append($('<li>').append(a));
                 }
                 let container = $('#ce-molecules-list');
@@ -70,6 +76,8 @@
                     .attr('target', '_blank')
                     .append('open "'+input.getValue()+'" in fulltext search');
                 container.append(a);
+            }).error(()=> {
+                input.popPending();
             });
         });
 

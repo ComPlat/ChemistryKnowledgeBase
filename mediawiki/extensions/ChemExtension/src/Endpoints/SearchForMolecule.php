@@ -18,6 +18,7 @@ class SearchForMolecule extends SimpleHandler
     private $casProp;
     private $trivialnameProp;
     private $inchiKey;
+    private $abbreviation;
 
     /**
      * SearchForMolecule constructor.
@@ -28,6 +29,7 @@ class SearchForMolecule extends SimpleHandler
         $this->casProp = QueryUtils::newPropertyPrintRequest("CAS");
         $this->trivialnameProp = QueryUtils::newPropertyPrintRequest("Trivialname");
         $this->inchiKey = QueryUtils::newPropertyPrintRequest("InChIKey");
+        $this->abbreviation = QueryUtils::newPropertyPrintRequest("Abbreviation");
     }
 
     public function run()
@@ -83,7 +85,7 @@ class SearchForMolecule extends SimpleHandler
 
         $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts),
         [
-            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
+            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
         ]);
         $allResults = $this->readResults($prioritizedResults);
         if (count($allResults) < self::MAX_RESULTS) {
@@ -92,7 +94,7 @@ class SearchForMolecule extends SimpleHandler
                             OR [[Category:Molecule]][[Synonym::~*$searchText*]]
                             OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
                             OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]", [
-                $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
+                $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
             ]);
             $allResults = array_merge($allResults, $this->readResults($generalResults));
         }
@@ -104,7 +106,7 @@ class SearchForMolecule extends SimpleHandler
     {
         $results = QueryUtils::executeBasicQuery(
             "[[Category:Molecule]][[CAS::$casNumber]]", [
-            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey
+            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
         ]);
         return $this->readResults($results);
     }
@@ -121,6 +123,7 @@ class SearchForMolecule extends SimpleHandler
         $obj['CAS'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'CAS');
         $obj['Trivialname'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Trivialname');
         $obj['InChIKey'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'InChIKey');
+        $obj['Abbreviation'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Abbreviation');
         $obj['label'] = $this->makeLabel($obj);
         return [$obj];
     }
@@ -154,6 +157,10 @@ class SearchForMolecule extends SimpleHandler
             $column = next($row);
             $dataItem = $column->getNextDataItem();
             $obj['InChIKey'] = $dataItem !== false ? $dataItem->getString() : '';
+
+            $column = next($row);
+            $dataItem = $column->getNextDataItem();
+            $obj['Abbreviation'] = $dataItem !== false ? $dataItem->getString() : '';
 
             $obj['label'] = $this->makeLabel($obj);
             $searchResults[] = $obj;
