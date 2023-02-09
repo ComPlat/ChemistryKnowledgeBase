@@ -71,11 +71,14 @@
                 }
                 let container = $('#ce-molecules-list');
                 window.ChemExtension.initTooltips(container);
+
+                let searchHint = $('#ce-moleculelist-search-hint');
                 let a = $('<a>')
                     .attr('href', mw.config.get('wgScriptPath') + '/Special:Search?search=' + encodeURIComponent(input.getValue()))
                     .attr('target', '_blank')
                     .append('open "'+input.getValue()+'" in fulltext search');
-                container.append(a);
+                searchHint.empty();
+                searchHint.append(a);
             }).error(()=> {
                 input.popPending();
             });
