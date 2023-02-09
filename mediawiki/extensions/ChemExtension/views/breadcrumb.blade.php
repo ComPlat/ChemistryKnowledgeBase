@@ -14,6 +14,8 @@
         {!! $categoryTree !!}
     </div>
     <div style="clear: both; display:none;" id="ce-publication-content" class="ce-content-panel">
+        <h3>Current site</h3>
+        {!! $categories !!}
         <h3>Publications</h3>
         {!! $publicationList !!}
     </div>
