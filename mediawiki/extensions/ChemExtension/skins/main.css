@@ -232,6 +232,10 @@ div.ce-side-panel-bar {
     background: mediumseagreen;
 }
 
+.ce-page-type-other {
+    background: lightgrey;
+}
+
 .CategoryTreeTag {
     overflow: auto
 }

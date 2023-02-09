@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Pages\Breadcrumb;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreationJob;
 use DIQA\ChemExtension\Utils\ChemTools;
@@ -139,7 +140,8 @@ class RenderFormula
             );
     }
 
-    public static function outputMoleculeReferences(OutputPage $out): void {
+    public static function outputMoleculeReferences(OutputPage $out): void
+    {
         global $wgTitle;
         if (!self::isMoleculeOrReaction($wgTitle)) {
             return;
@@ -152,15 +154,36 @@ class RenderFormula
             return;
         }
 
+        $topicPages = array_filter($pagesThatUseFormula, function (Title $title) {
+            $b = new Breadcrumb($title);
+            return $title->getNamespace() === NS_CATEGORY && $b->checkIfInTopicCategory($title);
+        });
+        $publicationPages = array_filter($pagesThatUseFormula, function (Title $title) {
+            $b = new Breadcrumb($title);
+            return $title->getNamespace() === NS_MAIN && !$title->isSubpage() && $b->checkIfInTopicCategory($title);
+        });
+        $investigationPages = array_filter($pagesThatUseFormula, function (Title $title) {
+            $b = new Breadcrumb($title);
+            return $title->getNamespace() === NS_MAIN && $title->isSubpage() && $b->checkIfInTopicCategory($title->getBaseTitle());
+        });
+
+        $otherPages = array_udiff($pagesThatUseFormula, array_merge($topicPages, $publicationPages, $investigationPages),
+            function (Title $title1, Title $title2) {
+                return strcmp($title1->getDBkey(), $title2->getDBkey());
+            });
+
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new Blade ($views, $cache);
 
-        $html = $blade->view ()->make ( "molecule-list",
+        $html = $blade->view()->make("molecule-list",
             [
-                'pages' => $pagesThatUseFormula,
+                'topicPages' => $topicPages,
+                'publicationPages' => $publicationPages,
+                'investigationPages' => $investigationPages,
+                'otherPages' => $otherPages
             ]
-        )->render ();
+        )->render();
         $out->addHTML($html);
     }
 }
