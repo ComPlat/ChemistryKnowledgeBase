@@ -36,7 +36,7 @@ class PageCreationSpecial extends SpecialPage
         return $helpSection;
     }
 
-    protected function createPageAndRedirect(Title $pageTitle, string $superTopics, $doiData)
+    protected function createPageAndRedirect(Title $pageTitle, string $superTopics, $doiData = null)
     {
             if ($pageTitle->exists()) {
                 throw new Exception("Page creation failed because page already exists");
