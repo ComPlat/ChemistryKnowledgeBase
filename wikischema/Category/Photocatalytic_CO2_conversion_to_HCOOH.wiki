@@ -1,3 +1,4 @@
+{{BaseTemplate}}
 == CO<sub>2</sub> conversion to formic acid{{#literature:|doi=10.1039/d0gc04040a}}==
 Formic acid (FA) is a simple chemical with many uses. Its applications include use as a preservative, in the leather and dyeing industry and chemical providing a C1 building block. It is also an important H<sub>2</sub> carrier, because of its qualities as non-toxic, easily storable liquid. This also makes it directly usable in fuel cells.{{#literature:|doi=doi.org/10.1016/j.ijhydene.2016.05.199}} The global production is currently estimated at 870.000 metric tons in 2021 with a CAGR (Compound Annual Growth Report) of 3.87% in volume terms during the period 2022-2027.[https://www.mordorintelligence.com/industry-reports/formic-acid-market<nowiki>] </nowiki>
 

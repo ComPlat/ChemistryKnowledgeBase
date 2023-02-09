@@ -1,1 +1,2 @@
+{{BaseTemplate}}
 This is the wiki "Topic" base category.
