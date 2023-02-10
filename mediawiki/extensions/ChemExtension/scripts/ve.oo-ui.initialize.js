@@ -3,8 +3,27 @@
 
     function initialize() {
         let experimentList = $('.experimentlist');
-        if (experimentList.length === 0) return;
-        experimentList.each( (i,e) => OO.ui.infuse(e));
+        if (experimentList.length > 0) {
+            experimentList.each( (i,e) => OO.ui.infuse(e));
+        }
+
+        $('th[property=hidden]').click((e) => {
+            let th = $(e.target).empty();
+            th.append(th.attr('about'));
+            let table = th.closest('table');
+            table.find('tr td:nth-child('+whichChild(th)+') span', table).show();
+        });
+    }
+
+    function whichChild(node) {
+        let i = 1;
+        while(node = node.prev()) {
+            if (node.length === 0) {
+                break;
+            }
+            i++;
+        }
+        return i;
     }
 
     function initializeToggleBoxes() {

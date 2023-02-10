@@ -57,11 +57,17 @@ class ExperimentListRenderer extends ExperimentRenderer {
         $results = [];
         $tabs = $htmlTableEditor->getTabs();
 
+        global $wgCEHiddenColumns;
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
             $htmlTableEditor->removeEmptyColumns();
+            if ($wgCEHiddenColumns ?? false) {
+                $htmlTableEditor->collapseColumns();
+            }
             if (!WikiTools::isInVisualEditor()) {
-                $htmlTableEditor->removeOtherColumns($tab);
+                if ($tab !== '') {
+                    $htmlTableEditor->removeOtherColumns($tab);
+                }
             } else {
                 $htmlTableEditor->addEditButtonsAsFirstColumn();
             }

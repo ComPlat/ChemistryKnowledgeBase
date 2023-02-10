@@ -55,11 +55,17 @@ TEMPLATE;
         $htmlTableEditor = new HtmlTableEditor($html, null);
         $tabs = $htmlTableEditor->getTabs();
 
+        global $wgCEHiddenColumns;
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, null);
             $htmlTableEditor->removeEmptyColumns();
+            if ($wgCEHiddenColumns ?? false) {
+                $htmlTableEditor->collapseColumns();
+            }
             if (!WikiTools::isInVisualEditor()) {
-                $htmlTableEditor->removeOtherColumns($tab);
+                if ($tab !== '') {
+                    $htmlTableEditor->removeOtherColumns($tab);
+                }
 
                 $links = [];
                 $templateData = $this->context['templateData'];

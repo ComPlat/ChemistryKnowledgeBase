@@ -10,36 +10,36 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th resource="General">PS conc [mM]</th>
 <th resource="General">e-D</th>
 <th resource="General">e-D conc [M]</th>
-<th resource="Additives and solvents">H-D</th>
-<th resource="Additives and solvents">H-D conc [M]</th>
+<th resource="Additives and solvents" property="hidden">H-D</th>
+<th resource="Additives and solvents" property="hidden">H-D conc [M]</th>
 <th resource="General,Additives and solvents">solvent A</th>
-<th resource="Additives and solvents">solvent B</th>
-<th resource="Additives and solvents">solvent C</th>
-<th resource="Additives and solvents">solv A/B/C</th>
+<th resource="Additives and solvents" property="hidden">solvent B</th>
+<th resource="Additives and solvents" property="hidden">solvent C</th>
+<th resource="Additives and solvents" property="hidden">solv A/B/C</th>
 <th resource="Additives and solvents">additives, e.g. for buffer</th>
-<th resource="Additives and solvents">additives conc [M]</th>
-<th resource="Physical data">pH</th>
-<th resource="Physical data">T [°C]</th>
+<th resource="Additives and solvents" property="hidden">additives conc [M]</th>
+<th resource="Physical data" property="hidden">pH</th>
+<th resource="Physical data" property="hidden">T [°C]</th>
 <th resource="General,Physical data">λexc [nm]</th>
-<th resource="Physical data">t [h]</th>
+<th resource="Physical data" property="hidden">t [h]</th>
 <th resource="General,Products">TON CO</th>
-<th resource="Products">TOF CO</th>
-<th resource="Products">Φ CO [%]</th>
+<th resource="Products" property="hidden">TOF CO</th>
+<th resource="Products" property="hidden">Φ CO [%]</th>
 <th resource="General,Products">TON CH4</th>
-<th resource="Products">TOF CH4</th>
-<th resource="Products">Φ CH4 [%]</th>
+<th resource="Products" property="hidden">TOF CH4</th>
+<th resource="Products" property="hidden">Φ CH4 [%]</th>
 <th resource="General,Products">TON H2</th>
-<th resource="Products">TOF H2</th>
-<th resource="Products">Φ H2 [%]</th>
+<th resource="Products" property="hidden">TOF H2</th>
+<th resource="Products" property="hidden">Φ H2 [%]</th>
 <th resource="General,Products">TON HCOOH</th>
-<th resource="Products">TOF HCOOH</th>
-<th resource="Products">Φ HCOOH [%]</th>
+<th resource="Products" property="hidden">TOF HCOOH</th>
+<th resource="Products" property="hidden">Φ HCOOH [%]</th>
 <th resource="General,Products">TON MeOH</th>
-<th resource="Products">TOF MeOH</th>
-<th resource="Products">Φ MeOH [%]</th>
+<th resource="Products" property="hidden">TOF MeOH</th>
+<th resource="Products" property="hidden">Φ MeOH [%]</th>
 <th resource="General,Products">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
 <th resource="Products">Φ all [%]</th>
-<th resource="General">include</th>
+<th resource="General" property="hidden">include</th>
 </tr>
 {{{experiments|}}}
 </table>

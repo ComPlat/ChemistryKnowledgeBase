@@ -46,11 +46,16 @@ abstract class ExperimentRenderer
     {
 
         OutputPage::setupOOUI();
+        global $wgCEHiddenColumns;
 
-        $tabsWithRenderedContent = $this->getTabContent();
-
-        if (count($tabsWithRenderedContent) === 1 || WikiTools::isInVisualEditor()) {
+        if ($wgCEHiddenColumns ?? false) {
             return $this->getTabContent()[''];
+        } else {
+            $tabsWithRenderedContent = $this->getTabContent();
+
+            if (count($tabsWithRenderedContent) === 1 || WikiTools::isInVisualEditor()) {
+                return $this->getTabContent()[''];
+            }
         }
 
         $tabPanels = [];

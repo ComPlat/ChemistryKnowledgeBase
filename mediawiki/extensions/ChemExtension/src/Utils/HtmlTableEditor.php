@@ -44,6 +44,46 @@ class HtmlTableEditor
 
     }
 
+    /**
+     * Collapses columns which are annotated with property="hidden"
+     * Table header content is moved to attribute "about" and content is replaced with "..."
+     * Table column content is put in a hidden span
+     */
+    public function collapseColumns() {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//td');
+        $i = 0;
+        foreach ($list as $td) {
+            $i++;
+            $propertyAttribute = $td->getAttribute('property');
+            if ($propertyAttribute == '') {
+                continue;
+            }
+            if ($propertyAttribute === 'hidden') {
+                $span = $this->doc->createElement('span');
+                $span->setAttribute("style", "display: none;");
+                while(!is_null($td->childNodes[0])) {
+                    $span->appendChild($td->childNodes[0]);  // wtf??
+                }
+                $td->appendChild($span);
+            }
+        }
+        $i = 0;
+        $list = $xpath->query('//th');
+        foreach ($list as $td) {
+            $i++;
+            $propertyAttribute = $td->getAttribute('property');
+            if ($propertyAttribute == '') {
+                continue;
+            }
+            if ($propertyAttribute === 'hidden') {
+                $td->setAttribute('about', $this->getHtmlFromNode($td));
+                $td->setAttribute("style", "cursor: pointer;");
+                $td->textContent = '...';
+            }
+        }
+    }
+
     public function removeOtherColumns($tabName)
     {
         $xpath = new DOMXPath($this->doc);
@@ -224,13 +264,13 @@ class HtmlTableEditor
         return $a;
     }
 
-    public function iterateCells(callable $action)
+    private function getHtmlFromNode($node): string
     {
-        $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//td');
-        foreach ($list as $td) {
-            $action(trim($td->textContent));
+        $html = '';
+        foreach ($node->childNodes as $childNode) {
+            $html .= $this->doc->saveHTML($childNode);
         }
+        return $html;
     }
 
     /**
