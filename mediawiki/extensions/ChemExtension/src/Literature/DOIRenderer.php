@@ -61,17 +61,17 @@ class DOIRenderer {
                 'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
                 'authors' => DOITools::formatAuthors($data->author),
                 'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
-                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),
-                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'}),
+                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? ''),
+                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? ''),
                 'publisher' => $data->publisher ?? '-',
-                'licenses' => DOITools::formatLicenses($data->license),
+                'licenses' => DOITools::formatLicenses($data->license ?? ''),
                 'issue' => $data->issue ?? '-',
                 'year' => $doiData->issued->{"date-parts"}[0][0] ?? "-",
                 'journal' =>  $doiData->{"container-title"} ?? "-",
                 'volume' => $data->volume ?? '-',
                 'pages' => $data->page ?? '-',
                 'subjects' => $data->subject ?? '-',
-                'funders' => count($data->funder) === 0 ? "-" : array_map(function ($e) {
+                'funders' => count($data->funder ?? []) === 0 ? "-" : array_map(function ($e) {
                     return $e->name;
                 }, $data->funder),
             ]
