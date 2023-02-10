@@ -74,7 +74,8 @@
 
                 let searchHint = $('#ce-moleculelist-search-hint');
                 let a = $('<a>')
-                    .attr('href', mw.config.get('wgScriptPath') + '/Special:Search?search=' + encodeURIComponent(input.getValue()))
+                    .attr('href', mw.config.get('wgScriptPath') + '/Special:Search?search='
+                        + encodeURIComponent(input.getValue()) + '&prefix='+decodeURIComponent('category=Molecule'))
                     .attr('target', '_blank')
                     .append('open "'+input.getValue()+'" in fulltext search');
                 searchHint.empty();
