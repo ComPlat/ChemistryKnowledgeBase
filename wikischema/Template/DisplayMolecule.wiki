@@ -2,5 +2,5 @@
 How to display a molecule
 </noinclude>
 <includeonly>
-{{#if: {{{1|}}}|{{#if:{{#show:{{{1|}}}|?Abbreviation}}| [[{{{1|}}}|{{#show: {{{1|}}}|?Abbreviation }}]]| [[{{{1|}}}]] }}|}}
+{{#if: {{{1|}}}|{{#if:{{#showcache:{{{1|}}}|?Abbreviation}}| [[{{{1|}}}|{{#showcache: {{{1|}}}|?Abbreviation }}]]| [[{{{1|}}}]] }}|}}
 </includeonly>

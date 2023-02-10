@@ -53,9 +53,9 @@ TEMPLATE;
 
         $results = [];
         $htmlTableEditor = new HtmlTableEditor($html, null);
-        $tabs = $htmlTableEditor->getTabs();
-
         global $wgCEHiddenColumns;
+        $tabs = $wgCEHiddenColumns === true ? [''] : $htmlTableEditor->getTabs();
+
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, null);
             $htmlTableEditor->removeEmptyColumns();

@@ -55,9 +55,9 @@ class ExperimentListRenderer extends ExperimentRenderer {
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
         $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
         $results = [];
-        $tabs = $htmlTableEditor->getTabs();
-
         global $wgCEHiddenColumns;
+        $tabs = $wgCEHiddenColumns === true ? [''] : $htmlTableEditor->getTabs();
+
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, $this->context['form']);
             $htmlTableEditor->removeEmptyColumns();
