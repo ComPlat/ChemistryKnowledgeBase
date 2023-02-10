@@ -60,12 +60,7 @@ class HtmlTableEditor
                 continue;
             }
             if ($propertyAttribute === 'hidden') {
-                $span = $this->doc->createElement('span');
-                $span->setAttribute("style", "display: none;");
-                while(!is_null($td->childNodes[0])) {
-                    $span->appendChild($td->childNodes[0]);  // wtf??
-                }
-                $td->appendChild($span);
+                $td->setAttribute('class', 'collapsed-column');
             }
         }
         $i = 0;

@@ -11,7 +11,7 @@
             let th = $(e.target).empty();
             th.append(th.attr('about'));
             let table = th.closest('table');
-            table.find('tr td:nth-child('+whichChild(th)+') span', table).show();
+            table.find('tr td:nth-child('+whichChild(th)+')', table).removeClass('collapsed-column');
         });
     }
 

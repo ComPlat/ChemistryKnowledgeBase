@@ -253,3 +253,7 @@ div.ce-side-panel-bar {
 #ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
     list-style: circle;
 }
+
+.collapsed-column {
+    visibility: hidden;
+}
