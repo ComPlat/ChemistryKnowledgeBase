@@ -210,8 +210,8 @@ class refreshTopicPages extends Maintenance
             $b = new \DIQA\ChemExtension\NavigationBar\NavigationBar($title);
             if ($b->checkIfInTopicCategory($title)) {
                 $this->updatePage($title);
+                print "\nupdate: " . $title->getPrefixedText();
             }
-            print "\nupdate: " . $title->getPrefixedText();
         }
 
 

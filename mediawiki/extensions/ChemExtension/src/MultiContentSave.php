@@ -41,6 +41,12 @@ class MultiContentSave
         self::parseMoleculeLinks($wikitext);
 
         self::addMoleculesToIndex($pageTitle);
+        self::resetCollectMolecules();
+    }
+
+    public static function resetCollectMolecules()
+    {
+        self::$MOLECULES_FOUND = [];
     }
 
     public static function collectMolecules($chemFormId)
@@ -74,7 +80,7 @@ class MultiContentSave
         }
 
         if (count($moleculeCollections) > 0) {
-            self::addMoleculeCollectionJob($moleculeCollections);
+            self::addMoleculeCollectionJob($moleculeCollections, $pageTitle);
         }
     }
 
@@ -82,13 +88,11 @@ class MultiContentSave
      * @param ChemForm $chemForm
      * @param Title|null $title
      */
-    private static function addMoleculeCollectionJob(array $moleculeCollections): void
+    private static function addMoleculeCollectionJob(array $moleculeCollections, Title $pageTitle): void
     {
-        global $wgTitle;
-
         $jobParams = [];
         $jobParams['moleculeCollections'] = $moleculeCollections;
-        $job = new MoleculesImportJob($wgTitle, $jobParams);
+        $job = new MoleculesImportJob($pageTitle, $jobParams);
         JobQueueGroup::singleton()->push($job);
 
     }
