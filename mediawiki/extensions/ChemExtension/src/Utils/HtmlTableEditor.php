@@ -63,19 +63,17 @@ class HtmlTableEditor
                 $td->setAttribute('class', 'collapsed-column');
             }
         }
-        $i = 0;
+
         $list = $xpath->query('//th');
         foreach ($list as $td) {
-            $i++;
             $propertyAttribute = $td->getAttribute('property');
-            if ($propertyAttribute == '') {
-                continue;
-            }
-            if ($propertyAttribute === 'hidden') {
+
+                $td->setAttribute('collapsed', $propertyAttribute === 'hidden' ? 'true' : 'false');
                 $td->setAttribute('about', $this->getHtmlFromNode($td));
                 $td->setAttribute("style", "cursor: pointer;");
-                $td->textContent = '...';
-            }
+                if ($propertyAttribute === 'hidden') {
+                    $td->textContent = '.';
+                }
         }
     }
 
