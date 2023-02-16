@@ -142,7 +142,7 @@ class MultiContentSave
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $uniqueListOfMolecules = array_unique(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()] ?? []);
-        print_r($uniqueListOfMolecules);
+
         foreach ($uniqueListOfMolecules as $chemFormId) {
             $repo->addChemFormToIndex($pageTitle, $chemFormId);
         }
