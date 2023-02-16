@@ -255,5 +255,9 @@ div.ce-side-panel-bar {
 }
 
 .collapsed-column {
-    visibility: hidden;
+    visibility: collapse;
+}
+
+td.collapsed-column p {
+    display: none;
 }

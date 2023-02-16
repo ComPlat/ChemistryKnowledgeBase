@@ -4,7 +4,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <includeonly>
 <table class="wikitable">
 <tr>
-<th resource="General">cat</th>
+<th resource="General" title="Catalyst">cat</th>
 <th resource="General">cat conc [mM]</th>
 <th resource="General">PS</th>
 <th resource="General">PS conc [mM]</th>
@@ -37,8 +37,8 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th resource="General,Products">TON MeOH</th>
 <th resource="Products" property="hidden">TOF MeOH</th>
 <th resource="Products" property="hidden">Φ MeOH [%]</th>
-<th resource="General,Products">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
-<th resource="Products">Φ all [%]</th>
+<th resource="General,Products" property="hidden">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
+<th resource="Products" property="hidden">Φ all [%]</th>
 <th resource="General" property="hidden">include</th>
 </tr>
 {{{experiments|}}}
