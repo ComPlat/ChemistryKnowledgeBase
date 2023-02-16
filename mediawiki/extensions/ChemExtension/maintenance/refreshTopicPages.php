@@ -10,7 +10,7 @@ use MediaWiki\MediaWikiServices;
  */
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
 
-class UpdateBaseTemplate extends Maintenance
+class refreshTopicPages extends Maintenance
 {
 
     private $linkCache;
@@ -19,7 +19,7 @@ class UpdateBaseTemplate extends Maintenance
     public function __construct()
     {
         parent::__construct();
-        $this->mDescription = "Updates SOLR index";
+        $this->mDescription = "Refresh topic pages";
         $this->addOption('v', 'Verbose mode', false, false);
         $this->addOption('d', 'Delay every 100 pages (miliseconds)', false, true);
         $this->addOption('x', 'Debug mode', false, false);
@@ -57,7 +57,8 @@ class UpdateBaseTemplate extends Maintenance
     /**
      * Print Documatation header
      */
-    private function printDocHeader() {
+    private function printDocHeader()
+    {
         print "Refreshing all semantic data in the SOLR server!\n---\n" .
             " Some versions of PHP suffer from memory leaks in long-running scripts.\n" .
             " If your machine gets very slow after many pages (typically more than\n" .
@@ -81,13 +82,13 @@ class UpdateBaseTemplate extends Maintenance
         print "Processing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ...\n";
         new SMWDIProperty("_wpg");
         $id = $start;
-        while (((! $end) || ($id <= $end)) && ($id > 0)) {
+        while (((!$end) || ($id <= $end)) && ($id > 0)) {
             $title = Title::newFromID($id);
             if ($this->hasOption('v')) {
                 print sprintf("(%s) Processing ID %s ... [%s]\n",
-                    $this->num_files, $id, ! is_null($title) ? $title->getPrefixedText() : "-");
+                    $this->num_files, $id, !is_null($title) ? $title->getPrefixedText() : "-");
             }
-            $id ++;
+            $id++;
             if (is_null($title)) {
                 continue;
             }
@@ -97,7 +98,7 @@ class UpdateBaseTemplate extends Maintenance
             if (($this->hasOption('d')) && (($this->num_files + 1) % 100 === 0)) {
                 usleep($this->getOption('d'));
             }
-            $this->num_files ++;
+            $this->num_files++;
             $this->linkCache->clear(); // avoid memory leaks
 
             if ($this->writeToStartidfile) {
@@ -125,15 +126,14 @@ class UpdateBaseTemplate extends Maintenance
 
             $title = Title::newFromText($page);
 
-            if (! is_null($title)) {
+            if (!is_null($title)) {
                 $this->update($title);
             }
 
-            $this->num_files ++;
+            $this->num_files++;
         }
 
     }
-
 
 
     /**
@@ -148,7 +148,7 @@ class UpdateBaseTemplate extends Maintenance
         if ($this->hasOption('s')) {
             $start = max(1, intval($this->getOption('s')));
         } elseif ($this->hasOption('startidfile')) {
-            if (! is_writable(file_exists($this->getOption('startidfile')) ? $this->getOption('startidfile') : dirname($this->getOption('startidfile')))) {
+            if (!is_writable(file_exists($this->getOption('startidfile')) ? $this->getOption('startidfile') : dirname($this->getOption('startidfile')))) {
                 die("Cannot use a startidfile that we can't write to.\n");
             }
             $this->writeToStartidfile = true;
@@ -223,12 +223,10 @@ class UpdateBaseTemplate extends Maintenance
     private function updatePage(Title $title): void
     {
         $text = WikiTools::getText($title);
-        if (mb_strpos($text, '{{BaseTemplate}}') === false) {
-            $text = "{{BaseTemplate}}\n$text";
-            WikiTools::doEditContent($title, $text, "auto-update");
-        }
+        WikiTools::doEditContent($title, $text, "auto-update", EDIT_UPDATE | EDIT_MINOR, null, true);
+
     }
 }
 
-$maintClass = "UpdateBaseTemplate";
+$maintClass = "refreshTopicPages";
 require_once RUN_MAINTENANCE_IF_MAIN;

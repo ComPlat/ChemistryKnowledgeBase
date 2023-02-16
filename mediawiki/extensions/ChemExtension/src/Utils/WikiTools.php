@@ -51,7 +51,7 @@ class WikiTools {
         return Title::newFromText($matches[1]);
     }
 
-    public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null) {
+    public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null, $force = false) {
 
 
         if( $user==null ) {
@@ -72,7 +72,7 @@ class WikiTools {
 
         $newContent = ContentHandler::makeContent( $newContentsText, $title );
 
-        if( trim($newContent->getWikitextForTransclusion()) == trim( $oldText ) ) {
+        if( !$force && trim($newContent->getWikitextForTransclusion()) == trim( $oldText ) ) {
             // do nothing
             return true;
 
