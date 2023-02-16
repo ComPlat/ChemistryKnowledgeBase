@@ -38,20 +38,20 @@ class MultiContentSave
         $pageTitle = $revisionRecord->getPageAsLinkTarget();
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle);
-        self::parseMoleculeLinks($wikitext);
+        self::parseMoleculeLinks($wikitext, $pageTitle);
 
         self::addMoleculesToIndex($pageTitle);
-        self::resetCollectMolecules();
+        self::resetCollectMolecules($pageTitle);
     }
 
-    public static function resetCollectMolecules()
+    public static function resetCollectMolecules(Title $pageTitle)
     {
-        self::$MOLECULES_FOUND = [];
+        unset(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()]);
     }
 
-    public static function collectMolecules($chemFormId)
+    public static function collectMolecules($chemFormId, $pageTitle)
     {
-        self::$MOLECULES_FOUND[] = $chemFormId;
+        self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()][] = $chemFormId;
     }
 
 
@@ -70,7 +70,7 @@ class MultiContentSave
         foreach ($chemForms as $chemForm) {
             try {
                 $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
-                self::collectMolecules($moleculePage['chemformId']);
+                self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 if ($chemForm->hasRGroupDefinitions()) {
                     $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
                 }
@@ -111,7 +111,7 @@ class MultiContentSave
         $repo->deleteAllChemFormIndexByPageId($pageTitle);
     }
 
-    private static function parseMoleculeLinks($wikitext)
+    private static function parseMoleculeLinks($wikitext, Title $pageTitle)
     {
         $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $parser = new ParserFunctionParser();
@@ -127,7 +127,7 @@ class MultiContentSave
 
             try {
                 $chemFormId = $repo->getChemFormId($link);
-                self::collectMolecules($chemFormId);
+                self::collectMolecules($chemFormId, $pageTitle);
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
@@ -141,8 +141,9 @@ class MultiContentSave
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
-        self::$MOLECULES_FOUND = array_unique(self::$MOLECULES_FOUND);
-        foreach (self::$MOLECULES_FOUND as $chemFormId) {
+        $uniqueListOfMolecules = array_unique(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()] ?? []);
+        print_r($uniqueListOfMolecules);
+        foreach ($uniqueListOfMolecules as $chemFormId) {
             $repo->addChemFormToIndex($pageTitle, $chemFormId);
         }
     }

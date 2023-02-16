@@ -36,7 +36,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
                 $templateParams .= "\n|$key=$value";
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
-                    Hooks::run('CollectMolecules', [$chemFormId]);
+                    Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
                 }
             }
             $experiments .= "{{".$rowTemplate . $templateParams . "\n}}";
