@@ -10,13 +10,13 @@ class HtmlTableEditor
 {
 
     private $doc;
-    private $form;
+    private $context;
 
-    public function __construct($tableHtml, $form)
+    public function __construct($tableHtml, $context)
     {
         $this->doc = new DOMDocument();
         $this->doc->loadHTML(mb_convert_encoding($tableHtml, 'HTML-ENTITIES', 'UTF-8'));
-        $this->form = $form;
+        $this->context = $context;
     }
 
     public function retainRows($rowIndices)
@@ -240,7 +240,8 @@ class HtmlTableEditor
         $a->setAttribute("style", "cursor: pointer");
         $a->setAttribute("class", "experiment-editable");
         $a->setAttribute("resource", $i - 1);
-        $a->setAttribute("datatype", $this->form);
+        $a->setAttribute("datatype", $this->context['form']);
+        $a->setAttribute("about", $this->context['name']);
         $text = $this->doc->createTextNode('(edit)');
         $a->appendChild($text);
         return $a;
