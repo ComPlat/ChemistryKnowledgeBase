@@ -262,8 +262,8 @@ div.ce-side-panel-bar {
     visibility: collapse;
 }
 
-td.collapsed-column p {
-    display: none;
+table th[collapsable] {
+    cursor: pointer;
 }
 
 div.ce-missing-item table td:nth-child(1) {

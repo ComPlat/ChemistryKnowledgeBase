@@ -49,31 +49,33 @@ class HtmlTableEditor
      * Table header content is moved to attribute "about" and content is replaced with "..."
      * Table column content is put in a hidden span
      */
-    public function collapseColumns() {
+    public function collapseColumns()
+    {
         $xpath = new DOMXPath($this->doc);
         $list = $xpath->query('//td');
         $i = 0;
         foreach ($list as $td) {
             $i++;
+            $td->setAttribute('stashed', $this->getHtmlFromNode($td));
             $propertyAttribute = $td->getAttribute('property');
             if ($propertyAttribute == '') {
                 continue;
             }
             if ($propertyAttribute === 'hidden') {
                 $td->setAttribute('class', 'collapsed-column');
+                $td->textContent = '';
             }
         }
 
         $list = $xpath->query('//th');
         foreach ($list as $td) {
             $propertyAttribute = $td->getAttribute('property');
-
-                $td->setAttribute('collapsed', $propertyAttribute === 'hidden' ? 'true' : 'false');
-                $td->setAttribute('about', $this->getHtmlFromNode($td));
-                $td->setAttribute("style", "cursor: pointer;");
-                if ($propertyAttribute === 'hidden') {
-                    $td->textContent = '.';
-                }
+            $td->setAttribute('stashed', $this->getHtmlFromNode($td));
+            $td->setAttribute('collapsed', $propertyAttribute === 'hidden' ? 'true' : 'false');
+            $td->setAttribute('collapsable', 'true');
+            if ($propertyAttribute === 'hidden') {
+                $td->textContent = '.';
+            }
         }
     }
 
