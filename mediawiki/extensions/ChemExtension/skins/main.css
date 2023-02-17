@@ -240,6 +240,10 @@ div.ce-side-panel-bar {
     background: lightyellow;
 }
 
+.ce-page-type-doi {
+    background: lightpink;
+}
+
 .CategoryTreeTag {
     overflow: auto
 }
@@ -260,4 +264,30 @@ div.ce-side-panel-bar {
 
 td.collapsed-column p {
     display: none;
+}
+
+div.ce-missing-item table td:nth-child(1) {
+    width: 250px;
+}
+
+div.ce-missing-item table {
+    width: 80%;
+}
+
+div.ce-missing-item {
+    border: 1px solid;
+    border-radius: 5px;
+    padding: 10px;
+    width: 80%;
+}
+
+div.ce-missing-item span {
+    padding: 5px;
+    border-radius: 3px;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+div.ce-missing-item a.image {
+    margin-left: 10px;
 }

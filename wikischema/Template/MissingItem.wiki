@@ -1,0 +1,20 @@
+<noinclude>
+Missing item
+Params:
+* date=YYYY-mm-dd
+* text=something is missing here!
+* author=Hans
+* type=investigation
+* name=Missing investigation
+* icon=File:WikiTemplate_experiment.png
+</noinclude>
+<includeonly>
+<div class="ce-missing-item ce-page-type-{{{type}}}">
+    <table>
+        <tr><td>[[{{{icon}}}]]<span>{{{name}}}</span>
+        <td>{{#if: {{{date|}}}|Date: {{{date}}}|}} {{#if: {{{author|}}}|<br>Author: {{{author}}}|}}
+        <div style="margin-top: 10px">{{{text}}}</div>
+        </td></tr>
+    </table>
+</div>
+</includeonly>
