@@ -70,8 +70,8 @@ class DOIRenderer {
                 'journal' =>  $doiData->{"container-title"} ?? "-",
                 'volume' => $data->volume ?? '-',
                 'pages' => $data->page ?? '-',
-                'subjects' => $data->subject ?? '-',
-                'funders' => count($data->funder ?? []) === 0 ? "-" : array_map(function ($e) {
+                'subjects' => $data->subject ?? [],
+                'funders' => count($data->funder ?? []) === 0 ? [] : array_map(function ($e) {
                     return $e->name;
                 }, $data->funder),
             ]
