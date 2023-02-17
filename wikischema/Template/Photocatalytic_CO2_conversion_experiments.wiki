@@ -2,44 +2,44 @@
 This is the Photocatalytic CO2 conversion experiments template.
 </noinclude>
 <includeonly>
-<table class="wikitable">
+<table class="wikitable" title="">
 <tr>
 <th resource="General" title="Catalyst">cat</th>
-<th resource="General">cat conc [mM]</th>
-<th resource="General">PS</th>
-<th resource="General">PS conc [mM]</th>
-<th resource="General">e-D</th>
-<th resource="General">e-D conc [M]</th>
-<th resource="Additives and solvents" property="hidden">H-D</th>
-<th resource="Additives and solvents" property="hidden">H-D conc [M]</th>
-<th resource="General,Additives and solvents">solvent A</th>
-<th resource="Additives and solvents" property="hidden">solvent B</th>
-<th resource="Additives and solvents" property="hidden">solvent C</th>
-<th resource="Additives and solvents" property="hidden">solv A/B/C</th>
-<th resource="Additives and solvents">additives, e.g. for buffer</th>
-<th resource="Additives and solvents" property="hidden">additives conc [M]</th>
-<th resource="Physical data" property="hidden">pH</th>
-<th resource="Physical data" property="hidden">T [°C]</th>
-<th resource="General,Physical data">λexc [nm]</th>
-<th resource="Physical data" property="hidden">t [h]</th>
-<th resource="General,Products">TON CO</th>
-<th resource="Products" property="hidden">TOF CO</th>
-<th resource="Products" property="hidden">Φ CO [%]</th>
-<th resource="General,Products">TON CH4</th>
-<th resource="Products" property="hidden">TOF CH4</th>
-<th resource="Products" property="hidden">Φ CH4 [%]</th>
-<th resource="General,Products">TON H2</th>
-<th resource="Products" property="hidden">TOF H2</th>
-<th resource="Products" property="hidden">Φ H2 [%]</th>
-<th resource="General,Products">TON HCOOH</th>
-<th resource="Products" property="hidden">TOF HCOOH</th>
-<th resource="Products" property="hidden">Φ HCOOH [%]</th>
-<th resource="General,Products">TON MeOH</th>
-<th resource="Products" property="hidden">TOF MeOH</th>
-<th resource="Products" property="hidden">Φ MeOH [%]</th>
-<th resource="General,Products" property="hidden">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
-<th resource="Products" property="hidden">Φ all [%]</th>
-<th resource="General" property="hidden">include</th>
+<th resource="General" title="catalyst concentration">cat conc [mM]</th>
+<th resource="General" title="photosensitizer">PS</th>
+<th resource="General" title="photosensitizer concentration">PS conc [mM]</th>
+<th resource="General" title="electron donor">e-D</th>
+<th resource="General" title="electron donor concentration">e-D conc [M]</th>
+<th resource="Additives and solvents" property="hidden" title="hydrogen donor">H-D</th>
+<th resource="Additives and solvents" property="hidden" title="hydrogen donor concentration">H-D conc [M]</th>
+<th resource="General,Additives and solvents" title="solvent A">solvent A</th>
+<th resource="Additives and solvents" property="hidden" title="solvent B">solvent B</th>
+<th resource="Additives and solvents" property="hidden" title="solvent C">solvent C</th>
+<th resource="Additives and solvents" property="hidden" title="solvent ratio">solv A/B/C</th>
+<th resource="Additives and solvents" title="additives">additives, e.g. for buffer</th>
+<th resource="Additives and solvents" property="hidden" title="additives concentration">additives conc [M]</th>
+<th resource="Physical data" property="hidden" title="pH">pH</th>
+<th resource="Physical data" property="hidden" title="temperature">T [°C]</th>
+<th resource="General,Physical data" title="irradiation wavelength">λexc [nm]</th>
+<th resource="Physical data" property="hidden" title="irradiation time">t [h]</th>
+<th resource="General,Products" title="turnover number CO">TON CO</th>
+<th resource="Products" property="hidden" title="turnover frequency CO">TOF CO</th>
+<th resource="Products" property="hidden" title="quantum yield CO">Φ CO [%]</th>
+<th resource="General,Products" title="turnover number CH4">TON CH4</th>
+<th resource="Products" property="hidden" title="turnover frequency CH4">TOF CH4</th>
+<th resource="Products" property="hidden" title="quantum yield CH4">Φ CH4 [%]</th>
+<th resource="General,Products" title="turnover number H2">TON H2</th>
+<th resource="Products" property="hidden" title="turnover frequency H2">TOF H2</th>
+<th resource="Products" property="hidden" title="quantum yield H2">Φ H2 [%]</th>
+<th resource="General,Products" title="turnover number HCOOH">TON HCOOH</th>
+<th resource="Products" property="hidden" title="turnover frequency HCOOH">TOF HCOOH</th>
+<th resource="Products" property="hidden" title="quantum yield HCOOH">Φ HCOOH [%]</th>
+<th resource="General,Products" title="turnover number MeOH">TON MeOH</th>
+<th resource="Products" property="hidden" title="turnover frequency MeOH">TOF MeOH</th>
+<th resource="Products" property="hidden" title="quantum yield MeOH">Φ MeOH [%]</th>
+<th resource="General,Products" property="hidden" title="selectivity">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
+<th resource="Products" property="hidden" title="total quantum yield">Φ all [%]</th>
+<th resource="General" property="hidden" title="include">include</th>
 </tr>
 {{{experiments|}}}
 </table>
