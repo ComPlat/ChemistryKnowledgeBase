@@ -15585,43 +15585,43 @@ window.ChemExtension.RGroups = [
         "label": "tBu"
     },
     {
-        "data": "Br-",
+        "data": "br-",
         "label": "Br-"
     },
     {
-        "data": "Cl-",
+        "data": "cl-",
         "label": "Cl-"
     },
     {
-        "data": "PF6-",
+        "data": "pf6-",
         "label": "PF6-"
     },
     {
-        "data": "K+",
+        "data": "k+",
         "label": "K+"
     },
     {
-        "data": "NBu4+",
+        "data": "nbu4+",
         "label": "NBu4+"
     },
     {
-        "data": "CO",
+        "data": "co",
         "label": "CO"
     },
     {
-        "data": "CO2",
+        "data": "co2",
         "label": "CO2"
     },
     {
-        "data": "NCMe",
+        "data": "ncme",
         "label": "NCMe"
     },
     {
-        "data": "H2O",
+        "data": "h2o",
         "label": "H2O"
     },
     {
-        "data": "PO(OH)2",
+        "data": "po(oh)2",
         "label": "PO(OH)2"
     }
 ];
