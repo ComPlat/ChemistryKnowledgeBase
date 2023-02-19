@@ -44,6 +44,17 @@ class MultiContentSave
         self::resetCollectMolecules($pageTitle);
     }
 
+    public static function onArticleDeleteComplete( &$article, \User &$user, $reason, $id, $content, \LogEntry
+        $logEntry, $archivedRevisionCount ) {
+        if ($article->getTitle()->getNamespace() === NS_MOLECULE
+        || $article->getTitle()->getNamespace() === NS_REACTION) {
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+            $repo = new ChemFormRepository($dbr);
+            $repo->deleteAllChemFormIndexByPageId($article->getTitle());
+            $repo->deleteChemForm($article->getTitle()->getText());
+        }
+    }
+
     public static function resetCollectMolecules(Title $pageTitle)
     {
         unset(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()]);
@@ -95,13 +106,6 @@ class MultiContentSave
         $job = new MoleculesImportJob($pageTitle, $jobParams);
         JobQueueGroup::singleton()->push($job);
 
-    }
-
-    private static function addToChemFormIndex($pageTitle, $chemformId)
-    {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
-        $repo = new ChemFormRepository($dbr);
-        $repo->addChemFormToIndex($pageTitle, $chemformId);
     }
 
     private static function removeAllMoleculesFromChemFormIndex($pageTitle)

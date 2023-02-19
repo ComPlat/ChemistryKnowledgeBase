@@ -25,6 +25,7 @@
 	"paper-hint": "Enter new paper title",
 	"paper-label": "Paper title",
 	"checkservices": "Check services for ChemWiki",
+	"findunusedmolecules": "Find unused molecules",
 	"page-type-topic": "Topic",
 	"page-type-publication": "Publication page",
 	"page-type-investigation": "Investigation"

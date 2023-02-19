@@ -102,6 +102,11 @@ class ChemFormRepository
         return null;
     }
 
+    public function deleteChemForm($chemFormId) {
+        $this->db->delete('chem_form',
+            ['id' => $chemFormId]);
+    }
+
     public function addChemFormImage($moleculeKey, $imgData): int
     {
         $this->db->startAtomic(__METHOD__);
@@ -243,4 +248,30 @@ class ChemFormRepository
         }
         return $results;
     }
+
+    public function getUnusedMolecules($limit = 10000, $offset = 0)
+    {
+        $res = $this->db->select(
+            ['chem_form_index', 'chem_form'],
+            ['chem_form.id'],
+            ['chem_form_index.chem_form_id IS NULL'],
+            __METHOD__,
+            [
+                'OFFSET' => $offset,
+                'LIMIT' => $limit],
+            ['chem_form_index' => ['LEFT JOIN', 'chem_form_index.chem_form_id=chem_form.id']]);
+        $results = [];
+        foreach ($res as $row) {
+            $title = Title::newFromText($row->id, NS_MOLECULE);
+            if (!$title->exists()) {
+                $title = Title::newFromText($row->id, NS_REACTION);
+                if (!$title->exists()) {
+                    $title = "Molecule entry without according page: {$row->id}";
+                }
+            }
+            $results[] = $title;
+        }
+        return $results;
+    }
+
 }

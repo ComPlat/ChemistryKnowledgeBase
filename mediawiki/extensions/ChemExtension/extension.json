@@ -18,7 +18,8 @@
         "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage",
         "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper",
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
-        "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices"
+        "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
+        "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules"
 
     },
     "AutoloadNamespaces": {
@@ -29,6 +30,7 @@
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
+        "ArticleDeleteComplete": "DIQA\\ChemExtension\\MultiContentSave::onArticleDeleteComplete",
         "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates",
         "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
