@@ -1,4 +1,2 @@
 <noinclude>Template for setting display title. Removes the namespace and makes it available to SMW (Display title of) </noinclude>
-‎<includeonly>
-{{DISPLAYTITLE: {{PAGENAME}} }}
-‎<includeonly>
+‎<includeonly>{{DISPLAYTITLE: {{PAGENAME}} }}‎<includeonly>

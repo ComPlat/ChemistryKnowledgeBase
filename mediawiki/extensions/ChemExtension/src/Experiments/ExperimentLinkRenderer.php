@@ -49,7 +49,7 @@ TEMPLATE;
 
         $parser = new Parser();
         $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
-        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
 
         $results = [];
         $htmlTableEditor = new HtmlTableEditor($html, null);

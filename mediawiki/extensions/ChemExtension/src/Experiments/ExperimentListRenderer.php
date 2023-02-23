@@ -52,7 +52,7 @@ class ExperimentListRenderer extends ExperimentRenderer {
 
         $parser = new Parser();
         $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
-        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
         $htmlTableEditor = new HtmlTableEditor($html, $this->context);
         $results = [];
         global $wgCEHiddenColumns;
