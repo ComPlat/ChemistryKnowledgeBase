@@ -44,7 +44,10 @@ class RenderFormula
         $chemFormRepo = new ChemFormRepository($dbr);
         $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'] ?? '', $arguments['inchikey'] ?? '');
 
-        $chemFormId = $chemFormRepo->addChemForm($moleculeKey);
+        $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
+        if (is_null($chemFormId)) {
+            return array('', 'noparse' => true, 'isHTML' => true);
+        }
         $attributes['chemFormId'] = $chemFormId;
 
         $attributes['downloadURL'] = $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey);
