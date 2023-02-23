@@ -20,6 +20,7 @@ use SMW\ApplicationFactory;
 class Setup {
 
     private static $cachedQueries = [];
+    private static $subTitleExtension = '';
 
     public static function initModules() {
 
@@ -86,7 +87,7 @@ class Setup {
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
         $b = new NavigationBar($wgTitle);
-        $out->addSubtitle($b->getPageType());
+        $out->addSubtitle($b->getPageType() . self::$subTitleExtension);
 
         $out->addModules('ext.diqa.chemextension');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
@@ -107,6 +108,11 @@ class Setup {
             $data .= $b->getNavigationLocation();
         }
 
+    }
+
+    public static function extendSubtitle($html)
+    {
+        self::$subTitleExtension .= $html;
     }
 
     public static function onParserFirstCallInit( Parser $parser ) {

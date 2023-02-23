@@ -46,11 +46,11 @@ class MultiContentSave
 
     public static function onArticleDeleteComplete( &$article, \User &$user, $reason, $id, $content, \LogEntry
         $logEntry, $archivedRevisionCount ) {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $repo = new ChemFormRepository($dbr);
+        $repo->deleteAllChemFormIndexByPageId($article->getTitle());
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
-            $repo = new ChemFormRepository($dbr);
-            $repo->deleteAllChemFormIndexByPageId($article->getTitle());
             $repo->deleteChemForm($article->getTitle()->getText());
         }
     }

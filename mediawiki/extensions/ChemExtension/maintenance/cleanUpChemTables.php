@@ -52,17 +52,20 @@ class cleanUpChemTables extends \Maintenance
             print "\nCleaning tables...";
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
             $repo = new ChemFormRepository($dbr);
-            $moleculeTitles = $repo->getUnusedMolecules();
+            $ids = $repo->getUnusedMoleculeIds();
             $i = 1;
-            foreach($moleculeTitles as $title) {
-                if (!$title->exists()) {
-                    print "\n\tRemove chemform ($i): {$title->getPrefixedText()}";
+            foreach($ids as $id) {
+                $moleculeTitle = \Title::newFromText($id, NS_MOLECULE);
+                $reactionTitle = \Title::newFromText($id, NS_REACTION);
+                if (!$moleculeTitle->exists() && !$reactionTitle->exists()) {
+                    print "\n\tRemove chemform ($i): $id}";
                     if (!$this->hasOption('dry-run')) {
-                        $repo->deleteAllChemFormIndexByPageId($title);
-                        $repo->deleteChemForm($title->getText());
+                        $repo->deleteAllChemFormIndexByPageId($id);
+                        $repo->deleteChemForm($id);
                     }
-                    $i++;
                 }
+
+                $i++;
             }
             print "\nfinished\n";
         } catch (Exception $e) {

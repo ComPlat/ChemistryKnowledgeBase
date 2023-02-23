@@ -77,7 +77,7 @@ class DOIRenderer {
             ]
         )->render ();
         $wikitext .= trim($parameters);
-        $wikitext .= "\n}}\n";
+        $wikitext .= "\n}}";
         return $wikitext;
     }
 

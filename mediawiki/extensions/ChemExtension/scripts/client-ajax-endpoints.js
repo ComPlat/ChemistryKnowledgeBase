@@ -23,6 +23,20 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.uploadImageAndReplaceOld = function (moleculeKeyOld, moleculeKeyNew, imgData) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/chemform/upload?" + $.param({ moleculeKey: moleculeKeyNew, moleculeKeyToReplace: moleculeKeyOld });
+
+        return $.ajax({
+            method: "POST",
+            url: url,
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                'imgData': imgData,
+            }
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.getInchiKey = function (node, formulaV3000) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/inchi?mol=" + btoa(formulaV3000);

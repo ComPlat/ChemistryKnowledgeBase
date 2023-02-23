@@ -41,7 +41,18 @@ class FindUnusedMolecules extends SpecialPage
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
-        $moleculeTitles = $repo->getUnusedMolecules($limit, $offset);
+        $ids = $repo->getUnusedMoleculeIds($limit, $offset);
+
+        $moleculeTitles = array_map(function($e) {
+            $title = \Title::newFromText($e, NS_MOLECULE);
+            if (!$title->exists()) {
+                $title = \Title::newFromText($e, NS_REACTION);
+                if (!$title->exists()) {
+                    $title = "Molecule entry without according page: {$e}";
+                }
+            }
+            return $title;
+        }, $ids);
         $output->addHTML($this->blade->view()->make("findUnusedMolecules.results", [
 
             'moleculeTitles' => $moleculeTitles,

@@ -41,9 +41,10 @@ class DOIInfoBox
 
             $parserNew = new Parser();
             $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions());
-            $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+            $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
 
-            return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
+            \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);
+            return ['', 'noparse' => true, 'isHTML' => true];
         } catch(Exception $e) {
             $html = self::getBlade()->view ()->make ( "error", ['message' => $e->getMessage()])->render ();
             return [$html, 'noparse' => true, 'isHTML' => true];

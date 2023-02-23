@@ -1,6 +1,5 @@
 <noinclude>Template for DOI Infobox</noinclude>
-<includeonly>
-<table class="float-right infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;">
+<includeonly><table class="float-right infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;">
 <tr>
 <th colspan="2" style="font-size:120%; text-align:center; cursor: pointer;">About</th>
 </tr>
@@ -31,5 +30,4 @@
 <tr style="display: none;">
 <td colspan="2" style="font-size:80%; text-align:center; ">[{{fullurl:Special:Literature|doi={{{doi|}}} }} Show details]</td>
 </tr>
-</table>
-</includeonly>
+</table></includeonly>

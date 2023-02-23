@@ -132,8 +132,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         } else {
             moleculeKey = formulaData.inchikey;
         }
-
-        this.ajax.uploadImage(moleculeKey, btoa(unescape(encodeURIComponent(imgData)))).then(() => {
+        let uploadImagePromise;
+        if (this.moleculeKeyOld === '') {
+            uploadImagePromise = this.ajax.uploadImage(moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+        } else {
+            uploadImagePromise = this.ajax.uploadImageAndReplaceOld(this.moleculeKeyOld, moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+        }
+        uploadImagePromise.then(() => {
             this.updateModelAfterUpload(node, {
                 formula: formulaData.formula,
                 smiles: formulaData.smiles,
@@ -174,6 +179,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         this.iframe.setData(data);
         this.selectedNode = data.node;
+        this.moleculeKeyOld = data.inchikey;
         return ve.ui.KetcherDialog.super.prototype.setup.call(this, data);
     };
 
