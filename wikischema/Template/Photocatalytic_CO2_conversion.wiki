@@ -1,8 +1,7 @@
 <noinclude>
 This is the Photocatalytic CO2 conversion template.
 </noinclude>
-<includeonly>
-<tr>
+<includeonly><tr>
 <td resource="General">{{DisplayMolecule|{{{catalyst|}}} }}</td>
 <td resource="General">{{{cat conc|}}}</td>
 <td resource="General">{{DisplayMolecule|{{{PS|}}} }}</td>
@@ -39,8 +38,7 @@ This is the Photocatalytic CO2 conversion template.
 <td resource="General,Products" property="hidden">{{Selectivity|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
 <td resource="Products" property="hidden">{{DisplayNumberNotNull|{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }} }}</td>
 <td resource="General" property="hidden">{{{include|}}}</td>
-</tr>
-{{#subobject:
+</tr>{{#subobject:
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}
  |Photosensitizer={{{PS|}}}
@@ -78,5 +76,4 @@ This is the Photocatalytic CO2 conversion template.
  |Selectivity={{{selectivity|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
-}}
-</includeonly>
+}}</includeonly>
