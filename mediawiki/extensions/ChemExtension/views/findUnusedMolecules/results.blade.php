@@ -1,4 +1,7 @@
 <div style="margin-top: 20px;">
+    @if(count($moleculeTitles) === 0)
+        <p>No molecules found</p>
+    @else
     <ul>
         @foreach($moleculeTitles as $title)
             <li>
@@ -11,4 +14,5 @@
             </li>
         @endforeach
     </ul>
+    @endif
 </div>
