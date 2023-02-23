@@ -48,7 +48,7 @@ class MultiContentSave
         $logEntry, $archivedRevisionCount ) {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
-        $repo->deleteAllChemFormIndexByPageId($article->getTitle());
+        $repo->deleteAllChemFormIndexByPage($article->getTitle());
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
             $repo->deleteChemForm($article->getTitle()->getText());
@@ -112,7 +112,7 @@ class MultiContentSave
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
-        $repo->deleteAllChemFormIndexByPageId($pageTitle);
+        $repo->deleteAllChemFormIndexByPage($pageTitle);
     }
 
     private static function parseMoleculeLinks($wikitext, Title $pageTitle)

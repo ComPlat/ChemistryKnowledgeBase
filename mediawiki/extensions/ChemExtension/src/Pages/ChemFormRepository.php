@@ -234,11 +234,19 @@ class ChemFormRepository
         return $results;
     }
 
-    public function deleteAllChemFormIndexByPageId(Title $page)
+    public function deleteAllChemFormIndexByPage(Title $page)
     {
         $this->db->delete('chem_form_index',
             [
                 'page_id' => $page->getArticleID(),
+            ]);
+    }
+
+    public function deleteAllChemFormIndexByChemFormId($chemformId)
+    {
+        $this->db->delete('chem_form_index',
+            [
+                'chem_form_id' => $chemformId,
             ]);
     }
 

@@ -60,7 +60,7 @@ class cleanUpChemTables extends \Maintenance
                 if (!$moleculeTitle->exists() && !$reactionTitle->exists()) {
                     print "\n\tRemove chemform ($i): $id}";
                     if (!$this->hasOption('dry-run')) {
-                        $repo->deleteAllChemFormIndexByPageId($id);
+                        $repo->deleteAllChemFormIndexByChemFormId($id);
                         $repo->deleteChemForm($id);
                     }
                 }
