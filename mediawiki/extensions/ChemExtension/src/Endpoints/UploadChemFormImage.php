@@ -20,7 +20,7 @@ class UploadChemFormImage extends SimpleHandler {
 
         $chemFormRepo = new ChemFormRepository($dbr);
         if (isset($params['moleculeKeyToReplace'])) {
-            $chemFormRepo->replaceChemFormImage($params['moleculeKeyToReplace'], $params['moleculeKey'], $params['imgData']);
+            $chemFormRepo->addChemFormImageForReserved($params['moleculeKeyToReplace'], $params['moleculeKey'], $params['imgData']);
         } else {
             $chemFormRepo->addChemFormImage($params['moleculeKey'], $params['imgData']);
         }

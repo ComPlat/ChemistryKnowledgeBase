@@ -28,8 +28,13 @@ class MoleculePageCreator
         );
 
         $chemFormRepository = new ChemFormRepository($dbr);
-        $key = $chemForm->getMoleculeKey();
-        $id = $chemFormRepository->addChemForm($key);
+        $moleculeKey = $chemForm->getMoleculeKey();
+        $reservedKey = $chemFormRepository->getChemFormIdForReservedByKey($moleculeKey);
+        if (!is_null($reservedKey)) {
+            $imgData = $chemFormRepository->getChemFormImageForReservedByKey($moleculeKey);
+            $chemFormRepository->commitReservedMolecule($moleculeKey, $imgData);
+        }
+        $id = $chemFormRepository->addChemForm($moleculeKey);
 
         $title = MoleculePageCreationJob::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 

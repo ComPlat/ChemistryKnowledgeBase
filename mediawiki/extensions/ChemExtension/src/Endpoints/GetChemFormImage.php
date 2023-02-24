@@ -21,7 +21,10 @@ class GetChemFormImage extends SimpleHandler
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $moleculeKey = $params['moleculeKey'];
-        $imgDataBase64 = $chemFormRepo->getChemFormImage($moleculeKey);
+        $imgDataBase64 = $chemFormRepo->getChemFormImageForReservedByKey($moleculeKey);
+        if (is_null($imgDataBase64)) {
+            $imgDataBase64 = $chemFormRepo->getChemFormImageByKey($moleculeKey);
+        }
         if (is_null($imgDataBase64) || $imgDataBase64 == '') {
             $res = new Response("chemical formula does not exist: $moleculeKey");
             $res->setStatus(400);
