@@ -197,6 +197,24 @@ class HtmlTableEditor
 
     }
 
+    public function addIndexAsFirstColumn()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+        foreach ($list as $tr) {
+
+            $td = $this->doc->createElement('td');
+            $textNode = $this->doc->createTextNode("$i.");
+            if ($i > 0) {
+                $td->appendChild($textNode);
+            }
+            $tr->insertBefore($td, $tr->firstChild);
+            $i++;
+        }
+
+    }
+
     public function addLinkAsLastColumn(array $links)
     {
         $xpath = new DOMXPath($this->doc);

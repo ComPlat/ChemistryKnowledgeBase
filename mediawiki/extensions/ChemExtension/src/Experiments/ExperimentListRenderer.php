@@ -64,6 +64,7 @@ class ExperimentListRenderer extends ExperimentRenderer {
             if ($wgCEHiddenColumns ?? false) {
                 $htmlTableEditor->collapseColumns();
             }
+            $htmlTableEditor->addIndexAsFirstColumn();
             if (!WikiTools::isInVisualEditor()) {
                 if ($tab !== '') {
                     $htmlTableEditor->removeOtherColumns($tab);
