@@ -1,0 +1,16 @@
+Index: mediawiki/extensions/PageForms/includes/PF_FormPrinter.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php b/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php
+--- a/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php	(revision b58f4e1544700c4689d13bb3d909f6f94bcdf733)
++++ b/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php	(date 1677252332410)
+@@ -338,6 +338,7 @@
+ 			<td class="instanceRemove">$removeButton</td>
+ 			</tr>
+ 			</table>
++            <span class="pf_copy_template">copy</span>
+ END;
+ 
+ 		return $text;

@@ -50,6 +50,7 @@ class Setup {
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/rerender-chemform.js',
                 $baseScript . '/ve.oo-ui.initialize.js',
+                $baseScript . '/pf-extensions.js',
                 $baseScript . '/ve.oo-ui.add-experiment-dialog.js',
                 $baseScript . '/ve.oo-ui.add-experiment-widget.js',
                 $baseScript . '/ve.oo-ui.add-experiment-link-dialog.js',

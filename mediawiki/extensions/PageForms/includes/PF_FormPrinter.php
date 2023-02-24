@@ -338,6 +338,7 @@ class PFFormPrinter {
 			<td class="instanceRemove">$removeButton</td>
 			</tr>
 			</table>
+            <span class="pf_copy_template">copy</span>
 END;
 
 		return $text;
