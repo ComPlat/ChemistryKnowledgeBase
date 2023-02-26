@@ -19,11 +19,21 @@ class UploadChemFormImage extends SimpleHandler {
         );
 
         $chemFormRepo = new ChemFormRepository($dbr);
-        if (isset($params['moleculeKeyToReplace'])) {
-            $chemFormRepo->addChemFormImageForReserved($params['moleculeKeyToReplace'], $params['moleculeKey'], $params['imgData']);
-        } else {
-            $chemFormRepo->addChemFormImage($params['moleculeKey'], $params['imgData']);
+        if (!is_null($chemFormRepo->getChemFormId($params['moleculeKey']))) {
+            $res = new Response();
+            $res->setStatus(200);
+            return $res;
         }
+
+        $moleculeKeyOld = "reserved-" . $params['moleculeKeyToReplace'];
+        $moleculeKeyNew = "reserved-" . $params['moleculeKey'];
+        if (isset($params['moleculeKeyToReplace']) && !is_null($chemFormRepo->getChemFormImageByKey($moleculeKeyOld))) {
+            $chemFormRepo->replaceChemFormImage($moleculeKeyOld, $moleculeKeyNew, $params['imgData']);
+        } else {
+            $chemFormRepo->addChemFormImage($moleculeKeyNew, $params['imgData']);
+        }
+
+
         $res = new Response();
         $res->setStatus(200);
         return $res;

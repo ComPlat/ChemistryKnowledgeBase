@@ -44,7 +44,7 @@ class RenderFormula
         $chemFormRepo = new ChemFormRepository($dbr);
         $moleculeKey = MolfileProcessor::generateMoleculeKey($formula, $arguments['smiles'] ?? '', $arguments['inchikey'] ?? '');
 
-        $chemFormId = $chemFormRepo->getChemFormIdForReservedByKey($moleculeKey);
+        $chemFormId = $chemFormRepo->getChemFormId("reserved-".$moleculeKey);
         if (is_null($chemFormId)) {
             $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
             if (is_null($chemFormId)) {
@@ -91,7 +91,8 @@ class RenderFormula
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $chemFormRepo = new ChemFormRepository($dbr);
-        return $chemFormRepo->getChemFormImageByKey($moleculeKey) == '' && $chemFormRepo->getChemFormImageForReservedByKey($moleculeKey) == '';
+        return $chemFormRepo->getChemFormImageByKey($moleculeKey) == ''
+            && $chemFormRepo->getChemFormImageByKey("reserved-".$moleculeKey) == '';
     }
 
     private static function serializeAttributes(array $attributes): string

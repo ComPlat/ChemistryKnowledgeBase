@@ -29,10 +29,9 @@ class MoleculePageCreator
 
         $chemFormRepository = new ChemFormRepository($dbr);
         $moleculeKey = $chemForm->getMoleculeKey();
-        $reservedKey = $chemFormRepository->getChemFormIdForReservedByKey($moleculeKey);
+        $reservedKey = $chemFormRepository->getChemFormId("reserved-".$moleculeKey);
         if (!is_null($reservedKey)) {
-            $imgData = $chemFormRepository->getChemFormImageForReservedByKey($moleculeKey);
-            $chemFormRepository->commitReservedMolecule($moleculeKey, $imgData);
+            $chemFormRepository->commitReservedMolecule($moleculeKey);
         }
         $id = $chemFormRepository->addChemForm($moleculeKey);
 

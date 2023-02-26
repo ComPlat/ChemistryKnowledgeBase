@@ -28,8 +28,6 @@ class ChemFormRepository
                     )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_molecule_key_unique UNIQUE IF NOT EXISTS (molecule_key)');
         $this->db->query('ALTER TABLE chem_form AUTO_INCREMENT=100000');
-        $this->db->query('ALTER TABLE chem_form ADD COLUMN IF NOT EXISTS molecule_key_reserved VARCHAR(255) AFTER molecule_key');
-        $this->db->query('ALTER TABLE chem_form ADD COLUMN IF NOT EXISTS img_data_reserved MEDIUMBLOB AFTER img_data');
 
         $this->db->query('CREATE TABLE IF NOT EXISTS chem_form_index (
                         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,27 +91,6 @@ class ChemFormRepository
         return null;
     }
 
-    public function getChemFormIdForReservedByKey($moleculeKey)
-    {
-        $res = $this->db->select('chem_form', ['id'],
-            ['molecule_key_reserved' => $moleculeKey]);
-        if ($res->numRows() > 0) {
-            $row = $res->fetchObject();
-            return $row->id;
-        }
-        return null;
-    }
-
-    public function getChemFormImageForReservedByKey($moleculeKey)
-    {
-        $res = $this->db->select('chem_form', ['img_data_reserved'],
-            ['molecule_key_reserved' => $moleculeKey]);
-        if ($res->numRows() > 0) {
-            $row = $res->fetchObject();
-            return $row->img_data_reserved;
-        }
-        return null;
-    }
 
     public function getMoleculeKey($chemFormId)
     {
@@ -161,30 +138,26 @@ class ChemFormRepository
         return $id;
     }
 
-    public function commitReservedMolecule($moleculeKeyReserved, $imgDataReserved)
+    public function replaceChemFormImage($moleculeKeyOld, $moleculeKeyNew, $imgData)
+    {
+        $this->db->update('chem_form',
+            [
+                'img_data' => $imgData,
+                'molecule_key' => $moleculeKeyNew
+
+            ], [
+                'molecule_key' => $moleculeKeyOld
+            ]);
+    }
+
+    public function commitReservedMolecule($moleculeKeyReserved)
     {
         $this->db->update('chem_form',
             [
                 'molecule_key' => $moleculeKeyReserved,
-                'img_data' => $imgDataReserved,
-                'molecule_key_reserved' => NULL,
-                'img_data_reserved' => NULL
 
             ], [
-                'molecule_key_reserved' => $moleculeKeyReserved
-            ]);
-
-    }
-
-    public function addChemFormImageForReserved($moleculeKey, $moleculeKeyReserved, $imgData)
-    {
-        $this->db->update('chem_form',
-            [
-                'img_data_reserved' => $imgData,
-                'molecule_key_reserved' => $moleculeKeyReserved
-
-            ], [
-                'molecule_key' => $moleculeKey
+                'molecule_key' => "reserved-".$moleculeKeyReserved
             ]);
 
     }

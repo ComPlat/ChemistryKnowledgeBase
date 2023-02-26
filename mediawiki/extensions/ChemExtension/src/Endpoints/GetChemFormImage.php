@@ -21,7 +21,7 @@ class GetChemFormImage extends SimpleHandler
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $moleculeKey = $params['moleculeKey'];
-        $imgDataBase64 = $chemFormRepo->getChemFormImageForReservedByKey($moleculeKey);
+        $imgDataBase64 = $chemFormRepo->getChemFormImageByKey("reserved-".$moleculeKey);
         if (is_null($imgDataBase64)) {
             $imgDataBase64 = $chemFormRepo->getChemFormImageByKey($moleculeKey);
         }
