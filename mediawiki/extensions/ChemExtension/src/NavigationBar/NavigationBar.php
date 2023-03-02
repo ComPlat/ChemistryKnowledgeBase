@@ -14,7 +14,7 @@ class NavigationBar
     private $blade;
 
     private $title;
-    private $categoryList;
+    private $pageList;
 
     /**
      * Breadcrumb constructor.
@@ -29,7 +29,7 @@ class NavigationBar
 
         $parentCategoryTree = [];
         $parentCategoryTree[$this->title->getPrefixedText()] = $this->title->getParentCategoryTree();
-        $this->getReversedCategoryList($parentCategoryTree, $this->categoryList);
+        $this->getReversedCategoryList($parentCategoryTree, $this->pageList);
     }
 
     public function getNavigationLocation()
@@ -107,14 +107,17 @@ class NavigationBar
 
         $list = new Tag('ul');
         $list->addClasses(['ce-breadcrumb']);
-        foreach($this->categoryList as $category) {
-            if ($category->getText() === 'Topic') continue;
+        foreach($this->pageList as $page) {
+            if ($page->getText() === 'Topic') continue;
             $li = new Tag('li');
 
             $typeHint = new Tag('span');
-            $type = $this->getCssType($category);
+            $type = $this->getCssType($page);
             $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
-            $li->appendContent($category->getText());
+            $a = new Tag('a');
+            $a->appendContent($page->getText());
+            $a->setAttributes(['href' => $page->getFullURL()]);
+            $li->appendContent($a);
             $list->appendContent($li);
         }
         return $list;
@@ -133,10 +136,11 @@ class NavigationBar
 
     public function checkIfInTopicCategory(Title $title): bool
     {
-        $categoryTitles = array_map(function ($e) {
+        $this->getReversedCategoryList($title->getParentCategoryTree(), $categories);
+        $categoryTitleTexts = array_map(function ($e) {
             return $e->getText();
-        }, $this->categoryList);
-        return in_array('Topic', $categoryTitles);
+        }, $categories);
+        return in_array('Topic', $categoryTitleTexts);
     }
 
     private function showPublications(): bool
