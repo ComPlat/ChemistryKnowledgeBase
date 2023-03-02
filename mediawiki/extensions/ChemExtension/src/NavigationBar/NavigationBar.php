@@ -136,11 +136,9 @@ class NavigationBar
 
     public function checkIfInTopicCategory(Title $title): bool
     {
+        $categories = [];
         $this->getReversedCategoryList($title->getParentCategoryTree(), $categories);
-        $categoryTitleTexts = array_map(function ($e) {
-            return $e->getText();
-        }, $categories);
-        return in_array('Topic', $categoryTitleTexts);
+        return in_array('Topic', array_map(function ($e) { return $e->getText(); }, $categories));
     }
 
     private function showPublications(): bool
@@ -185,6 +183,10 @@ class NavigationBar
                 break;
             case NS_MAIN:
                 $type = $title->isSubpage() ? 'investigation' : 'publication';
+                break;
+            case NS_MOLECULE:
+            case NS_REACTION:
+                $type = "molecules";
                 break;
             default:
                 $type = 'undefined';
