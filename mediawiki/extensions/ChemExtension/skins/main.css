@@ -295,3 +295,14 @@ div.ce-missing-item a.image {
 span.pf_copy_template {
     cursor: pointer;
 }
+
+span.ce-type-hint {
+    width: 10px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+ul.ce-breadcrumb {
+  padding-left: 0px;
+}

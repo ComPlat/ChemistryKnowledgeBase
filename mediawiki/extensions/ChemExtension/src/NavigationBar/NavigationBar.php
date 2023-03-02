@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\NavigationBar;
 
+use OOUI\Tag;
 use OutputPage;
 use Parser;
 use ParserOptions;
@@ -13,7 +14,7 @@ class NavigationBar
     private $blade;
 
     private $title;
-    private $storedCategories;
+    private $categoryList;
 
     /**
      * Breadcrumb constructor.
@@ -25,11 +26,10 @@ class NavigationBar
         $this->blade = new Blade ($views, $cache);
 
         $this->title = $title;
-        $this->storedCategories = [];
 
         $parentCategoryTree = [];
         $parentCategoryTree[$this->title->getPrefixedText()] = $this->title->getParentCategoryTree();
-        $this->storeAndReturnCategoryList($title, $parentCategoryTree);
+        $this->getReversedCategoryList($parentCategoryTree, $this->categoryList);
     }
 
     public function getNavigationLocation()
@@ -58,7 +58,7 @@ class NavigationBar
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
                 'title' => $this->title,
-                'categories' => $this->makeTree($this->storedCategories[$this->title->getPrefixedText()]),
+                'categories' => $this->makeBreadcrumb()->toString(),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $pubs->getPublicationPages(),
                 'investigationList' => $investigations->getInvestigations(),
@@ -94,16 +94,7 @@ class NavigationBar
             return '';
         }
 
-        switch ($this->title->getNamespace()) {
-            case NS_CATEGORY:
-                $type = 'topic';
-                break;
-            case NS_MAIN:
-                $type = $this->title->isSubpage() ? 'investigation' : 'publication';
-                break;
-            default:
-                $type = 'undefined';
-        }
+        $type = $this->getCssType($this->title);
         return $this->blade->view()->make("page-type",
             [
                 'type' => $type,
@@ -112,14 +103,21 @@ class NavigationBar
         )->render();
     }
 
-    private function makeTree($categoryList): string
-    {
-        if (count($categoryList) > 0) {
-            $category = array_shift($categoryList);
-            if ($category->getText() === 'Topic') return $this->makeTree($categoryList);
-            return "<ul><li><a href='{$category->getFullURL()}'>{$category->getText()}</a></li>" . $this->makeTree($categoryList) . "</ul>";
+    private function makeBreadcrumb() {
+
+        $list = new Tag('ul');
+        $list->addClasses(['ce-breadcrumb']);
+        foreach($this->categoryList as $category) {
+            if ($category->getText() === 'Topic') continue;
+            $li = new Tag('li');
+
+            $typeHint = new Tag('span');
+            $type = $this->getCssType($category);
+            $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
+            $li->appendContent($category->getText());
+            $list->appendContent($li);
         }
-        return '';
+        return $list;
     }
 
     private function getReversedCategoryList($categories, &$allCategories)
@@ -135,22 +133,10 @@ class NavigationBar
 
     public function checkIfInTopicCategory(Title $title): bool
     {
-        $categories = $this->storeAndReturnCategoryList($title, $title->getParentCategoryTree());
         $categoryTitles = array_map(function ($e) {
             return $e->getText();
-        }, $categories);
+        }, $this->categoryList);
         return in_array('Topic', $categoryTitles);
-    }
-
-    private function storeAndReturnCategoryList(Title $title, $parentCategoryTree)
-    {
-        if (!array_key_exists($title->getPrefixedText(), $this->storedCategories)) {
-            $categories = [];
-            $this->getReversedCategoryList($parentCategoryTree, $categories);
-            $this->storedCategories[$title->getPrefixedText()] = $categories;
-            return $categories;
-        }
-        return $this->storedCategories[$title->getPrefixedText()];
     }
 
     private function showPublications(): bool
@@ -182,6 +168,24 @@ class NavigationBar
         } else {
             return ["Topic"];
         }
+    }
+
+    /**
+     * @return string
+     */
+    private function getCssType($title): string
+    {
+        switch ($title->getNamespace()) {
+            case NS_CATEGORY:
+                $type = 'topic';
+                break;
+            case NS_MAIN:
+                $type = $title->isSubpage() ? 'investigation' : 'publication';
+                break;
+            default:
+                $type = 'undefined';
+        }
+        return $type;
     }
 
 
