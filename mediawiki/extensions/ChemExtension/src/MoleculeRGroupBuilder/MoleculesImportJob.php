@@ -105,7 +105,7 @@ class MoleculesImportJob extends Job
     {
         try {
             $renderedMolecule = $this->moleculeRendererClient->render($concreteMolecule->getMolOrRxn());
-            $this->chemFormRepo->addChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
+            $this->chemFormRepo->addOrUpdateChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
             $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());

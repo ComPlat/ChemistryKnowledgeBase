@@ -108,7 +108,7 @@ class ChemFormRepository
             ['id' => $chemFormId]);
     }
 
-    public function addChemFormImage($moleculeKey, $imgData): int
+    public function addOrUpdateChemFormImage($moleculeKey, $imgData): int
     {
         $this->db->startAtomic(__METHOD__);
         $res = $this->db->select('chem_form', ['id'],
@@ -138,7 +138,7 @@ class ChemFormRepository
         return $id;
     }
 
-    public function replaceChemFormImage($moleculeKeyOld, $moleculeKeyNew, $imgData)
+    public function replaceMoleculeKeyAndImage($moleculeKeyOld, $moleculeKeyNew, $imgData)
     {
         $this->db->update('chem_form',
             [

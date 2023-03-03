@@ -19,20 +19,30 @@ class UploadChemFormImage extends SimpleHandler {
         );
 
         $chemFormRepo = new ChemFormRepository($dbr);
-        if (!is_null($chemFormRepo->getChemFormId($params['moleculeKey']))) {
+        $chemFormId = $chemFormRepo->getChemFormId($params['moleculeKey']);
+        $chemFormImage = $chemFormRepo->getChemFormImageByKey($params['moleculeKey']);
+        if (!is_null($chemFormId) && $chemFormImage !== '') {
+            // molecule exists and has image, don't touch it
             $res = new Response();
             $res->setStatus(200);
             return $res;
         }
 
-        $moleculeKeyOld = "reserved-" . $params['moleculeKeyToReplace'];
-        $moleculeKeyNew = "reserved-" . $params['moleculeKey'];
-        if (isset($params['moleculeKeyToReplace']) && !is_null($chemFormRepo->getChemFormImageByKey($moleculeKeyOld))) {
-            $chemFormRepo->replaceChemFormImage($moleculeKeyOld, $moleculeKeyNew, $params['imgData']);
-        } else {
-            $chemFormRepo->addChemFormImage($moleculeKeyNew, $params['imgData']);
-        }
+        if (!is_null($chemFormId) && $chemFormImage === '') {
+            // molecule exists and has no image, probably was just not rendered
+            // happens when you copy a molecule as wikitext to a page
+            $chemFormRepo->addOrUpdateChemFormImage($params['moleculeKey'], $params['imgData']);
 
+        } else {
+            // add or replace a "reserved" molecule image. this can be overwritten until the page is saved
+            $moleculeKeyOld = "reserved-" . ($params['moleculeKeyToReplace'] ?? '');
+            $moleculeKeyNew = "reserved-" . $params['moleculeKey'];
+            if (isset($params['moleculeKeyToReplace']) && !is_null($chemFormRepo->getChemFormImageByKey($moleculeKeyOld))) {
+                $chemFormRepo->replaceMoleculeKeyAndImage($moleculeKeyOld, $moleculeKeyNew, $params['imgData']);
+            } else {
+                $chemFormRepo->addOrUpdateChemFormImage($moleculeKeyNew, $params['imgData']);
+            }
+        }
 
         $res = new Response();
         $res->setStatus(200);
