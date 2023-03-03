@@ -36,12 +36,7 @@ class MultiContentSave
         $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
 
         $pageTitle = $revisionRecord->getPageAsLinkTarget();
-        self::removeAllMoleculesFromChemFormIndex($pageTitle);
-        self::parseChemicalFormulas($wikitext, $pageTitle);
-        self::parseMoleculeLinks($wikitext, $pageTitle);
-
-        self::addMoleculesToIndex($pageTitle);
-        self::resetCollectMolecules($pageTitle);
+        self::parseContentAndUpdateIndex($wikitext, $pageTitle, true);
     }
 
     public static function onArticleDeleteComplete( &$article, \User &$user, $reason, $id, $content, \LogEntry
@@ -69,7 +64,7 @@ class MultiContentSave
     /**
      * @param $wikitext
      */
-    private static function parseChemicalFormulas($wikitext, $pageTitle): void
+    private static function parseChemicalFormulas($wikitext, $pageTitle, $createPages): void
     {
         $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
         $chemFormParser = new ChemFormParser();
@@ -80,17 +75,28 @@ class MultiContentSave
 
         foreach ($chemForms as $chemForm) {
             try {
-                $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
-                self::collectMolecules($moleculePage['chemformId'], $pageTitle);
-                if ($chemForm->hasRGroupDefinitions()) {
-                    $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
+                if ($createPages) {
+                    $moleculePage = $pageCreator->createNewMoleculePage($chemForm);
+                    if ($chemForm->hasRGroupDefinitions()) {
+                        $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
+                    }
+                    self::collectMolecules($moleculePage['chemformId'], $pageTitle);
+                } else {
+                    $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+
+                    $repo = new ChemFormRepository($dbr);
+                    $moleculeKey = $chemForm->getMoleculeKey();
+                    $chemFormId = $repo->getChemFormId($moleculeKey);
+                    if (!is_null($chemFormId)) {
+                        self::collectMolecules($chemFormId, $pageTitle);
+                    }
                 }
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
         }
 
-        if (count($moleculeCollections) > 0) {
+        if (count($moleculeCollections) > 0 && $createPages) {
             self::addMoleculeCollectionJob($moleculeCollections, $pageTitle);
         }
     }
@@ -150,5 +156,14 @@ class MultiContentSave
         foreach ($uniqueListOfMolecules as $chemFormId) {
             $repo->addChemFormToIndex($pageTitle, $chemFormId);
         }
+    }
+
+    public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {
+        self::removeAllMoleculesFromChemFormIndex($pageTitle);
+        self::parseChemicalFormulas($wikitext, $pageTitle, $createPages);
+        self::parseMoleculeLinks($wikitext, $pageTitle);
+
+        self::addMoleculesToIndex($pageTitle);
+        self::resetCollectMolecules($pageTitle);
     }
 }

@@ -115,4 +115,26 @@ class WikiTools {
             false
         );
     }
+
+    public static function checkIfInTopicCategory(Title $title): bool
+    {
+        static $CHECK_TOPIC_CATEGORY = [];
+        if (array_key_exists($title->getPrefixedText(), $CHECK_TOPIC_CATEGORY)) {
+            return $CHECK_TOPIC_CATEGORY[$title->getPrefixedText()];
+        }
+        $categories = [];
+        self::getReversedCategoryList($title->getParentCategoryTree(), $categories);
+        $CHECK_TOPIC_CATEGORY[$title->getPrefixedText()] = in_array('Topic', array_map(function ($e) { return $e->getText(); }, $categories));
+        return $CHECK_TOPIC_CATEGORY[$title->getPrefixedText()];
+    }
+
+    private static function getReversedCategoryList($categories, &$allCategories)
+    {
+        foreach ($categories as $name => $super) {
+            if (is_array($super) && count($super) > 0) {
+                self::getReversedCategoryList($super, $allCategories);
+            }
+            $allCategories[] = Title::newFromText($name);
+        }
+    }
 }

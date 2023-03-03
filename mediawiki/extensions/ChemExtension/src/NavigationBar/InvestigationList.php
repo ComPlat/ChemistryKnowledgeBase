@@ -8,7 +8,6 @@ use Title;
 class InvestigationList {
     private $blade;
     private $title;
-
     /**
      * Breadcrumb constructor.
      */
@@ -20,22 +19,17 @@ class InvestigationList {
         $this->title = $title;
     }
 
-    public function getInvestigations(): string
+    public function renderInvestigationList(): string
     {
-        $results = [];
-        $subPages = $this->title->getSubpages();
-        if (is_array($subPages) && count($subPages) === 0) {
-            return '';
+        $investigationFinder = new InvestigationFinder();
+        if ($this->title->getNamespace() === NS_CATEGORY) {
+            $list = $investigationFinder->getInvestigationsForTopic($this->title);
+        } else {
+            $list = $investigationFinder->getInvestigationsForPublication($this->title);
         }
-
-        while ($subPages->current()) {
-            $results[] = $subPages->current();
-            $subPages->next();
-        }
-
         return $this->blade->view()->make("navigation.investigation-list",
             [
-                'list' => $results,
+                'list' => $list,
             ]
         )->render();
     }

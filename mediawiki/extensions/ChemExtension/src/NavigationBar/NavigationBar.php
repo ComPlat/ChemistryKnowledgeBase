@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\NavigationBar;
 
+use DIQA\ChemExtension\Utils\WikiTools;
 use OOUI\Tag;
 use OutputPage;
 use Parser;
@@ -48,12 +49,12 @@ class NavigationBar
         }
 
         $title = $this->title;
-        if (!$this->checkIfInTopicCategory($this->title)) {
+        if (!WikiTools::checkIfInTopicCategory($this->title)) {
             $title = Title::newFromText("Topic", NS_CATEGORY);
         }
         $pubs = new PublicationList($title);
-        $investigations = new InvestigationList($this->title);
-        $molecules = new MoleculesList($this->title);
+        $investigationList = new InvestigationList($this->title);
+        $moleculesList = new MoleculesList($this->title);
 
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
@@ -61,8 +62,8 @@ class NavigationBar
                 'categories' => $this->makeBreadcrumb()->toString(),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $pubs->getPublicationPages(),
-                'investigationList' => $investigations->getInvestigations(),
-                'moleculesList' => $molecules->getMolecules(),
+                'investigationList' => $investigationList->renderInvestigationList(),
+                'moleculesList' => $moleculesList->getMolecules(),
                 'showPublications' => $this->showPublications(),
                 'showInvestigations' => $this->showInvestigations(),
             ]
@@ -73,7 +74,7 @@ class NavigationBar
 
     public function getPageTitle(): string
     {
-        if (!$this->checkIfInTopicCategory($this->title)) {
+        if (!WikiTools::checkIfInTopicCategory($this->title)) {
             return $this->title->getPrefixedText();
         }
         return $this->title->getText();
@@ -90,7 +91,7 @@ class NavigationBar
         }
 
         // check if base page has super category "Topic"
-        if (!$this->checkIfInTopicCategory($basePage)) {
+        if (!WikiTools::checkIfInTopicCategory($basePage)) {
             return '';
         }
 
@@ -134,23 +135,16 @@ class NavigationBar
         }
     }
 
-    public function checkIfInTopicCategory(Title $title): bool
-    {
-        $categories = [];
-        $this->getReversedCategoryList($title->getParentCategoryTree(), $categories);
-        return in_array('Topic', array_map(function ($e) { return $e->getText(); }, $categories));
-    }
-
     private function showPublications(): bool
     {
-        return !($this->checkIfInTopicCategory($this->title)
+        return !(WikiTools::checkIfInTopicCategory($this->title)
             && $this->title->getNamespace() == NS_MAIN);
     }
 
     private function showInvestigations(): bool
     {
-        return ($this->checkIfInTopicCategory($this->title)
-            && $this->title->getNamespace() == NS_MAIN && !$this->title->isSubpage());
+        return (WikiTools::checkIfInTopicCategory($this->title)
+            && !$this->title->isSubpage());
     }
 
     /**

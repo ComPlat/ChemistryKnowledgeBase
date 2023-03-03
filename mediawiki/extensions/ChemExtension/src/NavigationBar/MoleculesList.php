@@ -26,10 +26,17 @@ class MoleculesList
 
     public function getMolecules()
     {
+        $moleculeFinder = new MoleculeFinder();
         $filter = $this->createGUIForMoleculeFilter();
+
+        if ($this->title->getNamespace() === NS_CATEGORY) {
+            $moleculeList = $moleculeFinder->getMoleculesForTopic($this->title, 100, 0);
+        } else {
+            $moleculeList = $moleculeFinder->getMoleculesForPublicationPage($this->title, 100, 0);
+        }
         $moleculeList = $this->blade->view()->make("navigation.molecule-list",
             [
-
+                'moleculesList' => []
             ]
         )->render();
 

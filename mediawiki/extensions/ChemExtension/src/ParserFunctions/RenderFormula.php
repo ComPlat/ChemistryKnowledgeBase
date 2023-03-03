@@ -156,22 +156,22 @@ class RenderFormula
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new ChemFormRepository($dbr);
-        $pagesThatUseFormula = $repo->getPageFromChemFormIndex(ChemTools::getChemFormIdFromPageTitle($wgTitle->getPrefixedText()));
+        $pagesThatUseFormula = $repo->getPageByChemFormId(ChemTools::getChemFormIdFromPageTitle($wgTitle->getPrefixedText()));
         if (count($pagesThatUseFormula) === 0) {
             return;
         }
 
         $topicPages = array_filter($pagesThatUseFormula, function (Title $title) {
             $b = new NavigationBar($title);
-            return $title->getNamespace() === NS_CATEGORY && $b->checkIfInTopicCategory($title);
+            return $title->getNamespace() === NS_CATEGORY && WikiTools::checkIfInTopicCategory($title);
         });
         $publicationPages = array_filter($pagesThatUseFormula, function (Title $title) {
             $b = new NavigationBar($title);
-            return $title->getNamespace() === NS_MAIN && !$title->isSubpage() && $b->checkIfInTopicCategory($title);
+            return $title->getNamespace() === NS_MAIN && !$title->isSubpage() && WikiTools::checkIfInTopicCategory($title);
         });
         $investigationPages = array_filter($pagesThatUseFormula, function (Title $title) {
             $b = new NavigationBar($title);
-            return $title->getNamespace() === NS_MAIN && $title->isSubpage() && $b->checkIfInTopicCategory($title->getBaseTitle());
+            return $title->getNamespace() === NS_MAIN && $title->isSubpage() && WikiTools::checkIfInTopicCategory($title->getBaseTitle());
         });
 
         $otherPages = array_udiff($pagesThatUseFormula, array_merge($topicPages, $publicationPages, $investigationPages),

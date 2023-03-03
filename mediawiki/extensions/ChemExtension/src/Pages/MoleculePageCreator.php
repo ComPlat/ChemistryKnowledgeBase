@@ -29,7 +29,7 @@ class MoleculePageCreator
 
         $chemFormRepository = new ChemFormRepository($dbr);
         $moleculeKey = $chemForm->getMoleculeKey();
-        $reservedKey = $chemFormRepository->getChemFormId("reserved-".$moleculeKey);
+        $reservedKey = $chemFormRepository->getChemFormId("reserved-" . $moleculeKey);
         if (!is_null($reservedKey)) {
             $chemFormRepository->commitReservedMolecule($moleculeKey);
         }
@@ -37,13 +37,15 @@ class MoleculePageCreator
 
         $title = MoleculePageCreationJob::getPageTitleToCreate($id, $chemForm->getMolOrRxn());
 
+
         $jobParams = [];
         $jobParams['chemForm'] = $chemForm;
         $jobParams['parent'] = $parent;
         $job = new MoleculePageCreationJob($title, $jobParams);
         JobQueueGroup::singleton()->push($job);
 
-        return [ 'title' => $title, 'chemformId' => $id ];
+
+        return ['title' => $title, 'chemformId' => $id];
     }
 
 

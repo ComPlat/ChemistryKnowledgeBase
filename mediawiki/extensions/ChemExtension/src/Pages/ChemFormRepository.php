@@ -272,13 +272,28 @@ class ChemFormRepository
             ]);
     }
 
-    public function getPageFromChemFormIndex($chemformId)
+    public function getPageByChemFormId($chemformId)
     {
         $res = $this->db->select('chem_form_index', ['page_id'],
             ['chem_form_id' => $chemformId]);
         $results = [];
         foreach ($res as $row) {
             $results[] = Title::newFromID($row->page_id);
+        }
+        return $results;
+    }
+
+    public function getChemFormIdsByPages(array $titles, $limit = 20, $offset = 0)
+    {
+        if (count($titles) === 0) {
+            return [];
+        }
+        $ids = array_map(function($e) { return $e->getArticleID();}, $titles);
+        $res = $this->db->select('chem_form_index', ['chem_form_id'],
+            ['page_id' =>$ids ], __METHOD__, ['LIMIT' => $limit, 'OFFSET' => $offset]);
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = $row->chem_form_id;
         }
         return $results;
     }

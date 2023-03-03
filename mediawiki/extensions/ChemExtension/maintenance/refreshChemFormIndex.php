@@ -3,14 +3,9 @@
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 
-/**
- * Updates the solr index.
- *
- * @ingroup EnhancedRetrieval
- */
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
 
-class refreshTopicPages extends Maintenance
+class refreshChemFormIndex extends Maintenance
 {
 
     private $linkCache;
@@ -51,7 +46,7 @@ class refreshTopicPages extends Maintenance
             $this->refreshPages($pages);
         }
 
-        print "{$this->num_files} IDs refreshed.\n";
+        print "\n{$this->num_files} IDs refreshed.\n";
     }
 
     /**
@@ -93,7 +88,7 @@ class refreshTopicPages extends Maintenance
                 continue;
             }
 
-            $this->update($title);
+            $this->refreshIndex($title);
 
             if (($this->hasOption('d')) && (($this->num_files + 1) % 100 === 0)) {
                 usleep($this->getOption('d'));
@@ -127,7 +122,7 @@ class refreshTopicPages extends Maintenance
             $title = Title::newFromText($page);
 
             if (!is_null($title)) {
-                $this->update($title);
+                $this->refreshIndex($title);
             }
 
             $this->num_files++;
@@ -198,35 +193,25 @@ class refreshTopicPages extends Maintenance
         return $end;
     }
 
-    private function update(Title $title)
-    {
-        if ($title->getNamespace() === NS_CATEGORY) {
-            $b = new \DIQA\ChemExtension\NavigationBar\NavigationBar($title);
-            if ($b->checkIfInTopicCategory($title)) {
-                $this->updatePage($title);
-                print "\nupdate: " . $title->getPrefixedText();
-            }
-        } else if ($title->getNamespace() === NS_MAIN) {
-            $b = new \DIQA\ChemExtension\NavigationBar\NavigationBar($title);
-            if ($b->checkIfInTopicCategory($title)) {
-                $this->updatePage($title);
-                print "\nupdate: " . $title->getPrefixedText();
-            }
-        }
-
-
-    }
-
     /**
-     * @param Title $title
+     * Refreshes the chemform index for a title
      */
-    private function updatePage(Title $title): void
+    private function refreshIndex(Title $title)
     {
-        $text = WikiTools::getText($title);
-        WikiTools::doEditContent($title, $text, "auto-update", EDIT_UPDATE | EDIT_MINOR, null, true);
 
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $text = WikiTools::getText($title);
+            $parser = new Parser();
+            $parser->parse($text, $title, new ParserOptions());
+            $mcs = new \DIQA\ChemExtension\MultiContentSave();
+            $mcs->parseContentAndUpdateIndex($text, $title, false);
+            print "\nrefresh:\t" . $title->getPrefixedText();
+        } else {
+            print "\nskip:\t" . $title->getPrefixedText();
+        }
     }
+
 }
 
-$maintClass = "refreshTopicPages";
+$maintClass = "refreshChemFormIndex";
 require_once RUN_MAINTENANCE_IF_MAIN;

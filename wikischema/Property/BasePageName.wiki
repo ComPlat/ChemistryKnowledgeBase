@@ -1,5 +1,5 @@
 ; Purpose
-* Refers to the base page of an experiment
+* Refers to the base page of an experiment from the subobjects which represents experiments
 
 ; Datatype
 * [[Has type::Page]].
