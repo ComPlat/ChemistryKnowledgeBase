@@ -113,10 +113,9 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             $headerFields[] = "Content-Type: application/json";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $ch = curl_init();
-            $url = $this->moleculeRGroupServiceUrl . "/api/v1/rgroup/";
+            $url = $this->moleculeRGroupServiceUrl . "/api/v1/molecules/";
             $payload = new \stdClass();
             $payload->mdl = $molfile;
-            $payload->rgroups = [['R1'=>'']]; // FIXME: needed for now. should be chnaged in backend
             $this->logger->log("Request payload: " . json_encode($payload));
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -139,12 +138,8 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
                 $this->logger->log("Result: " . print_r($body, true));
                 $result = json_decode($body);
                 $metadata = [];
-                $data = reset($result);
-                if ($data === false) {
-                    return [];
-                }
-                $metadata['molecularMass'] = $data->molecular_weight;
-                $metadata['molecularFormula'] = $data->formula;
+                $metadata['molecularMass'] = $result->molecular_weight ?? '';
+                $metadata['molecularFormula'] = $result->formula ?? '';
                 return $metadata;
             }
             throw new Exception("Error on upload. HTTP status: $httpcode. Message: $body");
