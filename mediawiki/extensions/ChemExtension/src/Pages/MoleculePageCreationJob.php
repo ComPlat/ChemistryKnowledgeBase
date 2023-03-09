@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
+use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock;
 use DIQA\ChemExtension\PubChem\PubChemService;
 use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
@@ -16,6 +18,7 @@ class MoleculePageCreationJob extends Job
     private $logger;
     private $chemForm;
     private $parent;
+    private $rGroupClient;
 
     public function __construct($title, $params)
     {
@@ -23,6 +26,10 @@ class MoleculePageCreationJob extends Job
         $this->logger = new LoggerUtils('MoleculePageCreationJob', 'ChemExtension');
         $this->chemForm = $params['chemForm'];
         $this->parent = $params['parent'];
+
+        global $wgCEUseMoleculeRGroupsClientMock;
+        $this->rGroupClient = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()
+            : new MoleculeRGroupServiceClientImpl();
     }
 
     public function run()
@@ -72,7 +79,7 @@ class MoleculePageCreationJob extends Job
             $template = "Molecule";
         }
 
-        $pubChemTemplateData = $this->getSanitizedPubChemData();
+        $pubChemTemplateData = $this->getSanitizedMoleculeData();
         $formulaTemplateData = $this->getFormulaTemplateData();
 
         return $this->serializeTemplate($template, array_merge($pubChemTemplateData, $formulaTemplateData));
@@ -135,17 +142,11 @@ class MoleculePageCreationJob extends Job
     /**
      * @return string
      */
-    private function getSanitizedPubChemData(): array
+    private function getSanitizedMoleculeData(): array
     {
         $pubChemData = $this->getRawPubChemData($this->chemForm->getInchiKey());
         if (is_null($pubChemData)) {
-            $pubChemData = [];
-            $pubChemData['trivialname'] = '';
-            $pubChemData['abbrev'] = '';
-            $pubChemData['molecularFormula'] = '';
-            $pubChemData['synonyms'] = '';
-            $pubChemData['hasVendors'] = '';
-            return $pubChemData;
+            return $this->getChemscannerMoleculeData($this->chemForm->getMolOrRxn());
         }
 
         // sanitize and format data
@@ -193,12 +194,35 @@ class MoleculePageCreationJob extends Job
 
     private function serializeTemplate(string $template, array $data): string
     {
-        $text = "{{".$template;
-        foreach($data as $key => $value) {
+        $text = "{{" . $template;
+        foreach ($data as $key => $value) {
             $text .= "\n|$key=$value";
         }
         $text .= "\n}}";
         return $text;
+    }
+
+    /**
+     * @param $molfile
+     * @return array
+     */
+    private function getChemscannerMoleculeData($molfile): array
+    {
+        try {
+            $pubChemData = [];
+            $pubChemData['trivialname'] = '';
+            $pubChemData['abbrev'] = '';
+            $pubChemData['molecularFormula'] = '';
+            $pubChemData['molecularMass'] = '';
+            $pubChemData['synonyms'] = '';
+            $pubChemData['hasVendors'] = '';
+            $metadata = $this->rGroupClient->getMetadata($molfile);
+            $pubChemData['molecularFormula'] = HtmlTools::formatSumFormula($metadata['molecularFormula']);
+            $pubChemData['molecularMass'] = $metadata['molecularMass'];
+        } catch (Exception $e) {
+            $this->logger->debug('Requesting molecule metadata from Chemscanner failed: ' . $e->getMessage());
+        }
+        return $pubChemData;
     }
 
 }

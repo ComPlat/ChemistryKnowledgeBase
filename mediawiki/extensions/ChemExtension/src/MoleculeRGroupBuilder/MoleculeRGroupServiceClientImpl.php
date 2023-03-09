@@ -105,4 +105,52 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
         list($header, $res) = $bodyBegin !== false ? array(substr($res, 0, $bodyBegin), substr($res, $bodyBegin + 4)) : array($res, "");
         return array($header, str_replace("%0A%0D%0A%0D", "\r\n\r\n", $res));
     }
+
+    function getMetadata(string $molfile): array
+    {
+        try {
+            $headerFields = [];
+            $headerFields[] = "Content-Type: application/json";
+            $headerFields[] = "Expect:"; // disables 100 CONTINUE
+            $ch = curl_init();
+            $url = $this->moleculeRGroupServiceUrl . "/api/v1/rgroup/";
+            $payload = new \stdClass();
+            $payload->mdl = $molfile;
+            $payload->rgroups = [['R1'=>'']]; // FIXME: needed for now. should be chnaged in backend
+            $this->logger->log("Request payload: " . json_encode($payload));
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HEADER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20); //timeout in seconds
+
+            $response = curl_exec($ch);
+            if (curl_errno($ch)) {
+                $error_msg = curl_error($ch);
+                throw new Exception("Error on request: $error_msg");
+            }
+            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            list($header, $body) = self::splitResponse($response);
+            if ($httpcode >= 200 && $httpcode <= 299) {
+                $this->logger->log("Result: " . print_r($body, true));
+                $result = json_decode($body);
+                $metadata = [];
+                $data = reset($result);
+                if ($data === false) {
+                    return [];
+                }
+                $metadata['molecularMass'] = $data->molecular_weight;
+                $metadata['molecularFormula'] = $data->formula;
+                return $metadata;
+            }
+            throw new Exception("Error on upload. HTTP status: $httpcode. Message: $body");
+
+        } finally {
+            curl_close($ch);
+        }
+    }
 }

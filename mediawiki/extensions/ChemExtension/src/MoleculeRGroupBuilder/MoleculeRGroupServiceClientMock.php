@@ -54,4 +54,9 @@ MOLFILE;
         }
         return $o;
     }
+
+    function getMetadata(string $molfile): array
+    {
+        return ['molecularMass' => 77.03912516, 'molecularFormula' => 'C6H6'];
+    }
 }

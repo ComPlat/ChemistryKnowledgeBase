@@ -18,4 +18,11 @@ interface MoleculeRGroupServiceClient {
      */
     function buildMolecules(string $molfile, array $rGroups);
 
+    /**
+     * Returns metadata for a molecule, e.g. molecular mass
+     * @param $molfile string Molecule in molfile V3000 format
+     * @return array of metadata
+     */
+    function getMetadata(string $molfile): array;
+
 }
