@@ -250,8 +250,6 @@ div.ce-side-panel-bar {
 
 #ce-publication-list, #ce-investigation-list, #ce-molecules-list {
     margin-top: 15px;
-    overflow: auto;
-    height: 545px;
 }
 
 #ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
@@ -305,4 +303,24 @@ span.ce-type-hint {
 
 ul.ce-breadcrumb {
   padding-left: 0px;
+}
+
+div.ce-breadcrumb {
+    max-height: 100px;
+    overflow: auto;
+}
+
+div.ce-content {
+    max-height: 580px;
+    overflow: auto;
+}
+
+div.ce-side-panel-footer {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+}
+
+#ce-side-panel-expand-button {
+    cursor: pointer;
 }

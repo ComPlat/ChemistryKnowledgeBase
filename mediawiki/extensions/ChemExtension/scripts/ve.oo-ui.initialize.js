@@ -53,10 +53,19 @@
         });
     }
 
+    function intializeExpandNavigationButton() {
+        let expanded = false;
+        $('#ce-side-panel-expand-button').click(()=> {
+           $('#ce-side-panel-content').css({width: expanded ? '400px' : '1000px'});
+           expanded = !expanded;
+        });
+    }
+
     $(function() {
         initialize();
         initializeToggleBoxes();
         initializeDOIInfoBoxToggle();
+        intializeExpandNavigationButton();
     });
 
     mw.hook( 'postEdit' ).add(function() {

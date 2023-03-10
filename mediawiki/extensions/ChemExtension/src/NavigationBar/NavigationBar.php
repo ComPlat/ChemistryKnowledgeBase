@@ -35,6 +35,7 @@ class NavigationBar
 
     public function getNavigationLocation()
     {
+        global $wgScriptPath;
         if (is_null($this->title)) {
             return '';
         }
@@ -66,6 +67,7 @@ class NavigationBar
                 'moleculesList' => $moleculesList->getMolecules(),
                 'showPublications' => $this->showPublications(),
                 'showInvestigations' => $this->showInvestigations(),
+                'imgPath' => "$wgScriptPath/extensions/ChemExtension/skins/images",
             ]
         )->render();
 
