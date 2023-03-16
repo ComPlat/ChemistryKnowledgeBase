@@ -257,6 +257,7 @@ class updateMolecules extends Maintenance
                     print "\tProblem on page: " . $title->getPrefixedText() . "\n";
                     $this->problems[] = $title;
                 }
+                sleep(1); // necessary because service gets easily overloaded
             }
         }
     }
