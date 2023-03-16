@@ -1,0 +1,17 @@
+<noinclude>
+Multiple issues
+Params:
+* date=YYYY-mm-dd
+* author=Hans
+* text=What is actually wrong with this page
+</noinclude>
+<includeonly>
+{{MissingItem
+|date={{{date|}}}
+|author={{{author|}}}
+|text=This page has multiple issues: {{{text|}}}
+|type=issue
+|name=Multiple issues
+|icon=File:WikiTemplate issue.png
+}}
+</includeonly>

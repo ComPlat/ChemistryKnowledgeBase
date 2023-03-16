@@ -1,0 +1,16 @@
+<noinclude>
+No category
+Params:
+* date=YYYY-mm-dd
+* author=Hans
+</noinclude>
+<includeonly>
+{{MissingItem
+|date={{{date|}}}
+|author={{{author|}}}
+|text=This page needs a category annotation
+|type=topic
+|name=No category
+|icon=File:WikiTemplate category.png
+}}
+</includeonly>

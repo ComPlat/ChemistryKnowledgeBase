@@ -1,0 +1,16 @@
+<noinclude>
+Unreferenced category
+Params:
+* date=YYYY-mm-dd
+* author=Hans
+</noinclude>
+<includeonly>
+{{MissingItem
+|date={{{date|}}}
+|author={{{author|}}}
+|text=This page has unreferenced categories
+|type=topic
+|name=Unreferenced category
+|icon=File:WikiTemplate category.png
+}}
+</includeonly>

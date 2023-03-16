@@ -1,21 +1,18 @@
 == All Molecules that have a Trivial Name==
-{{#ask: [[Category:Molecule]] [[Trivialname::+]]
- |?Trivialname
- |?IUPACName
- |?Synonym
- |?Abbreviation
- |?CAS
- |?MolecularFormula
- |?MolecularMass
- |format=broadtable
- |limit=200
- |offset=0
- |link=all
- |sort=
- |order=asc
- |headers=show
- |searchlabel=... further results
- |class=sortable wikitable smwtable
+{{#ask: [[Category:Molecule]] [[Trivialname::+]] [[InChIKey::+]]
+|?InChIKey
+|?Trivialname
+|?IUPACName
+|?Synonym
+|?Abbreviation
+|?CAS
+|?MolecularFormula
+|?MolecularMass
+|limit=10
+|format=plainlist
+|introtemplate=MoleculeListIntro
+|outrotemplate=MoleculeListOutro
+|template=MoleculeListRow
 }}
 
 == All Molecules (incl. all their Properties) ==
@@ -44,7 +41,7 @@
 }}
 
 == Only Names ==
-{{#ask: 
+{{#ask:
 [[Category:Molecule]] [[Trivialname::+]]
 OR
 [[Category:Molecule]] [[IUPACName::+]]

@@ -244,6 +244,15 @@ div.ce-side-panel-bar {
     background: lightpink;
 }
 
+.ce-page-type-issue {
+    background: lightsalmon;
+}
+
+.ce-page-type-citation {
+    background: lightblue;
+}
+
+
 .CategoryTreeTag {
     overflow: auto
 }
