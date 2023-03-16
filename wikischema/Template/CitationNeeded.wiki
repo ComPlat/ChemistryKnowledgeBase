@@ -3,11 +3,12 @@ Citation needed
 Params:
 * date=YYYY-mm-dd
 * author=Hans
+* text=Details about the claim
 </noinclude>
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This claim needs references to reliable sources
+|text=This claim needs references to reliable sources: {{{text|}}}
 |type=citation
 |name=Citation needed
 |icon=File:WikiTemplate open-book.png
