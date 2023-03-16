@@ -12,6 +12,8 @@ class updateMolecules extends Maintenance
 
     private $linkCache;
     private $writeToStartidfile;
+    private $problems;
+
 
     public function __construct()
     {
@@ -27,6 +29,7 @@ class updateMolecules extends Maintenance
         $this->addOption('n', 'Number of IDs from Start-ID', false, true);
         $this->addOption('f', 'End-ID by Pagename', false, true);
         $this->addOption('startidfile', 'File containing ID to start processing and saves last processed ID to this file', false, true);
+        $this->problems = [];
     }
 
     public function execute()
@@ -50,6 +53,13 @@ class updateMolecules extends Maintenance
         }
 
         print "\n{$this->num_files} IDs refreshed.\n";
+
+        if (count($this->problems) > 0) {
+            print "\nFound problems on following pages: \n";
+            foreach ($this->problems as $p) {
+                print "\t" . $p->getPrefixedText() . "\n";
+            }
+        }
     }
 
     /**
@@ -131,6 +141,7 @@ class updateMolecules extends Maintenance
             $this->num_files++;
         }
 
+
     }
 
 
@@ -201,10 +212,16 @@ class updateMolecules extends Maintenance
      */
     private function updateMoleculeData(Title $title)
     {
+        $categories = array_keys($title->getParentCategories());
+        if (in_array('Category:Molecule_collection', $categories)) {
+            print "\tSkip molecule collection: " . $title->getPrefixedText() . "\n";
+            return;
+        }
         global $wgCEUseMoleculeRGroupsClientMock;
         $rGroupClient = $wgCEUseMoleculeRGroupsClientMock ?
             new \DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock()
             : new \DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl();
+
 
         $text = WikiTools::getText($title);
         $te = new \DIQA\ChemExtension\Utils\TemplateEditor($text);
@@ -228,8 +245,9 @@ class updateMolecules extends Maintenance
                     }
                     print "\tSave page: " . $title->getPrefixedText() . "\n";
 
-                } catch(\Exception $e) {
-                    print "\tProblem on page: " . $title->getPrefixedText(). "\n";
+                } catch (\Exception $e) {
+                    print "\tProblem on page: " . $title->getPrefixedText() . "\n";
+                    $this->problems[] = $title;
                 }
             }
         }
