@@ -207,6 +207,11 @@ class updateMolecules extends Maintenance
         return $end;
     }
 
+    private static function startsWith( $haystack, $needle ) {
+        $length = strlen( $needle );
+        return substr( $haystack, 0, $length ) === $needle;
+    }
+
     /**
      * Updates the molecule page and adds mass and formula
      */
@@ -232,6 +237,9 @@ class updateMolecules extends Maintenance
             $molOrRxn = $params['molOrRxn'] ?? '';
             if (($mass == '' || $formula == '') && $molOrRxn != '') {
                 try {
+                    if (!self::startsWith($molOrRxn, "\n")) {
+                        $molOrRxn = "\n$molOrRxn";
+                    }
                     $metadata = $rGroupClient->getMetadata($molOrRxn);
                     if ($metadata['molecularMass'] != '') {
                         $params['molecularMass'] = $metadata['molecularMass'];
