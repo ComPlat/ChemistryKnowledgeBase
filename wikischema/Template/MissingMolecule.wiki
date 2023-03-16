@@ -4,13 +4,11 @@ Params:
 * date=YYYY-mm-dd
 * author=Hans
 </noinclude>
-<includeonly>
-{{MissingItem
+<includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
 |text=This page is missing a molecule. It may reference a chemical substance that is not present in this wiki. Please use the [[Help:Chemical formula]] template to draw and add it.
 |type=molecules
 |name=Missing molecule
 |icon=File:WikiTemplate_chemistry.png
-}}
-</includeonly>
+}}</includeonly>

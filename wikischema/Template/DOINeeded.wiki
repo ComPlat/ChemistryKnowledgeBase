@@ -4,13 +4,11 @@ Params:
 * date=YYYY-mm-dd
 * author=Hans
 </noinclude>
-<includeonly>
-{{MissingItem
+<includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
 |text=This page is about a dataset that does not have a DOI or other persistent identifier. Please consider saving your dataset in a repository that provides a persistent identifier or  [[Help:Create_new_paper#Literature_reference|add]] an identifier on this page.
 |type=doi
 |name=DOI needed
 |icon=File:WikiTemplate_open-book.png
-}}
-</includeonly>
+}}</includeonly>

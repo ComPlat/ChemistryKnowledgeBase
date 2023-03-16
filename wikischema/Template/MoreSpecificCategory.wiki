@@ -4,13 +4,11 @@ Params:
 * date=YYYY-mm-dd
 * author=Hans
 </noinclude>
-<includeonly>
-{{MissingItem
+<includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
 |text=This page needs more specific categories
 |type=topic
 |name=More specific category needed
 |icon=File:WikiTemplate category.png
-}}
-</includeonly>
+}}</includeonly>

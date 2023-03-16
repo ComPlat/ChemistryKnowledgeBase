@@ -4,13 +4,11 @@ Params:
 * date=YYYY-mm-dd
 * author=Hans
 </noinclude>
-<includeonly>
-{{MissingItem
+<includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
 |text=This claim needs references to reliable sources
 |type=citation
 |name=Citation needed
 |icon=File:WikiTemplate open-book.png
-}}
-</includeonly>
+}}</includeonly>

@@ -4,13 +4,11 @@ Params:
 * date=YYYY-mm-dd
 * author=Hans
 </noinclude>
-<includeonly>
-{{MissingItem
+<includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
 |text=This page or an investigation on this page is missing important data. It might be included in the Supporting Information of the publication.
 |type=investigation
 |name=Missing SI data
 |icon=File:WikiTemplate_experiment.png
-}}
-</includeonly>
+}}</includeonly>
