@@ -28,6 +28,11 @@
             }
 
             //TODO: copy others like date picker
+
+            setTimeout(() => {
+                $('.multipleTemplateInstance').last().trigger('click');
+
+            }, 300);
         });
     }
 
