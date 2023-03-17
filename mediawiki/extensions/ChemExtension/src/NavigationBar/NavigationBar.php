@@ -60,6 +60,7 @@ class NavigationBar
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
                 'title' => $this->title,
+                'type' => $this->getCssType($this->title),
                 'categories' => $this->makeBreadcrumb()->toString(),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $pubs->getPublicationPages(),
@@ -97,9 +98,11 @@ class NavigationBar
             return '';
         }
 
+        global $wgScriptPath;
         $type = $this->getCssType($this->title);
         return $this->blade->view()->make("page-type",
             [
+                'wgScriptPath' => $wgScriptPath,
                 'type' => $type,
                 'text' => $type
             ]
@@ -107,21 +110,26 @@ class NavigationBar
     }
 
     private function makeBreadcrumb() {
-
+        global $wgScriptPath;
         $list = new Tag('ul');
         $list->addClasses(['ce-breadcrumb']);
+        $indentation = 0;
         foreach($this->pageList as $page) {
             if ($page->getText() === 'Topic') continue;
             $li = new Tag('li');
 
+
             $typeHint = new Tag('span');
             $type = $this->getCssType($page);
+            $li->setAttributes(['style' => "margin-left: {$indentation}px"]);
             $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
+
             $a = new Tag('a');
             $a->appendContent($page->getText());
             $a->setAttributes(['href' => $page->getFullURL()]);
             $li->appendContent($a);
             $list->appendContent($li);
+            $indentation += 10;
         }
         return $list;
     }
@@ -179,13 +187,16 @@ class NavigationBar
                 break;
             case NS_MAIN:
                 $type = $title->isSubpage() ? 'investigation' : 'publication';
+                if ($type == 'publication' && !WikiTools::checkIfInTopicCategory($title)) {
+                    $type = "undefined";
+                }
                 break;
             case NS_MOLECULE:
             case NS_REACTION:
                 $type = "molecules";
                 break;
             default:
-                $type = 'undefined';
+                $type = "undefined";
         }
         return $type;
     }

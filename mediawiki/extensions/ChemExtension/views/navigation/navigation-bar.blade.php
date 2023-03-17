@@ -2,14 +2,19 @@
     <div class="ce-side-panel-footer">
         <span id="ce-side-panel-expand-button"><img src="{{$imgPath}}/expand.png"></span>
     </div>
-    <div id="ce-topic-switch" class="ce-page-type ce-page-type-topic" style="float:left; cursor: pointer;">Topics</div>
-    @if($showPublications)
-    <div id="ce-publication-switch" class="ce-page-type ce-page-type-publication" style="float:left; cursor: pointer;">Publications</div>
-    @endif
-    @if($showInvestigations)
-    <div id="ce-investigation-switch" class="ce-page-type ce-page-type-investigation" style="float:left; cursor: pointer;">Investigations</div>
-    @endif
-    <div id="ce-molecules-switch" class="ce-page-type ce-page-type-molecules" style="float:left; cursor: pointer;">Molecules</div>
+    <div id="ce-topic-element" class="ce-tree-element {{$type=='topic'?'ce-page-type-topic':''}}">topic</div>
+    <div>
+    <div id="ce-tree-element-link" style=" margin-left: 15px;"></div>
+    <div id="ce-publication-element" class="ce-tree-element {{$type=='publication'?'ce-page-type-publication':''}}">publication</div>
+    </div>
+    <div>
+        <div id="ce-tree-element-link" style="margin-left: 115px; top: -5px"></div>
+        <div id="ce-investigation-element" class="ce-tree-element {{$type=='investigation'?'ce-page-type-investigation':''}}">investigation</div>
+    </div>
+    <div>
+        <div id="ce-tree-element-link" style="margin-left: 230px; top: -10px"></div>
+        <div id="ce-molecule-element" class="ce-tree-element {{$type=='molecules'?'ce-page-type-molecules':''}}">molecule</div>
+    </div>
     <div style="clear: both;" id="ce-topic-content" class="ce-content-panel">
         <h3>Current site</h3>
         <div class="ce-breadcrumb">

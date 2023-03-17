@@ -220,32 +220,38 @@ div.ce-side-panel-bar {
     margin-left: 3px;
 }
 
+.ce-page-type img {
+    position: relative;
+    top: -3px;
+    left: -5px;
+}
+
 .ce-page-type-topic {
-    background: cornflowerblue;
+    background: cornflowerblue !important;
 }
 
 .ce-page-type-publication {
-    background: palevioletred;
+    background: palevioletred !important;
 }
 
 .ce-page-type-investigation {
-    background: mediumseagreen;
+    background: mediumseagreen !important;
 }
 
 .ce-page-type-other {
-    background: lightgrey;
+    background: lightgrey !important;
 }
 
 .ce-page-type-molecules {
-    background: lightyellow;
+    background: lightyellow !important;
 }
 
 .ce-page-type-doi {
-    background: lightpink;
+    background: lightpink !important;
 }
 
 .ce-page-type-issue {
-    background: lightsalmon;
+    background: lightsalmon !important;
 }
 
 .ce-page-type-citation {
@@ -308,6 +314,8 @@ span.ce-type-hint {
     height: 20px;
     display: inline-block;
     margin-right: 5px;
+    position: relative;
+    top: 3px;
 }
 
 ul.ce-breadcrumb {
@@ -315,12 +323,12 @@ ul.ce-breadcrumb {
 }
 
 div.ce-breadcrumb {
-    max-height: 100px;
+    max-height: 200px;
     overflow: auto;
 }
 
 div.ce-content {
-    max-height: 580px;
+    max-height: 480px;
     overflow: auto;
 }
 
@@ -333,3 +341,49 @@ div.ce-side-panel-footer {
 #ce-side-panel-expand-button {
     cursor: pointer;
 }
+
+.ce-tree-element {
+
+    height: 25px;
+    position: relative;
+    background: grey;
+    text-align: center;
+    font-size: 90%;
+    font-weight: bold;
+    border: 1px solid;
+    border-radius: 3px;
+}
+
+#ce-topic-element {
+    width: 60px;
+
+}
+
+#ce-tree-element-link {
+    border-left: 1px solid;
+    border-bottom: 1px solid;
+    width: 55px;
+    height: 12px;
+    position: relative;
+    float:left;
+
+}
+
+#ce-publication-element {
+    width: 90px;
+    margin-left: 70px;
+    top: -5px;
+}
+
+#ce-investigation-element {
+    width: 110px;
+    margin-left: 170px;
+    top: -10px;
+}
+
+#ce-molecule-element {
+    margin-left: 285px;
+    top: -15px;
+    width: 90px;
+}
+
