@@ -266,6 +266,7 @@ div.ce-side-panel-bar {
 
 #ce-publication-list, #ce-investigation-list, #ce-molecules-list {
     margin-top: 15px;
+    max-height: 300px;
 }
 
 #ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
