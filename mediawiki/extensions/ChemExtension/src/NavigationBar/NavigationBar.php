@@ -94,7 +94,7 @@ class NavigationBar
         }
 
         // check if base page has super category "Topic"
-        if (!WikiTools::checkIfInTopicCategory($basePage)) {
+        if (!WikiTools::checkIfInTopicCategory($basePage) && !$basePage->getNamespace() == NS_MOLECULE) {
             return '';
         }
 
@@ -193,7 +193,7 @@ class NavigationBar
                 break;
             case NS_MOLECULE:
             case NS_REACTION:
-                $type = "molecules";
+                $type = "molecule";
                 break;
             default:
                 $type = "undefined";

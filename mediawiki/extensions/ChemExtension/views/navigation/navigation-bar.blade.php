@@ -13,7 +13,7 @@
     </div>
     <div>
         <div id="ce-tree-element-link" style="margin-left: 230px; top: -10px"></div>
-        <div id="ce-molecule-element" class="ce-tree-element {{$type=='molecules'?'ce-page-type-molecules':''}}">molecule</div>
+        <div id="ce-molecule-element" class="ce-tree-element {{$type=='molecule'?'ce-page-type-molecule':''}}">molecule</div>
     </div>
     <div style="clear: both;" id="ce-topic-content" class="ce-content-panel">
         <h3>Current site</h3>

@@ -218,6 +218,7 @@ div.ce-side-panel-bar {
     font-weight: bold;
     width: 120px;
     margin-left: 3px;
+    border: 1px solid;
 }
 
 .ce-page-type img {
@@ -242,7 +243,7 @@ div.ce-side-panel-bar {
     background: lightgrey !important;
 }
 
-.ce-page-type-molecules {
+.ce-page-type-molecule {
     background: lightyellow !important;
 }
 
@@ -316,6 +317,7 @@ span.ce-type-hint {
     margin-right: 5px;
     position: relative;
     top: 3px;
+    border: 1px solid;
 }
 
 ul.ce-breadcrumb {
@@ -352,6 +354,7 @@ div.ce-side-panel-footer {
     font-weight: bold;
     border: 1px solid;
     border-radius: 3px;
+    cursor: pointer;
 }
 
 #ce-topic-element {

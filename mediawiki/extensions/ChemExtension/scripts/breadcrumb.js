@@ -6,19 +6,19 @@
     function initialize() {
 
 
-        $('#ce-topic-switch').click((e) => {
+        $('#ce-topic-element').click((e) => {
             $('.ce-content-panel').hide();
             $('#ce-topic-content').show();
         });
-        $('#ce-publication-switch').click((e) => {
+        $('#ce-publication-element').click((e) => {
             $('.ce-content-panel').hide();
             $('#ce-publication-content').show();
         });
-        $('#ce-investigation-switch').click((e) => {
+        $('#ce-investigation-element').click((e) => {
             $('.ce-content-panel').hide();
             $('#ce-investigation-content').show();
         });
-        $('#ce-molecules-switch').click((e) => {
+        $('#ce-molecule-element').click((e) => {
             $('.ce-content-panel').hide();
             $('#ce-molecules-content').show();
         });
