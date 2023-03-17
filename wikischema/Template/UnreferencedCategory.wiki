@@ -1,5 +1,5 @@
 <noinclude>
-Unreferenced category
+Unreferenced topic
 Params:
 * date=YYYY-mm-dd
 * author=Hans
@@ -7,8 +7,8 @@ Params:
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This page has unreferenced categories
+|text=This page has unreferenced topics
 |type=topic
-|name=Unreferenced category
+|name=Unreferenced topic
 |icon=File:WikiTemplate category.png
 }}</includeonly>

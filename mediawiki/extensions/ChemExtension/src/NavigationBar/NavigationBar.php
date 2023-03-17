@@ -140,8 +140,11 @@ class NavigationBar
             if (is_array($super) && count($super) > 0) {
                 $this->getReversedCategoryList($super, $allCategories);
             }
-            $allCategories[] = Title::newFromText($name);
-
+            $title = Title::newFromText($name);
+            if ($title->isSubpage()) {
+                $allCategories[] = $title->getBaseTitle();
+            }
+            $allCategories[] = $title;
         }
     }
 

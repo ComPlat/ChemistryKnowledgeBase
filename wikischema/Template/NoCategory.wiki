@@ -1,5 +1,5 @@
 <noinclude>
-No category
+No topic
 Params:
 * date=YYYY-mm-dd
 * author=Hans
@@ -7,8 +7,8 @@ Params:
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This page needs a category annotation
+|text=This page needs a topic annotation
 |type=topic
-|name=No category
+|name=No topic
 |icon=File:WikiTemplate category.png
 }}</includeonly>

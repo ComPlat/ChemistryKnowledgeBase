@@ -228,31 +228,31 @@ div.ce-side-panel-bar {
 }
 
 .ce-page-type-topic {
-    background: cornflowerblue !important;
+    background: cornflowerblue;
 }
 
 .ce-page-type-publication {
-    background: palevioletred !important;
+    background: palevioletred;
 }
 
 .ce-page-type-investigation {
-    background: mediumseagreen !important;
+    background: mediumseagreen;
 }
 
 .ce-page-type-other {
-    background: lightgrey !important;
+    background: lightgrey;
 }
 
 .ce-page-type-molecule {
-    background: lightyellow !important;
+    background: lightyellow;
 }
 
 .ce-page-type-doi {
-    background: lightpink !important;
+    background: lightpink;
 }
 
 .ce-page-type-issue {
-    background: lightsalmon !important;
+    background: lightsalmon;
 }
 
 .ce-page-type-citation {
@@ -349,13 +349,17 @@ div.ce-side-panel-footer {
 
     height: 25px;
     position: relative;
-    background: grey;
+
     text-align: center;
     font-size: 90%;
     font-weight: bold;
     border: 1px solid;
     border-radius: 3px;
     cursor: pointer;
+}
+
+.ce-tree-element-grey {
+    background: lightgrey;
 }
 
 #ce-topic-element {

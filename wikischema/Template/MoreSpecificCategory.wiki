@@ -1,5 +1,5 @@
 <noinclude>
-More specific category
+More specific topic
 Params:
 * date=YYYY-mm-dd
 * author=Hans
@@ -7,8 +7,8 @@ Params:
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This page needs more specific categories
+|text=This page needs more specific topic
 |type=topic
-|name=More specific category needed
+|name=More specific topic needed
 |icon=File:WikiTemplate category.png
 }}</includeonly>
