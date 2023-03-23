@@ -31,9 +31,22 @@
 
             setTimeout(() => {
                 $('.multipleTemplateInstance').last().trigger('click');
+                removeValuesAfterClick(newInstance);
 
             }, 300);
         });
+    }
+
+    let removeValuesAfterClick = function(newInstance) {
+        let el = newInstance;
+        let f = function() {
+            if (el.find('.fieldValuesDisplay').length > 0) {
+                el.find('.fieldValuesDisplay').remove();
+            } else {
+                setTimeout(f, 100);
+            }
+        }
+        f();
     }
 
     $(function() {
