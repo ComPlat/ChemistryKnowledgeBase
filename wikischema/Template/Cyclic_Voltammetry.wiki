@@ -1,0 +1,48 @@
+<noinclude>
+This is the Cyclic Voltammetry template.
+</noinclude>
+<includeonly><tr>
+<td>{{{anl|}}}</td>
+<td>{{{anl conc|}}}</td>
+<td>todo</td>
+<td>todo</td>
+<td>{{{solv|}}}</td>
+<td property="hidden">{{{solv vol|}}}</td>
+<td>{{{electrolyte|}}}</td>
+<td property="hidden">{{{el conc|}}}</td>
+<td>{{{int ref comp|}}}</td>
+<td property="hidden">{{{scan rate|}}}</td>
+<td>{{{scan number|}}}</td>
+<td property="hidden">{{{potential window|}}}</td>
+<td property="hidden">{{{scan dir|}}}</td>
+<td>{{{gas|}}}</td>
+<td property="hidden">{{{temp|}}}</td>
+<td property="hidden">{{{cond|}}}</td>
+<td>{{{WE|}}}</td>
+<td property="hidden">{{{WE area|}}}</td>
+<td property="hidden">{{{CE|}}}</td>
+<td>{{{RE|}}}</td>
+<td property="hidden">{{{include|}}}</td>
+</tr>{{#subobject:
+ |Analyte={{{anl|}}}
+ |Analyte concentration={{{anl conc|}}}
+ |Oxidation potential={{{|}}}
+ |Reduction potential={{{|}}}
+ |Solvent A={{{solv|}}}
+ |Solvent volume={{{solv vol|}}}
+ |Electrolyte={{{electrolyte|}}}
+ |Electrolyte concentration={{{el conc|}}}
+ |Internal reference compound={{{int ref comp|}}}
+ |Scan rate={{{scan rate|}}}
+ |Scan number={{{scan number|}}}
+ |Potential window={{{potential window|}}}
+ |Scan direction={{{scan dir|}}}
+ |Gas={{{gas|}}}
+ |Temperature={{{temp|}}}
+ |Condition={{{cond|}}}
+ |Working electrode={{{WE|}}}
+ |Working electrode surface area={{{WE area|}}}
+ |Counter electrode={{{CE|}}}
+ |Reference electrode={{{RE|}}}
+ |BasePageName={{BASEPAGENAME}}
+}}</includeonly>

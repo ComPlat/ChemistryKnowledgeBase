@@ -1,0 +1,78 @@
+<noinclude>
+Add a new set of cyclic voltammetry experiments (a table in which each row describes one investigation):
+{{#forminput:form=Cyclic Voltammetry experiments}}
+</noinclude>
+
+<includeonly>
+{{{for template|Cyclic Voltammetry experiments}}}
+experiments:
+{{{field|experiments|holds template}}}
+{{{end template}}}
+
+{{{for template|Cyclic Voltammetry|multiple|embed in field=Cyclic Voltammetry experiments[experiments]}}}
+{| class="formtable"
+! analyte (catalyst):
+| {{{field|anl|input type=combobox|property=Analyte|values from category=Molecule}}}
+|-
+! analyte concentration [mM]:
+| {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! redox potential:
+| {{{field|redox potential|input type=regexp|base type=string|message=Input value pairs according to the format description|regexp=/(^$)!(^(([+-]?([0-9]*\.)?[0-9]*)?,([+-]?([0-9]*\.)?[0-9]*)?)(;(([+-]?([0-9]*\.)?[0-9]*)?,([+-]?([0-9]*\.)?[0-9]*)?))*$)/}}}
+|-
+! solvent:
+| {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
+|-
+! solvent volume [ml]:
+| {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! electrolyte:
+| {{{field|electrolyte|property=Electrolyte|input type=string}}}
+|-
+! electrolyte concentration [M]:
+| {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! internal reference compound:
+| {{{field|int ref comp|property=Internal reference compound|input type=dropdown}}}
+|-
+! scan rate [mV s-1]:
+| {{{field|scan rate|input type=regexp|property=Scan rate|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! scan number:
+| {{{field|scan number|input type=regexp|property=Scan number|base type=Number|message=Input a positive integer|regexp=/^[0-9]*$/}}}
+|-
+! potential window:
+| {{{field|potential window|property=Potential window|input type=string}}}
+|-
+! scan direction:
+| {{{field|scan dir|property=Scan direction|input type=dropdown}}}
+|-
+! gas (atmosphere):
+| {{{field|gas|property=Gas|input type=string}}}
+|-
+! temperature [° C]:
+| {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! condition (wavelength [nm] or dark):
+| {{{field|cond|property=Condition|input type=string}}}
+|-
+! working electrode (type and material):
+| {{{field|WE|property=Working electrode|input type=string}}}
+|-
+! WE surface area [mm²]:
+| {{{field|WE area|property=Working electrode surface area|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! counter electrode:
+| {{{field|CE|property=Counter electrode|input type=string}}}
+|-
+! reference electrode:
+| {{{field|RE|property=Reference electrode|input type=dropdown}}}
+|-
+! include:
+| {{{field|include|input type=checkbox|property=Include}}}
+|-
+|}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

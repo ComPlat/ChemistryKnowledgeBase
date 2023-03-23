@@ -30,6 +30,12 @@ class ExperimentRepository
                 'type' => 'molecular-process',
                 'rowTemplate' => 'Photocatalytic_CO2_conversion'
 
+            ],
+            'Cyclic_Voltammetry_experiments' => [
+                'label' => 'Cyclic Voltammetry experiments',
+                'type' => 'molecular-process',
+                'rowTemplate' => 'Cyclic_Voltammetry'
+
             ]
         ];
 
