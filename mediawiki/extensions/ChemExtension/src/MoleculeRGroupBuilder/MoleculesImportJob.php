@@ -86,7 +86,7 @@ class MoleculesImportJob extends Job
     {
         $moleculeCollection = $collection['chemForm'];
         $moleculeCollectionTitle = $collection['title'];
-        $result = $this->pageCreator->createNewMoleculePage($concreteMolecule, $moleculeCollectionTitle);
+        $result = $this->pageCreator->createNewMoleculePage($concreteMolecule, $moleculeCollectionTitle, false);
         $concreteMoleculeTitle = $result['title'];
         $this->logger->log("Created molecule/reaction page: {$concreteMoleculeTitle->getPrefixedText()}, "
             . "chemform: {$concreteMolecule->__toString()}, moleculeKey: {$concreteMolecule->getMoleculeKey()}");

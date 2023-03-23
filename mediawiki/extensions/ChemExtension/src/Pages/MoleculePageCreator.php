@@ -21,7 +21,7 @@ class MoleculePageCreator
     /**
      * @throws Exception
      */
-    public function createNewMoleculePage(ChemForm $chemForm, ?Title $parent = null): array
+    public function createNewMoleculePage(ChemForm $chemForm, ?Title $parent = null, $async = false): array
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_MASTER
@@ -42,7 +42,11 @@ class MoleculePageCreator
         $jobParams['chemForm'] = $chemForm;
         $jobParams['parent'] = $parent;
         $job = new MoleculePageCreationJob($title, $jobParams);
-        JobQueueGroup::singleton()->push($job);
+        if ($async) {
+            JobQueueGroup::singleton()->push($job);
+        } else {
+            $job->run();
+        }
 
 
         return ['title' => $title, 'chemformId' => $id];

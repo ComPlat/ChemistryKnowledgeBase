@@ -60,7 +60,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
                 $this->logger->log("Result: " . print_r($body, true));
                 $result = json_decode($body);
                 $concreteMolecules = [];
-                foreach($result as $m) {
+                foreach($result->rgroup as $m) {
                     $concreteMolecules[] = [
                         'chemForm' => ChemForm::fromMolOrRxn($m->mdl, $m->smiles, $m->inchi, $m->inchikey),
                         'rGroups' => self::makeRGroupsLowercase($m)
