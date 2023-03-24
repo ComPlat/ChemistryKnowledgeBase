@@ -33,7 +33,7 @@ class ExperimentRepository
             ],
             'Cyclic_Voltammetry_experiments' => [
                 'label' => 'Cyclic Voltammetry experiments',
-                'type' => 'molecular-process',
+                'type' => 'assay',
                 'rowTemplate' => 'Cyclic_Voltammetry'
 
             ]
