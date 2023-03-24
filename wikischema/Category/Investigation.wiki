@@ -1,1 +1,3 @@
 {{BaseTemplate}}
+
+[[equivalent URI:=http://purl.obolibrary.org/obo/OBI_0000066]]
