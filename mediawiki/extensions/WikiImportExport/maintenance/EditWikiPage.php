@@ -16,6 +16,10 @@ use WikiPage;
  */
 class EditWikiPage {
 
+    public const UPDATED = 1;
+    public const NOT_UPDATED = 2;
+    public const ERROR = 3;
+
     /**
      * Replaces the content of the given page with the provide newContentsText.
      * If the old and the new text are equal, no update will be done.
@@ -60,10 +64,10 @@ class EditWikiPage {
 
         $newContent = ContentHandler::makeContent( $newContentsText, $title );
 
-        if( trim($newContent->getWikitextForTransclusion()) == trim( $oldText ) ) {
+        if( self::equalIgnoringLineFeeds(trim($newContent->getWikitextForTransclusion()), trim( $oldText )) ) {
             // do nothing
             echo("Old and new content are identical. Nothing to do.\n");
-            return true;
+            return self::NOT_UPDATED;
 
         } else {
             $comment = CommentStoreComment::newUnsavedComment( $editMessageText );
@@ -80,8 +84,16 @@ class EditWikiPage {
             } else {
                 echo("ERROR: Failed modifying page $title.\n");
             }
-            return $updater->wasSuccessful();
+            return $updater->wasSuccessful() ? self::UPDATED : self::ERROR;
         }
+    }
+
+    private static function equalIgnoringLineFeeds($a, $b) {
+        $a = str_replace(["\r", "\n"], "\n", $a);
+        $b = str_replace(["\r", "\n"], "\n", $b);
+        $a = preg_replace("/\n+/", "\n", $a);
+        $b = preg_replace("/\n+/", "\n", $b);
+        return strcmp($a, $b) === 0;
     }
 
     /**
