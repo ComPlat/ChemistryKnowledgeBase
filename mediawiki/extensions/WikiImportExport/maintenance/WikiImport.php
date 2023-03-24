@@ -140,14 +140,26 @@ class WikiImport extends Maintenance {
                     $this->importFile($nsID, $nsName, "$namespaceDir/$file");
                 }
                 if ($nsID === NS_FILE) {
-                    $imageDir = $this->storageDirectory . '/images';
-                    $imageFilenameInWiki = pathinfo($file, PATHINFO_FILENAME);
-                    $title = \Title::newFromDBkey( "File:".urldecode($imageFilenameInWiki));
-                    $this->uploadImage("$imageDir/$imageFilenameInWiki", $title, "");
+                    $imageDir = $this->storageDirectory . '/File';
+                    $imageFilenameInWiki = pathinfo($file, PATHINFO_FILENAME) . ".". pathinfo($file, PATHINFO_EXTENSION);
+                    $title = \Title::newFromDBkey( "File:$imageFilenameInWiki");
+                    $this->uploadImage("$imageDir/$imageFilenameInWiki", $title);
                 }
             }
         } else {
             echo("\tno files.\n");
+        }
+    }
+
+    function uploadImage($path, $title) {
+        $localFile = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()->newFile( $title );
+        $status = $localFile->upload($path, "auto-generated", "");
+        if ($status->isOK()) {
+            echo "\n\tfile uploaded: ".$title->getPrefixedText()."\n";
+        } else {
+            foreach($status->getErrors() as $e) {
+                echo "\n\t".$e['message'].": ".$title->getPrefixedText()."\n";
+            }
         }
     }
 
