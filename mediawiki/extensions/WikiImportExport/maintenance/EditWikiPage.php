@@ -89,10 +89,9 @@ class EditWikiPage {
     }
 
     private static function equalIgnoringLineFeeds($a, $b) {
-        $a = str_replace(["\r", "\n"], "\n", $a);
-        $b = str_replace(["\r", "\n"], "\n", $b);
-        $a = preg_replace("/\n+/", "\n", $a);
-        $b = preg_replace("/\n+/", "\n", $b);
+        $a = str_replace(["\r", "\n"], "", $a);
+        $b = str_replace(["\r", "\n"], "", $b);
+
         return strcmp($a, $b) === 0;
     }
 
