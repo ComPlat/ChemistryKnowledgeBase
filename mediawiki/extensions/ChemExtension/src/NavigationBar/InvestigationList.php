@@ -24,12 +24,15 @@ class InvestigationList {
         $investigationFinder = new InvestigationFinder();
         if ($this->title->getNamespace() === NS_CATEGORY) {
             $list = $investigationFinder->getInvestigationsForTopic($this->title);
+            $type = "topic";
         } else {
             $list = $investigationFinder->getInvestigationsForPublication($this->title);
+            $type = "publication";
         }
         return $this->blade->view()->make("navigation.investigation-list",
             [
                 'list' => $list,
+                'type' => $type,
             ]
         )->render();
     }
