@@ -261,12 +261,25 @@ div.ce-side-panel-bar {
 
 
 .CategoryTreeTag {
-    overflow: auto
+    overflow: auto;
 }
 
-#ce-publication-list, #ce-investigation-list, #ce-molecules-list {
+#ce-publication-list {
+    overflow: auto;
     margin-top: 15px;
     max-height: 300px;
+}
+
+#ce-investigation-list {
+    overflow: auto;
+    margin-top: 15px;
+    max-height: 650px;
+}
+
+#ce-molecules-list {
+    overflow: auto;
+    margin-top: 15px;
+    max-height: 560px;
 }
 
 #ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
