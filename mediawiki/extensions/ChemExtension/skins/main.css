@@ -408,3 +408,7 @@ div.ce-side-panel-footer {
     width: 90px;
 }
 
+a.publication-for-investigation {
+    font-size: small;
+    margin-left: 5px;
+}
