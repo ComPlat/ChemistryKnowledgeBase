@@ -42,6 +42,9 @@
             let result = $.grep(window.ChemExtension.RGroups, function (e) {
                 return e.data.indexOf(valueLower) > -1;
             });
+            result = result.sort((a,b) => {
+                return a.label.length - b.label.length;
+            });
             deferred.resolve( result );
         }, 300);
 
