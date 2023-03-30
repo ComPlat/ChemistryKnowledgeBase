@@ -186,7 +186,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 #ce-side-panel-content {
     padding: 10px;
     position: fixed;
-    border: 2px solid;
+    border: 1px solid;
     top: 80px;
     left: 15px;
     width: 400px;
