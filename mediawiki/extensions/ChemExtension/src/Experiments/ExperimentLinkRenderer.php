@@ -6,6 +6,7 @@ use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
 use Parser;
 use ParserOptions;
 use Title;
@@ -46,10 +47,12 @@ class ExperimentLinkRenderer extends ExperimentRenderer
 |experiments={$experiments}
 }}
 TEMPLATE;
-
-        $parser = new Parser();
-        $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
-        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
+        $html = $cache->getWithSetCallback(md5($templateCall), 20, function() use($templateCall){
+            $parser = new Parser();
+            $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
+            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+        });
 
         $results = [];
         $htmlTableEditor = new HtmlTableEditor($html, null);

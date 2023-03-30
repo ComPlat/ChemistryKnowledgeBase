@@ -8,6 +8,7 @@ use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
 use Title;
 use Exception;
 use Parser;
@@ -50,9 +51,13 @@ class ExperimentListRenderer extends ExperimentRenderer {
             }
         });
 
-        $parser = new Parser();
-        $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
-        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
+        $html = $cache->getWithSetCallback(md5($text), 20, function() use($text, $pageTitle){
+            $parser = new Parser();
+            $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
+            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+        });
+
         $htmlTableEditor = new HtmlTableEditor($html, $this->context);
         $results = [];
         global $wgCEHiddenColumns;
