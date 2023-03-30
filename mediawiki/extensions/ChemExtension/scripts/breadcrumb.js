@@ -28,63 +28,88 @@
     }
 
     function initializePublicationFilter() {
-        let ajax = new window.ChemExtension.AjaxEndpoints();
         let input = OO.ui.infuse($('#ce-publication-filter'));
         input.on('enter', () => {
-            input.pushPending();
-            let category = mw.config.get('wgCanonicalNamespace') === 'Category' ? mw.config.get('wgTitle') : 'Topic';
-            ajax.getPublications(category, input.getValue()).done((result) => {
-                input.popPending();
-                let list = $('#ce-publication-list');
-                list.empty();
-                list.append(result.html);
-            }).error(()=> {
-                input.popPending();
-            });
+            searchForPublication(input);
+        });
+        let handle = null;
+        input.on('change', () => {
+            if (handle) {
+                clearTimeout(handle);
+            }
+            handle = setTimeout(function() {
+                searchForPublication(input);
+            }, 300);
+        });
+    }
+
+    function searchForPublication(input) {
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        input.pushPending();
+        let category = mw.config.get('wgCanonicalNamespace') === 'Category' ? mw.config.get('wgTitle') : 'Topic';
+        ajax.getPublications(category, input.getValue()).done((result) => {
+            input.popPending();
+            let list = $('#ce-publication-list');
+            list.empty();
+            list.append(result.html);
+        }).error(()=> {
+            input.popPending();
         });
     }
 
     function initializeMoleculesFilter() {
-        let ajax = new window.ChemExtension.AjaxEndpoints();
         let input = OO.ui.infuse($('#ce-molecules-filter'));
         input.on('enter', () => {
-            input.pushPending();
-            ajax.searchForMolecule(input.getValue(), mw.config.get('wgRelevantPageName')).done((result) => {
-                input.popPending();
-                let results = result.pfautocomplete;
-                let list = $('#ce-molecules-list ul');
-                list.empty();
-                if (results.length === 0) {
-                    list.append('no molecules found');
-                    return;
-                }
-                for (let i = 0; i < results.length; i++) {
-                    let text = results[i].Trivialname !== '' ? results[i].Trivialname : results[i].IUPACName;
-                    if (results[i].Abbreviation !== '') {
-                        text += ' (' +  results[i].Abbreviation + ')';
-                    }
-                    let a = $('<a>')
-                        .attr('href', mw.config.get('wgScriptPath') + '/' + results[i].title)
-                        .attr('title', results[i].title)
-                        .append(text);
-                    list.append($('<li>').append(a));
-                }
-                let container = $('#ce-molecules-list');
-                window.ChemExtension.initTooltips(container);
-
-                let searchHint = $('#ce-moleculelist-search-hint');
-                let a = $('<a>')
-                    .attr('href', mw.config.get('wgScriptPath') + '/Special:Search?search='
-                        + encodeURIComponent(input.getValue()) + '&prefix='+decodeURIComponent('category=Molecule'))
-                    .attr('target', '_blank')
-                    .append('open "'+input.getValue()+'" in fulltext search');
-                searchHint.empty();
-                searchHint.append(a);
-            }).error(()=> {
-                input.popPending();
-            });
+            searchForMolecule(input);
         });
+        let handle = null;
+        input.on('change', () => {
+            if (handle) {
+                clearTimeout(handle);
+            }
+            handle = setTimeout(function() {
+                searchForMolecule(input);
+            }, 300);
+        });
+    }
 
+    function searchForMolecule(input) {
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        input.pushPending();
+        ajax.searchForMolecule(input.getValue(), mw.config.get('wgRelevantPageName')).done((result) => {
+            input.popPending();
+            let results = result.pfautocomplete;
+            let list = $('#ce-molecules-list ul');
+            list.empty();
+            if (results.length === 0) {
+                list.append('no molecules found');
+                return;
+            }
+            for (let i = 0; i < results.length; i++) {
+                let text = results[i].Trivialname !== '' ? results[i].Trivialname : results[i].IUPACName;
+                if (results[i].Abbreviation !== '') {
+                    text += ' (' +  results[i].Abbreviation + ')';
+                }
+                let a = $('<a>')
+                    .attr('href', mw.config.get('wgScriptPath') + '/' + results[i].title)
+                    .attr('title', results[i].title)
+                    .append(text);
+                list.append($('<li>').append(a));
+            }
+            let container = $('#ce-molecules-list');
+            window.ChemExtension.initTooltips(container);
+
+            let searchHint = $('#ce-moleculelist-search-hint');
+            let a = $('<a>')
+                .attr('href', mw.config.get('wgScriptPath') + '/Special:Search?search='
+                    + encodeURIComponent(input.getValue()) + '&prefix='+decodeURIComponent('category=Molecule'))
+                .attr('target', '_blank')
+                .append('open "'+input.getValue()+'" in fulltext search');
+            searchHint.empty();
+            searchHint.append(a);
+        }).error(()=> {
+            input.popPending();
+        });
     }
 
     $(function () {
