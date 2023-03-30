@@ -283,14 +283,15 @@ class ChemFormRepository
         return $results;
     }
 
-    public function getChemFormIdsByPages(array $titles, $limit = 20, $offset = 0)
+    public function getChemFormIdsByPages(array $titles): array
     {
         if (count($titles) === 0) {
             return [];
         }
         $ids = array_map(function($e) { return $e->getArticleID();}, $titles);
-        $res = $this->db->select('chem_form_index', ['chem_form_id'],
-            ['page_id' =>$ids ], __METHOD__, ['LIMIT' => $limit, 'OFFSET' => $offset]);
+        $res = $this->db->select('chem_form_index',
+            ['chem_form_id'],
+            ['page_id' =>$ids ]);
         $results = [];
         foreach ($res as $row) {
             $results[] = $row->chem_form_id;
@@ -318,4 +319,19 @@ class ChemFormRepository
         return $results;
     }
 
+    public function getMoleculeIdsUsedOnCategory(Title $category): array
+    {
+        $res = $this->db->select(
+            ['chem_form_index', 'category_index'],
+            ['chem_form_index.chem_form_id'],
+            ['chem_form_index.page_id = category_index.page_id',
+                'category_id' =>  $category->getArticleID()
+            ]
+        );
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = $row->chem_form_id;
+        }
+        return $results;
+    }
 }

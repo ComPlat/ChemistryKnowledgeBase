@@ -9,6 +9,7 @@ use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
@@ -158,12 +159,24 @@ class MultiContentSave
         }
     }
 
+    private static function addToCategoryIndex(Title $pageTitle)
+    {
+        $categories = [];
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $repo = new CategoryIndexRepository($dbr);
+        $repo->deleteCategoryFromIndex($pageTitle);
+        WikiTools::getReversedCategoryList($pageTitle->getParentCategoryTree(), $categories);
+        $repo->addCategoriesForTitle($pageTitle, $categories);
+    }
+
     public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle, $createPages);
         self::parseMoleculeLinks($wikitext, $pageTitle);
 
         self::addMoleculesToIndex($pageTitle);
+        self::addToCategoryIndex($pageTitle);
         self::resetCollectMolecules($pageTitle);
     }
+
 }

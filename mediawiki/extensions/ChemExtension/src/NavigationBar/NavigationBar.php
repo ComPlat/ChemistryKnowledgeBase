@@ -55,7 +55,7 @@ class NavigationBar
         }
         $pubs = new PublicationList($title);
         $investigationList = new InvestigationList($this->title);
-        $moleculesList = new MoleculesList($this->title);
+        $moleculesList = new MoleculesList();
 
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [

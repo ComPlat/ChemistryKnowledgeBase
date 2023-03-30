@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Maintenance;
 
 
+use DIQA\ChemExtension\CategoryIndexRepository;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
@@ -50,7 +51,8 @@ class setupStore extends \Maintenance
         $tables = [
             (new ChemFormRepository($db))->setupTables(),
             (new PubChemRepository($db))->setupTables(),
-            (new LiteratureRepository($db))->setupTables()
+            (new LiteratureRepository($db))->setupTables(),
+            (new CategoryIndexRepository($db))->setupTables()
         ];
         $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {

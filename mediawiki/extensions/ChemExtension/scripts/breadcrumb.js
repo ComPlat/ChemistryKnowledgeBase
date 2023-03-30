@@ -49,7 +49,7 @@
         let input = OO.ui.infuse($('#ce-molecules-filter'));
         input.on('enter', () => {
             input.pushPending();
-            ajax.searchForMolecule(input.getValue()).done((result) => {
+            ajax.searchForMolecule(input.getValue(), mw.config.get('wgRelevantPageName')).done((result) => {
                 input.popPending();
                 let results = result.pfautocomplete;
                 let list = $('#ce-molecules-list ul');

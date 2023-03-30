@@ -2,8 +2,10 @@
 
 namespace DIQA\ChemExtension\Endpoints;
 
+use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
 use SMW\Query\QueryResult;
 use Title;
@@ -20,6 +22,8 @@ class SearchForMolecule extends SimpleHandler
     private $inchiKey;
     private $abbreviation;
 
+    private $repo;
+
     /**
      * SearchForMolecule constructor.
      */
@@ -30,20 +34,30 @@ class SearchForMolecule extends SimpleHandler
         $this->trivialnameProp = QueryUtils::newPropertyPrintRequest("Trivialname");
         $this->inchiKey = QueryUtils::newPropertyPrintRequest("InChIKey");
         $this->abbreviation = QueryUtils::newPropertyPrintRequest("Abbreviation");
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $this->repo = new ChemFormRepository($dbr);
     }
 
     public function run()
     {
         $params = $this->getValidatedParams();
         $searchText = $params['searchText'];
+        $restrictTo = $params['restrictTo'] ?? null;
         $priorityProperties = $params['priorityProperties'] ?? [];
+
+        if (!is_null($restrictTo)) {
+            $restrictToPage = Title::newFromText($restrictTo);
+            $moleculeFilter = $this->getMoleculeFilter($restrictToPage);
+        } else {
+            $moleculeFilter = "Category:Molecule";
+        }
 
         if (ChemTools::isChemformId($searchText)) {
             $searchResults = $this->searchForChemFormId($searchText);
         } else if (ChemTools::isCASNumber($searchText)) {
             $searchResults = $this->searchForCAS($searchText);
         } else {
-            $searchResults = $this->generalSearch($searchText, $priorityProperties);
+            $searchResults = $this->generalSearch($searchText, $moleculeFilter, $priorityProperties);
         }
 
         return ['pfautocomplete' => $searchResults];
@@ -62,6 +76,11 @@ class SearchForMolecule extends SimpleHandler
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
             ],
+            'restrictTo' => [
+                self::PARAM_SOURCE => 'query',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => false,
+            ],
             'priorityProperties' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
@@ -72,28 +91,23 @@ class SearchForMolecule extends SimpleHandler
         ];
     }
 
-    /**
-     * @param $searchText
-     * @param $priorityProperties
-     * @return array
-     */
-    private function generalSearch($searchText, $priorityProperties): array
+    private function generalSearch($searchText, $filter, $priorityProperties): array
     {
-        $propertyQueryParts = array_map(function($p) use($searchText) {
-            return "[[Category:Molecule]][[$p::~*$searchText*]]";
-            }, $priorityProperties);
+        $propertyQueryParts = array_map(function ($p) use ($searchText, $filter) {
+            return "[[$filter]][[$p::~*$searchText*]]";
+        }, $priorityProperties);
 
         $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts),
-        [
-            $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
-        ]);
+            [
+                $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
+            ]);
         $allResults = $this->readResults($prioritizedResults);
         if (count($allResults) < self::MAX_RESULTS) {
             $generalResults = QueryUtils::executeBasicQuery(
-                "[[Category:Molecule]][[IUPACName::~*$searchText*]] 
-                            OR [[Category:Molecule]][[Synonym::~*$searchText*]]
-                            OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
-                            OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]", [
+                "[[$filter]][[IUPACName::~*$searchText*]] 
+                            OR [[$filter]][[Synonym::~*$searchText*]]
+                            OR [[$filter]][[Trivialname::~*$searchText*]]
+                            OR [[$filter]][[Abbreviation::~*$searchText*]]", [
                 $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
             ]);
             $allResults = array_merge($allResults, $this->readResults($generalResults));
@@ -174,5 +188,26 @@ class SearchForMolecule extends SimpleHandler
         $labelToShow = $obj['Trivialname'] == '' ? $obj['title'] : $obj['Trivialname'];
         if ($obj['CAS'] != '') $labelToShow .= ", CAS: " . $obj['CAS'];
         return $labelToShow;
+    }
+
+
+    private function getMoleculeFilter(Title $restrictToPage): string
+    {
+        $moleculeIds = [];
+        if ($restrictToPage->getNamespace() === NS_CATEGORY) {
+            $moleculeIds = $this->repo->getMoleculeIdsUsedOnCategory($restrictToPage);
+        } elseif ($restrictToPage->getNamespace() === NS_MAIN) {
+            $moleculeIds = $this->repo->getChemFormIdsByPages([$restrictToPage]);
+        }
+        if (count($moleculeIds) < 10 * 1000) {
+            $moleculeFilter = implode('||', array_map(function ($m) {
+                return "Molecule:$m";
+            }, $moleculeIds));
+        } else {
+            // if more than 10.000 molecules, use default filter for performance reasons
+            return "Category:Molecule";
+        }
+
+        return $moleculeFilter;
     }
 }

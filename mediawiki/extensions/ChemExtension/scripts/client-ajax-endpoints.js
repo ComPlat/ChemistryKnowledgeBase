@@ -64,12 +64,19 @@
         });
     }
 
-    window.ChemExtension.AjaxEndpoints.prototype.searchForMolecule = function (searchText) {
+    window.ChemExtension.AjaxEndpoints.prototype.searchForMolecule = function (searchText, restrictTo) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/search-molecule?searchText=" + encodeURIComponent(searchText);
+        let url = baseUrl + "/v1/search-molecule";
+        let data = {
+            searchText: searchText
+        };
+        if (restrictTo) {
+            data.restrictTo = restrictTo;
+        }
         return $.ajax({
             method: "GET",
-            url: url
+            url: url,
+            data: data
         });
     }
 

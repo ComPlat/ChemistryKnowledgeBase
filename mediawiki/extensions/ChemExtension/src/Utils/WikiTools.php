@@ -128,7 +128,7 @@ class WikiTools {
         return $CHECK_TOPIC_CATEGORY[$title->getPrefixedText()];
     }
 
-    private static function getReversedCategoryList($categories, &$allCategories)
+    public static function getReversedCategoryList($categories, &$allCategories)
     {
         foreach ($categories as $name => $super) {
             if (is_array($super) && count($super) > 0) {
