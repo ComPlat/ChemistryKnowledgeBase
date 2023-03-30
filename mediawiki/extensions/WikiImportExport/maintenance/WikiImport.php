@@ -156,6 +156,7 @@ class WikiImport extends Maintenance {
         $status = $localFile->upload($path, "auto-generated", "");
         if ($status->isOK()) {
             echo "\n\tfile uploaded: ".$title->getPrefixedText()."\n";
+            $this->createdOrUpdatedPages[] = $title;
         } else {
             foreach($status->getErrors() as $e) {
                 echo "\n\t".$e['message'].": ".$title->getPrefixedText()."\n";
