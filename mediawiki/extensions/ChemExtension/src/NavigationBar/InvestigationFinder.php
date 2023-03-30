@@ -21,7 +21,10 @@ QUERY;
         while ($row = $queryResults->getNext()) {
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
-            $results[$dataItem->getTitle()->getPrefixedText()] = $dataItem->getTitle();
+            $results[$dataItem->getTitle()->getPrefixedText()] = [
+                'title' => $dataItem->getTitle(),
+                'type' => $this->getInvestigationType($dataItem->getTitle())
+            ];
         }
 
         return array_values($results);
@@ -40,10 +43,18 @@ QUERY;
         while ($row = $queryResults->getNext()) {
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
-            $results[$dataItem->getTitle()->getPrefixedText()] = $dataItem->getTitle();
+            $results[$dataItem->getTitle()->getPrefixedText()] = [
+                'title' => $dataItem->getTitle(),
+                'type' => $this->getInvestigationType($dataItem->getTitle())
+            ];
         }
 
         return array_values($results);
     }
 
+    private function getInvestigationType($title) {
+        $categories = array_keys($title->getParentCategories());
+        $categories = array_diff($categories, ["Category:Investigation"]);
+        return array_map(function($e) { return str_replace("_", " ", explode(":", $e)[1]); }, $categories);
+    }
 }

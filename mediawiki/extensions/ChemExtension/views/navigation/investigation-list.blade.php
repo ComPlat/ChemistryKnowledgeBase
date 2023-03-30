@@ -5,11 +5,14 @@
     <ul>
         @if($type==='topic')
         @foreach($list as $l)
-            <li><a href="{{$l->getFullURL()}}">{{$l->getSubpageText()}}</a><a class="publication-for-investigation" href="{{$l->getBaseTitle()->getFullURL()}}">({{$l->getBaseText()}})</a></li>
+            <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">{{$l['title']->getSubpageText()}}</a>
+                <a class="publication-for-investigation" href="{{$l['title']->getBaseTitle()->getFullURL()}}">({{$l['title']->getBaseText()}})</a>
+
+            </li>
         @endforeach
         @else
             @foreach($list as $l)
-                <li><a href="{{$l->getFullURL()}}">{{$l->getSubpageText()}}</a></li>
+                <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">{{$l['title']->getSubpageText()}}</a></li>
             @endforeach
         @endif
     </ul>
