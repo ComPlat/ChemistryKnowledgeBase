@@ -45,11 +45,10 @@ class SearchForMolecule extends SimpleHandler
         $restrictTo = $params['restrictTo'] ?? null;
         $priorityProperties = $params['priorityProperties'] ?? [];
 
+        $moleculeFilter = [];
         if (!is_null($restrictTo)) {
             $restrictToPage = Title::newFromText($restrictTo);
             $moleculeFilter = $this->getMoleculeFilter($restrictToPage);
-        } else {
-            $moleculeFilter = "Category:Molecule";
         }
 
         if (ChemTools::isChemformId($searchText)) {
@@ -91,28 +90,33 @@ class SearchForMolecule extends SimpleHandler
         ];
     }
 
-    private function generalSearch($searchText, $filter, $priorityProperties): array
+    private function generalSearch($searchText, $moleculeFilter, $priorityProperties): array
     {
-        $propertyQueryParts = array_map(function ($p) use ($searchText, $filter) {
-            return "[[$filter]][[$p::~*$searchText*]]";
+        $propertyQueryParts = array_map(function ($p) use ($searchText) {
+            return "[[Category:Molecule]][[$p::~*$searchText*]]";
         }, $priorityProperties);
 
-        $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts),
+        $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts, ['limit' => 10000]),
             [
                 $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
             ]);
         $allResults = $this->readResults($prioritizedResults);
         if (count($allResults) < self::MAX_RESULTS) {
             $generalResults = QueryUtils::executeBasicQuery(
-                "[[$filter]][[IUPACName::~*$searchText*]] 
-                            OR [[$filter]][[Synonym::~*$searchText*]]
-                            OR [[$filter]][[Trivialname::~*$searchText*]]
-                            OR [[$filter]][[Abbreviation::~*$searchText*]]", [
+                "[[Category:Molecule]][[IUPACName::~*$searchText*]] 
+                            OR [[Category:Molecule]][[Synonym::~*$searchText*]]
+                            OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
+                            OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]", [
                 $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
-            ]);
+            ], ['limit' => 10000]);
             $allResults = array_merge($allResults, $this->readResults($generalResults));
         }
 
+        if (count($moleculeFilter) > 0) {
+            $allResults = array_filter($allResults, function ($e) use ($moleculeFilter) {
+                return in_array($e['chemformid'], $moleculeFilter);
+            });
+        }
         return array_slice($allResults, 0, min(count($allResults), 500));
     }
 
@@ -155,6 +159,7 @@ class SearchForMolecule extends SimpleHandler
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
             $obj['title'] = $dataItem->getTitle()->getPrefixedText();
+            $obj['chemformid'] = $dataItem->getTitle()->getText();
 
             $column = next($row);
             $dataItem = $column->getNextDataItem();
@@ -191,7 +196,7 @@ class SearchForMolecule extends SimpleHandler
     }
 
 
-    private function getMoleculeFilter(Title $restrictToPage): string
+    private function getMoleculeFilter(Title $restrictToPage): array
     {
         $moleculeIds = [];
         if ($restrictToPage->getNamespace() === NS_CATEGORY) {
@@ -199,15 +204,6 @@ class SearchForMolecule extends SimpleHandler
         } elseif ($restrictToPage->getNamespace() === NS_MAIN) {
             $moleculeIds = $this->repo->getChemFormIdsByPages([$restrictToPage]);
         }
-        if (count($moleculeIds) < 10 * 1000) {
-            $moleculeFilter = implode('||', array_map(function ($m) {
-                return "Molecule:$m";
-            }, $moleculeIds));
-        } else {
-            // if more than 10.000 molecules, use default filter for performance reasons
-            return "Category:Molecule";
-        }
-
-        return $moleculeFilter;
+        return $moleculeIds;
     }
 }
