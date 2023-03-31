@@ -55,7 +55,7 @@ class FindMissingItems extends SpecialPage
             ['tl_from', "GROUP_CONCAT(tl_title SEPARATOR ',') AS types"],
             ["tl_title IN ('".implode("','", $typesOfItems)."')"],
             __METHOD__,
-            ['GROUP BY tl_from']
+            ['GROUP BY' => 'tl_from']
         );
         foreach ($res as $row) {
             $results[] = [

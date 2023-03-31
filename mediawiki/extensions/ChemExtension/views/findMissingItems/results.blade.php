@@ -9,7 +9,7 @@
                     {{++$startIndex}}. <span>{{$r['title']}}</span>
                 @else
                     {{++$startIndex}}. <a class="{{$r['title']->exists() ? '':'new'}}" href="{{$r['title']->getFullURL()}}">{{$r['title']->getText()}}</a>
-                    (<span>{{implode(',', $r['types'])}}</span>)
+                    (<span>{{implode(', ', $r['types'])}}</span>)
                 @endif
             </li>
         @endforeach
