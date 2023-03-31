@@ -8,7 +8,10 @@ use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
+use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
+use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use JobQueueGroup;
@@ -169,6 +172,25 @@ class MultiContentSave
         $repo->addCategoriesForTitle($pageTitle, $categories);
     }
 
+    private static function addMoleculesFromInvestigation(string $wikitext, Title $pageTitle)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $repo = new ChemFormRepository($dbr);
+        $templateParser = new TemplateParser($wikitext);
+        $ast = $templateParser->parse();
+        $ast->visitNodes(function($node) use($repo, $pageTitle) {
+            if (!($node instanceof TemplateTextNode)) return;
+            $params = explode('|', $node->getText());
+            $keyValues = ParserFunctionParser::parseArguments($params);
+            foreach($keyValues as $key => $value) {
+                $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
+                if (!is_null($chemFormId)) {
+                    $repo->addChemFormToIndex($pageTitle, $chemFormId);
+                }
+            }
+        });
+    }
+
     public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle, $createPages);
@@ -176,6 +198,9 @@ class MultiContentSave
 
         self::addMoleculesToIndex($pageTitle);
         self::addToCategoryIndex($pageTitle);
+        if ($pageTitle->isSubpage()) {
+            self::addMoleculesFromInvestigation($wikitext, $pageTitle);
+        }
         self::resetCollectMolecules($pageTitle);
     }
 
