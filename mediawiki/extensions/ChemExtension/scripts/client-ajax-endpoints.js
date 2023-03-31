@@ -39,10 +39,13 @@
 
     window.ChemExtension.AjaxEndpoints.prototype.getInchiKey = function (node, formulaV3000) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/inchi?mol=" + btoa(formulaV3000);
+        let url = baseUrl + "/v1/inchi";
         return $.ajax({
-            method: "GET",
-            url: url
+            method: "POST",
+            url: url,
+            data: {
+                mol: btoa(formulaV3000)
+            }
         });
     }
 

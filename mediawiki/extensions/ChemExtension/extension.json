@@ -54,7 +54,7 @@
         },
         {
             "path": "/ChemExtension/v1/inchi",
-            "method": "GET",
+            "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetInchI"
         },
         {

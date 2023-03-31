@@ -35,7 +35,7 @@ class GetInchI extends SimpleHandler {
         return [
 
             'mol' => [
-                self::PARAM_SOURCE => 'query',
+                self::PARAM_SOURCE => 'post',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
             ]
