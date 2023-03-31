@@ -19,7 +19,8 @@
         "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper",
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
         "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
-        "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules"
+        "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules",
+        "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems"
 
     },
     "AutoloadNamespaces": {
