@@ -178,14 +178,16 @@ class MultiContentSave
         $repo = new ChemFormRepository($dbr);
         $templateParser = new TemplateParser($wikitext);
         $ast = $templateParser->parse();
-        $ast->visitNodes(function($node) use($repo, $pageTitle) {
+        $alreadyAdded = [];
+        $ast->visitNodes(function($node) use($repo, $pageTitle, $alreadyAdded) {
             if (!($node instanceof TemplateTextNode)) return;
             $params = explode('|', $node->getText());
             $keyValues = ParserFunctionParser::parseArguments($params);
             foreach($keyValues as $key => $value) {
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
-                if (!is_null($chemFormId)) {
+                if (!is_null($chemFormId) && !in_array($chemFormId, $alreadyAdded)) {
                     $repo->addChemFormToIndex($pageTitle, $chemFormId);
+                    $alreadyAdded[] = $chemFormId;
                 }
             }
         });
