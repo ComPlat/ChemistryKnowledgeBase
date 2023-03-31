@@ -174,23 +174,25 @@ class MultiContentSave
 
     private static function addMoleculesFromInvestigation(string $wikitext, Title $pageTitle)
     {
+        $moleculesAlreadyFound = [];
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $templateParser = new TemplateParser($wikitext);
         $ast = $templateParser->parse();
-        $alreadyAdded = [];
-        $ast->visitNodes(function($node) use($repo, $pageTitle, $alreadyAdded) {
+        $ast->visitNodes(function($node) use($repo, $pageTitle, & $moleculesAlreadyFound) {
             if (!($node instanceof TemplateTextNode)) return;
+
             $params = explode('|', $node->getText());
             $keyValues = ParserFunctionParser::parseArguments($params);
             foreach($keyValues as $key => $value) {
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
-                if (!is_null($chemFormId) && !in_array($chemFormId, $alreadyAdded)) {
+                if (!is_null($chemFormId) && !in_array($chemFormId, $moleculesAlreadyFound)) {
                     $repo->addChemFormToIndex($pageTitle, $chemFormId);
-                    $alreadyAdded[] = $chemFormId;
+                    $moleculesAlreadyFound[] = $chemFormId;
                 }
             }
         });
+
     }
 
     public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {

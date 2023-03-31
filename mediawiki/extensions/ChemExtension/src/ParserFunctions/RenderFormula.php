@@ -162,15 +162,12 @@ class RenderFormula
         }
 
         $topicPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_CATEGORY && WikiTools::checkIfInTopicCategory($title);
         });
         $publicationPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_MAIN && !$title->isSubpage() && WikiTools::checkIfInTopicCategory($title);
         });
         $investigationPages = array_filter($pagesThatUseFormula, function (Title $title) {
-            $b = new NavigationBar($title);
             return $title->getNamespace() === NS_MAIN && $title->isSubpage() && WikiTools::checkIfInTopicCategory($title->getBaseTitle());
         });
 
