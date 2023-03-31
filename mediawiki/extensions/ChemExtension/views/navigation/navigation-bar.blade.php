@@ -41,7 +41,7 @@
 
     </div>
     <div style="clear: both; display:none;" id="ce-molecules-content" class="ce-content-panel">
-        <h3>Molecules</h3>
+        <h3>Molecules {{$type != 'molecule' && $type != 'undefined' ? "for this $type" : ""}}</h3>
         {!! $moleculesList !!}
 
     </div>
