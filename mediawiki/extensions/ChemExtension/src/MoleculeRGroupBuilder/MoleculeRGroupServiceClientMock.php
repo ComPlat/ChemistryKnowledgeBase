@@ -59,4 +59,24 @@ MOLFILE;
     {
         return ['molecularMass' => 77.03912516, 'molecularFormula' => 'C6H6'];
     }
+
+    function getAvailableRGroups(): array
+    {
+        return [
+            "DMF",
+            "CO2Et",
+            "EtO2C",
+            "COOEt",
+            "EtOOC",
+            "OiBu",
+            "iBuO",
+            "tBu",
+            "nBu",
+            "iPr",
+            "OC",
+            "H2O",
+            "py",
+            "DMFFMD"
+        ];
+    }
 }

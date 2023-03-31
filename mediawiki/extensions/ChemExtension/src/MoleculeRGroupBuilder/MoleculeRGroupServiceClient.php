@@ -25,4 +25,10 @@ interface MoleculeRGroupServiceClient {
      */
     function getMetadata(string $molfile): array;
 
+    /**
+     * Returns available RGroups
+     * @return array
+     */
+    function getAvailableRGroups() : array;
+
 }

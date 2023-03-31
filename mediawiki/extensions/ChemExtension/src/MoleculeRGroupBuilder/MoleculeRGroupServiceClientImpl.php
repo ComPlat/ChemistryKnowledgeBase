@@ -148,4 +148,38 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             curl_close($ch);
         }
     }
+
+    function getAvailableRGroups(): array
+    {
+        try {
+            $headerFields = [];
+            $headerFields[] = "Content-Type: application/json";
+            $headerFields[] = "Expect:"; // disables 100 CONTINUE
+            $ch = curl_init();
+            $url = $this->moleculeRGroupServiceUrl . "/api/v1/superatoms/keys";
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_HEADER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5); //timeout in seconds
+
+            $response = curl_exec($ch);
+            if (curl_errno($ch)) {
+                $error_msg = curl_error($ch);
+                throw new Exception("Error on request: $error_msg");
+            }
+            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            list($header, $body) = self::splitResponse($response);
+            if ($httpcode >= 200 && $httpcode <= 299) {
+                $result = json_decode($body);
+                return $result->keys ?? [];
+            }
+            throw new Exception("Error on upload. HTTP status: $httpcode. Message: $body");
+
+        } finally {
+            curl_close($ch);
+        }
+    }
 }

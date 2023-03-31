@@ -105,7 +105,13 @@
             "path": "/ChemExtension/v1/publications",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetPublications"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/rgroups-available",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetAvailableRGroups"
         }
+
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
