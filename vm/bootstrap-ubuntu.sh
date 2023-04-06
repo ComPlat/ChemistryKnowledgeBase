@@ -72,6 +72,10 @@ printf "\n\n\n#################### Java\n"
 date
 sudo apt -y install default-jre
 
+printf "\n\n\n#################### Tools\n"
+sudo apt -y install dos2unix
+sudo dos2unix /vagrant/*.sh
+
 
 printf "\n\n\n#################### Configure Apache changes\n"
 date
@@ -90,7 +94,6 @@ date
 sudo service apache2 status
 sudo service memcached status
 sudo service mysqld status
-
 
 printf "\n\n\n#################### Finished bootstrap.sh\n"
 date
