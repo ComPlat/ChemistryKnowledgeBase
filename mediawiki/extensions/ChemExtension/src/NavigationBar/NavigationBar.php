@@ -3,7 +3,6 @@
 namespace DIQA\ChemExtension\NavigationBar;
 
 use DIQA\ChemExtension\Utils\WikiTools;
-use OOUI\Tag;
 use OutputPage;
 use Parser;
 use ParserOptions;
@@ -28,9 +27,6 @@ class NavigationBar
 
         $this->title = $title;
 
-        $parentCategoryTree = [];
-        $parentCategoryTree[$this->title->getPrefixedText()] = $this->title->getParentCategoryTree();
-        $this->getReversedCategoryList($parentCategoryTree, $this->pageList);
     }
 
     public function getNavigationLocation()
@@ -60,7 +56,7 @@ class NavigationBar
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
                 'title' => $this->title,
-                'type' => $this->getCssType($this->title),
+                'type' => self::getCssType($this->title),
                 'categories' => $this->makeBreadcrumb()->toString(),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $pubs->getPublicationPages(),
@@ -99,7 +95,7 @@ class NavigationBar
         }
 
         global $wgScriptPath;
-        $type = $this->getCssType($this->title);
+        $type = self::getCssType($this->title);
         return $this->blade->view()->make("page-type",
             [
                 'wgScriptPath' => $wgScriptPath,
@@ -110,42 +106,12 @@ class NavigationBar
     }
 
     private function makeBreadcrumb() {
-        global $wgScriptPath;
-        $list = new Tag('ul');
-        $list->addClasses(['ce-breadcrumb']);
-        $indentation = 0;
-        foreach($this->pageList as $page) {
-            if ($page->getText() === 'Topic') continue;
-            $li = new Tag('li');
-
-
-            $typeHint = new Tag('span');
-            $type = $this->getCssType($page);
-            $li->setAttributes(['style' => "margin-left: {$indentation}px"]);
-            $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
-
-            $a = new Tag('a');
-            $a->appendContent($page->getText());
-            $a->setAttributes(['href' => $page->getFullURL()]);
-            $li->appendContent($a);
-            $list->appendContent($li);
-            $indentation += 10;
+        $tree = new BreadcrumbTree($this->title);
+        $firstChild = $tree->getTree()->firstChild();
+        if (!is_null($firstChild) && $firstChild->getTitle()->getText() === 'Topic') {
+            return $firstChild->serialize();
         }
-        return $list;
-    }
-
-    private function getReversedCategoryList($categories, &$allCategories)
-    {
-        foreach ($categories as $name => $super) {
-            if (is_array($super) && count($super) > 0) {
-                $this->getReversedCategoryList($super, $allCategories);
-            }
-            $title = Title::newFromText($name);
-            if ($title->isSubpage()) {
-                $allCategories[] = $title->getBaseTitle();
-            }
-            $allCategories[] = $title;
-        }
+        return $tree->getTree()->serialize();
     }
 
     private function showPublications(): bool
@@ -182,7 +148,7 @@ class NavigationBar
     /**
      * @return string
      */
-    private function getCssType($title): string
+    public static function getCssType($title): string
     {
         switch ($title->getNamespace()) {
             case NS_CATEGORY:
