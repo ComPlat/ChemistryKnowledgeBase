@@ -273,13 +273,13 @@ div.ce-side-panel-bar {
 #ce-investigation-list {
     overflow: auto;
     margin-top: 15px;
-    max-height: 650px;
+    max-height: 300px;
 }
 
 #ce-molecules-list {
     overflow: auto;
     margin-top: 15px;
-    max-height: 560px;
+    max-height: 300px;
 }
 
 #ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {

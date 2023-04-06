@@ -36,11 +36,19 @@
         </div>
     </div>
     <div style="clear: both; display:none;" id="ce-investigation-content" class="ce-content-panel">
+        <h3>Current site</h3>
+        <div class="ce-breadcrumb">
+            {!! $categories !!}
+        </div>
         <h3>Investigations</h3>
         {!! $investigationList !!}
 
     </div>
     <div style="clear: both; display:none;" id="ce-molecules-content" class="ce-content-panel">
+        <h3>Current site</h3>
+        <div class="ce-breadcrumb">
+            {!! $categories !!}
+        </div>
         <h3>Molecules {{$type != 'molecule' && $type != 'undefined' ? "for this $type" : ""}}</h3>
         {!! $moleculesList !!}
 
