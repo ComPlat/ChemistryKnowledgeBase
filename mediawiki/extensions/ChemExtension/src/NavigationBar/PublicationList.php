@@ -24,7 +24,7 @@ class PublicationList {
         $this->title = $title;
     }
 
-    public function getPublicationPages(): string
+    public function getPublicationPages(): array
     {
 
         $results = QueryUtils::executeBasicQuery("[[{$this->title->getPrefixedText()}]]", [], ['limit' => 500]);
@@ -37,12 +37,7 @@ class PublicationList {
             $searchResults[] = $obj;
 
         }
-
-        return $this->blade->view()->make("navigation.publication-list",
-            [
-                'list' => $searchResults,
-            ]
-        )->render();
+        return $searchResults;
     }
 
     /**
