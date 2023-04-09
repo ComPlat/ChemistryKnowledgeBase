@@ -10,40 +10,38 @@ use Philo\Blade\Blade;
 class MoleculesList
 {
     private $blade;
-
+    private $type;
 
     /**
      * Breadcrumb constructor.
      */
-    public function __construct()
+    public function __construct($type)
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $this->blade = new Blade ($views, $cache);
-
+        $this->type = $type;
     }
 
     public function getMolecules()
     {
-        $filter = $this->createGUIForMoleculeFilter();
-        $moleculeList = $this->blade->view()->make("navigation.molecule-list",
+        return $this->blade->view()->make("navigation.molecule-list",
             [
                 'moleculesList' => []
             ]
         )->render();
-
-        return $filter . $moleculeList;
     }
 
-    private function createGUIForMoleculeFilter()
+    public function createGUIForMoleculeFilter()
     {
+        $placeholder = 'Filter for molecules ' . ($this->type != 'molecule' && $this->type != 'undefined' ? "of this $this->type" : "");
         return new FieldLayout(
             new TextInputWidget([
-                'id' => 'ce-molecules-filter',
+                'id' => 'ce-molecules-filter-input',
                 'infusable' => true,
                 'name' => 'molecules-filter',
                 'value' => '',
-                'placeholder' => 'Filter for molecules...'
+                'placeholder' => $placeholder
             ]),
             [
                 'align' => 'top',

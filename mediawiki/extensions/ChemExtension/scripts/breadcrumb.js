@@ -8,19 +8,25 @@
 
         $('#ce-topic-element').click((e) => {
             $('.ce-content-panel').hide();
+            $('.ce-filter-panel').hide();
             $('#ce-topic-content').show();
         });
         $('#ce-publication-element').click((e) => {
             $('.ce-content-panel').hide();
+            $('.ce-filter-panel').hide();
             $('#ce-publication-content').show();
+            $('#ce-publication-filter').show();
         });
         $('#ce-investigation-element').click((e) => {
             $('.ce-content-panel').hide();
+            $('.ce-filter-panel').hide();
             $('#ce-investigation-content').show();
         });
         $('#ce-molecule-element').click((e) => {
             $('.ce-content-panel').hide();
+            $('.ce-filter-panel').hide();
             $('#ce-molecules-content').show();
+            $('#ce-molecules-filter').show();
         });
         initializePublicationFilter();
         initializeMoleculesFilter();
@@ -28,7 +34,7 @@
     }
 
     function initializePublicationFilter() {
-        let input = OO.ui.infuse($('#ce-publication-filter'));
+        let input = OO.ui.infuse($('#ce-publication-filter-input'));
         input.on('enter', () => {
             searchForPublication(input);
         });
@@ -58,7 +64,7 @@
     }
 
     function initializeMoleculesFilter() {
-        let input = OO.ui.infuse($('#ce-molecules-filter'));
+        let input = OO.ui.infuse($('#ce-molecules-filter-input'));
         input.on('enter', () => {
             searchForMolecule(input);
         });

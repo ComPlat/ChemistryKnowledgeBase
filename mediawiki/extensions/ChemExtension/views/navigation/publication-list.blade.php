@@ -1,4 +1,4 @@
-<div id="ce-publication-list">
+<div id="ce-publication-list" class="ce-list">
     @if(count($list) === 0)
         none
     @else

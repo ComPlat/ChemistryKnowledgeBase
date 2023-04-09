@@ -51,7 +51,7 @@ class NavigationBar
         }
         $pubs = new PublicationList($title);
         $investigationList = new InvestigationList($this->title);
-        $moleculesList = new MoleculesList();
+        $moleculesList = new MoleculesList(self::getCssType($this->title));
 
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
@@ -60,8 +60,10 @@ class NavigationBar
                 'categories' => $this->makeBreadcrumb()->toString(),
                 'categoryTree' => $treeHTML,
                 'publicationList' => $pubs->getPublicationPages(),
+                'publicationFilter' => $pubs->createGUIForPublicationFilter(),
                 'investigationList' => $investigationList->renderInvestigationList(),
                 'moleculesList' => $moleculesList->getMolecules(),
+                'moleculesFilter' => $moleculesList->createGUIForMoleculeFilter(),
                 'showPublications' => $this->showPublications(),
                 'showInvestigations' => $this->showInvestigations(),
                 'imgPath' => "$wgScriptPath/extensions/ChemExtension/skins/images",

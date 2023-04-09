@@ -1,4 +1,4 @@
-<div id="ce-molecules-list">
+<div id="ce-molecules-list" class="ce-list">
 <ul>
     @foreach($moleculesList as $l)
         <li><a href="{{$l['page']->getFullURL()}}">{{$l['name']}}</a></li>

@@ -38,25 +38,22 @@ class PublicationList {
 
         }
 
-        $filter = $this->createGUIForPublicationFilter();
-        $publicationList = $this->blade->view()->make("navigation.publication-list",
+        return $this->blade->view()->make("navigation.publication-list",
             [
                 'list' => $searchResults,
             ]
         )->render();
-
-        return $filter . $publicationList;
     }
 
     /**
      * @return FieldLayout
      * @throws \OOUI\Exception
      */
-    private function createGUIForPublicationFilter(): FieldLayout
+    public function createGUIForPublicationFilter(): FieldLayout
     {
         return new FieldLayout(
             new TextInputWidget([
-                'id' => 'ce-publication-filter',
+                'id' => 'ce-publication-filter-input',
                 'infusable' => true,
                 'name' => 'publication-filter',
                 'value' => '',

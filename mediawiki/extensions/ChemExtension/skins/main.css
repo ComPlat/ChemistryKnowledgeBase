@@ -193,6 +193,10 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     height: 80%;
     background: whitesmoke;
     border-radius: 5px;
+
+    display: flex;
+    flex-direction: column;
+
 }
 
 #ce-side-panel-content li {
@@ -264,25 +268,11 @@ div.ce-side-panel-bar {
     overflow: auto;
 }
 
-#ce-publication-list {
-    overflow: auto;
+.ce-list {
     margin-top: 15px;
-    max-height: 300px;
 }
 
-#ce-investigation-list {
-    overflow: auto;
-    margin-top: 15px;
-    max-height: 300px;
-}
-
-#ce-molecules-list {
-    overflow: auto;
-    margin-top: 15px;
-    max-height: 300px;
-}
-
-#ce-publication-list li, #ce-investigation-list li, #ce-molecules-list li {
+.ce-list li {
     list-style: circle;
 }
 
@@ -338,13 +328,11 @@ ul.ce-breadcrumb {
   padding-left: 0px;
 }
 
-div.ce-breadcrumb {
-    max-height: 200px;
+div.ce-content-panel {
     overflow: auto;
 }
 
 div.ce-content {
-    max-height: 480px;
     overflow: auto;
 }
 
