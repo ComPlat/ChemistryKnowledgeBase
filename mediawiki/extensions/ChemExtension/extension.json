@@ -106,6 +106,10 @@
             "path": "/ChemExtension/v1/publications",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetPublications"
+        },{
+            "path": "/ChemExtension/v1/investigations",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetInvestigations"
         },
         {
             "path": "/ChemExtension/v1/chemform/rgroups-available",

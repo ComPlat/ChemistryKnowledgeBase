@@ -62,6 +62,7 @@ class NavigationBar
                 'publicationList' => $pubs->getPublicationPages(),
                 'publicationFilter' => $pubs->createGUIForPublicationFilter(),
                 'investigationList' => $investigationList->renderInvestigationList(),
+                'investigationFilter' => $investigationList->createGUIForInvestigationFilter(),
                 'moleculesList' => $moleculesList->getMolecules(),
                 'moleculesFilter' => $moleculesList->createGUIForMoleculeFilter(),
                 'showPublications' => $this->showPublications(),

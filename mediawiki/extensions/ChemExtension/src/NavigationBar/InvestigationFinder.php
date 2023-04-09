@@ -9,10 +9,12 @@ use Title;
 class InvestigationFinder {
 
 
-    public function getInvestigationsForPublication(Title $publication): array
+    public function getInvestigationsForPublication(Title $publication, $searchTerm = ""): array
     {
+        $searchTermConstraint = $searchTerm !== '' ? "[[Display title of::~*$searchTerm*]]" : "";
         $text = $publication->getText();
         $query = <<<QUERY
+$searchTermConstraint
 [[BelongsToPublication::$text]]
 QUERY;
 
@@ -31,10 +33,12 @@ QUERY;
 
     }
 
-    public function getInvestigationsForTopic(Title $topic): array
+    public function getInvestigationsForTopic(Title $topic, $searchTerm = ""): array
     {
+        $searchTermConstraint = $searchTerm !== '' ? "[[Display title of::~*$searchTerm*]]" : "";
         $categoryTitleText = $topic->getText();
         $query = <<<QUERY
+$searchTermConstraint
 [[BelongsToPublication::<q>[[Category:$categoryTitleText]]</q>]]
 QUERY;
 

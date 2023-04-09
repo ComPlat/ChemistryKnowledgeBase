@@ -21,6 +21,7 @@
             $('.ce-content-panel').hide();
             $('.ce-filter-panel').hide();
             $('#ce-investigation-content').show();
+            $('#ce-investigation-filter').show();
         });
         $('#ce-molecule-element').click((e) => {
             $('.ce-content-panel').hide();
@@ -29,6 +30,7 @@
             $('#ce-molecules-filter').show();
         });
         initializePublicationFilter();
+        initializeInvestigationFilter();
         initializeMoleculesFilter();
         initialized = true;
     }
@@ -56,6 +58,36 @@
         ajax.getPublications(category, input.getValue()).done((result) => {
             input.popPending();
             let list = $('#ce-publication-list');
+            list.empty();
+            list.append(result.html);
+        }).error(()=> {
+            input.popPending();
+        });
+    }
+
+    function initializeInvestigationFilter() {
+        let input = OO.ui.infuse($('#ce-investigation-filter-input'));
+        input.on('enter', () => {
+            searchForInvestigation(input);
+        });
+        let handle = null;
+        input.on('change', () => {
+            if (handle) {
+                clearTimeout(handle);
+            }
+            handle = setTimeout(function() {
+                searchForInvestigation(input);
+            }, 300);
+        });
+    }
+
+    function searchForInvestigation(input) {
+        let ajax = new window.ChemExtension.AjaxEndpoints();
+        input.pushPending();
+        let pageTitle = mw.config.get('wgTitle');
+        ajax.getInvestigations(pageTitle, input.getValue()).done((result) => {
+            input.popPending();
+            let list = $('#ce-investigation-list');
             list.empty();
             list.append(result.html);
         }).error(()=> {

@@ -38,8 +38,10 @@
         {!! $publicationList !!}
         </div>
     </div>
+    <div style="display:none;" id="ce-investigation-filter" class="ce-filter-panel">
+        {!! $investigationFilter !!}
+    </div>
     <div style="display:none;" id="ce-investigation-content" class="ce-content-panel">
-        <h3>Investigations</h3>
         {!! $investigationList !!}
 
     </div>

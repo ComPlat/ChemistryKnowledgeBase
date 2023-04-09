@@ -118,6 +118,19 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.getInvestigations = function (pageTitle, searchTerm) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/investigations";
+        return $.ajax({
+            method: "GET",
+            url: url,
+            data: {
+                title: pageTitle,
+                searchTerm: searchTerm
+            },
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.getAvailableRGroups = function () {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/chemform/rgroups-available";

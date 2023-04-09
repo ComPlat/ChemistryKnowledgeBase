@@ -199,7 +199,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 
 }
 
-#ce-side-panel-content li {
+div.ce-breadcrumb li {
     list-style: none;
 }
 
