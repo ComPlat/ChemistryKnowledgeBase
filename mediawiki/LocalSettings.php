@@ -392,6 +392,7 @@ $smwgNamespacesWithSemanticLinks[NS_TEMPLATE] = true;
 # Enable subpages in the main namespace
 $wgNamespacesWithSubpages[NS_MAIN] = true;
 wfLoadExtension('ChemExtension');
+wfLoadExtension('InvestigationImport');
 wfLoadExtension( 'CategoryTree' );
 $wgCategoryTreeMaxDepth=4;
 
