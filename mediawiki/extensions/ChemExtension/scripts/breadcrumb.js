@@ -84,7 +84,7 @@
     function searchForInvestigation(input) {
         let ajax = new window.ChemExtension.AjaxEndpoints();
         input.pushPending();
-        let pageTitle = mw.config.get('wgTitle');
+        let pageTitle = mw.config.get('wgPageName');
         ajax.getInvestigations(pageTitle, input.getValue()).done((result) => {
             input.popPending();
             let list = $('#ce-investigation-list');
