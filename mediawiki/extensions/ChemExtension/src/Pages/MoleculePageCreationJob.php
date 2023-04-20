@@ -46,11 +46,10 @@ class MoleculePageCreationJob extends Job
         if (!$successful) {
             throw new Exception("Could not create/update molecule/reaction page");
         }
-        if (count($this->chemForm->getRGroups()) > 0) {
-            $this->logger->log("Created/updated molecule collection page: {$title->getPrefixedText()}, smiles: {$this->chemForm->getSmiles()}");
-        } else {
-            $this->logger->log("Created/updated molecule/reaction page with RGroups: {$title->getPrefixedText()}, smiles: {$this->chemForm->getSmiles()}");
-        }
+
+        $object = $this->chemForm->hasRGroupDefinitions() ? "molecule collection" : "molecule";
+        $message = "Created/updated $object page: {$title->getPrefixedText()}, smiles: {$this->chemForm->getSmiles()}";
+        $this->logger->log($message);
     }
 
     /**
