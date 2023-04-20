@@ -206,6 +206,14 @@ class ChemFormRepository
             ]);
     }
 
+    public function deleteAllConcreteMoleculeByMoleculePage(Title $moleculePage)
+    {
+        $this->db->delete('molecule_collection',
+            [
+                'molecule_page_id' => $moleculePage->getArticleID(),
+            ]);
+    }
+
     public function getConcreteMolecules(Title $moleculeCollectionPage): array
     {
         $results = [];
