@@ -10,7 +10,11 @@
 
     OO.VisualEditorTools.prototype.createMoleculeKey = function (formula, smiles) {
         let rGroupIds = this.getRGroupIds(formula);
-        return smiles + rGroupIds.join('');
+        let key = smiles + rGroupIds.join('');
+        if (key.length > 255) {
+            key = window.ChemExtension.md5(key);
+        }
+        return key;
     }
 
     OO.VisualEditorTools.prototype.getNumberOfMoleculeRGroups = function (formula) {

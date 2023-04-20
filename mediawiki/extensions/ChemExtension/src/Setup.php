@@ -75,6 +75,17 @@ class Setup {
             'dependencies' => [],
         );
 
+        $wgResourceModules['ext.diqa.md5'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/libs/md5.js',
+            ],
+            'styles' => [],
+            'dependencies' => [],
+        );
+
         $wgResourceModules['ext.diqa.chemextension.pf'] = array(
             'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
@@ -91,6 +102,7 @@ class Setup {
         $out->addSubtitle($b->getPageType() . self::$subTitleExtension);
 
         $out->addModules('ext.diqa.chemextension');
+        $out->addModules('ext.diqa.md5');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
