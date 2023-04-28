@@ -29,8 +29,9 @@ The extension implies a particular data model in the wiki which looks as followi
 
   Molecule and molecule collection pages are in a separate namespace "Molecule". Each page there represents one molecule
   or one collection of molecules (cf. section "Concepts"). They usually contain metadata about the molecule like mass or trivialname.
+
   
-##Namespaces
+## Namespaces
 The extension adds 2 additional namespaces: 
 * Molecule 
 * and Reaction 
@@ -52,7 +53,7 @@ molecules automatically from it.
 
 A molecule with rests is also called a "molecule collection" in our terminology.
 
-###Terms
+### Terms
 *Molecule key*: It's a unique identifier of the molecule in the wiki. Same molecule key means same molecule.
 For concrete molecules it is just the InChI-Key. For molecule collections it's the SMILES string plus the
 rests used in the molecule (sorted by rest number), e.g.
@@ -68,11 +69,11 @@ Note: If the SMILES string and the rests exceed the length of 255, the key is ha
 This number is an easy and unique identifier for molecules in the wiki. It's synthetic, so different
 instances of this wiki will have different numbers for a molecule, unlike the molecule key. 
 
-###Classes
+### Classes
 * *ChemForm*: Represents a chemical formula in a wiki page.
 * *ChemFormParser*: Parses chemical formulas from wiki text and returns a list of *ChemForm* instances.
 
-###Repository
+### Repository
 Chemical formulas requires some extra data in database. The following tables are used therefore:
 * *chem_form*: Stores the chemFormId (primary key), the molecule key and the image data
     * *id*: chemFormId (cf. Terms)
@@ -96,7 +97,7 @@ Chemical formulas requires some extra data in database. The following tables are
 
 The class *ChemFormRepository* abstracts access to these tables.
 
-###Parser functions / Hooks
+### Parser functions / Hooks
 * *chemform*: Hook for defining a molecule on a page
     * tag content is the molecule as MOLFile V3000
     * inchikey: the inchikey (if not a molecule collection)
@@ -125,7 +126,7 @@ The class *ChemFormRepository* abstracts access to these tables.
 * *extractElements*: Extracts chemical elements from a chemical formula as a comma-separated list. Parameters:
     * *formula*: the chemical (sum-)formula.
 
-###Scripts
+### Scripts
 * ve.extend.js: Renders custom buttons in the VE dialogs
 * ve.insert-commands.js: Registers new commands in "insert" menu of VE
 * ve.oo.ui.ketcher-dialog.js: Dialog which includes Ketcher to VE
@@ -176,18 +177,18 @@ and the type of investigation. Refer to the parser function section for details.
 Additionally, a topic page can include several investigations via the parser function "#experimentlink". This is
 also editable by VisualEditor. Refer to the parser function section for details.
 
-###Classes
+### Classes
 * ExperimentListRenderer: renders the *#experimentlist* parser function.
 * ExperimentLinkRenderer: renders the *#experimentlink* parser function.
 * ExperimentType: DTO class to access the registered type of investigation from *ExperimentRepository*
 * ExperimentRepository: stores the registered investigations
 
-###Scripts
+### Scripts
 * ve.oo-ui.add-experiment-dialog: VE-Dialog for *#experimentlist* parser function
 * ve.oo-ui.add-experiment-link-dialog: VE-Dialog for *#experimentlink* parser function
 * ve.oo-ui.add-experiment-widget: Widget which is displayed in the VE-Dialog.
 
-###Parser functions
+### Parser functions
 * *experimentlist*: Inserts a new investigation (=list of experiments)
     * *form*: The type of the experiment (effectively the form used)
     * *name*: Arbitrary name of the experiment
@@ -198,7 +199,7 @@ also editable by VisualEditor. Refer to the parser function section for details.
     * *form*: The type of the experiment (effectively the form used)
     * *restrictToPages*: A SMW query to select the experiments (default is all of the given type)
     
-##Navigation bar
+## Navigation bar
 On the left side we have a side-bar showing the content of the wiki. The content is context-specific..
 There are 4 "tabs": Topics, Publications, Investigations and Molecules. On all tabs you see the current
 location as a breadcrumb-tree. Below there is specific content for each tab. The content also depends
@@ -228,7 +229,7 @@ If the user is on a molecule page:
 * Investigation: shows nothing
 * Molecules: Search field for all molecules.
 
-###Classes
+### Classes
 * NavigationBar: Renders the whole content of the navigation bar
 * BradcrumbTree: Renders the breadcrumb with the current location
 * InvestigationFinder: Retrieves the investigations depending on the context
@@ -237,7 +238,7 @@ If the user is on a molecule page:
 * MoleculeList: Renders the molecule tab content.
 * PublicationList: Renders the publication tab content.
 
-###Scripts
+### Scripts
 * breadcrumb.js: Contains all javascript for navigation bar
 
 ## Literature references
@@ -252,7 +253,7 @@ linked from the reference list.
 
     Special:Literature?doi=10.1093/ajae/aaq063
 
-###Repository
+### Repository
 Literature data is cached in the database. Otherwise, it would be necessary to retrieve it
 always from the web which is too slow (~1s for each reference). The following table is used:
 
@@ -261,14 +262,14 @@ always from the web which is too slow (~1s for each reference). The following ta
     * *doi*: Digital object identifier
     * *data*: JSON object with literature data
 
-###Classes
+### Classes
 * *DOIRenderer*: Displays the references (as reference in the text, at the bottom of a page and as a infobox)
 * *DOIResolver*: Resolves as DOI and stores the result in the DB
 * *DOITools*: Utility classes
 * *LiteratureResolverJob*: To retrieve literature data async.
 * *SpecialLiterature*: Special page "Special:Literature" to display literature data in detail.
 
-###Parser functions 
+### Parser functions 
 * *literature*: Renders a literature reference in the text
     * *doi*: the DOI of the literature referenced
 
@@ -283,7 +284,7 @@ If the molecule does not exist in PubChem, it tries to retrieve some of the meta
 
 There is a template "Molecule" which is populated by this data. 
 
-###Repository
+### Repository
 Data from PubChem is cached in the DB. Mainly due to performance reasons. We do 3 different
 requests for each molecule (record, synonyms, categories). The results of all are stored.
 
@@ -294,7 +295,7 @@ requests for each molecule (record, synonyms, categories). The results of all ar
     * *synonyms*: JSON object
     * *categories*: JSON object
 
-###Classes
+### Classes
 * *PubChemClient*: Retrieves data from PubChem.
 * *PubChem\*Result* classes: Parses results of PubChem-data (record, synonyms, categories).
 * *PubChemRepository*: Provides access to database table
@@ -330,7 +331,7 @@ The backend provides a couple of REST-endpoints. The functionality is quite self
 They are located in the Endpoints-package.
 The javascript code to access those endpoints is located at *client-ajax-endpoints.js*
 
-##Misc
+## Misc
 The util package contains a bunch of utility classes with static functions. However, two classes non-static
 functions are notable:
 * TemplateParser:  builds an AST for nested template calls. This is necessary to process investigations
@@ -339,7 +340,7 @@ functions are notable:
   additional functionality to the HTML tables which are rendered by the investigation feature. e.g. the
   expand/collapse-feature.
 
-###General Scripts
+### General Scripts
 * pf-extensions: copy button in multi-form editor
 * ve.oo.model.tools.js: Utility class with helper methods
 * ve.oo-ui.initialize: General code required on all pages
@@ -362,7 +363,7 @@ because we need to extend certain functionality.
 * sticky-ve-toolbar.patch: makes the toolbar in VE "sticky" to the top when scrolling. otherwise, it disappears.
 * ve_FocusableNode.patch: Implements a listener when a parser-function element in VE in clicked.
 
-##Category indexing
+## Category indexing
 For technical reasons we need to materialize all category memberships of a page. That means,
 the database does not only contain the direct memberships but also the inferred memberships.
 
@@ -376,7 +377,7 @@ category_index has the following fields:
 
 The repository class is *CategoryIndexRepository*.
 
-##Wiki schema
+## Wiki schema
 There is a set of pump-primed pages which is included in all wikis. 
 
 * Categories

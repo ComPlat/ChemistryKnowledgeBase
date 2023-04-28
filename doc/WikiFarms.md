@@ -11,7 +11,7 @@ to be included manually in LocalSettings.php.
 Additionally, it is checked if the currently logged-in user may access the wiki. If not, access is denied.
 This happens in the hook "onBeforePageDisplay" (cf. Setup script)
 
-##Jobs
+## Jobs
 * *CreateWikiJob*: Creates a new wiki async. Parameters:
   * wikiId: The wiki ID (primary key from wiki_farm table)
   * name: arbitrary name
@@ -20,7 +20,7 @@ This happens in the hook "onBeforePageDisplay" (cf. Setup script)
   
 The wiki jobs actually use Bash scripts to do their job. (cf. Bash scripts)
 
-##Repository
+## Repository
 The extension creates 2 new tables in the database. These tables are also shared among all wikis.
 
 * *wiki_farm*: Contains all created wikis.
@@ -43,20 +43,20 @@ TO_BE_DELETED means that there is a wiki job to remove it, but it has not been r
     
 The according repository class is *WikiRepository*
 
-##Endpoints
+## Endpoints
 Endpoints are self-explanatory. They allow creating/deleting of wikis and adding/removing of users who
 are allowed to access it.
 
-##Specialpages
+## Specialpages
 There is one special page where wikis can be created/removed and users can be added/removed:
 Special:SpecialCreateWiki
 
-###Javascript
+### Javascript
 The special page uses 2 scripts to implement the GUI.
 * wf.special.createwiki.js
 * wf.special.createwiki.ajax.js
 
-##Bash scripts
+## Bash scripts
 * createWiki.sh: Creates a wiki. It creates a folder for the wiki with an upload folder, a solr-core and a database copy.
 At last, it imports the wiki-schema content. Parameters:
   * wikiId: Id of the wiki (primary key in wiki_farm table)
@@ -67,7 +67,7 @@ At last, it imports the wiki-schema content. Parameters:
   database exists. Parameters:
   * wikiId: Id of the wiki (primary key in wiki_farm table)
 
-##Maintenance scripts
+## Maintenance scripts
 * runJobsForAllWikis.php: runs the job-queue for all existing wikis
 * runRefreshIndexForAllWikis.php: runs the SOLR refresh for all wikis
 * runSetupForAllWikis.php: Runs the database setup for all wikis
