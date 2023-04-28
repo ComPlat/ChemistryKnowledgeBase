@@ -1,7 +1,7 @@
 <noinclude>
 This is the Photocatalytic CO2 conversion experiments template.
 </noinclude>
-<includeonly>{{BaseTemplate}}<table class="wikitable" title="">
+<includeonly><table class="wikitable" title="">
 <tr>
 <th resource="General" title="catalyst">cat</th>
 <th resource="General" title="catalyst concentration">cat conc [mM]</th>
@@ -42,6 +42,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 </tr>
 {{{experiments|}}}
 </table>
+{{BaseTemplate}}
 {{#set: BelongsToPublication={{BASEPAGENAME}} }}
 [[Category:Photocatalytic CO2 conversion experiments]]
 [[Category:Investigation]]</includeonly>
