@@ -141,6 +141,10 @@ The class *ChemFormRepository* abstracts access to these tables.
 * rgroups.js: default set of R-Groups
 * ve.oo-ui.rgroups-lookup: Widget to retrieve available R-Groups from the backend
 
+![chemform-overview!](https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/chemform-overview.PNG "Chemical formula integration")
+
+![rgroups-overview!](https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/rGroups-overview.PNG "R-Groups integration")
+
 ## Investigations
 Besides chemical formulas, investigations are the second main item which can be embedded in a wikipage.
 An investigation is a set of experiments. Each experiment consists of a couple of property values specific to the particular
