@@ -462,7 +462,9 @@ checked on Special:CheckServices. They do not use authentication for now.
   It turns a series of rows of R-Groups to a set of concrete molecules. The input
   and output format is MOLFile V3000. The technology used is RDKit (https://https://www.rdkit.org/)
 
-  Service-URL: http://193.196.36.39
+  * Service-URL: http://193.196.36.39
+  * Client class: *MoleculeRGroupServiceClientImpl*
+  * Base URL configuration: $wgMoleculeRGroupServiceUrl
 
 
 * *Molecule render service*
@@ -470,7 +472,9 @@ checked on Special:CheckServices. They do not use authentication for now.
   This service renders a molecule in MOLFile V3000 format as SVG-graphic. The technology used is
   Ketcher as backend-service (https://lifescience.opensource.epam.com/ketcher/index.html)
 
-  Service-URL: https://dev.ketchersvc.hydrogen.scc.kit.edu
+  * Service-URL: https://dev.ketchersvc.hydrogen.scc.kit.edu
+  * Client class: *MoleculeRendererClientImpl*
+  * Base URL configuration: $moleculeRendererServiceUrl
 
 ### R-Group services
 #### Build molecules from molecule template
