@@ -3,10 +3,10 @@ This extension contains all functionality related to handle scientific chemistry
 focus lies on displaying and editing of molecules. Additionally, we support authoring of investigations which are 
 sets of experiments. They can be entered in a structured way and queried by the system to be displayed on overview pages.
 Finally, we support literature references which are a necessity in scientific publications, and we integrate the common 
-database PubChem to populate the wiki automatically with data about molecules.
+database "PubChem" to populate the wiki automatically with data about molecules.
 
 ## Page types and structure
-The extension implies a particular data model in the wiki which looks as following: 
+The extension imposes a particular data model in the wiki which looks as following: 
 * *Topics*
 
   Topics are authored compilations of publications. They are represented as sub-categories of the pre-defined category
@@ -28,7 +28,7 @@ The extension implies a particular data model in the wiki which looks as followi
 * *Molecules and molecule collections*
 
   Molecule and molecule collection pages are in a separate namespace "Molecule". Each page there represents one molecule
-  or one collection of molecules (cf. section "Concepts"). They usually contain metadata about the molecule like mass or trivialname.
+  or one collection of molecules (cf. section "Terms"). They usually contain metadata about the molecule like mass or trivialname.
 
   
 ## Namespaces
@@ -37,10 +37,10 @@ The extension adds 2 additional namespaces:
 * and Reaction 
 
 ## Chemical formulas
-Handling chemical formulas in Mediawiki is the main functionality which this extension
+Handling chemical formulas ([Fig. 1]) in Mediawiki is the main functionality which this extension
 provides. This includes:
-* embed molecules to a page
-* embed a molecule with R-Groups to a page
+* embed molecules to a page 
+* embed a molecule with R-Groups to a page 
 * integrate Ketcher molecule editor with VisualEditor
 * create automatically molecule pages for molecules embedded in pages
 * create and instantiate concrete molecules from molecules with R-Groups
@@ -49,7 +49,7 @@ provides. This includes:
 Chemical formulas with rests (R-Groups) are kind of molecule templates which
 get instantiated to real molecules by a set of RGroup-bindings. The user authors
 the R-Groups bindings in the VisualEditor and the system then generates the concrete 
-molecules automatically from it.
+molecules automatically from it. ([Fig. 2])
 
 A molecule with rests is also called a "molecule collection" in our terminology.
 
@@ -72,16 +72,18 @@ instances of this wiki will have different numbers for a molecule, unlike the mo
 ### Classes
 * *ChemForm*: Represents a chemical formula in a wiki page.
 * *ChemFormParser*: Parses chemical formulas from wiki text and returns a list of *ChemForm* instances.
+Parsing happens during article save operation.
 
 ### Repository
-Chemical formulas requires some extra data in database. The following tables are used therefore:
+Chemical formulas requires some additional data in database. The following tables are used therefore:
 * *chem_form*: Stores the chemFormId (primary key), the molecule key and the image data
     * *id*: chemFormId (cf. Terms)
     * *molecule_key*: Molecule key (cf. Terms)
     * *img_data*: SVG-image as base64-encoded
 
 
-* *chem_form_index*: It contains the information where a particular molecule appears in the wiki (effectively an index for molecules).
+* *chem_form_index*: It contains the information where a particular molecule appears in the wiki 
+  (effectively an index for molecules).
     * *id*: primary key
     * *page_id*: Wiki-ID of page a molecule appears on
     * *chem_form_id*: ID of molecule
@@ -141,12 +143,19 @@ The class *ChemFormRepository* abstracts access to these tables.
 * rgroups.js: default set of R-Groups
 * ve.oo-ui.rgroups-lookup: Widget to retrieve available R-Groups from the backend
 
-![chemform-overview!](https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/chemform-overview.PNG "Chemical formula integration")
+<figure>
+    <img src="https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/chemform-overview.PNG"
+         alt="Chemical formula integration">
+    <figcaption>[Fig. 1] Data flow when users enters a chemical formula in the wiki.</figcaption>
+</figure>
 
-![rgroups-overview!](https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/rGroups-overview.PNG "R-Groups integration")
+<figure>
+    <img src="https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/rGroups-overview.PNG"
+         alt="R-Groups integration">
+    <figcaption>[Fig. 2] Data flow when users enters R-Groups for a molecule collection in the wiki.</figcaption>
+</figure>
 
 ## Investigations
-Besides chemical formulas, investigations are the second main item which can be embedded in a wikipage.
 An investigation is a set of experiments. Each experiment consists of a couple of property values specific to the particular
 type of experiment. These property values are grouped into a subobject.
 The set of subobjects is stored on a subpage of the page which contains the investigation.
@@ -162,7 +171,7 @@ stores the experiments as a nested template call.
       ...
     }}
 
-Each row-template creates the subobject to store the data of one row in SMW-properties. For each type of investigation,
+Each row-template creates the subobject to store the data of one experiment in SMW-properties. For each type of investigation,
 those 2 templates must exist as well as a couple of properties to hold the data. The row template is supposed
 to create an HTML table row. The investigation template has to enclose these rows with an HTML table head/body.
 
@@ -175,11 +184,13 @@ to create an HTML table row. The investigation template has to enclose these row
 New investigation types needs to be registered in class *ExperimentRepository*. They are then displayed in the VE-GUI
 when adding an investigation to a page. This class contains all data about investigation types, it is not stored in the DB.
 
-The feature is integrated in VisualEditor. It adds the parser function "#experimentlist" to embed the investigation data in the page. It refers to the name (=subpage)
-and the type of investigation. Refer to the parser function section for details.
+The feature is integrated in VisualEditor. The according menu item "Insert->Investigation" 
+adds the parser function "#experimentlist" to embed the investigation data in the page. 
+It refers to the name (=subpage) and the type of investigation. Refer to the parser function 
+section for details.
 
 Additionally, a topic page can include several investigations via the parser function "#experimentlink". This is
-also editable by VisualEditor. Refer to the parser function section for details.
+also editable by VisualEditor ("Insert->Investigation link"). Refer to the parser function section for details.
 
 ### Classes
 * ExperimentListRenderer: renders the *#experimentlist* parser function.
@@ -247,9 +258,10 @@ If the user is on a molecule page:
 
 ## Literature references
 Publication pages usually have literature references. Such references can be embedded in the text via
-VisualEditor (with literature parserfunction). On the rendered page, those references are displayed with
-small shortcuts like [CHF20]. They are linked with a reference list at the end of the publication. This 
-reference list is automatically generated from the data retrieved by DOI.
+VisualEditor ("Insert->Literature reference" via "#literature"-parserfunction). On the rendered page, those references 
+are displayed with small shortcuts like [CHF20]. They are linked with a reference list at the end of the 
+publication. This reference list is automatically generated from the data retrieved by DOI. It is appended automatically
+to an article if there are any on the page.
 
 The references are resolved via https://dx.doi.org/ or https://api.crossref.org/works/, the data is cached
 in the wiki. There is a special page which list all relevant data about a literature reference. It is
@@ -266,6 +278,8 @@ always from the web which is too slow (~1s for each reference). The following ta
     * *doi*: Digital object identifier
     * *data*: JSON object with literature data
 
+The data is stored when a DOI is retrieved the first time. It is not supposed to be updated. 
+
 ### Classes
 * *DOIRenderer*: Displays the references (as reference in the text, at the bottom of a page and as a infobox)
 * *DOIResolver*: Resolves as DOI and stores the result in the DB
@@ -276,7 +290,6 @@ always from the web which is too slow (~1s for each reference). The following ta
 ### Parser functions 
 * *literature*: Renders a literature reference in the text
     * *doi*: the DOI of the literature referenced
-
 
 * *doiinfobox*: Renders an infobox with retrieved data for a DOI. Usually placed at the beginning of a page.
     * *first param* (nameless): the DOI of the literature referenced
@@ -294,7 +307,7 @@ requests for each molecule (record, synonyms, categories). The results of all ar
 
 * *pub_chem*: Caches the PubChem data
     * *id*: primary key
-    * *molecule_key*: Molecule key (cf. concepts)
+    * *molecule_key*: Molecule key (cf. Terms)
     * *record*: JSON object
     * *synonyms*: JSON object
     * *categories*: JSON object
@@ -311,7 +324,7 @@ requests for each molecule (record, synonyms, categories). The results of all ar
 * Special page for creating publications/topics. Linked via Authoring menu.
     * *Special:CreateNewPaper*
     * *Special:CreateNewTopic*
-    * uses scripts in *special.create-topic.js*
+    * The GUI is enhanced by javascript in *special.create-topic.js*
 * Special page for finding missing items, ie. find where certain templates are used to indicate there are issues.
   *Special:FindMissingItems*
 * Special unused molecules, ie. molecule pages which are not referenced anywhere:
@@ -320,9 +333,10 @@ requests for each molecule (record, synonyms, categories). The results of all ar
 ## Jobs
 Some processes need to be run asynchronously to avoid longer blocking during page-save
 operations. These are:
-* Create of molecule pages. There can be a lot of pages which needs to be created on a page
-  save. The job class is *MoleculePageCreationJob*. It creates exactly one molecule page.
-* Creation of concrete molecules from a molecule collection. This can be also a time-consuming operation
+* *MoleculePageCreationJob*. When a page is saved, a molecule page has to be created. Since there
+  can be a lot of molecules on a page, this operation needs to be asynchronous. 
+  The job class is *MoleculePageCreationJob*. It creates exactly one molecule page.
+* *MoleculeImportJob*: This job creates concrete molecules from a molecule collection. This can be also a time-consuming operation
   because for every molecule a page is created. The job class is *MoleculeImportJob*. It takes a set
   of molecule collections with rests and creates for each collection a set of concrete molecules.
 
@@ -331,20 +345,22 @@ operations. These are:
 * Setup: Registers js-modules, styles, MW hooks, parser functions.
 
 ## Endpoints
-The backend provides a couple of REST-endpoints. The functionality is quite self-explanatory.
-They are located in the Endpoints-package.
-The javascript code to access those endpoints is located at *client-ajax-endpoints.js*
+The backend provides a couple of REST-endpoints. The functionality is quite self-explanatory. Basically,
+the endpoints are CRUD-operations for the newly added database tables.
+All endpoints are located in the Endpoints-package.
+The javascript client to easily access those endpoints is located at *client-ajax-endpoints.js*
 
 ## Misc
-The util package contains a bunch of utility classes with static functions. However, two classes non-static
-functions are notable:
-* TemplateParser:  builds an AST for nested template calls. This is necessary to process investigations
-  which make use of multi-instance forms.
-* HtmlTableEditor: parses an HTML table and allows a couple of operations on it. This is required to provide
-  additional functionality to the HTML tables which are rendered by the investigation feature. e.g. the
-  expand/collapse-feature.
+The util package contains a bunch of utility classes with static functions. However, two classes are no utility 
+classes and therefore notable:
+* *TemplateParser*:  builds an AST for nested template calls. This is necessary to process investigations
+  which make use of multi-instance forms. Then we are able to retrieve single data items which the 
+  template is populated with.
+* *HtmlTableEditor*: parses an HTML table and allows a couple of operations on it. This is required to post-process 
+  generated tables and so to provide additional functionality to the HTML tables which are rendered by the investigation 
+  feature. e.g. the expand/collapse-feature.
 
-### General Scripts
+### Other scripts 
 * pf-extensions: copy button in multi-form editor
 * ve.oo.model.tools.js: Utility class with helper methods
 * ve.oo-ui.initialize: General code required on all pages
@@ -357,7 +373,7 @@ because we need to extend certain functionality.
 * extend-parser-function-editor.patch: Allows adding functionality in the parser-function edit dialog in VE.
 * extend-tag-editor.patch: Allows adding functionality in the tag edit dialog in VE.
 * mw_namespaces_search_field.patch: Restrict mediawiki standard search to particular namespaces
-* PF_popupform.patch: ??
+* pf_autoAdjustment.patch: Fixes sizing issue with multi-instance form editor
 * pf_autocomplete_show_label.patch: Shows a label in the auto-complete instead of MW-Title.
 * pf_copyButton.patch: Adds a button to copy a row in the multi-instance form
 * pf_preSelectByIndex.patch: Allows pre-selecting a particular row in the multi-instance form.
@@ -391,7 +407,7 @@ There is a set of pump-primed pages which is included in all wikis.
   * Topic
 
 
-* Propeties
+* Properties
   * BelongsToPublication: Link to the publication page from an investigation
   * BasePageName: Link to a publication page from a subobject in an investigation
   * InchIKey: Stores InChI key for a molecule
@@ -417,7 +433,9 @@ There is a set of pump-primed pages which is included in all wikis.
   * DisplayNumberNotNull: Shows a number only if not null
   
   
-The following templates are placeholders to indicate a problem:
+The following templates are placeholders to indicate a problem. All of them have two mandatory
+parameters: *date* and *author*. The date-format is arbitrary since it's only used for displaying
+purposes for now. They are rendered as kind of notification hints/reminders for content creators. 
   * MissingMolecule
   * FaultyMolecule
   * MissingInvestigation
@@ -435,7 +453,7 @@ purposes. But these latter ones are not strictly required by this extension.
 
 ## External services
 ChemExtension needs 2 external services to work properly. The availability can be
-checked on Special:CheckServices.
+checked on Special:CheckServices. They do not use authentication for now.
 
 
 * *RGroup-Service*
@@ -454,7 +472,8 @@ checked on Special:CheckServices.
 
   Service-URL: https://dev.ketchersvc.hydrogen.scc.kit.edu
 
-[1] RGroup service: Build molecules from molecule template
+### R-Group services
+#### Build molecules from molecule template
 
     POST /api/v1/rgroup/
 
@@ -500,7 +519,7 @@ Response:
         ]
     }
 
-[2] RGroup service: Get all available R-Groups:
+#### Get all available R-Groups:
 
     GET /api/v1/superatoms/keys
 
@@ -520,7 +539,7 @@ Response:
       ]
     }
 
-[3] RGroup service: Get molecule metadata:
+#### Get molecule metadata:
 
     POST /api/v1/molecules/
 
@@ -541,7 +560,8 @@ Response:
     "formula": "C22H19N5NiS2"
 }
 
-[4] Molecule render service
+### Molecule render service
+#### Render molecule
 
     POST /render
 
