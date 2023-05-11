@@ -5,11 +5,7 @@ This is the Cyclic Voltammetry template.
 <td>{{{anl|}}}</td>
 <td>{{{anl conc|}}}</td>
 <td>
-
-<table>
-{{#arraymap:{{{redox potential|}}}|;|@|<tr>{{#arraymap:@|,|@@|<td>@@</td>}}</tr>}}
-</table>
-
+{{#formatAsTable:{{{redox potential|}}} }}
 </td>
 <td>{{{solv|}}}</td>
 <td property="hidden">{{{solv vol|}}}</td>

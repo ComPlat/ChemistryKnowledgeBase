@@ -408,3 +408,7 @@ table.experiment-link tr:first-child td:first-child {
     width: 25px;
     cursor: pointer;
 }
+
+table.ce-center-aligned-table td {
+    text-align: center;
+}

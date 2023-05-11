@@ -8,6 +8,7 @@ use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
+use DIQA\ChemExtension\ParserFunctions\FormatAsTable;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
@@ -137,6 +138,7 @@ class Setup {
         $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
+        $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
 
         self::registerShowCachedHandler($parser);
     }
