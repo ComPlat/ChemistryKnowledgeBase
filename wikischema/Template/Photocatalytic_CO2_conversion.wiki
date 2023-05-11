@@ -74,6 +74,11 @@ This is the Photocatalytic CO2 conversion template.
  |Quantum yield MeOH={{{Φ MeOH|}}}
  |Quantum yield total={{{Φ all|}}}
  |Selectivity={{{selectivity|}}}
+ |Selectivity CO={{SelectivityForOne|{{{TON CO|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
+ |Selectivity CH4={{SelectivityForOne|{{{TON CH4|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
+ |Selectivity H2={{SelectivityForOne|{{{TON H2|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
+ |Selectivity HCOOH={{SelectivityForOne|{{{TON HCOOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
+ |Selectivity MeOH={{SelectivityForOne|{{{TON MeOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
 }}</includeonly>
