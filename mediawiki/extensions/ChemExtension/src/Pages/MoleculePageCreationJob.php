@@ -183,7 +183,7 @@ class MoleculePageCreationJob extends Job
         $formulaTemplateData['inchi'] = $this->chemForm->getInchi();
         $formulaTemplateData['inchikey'] = $this->chemForm->getMoleculeKey();
         $formulaTemplateData['width'] = $this->chemForm->getWidth();
-        $formulaTemplateData['height'] = $this->chemForm->getMoleculeKey();
+        $formulaTemplateData['height'] = $this->chemForm->getHeight();
         $formulaTemplateData['float'] = $this->chemForm->getFloat();
         $parentArticle = !is_null($this->parent) ? $this->parent->getPrefixedText() : '';
         $formulaTemplateData['parent'] = $parentArticle;
