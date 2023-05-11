@@ -1,4 +1,4 @@
-#Ontology Integration
+# Ontology Integration
 Create a page with name: *MediaWiki:Smw_import_<kürzel>* where *<kürzel>* is the abbreviation for the namespace with this content:
 
     http://some.url.org/|[http://some.url.org/ Friendly name of this vocabulary]
@@ -14,7 +14,7 @@ Add on the property page "Property:Trivialname" the following annotation:
 
 Do an RDF Export of a page using this property (see example below)
 
-##Example
+## Example
 Ontology Page
 
 http://chemwiki.scc.kit.edu/main/mediawiki/index.php?title=MediaWiki:Smw_import_chebi
