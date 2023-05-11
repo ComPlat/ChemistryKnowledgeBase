@@ -195,7 +195,7 @@ class ImportValue extends DataValue {
 	}
 
 	public function getNS() {
-		return $this->uri;
+		return strpos($this->uri, "[") === 0 ? substr($this->uri, 1) : $this->uri;
 	}
 
 	public function getNSID() {
