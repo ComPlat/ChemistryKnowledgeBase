@@ -45,4 +45,5 @@ This is the Photocatalytic CO2 conversion experiments template.
 {{BaseTemplate}}
 {{#set: BelongsToPublication={{BASEPAGENAME}} }}
 [[Category:Photocatalytic CO2 conversion experiments]]
+[[Category:Molecular process]]
 [[Category:Investigation]]</includeonly>
