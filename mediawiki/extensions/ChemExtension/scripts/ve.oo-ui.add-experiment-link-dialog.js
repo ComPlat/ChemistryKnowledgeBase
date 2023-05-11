@@ -25,6 +25,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let experimentType = this.chooseExperimentsWidget.getSelectedExperiment();
                 let query = this.chooseExperimentsWidget.getQuery();
                 let restrictToPages = this.chooseExperimentsWidget.getRestrictToPages();
+                let sortColumns = this.chooseExperimentsWidget.getSortColumns();
+                let orderColumns = this.chooseExperimentsWidget.getOrderColumns();
 
                 let params = node.element.attributes.mw.parts[0].template.params;
                 let target = node.element.attributes.mw.parts[0].template.target;
@@ -32,9 +34,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 target.wt = '#experimentlink:' + encodeURIComponent(query);
                 params.form = params.form || {};
                 params.restrictToPages = params.restrictToPages || {};
+                params.sort = params.sort || {};
+                params.order = params.order || {};
 
                 params.form.wt = experimentType;
                 params.restrictToPages.wt = restrictToPages.join(',');
+                params.sort.wt = sortColumns;
+                params.order.wt = orderColumns;
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
@@ -66,7 +72,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentLinkDialog.prototype.getBodyHeight = function () {
-        return 400;
+        return 500;
     };
 
     /* Static Properties */

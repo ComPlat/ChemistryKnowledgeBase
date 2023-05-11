@@ -101,10 +101,32 @@
                 this.parent.getActions().list[0].setDisabled(false);
             });
 
+            let sortLabel = new OO.ui.LabelWidget({
+                label: "Sort for columns (comma-separated)",
+            });
+            let sortValue =  data.template.params.sort ? data.template.params.sort.wt : '';
+            this.sort = new OO.ui.MultilineTextInputWidget({value: sortValue});
+            this.sort.on('change', (item) => {
+                this.parent.getActions().list[0].setDisabled(false);
+            });
+
+            let orderLabel = new OO.ui.LabelWidget({
+                label: "Order for columns (comma-separated)",
+            });
+            let orderValue =  data.template.params.order ? data.template.params.order.wt : '';
+            this.order = new OO.ui.MultilineTextInputWidget({value: orderValue});
+            this.order.on('change', (item) => {
+                this.parent.getActions().list[0].setDisabled(false);
+            });
+
             items.push(queryLabel);
             items.push(this.query);
             items.push(restrictToPagesLabel);
             items.push(this.restrictInput);
+            items.push(sortLabel);
+            items.push(this.sort);
+            items.push(orderLabel);
+            items.push(this.order);
         } else {
 
             let experimentNameLabel = new OO.ui.LabelWidget({
@@ -156,6 +178,14 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.getRestrictToPages = function () {
         return this.restrictInput.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getSortColumns = function () {
+        return this.sort.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getOrderColumns = function () {
+        return this.order.getValue();
     }
 
 

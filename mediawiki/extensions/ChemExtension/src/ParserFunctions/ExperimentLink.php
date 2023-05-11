@@ -73,6 +73,8 @@ class ExperimentLink
     private static function getTemplateData(array $parameters, $selectExperimentQuery): array
     {
         $restrictToPages = $parameters['restrictToPages'] ?? false;
+        $sort = $parameters['sort'] ?? '';
+        $order = $parameters['order'] ?? '';
         $restrictToPagesQuery = '';
         if ($restrictToPages !== false && trim($restrictToPages) !== '') {
             $restrictToPageConstraint = array_map(function($p) {
@@ -90,7 +92,7 @@ class ExperimentLink
             $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery);
-        $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests);
+        $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, [ 'sort' => $sort, 'order' => $order ]);
         $rows = [];
         while ($row = $results->getNext()) {
             $column = reset($row);
