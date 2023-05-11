@@ -400,3 +400,11 @@ a.publication-for-investigation {
     font-size: small;
     margin-left: 5px;
 }
+
+table.experiment-link tr:first-child td:first-child {
+    background-image: url( images/up-down.png );
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 25px;
+    cursor: pointer;
+}

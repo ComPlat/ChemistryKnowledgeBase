@@ -241,6 +241,35 @@ class HtmlTableEditor
 
     }
 
+    public function hideAllRowsExceptFirst()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+
+        foreach ($list as $tr) {
+            if ($i === 0) {
+                $i++;
+                continue;
+            }
+            $tr->setAttribute('style', 'display:none;');
+        }
+    }
+
+    public function addTableClass($class)
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//table');
+        foreach ($list as $t) {
+            $oldClass = $t->getAttribute('class');
+            if (is_null($oldClass)) {
+                $t->setAttribute('class', $class);
+            } else {
+                $t->setAttribute('class', "$oldClass $class");
+            }
+        }
+    }
+
     public function getNumberOfRows()
     {
         $xpath = new DOMXPath($this->doc);

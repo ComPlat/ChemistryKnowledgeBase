@@ -86,6 +86,8 @@ TEMPLATE;
                     }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
+                $htmlTableEditor->hideAllRowsExceptFirst();
+                $htmlTableEditor->addTableClass("experiment-link");
             }
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,

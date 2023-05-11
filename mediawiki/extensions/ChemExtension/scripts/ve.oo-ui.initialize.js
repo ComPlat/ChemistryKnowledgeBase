@@ -26,6 +26,15 @@
                 columns.empty();
             }
         });
+
+        $('table.experiment-link tr:first-child td:first-child').click(function(e) {
+            let table = $(e.target).closest('table');
+            if (table.find('tr:last-child').is(':visible')) {
+                table.find('tr').not(':first-child').hide();
+            } else {
+                table.find('tr').show();
+            }
+        });
     }
 
     function whichChild(node) {
