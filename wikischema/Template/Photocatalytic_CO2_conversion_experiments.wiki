@@ -15,7 +15,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th resource="Additives and solvents" property="hidden" title="solvent B">solvent B</th>
 <th resource="Additives and solvents" property="hidden" title="solvent C">solvent C</th>
 <th resource="Additives and solvents" property="hidden" title="solvent ratio">solv A/B/C</th>
-<th resource="Additives and solvents" title="additives">additives, e.g. for buffer</th>
+<th resource="Additives and solvents" title="additives">additives</th>
 <th resource="Additives and solvents" property="hidden" title="additives concentration">additives conc [M]</th>
 <th resource="Physical data" property="hidden" title="pH">pH</th>
 <th resource="Physical data" property="hidden" title="temperature">T [°C]</th>
