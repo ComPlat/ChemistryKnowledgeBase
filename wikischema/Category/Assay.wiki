@@ -1,4 +1,5 @@
 {{BaseTemplate}}
 Investigations of type "assay"
 
+[[Imported from::obi:OBI_0000070]]
 [[Category:Investigation]]

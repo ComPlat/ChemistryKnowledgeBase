@@ -1,4 +1,5 @@
 {{BaseTemplate}}
 Investigations of type "Molecular process"
 
+[[Imported from::mop:MOP_0000543]]
 [[Category:Investigation]]

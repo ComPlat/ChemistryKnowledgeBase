@@ -1,0 +1,5 @@
+http://purl.obolibrary.org/obo/|[http://purl.obolibrary.org/obo/ Ontology for Biomedical Investigations]
+ OBI_0000070|Type:Page
+ OBI_0000066|Type:Page
+ 
+[[Category:Imported vocabulary]]
