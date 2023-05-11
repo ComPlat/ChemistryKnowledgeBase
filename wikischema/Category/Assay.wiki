@@ -1,0 +1,4 @@
+{{BaseTemplate}}
+Investigations of type "assay"
+
+[[Category:Investigation]]

@@ -6,3 +6,5 @@
 
 ; Values
 * Input fields should be restricted to numbers between 0 and 14 (<nowiki>regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14)$/</nowiki>).
+
+[[Imported from::ncit:NCIT_C45997]]

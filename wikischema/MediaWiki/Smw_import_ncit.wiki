@@ -1,0 +1,7 @@
+http://purl.obolibrary.org/obo/|[http://purl.obolibrary.org/obo/ National Cancer Institute Thesaurus]
+ NCIT_C45997|Type:Number
+ NCIT_C25206|Type:Number
+ NCIT_C41185|Type:Number
+
+
+[[Category:Imported vocabulary]]

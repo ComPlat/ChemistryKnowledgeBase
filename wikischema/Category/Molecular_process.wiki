@@ -1,0 +1,4 @@
+{{BaseTemplate}}
+Investigations of type "Molecular process"
+
+[[Category:Investigation]]

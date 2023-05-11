@@ -1,0 +1,9 @@
+This is a property of type [[Has type::Text]].
+
+The allowed values for this property are:
+* [[Allows value::SCE]]
+* [[Allows value::SHE]]
+* [[Allows value::Ag/AgCl]]
+* [[Allows value::Ag/Ag+ (AgNO3)]]
+
+[[Imported from::chmo:CHMO_0002345]]

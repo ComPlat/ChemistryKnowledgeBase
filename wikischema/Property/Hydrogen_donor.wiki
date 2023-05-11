@@ -9,3 +9,5 @@
 
 ; Label
 * [[Has preferred property label::H-D@en]]
+
+[[Imported from::chebi:CHEBI_17499]]
