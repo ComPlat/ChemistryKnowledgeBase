@@ -12,7 +12,7 @@ class FormatAsTable {
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
         $rows = explode(";", $parameters['']);
-        $result = '<table class="ce-center-aligned-table">';
+        $result = '<table class="ce-center-aligned-table" inner="true">';
         foreach($rows as $row) {
             $result .= '<tr>';
             $columns = explode(",",$row);

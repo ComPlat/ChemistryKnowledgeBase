@@ -62,9 +62,7 @@ TEMPLATE;
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, null);
             $htmlTableEditor->removeEmptyColumns();
-            if ($wgCEHiddenColumns ?? false) {
-                $htmlTableEditor->collapseColumns();
-            }
+
             $htmlTableEditor->addIndexAsFirstColumn();
             if (!WikiTools::isInVisualEditor()) {
                 if ($tab !== '') {
