@@ -19,7 +19,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
 
     ve.ui.ChooseExperimentDialog.prototype.getActionProcess = function (action) {
-        if (action === 'apply') {
+        if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(() => {
                 let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
                 let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
@@ -55,7 +55,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.ChooseExperimentDialog.prototype.attachActions = function() {
         ve.ui.ChooseExperimentDialog.super.prototype.attachActions.call(this);
-        this.getActions().list[0].setDisabled(true);
+        this.setActionsDisabled(['edit','insert'],true);
+    }
+
+    ve.ui.ChooseExperimentDialog.prototype.setActionsDisabled = function (modes, b) {
+        let actions = $.grep(this.getActions().list, function (e) {
+            return modes.includes(e.modes);
+        });
+        $.each(actions, function(i, e) {
+            e.setDisabled(b);
+        });
     }
 
     ve.ui.ChooseExperimentDialog.prototype.setup = function (data) {
@@ -76,15 +85,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.ChooseExperimentDialog.static.actions = [
         {
-            'action': 'apply',
-            'label': mw.msg('visualeditor-dialog-action-apply'),
-            'flags': ['safe'],
-            'modes': ['edit', 'insert', 'select']
+            action: 'done',
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-apply' ),
+            flags: [ 'progressive', 'primary' ],
+            modes: 'edit'
         },
         {
-            'label': OO.ui.deferMsg('visualeditor-dialog-action-cancel'),
-            'flags': 'safe',
-            'modes': ['edit', 'insert', 'select']
+            action: 'insert',
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-insert' ),
+            flags: [ 'progressive', 'primary' ],
+            modes: 'insert'
+        },
+        {
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-cancel' ),
+            flags: [ 'safe', 'close' ],
+            modes: [ 'readonly', 'insert', 'edit', 'insert-select' ]
         }
     ];
 

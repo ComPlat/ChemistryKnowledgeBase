@@ -36,7 +36,9 @@
         let formLayout = new OO.ui.FormLayout({
             items: [label,this.textWidget]
         })
-
+        this.textWidget.on('change', (item) => {
+            this.setActionsDisabled(['edit', 'insert'], item === '');
+        });
         this.$element.append(formLayout.$element);
     }
 
@@ -46,6 +48,15 @@
 
     OO.ui.ChooseMoleculeWidget.prototype.getErrorLabel = function() {
         return this.errorLabel;
+    }
+
+    OO.ui.ChooseMoleculeWidget.prototype.setActionsDisabled = function (modes, b) {
+        let actions = $.grep(this.parent.getActions().list, function (e) {
+            return modes.includes(e.modes);
+        });
+        $.each(actions, function(i, e) {
+            e.setDisabled(b);
+        });
     }
 
 

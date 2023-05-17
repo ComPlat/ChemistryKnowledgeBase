@@ -61,9 +61,7 @@
 
         });
         this.chooseExperimentDropDown.on('change', (item) => {
-            if (this.parent.getActions().list[0]) {
-                this.parent.getActions().list[0].setDisabled(false);
-            }
+            this.setActionsDisabled(['edit', 'insert'], item == '');
         });
         let form = data.template ? data.template.params.form.wt : '';
         let selectedForm = this.findMenuOptionsOfForm(form);
@@ -87,7 +85,7 @@
             let titles = restrictValue.trim() !== '' ? restrictValue.split(",") : [];
             this.restrictInput = new mw.widgets.TitlesMultiselectWidget({selected: titles});
             this.restrictInput.on('change', (item) => {
-                this.parent.getActions().list[0].setDisabled(false);
+                this.setActionsDisabled(['edit', 'insert'], false);
             });
 
             let queryLabel = new OO.ui.LabelWidget({
@@ -98,7 +96,7 @@
             queryValue = decodeURIComponent(queryValue);
             this.query = new OO.ui.MultilineTextInputWidget({value: queryValue});
             this.query.on('change', (item) => {
-                this.parent.getActions().list[0].setDisabled(false);
+                this.setActionsDisabled(['edit', 'insert'], false);
             });
 
             let sortLabel = new OO.ui.LabelWidget({
@@ -107,7 +105,7 @@
             let sortValue =  data.template.params.sort ? data.template.params.sort.wt : '';
             this.sort = new OO.ui.MultilineTextInputWidget({value: sortValue});
             this.sort.on('change', (item) => {
-                this.parent.getActions().list[0].setDisabled(false);
+                this.setActionsDisabled(['edit', 'insert'], false);
             });
 
             let orderLabel = new OO.ui.LabelWidget({
@@ -116,7 +114,7 @@
             let orderValue =  data.template.params.order ? data.template.params.order.wt : '';
             this.order = new OO.ui.MultilineTextInputWidget({value: orderValue});
             this.order.on('change', (item) => {
-                this.parent.getActions().list[0].setDisabled(false);
+                this.setActionsDisabled(['edit', 'insert'], false);
             });
 
             items.push(queryLabel);
@@ -135,9 +133,7 @@
             let experimentNameValue = data.template ? data.template.params.name.wt : '';
             this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue});
             this.experimentName.on('change', (item) => {
-                if (this.parent.getActions().list[0]) {
-                    this.parent.getActions().list[0].setDisabled(item == '');
-                }
+                this.setActionsDisabled(['edit', 'insert'], item == '');
             });
 
             items.push(experimentNameLabel);
@@ -150,6 +146,15 @@
         });
         this.$element.append(formLayout.$element);
 
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.setActionsDisabled = function (modes, b) {
+        let actions = $.grep(this.parent.getActions().list, function (e) {
+            return modes.includes(e.modes);
+        });
+        $.each(actions, function(i, e) {
+            e.setDisabled(b);
+        });
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfType = function (type) {
