@@ -412,3 +412,7 @@ table.experiment-link > tbody > tr:first-child td:first-child {
 table.ce-center-aligned-table td {
     width: 100%;
 }
+
+table.wikitable th {
+    cursor: pointer;
+}

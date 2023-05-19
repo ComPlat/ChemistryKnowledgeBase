@@ -7,21 +7,26 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        $('th[collapsable]').click((e) => {
-            let th = $(e.target).empty();
+        $('table.wikitable th').click((e) => {
+            let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
             th.attr('collapsed', !collapsed);
             let table = th.closest('table');
             let columns = table.find('tr td:nth-child(' + whichChild(th) + ')', table);
             if (collapsed) {
-                th.append(th.attr('stashed'));
+                th.empty().append(th.attr('stashed'));
                 columns.removeClass('collapsed-column');
                 columns.each((i, e) => {
                     let el = $(e);
                     el.append(el.attr('stashed'));
                 });
             } else {
-                th.append('.');
+                th.attr('stashed', th.html());
+                columns.each((i, e) => {
+                    let el = $(e);
+                    el.attr('stashed', el.html());
+                });
+                th.empty().append('.');
                 columns.addClass('collapsed-column');
                 columns.empty();
             }
