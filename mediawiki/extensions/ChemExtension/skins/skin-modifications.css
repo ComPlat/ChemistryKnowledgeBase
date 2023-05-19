@@ -22,3 +22,7 @@ div.flex-fill div.row:nth-child(2) {
 div#content {
     padding: 0px !important;
 }
+
+div.multipleTemplateInstance:not(.minimized) td.fieldValuesDisplay {
+    width: 100px;
+}
