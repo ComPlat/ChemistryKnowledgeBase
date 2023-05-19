@@ -9,6 +9,16 @@
 @media (min-width: 768px) {
     .container, .container-sm, .container-md {
         max-width: 320px;
-        margin-left: 390px;
+        margin-left: 420px;
     }
+}
+
+div.flex-fill div.row:nth-child(2) {
+    overflow-x: auto;
+    margin-right: 0px !important;
+    margin-left: 0px !important;
+}
+
+div#content {
+    padding: 0px !important;
 }
