@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\NavigationBar;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Philo\Blade\Blade;
 use Title;
+use OutputPage;
 
 class InvestigationFinder {
 
@@ -60,5 +61,24 @@ QUERY;
         $categories = array_keys($title->getParentCategories());
         $categories = array_diff($categories, ["Category:Investigation"]);
         return array_map(function($e) { return str_replace("_", " ", explode(":", $e)[1]); }, $categories);
+    }
+
+    public static function renderInvestigationList(OutputPage $out) {
+        global $wgTitle;
+        $finder = new InvestigationFinder();
+        $investigations = $finder->getInvestigationsForPublication($wgTitle);
+        if (count($investigations) === 0) {
+            return;
+        }
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $blade = new Blade ($views, $cache);
+
+        $html = $blade->view()->make("investigation-list",
+            [
+                'list' => $investigations,
+            ]
+        )->render();
+        $out->addHTML($html);
     }
 }

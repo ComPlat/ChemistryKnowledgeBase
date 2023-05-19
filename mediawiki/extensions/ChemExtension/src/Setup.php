@@ -3,6 +3,7 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
@@ -107,6 +108,7 @@ class Setup {
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
+        InvestigationFinder::renderInvestigationList($out);
 
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
             $out->addModules('ext.diqa.chemextension.pf');
