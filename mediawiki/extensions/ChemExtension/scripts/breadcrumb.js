@@ -29,10 +29,41 @@
             $('#ce-molecules-content').show();
             $('#ce-molecules-filter').show();
         });
+        initializeNavbar();
         initializePublicationFilter();
         initializeInvestigationFilter();
         initializeMoleculesFilter();
         initialized = true;
+    }
+
+    let EXPANDED_KEY = 'mw.chem-extension.navbar-expanded';
+
+    function initializeNavbar() {
+        if (localStorage.getItem(EXPANDED_KEY) === 'true') {
+            expandNavbar();
+        } else {
+            collapseNavbar();
+        }
+        $('#ce-side-panel-content-collapsed').click((e) => {
+            expandNavbar();
+        });
+        $('#ce-side-panel-close-button').click(function() {
+           collapseNavbar();
+        });
+    }
+
+    function expandNavbar() {
+        $('#ce-side-panel-content-collapsed').hide();
+        $('#ce-side-panel-content').show();
+        $('div.container div.row').attr('style', 'margin-left: 350px !important;');
+        localStorage.setItem(EXPANDED_KEY, 'true');
+    }
+
+    function collapseNavbar() {
+        $('#ce-side-panel-content-collapsed').show();
+        $('#ce-side-panel-content').hide();
+        $('div.container div.row').attr('style', 'margin-left: 0px !important;');
+        localStorage.setItem(EXPANDED_KEY, 'false');
     }
 
     function initializePublicationFilter() {

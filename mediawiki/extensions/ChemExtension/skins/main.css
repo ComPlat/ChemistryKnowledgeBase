@@ -183,20 +183,34 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     background: navajowhite;
 }
 
-#ce-side-panel-content {
+.ce-side-panel-content-base {
     padding: 10px;
     position: fixed;
     border: 1px solid;
     top: 80px;
     left: 15px;
-    width: 400px;
     height: 80%;
     background: whitesmoke;
     border-radius: 5px;
-
     display: flex;
     flex-direction: column;
+}
 
+#ce-side-panel-content {
+    width: 400px;
+}
+
+#ce-side-panel-content-collapsed {
+    width: 45px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+div.verticaltext {
+    transform: rotate(-90deg);
+    font-weight: bold;
 }
 
 div.ce-breadcrumb li {
@@ -221,6 +235,7 @@ div.ce-side-panel-bar {
     text-align: center;
     font-weight: bold;
     width: 120px;
+    height: 28px;
     margin-left: 3px;
     border: 1px solid;
 }
@@ -342,6 +357,13 @@ div.ce-side-panel-footer {
     bottom: 0px;
 }
 
+div.ce-side-panel-header {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    padding: 3px;
+}
+
 #ce-side-panel-expand-button {
     cursor: pointer;
 }
@@ -415,4 +437,9 @@ table.ce-center-aligned-table td {
 
 table.wikitable th {
     cursor: pointer;
+}
+
+.ce-subtitle-content {
+    display: flex;
+    justify-content: space-between;
 }

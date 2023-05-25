@@ -1,15 +1,22 @@
-@media (min-width: 1200px) {
+@media (min-width: 1800px) {
     .container {
-        max-width: 1480px !important;
-        margin-left: 390px;
+        max-width: 1800px !important;
+
     }
 
 }
 
+@media (min-width: 1105px) {
+    .container, .container-sm, .container-md {
+        max-width: 1105px;
+
+    }
+}
+
 @media (min-width: 768px) {
     .container, .container-sm, .container-md {
-        max-width: 320px;
-        margin-left: 420px;
+        max-width: 768px;
+
     }
 }
 
@@ -26,3 +33,5 @@ div#content {
 div.multipleTemplateInstance:not(.minimized) td.fieldValuesDisplay {
     width: 100px;
 }
+
+

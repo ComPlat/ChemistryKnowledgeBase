@@ -29,7 +29,11 @@ class NavigationBar
 
     }
 
-    public function getNavigationLocation()
+    public function getCollapsedNavigationBar() {
+        return '<div id="ce-side-panel-content-collapsed" class="ce-side-panel-content-base" style=""><div class="verticaltext">Navigation</div></div>';
+    }
+
+    public function getNavigationBar()
     {
         global $wgScriptPath;
         if (is_null($this->title)) {

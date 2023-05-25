@@ -101,7 +101,7 @@ class Setup {
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
         $b = new NavigationBar($wgTitle);
-        $out->addSubtitle($b->getPageType() . self::$subTitleExtension);
+        $out->addSubtitle('<div class="ce-subtitle-content">'.$b->getPageType() . self::$subTitleExtension."</div>");
 
         $out->addModules('ext.diqa.chemextension');
         $out->addModules('ext.diqa.md5');
@@ -121,7 +121,8 @@ class Setup {
         global $wgTitle;
         $b = new NavigationBar($wgTitle);
         if (!$wgTitle->isSpecial('FormEdit')) {
-            $data .= $b->getNavigationLocation();
+            $data .= $b->getNavigationBar();
+            $data .= $b->getCollapsedNavigationBar();
         }
 
     }
