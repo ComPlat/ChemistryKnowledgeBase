@@ -174,7 +174,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     top: 60px;
     left: 10px;
     width: 60px;
-    height: 80%;
+    height: 90%;
     background: whitesmoke;
     border-radius: 5px;
 }
@@ -189,11 +189,12 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     border: 1px solid;
     top: 80px;
     left: 15px;
-    height: 80%;
+    height: 90%;
     background: whitesmoke;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
+    z-index: 2000;
 }
 
 #ce-side-panel-content {
@@ -201,7 +202,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 }
 
 #ce-side-panel-content-collapsed {
-    width: 45px;
+    width: 35px;
     cursor: pointer;
     display: flex;
     align-items: center;
