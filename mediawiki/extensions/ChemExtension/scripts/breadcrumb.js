@@ -55,14 +55,14 @@
     function expandNavbar() {
         $('#ce-side-panel-content-collapsed').hide();
         $('#ce-side-panel-content').show();
-        $('div.container div.row').attr('style', 'margin-left: 350px !important;');
+        $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
         localStorage.setItem(EXPANDED_KEY, 'true');
     }
 
     function collapseNavbar() {
         $('#ce-side-panel-content-collapsed').show();
         $('#ce-side-panel-content').hide();
-        $('div.container div.row').attr('style', 'margin-left: 0px !important;');
+        $('div.container-fluid div.row').attr('style', 'margin-left: 40px !important;');
         localStorage.setItem(EXPANDED_KEY, 'false');
     }
 
