@@ -26,6 +26,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
      */
     protected function getTabContent(): array
     {
+
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $mainTemplate = $experimentType->getMainTemplate();
         $rowTemplate = $experimentType->getRowTemplate();
@@ -47,11 +48,12 @@ class ExperimentLinkRenderer extends ExperimentRenderer
 |experiments={$experiments}
 }}
 TEMPLATE;
-        $cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-        $html = $cache->getWithSetCallback(md5($templateCall), 20, function() use($templateCall){
-            $parser = new Parser();
-            $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
-            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $cache = MediaWikiServices::getInstance()->getMainObjectStash();
+        $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($templateCall)), $cache::TTL_DAY,
+            function() use($templateCall){
+                $parser = new Parser();
+                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
+                return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 
         $results = [];
