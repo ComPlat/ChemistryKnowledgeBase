@@ -365,7 +365,7 @@ div.ce-side-panel-header {
     padding: 3px;
 }
 
-#ce-side-panel-expand-button {
+#ce-side-panel-expand-button, #ce-side-panel-close-button {
     cursor: pointer;
 }
 
