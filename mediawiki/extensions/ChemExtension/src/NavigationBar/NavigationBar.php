@@ -141,7 +141,7 @@ class NavigationBar
         if ($this->title->isSubpage()) {
             $title = $this->title->getBaseTitle();
         }
-        if ($title->getNamespace() === NS_CATEGORY) {
+        if ($title->getNamespace() === NS_CATEGORY && WikiTools::checkIfInTopicCategory($title)) {
             $rootCategories = count($title->getParentCategories()) === 0 ? ['Category:Topic'] : array_keys($title->getParentCategories());
             return array_map(function ($e) {
                 return Title::newFromText($e)->getText();
@@ -158,7 +158,11 @@ class NavigationBar
     {
         switch ($title->getNamespace()) {
             case NS_CATEGORY:
-                $type = 'topic';
+                if (WikiTools::checkIfInTopicCategory($title)) {
+                    $type = 'topic';
+                } else {
+                    $type = 'other';
+                }
                 break;
             case NS_MAIN:
                 $type = $title->isSubpage() ? 'investigation' : 'publication';
@@ -171,7 +175,7 @@ class NavigationBar
                 $type = "molecule";
                 break;
             default:
-                $type = "undefined";
+                $type = "other";
         }
         return $type;
     }
