@@ -280,6 +280,15 @@ class HtmlTableEditor
         }
     }
 
+    public function hideTables()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//table');
+        foreach ($list as $t) {
+            $t->setAttribute('style', 'display:none;');
+        }
+    }
+
     public function getNumberOfRows()
     {
         $xpath = new DOMXPath($this->doc);

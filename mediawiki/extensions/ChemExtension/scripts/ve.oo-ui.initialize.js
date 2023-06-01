@@ -32,12 +32,17 @@
             }
         });
 
-        $('table.experiment-link tr:first-child td:first-child').click(function(e) {
-            let table = $(e.target).closest('table');
-            if (table.find('tr:last-child').is(':visible')) {
-                table.find('tr').not(':first-child').hide();
+        $('span.experiment-link-show-button').click(function(e) {
+            let buttonLabel = $(e.target);
+            let table = buttonLabel.closest('div.experiment-link-container').find('table');
+            let visible = table.is(':visible');
+            if (visible) {
+                buttonLabel.text('Show investigations');
+                table.hide();
             } else {
-                table.find('tr').show();
+                buttonLabel.text('Hide investigations');
+                table.show();
+
             }
         });
     }

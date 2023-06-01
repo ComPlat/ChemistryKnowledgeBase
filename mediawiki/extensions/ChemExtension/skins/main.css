@@ -424,13 +424,6 @@ a.publication-for-investigation {
     margin-left: 5px;
 }
 
-table.experiment-link > tbody > tr:first-child td:first-child {
-    background-image: url( images/up-down.png );
-    background-repeat: no-repeat;
-    background-position: center;
-    width: 25px;
-    cursor: pointer;
-}
 
 table.ce-center-aligned-table td {
     width: 100%;

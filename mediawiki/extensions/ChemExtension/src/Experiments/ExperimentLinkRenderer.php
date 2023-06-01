@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
+use OOUI\ButtonInputWidget;
 use Parser;
 use ParserOptions;
 use Title;
@@ -86,11 +87,20 @@ TEMPLATE;
                     }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
-                $htmlTableEditor->hideAllRowsExceptFirst();
+                $htmlTableEditor->hideTables();
                 $htmlTableEditor->addTableClass("experiment-link");
             }
-            $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
+
+            $showButton = new ButtonInputWidget([
+                'classes' => ['chemext-button', 'experiment-link-show-button'],
+                'type' => 'button',
+                'label' => 'Show investigations',
+                'flags' => ['primary', 'progressive'],
+                'infusable' => true
+            ]);
+            $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
+                'button' => $showButton->toString()
 
             ])->render ();
         }
