@@ -20,9 +20,12 @@ $dataArrayC = $spreadsheet->getActiveSheet()
     TRUE         // Should the array be indexed by cell row and cell column
 );
 $CV_metadata = array();
-var_dump($dataArrayC[4]["C"][0]);
-// for ($x = 4; $x <= 91; $x++){
-//     $CV_metadata[$dataArrayE[$x]["E"]]->$dataArrayC[$x]["C"];
-// };
-var_dump($CV_metadata);
+// var_dump($dataArrayC[4]["C"]);
+
+
+for ($x = 4; $x <= 91; $x++){    
+ $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];};
+$CV_metadata = $dataArrayC;
+print_r($CV_metadata);
+// var_dump($CV_metadata)
 ?>

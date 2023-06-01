@@ -1,0 +1,31 @@
+{
+    "@context" :{
+        "Schema":"https://schema.org/",
+        "Iupac_Name":"Schema:iupacName",
+        "Trivial_Name":"Schema:name",
+        "Exact_Mass":"Schema:molecularWeight",
+        "Molecular_formula":"Schema:molecularFormula",
+        "SMILES":"Schema:smiles",
+        "Inchi_key":"Schema:inChIKey"
+    },
+    "@type":"Molecule",
+    "@id":"water",
+    "CID":"cid1",
+    "CAS":"cas2",
+    "Iupac_Name":"ip4",
+    "Abbreviation":"",
+    "Trivial_Name":"",
+    "Exact_Mass":"EM",
+    "Molecular_formula":"H20",
+    "LogP":"p1",
+    "Has_Vendors":"",
+    "Synoynms":"",
+    "SMILES":"",
+    "Inchi":"",
+    "Inchi_key":""
+}
+    
+    
+    
+     
+     
