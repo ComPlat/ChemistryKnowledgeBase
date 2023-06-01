@@ -23,9 +23,11 @@ $CV_metadata = array();
 // var_dump($dataArrayC[4]["C"]);
 
 
-for ($x = 4; $x <= 91; $x++){    
- $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];};
-$CV_metadata = $dataArrayC;
+for ($x = 4; $x <= 91; $x++){  
+    if (($dataArrayE[$x]["E"])!= ""); 
+ $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];
+
+($CV_metadata[$dataArrayC[$x]["E"]] = $dataArrayC[$x]["C"]);}
 print_r($CV_metadata);
 // var_dump($CV_metadata)
 ?>
