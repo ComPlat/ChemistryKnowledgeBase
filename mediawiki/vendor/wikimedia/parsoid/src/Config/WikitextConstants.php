@@ -107,7 +107,7 @@ class WikitextConstants {
 				'table', 'td', 'th', 'time', 'tr', 'tt',
 				'u', 'ul',
 				'var',
-				'wbr',
+				'wbr','img','a'
 			] ),
 		];
 

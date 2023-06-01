@@ -22,10 +22,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(() => {
                 let node = ve.init.target.getSurface().getModel().getSelectedNode();
-                let inchiKey = this.chooseMoleculeWidget.getChemFormId();
+                let inchiKey = this.chooseMoleculeWidget.getMoleculeKey();
+                let showAsImage = this.chooseMoleculeWidget.isShownAsImage();
                 let params = node.element.attributes.mw.parts[0].template.params;
                 params.link = params.link || {};
                 params.link.wt = inchiKey;
+                params.image = params.image || {};
+                params.image.wt = showAsImage ? 'true':'false';
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
