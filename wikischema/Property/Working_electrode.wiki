@@ -2,9 +2,16 @@
 * [[Property description::Contains a string describing the working electrode type and meterial used in a cyclic voltammetry experiment.@en]]
 
 ; Datatype
-* [[Has type::string]].
+* [[Has type::Text]].
 
-; Values
-* A String.
+The allowed values for this property are:
+* [[Allows value::gold]]
+* [[Allows value::silver]]
+* [[Allows value::platinum]]
+* [[Allows value::glassy carbon]]
+* [[Allows value::boron doped diamond]]
+* [[Allows value::pyrolytic carbon]]
+* [[Allows value::copper]]
+* [[Allows value::other]]
 
 [[Imported from::chmo:CHMO_0002346]]

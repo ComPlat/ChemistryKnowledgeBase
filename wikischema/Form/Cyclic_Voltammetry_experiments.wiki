@@ -30,7 +30,7 @@ experiments:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! electrolyte:
-| {{{field|electrolyte|property=Electrolyte|input type=string}}}
+| {{{field|electrolyte|property=Electrolyte|input type=dropdown}}}
 |-
 ! electrolyte concentration [M]:
 | {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
@@ -51,7 +51,7 @@ experiments:
 | {{{field|scan dir|property=Scan direction|input type=dropdown}}}
 |-
 ! gas (atmosphere):
-| {{{field|gas|property=Gas|input type=string}}}
+| {{{field|gas|property=Gas|input type=dropdown}}}
 |-
 ! temperature [° C]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
@@ -59,14 +59,14 @@ experiments:
 ! condition (wavelength [nm] or dark):
 | {{{field|cond|property=Condition|input type=string}}}
 |-
-! working electrode (type and material):
-| {{{field|WE|property=Working electrode|input type=string}}}
+! working electrode:
+| {{{field|WE|property=Working electrode|input type=dropdown}}}
 |-
 ! WE surface area [mm²]:
 | {{{field|WE area|property=Working electrode surface area|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! counter electrode:
-| {{{field|CE|property=Counter electrode|input type=string}}}
+| {{{field|CE|property=Counter electrode|input type=dropdown}}}
 |-
 ! reference electrode:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}

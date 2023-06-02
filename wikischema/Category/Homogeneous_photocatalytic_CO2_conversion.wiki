@@ -1,8 +1,19 @@
 {{BaseTemplate}}
 [[Category:Photocatalytic CO2 conversion]]
 
-TON CO >5{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E5%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+=== Related important contents ===
+<!-- Related content -->test123 This topic relates to the higher level topics: 
+ 
+[[:Category:Photocatalytic CO2 conversion|Photocatalytic CO2 conversion]]
 
-TON HCOOH{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3E1%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+[[:Category:CO2 conversion|Category:CO2 conversion]]
 
-Cat conc 0.025, TON H2 <10{{#experimentlink:%5B%5BCatalyst%20concentration%3A%3A0.025%5D%5D%0A%5B%5BTurnover%20number%20H2%3A%3A%3C10%5D%5D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}Solvent A not NMP{{#experimentlink:%7B%7B%23ask%3A%0A%20%5B%5BSolvent%20A%3A%3A!Molecule%3A100532%5D%5D%0A%20%7C%3F%20Turnover%20number%20CH4%0A%20%7Csort%3DTurnover%20number%20CH4%0A%20%7Corder%3Ddesc%0A%7D%7D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+Dear reader, I am a test molecule called phenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}, you can call me also benzenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}. 
+
+
+
+TON CO >100, sorted by catalyst{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=}}
+
+TON HCOOH, descending order{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Turnover number HCOOH|order=descending}}
+
+Cat conc 0.025, TON H2 <10{{#experimentlink:%5B%5BCatalyst%20concentration%3A%3A0.025%5D%5D%0A%5B%5BTurnover%20number%20H2%3A%3A%3C10%5D%5D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}

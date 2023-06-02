@@ -1,0 +1,4 @@
+<includeonly>
+ | {{{1}}} || {{#moleculelink: |link={{{2}}}|image=true}} || {{{3}}}
+ |-
+</includeonly>

@@ -2,8 +2,15 @@
 * [[Property description::Contains a string describing the gas atmosphere used in an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::string]].
+* [[Has type::Text]].
 
-; Values
-* A String.
+The allowed values for this property are:
+* [[Allows value::nitrogen]]
+* [[Allows value::argon]]
+* [[Allows value::CO2]]
+* [[Allows value::CO]]
+* [[Allows value::O2]]
+* [[Allows value::H2]]
+* [[Allows value::none]]
+
 [[Imported from::chmo:CHMO_0002783]]

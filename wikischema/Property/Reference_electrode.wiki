@@ -3,7 +3,12 @@ This is a property of type [[Has type::Text]].
 The allowed values for this property are:
 * [[Allows value::SCE]]
 * [[Allows value::SHE]]
-* [[Allows value::Ag/AgCl]]
-* [[Allows value::Ag/Ag+ (AgNO3)]]
+* [[Allows value::RHE]]
+* [[Allows value::Ag/AgCl in KCl(sat.)]]
+* [[Allows value::Ag/AgCl in KCl(3M)]]
+* [[Allows value::Ag/AgCl in NaCl(sat.)]]
+* [[Allows value::Ag/AgCl in NaCl(3M)]]
+* [[Allows value::Ag/AgNO3 in MeCN]]
+* [[Allows value::other]]
 
 [[Imported from::chmo:CHMO_0002345]]
