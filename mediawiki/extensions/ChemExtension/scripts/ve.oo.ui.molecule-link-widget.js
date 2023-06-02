@@ -35,7 +35,7 @@
         this.showAsImage = new OO.ui.CheckboxInputWidget();
         let params = data.template.params;
         this.textWidget.setValue(!params.link ? params.chemformid.wt: params.link.wt);
-        this.showAsImage.setSelected(params.image.wt === 'true');
+        this.showAsImage.setSelected(params.image && params.image.wt === 'true');
         let formLayout = new OO.ui.FormLayout({
             items: [label,this.textWidget]
         });
