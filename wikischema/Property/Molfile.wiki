@@ -1,0 +1,5 @@
+;Purpose
+* Contains the Molfile V3000
+
+;Datatype
+* [[Has type::String]]

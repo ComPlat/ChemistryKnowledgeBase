@@ -46,6 +46,7 @@
 |-
 
 |}
+{{#set: Molfile={{{molOrRxn}}} }}
 </div>
 
 {{#if: {{{parent|}}} | Belongs to molecule collection: [[{{{parent}}}]] | }}

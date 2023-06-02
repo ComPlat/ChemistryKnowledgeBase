@@ -20,7 +20,8 @@
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
         "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
         "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules",
-        "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems"
+        "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
+        "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule"
 
     },
     "AutoloadNamespaces": {
@@ -62,6 +63,11 @@
             "path": "/ChemExtension/v1/chemform/upload",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\UploadChemFormImage"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/replace",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\ReplaceChemFormImage"
         },
         {
             "path": "/ChemExtension/v1/chemform",
@@ -122,7 +128,8 @@
         "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
         "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
-        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob"
+        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob",
+        "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob"
     },
     "manifest_version": 2
 }

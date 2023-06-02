@@ -96,6 +96,15 @@ class Setup {
             'styles' => [ 'skins/pf.css' ],
             'dependencies' => [],
         );
+
+        $wgResourceModules['ext.diqa.chemextension.modify-molecule'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => ['scripts/special.modify-molecule.js'],
+            'styles' => [],
+            'dependencies' => ['ext.diqa.chemextension'],
+        );
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
@@ -113,7 +122,9 @@ class Setup {
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
             $out->addModules('ext.diqa.chemextension.pf');
         }
-
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("ModifyMolecule")) {
+            $out->addModules('ext.diqa.chemextension.modify-molecule');
+        }
 
     }
 

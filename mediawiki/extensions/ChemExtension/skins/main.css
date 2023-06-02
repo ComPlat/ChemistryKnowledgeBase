@@ -437,3 +437,9 @@ table.wikitable th {
     display: flex;
     justify-content: space-between;
 }
+
+iframe#mp-ketcher-editor {
+    width: 100%;
+    height: 600px;
+    margin-top: 15px;
+}

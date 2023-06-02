@@ -54,7 +54,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.KetcherDialog.prototype.updateMolecule = function (node, formulaV3000) {
 
-        this.ajax.getInchiKey(node, formulaV3000).then((response) => {
+        this.ajax.getInchiKey(formulaV3000).then((response) => {
             this.updatePageWithExternalRendering(node, formulaV3000, response.InChI, response.InChIKey);
             this.openRGroupsDialogIfNoRGroupsDefined(node, formulaV3000);
         }).catch((response) => {
