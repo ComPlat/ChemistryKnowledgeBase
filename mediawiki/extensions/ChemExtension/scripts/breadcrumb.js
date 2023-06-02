@@ -2,6 +2,7 @@
     'use strict';
 
     let initialized = false;
+    let tools = new OO.VisualEditorTools();
 
     function initialize() {
 
@@ -36,10 +37,10 @@
         initialized = true;
     }
 
-    let EXPANDED_KEY = 'mw.chem-extension.navbar-expanded';
+    let NAVBAR_STATUS_COOKIE = mw.config.get('wgCookiePrefix') + 'mw.chem-extension.navbar-expanded';
 
     function initializeNavbar() {
-        if (localStorage.getItem(EXPANDED_KEY) === 'true') {
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) === 'expanded') {
             expandNavbar();
         } else {
             collapseNavbar();
@@ -56,14 +57,18 @@
         $('#ce-side-panel-content-collapsed').hide();
         $('#ce-side-panel-content').show();
         $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
-        localStorage.setItem(EXPANDED_KEY, 'true');
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'expanded') {
+            tools.createCookie(NAVBAR_STATUS_COOKIE, 'expanded');
+        }
     }
 
     function collapseNavbar() {
         $('#ce-side-panel-content-collapsed').show();
         $('#ce-side-panel-content').hide();
         $('div.container-fluid div.row').attr('style', 'margin-left: 40px !important;');
-        localStorage.setItem(EXPANDED_KEY, 'false');
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'collapsed') {
+            tools.createCookie(NAVBAR_STATUS_COOKIE, 'collapsed');
+        }
     }
 
     function initializePublicationFilter() {

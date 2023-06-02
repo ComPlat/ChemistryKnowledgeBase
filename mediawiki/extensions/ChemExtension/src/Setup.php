@@ -14,6 +14,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
+use RequestContext;
 use OutputPage;
 use Parser;
 use Skin;
@@ -135,7 +136,11 @@ class Setup {
             $data .= $b->getNavigationBar();
             $data .= $b->getCollapsedNavigationBar();
         }
-
+        global $wgOut;
+        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+        if ($navBarStatus === 'expanded') {
+            $wgOut->addInlineStyle('div.container-fluid div.row { margin-left: 400px !important; }');
+        }
     }
 
     public static function extendSubtitle($html)
