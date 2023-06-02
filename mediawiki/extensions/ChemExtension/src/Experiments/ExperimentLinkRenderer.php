@@ -16,6 +16,8 @@ use Hooks;
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
 
+    static $BUTTON_COUNTER = 0;
+
     public function __construct($context)
     {
         parent::__construct($context);
@@ -91,8 +93,10 @@ TEMPLATE;
                 $htmlTableEditor->addTableClass("experiment-link");
             }
 
+            self::$BUTTON_COUNTER++;
             $showButton = new ButtonInputWidget([
                 'classes' => ['chemext-button', 'experiment-link-show-button'],
+                'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
                 'type' => 'button',
                 'label' => 'Show investigations',
                 'flags' => ['primary', 'progressive'],
@@ -100,7 +104,8 @@ TEMPLATE;
             ]);
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
-                'button' => $showButton->toString()
+                'button' => WikiTools::isInVisualEditor() ? '' : $showButton->toString(),
+                'buttonCounter' => self::$BUTTON_COUNTER
 
             ])->render ();
         }

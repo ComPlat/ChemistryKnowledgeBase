@@ -34,7 +34,9 @@
 
         $('span.experiment-link-show-button').click(function(e) {
             let buttonLabel = $(e.target);
-            let table = buttonLabel.closest('div.experiment-link-container').find('table');
+            let button = buttonLabel.closest('span.experiment-link-show-button');
+            let id = button.attr('id');
+            let table = $('#'+id+'-table').find('table');
             let visible = table.is(':visible');
             if (visible) {
                 buttonLabel.text('Show investigations');

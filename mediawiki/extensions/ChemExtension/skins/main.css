@@ -443,3 +443,8 @@ iframe#mp-ketcher-editor {
     height: 600px;
     margin-top: 15px;
 }
+
+span.experiment-link-show-button {
+    margin-top: -5px;
+    margin-left: 10px;
+}
