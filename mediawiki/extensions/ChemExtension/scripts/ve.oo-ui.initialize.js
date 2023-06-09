@@ -89,6 +89,11 @@
         intializeExpandNavigationButton();
     });
 
+    mw.hook( 've.deactivationComplete' ).add(function() {
+        initialize();
+        initializeToggleBoxes();
+        initializeDOIInfoBoxToggle();
+    });
     mw.hook( 'postEdit' ).add(function() {
         initialize();
         initializeToggleBoxes();

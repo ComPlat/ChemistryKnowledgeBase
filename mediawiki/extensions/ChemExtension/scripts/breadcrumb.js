@@ -30,7 +30,9 @@
             $('#ce-molecules-content').show();
             $('#ce-molecules-filter').show();
         });
-        initializeNavbar();
+        if (mw.config.get('wgPageName').indexOf('Special:FormEdit') === -1) {
+            initializeNavbar();
+        }
         initializePublicationFilter();
         initializeInvestigationFilter();
         initializeMoleculesFilter();

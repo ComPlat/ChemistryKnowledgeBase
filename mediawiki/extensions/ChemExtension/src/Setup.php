@@ -138,7 +138,7 @@ class Setup {
         }
         global $wgOut;
         $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
-        if ($navBarStatus === 'expanded') {
+        if ($navBarStatus === 'expanded' && !$wgTitle->isSpecial('FormEdit')) {
             $wgOut->addInlineStyle('div.container-fluid div.row { margin-left: 400px !important; }');
         }
     }
