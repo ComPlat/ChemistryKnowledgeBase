@@ -39,10 +39,10 @@
             let table = $('#'+id+'-table').find('table');
             let visible = table.is(':visible');
             if (visible) {
-                buttonLabel.text('Show investigations');
+                buttonLabel.text('Show table');
                 table.hide();
             } else {
-                buttonLabel.text('Hide investigations');
+                buttonLabel.text('Hide table');
                 table.show();
 
             }

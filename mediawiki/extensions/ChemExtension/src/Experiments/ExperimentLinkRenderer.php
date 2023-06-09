@@ -98,8 +98,9 @@ TEMPLATE;
                 'classes' => ['chemext-button', 'experiment-link-show-button'],
                 'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
                 'type' => 'button',
-                'label' => 'Show investigations',
+                'label' => 'Show table',
                 'flags' => ['primary', 'progressive'],
+                'title' => 'Show summary table of investigations',
                 'infusable' => true
             ]);
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [

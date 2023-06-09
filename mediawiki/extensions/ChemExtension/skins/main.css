@@ -448,3 +448,11 @@ span.experiment-link-show-button {
     margin-top: -5px;
     margin-left: 10px;
 }
+
+span.experiment-link-show-button button {
+    min-height: 1.8em !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    background: mediumseagreen !important;
+    border-color: grey !important;
+}
