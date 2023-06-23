@@ -194,7 +194,7 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    z-index: 2000;
+    z-index: 100;
 }
 
 #ce-side-panel-content {
