@@ -7,7 +7,7 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        $('table.wikitable th').click((e) => {
+        $('table.wikitable:not(.infobox) th').click((e) => {
             let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
             th.attr('collapsed', !collapsed);
