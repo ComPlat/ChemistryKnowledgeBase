@@ -6,12 +6,12 @@ use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
+use Hooks;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use Parser;
 use ParserOptions;
 use Title;
-use Hooks;
 
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
@@ -94,7 +94,7 @@ TEMPLATE;
             }
 
             self::$BUTTON_COUNTER++;
-            $showButton = new ButtonInputWidget([
+            $pageTypes = new ButtonInputWidget([
                 'classes' => ['chemext-button', 'experiment-link-show-button'],
                 'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
                 'type' => 'button',
@@ -103,9 +103,11 @@ TEMPLATE;
                 'title' => 'Show summary table of investigations',
                 'infusable' => true
             ]);
+
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
-                'button' => WikiTools::isInVisualEditor() ? '' : $showButton->toString(),
+                'button' => WikiTools::isInVisualEditor() ? '' : $pageTypes->toString(),
+                'description' => $this->context['description'],
                 'buttonCounter' => self::$BUTTON_COUNTER
 
             ])->render ();

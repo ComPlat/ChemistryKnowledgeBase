@@ -271,13 +271,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                                 params: {
                                                     form: {wt: ""},
                                                     restrictToPages: {wt: ""},
+                                                    description: {wt: ""}
                                                 },
                                                 target: {wt: "#experimentlink:", "function": "experimentlink"}
                                             }
                                         }
                                     ]
                                 },
-                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlink:","function":"experimentlink"},"params":{ "form":{"wt":""}, "restrictToPages":{"wt":""}},"i":0}}]}"'
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlink:","function":"experimentlink"},"params":{ "form":{"wt":""}, "restrictToPages":{"wt":""},, "description":{"wt":""}},"i":0}}]}"'
                             }
                         }
 

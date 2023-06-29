@@ -43,6 +43,7 @@ class ExperimentLink
             $renderer = new ExperimentLinkRenderer([
                 'page' => $title,
                 'form' => $parameters['form'],
+                'description' => $parameters['description'] ?? '- please enter description -',
                 'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery))
             ]);
             $html = $renderer->render();

@@ -78,6 +78,14 @@
         items.push(this.chooseExperimentDropDown);
 
         if (this.mode == 'link') {
+            let description = new OO.ui.LabelWidget({
+                label: "Description",
+            });
+            let descriptionValue =  data.template.params.description ? data.template.params.description.wt : '';
+            this.descriptionValue = new OO.ui.MultilineTextInputWidget({value: descriptionValue});
+            this.descriptionValue.on('change', (item) => {
+                this.setActionsDisabled(['edit', 'insert'], false);
+            });
             let restrictToPagesLabel = new OO.ui.LabelWidget({
                 label: "Restrict to publication pages (empty means all pages)",
             });
@@ -117,6 +125,8 @@
                 this.setActionsDisabled(['edit', 'insert'], false);
             });
 
+            items.push(description);
+            items.push(this.descriptionValue);
             items.push(queryLabel);
             items.push(this.query);
             items.push(restrictToPagesLabel);
@@ -191,6 +201,10 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.getOrderColumns = function () {
         return this.order.getValue();
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.getDescription = function () {
+        return this.descriptionValue.getValue();
     }
 
 
