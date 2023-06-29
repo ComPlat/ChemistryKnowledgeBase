@@ -414,7 +414,13 @@ class CategoryViewer extends ContextSource {
 		if ( $rescnt > 0 ) {
 			# Showing subcategories
 			$r .= "<div id=\"mw-subcategories\">\n";
-			$r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->run('chem_catviewer_category', [$this->getOutput()->getTitle(), & $html]);
+            if (isset($html) && $html !== ''){
+                $r .= $html;
+            } else {
+			    $r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
+            }
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'subcat' );
 			$r .= $this->formatList( $this->children, $this->children_start_char );
@@ -444,7 +450,13 @@ class CategoryViewer extends ContextSource {
 
 		if ( $rescnt > 0 ) {
 			$r = "<div id=\"mw-pages\">\n";
-			$r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
+            if (isset($html) && $html !== ''){
+                $r .= $html;
+            } else {
+			    $r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
+            }
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'page' );
 			$r .= $this->formatList( $this->articles, $this->articles_start_char );

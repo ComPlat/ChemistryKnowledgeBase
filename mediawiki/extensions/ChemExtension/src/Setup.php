@@ -14,11 +14,13 @@ use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
+use DIQA\ChemExtension\Utils\WikiTools;
 use RequestContext;
 use OutputPage;
 use Parser;
 use Skin;
 use SMW\ApplicationFactory;
+use Title;
 
 class Setup {
 
@@ -162,6 +164,25 @@ class Setup {
         self::registerShowCachedHandler($parser);
     }
 
+    public static function categoryViewerInstance(Title $title, & $html) {
+        $html = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $html = '<h2>Publications of topic "' . $title->getText(). '"</h2>';
+        }
+    }
+
+    public static function categoryList(Title $title, & $label) {
+        $label = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $label = 'Topics';
+        }
+    }
+    public static function categoryViewerCategory(Title $title, & $html) {
+        $html = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $html = '<h2>Subtopics of "' . $title->getText(). '"</h2>';
+        }
+    }
     public static function assignValueToMagicWord( &$parser, &$cache, &$magicWordId, &$ret ) {
         if ( $magicWordId === 'counter' ) {
             static $counter = 1;

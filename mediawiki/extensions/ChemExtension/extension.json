@@ -38,7 +38,10 @@
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
         "CollectMolecules": "DIQA\\ChemExtension\\MultiContentSave::collectMolecules",
         "SkinAfterContent": "DIQA\\ChemExtension\\Setup::onSkinAfterContent",
-        "ExtendSubtitle": "DIQA\\ChemExtension\\Setup::extendSubtitle"
+        "ExtendSubtitle": "DIQA\\ChemExtension\\Setup::extendSubtitle",
+        "chem_catviewer_instances": "DIQA\\ChemExtension\\Setup::categoryViewerInstance",
+        "chem_catviewer_category": "DIQA\\ChemExtension\\Setup::categoryViewerCategory",
+        "chem_categorylist": "DIQA\\ChemExtension\\Setup::categoryList"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"
