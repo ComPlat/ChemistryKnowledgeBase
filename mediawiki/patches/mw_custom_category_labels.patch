@@ -55,3 +55,17 @@ diff --git a/mediawiki/includes/CategoryViewer.php b/mediawiki/includes/Category
  			$r .= $countmsg;
  			$r .= $this->getSectionPagingLinks( 'page' );
  			$r .= $this->formatList( $this->articles, $this->articles_start_char );
+@@ -748,6 +748,12 @@
+ 			return $this->msg( "category-$type-count-limited" )->numParams( $rescnt )->parseAsBlock();
+ 		}
+ 		// Messages: category-subcat-count, category-article-count, category-file-count
+-		return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++        $hookContainer->run('chem_category_count', [$this->getOutput()->getTitle(), & $isInTopic]);
++        if (!is_null($isInTopic) && $isInTopic) {
++            return $this->msg( "topic-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        } else {
++		    return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        }
+ 	}
+ }

@@ -23,5 +23,8 @@
 	"findmissingitems": "Finde fehlende Items",
 	"page-type-topic": "Topic",
 	"page-type-publication": "Publikationseite",
-	"page-type-investigation": "Experiment"
+	"page-type-investigation": "Experiment",
+
+	"topic-subcat-count": "{{PLURAL:$2|Dieses Topic enthält das folgende Untertopic:|Dieses Topic enthält {{PLURAL:$1|das folgende Untertopic| die folgenden $1 Untertopics}} ($2 insgesamt):}}",
+	"topic-article-count": "{{PLURAL:$2|Dieses Topic enthält nur die folgende Publikation.|Folgende {{PLURAL:$1|Publikation ist| $1 Publikationen sind}} in diesem Topic, von $2 insgesamt.}}"
 }

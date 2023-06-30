@@ -177,6 +177,11 @@ class Setup {
             $label = 'Topics';
         }
     }
+
+    public static function categoryCount(Title $title, & $isInTopic) {
+        $isInTopic = WikiTools::checkIfInTopicCategory($title);
+    }
+
     public static function categoryViewerCategory(Title $title, & $html) {
         $html = '';
         if (WikiTools::checkIfInTopicCategory($title)) {

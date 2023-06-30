@@ -748,6 +748,12 @@ class CategoryViewer extends ContextSource {
 			return $this->msg( "category-$type-count-limited" )->numParams( $rescnt )->parseAsBlock();
 		}
 		// Messages: category-subcat-count, category-article-count, category-file-count
-		return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hookContainer->run('chem_category_count', [$this->getOutput()->getTitle(), & $isInTopic]);
+        if (!is_null($isInTopic) && $isInTopic) {
+            return $this->msg( "topic-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        } else {
+		    return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        }
 	}
 }
