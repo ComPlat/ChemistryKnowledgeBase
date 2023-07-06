@@ -107,12 +107,11 @@ class ModifyMolecule extends SpecialPage
             'flags' => ['primary', 'progressive'],
             'infusable' => true
         ]);
-        $moleculePage = \Title::newFromText($this->getRequest()->getText('inchikey', ''), NS_MOLECULE);
-        $modifyButton->setDisabled(is_null($moleculePage) || !$moleculePage->exists());
-
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
         $chemFormRepo = new ChemFormRepository($dbr);
         $chemFormId = $chemFormRepo->getChemFormId($inchikey);
+        $moleculePage = \Title::newFromText($chemFormId, NS_MOLECULE);
+        $modifyButton->setDisabled(is_null($moleculePage) || !$moleculePage->exists());
 
         $random = uniqid();
         $ketcherURL = "$wgScriptPath/extensions/ChemExtension/ketcher/index-editor.html?random=$random";
