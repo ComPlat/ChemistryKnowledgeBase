@@ -5,6 +5,7 @@ use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
+use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
@@ -141,8 +142,11 @@ class Setup {
         $link = '';
         $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
         if (in_array('sysop', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
+            $chemFormRepo = new ChemFormRepository($dbr);
+            $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
             $modifyMoleculePage = Title::newFromText("ModifyMolecule", NS_SPECIAL);
-            $url = $modifyMoleculePage->getFullURL(['chemformid'=>$wgTitle->getText()]);
+            $url = $modifyMoleculePage->getFullURL(['inchikey'=>$inchikey]);
             $link = "<a href=\"$url\">Modify molecule</a>";
         }
         return $link;
