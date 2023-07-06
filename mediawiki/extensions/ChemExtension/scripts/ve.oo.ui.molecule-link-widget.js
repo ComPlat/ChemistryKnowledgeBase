@@ -30,7 +30,7 @@
     OO.ui.ChooseMoleculeWidget.prototype.setData = function (data) {
         this.$element.empty();
         this.textWidget = new OO.ui.InchiKeyLookupTextInputWidget();
-        let label = new OO.ui.LabelWidget({label: "Molecule-ID"});
+        let label = new OO.ui.LabelWidget({label: "Molecule-ID (Trivial name, CAS, Abbreviation or Synonyms)"});
         let labelShowAsImage = new OO.ui.LabelWidget({label: "Show molecule image"});
         this.showAsImage = new OO.ui.CheckboxInputWidget();
         let params = data.template.params;

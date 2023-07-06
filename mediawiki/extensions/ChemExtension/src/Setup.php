@@ -15,6 +15,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
 use RequestContext;
 use OutputPage;
 use Parser;
@@ -112,8 +113,12 @@ class Setup {
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
+
+
         $b = new NavigationBar($wgTitle);
-        $out->addSubtitle('<div class="ce-subtitle-content">'.$b->getPageType() . self::$subTitleExtension."</div>");
+        $link = self::addModifyLink();
+        $out->addSubtitle('<div class="ce-subtitle-content">'.$b->getPageType() . self::$subTitleExtension."$link</div>");
+
 
         $out->addModules('ext.diqa.chemextension');
         $out->addModules('ext.diqa.md5');
@@ -129,6 +134,18 @@ class Setup {
             $out->addModules('ext.diqa.chemextension.modify-molecule');
         }
 
+    }
+
+    private static function addModifyLink() {
+        global $wgUser, $wgTitle;
+        $link = '';
+        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
+        if (in_array('sysop', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
+            $modifyMoleculePage = Title::newFromText("ModifyMolecule", NS_SPECIAL);
+            $url = $modifyMoleculePage->getFullURL(['chemformid'=>$wgTitle->getText()]);
+            $link = "<a href=\"$url\">Modify molecule</a>";
+        }
+        return $link;
     }
 
     public static function onSkinAfterContent( &$data, Skin $skin ) {
