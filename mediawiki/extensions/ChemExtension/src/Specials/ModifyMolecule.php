@@ -2,20 +2,18 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
-use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\QueryUtils;
+use DIQA\ChemExtension\Widgets\MoleculeSearchWidget;
+use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\Tag;
-use OOUI\TextInputWidget;
+use OutputPage;
 use Philo\Blade\Blade;
 use SpecialPage;
-use Exception;
-use OutputPage;
 
 class ModifyMolecule extends SpecialPage
 {
@@ -55,29 +53,21 @@ class ModifyMolecule extends SpecialPage
         }
     }
 
-    private function getMolfileFromChemFormId() {
+    private function getMolfileFromInChIKey() {
 
-        $chemFormId = $this->getRequest()->getText('chemformid', '');
-        if ($chemFormId === '') {
+        $inchikey = $this->getRequest()->getText('inchikey', '');
+        if ($inchikey === '') {
             return NULL;
         }
-        $queryResults = QueryUtils::executeBasicQuery("[[Molecule:$chemFormId]]", [QueryUtils::newPropertyPrintRequest("Molfile")]);
-        $smiles = NULL;
+        $molfile = NULL;
+        $queryResults = QueryUtils::executeBasicQuery("[[InChIKey::$inchikey]]", [QueryUtils::newPropertyPrintRequest("Molfile")]);
         if ($row = $queryResults->getNext()) {
-            reset($row);
-            $column = next($row);
-            $dataItem = $column->getNextDataItem();
-            if ($dataItem === false) {
-                throw new Exception("Cannot find Molefile annotation for molecule with ID: $chemFormId");
-            }
-            if ($dataItem->getDIType() == \SMWDataItem::TYPE_BLOB) {
-                $smiles = $dataItem->getString();
-            }
+            $molfile = $this->getMolfile($row, $inchikey);
         }
-        if (is_null($smiles)) {
-            throw new Exception("Cannot find molecule with ID: $chemFormId");
+        if (is_null($molfile)) {
+            throw new Exception("Cannot find molecule with ID: $inchikey");
         }
-        return $smiles;
+        return $molfile;
     }
 
     /**
@@ -87,18 +77,18 @@ class ModifyMolecule extends SpecialPage
      */
     private function createGUI(string $wgScriptPath): FormLayout
     {
-        $chemFormId = $this->getRequest()->getText('chemformid', '');
-        $chemFormIdInput = new FieldLayout(
-            new TextInputWidget([
-                'id' => 'chemformid',
+        $inchikey = $this->getRequest()->getText('inchikey', '');
+        $inchikeyInput = new FieldLayout(
+            new MoleculeSearchWidget([
+                'id' => 'inchikey',
                 'infusable' => true,
-                'name' => 'chemformid',
-                'value' => $chemFormId,
-                'placeholder' => 'Enter Molecule ID...'
+                'name' => 'inchikey',
+                'value' => $inchikey,
+                'placeholder' => 'Enter Molecule ID, InChIKey, abbreviation or synonym'
             ]),
             [
                 'align' => 'top',
-                'label' => 'Molecule-ID'
+                'label' => 'Molecule ID, InChIKey, abbreviation or synonym'
             ]
         );
 
@@ -117,8 +107,12 @@ class ModifyMolecule extends SpecialPage
             'flags' => ['primary', 'progressive'],
             'infusable' => true
         ]);
-        $moleculePage = \Title::newFromText($this->getRequest()->getText('chemformid', ''), NS_MOLECULE);
+        $moleculePage = \Title::newFromText($this->getRequest()->getText('inchikey', ''), NS_MOLECULE);
         $modifyButton->setDisabled(is_null($moleculePage) || !$moleculePage->exists());
+
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
+        $chemFormRepo = new ChemFormRepository($dbr);
+        $chemFormId = $chemFormRepo->getChemFormId($inchikey);
 
         $random = uniqid();
         $ketcherURL = "$wgScriptPath/extensions/ChemExtension/ketcher/index-editor.html?random=$random";
@@ -126,16 +120,37 @@ class ModifyMolecule extends SpecialPage
         $iframe->setAttributes([
             'src' => $ketcherURL,
             'id' => 'mp-ketcher-editor',
-            'formula' => $this->getMolfileFromChemFormId(),
+            'formula' => $this->getMolfileFromInChIKey(),
             'chemformid' => $chemFormId,
             ]);
 
-        $form = new FormLayout(['items' => [$chemFormIdInput, $loadButton, $iframe, $modifyButton],
+        $form = new FormLayout(['items' => [$inchikeyInput, $loadButton, $iframe, $modifyButton],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',
         ]);
         return $form;
+    }
+
+    /**
+     * @param $row
+     * @param string $inchikey
+     * @return Smiles string
+     * @throws Exception
+     */
+    private function getMolfile($row, string $inchikey)
+    {
+        $smiles = NULL;
+        reset($row);
+        $column = next($row);
+        $dataItem = $column->getNextDataItem();
+        if ($dataItem === false) {
+            throw new Exception("Cannot find Molefile annotation for molecule with ID: $inchikey");
+        }
+        if ($dataItem->getDIType() == \SMWDataItem::TYPE_BLOB) {
+            $smiles = $dataItem->getString();
+        }
+        return $smiles;
     }
 
 

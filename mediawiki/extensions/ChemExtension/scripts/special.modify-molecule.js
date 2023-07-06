@@ -56,6 +56,7 @@
     }
 
     $(function () {
+        OO.ui.infuse($('#inchikey'));
         new ketcherOperation();
     });
 
