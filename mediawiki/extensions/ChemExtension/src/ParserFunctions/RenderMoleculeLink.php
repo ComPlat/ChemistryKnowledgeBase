@@ -61,8 +61,8 @@ class RenderMoleculeLink
                 'fullPageTitle' => $page->getPrefixedText(),
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
                 'image' => ($parameters['image'] ?? false) === "true",
-                'width' => $parameters['width'] ?? 300,
-                'height' => $parameters['height'] ?? 200,
+                'width' => $parameters['width'] ?? 284,
+                'height' => $parameters['height'] ?? 133,
             ]
         )->render();
 
