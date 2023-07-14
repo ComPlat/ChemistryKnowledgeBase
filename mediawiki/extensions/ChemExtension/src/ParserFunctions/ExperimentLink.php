@@ -130,7 +130,7 @@ class ExperimentLink
         $orPartQueries = array_map(function ($q) use ($mainTemplate, $restrictQuery) {
             return
                 "[[-Has subobject::<q>[[Category:$mainTemplate]]</q>]] $q $restrictQuery [[Included::true]]";
-        }, explode(" OR ", $queryToSelectExperiments));
+        }, preg_split('/[\s\n\r]+OR[\s\n\r]+/', $queryToSelectExperiments));
         return implode(" OR ", $orPartQueries);
     }
 }
