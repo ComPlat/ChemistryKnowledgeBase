@@ -82,11 +82,41 @@
         });
     }
 
+    function initializeRGroups() {
+        $('.rgroups-button').click((e)=> {
+            let target = $(e.target);
+            let moleculeKey = target.attr('moleculekey');
+            let pageid = target.attr('pageid');
+
+            let draggable = $('<div>').addClass('ui-widget-content rgroup-draggable');
+            let myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
+                size: 'large'
+            }, draggable );
+            myDialog.initialize({moleculeKey: moleculeKey, pageid: pageid});
+
+            draggable.css({
+                top: getScrollPos() + Math.floor((window.parent.innerHeight - 450) / 2),
+                left: Math.floor((window.parent.innerWidth - 1000) / 2)
+            });
+            draggable.draggable();
+            ;
+            $('body').prepend($('<div>').height('0px').append(draggable));
+        });
+    }
+
+    function getScrollPos() {
+
+        let doc = window.document.documentElement;
+        return (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+
+    }
+
     $(function() {
         initialize();
         initializeToggleBoxes();
         initializeDOIInfoBoxToggle();
         intializeExpandNavigationButton();
+        initializeRGroups();
     });
 
     mw.hook( 've.deactivationComplete' ).add(function() {
