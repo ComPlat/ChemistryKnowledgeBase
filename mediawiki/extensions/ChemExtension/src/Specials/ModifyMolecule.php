@@ -21,7 +21,7 @@ class ModifyMolecule extends SpecialPage
 
     public function __construct()
     {
-        parent::__construct('ModifyMolecule', 'delete');
+        parent::__construct('ModifyMolecule', 'modifyMolecule');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $this->blade = new Blade ($views, $cache);

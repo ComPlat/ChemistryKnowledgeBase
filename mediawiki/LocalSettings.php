@@ -152,6 +152,7 @@ $wgGroupPermissions['*']['read'] = true;
 $wgGroupPermissions['*']['edit'] = true;
 $wgGroupPermissions['user']['read'] = true;
 $wgGroupPermissions['contributor']['edit'] = true;
+$wgGroupPermissions['editor']['modifyMolecule'] = true;
 
 $wgHTTPTimeout = 60;
 $wgIgnoreImageErrors=true;
