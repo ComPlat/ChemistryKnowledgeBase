@@ -15,6 +15,7 @@ return array(
     'Less' => array($vendorDir . '/wikimedia/less.php/lib'),
     'Kafka\\' => array($vendorDir . '/nmred/kafka-php/src'),
     'JsonMapper' => array($vendorDir . '/netresearch/jsonmapper/src'),
+    'HTMLPurifier' => array($vendorDir . '/ezyang/htmlpurifier/library'),
     'Console' => array($vendorDir . '/pear/console_getopt'),
     'ComposerVendorHtaccessCreator' => array($baseDir . '/includes/composer'),
     'ComposerPhpunitXmlCoverageEdit' => array($baseDir . '/includes/composer'),

@@ -3,6 +3,7 @@
 namespace DIQA\InvestigationImport\Maintenance;
 
 
+use DIQA\InvestigationImport\Importer\ImportFileReader;
 use Maintenance;
 
 /**
@@ -21,6 +22,7 @@ class import extends \Maintenance
     {
         parent::__construct();
         $this->addDescription('Imports investigations');
+        $this->addOption('f', 'file to import', true, true);
     }
 
     public function getDbType()
@@ -30,9 +32,10 @@ class import extends \Maintenance
 
     public function execute()
     {
-        print "\nDo something...";
-        print "\nfinished.";
-        print "\n";
+        $file = $this->getOption('f');
+        $reader = new ImportFileReader($file);
+        $reader->xml_parsing();
+
     }
 
 }
