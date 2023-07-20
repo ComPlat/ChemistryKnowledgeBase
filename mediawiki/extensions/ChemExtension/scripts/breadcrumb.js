@@ -2,6 +2,7 @@
     'use strict';
 
     let initialized = false;
+    let tools = new OO.VisualEditorTools();
 
     function initialize() {
 
@@ -29,10 +30,47 @@
             $('#ce-molecules-content').show();
             $('#ce-molecules-filter').show();
         });
+        if (mw.config.get('wgPageName').indexOf('Special:FormEdit') === -1) {
+            initializeNavbar();
+        }
         initializePublicationFilter();
         initializeInvestigationFilter();
         initializeMoleculesFilter();
         initialized = true;
+    }
+
+    let NAVBAR_STATUS_COOKIE = mw.config.get('wgCookiePrefix') + 'mw.chem-extension.navbar-expanded';
+
+    function initializeNavbar() {
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) === 'expanded') {
+            expandNavbar();
+        } else {
+            collapseNavbar();
+        }
+        $('#ce-side-panel-content-collapsed').click((e) => {
+            expandNavbar();
+        });
+        $('#ce-side-panel-close-button').click(function() {
+           collapseNavbar();
+        });
+    }
+
+    function expandNavbar() {
+        $('#ce-side-panel-content-collapsed').hide();
+        $('#ce-side-panel-content').show();
+        $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'expanded') {
+            tools.createCookie(NAVBAR_STATUS_COOKIE, 'expanded');
+        }
+    }
+
+    function collapseNavbar() {
+        $('#ce-side-panel-content-collapsed').show();
+        $('#ce-side-panel-content').hide();
+        $('div.container-fluid div.row').attr('style', 'margin-left: 40px !important;');
+        if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'collapsed') {
+            tools.createCookie(NAVBAR_STATUS_COOKIE, 'collapsed');
+        }
     }
 
     function initializePublicationFilter() {
@@ -84,7 +122,7 @@
     function searchForInvestigation(input) {
         let ajax = new window.ChemExtension.AjaxEndpoints();
         input.pushPending();
-        let pageTitle = mw.config.get('wgTitle');
+        let pageTitle = mw.config.get('wgPageName');
         ajax.getInvestigations(pageTitle, input.getValue()).done((result) => {
             input.popPending();
             let list = $('#ce-investigation-list');

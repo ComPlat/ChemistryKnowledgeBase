@@ -1,0 +1,8 @@
+http://purl.obolibrary.org/obo/|[http://purl.obolibrary.org/obo/ Chemical Methods Ontology]
+ CHMO_0002740|Type:Page
+ CHMO_0002783|Type:String
+ CHMO_0002346|Type:String
+ CHMO_0002358|Type:String
+ CHMO_0002345|Type:String
+
+[[Category:Imported vocabulary]]

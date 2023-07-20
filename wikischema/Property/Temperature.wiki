@@ -9,3 +9,6 @@
 
 ; Label
 * [[Has preferred property label::T [°C]@en]]
+
+
+[[Imported from::ncit:NCIT_C25206]]

@@ -51,11 +51,12 @@ class ExperimentListRenderer extends ExperimentRenderer {
             }
         });
 
-        $cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-        $html = $cache->getWithSetCallback(md5($text), 20, function() use($text, $pageTitle){
-            $parser = new Parser();
-            $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
-            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $cache = MediaWikiServices::getInstance()->getMainObjectStash();
+        $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($text)), $cache::TTL_DAY,
+            function() use($text, $pageTitle){
+                $parser = new Parser();
+                $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
+                return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 
         $htmlTableEditor = new HtmlTableEditor($html, $this->context);
@@ -66,9 +67,7 @@ class ExperimentListRenderer extends ExperimentRenderer {
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, $this->context);
             $htmlTableEditor->removeEmptyColumns();
-            if ($wgCEHiddenColumns ?? false) {
-                $htmlTableEditor->collapseColumns();
-            }
+
             $htmlTableEditor->addIndexAsFirstColumn();
             if (!WikiTools::isInVisualEditor()) {
                 if ($tab !== '') {

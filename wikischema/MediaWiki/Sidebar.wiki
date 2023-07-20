@@ -12,6 +12,7 @@
 ** Integrate Space in Main Wiki|Integrate Space in Main Wiki
 ** User Management|User Management
 ** Special:SpecialPages|Special Pages
+** Special:ModifyMolecule|Modify molecules
 * Help
 ** Help:Getting Started|Getting Started
 ** Help:Creating a Private Space|Creating a Private Space

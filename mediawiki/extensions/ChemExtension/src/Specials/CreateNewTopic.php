@@ -132,7 +132,10 @@ class CreateNewTopic extends PageCreationSpecial
         }
 
         $topicTitleObj = Title::newFromText($topicTitle, NS_CATEGORY);
-        $topicSuper = $wgRequest->getText('topic-super', 'Topic');
+        $topicSuper = $wgRequest->getText('topic-super');
+        if (is_null($topicSuper) || $topicSuper === '') {
+            $topicSuper = 'Topic';
+        }
         $this->createPageAndRedirect($topicTitleObj, $topicSuper);
 
     }

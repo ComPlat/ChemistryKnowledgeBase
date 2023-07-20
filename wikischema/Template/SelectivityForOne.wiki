@@ -1,0 +1,8 @@
+<noinclude>
+Selectivity for one element
+</noinclude>
+<includeonly>
+{{#ifeq:{{#expr: {{{2|0}}} + {{{3|0}}} + {{{4|0}}} + {{{5|0}}} + {{{6|0}}} }}|0
+||{{#expr:  ({{{1|0}}} / ({{{2|0}}} + {{{3|0}}} + {{{4|0}}} + {{{5|0}}} + {{{6|0}}})) * 100 round 1 }}
+}}
+</includeonly>

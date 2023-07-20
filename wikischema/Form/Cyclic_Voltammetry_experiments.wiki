@@ -12,13 +12,16 @@ experiments:
 {{{for template|Cyclic Voltammetry|multiple|embed in field=Cyclic Voltammetry experiments[experiments]}}}
 {| class="formtable"
 ! analyte (catalyst):
-| {{{field|anl|input type=combobox|property=Analyte|values from category=Molecule}}}
+| {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
 |-
 ! analyte concentration [mM]:
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! redox potential:
 | {{{field|redox potential|input type=regexp|base type=string|message=Input value pairs according to the format description|regexp=/(^$)!(^(([+-]?([0-9]*\.)?[0-9]*)?,([+-]?([0-9]*\.)?[0-9]*)?)(;(([+-]?([0-9]*\.)?[0-9]*)?,([+-]?([0-9]*\.)?[0-9]*)?))*$)/}}}
+|-
+|
+| (''Format'': value pairs &lt;v1&gt;,&lt;v2&gt; separated by a semicolon. Values can be empty. ''For example'': 1,2 or 1, or 1,2;,4)
 |-
 ! solvent:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
@@ -27,7 +30,7 @@ experiments:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! electrolyte:
-| {{{field|electrolyte|property=Electrolyte|input type=string}}}
+| {{{field|electrolyte|property=Electrolyte|input type=dropdown}}}
 |-
 ! electrolyte concentration [M]:
 | {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
@@ -48,7 +51,7 @@ experiments:
 | {{{field|scan dir|property=Scan direction|input type=dropdown}}}
 |-
 ! gas (atmosphere):
-| {{{field|gas|property=Gas|input type=string}}}
+| {{{field|gas|property=Gas|input type=dropdown}}}
 |-
 ! temperature [° C]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
@@ -56,14 +59,14 @@ experiments:
 ! condition (wavelength [nm] or dark):
 | {{{field|cond|property=Condition|input type=string}}}
 |-
-! working electrode (type and material):
-| {{{field|WE|property=Working electrode|input type=string}}}
+! working electrode:
+| {{{field|WE|property=Working electrode|input type=dropdown}}}
 |-
 ! WE surface area [mm²]:
 | {{{field|WE area|property=Working electrode surface area|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! counter electrode:
-| {{{field|CE|property=Counter electrode|input type=string}}}
+| {{{field|CE|property=Counter electrode|input type=dropdown}}}
 |-
 ! reference electrode:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}

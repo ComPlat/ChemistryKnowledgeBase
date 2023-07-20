@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains a string describing the illumination condition used in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::string]].
+
+; Values
+* A String.

@@ -10,3 +10,4 @@
 ; Values
 * Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].
 
+[[Imported from::chebi:CHEBI_46787]]

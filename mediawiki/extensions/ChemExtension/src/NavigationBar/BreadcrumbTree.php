@@ -23,7 +23,7 @@ class BreadcrumbTree
         $reversePaths = array_map(function ($e) {
             return array_reverse($e);
         }, $paths);
-        $this->tree = $this->buildTreeFromPaths($reversePaths);
+        $this->tree = $this->buildTreeFromPaths($reversePaths, $this->title);
     }
 
     public function getTree(): TreeNode
@@ -43,9 +43,9 @@ class BreadcrumbTree
         }
     }
 
-    private function buildTreeFromPaths($paths): TreeNode
+    private function buildTreeFromPaths($paths, $title): TreeNode
     {
-        $tree = new TreeNode();
+        $tree = new TreeNode($title);
         foreach ($paths as $path) {
             $node = $tree;
             foreach ($path as $category) {
@@ -112,24 +112,19 @@ class TreeNode {
     public function serialize() {
         $list = new Tag('ul');
         $list->addClasses(['ce-breadcrumb']);
-        $this->serialize_(0, $list);
+        if ($this->isLeaf()) {
+            $li = $this->createListItem($this->title, 0);
+            $list->appendContent($li);
+        } else {
+            $this->serialize_(0, $list);
+        }
         return $list;
     }
 
     private function serialize_($indentation, Tag $list) {
 
         foreach($this->children as $c) {
-
-            $li = new Tag('li');
-            $typeHint = new Tag('span');
-            $type = NavigationBar::getCssType($c->getTitle());
-            $li->setAttributes(['style' => "margin-left: {$indentation}px"]);
-            $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
-
-            $a = new Tag('a');
-            $a->appendContent($c->getTitle()->getText());
-            $a->setAttributes(['href' => $c->getTitle()->getFullURL()]);
-            $li->appendContent($a);
+            $li = $this->createListItem($c->getTitle(), $indentation);
             $list->appendContent($li);
             $c->serialize_($indentation + 10, $list);
         }
@@ -144,6 +139,33 @@ class TreeNode {
             $c->visitNodes($action);
             $action($c);
         }
+    }
+
+
+    private function createTitleLink($title): Tag
+    {
+        $a = new Tag('a');
+        $a->appendContent($title->getText());
+        $a->setAttributes(['href' => $title->getFullURL()]);
+        return $a;
+    }
+
+    /**
+     * @param $c
+     * @param $indentation
+     * @return Tag
+     */
+    private function createListItem($c, $indentation): Tag
+    {
+        $li = new Tag('li');
+        $typeHint = new Tag('span');
+        $type = NavigationBar::getCssType($c);
+        $li->setAttributes(['style' => "margin-left: {$indentation}px"]);
+        $li->appendContent($typeHint->addClasses(["ce-page-type-$type", 'ce-type-hint']));
+
+        $a = $this->createTitleLink($c);
+        $li->appendContent($a);
+        return $li;
     }
 
 }

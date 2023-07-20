@@ -8,6 +8,7 @@ class ComposerStaticInit_mediawiki_vendor
 {
     public static $files = array (
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
+        '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
@@ -15,7 +16,6 @@ class ComposerStaticInit_mediawiki_vendor
         '2b9d0f43f9552984cfa82fee95491826' => __DIR__ . '/..' . '/sabre/event/lib/coroutine.php',
         'd81bab31d3feb45bfe2f283ea3c8fdf7' => __DIR__ . '/..' . '/sabre/event/lib/Loop/functions.php',
         'a1cce3d26cc15c00fcd0b3354bd72c88' => __DIR__ . '/..' . '/sabre/event/lib/Promise/functions.php',
-        '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
@@ -57,6 +57,7 @@ class ComposerStaticInit_mediawiki_vendor
         array (
             'Wikimedia\\Zest\\' => 15,
             'Wikimedia\\XMPReader\\' => 20,
+            'Wikimedia\\WikiPEG\\' => 18,
             'Wikimedia\\Timestamp\\' => 20,
             'Wikimedia\\Services\\' => 19,
             'Wikimedia\\Purtle\\Tests\\' => 23,
@@ -68,7 +69,6 @@ class ComposerStaticInit_mediawiki_vendor
             'Wikimedia\\AtEase\\' => 17,
             'Wikimedia\\Assert\\' => 17,
             'Wikimedia\\' => 10,
-            'WikiPEG\\Tests\\' => 14,
             'WikiPEG\\' => 8,
             'Webmozart\\Assert\\' => 17,
             'WMDE\\HamcrestHtml\\' => 18,
@@ -144,6 +144,7 @@ class ComposerStaticInit_mediawiki_vendor
             'Microsoft\\PhpParser\\' => 20,
             'MediaWiki\\' => 10,
             'MediaWikiPhanConfig\\' => 20,
+            'ML\\JsonLD\\' => 10,
         ),
         'L' => 
         array (
@@ -231,6 +232,10 @@ class ComposerStaticInit_mediawiki_vendor
         array (
             0 => __DIR__ . '/..' . '/wikimedia/xmp-reader/src',
         ),
+        'Wikimedia\\WikiPEG\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/wikimedia/wikipeg/src',
+        ),
         'Wikimedia\\Timestamp\\' => 
         array (
             0 => __DIR__ . '/..' . '/wikimedia/timestamp/src',
@@ -279,10 +284,6 @@ class ComposerStaticInit_mediawiki_vendor
             3 => __DIR__ . '/..' . '/wikimedia/scoped-callback/src',
             4 => __DIR__ . '/..' . '/wikimedia/testing-access-wrapper/src',
             5 => __DIR__ . '/..' . '/wikimedia/wrappedstring/src',
-        ),
-        'WikiPEG\\Tests\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/wikimedia/wikipeg/tests/php',
         ),
         'WikiPEG\\' => 
         array (
@@ -515,6 +516,10 @@ class ComposerStaticInit_mediawiki_vendor
         array (
             0 => __DIR__ . '/..' . '/mediawiki/mediawiki-phan-config/src',
         ),
+        'ML\\JsonLD\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/ml/json-ld',
+        ),
         'LightnCandy\\' => 
         array (
             0 => __DIR__ . '/..' . '/zordius/lightncandy/src',
@@ -699,6 +704,10 @@ class ComposerStaticInit_mediawiki_vendor
             array (
                 0 => __DIR__ . '/..' . '/pear/mail',
                 1 => __DIR__ . '/..' . '/pear/mail_mime',
+            ),
+            'ML\\IRI' => 
+            array (
+                0 => __DIR__ . '/..' . '/ml/iri',
             ),
         ),
         'L' => 
@@ -959,6 +968,7 @@ class ComposerStaticInit_mediawiki_vendor
         'Composer\\Installers\\OsclassInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/OsclassInstaller.php',
         'Composer\\Installers\\OxidInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/OxidInstaller.php',
         'Composer\\Installers\\PPIInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/PPIInstaller.php',
+        'Composer\\Installers\\PantheonInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/PantheonInstaller.php',
         'Composer\\Installers\\PhiftyInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/PhiftyInstaller.php',
         'Composer\\Installers\\PhpBBInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/PhpBBInstaller.php',
         'Composer\\Installers\\PimcoreInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/PimcoreInstaller.php',
@@ -1100,6 +1110,7 @@ class ComposerStaticInit_mediawiki_vendor
         'Doctrine\\Common\\Cache\\Psr6\\CacheItem' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/Psr6/CacheItem.php',
         'Doctrine\\Common\\Cache\\Psr6\\DoctrineProvider' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/Psr6/DoctrineProvider.php',
         'Doctrine\\Common\\Cache\\Psr6\\InvalidArgument' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/Psr6/InvalidArgument.php',
+        'Doctrine\\Common\\Cache\\Psr6\\TypedCacheItem' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/Psr6/TypedCacheItem.php',
         'Doctrine\\Common\\Cache\\RedisCache' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/RedisCache.php',
         'Doctrine\\Common\\Cache\\SQLite3Cache' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/SQLite3Cache.php',
         'Doctrine\\Common\\Cache\\Version' => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache/Version.php',
@@ -2402,6 +2413,42 @@ class ComposerStaticInit_mediawiki_vendor
         'Liuggio\\StatsdClient\\Service\\StatsdService' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/Service/StatsdService.php',
         'Liuggio\\StatsdClient\\StatsdClient' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/StatsdClient.php',
         'Liuggio\\StatsdClient\\StatsdClientInterface' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/StatsdClientInterface.php',
+        'ML\\IRI\\IRI' => __DIR__ . '/..' . '/ml/iri/ML/IRI/IRI.php',
+        'ML\\IRI\\Test\\IriTest' => __DIR__ . '/..' . '/ml/iri/ML/IRI/Test/IriTest.php',
+        'ML\\JsonLD\\DefaultDocumentFactory' => __DIR__ . '/..' . '/ml/json-ld/DefaultDocumentFactory.php',
+        'ML\\JsonLD\\Document' => __DIR__ . '/..' . '/ml/json-ld/Document.php',
+        'ML\\JsonLD\\DocumentFactoryInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentFactoryInterface.php',
+        'ML\\JsonLD\\DocumentInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentInterface.php',
+        'ML\\JsonLD\\DocumentLoaderInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentLoaderInterface.php',
+        'ML\\JsonLD\\Exception\\InvalidQuadException' => __DIR__ . '/..' . '/ml/json-ld/Exception/InvalidQuadException.php',
+        'ML\\JsonLD\\Exception\\JsonLdException' => __DIR__ . '/..' . '/ml/json-ld/Exception/JsonLdException.php',
+        'ML\\JsonLD\\FileGetContentsLoader' => __DIR__ . '/..' . '/ml/json-ld/FileGetContentsLoader.php',
+        'ML\\JsonLD\\Graph' => __DIR__ . '/..' . '/ml/json-ld/Graph.php',
+        'ML\\JsonLD\\GraphInterface' => __DIR__ . '/..' . '/ml/json-ld/GraphInterface.php',
+        'ML\\JsonLD\\JsonLD' => __DIR__ . '/..' . '/ml/json-ld/JsonLD.php',
+        'ML\\JsonLD\\JsonLdSerializable' => __DIR__ . '/..' . '/ml/json-ld/JsonLdSerializable.php',
+        'ML\\JsonLD\\LanguageTaggedString' => __DIR__ . '/..' . '/ml/json-ld/LanguageTaggedString.php',
+        'ML\\JsonLD\\NQuads' => __DIR__ . '/..' . '/ml/json-ld/NQuads.php',
+        'ML\\JsonLD\\Node' => __DIR__ . '/..' . '/ml/json-ld/Node.php',
+        'ML\\JsonLD\\NodeInterface' => __DIR__ . '/..' . '/ml/json-ld/NodeInterface.php',
+        'ML\\JsonLD\\Processor' => __DIR__ . '/..' . '/ml/json-ld/Processor.php',
+        'ML\\JsonLD\\Quad' => __DIR__ . '/..' . '/ml/json-ld/Quad.php',
+        'ML\\JsonLD\\QuadParserInterface' => __DIR__ . '/..' . '/ml/json-ld/QuadParserInterface.php',
+        'ML\\JsonLD\\QuadSerializerInterface' => __DIR__ . '/..' . '/ml/json-ld/QuadSerializerInterface.php',
+        'ML\\JsonLD\\RdfConstants' => __DIR__ . '/..' . '/ml/json-ld/RdfConstants.php',
+        'ML\\JsonLD\\RemoteDocument' => __DIR__ . '/..' . '/ml/json-ld/RemoteDocument.php',
+        'ML\\JsonLD\\Test\\DocumentTest' => __DIR__ . '/..' . '/ml/json-ld/Test/DocumentTest.php',
+        'ML\\JsonLD\\Test\\EarlReportGenerator' => __DIR__ . '/..' . '/ml/json-ld/Test/EarlReportGenerator.php',
+        'ML\\JsonLD\\Test\\FileGetContentsLoaderTest' => __DIR__ . '/..' . '/ml/json-ld/Test/FileGetContentsLoaderTest.php',
+        'ML\\JsonLD\\Test\\GraphTest' => __DIR__ . '/..' . '/ml/json-ld/Test/GraphTest.php',
+        'ML\\JsonLD\\Test\\JsonLDApiTest' => __DIR__ . '/..' . '/ml/json-ld/Test/JsonLDApiTest.php',
+        'ML\\JsonLD\\Test\\JsonTestCase' => __DIR__ . '/..' . '/ml/json-ld/Test/JsonTestCase.php',
+        'ML\\JsonLD\\Test\\NQuadsTest' => __DIR__ . '/..' . '/ml/json-ld/Test/NQuadsTest.php',
+        'ML\\JsonLD\\Test\\TestManifestIterator' => __DIR__ . '/..' . '/ml/json-ld/Test/TestManifestIterator.php',
+        'ML\\JsonLD\\Test\\ValueTest' => __DIR__ . '/..' . '/ml/json-ld/Test/ValueTest.php',
+        'ML\\JsonLD\\Test\\W3CTestSuiteTest' => __DIR__ . '/..' . '/ml/json-ld/Test/W3CTestSuiteTest.php',
+        'ML\\JsonLD\\TypedValue' => __DIR__ . '/..' . '/ml/json-ld/TypedValue.php',
+        'ML\\JsonLD\\Value' => __DIR__ . '/..' . '/ml/json-ld/Value.php',
         'Mail' => __DIR__ . '/..' . '/pear/mail/Mail.php',
         'Mail_RFC822' => __DIR__ . '/..' . '/pear/mail/Mail/RFC822.php',
         'Mail_mail' => __DIR__ . '/..' . '/pear/mail/Mail/mail.php',
@@ -5550,12 +5597,15 @@ class ComposerStaticInit_mediawiki_vendor
         'Serializers\\Serializer' => __DIR__ . '/..' . '/serialization/serialization/src/Serializers/Serializer.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'Symfony\\Component\\Console\\Application' => __DIR__ . '/..' . '/symfony/console/Application.php',
+        'Symfony\\Component\\Console\\Attribute\\AsCommand' => __DIR__ . '/..' . '/symfony/console/Attribute/AsCommand.php',
+        'Symfony\\Component\\Console\\CI\\GithubActionReporter' => __DIR__ . '/..' . '/symfony/console/CI/GithubActionReporter.php',
         'Symfony\\Component\\Console\\Color' => __DIR__ . '/..' . '/symfony/console/Color.php',
         'Symfony\\Component\\Console\\CommandLoader\\CommandLoaderInterface' => __DIR__ . '/..' . '/symfony/console/CommandLoader/CommandLoaderInterface.php',
         'Symfony\\Component\\Console\\CommandLoader\\ContainerCommandLoader' => __DIR__ . '/..' . '/symfony/console/CommandLoader/ContainerCommandLoader.php',
         'Symfony\\Component\\Console\\CommandLoader\\FactoryCommandLoader' => __DIR__ . '/..' . '/symfony/console/CommandLoader/FactoryCommandLoader.php',
         'Symfony\\Component\\Console\\Command\\Command' => __DIR__ . '/..' . '/symfony/console/Command/Command.php',
         'Symfony\\Component\\Console\\Command\\HelpCommand' => __DIR__ . '/..' . '/symfony/console/Command/HelpCommand.php',
+        'Symfony\\Component\\Console\\Command\\LazyCommand' => __DIR__ . '/..' . '/symfony/console/Command/LazyCommand.php',
         'Symfony\\Component\\Console\\Command\\ListCommand' => __DIR__ . '/..' . '/symfony/console/Command/ListCommand.php',
         'Symfony\\Component\\Console\\Command\\LockableTrait' => __DIR__ . '/..' . '/symfony/console/Command/LockableTrait.php',
         'Symfony\\Component\\Console\\Command\\SignalableCommandInterface' => __DIR__ . '/..' . '/symfony/console/Command/SignalableCommandInterface.php',

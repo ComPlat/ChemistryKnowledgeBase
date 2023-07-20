@@ -7,23 +7,44 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        $('th[collapsable]').click((e) => {
-            let th = $(e.target).empty();
+        $('table.wikitable:not(.infobox) th').click((e) => {
+            let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
             th.attr('collapsed', !collapsed);
             let table = th.closest('table');
             let columns = table.find('tr td:nth-child(' + whichChild(th) + ')', table);
             if (collapsed) {
-                th.append(th.attr('stashed'));
+                th.empty().append(th.attr('stashed'));
                 columns.removeClass('collapsed-column');
                 columns.each((i, e) => {
                     let el = $(e);
                     el.append(el.attr('stashed'));
                 });
             } else {
-                th.append('.');
+                th.attr('stashed', th.html());
+                columns.each((i, e) => {
+                    let el = $(e);
+                    el.attr('stashed', el.html());
+                });
+                th.empty().append('.');
                 columns.addClass('collapsed-column');
                 columns.empty();
+            }
+        });
+
+        $('span.experiment-link-show-button').click(function(e) {
+            let buttonLabel = $(e.target);
+            let button = buttonLabel.closest('span.experiment-link-show-button');
+            let id = button.attr('id');
+            let table = $('#'+id+'-table').find('table');
+            let visible = table.is(':visible');
+            if (visible) {
+                buttonLabel.text('Show table');
+                table.hide();
+            } else {
+                buttonLabel.text('Hide table');
+                table.show();
+
             }
         });
     }
@@ -61,13 +82,48 @@
         });
     }
 
+    function initializeRGroups() {
+        $('.rgroups-button').click((e)=> {
+            let target = $(e.target);
+            let moleculeKey = target.attr('moleculekey');
+            let pageid = target.attr('pageid');
+
+            let draggable = $('<div>').addClass('ui-widget-content rgroup-draggable');
+            let myDialog = new window.parent.ChemExtension.ShowGroupsDialog( {
+                size: 'large'
+            }, draggable );
+            myDialog.initialize({moleculeKey: moleculeKey, pageid: pageid});
+
+            draggable.css({
+                top: getScrollPos() + Math.floor((window.parent.innerHeight - 450) / 2),
+                left: Math.floor((window.parent.innerWidth - 1000) / 2)
+            });
+            draggable.draggable();
+            ;
+            $('body').prepend($('<div>').height('0px').append(draggable));
+        });
+    }
+
+    function getScrollPos() {
+
+        let doc = window.document.documentElement;
+        return (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+
+    }
+
     $(function() {
         initialize();
         initializeToggleBoxes();
         initializeDOIInfoBoxToggle();
         intializeExpandNavigationButton();
+        initializeRGroups();
     });
 
+    mw.hook( 've.deactivationComplete' ).add(function() {
+        initialize();
+        initializeToggleBoxes();
+        initializeDOIInfoBoxToggle();
+    });
     mw.hook( 'postEdit' ).add(function() {
         initialize();
         initializeToggleBoxes();

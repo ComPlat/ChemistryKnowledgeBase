@@ -48,6 +48,7 @@ class MultiContentSave
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($article->getTitle());
+        $repo->deleteAllConcreteMoleculeByMoleculePage($article->getTitle());
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
             $repo->deleteChemForm($article->getTitle()->getText());

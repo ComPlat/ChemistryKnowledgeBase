@@ -95,6 +95,9 @@ class MolfileProcessor
         $key = $inchiKey;
         if (is_null($inchiKey) || $inchiKey === '') {
             $key = $smiles . implode('', MolfileProcessor::getRGroupIds($formula));
+            if (mb_strlen($key) > 255) {
+                $key = md5($key);
+            }
         }
         return $key;
     }

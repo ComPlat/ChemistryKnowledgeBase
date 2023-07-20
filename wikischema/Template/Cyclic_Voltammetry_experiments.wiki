@@ -5,8 +5,7 @@ This is the Cyclic Voltammetry experiments template.
 <tr>
 <th title="analyte (catalyst)">analyte</th>
 <th title="analyte concentration [mM]">anl conc [mM]</th>
-<th title="Oxidation potential">E0 ox [V]</th>
-<th title="Reduction potential">E0 red [V]</th>
+<th title="Redox potential">redox potential</th>
 <th title="solvent">solvent</th>
 <th title="solvent volume [ml]" property="hidden">solvent vol [ml]</th>
 <th title="electrolyte">electrolyte</th>
@@ -29,4 +28,5 @@ This is the Cyclic Voltammetry experiments template.
 </table>
 {{#set: BelongsToPublication={{BASEPAGENAME}} }}
 [[Category:Cyclic Voltammetry experiments]]
+[[Category:Assay]]
 [[Category:Investigation]]</includeonly>

@@ -12,42 +12,50 @@ class HtmlTableEditor
     private $doc;
     private $context;
 
+    private $innerTables;
+
     public function __construct($tableHtml, $context)
     {
         $this->doc = new DOMDocument();
         $this->doc->loadHTML(mb_convert_encoding($tableHtml, 'HTML-ENTITIES', 'UTF-8'));
         $this->context = $context;
+        $this->replaceInnerTables();
     }
 
-    public function retainRows($rowIndices)
-    {
+    private function replaceInnerTables() {
+        $this->innerTables = [];
         $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//tr');
-        $toRemove = [];
+        $list = $xpath->query('//table[@inner]');
         $i = 0;
-        foreach ($list as $tr) {
-            if ($i == 0) {
-                $i++;
-                continue; // skip header
-            }
-            if (!in_array($i, $rowIndices)) {
-                $toRemove[] = $tr;
-            }
+        foreach ($list as $table) {
+            $replaceElement = $this->doc->createElement("span", "element_$i");
+            $replaceElement->setAttribute('inner', "element_$i");
+            $table->parentNode->replaceChild($replaceElement, $table);
+            $this->innerTables["element_$i"] = $table;
             $i++;
         }
-        foreach ($toRemove as $tr) {
-            try {
-                $tr->parentNode->removeChild($tr);
-            } catch (DOMException $e) {
-            }
-        }
-
     }
+
+    private function restoreInnerTables() {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//span[@inner]');
+        foreach ($list as $span) {
+            $innerValue = $span->getAttribute('inner');
+            $span->parentNode->replaceChild($this->innerTables[$innerValue], $span);
+        }
+        global $wgCEHiddenColumns;
+        if ($wgCEHiddenColumns ?? false) {
+            $this->collapseColumns();
+        }
+    }
+
 
     /**
      * Collapses columns which are annotated with property="hidden"
      * Table header content is moved to attribute "about" and content is replaced with "..."
-     * Table column content is put in a hidden span
+     * Table column content is put in a hidden span.
+     *
+     * Method is idem-potent
      */
     public function collapseColumns()
     {
@@ -56,6 +64,7 @@ class HtmlTableEditor
         $i = 0;
         foreach ($list as $td) {
             $i++;
+            if ($td->getAttribute('stashed') !== '') continue;
             $td->setAttribute('stashed', $this->getHtmlFromNode($td));
             $propertyAttribute = $td->getAttribute('property');
             if ($propertyAttribute == '') {
@@ -69,6 +78,7 @@ class HtmlTableEditor
 
         $list = $xpath->query('//th');
         foreach ($list as $td) {
+            if ($td->getAttribute('stashed') !== '') continue;
             $propertyAttribute = $td->getAttribute('property');
             $td->setAttribute('stashed', $this->getHtmlFromNode($td));
             $td->setAttribute('collapsed', $propertyAttribute === 'hidden' ? 'true' : 'false');
@@ -224,7 +234,7 @@ class HtmlTableEditor
         foreach ($list as $tr) {
             if ($i === 0) {
                 $td = $this->doc->createElement('th');
-                $text = $this->doc->createTextNode("Publication page");
+                $text = $this->doc->createTextNode("lit");
                 $td->appendChild($text);
                 $tr->appendChild($td);
                 $i++;
@@ -239,6 +249,44 @@ class HtmlTableEditor
             if ($link === false) break;
         }
 
+    }
+
+    public function hideAllRowsExceptFirst()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+
+        foreach ($list as $tr) {
+            if ($i === 0) {
+                $i++;
+                continue;
+            }
+            $tr->setAttribute('style', 'display:none;');
+        }
+    }
+
+    public function addTableClass($class)
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//table');
+        foreach ($list as $t) {
+            $oldClass = $t->getAttribute('class');
+            if (is_null($oldClass)) {
+                $t->setAttribute('class', $class);
+            } else {
+                $t->setAttribute('class', "$oldClass $class");
+            }
+        }
+    }
+
+    public function hideTables()
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//table');
+        foreach ($list as $t) {
+            $t->setAttribute('style', 'display:none;');
+        }
     }
 
     public function getNumberOfRows()
@@ -294,7 +342,7 @@ class HtmlTableEditor
     {
         $node = $this->doc->documentElement
             ->firstChild->firstChild; // ignore html/body
-
+        $this->restoreInnerTables();
         return $this->doc->saveHTML($node);
     }
 }
