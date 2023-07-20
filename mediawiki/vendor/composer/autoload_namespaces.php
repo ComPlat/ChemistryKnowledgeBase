@@ -10,6 +10,7 @@ return array(
     'Pimple' => array($vendorDir . '/pimple/pimple/src'),
     'Net' => array($vendorDir . '/pear/net_smtp', $vendorDir . '/pear/net_socket'),
     'Mail' => array($vendorDir . '/pear/mail', $vendorDir . '/pear/mail_mime'),
+    'ML\\IRI' => array($vendorDir . '/ml/iri'),
     'Liuggio' => array($vendorDir . '/liuggio/statsd-php-client/src'),
     'Less' => array($vendorDir . '/wikimedia/less.php/lib'),
     'Kafka\\' => array($vendorDir . '/nmred/kafka-php/src'),
