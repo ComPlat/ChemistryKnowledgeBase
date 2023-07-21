@@ -42,7 +42,8 @@
         "chem_catviewer_instances": "DIQA\\ChemExtension\\Setup::categoryViewerInstance",
         "chem_catviewer_category": "DIQA\\ChemExtension\\Setup::categoryViewerCategory",
         "chem_categorylist": "DIQA\\ChemExtension\\Setup::categoryList",
-        "chem_category_count": "DIQA\\ChemExtension\\Setup::categoryCount"
+        "chem_category_count": "DIQA\\ChemExtension\\Setup::categoryCount",
+        "SkinTemplateNavigation::Universal": "DIQA\\ChemExtension\\Setup::onSkinTemplateNavigation"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"

@@ -112,6 +112,16 @@ class Setup {
         );
     }
 
+    public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
+        global $wgTitle, $wgScriptPath;
+        if (is_null($wgTitle)) {
+            return;
+        }
+        $links[ 'actions' ][] = [
+            'text' => "Export as JSON-LD", 'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=".urlencode($wgTitle->getText())
+			];
+    }
+
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
 

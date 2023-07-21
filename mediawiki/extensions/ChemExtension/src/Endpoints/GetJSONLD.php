@@ -41,7 +41,12 @@ class GetJSONLD extends SimpleHandler
             foreach ($subObjects as $subObject) {
                 $this->serializeSubject($subObject);
             }
-            return JsonLD::fromRdf($this->NQuadProducer->getQuads());
+            $jsonLD = JsonLD::fromRdf($this->NQuadProducer->getQuads());
+            $res = new Response(JsonLD::toString($jsonLD, true));
+            $res->addHeader('Content-Type', 'application/json');
+            $contentDisposition = sprintf('attachment; filename="%s_%s.json"', $title->getDBkey(), date("Ymd_His"));
+            $res->addHeader('Content-Disposition', $contentDisposition);
+            return $res;
 
         } catch (Exception $e) {
             $res = new Response($e->getMessage());
