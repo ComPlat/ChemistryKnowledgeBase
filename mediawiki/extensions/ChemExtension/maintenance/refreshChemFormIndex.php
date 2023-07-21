@@ -55,7 +55,7 @@ class refreshChemFormIndex extends Maintenance
      */
     private function printDocHeader()
     {
-        print "Refreshing all semantic data in the SOLR server!\n---\n" .
+        print "Refreshing all chemform indexes!\n---\n" .
             " Some versions of PHP suffer from memory leaks in long-running scripts.\n" .
             " If your machine gets very slow after many pages (typically more than\n" .
             " 1000) were refreshed, please abort with CTRL-C and resume this script\n" .
