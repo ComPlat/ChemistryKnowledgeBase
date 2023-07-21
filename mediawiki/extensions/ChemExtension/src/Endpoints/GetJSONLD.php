@@ -34,6 +34,9 @@ class GetJSONLD extends SimpleHandler
             if (is_null($title) || !$title->isValid()) {
                 throw new Exception("'page' parameter is invalid. Must be a wiki page title", 400);
             }
+            if (!$title->exists()) {
+                throw new Exception("page does not exist", 400);
+            }
             $pageAsDataItem = new DIWikiPage($title->getDBkey(), $title->getNamespace(), $title->getInterwiki());
             $this->serializeSubject($pageAsDataItem);
             $subObjects = QueryUtils::getPropertyValues($title, DIProperty::TYPE_SUBOBJECT);
@@ -44,7 +47,7 @@ class GetJSONLD extends SimpleHandler
             $jsonLD = JsonLD::fromRdf($this->NQuadProducer->getQuads());
             $res = new Response(JsonLD::toString($jsonLD, true));
             $res->addHeader('Content-Type', 'application/json');
-            $contentDisposition = sprintf('attachment; filename="%s_%s.json"', $title->getDBkey(), date("Ymd_His"));
+            $contentDisposition = sprintf('attachment; filename="%s_%s.json"', $title->getPrefixedDBkey(), date("Ymd_His"));
             $res->addHeader('Content-Disposition', $contentDisposition);
             return $res;
 

@@ -118,7 +118,8 @@ class Setup {
             return;
         }
         $links[ 'actions' ][] = [
-            'text' => "Export as JSON-LD", 'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=".urlencode($wgTitle->getText())
+            'text' => "Export as JSON-LD",
+            'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=".urlencode($wgTitle->getPrefixedText())
 			];
     }
 
