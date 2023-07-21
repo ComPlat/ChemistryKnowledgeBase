@@ -24,6 +24,7 @@ class refreshChemFormIndex extends Maintenance
         $this->addOption('n', 'Number of IDs from Start-ID', false, true);
         $this->addOption('f', 'End-ID by Pagename', false, true);
         $this->addOption('startidfile', 'File containing ID to start processing and saves last processed ID to this file', false, true);
+        $this->addOption('onlyexplink', 'Update only pages with #experimentlink parser function', false, false);
     }
 
     public function execute()
@@ -201,13 +202,14 @@ class refreshChemFormIndex extends Maintenance
 
         if (WikiTools::checkIfInTopicCategory($title)) {
             $text = WikiTools::getText($title);
+            if ($this->hasOption("onlyexplink") && strpos($text, '#experimentlink:') === false) {
+                return;
+            }
             $parser = new Parser();
             $parser->parse($text, $title, new ParserOptions());
             $mcs = new \DIQA\ChemExtension\MultiContentSave();
             $mcs->parseContentAndUpdateIndex($text, $title, false);
             print "\nrefresh:\t" . $title->getPrefixedText();
-        } else {
-            print "\nskip:\t" . $title->getPrefixedText();
         }
     }
 
