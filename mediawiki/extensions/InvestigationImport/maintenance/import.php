@@ -1,5 +1,6 @@
 <?php
 
+
 namespace DIQA\InvestigationImport\Maintenance;
 
 
@@ -8,11 +9,18 @@ use Maintenance;
 /**
  * Load the required class
  */
+// include_path ="mediawiki\extensions\InvestigationImport\src\Importer\ImportFileReader.php";
+
+include_once './../src/Importer/ImportFileReader.php';
+
+
 if (getenv('MW_INSTALL_PATH') !== false) {
     require_once getenv('MW_INSTALL_PATH') . '/maintenance/Maintenance.php';
 } else {
     require_once __DIR__ . '/../../../maintenance/Maintenance.php';
 }
+
+
 
 class import extends \Maintenance
 {
@@ -27,9 +35,17 @@ class import extends \Maintenance
     {
         return Maintenance::DB_ADMIN;
     }
-
-    public function execute()
-    {
+    public function call_xml_parsing($file_location){
+        $var_1 =new ImportFileReader();
+        $output = $var_1->xml_parsing($file_location);
+        echo get_class($output);
+        }
+    public function execute(){
+        echo get_class($this);
+        include_once './../src/Importer/ImportFileReader.php';
+        // echo(get_class_methods('ImportFileReader'));
+        // // xml_parsing("../xml_extr/CV_generic_dataset_withExValues.xlsx");
+        $this->call_xml_parsing("../xml_extr/CV_generic_dataset_withExValues.xlsx");
         print "\nDo something...";
         print "\nfinished.";
         print "\n";
