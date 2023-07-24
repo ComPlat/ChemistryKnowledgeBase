@@ -2,9 +2,10 @@
 
 namespace DIQA\ChemExtension\Endpoints;
 
-use DIQA\ChemExtension\Utils\QueryUtils;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
 use Philo\Blade\Blade;
+use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class GetPublications extends SimpleHandler
@@ -25,36 +26,43 @@ class GetPublications extends SimpleHandler
     {
 
         $params = $this->getValidatedParams();
-        $category = $params['category'];
-        $searchTerm = trim(strtolower($params['searchTerm'] ?? ''));
 
-        if ($searchTerm === '') {
-            $query = "[[Category:$category]]";
-        } else {
-            $query = "[[Category:$category]][[Display title of::~*$searchTerm*]]";
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+
+        if (isset($params['category'])) {
+            $category = $dbr->addQuotes(str_replace(' ','_', $params['category']));
+            $res = $dbr->select('page', 'page_id', "page_title = $category AND page_namespace = ".NS_CATEGORY);
+            if ($res->numRows() > 0) {
+                $row = $res->fetchObject();
+                $category_id = $row->page_id;
+            }
         }
 
-        $results = QueryUtils::executeBasicQuery(
-            $query,
-            [], ['limit' => 500]);
+        $searchtext = strtolower($params['searchTerm']);
+        $searchtext = $dbr->addQuotes("%$searchtext%");
 
-        $searchResults = [];
-        while ($row = $results->getNext()) {
-            $obj = [];
-            $column = reset($row);
-            $dataItem = $column->getNextDataItem();
-            $obj['title'] = $dataItem->getTitle();
-            $searchResults[] = $obj;
+        $conds = [
+            'page.page_id = page_props.pp_page',
+            "LOWER(CONVERT(pp_value USING latin1)) LIKE $searchtext"
+        ];
+        $tables = ['page_props', 'page'];
+        if (isset($category_id)) {
+            $tables[] = 'category_index';
+            $conds[] = "page.page_id = category_index.page_id AND category_index.category_id = $category_id";
+        }
+        $res = $dbr->select($tables, ['page_title', 'page_namespace'], $conds);
+        $results = [];
+        foreach ($res as $row) {
+            $title = Title::newFromText($row->page_title, $row->page_namespace);
+            $results[] = ['title' => $title ];
 
         }
-
-        $publicationList = $this->blade->view()->make("navigation.publication-list",
+        $html = $this->blade->view()->make("navigation.publication-list",
             [
-                'list' => $searchResults,
+                'list' => $results,
             ]
         )->render();
-
-        return ['html' => $publicationList];
+        return ['html' => $html];
     }
 
     public function needsWriteAccess()

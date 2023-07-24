@@ -1,0 +1,17 @@
+Index: mediawiki/extensions/SemanticMediaWiki/src/DataValues/ImportValue.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/SemanticMediaWiki/src/DataValues/ImportValue.php b/mediawiki/extensions/SemanticMediaWiki/src/DataValues/ImportValue.php
+--- a/mediawiki/extensions/SemanticMediaWiki/src/DataValues/ImportValue.php	(revision 3ce2086e39d9dbc2b46be99d6d63c9d03500aebd)
++++ b/mediawiki/extensions/SemanticMediaWiki/src/DataValues/ImportValue.php	(date 1683806975185)
+@@ -195,7 +195,7 @@
+ 	}
+ 
+ 	public function getNS() {
+-		return $this->uri;
++		return strpos($this->uri, "[") === 0 ? substr($this->uri, 1) : $this->uri;
+ 	}
+ 
+ 	public function getNSID() {

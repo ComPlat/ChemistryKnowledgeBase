@@ -24,19 +24,13 @@ class RenderFormula
 
     public static function renderFormula($formula, array $arguments, Parser $parser, PPFrame $frame): array
     {
-        global $wgScriptPath, $wgTitle;
+        global $wgTitle;
         $attributes = [];
 
-        $attributes['class'] = "chemformula";
         $attributes['width'] = $arguments['width'] ?? "300px";
         $attributes['height'] = $arguments['height'] ?? "200px";
-        $float = $arguments['float'] ?? 'none';
-
-        $attributes['style'] = "float: $float;";
-
-
-        $attributes['smiles'] = base64_encode($arguments['smiles'] ?? '');
-        $attributes['formula'] = base64_encode($formula);
+        $attributes['smiles'] = $arguments['smiles'] ?? '';
+        $attributes['formula'] = $formula;
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -51,38 +45,43 @@ class RenderFormula
                 return array('', 'noparse' => true, 'isHTML' => true);
             }
         }
-        $attributes['chemFormId'] = $chemFormId;
-
-        $attributes['downloadURL'] = $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey);
 
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
-        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle) ? 'true' : 'false';
+        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle);
 
-        $chemFormPage = MoleculePageCreationJob::getPageTitleToCreate($chemFormId, $formula);
-        $attributes['chemFormPageText'] = !is_null($chemFormPage) ? $chemFormPage->getText() : '';
+        $attributes['chemFormPage'] = MoleculePageCreationJob::getPageTitleToCreate($chemFormId, $formula);
+        $attributes['moleculeKey'] = $moleculeKey;
 
-        $queryString = http_build_query([
-            'width' => $attributes['width'],
-            'height' => $attributes['height'],
-            'moleculekey' => $moleculeKey,
-            'pageid' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
-            'chemformpage' => !is_null($chemFormPage) ? $chemFormPage->getPrefixedDBkey() : '',
-            'random' => uniqid()
-        ]);
-        global $wgScriptPath;
-        $attributes['src'] = "$wgScriptPath/extensions/ChemExtension/ketcher/index-formula.html?$queryString";
-        $serializedAttributes = self::serializeAttributes($attributes);
-        $output = self::renderFormulaInContext($moleculeKey, $formula, $arguments, $serializedAttributes);
+        $output = self::renderFormulaInContext($attributes);
 
         return array($output, 'noparse' => true, 'isHTML' => true);
     }
 
-    private static function renderFormulaInContext($moleculeKey, $formula, $arguments, $serializedAttributes): string
+    private static function renderFormulaInContext($attributes): string
     {
-        if ($moleculeKey != '' && self::imageNotExists($moleculeKey) && !WikiTools::isInVisualEditor()) {
-            $output = self::getRenderButton($moleculeKey, $formula);
+        if ($attributes['moleculeKey'] != '' && self::imageNotExists($attributes['moleculeKey']) && !WikiTools::isInVisualEditor()) {
+            $output = self::getRenderButton($attributes['moleculeKey'], $attributes['formula']);
         } else {
-            $output = "<iframe $serializedAttributes></iframe>";
+
+            $views = __DIR__ . '/../../views';
+            $cache = __DIR__ . '/../../cache';
+            $blade = new Blade ($views, $cache);
+
+            global $wgScriptPath, $wgTitle;
+            $output = $blade->view()->make("molecule",
+                [
+                    'url' => $attributes['chemFormPage']->getFullURL(),
+                    'label' => $attributes['chemFormPage']->getText(),
+                    'fullPageTitle' => $attributes['chemFormPage']->getPrefixedText(),
+                    'pageId' => $wgTitle->getArticleID(),
+                    'moleculeKey' => $attributes['moleculeKey'],
+                    'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($attributes['moleculeKey']),
+                    'width' => $attributes['width'],
+                    'height' => $attributes['height'],
+                    'showrgroups' => $attributes['showrgroups']
+                ]
+            )->render();
+
         }
         return $output;
     }

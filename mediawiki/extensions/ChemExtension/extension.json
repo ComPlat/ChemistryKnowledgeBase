@@ -20,7 +20,8 @@
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
         "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
         "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules",
-        "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems"
+        "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
+        "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule"
 
     },
     "AutoloadNamespaces": {
@@ -37,7 +38,11 @@
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
         "CollectMolecules": "DIQA\\ChemExtension\\MultiContentSave::collectMolecules",
         "SkinAfterContent": "DIQA\\ChemExtension\\Setup::onSkinAfterContent",
-        "ExtendSubtitle": "DIQA\\ChemExtension\\Setup::extendSubtitle"
+        "ExtendSubtitle": "DIQA\\ChemExtension\\Setup::extendSubtitle",
+        "chem_catviewer_instances": "DIQA\\ChemExtension\\Setup::categoryViewerInstance",
+        "chem_catviewer_category": "DIQA\\ChemExtension\\Setup::categoryViewerCategory",
+        "chem_categorylist": "DIQA\\ChemExtension\\Setup::categoryList",
+        "chem_category_count": "DIQA\\ChemExtension\\Setup::categoryCount"
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"
@@ -62,6 +67,11 @@
             "path": "/ChemExtension/v1/chemform/upload",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\UploadChemFormImage"
+        },
+        {
+            "path": "/ChemExtension/v1/chemform/replace",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\ReplaceChemFormImage"
         },
         {
             "path": "/ChemExtension/v1/chemform",
@@ -115,6 +125,10 @@
             "path": "/ChemExtension/v1/chemform/rgroups-available",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetAvailableRGroups"
+        },{
+            "path": "/ChemExtension/v1/json-ld",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetJSONLD"
         }
 
     ],
@@ -122,7 +136,8 @@
         "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
         "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
-        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob"
+        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob",
+        "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob"
     },
     "manifest_version": 2
 }

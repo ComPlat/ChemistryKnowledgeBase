@@ -1,2 +1,4 @@
 == Molecule category ==
 {{#default_form:Molecule}}
+
+[[Imported from::chebi:CHEBI_23367]]

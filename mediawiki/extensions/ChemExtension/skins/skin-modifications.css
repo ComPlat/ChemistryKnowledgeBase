@@ -1,14 +1,19 @@
-@media (min-width: 1200px) {
-    .container {
-        max-width: 1480px !important;
-        margin-left: 390px;
-    }
 
+div.flex-fill div.row:nth-child(2) {
+    margin-right: 0px !important;
+    margin-left: 0px !important;
 }
 
-@media (min-width: 768px) {
-    .container, .container-sm, .container-md {
-        max-width: 320px;
-        margin-left: 390px;
-    }
+div#mw-content-text {
+    overflow-x: auto;
 }
+
+div#content {
+    padding: 0px !important;
+}
+
+div.multipleTemplateInstance:not(.minimized) td.fieldValuesDisplay {
+    width: 100px;
+}
+
+

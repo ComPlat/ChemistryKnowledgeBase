@@ -1,4 +1,8 @@
-http://purl.obolibrary.org/obo/|http://purl.obolibrary.org/obo/ Chemical Entities of Biological Interest]
+http://purl.obolibrary.org/obo/|[http://purl.obolibrary.org/obo/ Chemical Entities of Biological Interest]
  CHEBI_35223|Type:Page
+ CHEBI_15022|Type:Page
+ CHEBI_17499|Type:Page
+ CHEBI_46787|Type:Page
+ CHEBI_23367|Type:Page
 
 [[Category:Imported vocabulary]]

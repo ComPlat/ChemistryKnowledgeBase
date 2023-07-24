@@ -52,31 +52,27 @@ class RenderMoleculeLink
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
 
-        if (WikiTools::isInVisualEditor()) {
 
-            $html = $page->getText();
+        global $wgScriptPath;
+        $html = $blade->view()->make("molecule-link",
+            [
+                'url' => $page->getFullURL(),
+                'label' => $page->getText(),
+                'fullPageTitle' => $page->getPrefixedText(),
+                'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
+                'image' => ($parameters['image'] ?? false) === "true",
+                'width' => $parameters['width'] ?? 300,
+                'height' => $parameters['height'] ?? 200,
+            ]
+        )->render();
 
-        } else {
-            global $wgScriptPath;
-            $html = $blade->view()->make("molecule-link",
-                [
-                    'url' => $page->getFullURL(),
-                    'label' => $page->getText(),
-                    'fullPageTitle' => $page->getPrefixedText(),
-                    'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
-                    'image' => ($parameters['image'] ?? false) === "true",
-                    'width' => $parameters['width'] ?? 300,
-                    'height' => $parameters['height'] ?? 200,
-                ]
-            )->render();
-
-        }
 
         $html = str_replace("\n", "", $html);
         return self::returnAsHTML($html);
     }
 
-    private static function returnAsHTML($text) {
+    private static function returnAsHTML($text)
+    {
         return [$text, 'noparse' => true, 'isHTML' => true];
     }
 }

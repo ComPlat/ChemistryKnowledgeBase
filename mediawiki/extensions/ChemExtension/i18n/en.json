@@ -26,8 +26,12 @@
 	"paper-label": "Paper title",
 	"checkservices": "Check services for ChemWiki",
 	"findunusedmolecules": "Find unused molecules",
+	"modifymolecule": "Modify molecules",
 	"findmissingitems": "Find missing items",
 	"page-type-topic": "Topic",
 	"page-type-publication": "Publication page",
-	"page-type-investigation": "Investigation"
+	"page-type-investigation": "Investigation",
+
+	"topic-subcat-count": "{{PLURAL:$2|This topic has only the following subtopic.|This topic has the following {{PLURAL:$1|subtopic|$1 subtopics}}, out of $2 total.}}",
+	"topic-article-count": "{{PLURAL:$2|This topic contains only the following publication.|The following {{PLURAL:$1|publication is|$1 publications are}} in this topic, out of $2 total.}}"
 }

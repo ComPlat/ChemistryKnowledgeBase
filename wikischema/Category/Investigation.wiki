@@ -1,3 +1,4 @@
 {{BaseTemplate}}
 
+[[Imported from::obi:OBI_0000066]]
 [[equivalent URI:=http://purl.obolibrary.org/obo/OBI_0000066]]

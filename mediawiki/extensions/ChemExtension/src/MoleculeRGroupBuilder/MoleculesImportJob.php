@@ -98,6 +98,7 @@ class MoleculesImportJob extends Job
 
     /**
      * Renders the molecule server-side and stores the image in DB. Fails silently, just log the error.
+     * If the molecule image already exists, it is not updated because it MUST be the same.
      *
      * @param ChemForm $concreteMolecule
      */
@@ -105,8 +106,11 @@ class MoleculesImportJob extends Job
     {
         try {
             $renderedMolecule = $this->moleculeRendererClient->render($concreteMolecule->getMolOrRxn());
-            $this->chemFormRepo->addOrUpdateChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
-            $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
+            $image = $this->chemFormRepo->getChemFormImageByKey($concreteMolecule->getMoleculeKey());
+            if (is_null($image) || $image === '') {
+                $this->chemFormRepo->addOrUpdateChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
+                $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
+            }
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }

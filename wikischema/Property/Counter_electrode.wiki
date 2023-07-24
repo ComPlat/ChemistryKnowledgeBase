@@ -1,0 +1,13 @@
+; Purpose
+* [[Property description::Contains a string describing the counter electrode type and meterial used in a cyclic voltammetry experiment.@en]]
+
+; Datatype
+* [[Has type::Text]].
+
+The allowed values for this property are:
+* [[Allows value::gold]]
+* [[Allows value::platinum]]
+* [[Allows value::carbon]]
+* [[Allows value::other]]
+
+[[Imported from::chmo:CHMO_0002358]]

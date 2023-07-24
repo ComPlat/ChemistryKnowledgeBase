@@ -1,6 +1,9 @@
-<div id="ce-side-panel-content" style="">
+<div id="ce-side-panel-content" class="ce-side-panel-content-base" style="display:none;">
     <div class="ce-side-panel-footer">
         <span id="ce-side-panel-expand-button"><img src="{{$imgPath}}/expand.png"></span>
+    </div>
+    <div class="ce-side-panel-header">
+        <span id="ce-side-panel-close-button"><img src="{{$imgPath}}/cancel.png"></span>
     </div>
     @include('navigation.schema-graph', [ 'type' => $type])
 

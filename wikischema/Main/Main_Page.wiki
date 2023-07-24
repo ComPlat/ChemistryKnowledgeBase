@@ -1,15 +1,30 @@
 == Available Topics ==
 <categorytree mode="pages" depth="3" hideroot="on" hideprefix="categories">Topic</categorytree>
 
+== Featured Molecule ==
+{{#ask: [[Category:Molecule]] [[Abbreviation::+]] [[InChIKey::+]] 
+|?InChIKey 
+|?Abbreviation 
+|limit=1 
+|order=random 
+|format=plainlist 
+|introtemplate=MoleculeShortListIntro 
+|outrotemplate=MoleculeListOutro 
+|template=MoleculeShortListRow
+|searchlabel= }}
 
+== Help ==
 
-<strong>MediaWiki has been installed.</strong>
+* [[Help:Getting Started]]
 
-Consult the [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents User's Guide] for information on using the wiki software.
+* [[Help:Create new paper]]
+* [[Help:Create new topic]]
 
-== Getting started ==
-* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:Configuration_settings Configuration settings list]
-* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:FAQ MediaWiki FAQ]
-* [https://lists.wikimedia.org/postorius/lists/mediawiki-announce.lists.wikimedia.org/ MediaWiki release mailing list]
-* [https://www.mediawiki.org/wiki/Special:MyLanguage/Localisation#Translation_resources Localise MediaWiki for your language]
-* [https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:Combating_spam Learn how to combat spam on your wiki]
+== Media Wiki ==
+*[[mediawikiwiki:Special:MyLanguage/Manual:Configuration_settings|Configuration settings list]]
+*[[mediawikiwiki:Special:MyLanguage/Manual:FAQ|MediaWiki FAQ]]
+*[https://lists.wikimedia.org/postorius/lists/mediawiki-announce.lists.wikimedia.org/ MediaWiki release mailing list]
+*[[mediawikiwiki:Special:MyLanguage/Localisation#Translation_resources|Localise MediaWiki for your language]]
+*[[mediawikiwiki:Special:MyLanguage/Manual:Combating_spam|Learn how to combat spam on your wiki]]
+* [[mediawikiwiki:Special:MyLanguage/Help:Contents|Media Wiki User's Guide]]
+__NOTOC__

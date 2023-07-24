@@ -69,7 +69,7 @@ class ExperimentType
         if (is_null($node)) {
             return [];
         }
-        preg_match_all('/\|([A-z0-9_\s]+)=\{\{\{([A-z0-9_\s]+)\|?\}\}\}/', $node->getTextContent(), $matches);
+        preg_match_all('/\|([A-z0-9_\s]+)=\{\{\{([A-z0-9_\s-]+)\|?\}\}\}/', $node->getTextContent(), $matches);
 
         $propertyMapping = [];
         for($i = 0; $i < count($matches[0]); $i++) {

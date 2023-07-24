@@ -37,7 +37,22 @@
         });
     }
 
-    window.ChemExtension.AjaxEndpoints.prototype.getInchiKey = function (node, formulaV3000) {
+    window.ChemExtension.AjaxEndpoints.prototype.replaceImage = function (formulaV3000, moleculeKey, chemFormId, imgData) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/chemform/replace?" + $.param({ moleculeKey: moleculeKey, chemFormId : chemFormId });
+
+        return $.ajax({
+            method: "POST",
+            url: url,
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                'imgData': imgData,
+                'molOrRxn': btoa(formulaV3000)
+            }
+        });
+    }
+
+    window.ChemExtension.AjaxEndpoints.prototype.getInchiKey = function (formulaV3000) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/inchi";
         return $.ajax({

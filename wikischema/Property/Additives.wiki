@@ -6,3 +6,6 @@
 
 ; Values
 * A String.
+
+; Label
+* [[Has preferred property label::additives, e.g. for buffer@en]]

@@ -3,19 +3,26 @@ namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Literature\DOIRenderer;
+use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
+use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
+use DIQA\ChemExtension\ParserFunctions\FormatAsTable;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
+use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
+use RequestContext;
 use OutputPage;
 use Parser;
 use Skin;
 use SMW\ApplicationFactory;
+use Title;
 
 class Setup {
 
@@ -75,6 +82,17 @@ class Setup {
             'dependencies' => [],
         );
 
+        $wgResourceModules['ext.diqa.md5'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/libs/md5.js',
+            ],
+            'styles' => [],
+            'dependencies' => [],
+        );
+
         $wgResourceModules['ext.diqa.chemextension.pf'] = array(
             'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
@@ -83,32 +101,69 @@ class Setup {
             'styles' => [ 'skins/pf.css' ],
             'dependencies' => [],
         );
+
+        $wgResourceModules['ext.diqa.chemextension.modify-molecule'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => ['scripts/special.modify-molecule.js'],
+            'styles' => [],
+            'dependencies' => ['ext.diqa.chemextension'],
+        );
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
+
+
         $b = new NavigationBar($wgTitle);
-        $out->addSubtitle($b->getPageType() . self::$subTitleExtension);
+        $link = self::addModifyLink();
+        $out->addSubtitle('<div class="ce-subtitle-content">'.$b->getPageType() . self::$subTitleExtension."$link</div>");
+
 
         $out->addModules('ext.diqa.chemextension');
+        $out->addModules('ext.diqa.md5');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
+        InvestigationFinder::renderInvestigationList($out);
 
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
             $out->addModules('ext.diqa.chemextension.pf');
         }
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("ModifyMolecule")) {
+            $out->addModules('ext.diqa.chemextension.modify-molecule');
+        }
 
+    }
 
+    private static function addModifyLink() {
+        global $wgUser, $wgTitle;
+        $link = '';
+        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
+        if (in_array('sysop', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
+            $chemFormRepo = new ChemFormRepository($dbr);
+            $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
+            $modifyMoleculePage = Title::newFromText("ModifyMolecule", NS_SPECIAL);
+            $url = $modifyMoleculePage->getFullURL(['inchikey'=>$inchikey]);
+            $link = "<a href=\"$url\">Modify molecule</a>";
+        }
+        return $link;
     }
 
     public static function onSkinAfterContent( &$data, Skin $skin ) {
         global $wgTitle;
         $b = new NavigationBar($wgTitle);
         if (!$wgTitle->isSpecial('FormEdit')) {
-            $data .= $b->getNavigationLocation();
+            $data .= $b->getNavigationBar();
+            $data .= $b->getCollapsedNavigationBar();
         }
-
+        global $wgOut;
+        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+        if ($navBarStatus === 'expanded' && !$wgTitle->isSpecial('FormEdit')) {
+            $wgOut->addInlineStyle('div.container-fluid div.row { margin-left: 400px !important; }');
+        }
     }
 
     public static function extendSubtitle($html)
@@ -125,10 +180,35 @@ class Setup {
         $parser->setFunctionHook( 'experimentlink', [ ExperimentLink::class, 'renderExperimentLink' ] );
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
+        $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
 
         self::registerShowCachedHandler($parser);
     }
 
+    public static function categoryViewerInstance(Title $title, & $html) {
+        $html = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $html = '<h2>Publications of topic "' . $title->getText(). '"</h2>';
+        }
+    }
+
+    public static function categoryList(Title $title, & $label) {
+        $label = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $label = 'Topics';
+        }
+    }
+
+    public static function categoryCount(Title $title, & $isInTopic) {
+        $isInTopic = WikiTools::checkIfInTopicCategory($title);
+    }
+
+    public static function categoryViewerCategory(Title $title, & $html) {
+        $html = '';
+        if (WikiTools::checkIfInTopicCategory($title)) {
+            $html = '<h2>Subtopics of "' . $title->getText(). '"</h2>';
+        }
+    }
     public static function assignValueToMagicWord( &$parser, &$cache, &$magicWordId, &$ret ) {
         if ( $magicWordId === 'counter' ) {
             static $counter = 1;

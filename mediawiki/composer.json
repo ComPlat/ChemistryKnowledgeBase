@@ -68,7 +68,9 @@
 		"zordius/lightncandy": "1.2.5",
 		"mediawiki/semantic-media-wiki": "^3.2",
 		"mediawiki/page-forms": "^5.2",
-		"diqa/enhanced-retrieval": "dev-master"
+		"diqa/enhanced-retrieval": "dev-master",
+		"ml/json-ld": "^1.2",
+		"phpoffice/phpspreadsheet": "^1.29"
 	},
 	"require-dev": {
 		"composer/spdx-licenses": "1.5.3",
@@ -148,7 +150,11 @@
 	},
 	"config": {
 		"optimize-autoloader": true,
-		"prepend-autoloader": false
+		"prepend-autoloader": false,
+		"allow-plugins": {
+			"composer/installers": true,
+			"wikimedia/composer-merge-plugin": true
+		}
 	},
 	"extra": {
 		"merge-plugin": {

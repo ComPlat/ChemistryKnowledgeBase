@@ -4,6 +4,7 @@
 namespace DIQA\InvestigationImport\Maintenance;
 
 
+use DIQA\InvestigationImport\Importer\ImportFileReader;
 use Maintenance;
 
 /**
@@ -29,12 +30,20 @@ class import extends \Maintenance
     {
         parent::__construct();
         $this->addDescription('Imports investigations');
+        $this->addOption('f', 'file to import', true, true);
     }
 
     public function getDbType()
     {
         return Maintenance::DB_ADMIN;
     }
+
+    public function execute()
+    {
+        $file = $this->getOption('f');
+        $reader = new ImportFileReader($file);
+        $reader->xml_parsing();
+
     public function call_xml_parsing($file_location){
         $var_1 =new ImportFileReader();
         $output = $var_1->xml_parsing($file_location);

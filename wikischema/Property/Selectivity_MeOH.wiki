@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains selectivity of an experiment or molecular process regarding MeOH.  @en]]
+
+; Datatype
+* [[Has type::Number]].
+
+; Values
+* A percentage value between 0 - 100.

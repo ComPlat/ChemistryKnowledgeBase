@@ -6,14 +6,17 @@ use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
+use Hooks;
 use MediaWiki\MediaWikiServices;
+use OOUI\ButtonInputWidget;
 use Parser;
 use ParserOptions;
 use Title;
-use Hooks;
 
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
+
+    static $BUTTON_COUNTER = 0;
 
     public function __construct($context)
     {
@@ -26,6 +29,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
      */
     protected function getTabContent(): array
     {
+
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $mainTemplate = $experimentType->getMainTemplate();
         $rowTemplate = $experimentType->getRowTemplate();
@@ -47,11 +51,12 @@ class ExperimentLinkRenderer extends ExperimentRenderer
 |experiments={$experiments}
 }}
 TEMPLATE;
-        $cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-        $html = $cache->getWithSetCallback(md5($templateCall), 20, function() use($templateCall){
-            $parser = new Parser();
-            $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
-            return $parserOutput->getText(['enableSectionEditLinks' => false]);
+        $cache = MediaWikiServices::getInstance()->getMainObjectStash();
+        $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($templateCall)), $cache::TTL_DAY,
+            function() use($templateCall){
+                $parser = new Parser();
+                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
+                return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 
         $results = [];
@@ -62,9 +67,7 @@ TEMPLATE;
         foreach($tabs as $tab) {
             $htmlTableEditor = new HtmlTableEditor($html, null);
             $htmlTableEditor->removeEmptyColumns();
-            if ($wgCEHiddenColumns ?? false) {
-                $htmlTableEditor->collapseColumns();
-            }
+
             $htmlTableEditor->addIndexAsFirstColumn();
             if (!WikiTools::isInVisualEditor()) {
                 if ($tab !== '') {
@@ -86,9 +89,26 @@ TEMPLATE;
                     }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
+                $htmlTableEditor->hideTables();
+                $htmlTableEditor->addTableClass("experiment-link");
             }
-            $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
+
+            self::$BUTTON_COUNTER++;
+            $pageTypes = new ButtonInputWidget([
+                'classes' => ['chemext-button', 'experiment-link-show-button'],
+                'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
+                'type' => 'button',
+                'label' => 'Show table',
+                'flags' => ['primary', 'progressive'],
+                'title' => 'Show summary table of investigations',
+                'infusable' => true
+            ]);
+
+            $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
+                'button' => WikiTools::isInVisualEditor() ? '' : $pageTypes->toString(),
+                'description' => $this->context['description'],
+                'buttonCounter' => self::$BUTTON_COUNTER
 
             ])->render ();
         }

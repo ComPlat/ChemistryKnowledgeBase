@@ -1,0 +1,71 @@
+Index: mediawiki/includes/skins/Skin.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/includes/skins/Skin.php b/mediawiki/includes/skins/Skin.php
+--- a/mediawiki/includes/skins/Skin.php	(revision f987b104d26e7a4b8638d7ee58f9b2545ef7c8d5)
++++ b/mediawiki/includes/skins/Skin.php	(date 1688032578797)
+@@ -530,7 +530,9 @@
+ 			$linkPage = $this->msg( 'pagecategorieslink' )->inContentLanguage()->text();
+ 			$pageCategoriesLinkTitle = Title::newFromText( $linkPage );
+ 			if ( $pageCategoriesLinkTitle ) {
+-				$link = $linkRenderer->makeLink( $pageCategoriesLinkTitle, $msg->text() );
++                $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++                $hookContainer->run('chem_categorylist', [$this->getOutput()->getTitle(), & $label]);
++                $link = $linkRenderer->makeLink($pageCategoriesLinkTitle, isset($label) && $label !== '' ? $label : $msg->text());
+ 			} else {
+ 				$link = $msg->escaped();
+ 			}
+Index: mediawiki/includes/CategoryViewer.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/includes/CategoryViewer.php b/mediawiki/includes/CategoryViewer.php
+--- a/mediawiki/includes/CategoryViewer.php	(revision f987b104d26e7a4b8638d7ee58f9b2545ef7c8d5)
++++ b/mediawiki/includes/CategoryViewer.php	(date 1688035215260)
+@@ -414,7 +414,13 @@
+ 		if ( $rescnt > 0 ) {
+ 			# Showing subcategories
+ 			$r .= "<div id=\"mw-subcategories\">\n";
+-			$r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
++            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++            $hookContainer->run('chem_catviewer_category', [$this->getOutput()->getTitle(), & $html]);
++            if (isset($html) && $html !== ''){
++                $r .= $html;
++            } else {
++			    $r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
++            }
+ 			$r .= $countmsg;
+ 			$r .= $this->getSectionPagingLinks( 'subcat' );
+ 			$r .= $this->formatList( $this->children, $this->children_start_char );
+@@ -444,7 +450,13 @@
+ 
+ 		if ( $rescnt > 0 ) {
+ 			$r = "<div id=\"mw-pages\">\n";
+-			$r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
++            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++            $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
++            if (isset($html) && $html !== ''){
++                $r .= $html;
++            } else {
++			    $r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
++            }
+ 			$r .= $countmsg;
+ 			$r .= $this->getSectionPagingLinks( 'page' );
+ 			$r .= $this->formatList( $this->articles, $this->articles_start_char );
+@@ -748,6 +748,12 @@
+ 			return $this->msg( "category-$type-count-limited" )->numParams( $rescnt )->parseAsBlock();
+ 		}
+ 		// Messages: category-subcat-count, category-article-count, category-file-count
+-		return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++        $hookContainer->run('chem_category_count', [$this->getOutput()->getTitle(), & $isInTopic]);
++        if (!is_null($isInTopic) && $isInTopic) {
++            return $this->msg( "topic-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        } else {
++		    return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++        }
+ 	}
+ }

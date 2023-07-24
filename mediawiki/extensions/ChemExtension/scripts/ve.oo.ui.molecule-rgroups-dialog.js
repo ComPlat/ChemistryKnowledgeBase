@@ -19,7 +19,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
 
     ve.ui.MoleculeRGroupsDialog.prototype.getActionProcess = function (action) {
-        if (action === 'apply') {
+        if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(function () {
 
                 let node = this.selectedNode
@@ -55,15 +55,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.MoleculeRGroupsDialog.static.actions = [
         {
-            'action': 'apply',
-            'label': mw.msg('visualeditor-dialog-action-apply'),
-            'flags': ['safe'],
-            'modes': ['edit', 'insert', 'select']
+            action: 'done',
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-apply' ),
+            flags: [ 'progressive', 'primary' ],
+            modes: 'edit'
         },
         {
-            'label': OO.ui.deferMsg('visualeditor-dialog-action-cancel'),
-            'flags': 'safe',
-            'modes': ['edit', 'insert', 'select']
+            action: 'insert',
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-insert' ),
+            flags: [ 'progressive', 'primary' ],
+            modes: 'insert'
+        },
+        {
+            label: OO.ui.deferMsg( 'visualeditor-dialog-action-cancel' ),
+            flags: [ 'safe', 'close' ],
+            modes: [ 'readonly', 'insert', 'edit', 'insert-select' ]
         }
     ];
 
