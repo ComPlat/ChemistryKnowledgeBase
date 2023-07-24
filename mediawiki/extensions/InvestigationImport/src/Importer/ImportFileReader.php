@@ -48,9 +48,12 @@ class ImportFileReader {
           if (($dataArrayE[$x]["E"])!= ""); 
               $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];
               ($CV_metadata[$dataArrayC[$x]["E"]] = $dataArrayC[$x]["C"]);}
-              print_r($CV_metadata);
+            //   print_r($CV_metadata);
     // var_dump($CV_metadata)
-}
+    }
     function update_data($CV_metadata){
-
-}}
+        foreach ($CV_metadata as $key => $val){
+            echo "$key = $val<br>";
+        }
+    }
+}
