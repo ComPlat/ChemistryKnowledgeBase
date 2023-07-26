@@ -30,8 +30,9 @@ class import extends \Maintenance
     {
         $file = $this->getOption('f');
         $reader = new ImportFileReader($file);
-        $cv_data = $reader->xml_parsing($file);
-        $reader->update_data($cv_data);
+        $cv_data = ($reader->xml_parsing($file));
+        $wikitext = $reader->update_data($cv_data);
+        echo($wikitext);
     }
     // public function call_xml_parsing($file_location){
     //     $var_1 =new ImportFileReader();

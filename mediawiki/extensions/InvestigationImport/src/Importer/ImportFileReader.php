@@ -48,12 +48,16 @@ class ImportFileReader {
           if (($dataArrayE[$x]["E"])!= ""); 
               $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];
               ($CV_metadata[$dataArrayC[$x]["E"]] = $dataArrayC[$x]["C"]);}
-            //   print_r($CV_metadata);
-    // var_dump($CV_metadata)
+      return $CV_metadata;
     }
-    function update_data($CV_metadata){
-        foreach ($CV_metadata as $key => $val){
-            echo "$key = $val<br>";
-        }
-    }
+    public function update_data($extracted_data){
+      $wikitext_data = "";
+      $table_title = "this is an example of a tittle\n";
+        foreach ($extracted_data as $key => $val){
+          $new_data = "| $key || $val |\n|-\n";
+          $wikitext_data = $wikitext_data . $new_data;
+          }
+          $wikitext_data = "{|" . $table_title . $wikitext_data . "|}";
+        return ($wikitext_data);
+      }
 }
