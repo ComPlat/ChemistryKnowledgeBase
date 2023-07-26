@@ -25,7 +25,6 @@ class ImportFileReader {
     
   public function xml_parsing($file) {
     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
-    // $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load("../resources/CV_generic_dataset_withExValues.xlsx");
     $dataArrayE = $spreadsheet->getActiveSheet()
         ->rangeToArray(
         'E4:E91',     // The worksheet range that we want to retrieve
@@ -43,7 +42,6 @@ class ImportFileReader {
         TRUE         // Should the array be indexed by cell row and cell column
         );
       $CV_metadata = array();
-    // var_dump($dataArrayC[4]["C"]);
       for ($x = 4; $x <= 91; $x++){  
           if (($dataArrayE[$x]["E"])!= ""); 
               $dataArrayC[$x]["E"] = $dataArrayE[$x]["E"];
@@ -55,17 +53,17 @@ class ImportFileReader {
             echo("key removed $key\n");
         }
       }
-
+      // need to add code to change molecule common name to Molecule:Id
       return $CV_metadata;
     }
     public function update_data($extracted_data){
       $wikitext_data = "";
-      $table_start = "{| class=\"wikitable\" style=\"margin:auto\"\n|+ Captiontext\n";
+      $table_start = "{{ class=\"wikitable\" style=\"margin:auto\"\n|+ Captiontext\n";
         foreach ($extracted_data as $key => $val){
-          $new_data = "| $key || $val |\n|-\n";
+          $new_data = "|$key=$val\n";
           $wikitext_data = $wikitext_data . $new_data;
           }
-        $wikitext_data = $table_start . $wikitext_data . "|}";
+        $wikitext_data = $table_start . $wikitext_data . "}}\n";
         return ($wikitext_data);
       }
 }
