@@ -1,6 +1,7 @@
 <?php
 namespace DIQA\InvestigationImport\Maintenance;
 use DIQA\InvestigationImport\Importer\ImportFileReader;
+use DIQA\ChemExtension\Utils\WikiTools;
 use Maintenance;
 /**
  * Load the required class
@@ -32,7 +33,7 @@ class import extends \Maintenance
         $reader = new ImportFileReader($file);
         $cv_data = ($reader->xml_parsing($file));
         $wikitext = $reader->update_data($cv_data);
-        echo($wikitext);
+        WikiTools::doEditContent("test_title", $wikitext, "comment",EDIT_NEW);
     }
 }
 $maintClass = import::class;

@@ -59,7 +59,7 @@ class ImportFileReader {
   public function update_data($extracted_data){
     $mediawiki_catagories = ["sample"=>"anl","anl conc"=>"test","redox potential"=>"test","solvent"=>"solv","amount_sol"=>"solv vol","salt"=>"electrolyte","concentration_salt"=>"el conc","reference"=>"int ref comp","scan_rate"=>"scan rate","step_size"=>"scan number","potential window"=>"potential window","scan dir"=>"scan dir","atmosphere"=>"gas","temperature"=>"temp","conditions"=>"cond","working"=>"WE","working_area"=>"WE area","counter"=>"CE" ,"reference"=>"RE" ,"include"=>"include"];
     $wikitext_data = "";
-    $table_start = "{{Cyclic Voltemetry experiments\n|experiments={{Cyclic Voltemetry\n";
+    $table_start = "{{Cyclic Voltammetry experiments\n|experiments={{Cyclic Voltammetry\n";
     $mediawiki_data =[];
     $volt_array =[];
     foreach ($extracted_data as $key => $val){
