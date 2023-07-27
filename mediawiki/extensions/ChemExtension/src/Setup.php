@@ -112,6 +112,17 @@ class Setup {
         );
     }
 
+    public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
+        global $wgTitle, $wgScriptPath;
+        if (is_null($wgTitle)) {
+            return;
+        }
+        $links[ 'actions' ][] = [
+            'text' => "Export as JSON-LD",
+            'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=".urlencode($wgTitle->getPrefixedText())
+			];
+    }
+
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
         global $wgTitle;
 
@@ -141,7 +152,7 @@ class Setup {
         global $wgUser, $wgTitle;
         $link = '';
         $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
-        if (in_array('sysop', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
+        if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
             $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());

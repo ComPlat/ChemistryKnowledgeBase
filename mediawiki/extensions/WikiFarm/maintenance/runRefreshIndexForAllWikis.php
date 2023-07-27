@@ -24,7 +24,7 @@ class runRefreshIndexForAllWikis extends \Maintenance
     {
         parent::__construct();
         $this->addDescription('runs jobs in all wikis');
-
+        $this->addOption('onlyexplink', 'Update only pages with #experimentlink parser function', false, false);
     }
 
     public function getDbType()
@@ -53,16 +53,20 @@ class runRefreshIndexForAllWikis extends \Maintenance
 
         $allWikis = $repository->getAllWikis();
 
+        $arguments = '';
+        if ($this->hasOption("onlyexplink")) {
+            $arguments = '--onlyexplink';
+        }
         global $wgWikiFarmBinFolder;
         $wgWikiFarmBinFolder = $wgWikiFarmBinFolder ?? "$IP/../bin";
         chdir($wgWikiFarmBinFolder);
         foreach($allWikis as $wiki) {
             $id = $wiki['id'];
 
-            echo shell_exec("bash $wgWikiFarmBinFolder/runRefreshIndexForWiki.sh wiki$id 2>&1");
+            echo shell_exec("bash $wgWikiFarmBinFolder/runRefreshIndexForWiki.sh wiki$id $arguments 2>&1");
         }
 
-        echo shell_exec("bash $wgWikiFarmBinFolder/runRefreshIndexForWiki.sh main 2>&1");
+        echo shell_exec("bash $wgWikiFarmBinFolder/runRefreshIndexForWiki.sh main $arguments 2>&1");
         echo "\n";
     }
 

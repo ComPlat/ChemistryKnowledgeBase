@@ -7,4 +7,4 @@ if [ -z "$1" ]
 fi
 
 export REQUEST_URI=/main/mediawiki
-php $1/extensions/WikiFarm/maintenance/runRefreshIndexForAllWikis.php
+php $1/extensions/WikiFarm/maintenance/runRefreshIndexForAllWikis.php $@

@@ -21,4 +21,4 @@ fi
 
 export REQUEST_URI=/$1/mediawiki
 echo "Running job for wiki $1"
-php $RUNJOBSCRIPT
+php $RUNJOBSCRIPT $2

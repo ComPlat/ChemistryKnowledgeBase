@@ -27,6 +27,15 @@
                 inputsNew.eq(i).val(input.val());
             }
 
+            // copy standard drop-downs
+            let selects = instanceToCopy.find('span.inputSpan select:not([data-select2-id])');
+            let selectsNew = newInstance.find('span.inputSpan select:not([data-select2-id])');
+            selectsNew.empty();
+            for(let i = 0; i < selects.length; i++) {
+                let options = selects.eq(i).find('option');
+                selectsNew.eq(i).append(options.clone());
+            }
+
             //TODO: copy others like date picker
 
             setTimeout(() => {

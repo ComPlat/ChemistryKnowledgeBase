@@ -24,6 +24,7 @@ class refreshChemFormIndex extends Maintenance
         $this->addOption('n', 'Number of IDs from Start-ID', false, true);
         $this->addOption('f', 'End-ID by Pagename', false, true);
         $this->addOption('startidfile', 'File containing ID to start processing and saves last processed ID to this file', false, true);
+        $this->addOption('onlyexplink', 'Update only pages with #experimentlink parser function', false, false);
     }
 
     public function execute()
@@ -54,7 +55,7 @@ class refreshChemFormIndex extends Maintenance
      */
     private function printDocHeader()
     {
-        print "Refreshing all semantic data in the SOLR server!\n---\n" .
+        print "Refreshing all chemform indexes!\n---\n" .
             " Some versions of PHP suffer from memory leaks in long-running scripts.\n" .
             " If your machine gets very slow after many pages (typically more than\n" .
             " 1000) were refreshed, please abort with CTRL-C and resume this script\n" .
@@ -201,13 +202,14 @@ class refreshChemFormIndex extends Maintenance
 
         if (WikiTools::checkIfInTopicCategory($title)) {
             $text = WikiTools::getText($title);
+            if ($this->hasOption("onlyexplink") && strpos($text, '#experimentlink:') === false) {
+                return;
+            }
             $parser = new Parser();
             $parser->parse($text, $title, new ParserOptions());
             $mcs = new \DIQA\ChemExtension\MultiContentSave();
             $mcs->parseContentAndUpdateIndex($text, $title, false);
             print "\nrefresh:\t" . $title->getPrefixedText();
-        } else {
-            print "\nskip:\t" . $title->getPrefixedText();
         }
     }
 
