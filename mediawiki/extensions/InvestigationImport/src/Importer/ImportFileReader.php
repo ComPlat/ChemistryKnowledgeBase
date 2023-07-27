@@ -57,13 +57,17 @@ class ImportFileReader {
       return $CV_metadata;
     }
     public function update_data($extracted_data){
+      $mediawiki_catagories = ["sample"=>"analyte","anl conc","redox potential","solvent","amount_sol"=>"solvent vol","salt"=>"electrolyte","concenttrtion_salt"=>"el conc","refeerence"=>"int ref comp","scan_rate"=>"scan rate","step_size"=>"scan number","potential window","scan dir","atmosphere"=>"gas","temperature"=>"T","conditions"=>"condition","working"=>"WE","working_area"=>"WE surface area","counter"=>"CE" ,"reference"=>"RE" ,"include"];
       $wikitext_data = "";
-      $table_start = "{{ class=\"wikitable\" style=\"margin:auto\"\n|+ Captiontext\n";
+      $table_start = "{{Cyclic Voltemetry experiments\n|experiments={{Cyclic Voltemetry\n";
         foreach ($extracted_data as $key => $val){
+          if (preg_match("/\d,\d{5}E.\d{3}/",$val)){
+            $val = (float)$val;
+          }
           $new_data = "|$key=$val\n";
           $wikitext_data = $wikitext_data . $new_data;
           }
-        $wikitext_data = $table_start . $wikitext_data . "}}\n";
+        $wikitext_data = $table_start . $wikitext_data . "}}\n}}";
         return ($wikitext_data);
       }
 }
