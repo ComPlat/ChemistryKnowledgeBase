@@ -141,7 +141,7 @@ class Setup {
         global $wgUser, $wgTitle;
         $link = '';
         $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
-        if (in_array('sysop', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
+        if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
             $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
