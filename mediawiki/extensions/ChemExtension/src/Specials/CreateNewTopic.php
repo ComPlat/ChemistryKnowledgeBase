@@ -130,7 +130,12 @@ class CreateNewTopic extends PageCreationSpecial
         if ($topicTitle == '') {
             throw new Exception("Topic title must be set.");
         }
-
+        if (strpos($topicTitle, '/') !== false
+            || strpos($topicTitle, '#') !== false
+            || strpos($topicTitle, '[') !== false
+            || strpos($topicTitle, ']') !== false) {
+            throw new Exception('These characters are not allowed in topic titles: /,#,[,]');
+        }
         $topicTitleObj = Title::newFromText($topicTitle, NS_CATEGORY);
         $topicSuper = $wgRequest->getText('topic-super');
         if (is_null($topicSuper) || $topicSuper === '') {

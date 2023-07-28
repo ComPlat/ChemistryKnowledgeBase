@@ -142,6 +142,12 @@ class CreateNewPaper extends PageCreationSpecial
             $doiData = $doiResolver->resolve($doi);
         }
         if ($paperTitle != '') {
+            if (strpos($paperTitle, '/') !== false
+            || strpos($paperTitle, '#') !== false
+            || strpos($paperTitle, '[') !== false
+            || strpos($paperTitle, ']') !== false) {
+                throw new Exception('These characters are not allowed in publication titles: /,#,[,]');
+            }
             $paperTitleObj = Title::newFromText($paperTitle);
         } else {
             throw new Exception("Paper title must be set.");
