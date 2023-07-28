@@ -7,13 +7,16 @@
 ** Search for Molecules|Search for Molecules
 ** Search for Reactions|Search for Reactions
 * Administration
-** Create a new Space|Create a new Space
-** Manage Space Users|Manage Space Users
+** Special:SpecialCreateWiki|Create or manage a new Space
 ** Integrate Space in Main Wiki|Integrate Space in Main Wiki
-** User Management|User Management
+** Special:UserRights|User Management
+** Special:FindMissingItems|Find missing items
+** Special:FindUnusedMolecules|Find unused molecules
+** Special:CheckServices|Check services
 ** Special:SpecialPages|Special Pages
 ** Special:ModifyMolecule|Modify molecules
 * Help
 ** Help:Getting Started|Getting Started
+** Help:Create new paper|Create new Paper
 ** Help:Creating a Private Space|Creating a Private Space
 ** Special:Version|Wiki Version
