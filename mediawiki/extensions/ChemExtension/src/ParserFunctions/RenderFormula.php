@@ -73,7 +73,7 @@ class RenderFormula
                     'url' => $attributes['chemFormPage']->getFullURL(),
                     'label' => $attributes['chemFormPage']->getText(),
                     'fullPageTitle' => $attributes['chemFormPage']->getPrefixedText(),
-                    'pageId' => $wgTitle->getArticleID(),
+                    'pageId' => is_null($wgTitle) ? '' : $wgTitle->getArticleID(),
                     'moleculeKey' => $attributes['moleculeKey'],
                     'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($attributes['moleculeKey']),
                     'width' => $attributes['width'],
