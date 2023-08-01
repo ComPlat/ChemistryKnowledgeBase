@@ -33,7 +33,10 @@ class import extends \Maintenance
         $reader = new ImportFileReader($file);
         $cv_data = ($reader->xml_parsing($file));
         $wikitext = $reader->update_data($cv_data);
-        WikiTools::doEditContent("test_title", $wikitext, "comment",EDIT_NEW);
+        $file = str_replace("../resources/","",$file);
+        $file_array = str_split($file,$length=7);
+        echo("$file_array[0]\n");
+        WikiTools::doEditContent($file_array[0], $wikitext, "comment",EDIT_UPDATE);
     }
 }
 $maintClass = import::class;

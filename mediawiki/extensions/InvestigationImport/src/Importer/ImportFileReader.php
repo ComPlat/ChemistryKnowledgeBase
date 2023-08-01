@@ -24,7 +24,10 @@ class ImportFileReader {
         }
    
   public function xml_parsing($file) {
-    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+    $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xlsx");
+    $reader->setLoadSheetsOnly('cyclic voltammetry (CV)');
+    // $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+    $spreadsheet = $reader->load($file);
     $dataArrayE = $spreadsheet->getActiveSheet()
         ->rangeToArray(
         'E4:E91',     // The worksheet range that we want to retrieve
@@ -57,11 +60,12 @@ class ImportFileReader {
       return $CV_metadata;
     }
   public function update_data($extracted_data){
-    $mediawiki_catagories = ["sample"=>"anl","anl conc"=>"test","redox potential"=>"test","solvent"=>"solv","amount_sol"=>"solv vol","salt"=>"electrolyte","concentration_salt"=>"el conc","reference"=>"int ref comp","scan_rate"=>"scan rate","step_size"=>"scan number","potential window"=>"potential window","scan dir"=>"scan dir","atmosphere"=>"gas","temperature"=>"temp","conditions"=>"cond","working"=>"WE","working_area"=>"WE area","counter"=>"CE" ,"reference"=>"RE" ,"include"=>"include"];
+    $mediawiki_catagories = ["id"=>"anl","anl conc"=>"test","redox potential"=>"test","solvent"=>"solv","amount_sol"=>"solv vol","salt"=>"electrolyte","concentration_salt"=>"el conc","reference"=>"int ref comp","scan_rate"=>"scan rate","step_size"=>"scan number","potential window"=>"potential window","scan dir"=>"scan dir","atmosphere"=>"gas","temperature"=>"temp","conditions"=>"cond","working"=>"WE","working_area"=>"WE area","counter"=>"CE" ,"reference"=>"RE" ,"include"=>"include"];
     $wikitext_data = "";
     $table_start = "{{Cyclic Voltammetry experiments\n|experiments={{Cyclic Voltammetry\n";
     $mediawiki_data =[];
     $volt_array =[];
+    
     foreach ($extracted_data as $key => $val){
       if (preg_match("/voltage/",$key)){
         if (preg_match("/\d,\d{5}E.\d{3}/",$val)){
@@ -70,7 +74,7 @@ class ImportFileReader {
         $volt_array[]= $val;
       }
     }
-    $mediawiki_data["redox_potential"]= $volt_array;
+    $mediawiki_data["redox potential"]= $volt_array;
     foreach ($mediawiki_catagories as $mw_key => $mw_val){
       if (array_key_exists($mw_key,$extracted_data)){
         // echo($extracted_data[$mw_key]. "\n");
@@ -79,12 +83,17 @@ class ImportFileReader {
     }
     foreach ($mediawiki_data as $key => $val){
       if (is_array($val)){
-        $val = implode(",",$val);
-      } 
+        $new_string = "$val[0],$val[1];$val[2],$val[3]";
+        // var_dump($new_string);
+        $val = $new_string;
+        }
+        // var_dump($val);  
+      
       $new_data = "|$key=$val\n";
       $wikitext_data = $wikitext_data . $new_data;
-    }
+      }
     $wikitext_data = $table_start . $wikitext_data . "}}\n}}";
+    var_dump($wikitext_data);
     return ($wikitext_data);
   }
 }
