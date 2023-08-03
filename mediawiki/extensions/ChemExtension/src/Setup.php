@@ -55,7 +55,6 @@ class Setup {
                 $baseScript . '/ve.oo.ui.molecule-rgroups-dialog.js',
                 $baseScript . '/oo.ui.rgroups-display-widget.js',
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
-                $baseScript . '/rerender-chemform.js',
                 $baseScript . '/ve.oo-ui.initialize.js',
                 $baseScript . '/pf-extensions.js',
                 $baseScript . '/ve.oo-ui.add-experiment-dialog.js',
@@ -110,6 +109,15 @@ class Setup {
             'styles' => [],
             'dependencies' => ['ext.diqa.chemextension'],
         );
+
+        $wgResourceModules['ext.diqa.chemextension.import-page'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => ['scripts/special.import-page.js'],
+            'styles' => [],
+            'dependencies' => ['ext.diqa.chemextension'],
+        );
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
@@ -145,7 +153,9 @@ class Setup {
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("ModifyMolecule")) {
             $out->addModules('ext.diqa.chemextension.modify-molecule');
         }
-
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("SpecialImportPage")) {
+            $out->addModules('ext.diqa.chemextension.import-page');
+        }
     }
 
     private static function addModifyLink() {

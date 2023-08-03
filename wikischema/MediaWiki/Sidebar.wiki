@@ -8,7 +8,7 @@
 ** Search for Reactions|Search for Reactions
 * Administration
 ** Special:SpecialCreateWiki|Create or manage a new Space
-** Integrate Space in Main Wiki|Integrate Space in Main Wiki
+** Special:SpecialImportPage|Integrate Space in Main Wiki
 ** Special:UserRights|User Management
 ** Special:FindMissingItems|Find missing items
 ** Special:FindUnusedMolecules|Find unused molecules

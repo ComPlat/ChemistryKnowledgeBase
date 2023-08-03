@@ -21,7 +21,8 @@
         "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
         "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules",
         "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
-        "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule"
+        "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule",
+        "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage"
 
     },
     "AutoloadNamespaces": {
@@ -138,7 +139,8 @@
         "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob",
-        "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob"
+        "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob",
+        "PageImportJob": "DIQA\\ChemExtension\\Pages\\PageImportJob"
     },
     "manifest_version": 2
 }
