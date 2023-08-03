@@ -5,6 +5,24 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // require 'vendor/autoload.php';
 class ImportFileReader {
+  function open_zip_extr_data($zip_file){
+    $output =[];
+    $file_array = zip_file_parsing($zip_file);
+    $cv_data = (xml_parsing($file_array[1]));
+    $wikitext = update_data($cv_data);
+    echo($wikitext);
+    foreach ($file_array[2] as $peak_file){
+      $xy =jdx_parsing($peak_file);
+      $new_string = $xy['MAXX'] .",". $xy["MAXY"].";".$xy["MINX"].",".$xy["MINY"];
+        // var_dump($new_string);
+        $val = $new_string;
+        // var_dump($val);  
+      $new_data = "|$key=$val\n";
+      $wikitext_data = $wikitext_data . $new_data;
+      $output[] = $wikitext_data;
+    }
+    return $output;
+  }
     
   function upload(){
     $target_dir = "uploads/";
@@ -16,12 +34,13 @@ class ImportFileReader {
       if($FileType == "xlxs") {
         echo "File is an CV file - " . $check["mime"] . ".";
         $uploadOk = 1;
-      } else {
+      } 
+      else {
         echo "File is not a CV file.";
         $uploadOk = 0;
-      }
+      } 
     }
-        }
+  }
   public function zip_file_parsing($zip_file){
     $zip = new ZipArchive;
     $zip->open($zip_file);
@@ -48,14 +67,14 @@ class ImportFileReader {
     $text_array = explode("\n",$file_text);
     foreach($text_array as $text_line){
       foreach ($term_array as $term){
-      if (preg_match($term)){
-        str_replace("##","",$term);
-       $split_str = explode("=",$text_line);
-        $output[$term] = $split_str[1] ;
+        if (preg_match($term)){
+          str_replace("##","",$term);
+          $split_str = explode("=",$text_line);
+          $output[$term] = $split_str[1] ;
+        }
       }
     }
-    }
-
+    return $output;
   }
   
   public function xml_parsing($file) {
