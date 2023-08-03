@@ -22,7 +22,29 @@ class ImportFileReader {
       }
     }
         }
-   
+  public function zip_file_parsing($zip_file){
+    $zip = new ZipArchive;
+    $zip->open($zip_file);
+    $zip->extractTo('../resources/tmp_file');
+    $zip->close();
+    $file_array = scandir("../resources/tmp_file");
+    $out_put =[];
+    $jdx_array =[];
+    foreach ($file_array as $file){
+      if (preg_match(".xlsx",$file)){
+              $out_put[1] =$file ;
+            }
+      if (preg_match(".peak.bagit.jdx",$file)){
+        $jdx_array[]= $file;
+      }
+    }
+    $out_put[2] = $jdx_array;
+    return $out_put;
+  }
+  public function jdx_parsing(){
+    
+  }
+  
   public function xml_parsing($file) {
     $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xlsx");
     $reader->setLoadSheetsOnly('cyclic voltammetry (CV)');
