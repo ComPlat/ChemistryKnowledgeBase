@@ -30,6 +30,7 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.setData = function (data) {
         this.$element.empty();
+        this.$element.addClass("experiment-dialog")
 
         let experiments = mw.config.get('experiments');
         this.allExperiments = [];
@@ -37,7 +38,7 @@
             this.allExperiments.push({data: e, label: experiments[e].label, type: experiments[e].type});
         }
         let labelType = new OO.ui.LabelWidget({
-            label: "Type"
+            label: "Type *"
         });
         this.chooseTypeDropDown = new OO.ui.DropdownInputWidget({
             options: [
@@ -47,7 +48,7 @@
 
         });
         let labelExperimentType = new OO.ui.LabelWidget({
-            label: "Investigation-Type",
+            label: "Investigation-Type *",
 
         });
         this.chooseTypeDropDown.on('change', (item) => {
@@ -60,9 +61,9 @@
             options: this.findMenuOptionsOfType('assay')
 
         });
-        this.chooseExperimentDropDown.on('change', (item) => {
+        /*this.chooseExperimentDropDown.on('change', (item) => {
             this.setActionsDisabled(['edit', 'insert'], item == '');
-        });
+        });*/
         let form = data.template ? data.template.params.form.wt : '';
         let selectedForm = this.findMenuOptionsOfForm(form);
         if (selectedForm.length > 0) {
@@ -79,12 +80,12 @@
 
         if (this.mode == 'link') {
             let description = new OO.ui.LabelWidget({
-                label: "Description",
+                label: "Description *",
             });
             let descriptionValue =  data.template.params.description ? data.template.params.description.wt : '';
             this.descriptionValue = new OO.ui.MultilineTextInputWidget({value: descriptionValue});
             this.descriptionValue.on('change', (item) => {
-                this.setActionsDisabled(['edit', 'insert'], false);
+                this.setActionsDisabled(['edit', 'insert'], item == '');
             });
             let restrictToPagesLabel = new OO.ui.LabelWidget({
                 label: "Restrict to publication pages (empty means all pages)",
@@ -138,7 +139,7 @@
         } else {
 
             let experimentNameLabel = new OO.ui.LabelWidget({
-                label: "Investigation-Name",
+                label: "Investigation-Name *",
             });
             let experimentNameValue = data.template ? data.template.params.name.wt : '';
             this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue});

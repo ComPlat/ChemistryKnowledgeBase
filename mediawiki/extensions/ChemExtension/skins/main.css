@@ -472,3 +472,8 @@ span.experiment-link-show-button button {
     background: mediumseagreen !important;
     border-color: grey !important;
 }
+
+div.experiment-dialog label {
+    margin-bottom: 0px !important;
+    margin-top: 0.5rem;
+}
