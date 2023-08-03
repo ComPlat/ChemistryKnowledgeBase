@@ -5,17 +5,19 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // require 'vendor/autoload.php';
 class ImportFileReader {
-  function open_zip_extr_data($zip_file){
+  public function open_zip_extr_data($zip_file){
+    ## opens zip file and returns an array of each experiment in the zipfile
     $output =[];
-    $file_array = zip_file_parsing($zip_file);
-    $cv_data = (xml_parsing($file_array[1]));
-    $wikitext = update_data($cv_data);
-    echo($wikitext);
+    $file_array = $this->zip_file_parsing($zip_file);
+    $cv_data = ($this->xml_parsing($file_array[1]));
+    $wikitext = $this->update_data($cv_data);
+    # echo($wikitext);
     foreach ($file_array[2] as $peak_file){
-      $xy =jdx_parsing($peak_file);
+      $xy =$this->jdx_parsing($peak_file);
       $new_string = $xy['MAXX'] .",". $xy["MAXY"].";".$xy["MINX"].",".$xy["MINY"];
         // var_dump($new_string);
-        $val = $new_string;
+      $val = $new_string;
+      $key = "redox potential";
         // var_dump($val);  
       $new_data = "|$key=$val\n";
       $wikitext_data = $wikitext_data . $new_data;
@@ -128,7 +130,7 @@ class ImportFileReader {
         $volt_array[]= $val;
       }
     }
-    $mediawiki_data["redox potential"]= $volt_array;
+    $mediawiki_data["redox 1 potential"]= $volt_array;
     foreach ($mediawiki_catagories as $mw_key => $mw_val){
       if (array_key_exists($mw_key,$extracted_data)){
         // echo($extracted_data[$mw_key]. "\n");
