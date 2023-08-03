@@ -28,21 +28,34 @@ class ImportFileReader {
     $zip->extractTo('../resources/tmp_file');
     $zip->close();
     $file_array = scandir("../resources/tmp_file");
-    $out_put =[];
+    $output =[];
     $jdx_array =[];
     foreach ($file_array as $file){
       if (preg_match(".xlsx",$file)){
-              $out_put[1] =$file ;
+              $output[1] =$file ;
             }
       if (preg_match(".peak.bagit.jdx",$file)){
         $jdx_array[]= $file;
       }
     }
-    $out_put[2] = $jdx_array;
-    return $out_put;
+    $output[2] = $jdx_array;
+    return $output;
   }
-  public function jdx_parsing(){
-    
+  public function jdx_parsing($jdx_file){
+    $output=[];
+    $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
+    $file_text =fread($jdx_file);
+    $text_array = explode("\n",$file_text);
+    foreach($text_array as $text_line){
+      foreach ($term_array as $term){
+      if (preg_match($term)){
+        str_replace("##","",$term);
+       $split_str = explode("=",$text_line);
+        $output[$term] = $split_str[1] ;
+      }
+    }
+    }
+
   }
   
   public function xml_parsing($file) {
