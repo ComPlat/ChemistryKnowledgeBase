@@ -8,7 +8,10 @@ class ImportFileReader {
   public function open_zip_extr_data($zip_file){
     ## opens zip file and returns an array of each experiment in the zipfile
     $output =[];
-    $file_array = $this->zip_file_parsing($zip_file);
+    $file_name = basename($zip_file);
+    $temp_folder_location = "../../resources/temp_file". $file_name ;
+    mkdir($temp_folder_location,0777);
+    $file_array = $this->zip_file_parsing($zip_file,$temp_folder_location);
     $cv_data = ($this->xml_parsing($file_array[1]));
     $wikitext = $this->update_data($cv_data);
     # echo($wikitext);
@@ -22,7 +25,9 @@ class ImportFileReader {
       $new_data = "|$key=$val\n";
       $wikitext_data = $wikitext_data . $new_data;
       $output[] = $wikitext_data;
+
     }
+    rmdir($temp_folder_location);
     return $output;
   }
     
@@ -43,12 +48,12 @@ class ImportFileReader {
       } 
     }
   }
-  public function zip_file_parsing($zip_file){
+  public function zip_file_parsing($zip_file,$temp_folder_location){
     $zip = new ZipArchive;
     $zip->open($zip_file);
-    $zip->extractTo('../resources/tmp_file');
+    $zip->extractTo($temp_folder_location);
     $zip->close();
-    $file_array = scandir("../resources/tmp_file");
+    $file_array = scandir($temp_folder_location);
     $output =[];
     $jdx_array =[];
     foreach ($file_array as $file){
@@ -65,7 +70,9 @@ class ImportFileReader {
   public function jdx_parsing($jdx_file){
     $output=[];
     $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
+    $jdx_file =fopen($jdx_file,"r");
     $file_text =fread($jdx_file);
+    fclose($jdx_file);
     $text_array = explode("\n",$file_text);
     foreach($text_array as $text_line){
       foreach ($term_array as $term){
