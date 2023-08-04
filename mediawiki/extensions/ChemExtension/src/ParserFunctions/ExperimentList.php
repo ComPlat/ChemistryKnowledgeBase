@@ -41,7 +41,7 @@ class ExperimentList
             }
             $importFile = $parameters['importFile'] ?? '';
             if ($importFile != '') {
-                self::importInvestigationFile($importFile, $title, $parameters['name']);
+                self::importInvestigationFile($importFile, $title, $parameters['name'], $parameters['form']);
             }
             $renderer = new ExperimentListRenderer([
                 'page' => $title,
@@ -71,33 +71,33 @@ class ExperimentList
         return new Blade ( $views, $cache );
     }
 
-    private static function importInvestigationFile($importFilePageName, Title $title, $investigationName)
+    private static function importInvestigationFile($importFilePageName, Title $title, $investigationName, $investigationType)
     {
-        global $IP, $wgUploadPath;
+        $investigationTitle = Title::newFromText($title->getText() . "/" . $investigationName);
+        if ($investigationTitle->exists()) {
+           return;
+        }
         $fileTitle = Title::newFromText($importFilePageName, NS_FILE);
         if (!$fileTitle->exists()) {
             throw new Exception("'$importFilePageName' does not exist.");
         }
-        $file = LocalFile::newFromTitle($fileTitle, MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo());
-        $investigationTitle = Title::newFromText($title->getText() . "/" . $investigationName);
-        $fullPath = $IP . $wgUploadPath . $file->getRel();
-        self::importData($investigationTitle, $fullPath);
+        $localRepo = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo();
+        $file = LocalFile::newFromTitle($fileTitle, $localRepo);
+        self::importData($investigationTitle, $file->getLocalRefPath(), $investigationType);
     }
 
     /**
-     * // TODO Diana: import investigation data.
+     * Imports the investigation data from a file.
+     *
      * @param Title $investigationTitle the investigation page being created
      * @param string $fullPath absolute path of file to import
+     * @param string $investigationType eg. Cyclic_Voltammetry_experiments or Photocatalytic_CO2_conversion_experiments
      */
-    private static function importData(Title $investigationTitle, string $fullPath)
+    private static function importData(Title $investigationTitle, string $fullPath, string $investigationType)
     {
-        $file = $fullPath;
-        $reader = new ImportFileReader($file);
-        $experiment_array = ($reader->open_zip_extr_data($file));
-        $wikitext = implode("\n",$experiment_array);
-        $file = basename($file);
-        $file = str_replace(".zip","",$file);
-        echo("$file\n");
-        WikiTools::doEditContent($investigationTitle, $wikitext, "comment",EDIT_NEW);
+        $reader = new ImportFileReader();
+        $experiment_array = $reader->open_zip_extr_data($fullPath);
+        $wikitext = implode("\n", $experiment_array);
+        WikiTools::doEditContent($investigationTitle, $wikitext, "auto-generated",EDIT_NEW);
     }
 }

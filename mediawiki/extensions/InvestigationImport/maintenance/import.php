@@ -30,12 +30,13 @@ class import extends \Maintenance
     public function execute()
     {
         $file = $this->getOption('f');
-        $reader = new ImportFileReader($file);
+        $reader = new ImportFileReader();
         $experiment_array = ($reader->open_zip_extr_data($file));
         $wikitext = implode("\n",$experiment_array);
         $file = basename($file);
         $file = str_replace(".zip","",$file);
         echo("$file\n");
+        echo $wikitext;
         WikiTools::doEditContent($file, $wikitext, "comment",EDIT_NEW);
     }
 }
