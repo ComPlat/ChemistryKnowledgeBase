@@ -33,5 +33,10 @@
 	"page-type-investigation": "Investigation",
 
 	"topic-subcat-count": "{{PLURAL:$2|This topic has only the following subtopic.|This topic has the following {{PLURAL:$1|subtopic|$1 subtopics}}, out of $2 total.}}",
-	"topic-article-count": "{{PLURAL:$2|This topic contains only the following publication.|The following {{PLURAL:$1|publication is|$1 publications are}} in this topic, out of $2 total.}}"
+	"topic-article-count": "{{PLURAL:$2|This topic contains only the following publication.|The following {{PLURAL:$1|publication is|$1 publications are}} in this topic, out of $2 total.}}",
+
+	"specialimportpage": "Export page from subwiki to main wiki",
+	"page-title-label": "Page title to import into main wiki",
+	"page-title-hint": "Enter page title",
+	"chemext-import-page": "Import page to main wiki"
 }

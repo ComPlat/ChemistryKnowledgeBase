@@ -15,9 +15,9 @@ class ReplaceChemFormImage extends SimpleHandler {
     public function run() {
 
         global $wgUser;
-        if (!MediaWikiServices::getInstance()
-            ->getPermissionManager()
-            ->userHasRight( $wgUser, 'delete' )) {
+        if (!in_array('editor', MediaWikiServices::getInstance()
+            ->getUserGroupManager()
+            ->getUserGroups( $wgUser))) {
             $res = new Response();
             $res->setStatus(403);
             return $res;

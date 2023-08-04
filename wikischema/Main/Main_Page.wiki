@@ -1,8 +1,10 @@
-== Available Topics ==
-<categorytree mode="pages" depth="3" hideroot="on" hideprefix="categories">Topic</categorytree>
-
-== Featured Molecule ==
-{{#ask: [[Category:Molecule]] [[Abbreviation::+]] [[InChIKey::+]] 
+{| style="border: 1px outset"
+|+
+! style="background-color:#eaecf0; padding: 10px" | Available Topics
+! style="background-color:#eaecf0; padding: 10px" | Featured Molecule
+|-
+| style="padding: 30px" |<categorytree mode="pages" depth="3" hideroot="on" hideprefix="categories">Topic</categorytree>
+| style="padding: 30px" |{{#ask: [[Category:Molecule]] [[Abbreviation::+]] [[InChIKey::+]] 
 |?InChIKey 
 |?Abbreviation 
 |limit=1 
@@ -12,19 +14,24 @@
 |outrotemplate=MoleculeListOutro 
 |template=MoleculeShortListRow
 |searchlabel= }}
-
-== Help ==
-
-* [[Help:Getting Started]]
-
-* [[Help:Create new paper]]
+|-
+! style="background-color:#eaecf0; padding:10px" colspan="2" |Featured Publication
+|-
+| style="padding: 30px" colspan="2"| {{#ask: [[Category:Topic]]|limit=1|order=random|searchlabel= }}
+|-
+! style="background-color:#eaecf0; padding: 10px" | Help
+! style="background-color:#eaecf0; padding: 10px" | Media Wiki
+|-
+| style="padding: 15px" |
+* [[Help:Getting Started]] 
+* [[Help:Create new paper]] 
 * [[Help:Create new topic]]
-
-== Media Wiki ==
+* [[Help:ReplaceMolecule]]
+| style="padding: 15px" |
 *[[mediawikiwiki:Special:MyLanguage/Manual:Configuration_settings|Configuration settings list]]
 *[[mediawikiwiki:Special:MyLanguage/Manual:FAQ|MediaWiki FAQ]]
 *[https://lists.wikimedia.org/postorius/lists/mediawiki-announce.lists.wikimedia.org/ MediaWiki release mailing list]
 *[[mediawikiwiki:Special:MyLanguage/Localisation#Translation_resources|Localise MediaWiki for your language]]
 *[[mediawikiwiki:Special:MyLanguage/Manual:Combating_spam|Learn how to combat spam on your wiki]]
-* [[mediawikiwiki:Special:MyLanguage/Help:Contents|Media Wiki User's Guide]]
-__NOTOC__
+*[[mediawikiwiki:Special:MyLanguage/Help:Contents|Media Wiki User's Guide]]
+|}

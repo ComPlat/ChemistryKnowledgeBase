@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock;
 use DIQA\ChemExtension\PubChem\PubChemService;
@@ -10,6 +11,7 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Job;
+use MediaWiki\MediaWikiServices;
 use Title;
 use Exception;
 
@@ -46,6 +48,7 @@ class MoleculePageCreationJob extends Job
         if (!$successful) {
             throw new Exception("Could not create/update molecule/reaction page");
         }
+        $this->renderMoleculeIfNecessary();
 
         $object = $this->chemForm->hasRGroupDefinitions() ? "molecule collection" : "molecule";
         $message = "Created/updated $object page: {$title->getPrefixedText()}, smiles: {$this->chemForm->getSmiles()}";
@@ -222,6 +225,23 @@ class MoleculePageCreationJob extends Job
             $this->logger->debug('Requesting molecule metadata from Chemscanner failed: ' . $e->getMessage());
         }
         return $pubChemData;
+    }
+
+    private function renderMoleculeIfNecessary()
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
+
+        $chemFormRepo = new ChemFormRepository($dbr);
+        $img = $chemFormRepo->getChemFormImageByKey($this->chemForm->getMoleculeKey());
+        if ($img == '') {
+            try {
+                $client = new MoleculeRendererClientImpl();
+                $renderedMolecule = $client->render($this->chemForm->getMolOrRxn());
+                $chemFormRepo->addOrUpdateChemFormImage($this->chemForm->getMoleculeKey(), base64_encode($renderedMolecule->svg));
+            } catch(Exception $e) {
+                $this->logger->debug('Failed to render molecule: '.$this->chemForm->getMoleculeKey());
+            }
+        }
     }
 
 }

@@ -7,7 +7,7 @@ Params:
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This page references the wrong molecule. Please select the correct molecule or add it with the [[Help:Chemical formula]] template.
+|text=This page references the wrong molecule. Please select the correct molecule or add it with the [[Help:Getting_Started#Chemical_formula|chemical formula]] template.
 |type=molecules
 |name=Wrong molecule
 |icon=File:WikiTemplate_chemistry.png

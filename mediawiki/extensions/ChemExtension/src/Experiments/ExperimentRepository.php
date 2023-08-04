@@ -14,17 +14,6 @@ class ExperimentRepository
     {
 
         $this->experiments = [
-            'DemoExperiment1' => [
-                'label' => 'DemoInvestigation 1',
-                'type' => 'assay',
-                'rowTemplate' => 'DemoExperiment1Row'
-
-            ],
-            'DemoExperiment2' => [
-                'label' => 'DemoInvestigation 2',
-                'type' => 'molecular-process',
-                'rowTemplate' => 'DemoExperiment2Row'
-            ],
             'Photocatalytic_CO2_conversion_experiments' => [
                 'label' => 'Photocatalytic CO2 conversion',
                 'type' => 'molecular-process',

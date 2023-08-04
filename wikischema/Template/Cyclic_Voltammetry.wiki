@@ -2,12 +2,12 @@
 This is the Cyclic Voltammetry template.
 </noinclude>
 <includeonly><tr>
-<td>{{{anl|}}}</td>
+<td>{{DisplayMolecule|{{{anl|}}} }}</td>
 <td>{{{anl conc|}}}</td>
 <td>
 {{#formatAsTable:{{{redox potential|}}} }}
 </td>
-<td>{{{solv|}}}</td>
+<td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
 <td>{{{electrolyte|}}}</td>
 <td property="hidden">{{{el conc|}}}</td>
