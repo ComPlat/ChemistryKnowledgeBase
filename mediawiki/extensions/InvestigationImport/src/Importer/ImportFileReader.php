@@ -1,33 +1,55 @@
 <?php
 
 namespace DIQA\InvestigationImport\Importer;
+use ZipArchive;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // require 'vendor/autoload.php';
 class ImportFileReader {
+  function rrmdir($dir)
+{
+ if (is_dir($dir))
+ {
+  $objects = scandir($dir);
+
+  foreach ($objects as $object)
+  {
+   if ($object != '.' && $object != '..')
+   {
+    if (filetype($dir.'/'.$object) == 'dir') {rrmdir($dir.'/'.$object);}
+    else {unlink($dir.'/'.$object);}
+   }
+  }
+
+  reset($objects);
+  rmdir($dir);
+ }
+}
+
   public function open_zip_extr_data($zip_file){
     ## opens zip file and returns an array of each experiment in the zipfile
     $output =[];
     $file_name = basename($zip_file);
-    $temp_folder_location = "../../resources/temp_file". $file_name ;
+    $temp_folder_location = "../resources/temp_file". $file_name ;
     mkdir($temp_folder_location,0777);
     $file_array = $this->zip_file_parsing($zip_file,$temp_folder_location);
-    $cv_data = ($this->xml_parsing($file_array[1]));
+    // var_dump($temp_folder_location."/".$file_array["1"]);
+    $cv_data = ($this->xml_parsing($temp_folder_location."/".$file_array["1"]));
     $wikitext = $this->update_data($cv_data);
     # echo($wikitext);
-    foreach ($file_array[2] as $peak_file){
-      $xy =$this->jdx_parsing($peak_file);
+    foreach ($file_array["2"] as $peak_file){
+      $xy =$this->jdx_parsing($temp_folder_location."/".$peak_file);
       $new_string = $xy['MAXX'] .",". $xy["MAXY"].";".$xy["MINX"].",".$xy["MINY"];
         // var_dump($new_string);
       $val = $new_string;
       $key = "redox potential";
         // var_dump($val);  
       $new_data = "|$key=$val\n";
-      $wikitext_data = $wikitext_data . $new_data;
+      $wikitext_data = $wikitext . $new_data. "}}\n}}";
       $output[] = $wikitext_data;
 
     }
-    rmdir($temp_folder_location);
+    $this->rrmdir($temp_folder_location);
     return $output;
   }
     
@@ -50,39 +72,47 @@ class ImportFileReader {
   }
   public function zip_file_parsing($zip_file,$temp_folder_location){
     $zip = new ZipArchive;
-    $zip->open($zip_file);
+    if ($zip->open($zip_file) === true){
+    // $result_code = $zip->open($zip_file);
     $zip->extractTo($temp_folder_location);
     $zip->close();
+    echo("\nok\n");
+    }
+    else {
+      echo "\nfailed\n";
+  }
     $file_array = scandir($temp_folder_location);
+    
     $output =[];
     $jdx_array =[];
     foreach ($file_array as $file){
-      if (preg_match(".xlsx",$file)){
-              $output[1] =$file ;
+      if (preg_match("/.xlsx/",$file)){
+              $output["1"] =$file ;
             }
-      if (preg_match(".peak.bagit.jdx",$file)){
+      if (preg_match("/.bagit.peak.jdx/",$file)){
         $jdx_array[]= $file;
       }
     }
-    $output[2] = $jdx_array;
+    $output["2"] = $jdx_array;
     return $output;
   }
   public function jdx_parsing($jdx_file){
     $output=[];
     $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
-    $jdx_file =fopen($jdx_file,"r");
-    $file_text =fread($jdx_file);
-    fclose($jdx_file);
+    $jdx_file_contents =fopen($jdx_file,"r");
+    $file_text =fread($jdx_file_contents, filesize($jdx_file));
+    fclose($jdx_file_contents);
     $text_array = explode("\n",$file_text);
     foreach($text_array as $text_line){
       foreach ($term_array as $term){
-        if (preg_match($term)){
-          str_replace("##","",$term);
+        if (preg_match("/$term/",$text_line)){
+         $term = str_replace("##","",$term);
           $split_str = explode("=",$text_line);
-          $output[$term] = $split_str[1] ;
+          $output["$term"] = $split_str[1] ;
         }
       }
     }
+    // var_dump($output);
     return $output;
   }
   
@@ -155,8 +185,8 @@ class ImportFileReader {
       $new_data = "|$key=$val\n";
       $wikitext_data = $wikitext_data . $new_data;
       }
-    $wikitext_data = $table_start . $wikitext_data . "}}\n}}";
-    var_dump($wikitext_data);
+    $wikitext_data = $table_start . $wikitext_data ;
+    // var_dump($wikitext_data);
     return ($wikitext_data);
   }
 }
