@@ -33,6 +33,7 @@ class import extends \Maintenance
         $reader = new ImportFileReader($file);
         $experiment_array = ($reader->open_zip_extr_data($file));
         $wikitext = implode("\n",$experiment_array);
+        var_dump($wikitext);
         $file = str_replace("../resources/","",$file);
         $file_array = str_split($file,$length=7);
         echo("$file_array[0]\n");
