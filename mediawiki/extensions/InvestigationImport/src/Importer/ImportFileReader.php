@@ -65,26 +65,42 @@ class ImportFileReader
         return $output;
     }
 
-    private function jdx_parsing($jdx_file)
-    {
-        $output = [];
-        $term_array = ["##MAXX", "##MAXY", "##MINX", "##MINY"];
-        $jdx_file_contents = fopen($jdx_file, "r");
-        $file_text = fread($jdx_file_contents, filesize($jdx_file));
+    public function jdx_parsing($jdx_file){
+        $output=[];
+        $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
+        $peaktable_array =["start"=>"$$ === CHEMSPECTRA PEAK TABLE AUTO ===","data"=>"##PEAKTABLE= (XY..XY)"
+            ,"end"=>"##END="];
+        $jdx_file_contents =fopen($jdx_file,"r");
+        $file_text =fread($jdx_file_contents, filesize($jdx_file));
         fclose($jdx_file_contents);
-        $text_array = explode("\n", $file_text);
-        foreach ($text_array as $text_line) {
-            foreach ($term_array as $term) {
-                if (preg_match("/$term/", $text_line)) {
-                    $term = str_replace("##", "", $term);
-                    $split_str = explode("=", $text_line);
+        $text_array = explode("\n",$file_text);
+        $count= 0;
+        $boo =false;
+        $data_index = [];
+        foreach($text_array as $text_line){
+            // if ($text_line === $peaktable_array["start"]){
+            //   $boo =true;
+            // }
+            // if ($text_line === $peaktable_array["data"] and $boo === true){
+            //   $data_index[] = $count;
+            // }
+            // if ($text_line === $peaktable_array["end"] and $boo === true){
+            //   $data_index[] = $count;
+            //   $boo = false;
+            // }
+            // $count = $count + 1;
+            foreach ($term_array as $term){
+                if (preg_match("/$term/",$text_line)){
+                    $term = str_replace("##","",$term);
+                    $split_str = explode("=",$text_line);
                     $cleaned_num = $split_str[1];
                     $cleaned_num = (float)$cleaned_num;
                     // var_dump($cleaned_num);
-                    $output["$term"] = $cleaned_num;
+                    $output["$term"] = $cleaned_num ;
                 }
             }
         }
+        var_dump($data_index);
         // var_dump($output);
         return $output;
     }
