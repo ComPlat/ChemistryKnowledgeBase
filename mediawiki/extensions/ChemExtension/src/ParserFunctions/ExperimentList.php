@@ -91,6 +91,13 @@ class ExperimentList
      */
     private static function importData(Title $investigationTitle, string $fullPath)
     {
-        $reader = new ImportFileReader();
+        $file = $fullPath;
+        $reader = new ImportFileReader($file);
+        $experiment_array = ($reader->open_zip_extr_data($file));
+        $wikitext = implode("\n",$experiment_array);
+        $file = basename($file);
+        $file = str_replace(".zip","",$file);
+        echo("$file\n");
+        WikiTools::doEditContent($investigationTitle, $wikitext, "comment",EDIT_NEW);
     }
 }
