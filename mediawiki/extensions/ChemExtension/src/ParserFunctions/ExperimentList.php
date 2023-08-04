@@ -5,9 +5,13 @@ namespace DIQA\ChemExtension\ParserFunctions;
 use DIQA\ChemExtension\Experiments\ExperimentListRenderer;
 use DIQA\ChemExtension\Experiments\ExperimentRenderer;
 use DIQA\ChemExtension\Utils\WikiTools;
+use DIQA\InvestigationImport\Importer\ImportFileReader;
+use MediaWiki\MediaWikiServices;
 use Parser;
 use Exception;
 use Philo\Blade\Blade;
+use Title;
+use LocalFile;
 
 class ExperimentList
 {
@@ -35,6 +39,10 @@ class ExperimentList
             if (is_null($title)) {
                 throw new Exception("could not identify current title");
             }
+            $importFile = $parameters['importFile'] ?? '';
+            if ($importFile != '') {
+                self::importInvestigationFile($importFile, $title, $parameters['name']);
+            }
             $renderer = new ExperimentListRenderer([
                 'page' => $title,
                 'form' => $parameters['form'],
@@ -61,5 +69,28 @@ class ExperimentList
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
         return new Blade ( $views, $cache );
+    }
+
+    private static function importInvestigationFile($importFilePageName, Title $title, $investigationName)
+    {
+        global $IP, $wgUploadPath;
+        $fileTitle = Title::newFromText($importFilePageName, NS_FILE);
+        if (!$fileTitle->exists()) {
+            throw new Exception("'$importFilePageName' does not exist.");
+        }
+        $file = LocalFile::newFromTitle($fileTitle, MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo());
+        $investigationTitle = Title::newFromText($title->getText() . "/" . $investigationName);
+        $fullPath = $IP . $wgUploadPath . $file->getRel();
+        self::importData($investigationTitle, $fullPath);
+    }
+
+    /**
+     * // TODO Diana: import investigation data.
+     * @param Title $investigationTitle the investigation page being created
+     * @param string $fullPath absolute path of file to import
+     */
+    private static function importData(Title $investigationTitle, string $fullPath)
+    {
+        $reader = new ImportFileReader();
     }
 }

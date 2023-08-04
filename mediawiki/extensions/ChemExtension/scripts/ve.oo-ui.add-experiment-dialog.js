@@ -23,6 +23,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             return new OO.ui.Process(() => {
                 let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
                 let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
+                let importFile = this.chooseExperimentsWidget.getImportFile();
                 let toInsert = [ [
                     {
                         type: 'mwTransclusionInline',
@@ -34,7 +35,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                             i: 0,
                                             params: {
                                                 form: { wt: selectedExperiment },
-                                                name: { wt: selectedExperimentName }
+                                                name: { wt: selectedExperimentName },
+                                                importFile: { wt: importFile }
                                             },
                                             target: { wt: "#experimentlist:", "function": "experimentlist"}
                                         }
@@ -75,7 +77,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentDialog.prototype.getBodyHeight = function () {
-        return 250;
+        return 300;
     };
 
     /* Static Properties */
