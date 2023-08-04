@@ -1,0 +1,36 @@
+==== How to replace a molecule in the wiki ====
+(because it is faulty or there are other issues)
+
+===== Molecule just looks weird, but is correct: =====
+
+* log in (with role “editor”)
+* go to molecule page, click “modify molecule” in the top right
+* This opens the Modify molecule special page with the molecule pre-loaded in the editor
+* redraw the molecule correctly, '''it must have the same InChIKey'''!
+* Save with “modify molecule” on the bottom of the page
+
+===== Molecule is faulty (missing charge, wrong CO bond, missing counter ion, too many H…) =====
+
+# Set template “Faulty molecule” on page (Insert > Templates > Faulty molecule)
+# Open molecule page
+# Remove abbreviation (save for later use on correct molecule)
+# Check section “Molecule is used on following pages”
+## Topic: mostly in investigation link → will change automatically with investigation, if chemform or molecule link, replace with correct molecule link
+## Publication: usually chemform or molecule link, replace
+## Investigation: must be changed in investigation form
+# Check if molecule is part of a collection
+## if the base is wrong, redo the whole collection, check for each individual molecule
+## if one R-group is wrong, change it where the collection is drawn (add new correct R-group)
+# With an overview on which pages it needs to be changed you can proceed:
+## on the original (publication) page where the molecule was drawn, create a new chemform with the correct molecule structure (or molecule link)
+## delete the faulty chemform (or molecule link)
+## save the page
+## go to the new molecule page and add the abbreviation
+## on pages with investigations, edit the lines mentioning the molecule (remove old with little x at end of line, add new molecule ID or abbreviation, '''select the molecule proposed! Molecule entry must be Molecule:100xxx''')
+## remove “Faulty molecule” banner if all is corrected
+## Save page: add “Fixed faulty molecule” or something similar in summary
+## Repeat on as many pages as necessary
+# Add “new” molecule to the [https://docs.google.com/spreadsheets/d/1fxYfQA3uo5vMaVXReY5LyyusimdM_poe74K4oQD9hu8/edit#gid=0 list]
+## enter “ok” in “valid structure”
+## link to new molecule from old molecule in “redirect”
+# Check old molecule page: it should have an empty “Molecule is used on following pages” section (or only test pages)

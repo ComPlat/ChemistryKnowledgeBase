@@ -7,7 +7,7 @@ Params:
 <includeonly>{{MissingItem
 |date={{{date|}}}
 |author={{{author|}}}
-|text=This page about a publication or dataset does not currently include an [[Help:Create_new_paper#Investigation|investigation]]. Please add any experiments detailed in the publication or performed to obtain this dataset.
+|text=This page about a publication or dataset does not currently include an [[Help:Getting_Started#Investigation|investigation]]. Please add any experiments detailed in the publication or performed to obtain this dataset.
 |type=investigation
 |name=Missing investigation
 |icon=File:WikiTemplate_experiment.png
