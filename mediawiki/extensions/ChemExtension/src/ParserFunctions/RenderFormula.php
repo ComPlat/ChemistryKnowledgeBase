@@ -75,7 +75,8 @@ class RenderFormula
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($attributes['moleculeKey']),
                 'width' => $attributes['width'],
                 'height' => $attributes['height'],
-                'showrgroups' => $attributes['showrgroups']
+                'showrgroups' => $attributes['showrgroups'],
+                'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png"
             ]
         )->render();
     }
