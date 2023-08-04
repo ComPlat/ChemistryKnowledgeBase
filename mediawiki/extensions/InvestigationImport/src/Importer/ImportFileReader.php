@@ -1,6 +1,7 @@
 <?php
 
 namespace DIQA\InvestigationImport\Importer;
+
 use ZipArchive;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -30,6 +31,7 @@ class ImportFileReader {
     ## opens zip file and returns an array of each experiment in the zipfile
     $output =[];
     $file_name = basename($zip_file);
+    $file_name = str_replace(".zip","",$file_name);
     $temp_folder_location = "../resources/temp_file". $file_name ;
     mkdir($temp_folder_location,0777);
     $file_array = $this->zip_file_parsing($zip_file,$temp_folder_location);
@@ -74,15 +76,14 @@ class ImportFileReader {
     $zip = new ZipArchive;
     if ($zip->open($zip_file) === true){
     // $result_code = $zip->open($zip_file);
-    $zip->extractTo($temp_folder_location);
-    $zip->close();
-    echo("\nok\n");
+      $zip->extractTo($temp_folder_location);
+      $zip->close();
+      echo("ok\n");
     }
     else {
-      echo "\nfailed\n";
+      echo "failed\n";
   }
     $file_array = scandir($temp_folder_location);
-    
     $output =[];
     $jdx_array =[];
     foreach ($file_array as $file){
@@ -108,7 +109,10 @@ class ImportFileReader {
         if (preg_match("/$term/",$text_line)){
          $term = str_replace("##","",$term);
           $split_str = explode("=",$text_line);
-          $output["$term"] = $split_str[1] ;
+          $cleaned_num = $split_str[1];
+          $cleaned_num = (float)$cleaned_num;
+          // var_dump($cleaned_num);
+          $output["$term"] = $cleaned_num ;
         }
       }
     }
