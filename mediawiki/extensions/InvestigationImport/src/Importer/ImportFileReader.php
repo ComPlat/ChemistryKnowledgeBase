@@ -22,10 +22,10 @@ class ImportFileReader
         $wikitext = $this->update_data($cv_data);
         # echo($wikitext);
         foreach ($file_array["2"] as $peak_file) {
-            $xy = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
-            $new_string = $xy['MAXX'] . "," . $xy["MAXY"] . ";" . $xy["MINX"] . "," . $xy["MINY"];
+            $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
+            # $new_string = $xy['MAXX'] . "," . $xy["MAXY"] . ";" . $xy["MINX"] . "," . $xy["MINY"];
             // var_dump($new_string);
-            $val = $new_string;
+            $val = $peak_string;
             $key = "redox potential";
             // var_dump($val);
             $new_data = "|$key=$val\n";
@@ -78,29 +78,34 @@ class ImportFileReader
         $boo =false;
         $data_index = [];
         foreach($text_array as $text_line){
-            // if ($text_line === $peaktable_array["start"]){
-            //   $boo =true;
-            // }
-            // if ($text_line === $peaktable_array["data"] and $boo === true){
-            //   $data_index[] = $count;
-            // }
-            // if ($text_line === $peaktable_array["end"] and $boo === true){
-            //   $data_index[] = $count;
-            //   $boo = false;
-            // }
-            // $count = $count + 1;
-            foreach ($term_array as $term){
-                if (preg_match("/$term/",$text_line)){
-                    $term = str_replace("##","",$term);
-                    $split_str = explode("=",$text_line);
-                    $cleaned_num = $split_str[1];
-                    $cleaned_num = (float)$cleaned_num;
-                    // var_dump($cleaned_num);
-                    $output["$term"] = $cleaned_num ;
-                }
+            if ($text_line === $peaktable_array["start"]){
+              $boo =true;
             }
+            if ($text_line === $peaktable_array["data"] and $boo === true){
+              $data_index[] = $count;
+            }
+            if ($text_line === $peaktable_array["end"] and $boo === true){
+              $data_index[] = $count;
+              $boo = false;
+            }
+            $count = $count + 1;
+            // foreach ($term_array as $term){
+            //     if (preg_match("/$term/",$text_line)){
+            //         $term = str_replace("##","",$term);
+            //         $split_str = explode("=",$text_line);
+            //         $cleaned_num = $split_str[1];
+            //         $cleaned_num = (float)$cleaned_num;
+            //         // var_dump($cleaned_num);
+            //         $output["$term"] = $cleaned_num ;
+            //     }
+            // }
         }
         var_dump($data_index);
+        $peak_string ="";
+        for($x= $data_index[0];$x >= $data_index[1]; $x++){
+          $peak_string = $peak_string.$text_array[$x]. ";";
+        }       
+        $peak_string = $output;
         // var_dump($output);
         return $output;
     }
