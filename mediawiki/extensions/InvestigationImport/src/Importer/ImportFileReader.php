@@ -17,17 +17,12 @@ class ImportFileReader
         $temp_folder_location = sys_get_temp_dir() . "/" . basename($zip_file) . "_" . uniqid();
         mkdir($temp_folder_location);
         $file_array = $this->zip_file_parsing($zip_file, $temp_folder_location);
-        // var_dump($temp_folder_location."/".$file_array["1"]);
         $cv_data = ($this->xml_parsing($temp_folder_location . "/" . $file_array["1"]));
         $wikitext = $this->update_data($cv_data);
-        # echo($wikitext);
         foreach ($file_array["2"] as $peak_file) {
             $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
-            # $new_string = $xy['MAXX'] . "," . $xy["MAXY"] . ";" . $xy["MINX"] . "," . $xy["MINY"];
-            // var_dump($new_string);
             $val = $peak_string;
             $key = "redox potential";
-            // var_dump($val);
             $new_data = "|$key=$val\n";
             $wikitext_data = $wikitext . $new_data . "}}\n}}";
             $output[] = $wikitext_data;
@@ -57,7 +52,7 @@ class ImportFileReader
             if (preg_match("/.xlsx/", $file)) {
                 $output["1"] = $file;
             }
-            if (preg_match("/.bagit.peak.jdx/", $file)) {
+            if (preg_match("/.bagit.edit.jdx/", $file)) {
                 $jdx_array[] = $file;
             }
         }
@@ -68,7 +63,7 @@ class ImportFileReader
     public function jdx_parsing($jdx_file){
         $output=[];
         $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
-        $peaktable_array =["start"=>"$$ === CHEMSPECTRA PEAK TABLE AUTO ===","data"=>"##PEAKTABLE= (XY..XY)"
+        $peaktable_array =["start"=>"$$ === CHEMSPECTRA CYCLIC VOLTAMMETRY ===","data"=>"##\$CSCYCLICVOLTAMMETRYDATA="
             ,"end"=>"##END="];
         $jdx_file_contents =fopen($jdx_file,"r");
         $file_text =fread($jdx_file_contents, filesize($jdx_file));
@@ -81,32 +76,22 @@ class ImportFileReader
             if ($text_line === $peaktable_array["start"]){
               $boo =true;
             }
-            if ($text_line === $peaktable_array["data"] and $boo === true){
+            if ($text_line === $peaktable_array["data"] and $boo == true){
               $data_index[] = $count;
             }
-            if ($text_line === $peaktable_array["end"] and $boo === true){
+            if ($text_line === $peaktable_array["end"] and $boo == true){
               $data_index[] = $count;
               $boo = false;
             }
             $count = $count + 1;
-            // foreach ($term_array as $term){
-            //     if (preg_match("/$term/",$text_line)){
-            //         $term = str_replace("##","",$term);
-            //         $split_str = explode("=",$text_line);
-            //         $cleaned_num = $split_str[1];
-            //         $cleaned_num = (float)$cleaned_num;
-            //         // var_dump($cleaned_num);
-            //         $output["$term"] = $cleaned_num ;
-            //     }
-            // }
         }
-        var_dump($data_index);
-        $peak_string ="";
-        for($x= $data_index[0];$x >= $data_index[1]; $x++){
-          $peak_string = $peak_string.$text_array[$x]. ";";
-        }       
-        $peak_string = $output;
-        // var_dump($output);
+        $data_index[0]= $data_index[0] + 1;
+        $data_index[1]= $data_index[1] - 1;
+        $peak_string  ="";
+        for($x= $data_index[0];$x <= $data_index[1]; $x++){
+          $peak_string = $peak_string . $text_array[$x] . ";"; 
+        }    
+        $output = $peak_string;
         return $output;
     }
 
@@ -114,7 +99,6 @@ class ImportFileReader
     {
         $reader = IOFactory::createReader("Xlsx");
         $reader->setLoadSheetsOnly('cyclic voltammetry (CV)');
-        // $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
         $spreadsheet = $reader->load($file);
         $dataArrayE = $spreadsheet->getActiveSheet()
             ->rangeToArray(
