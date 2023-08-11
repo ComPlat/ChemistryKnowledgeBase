@@ -19,19 +19,24 @@ class ImportFileReader
         $file_array = $this->zip_file_parsing($zip_file, $temp_folder_location);
         $cv_data = ($this->xml_parsing($temp_folder_location . "/" . $file_array["1"]));
         $wikitext = $this->update_data($cv_data);
-        $intial_start_boo = true;
+        $intial_start_int = 1;
         foreach ($file_array["2"] as $peak_file) {
-            if ($intial_start_boo = true){
-                $intial_start_boo = false;
+            if ($intial_start_int == 1){
             }
             else {
-                $wikitext = str_replace("}}{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
+                $wikitext = str_replace("{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
             }
             $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
             $val = $peak_string;
             $key = "redox potential";
             $new_data = "|$key=$val\n";
-            $wikitext_data = $wikitext . $new_data . "}}\n}}";
+            if ($intial_start_int == count($file_array["2"]))
+                $wikitext_data = $wikitext . $new_data . "}}\n}}";
+            else{
+                $wikitext_data = $wikitext . $new_data . "}}";
+            }
+            $intial_start_int = $intial_start_int + 1;
+            echo($intial_start_int);
             $output[] = $wikitext_data;
 
         }

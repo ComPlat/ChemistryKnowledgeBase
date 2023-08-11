@@ -37,7 +37,7 @@ class import extends \Maintenance
         $file = str_replace(".zip","",$file);
         echo("$file\n");
         echo $wikitext;
-        WikiTools::doEditContent($file, $wikitext, "comment",EDIT_NEW);
+        WikiTools::doEditContent($file, $wikitext, "comment",EDIT_UPDATE);
     }
 }
 $maintClass = import::class;
