@@ -99,23 +99,33 @@ class ImportFileReader
         }
         $data_index[0]= $data_index[0] + 1;
         $data_index[1]= $data_index[1] - 1;
-        $peak_string  =[];
-        $character_list = ["(",")"];
-        for($x= $data_index[0];$x <= $data_index[1]; $x++){            
-            $text_array[$x] =trim($text_array[$x],$character_list);
-            $peak_array = explode(",",$term_array[$x]);
+        $peak_string  ="";
+        for($x= $data_index[0];$x <= $data_index[1]; $x++){    
+            $single_peak_array =[];        
+            $text_array[$x] =trim($text_array[$x],"()");
+            $peak_array = explode(", ",$text_array[$x]);
+            // var_dump($peak_array);
             foreach ($peak_array as $data_point){
-                if (str_contains($data_point,"e") )
-                $e_value = str_split($data_point)[1];
-                else{
-                $e_value = "";
+                if (str_contains($data_point,"e") ){
+                    $e_value = "e" . explode("e",$data_point)[1];
+                    $data_point = explode("e",$data_point)[0];
                 }
-            $small_data = substr($data_point,3);
-            $small_data = $small_data . $evalue;
+                else{
+                    $e_value = "";
+                }
+                if (str_contains($data_point,"-") ){
+                    $negative_value ="-";
+                    $data_point = trim($data_point,"-");      
+                }                         
+                else{
+                    $negative_value = "";
+                }
+            $small_data = substr($data_point,0,4);
+            $small_data = $negative_value . $small_data . $e_value;
             $single_peak_array[] = $small_data;    
             }
-            $single_peak = implode($single_peak_array,",");
-          $peak_string = $peak_string . $single_peak_array . ";"; 
+            $single_peak = implode(",\, ",$single_peak_array);
+          $peak_string = $peak_string . $single_peak . ";"; 
         }    
         
 
