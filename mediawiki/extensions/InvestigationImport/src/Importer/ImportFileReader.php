@@ -25,7 +25,7 @@ class ImportFileReader
                 $intial_start_boo = false;
             }
             else {
-                $wikitext = str_replace("{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
+                $wikitext = str_replace("}}{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
             }
             $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
             $val = $peak_string;
