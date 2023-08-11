@@ -124,7 +124,7 @@ class ImportFileReader
             $small_data = $negative_value . $small_data . $e_value;
             $single_peak_array[] = $small_data;    
             }
-            $single_peak = implode(",\, ",$single_peak_array);
+            $single_peak = implode(", ",$single_peak_array);
           $peak_string = $peak_string . $single_peak . ";"; 
         }    
         
@@ -200,8 +200,11 @@ class ImportFileReader
                 // var_dump($new_string);
                 $val = $new_string;
             }
+            var_dump($val);
             // var_dump($val);
-
+            if(is_numeric($val)){
+                $val = substr($val,0,4);
+            }
             $new_data = "|$key=$val\n";
             $wikitext_data = $wikitext_data . $new_data;
         }
