@@ -94,10 +94,26 @@ class ImportFileReader
         }
         $data_index[0]= $data_index[0] + 1;
         $data_index[1]= $data_index[1] - 1;
-        $peak_string  ="";
-        for($x= $data_index[0];$x <= $data_index[1]; $x++){
-          $peak_string = $peak_string . $text_array[$x] . ";"; 
+        $peak_string  =[];
+        $character_list = ["(",")"];
+        for($x= $data_index[0];$x <= $data_index[1]; $x++){            
+            $text_array[$x] =trim($text_array[$x],$character_list);
+            $peak_array = explode(",",$term_array[$x]);
+            foreach ($peak_array as $data_point){
+                if (str_contains($data_point,"e") )
+                $e_value = str_split($data_point)[1];
+                else{
+                $e_value = "";
+                }
+            $small_data = substr($data_point,3);
+            $small_data = $small_data . $evalue;
+            $single_peak_array[] = $small_data;    
+            }
+            $single_peak = implode($single_peak_array,",");
+          $peak_string = $peak_string . $single_peak_array . ";"; 
         }    
+        
+
         $output = $peak_string;
         return $output;
     }
