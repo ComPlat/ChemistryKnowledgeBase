@@ -120,7 +120,7 @@ class ImportFileReader
                 else{
                     $negative_value = "";
                 }
-            $small_data = substr($data_point,0,4);
+            $small_data = round($data_point,2);
             $small_data = $negative_value . $small_data . $e_value;
             $single_peak_array[] = $small_data;    
             }
