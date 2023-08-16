@@ -182,16 +182,7 @@ class ImportFileReader
         // need to add code to change molecule common name to Molecule:Id
         return $CV_metadata;
     }
-    function roundoff(STRING $value){
-        $last = substr($value,-1);
-        $zero_place= strlen(explode(".",$value)[1]);
-        $zero_place = $zero_place - 1;
-        $round_vale = pow(10,"-" . $zero_place);
-        if ($last >= 5){
-            $last = $last + 1;
-        }
-        return $last;
-    }
+
     private function update_data($extracted_data)
     {
         $mediawiki_catagories = ["id" => "anl", "anl conc" => "test", "redox potential" => "test", "solvent" => "solv", "amount_sol" => "solv vol", "salt" => "electrolyte", "concentration_salt" => "el conc", "reference" => "int ref comp", "scan_rate" => "scan rate", "step_size" => "scan number", "potential window" => "potential window", "scan dir" => "scan dir", "atmosphere" => "gas", "temperature" => "temp", "conditions" => "cond", "working" => "WE", "working_area" => "WE area", "counter" => "CE", "reference" => "RE", "include" => "include"];
@@ -224,8 +215,7 @@ class ImportFileReader
             var_dump($val);
             // var_dump($val);
             if(is_numeric($val)){
-                $val = $this->roundoff($val);
-                $val = substr($val,0,5);
+                $val = substr($val,0,4);
             }
             $new_data = "|$key=$val\n";
             $wikitext_data = $wikitext_data . $new_data;
