@@ -71,6 +71,18 @@ class ImportFileReader
         $output["2"] = $jdx_array;
         return $output;
     }
+    public function csv_parsing($csv_file){
+        $reader = IOFactory::createReader("csv");
+        $reader->setSheetIndex(0);
+        $dataArray1 = $spreadsheet->getActiveSheet()->rangeToArray('A1:G1');
+        $dataArray2 = $spreadsheet->getActiveSheet()->rangeToArray('A2:G2');
+        $count = 0;
+        $output = [];
+        foreach ($dataArray1 as $data_value){
+            $output[$dataArray1] = $dataArray2;
+        }
+        return ($output);
+    }
 
     public function jdx_parsing($jdx_file){
         $output=[];
@@ -120,8 +132,7 @@ class ImportFileReader
                 else{
                     $negative_value = "";
                 }
-            $data_point = $this->roundoff($data_point);
-            $small_data = substr($data_point,0,4);
+            $small_data = round($data_point,2);
             $small_data = $negative_value . $small_data . $e_value;
             $single_peak_array[] = $small_data;    
             }
