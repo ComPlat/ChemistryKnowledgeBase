@@ -31,7 +31,9 @@ class RenderLiterature
             }
 
             $doiData = self::resolveDOI($doi, $parser);
-
+            if ($doiData  === '__placeholder__') {
+                return ["$doi was not yet resolved", 'noparse' => true, 'isHTML' => true];
+            }
         } catch (Exception $e) {
             $output = $e->getMessage();
             return [$output, 'noparse' => true, 'isHTML' => true];

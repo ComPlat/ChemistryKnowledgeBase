@@ -36,6 +36,11 @@ class DOIInfoBox
             } else {
                 $data = $literature['data'];
             }
+
+            if ($data === '__placeholder__') {
+                // should not happen
+                return ["$doi was not yet resolved.", 'noparse' => true, 'isHTML' => true];
+            }
             $doiRenderer = new DOIRenderer();
             $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
 
