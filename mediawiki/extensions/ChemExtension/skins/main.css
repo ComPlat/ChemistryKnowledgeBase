@@ -477,3 +477,11 @@ div.experiment-dialog label {
     margin-bottom: 0px !important;
     margin-top: 0.5rem;
 }
+
+p.added-jobs-success {
+    margin: 10px;
+    border: 1px solid;
+    padding: 10px;
+    background: lightgreen;
+    text-align: center;
+}
