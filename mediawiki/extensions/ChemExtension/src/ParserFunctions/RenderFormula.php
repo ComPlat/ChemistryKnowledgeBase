@@ -42,9 +42,13 @@ class RenderFormula
         if (is_null($chemFormId)) {
             $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
             if (is_null($chemFormId)) {
-                return array('', 'noparse' => true, 'isHTML' => true);
+                $output = self::renderEmptyMolecule($attributes);
+                return array($output, 'noparse' => true, 'isHTML' => true);
             }
         }
+
+        $imageAlreadyRendered = $chemFormRepo->hasChemFormImageById($chemFormId);
+        $attributes['imageAlreadyRendered'] = $imageAlreadyRendered;
 
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
         $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle);
@@ -76,6 +80,25 @@ class RenderFormula
                 'width' => $attributes['width'],
                 'height' => $attributes['height'],
                 'showrgroups' => $attributes['showrgroups'],
+                'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png",
+                'imageAlreadyRendered' => $attributes['imageAlreadyRendered']
+            ]
+        )->render();
+    }
+
+    private static function renderEmptyMolecule($attributes): string
+    {
+
+        $views = __DIR__ . '/../../views';
+        $cache = __DIR__ . '/../../cache';
+        $blade = new Blade ($views, $cache);
+
+        global $wgScriptPath, $wgTitle;
+        return $blade->view()->make("molecule",
+            [
+                'moleculeKey' => '',
+                'width' => $attributes['width'],
+                'height' => $attributes['height'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png"
             ]
         )->render();

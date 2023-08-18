@@ -46,6 +46,8 @@ SQL;
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
             $category_id = $row->page_id;
+        } else {
+            return [];
         }
 
         $searchtext = $dbr->addQuotes(strtolower("%$searchTerm%"));
