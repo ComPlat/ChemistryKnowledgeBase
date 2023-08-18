@@ -29,6 +29,7 @@ class PageImportJob extends Job {
         // call import script in main context
         global $wgWikiFarmBinFolder, $IP;
         $wgWikiFarmBinFolder = $wgWikiFarmBinFolder ?? "$IP/../bin";
+        chdir($wgWikiFarmBinFolder);
         print "\nbash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1";
         echo shell_exec("bash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1");
     }
