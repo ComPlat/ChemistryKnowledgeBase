@@ -80,7 +80,8 @@ class ExperimentListRenderer extends ExperimentRenderer {
             }
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,
-                'experimentName' => $experimentName
+                'experimentName' => $experimentName,
+                'experimentPageTitle' => $experimentPageTitle
             ])->render ();
         }
 
