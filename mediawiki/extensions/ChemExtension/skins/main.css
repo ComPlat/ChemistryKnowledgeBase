@@ -486,6 +486,10 @@ p.added-jobs-success {
     text-align: center;
 }
 
+table.ce-center-aligned-table {
+    width: 100%;
+}
+
 table.ce-center-aligned-table td {
     width: 50%;
     text-align: center;
