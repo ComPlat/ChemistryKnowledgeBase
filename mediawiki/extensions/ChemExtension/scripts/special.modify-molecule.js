@@ -64,7 +64,7 @@
     }
 
     $(function () {
-        OO.ui.infuse($('#inchikey'));
+        OO.ui.infuse($('#moleculeKey'));
         new ketcherOperation();
     });
 

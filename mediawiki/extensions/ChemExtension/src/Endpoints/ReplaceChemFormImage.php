@@ -44,6 +44,13 @@ class ReplaceChemFormImage extends SimpleHandler {
             return $res;
         } else if (is_null($chemFormId)) {
             // moleculeKey has changed, ie. chemFormId must be updated with a new moleculeKey and image
+
+            // dont allow this for the time being
+            $res = new Response();
+            $res->setBody("Molecule with molecule_key '". $params['moleculeKey'] . "' already exists");
+            $res->setStatus(400);
+            return $res;
+
             $chemFormRepo->updateImageAndMoleculeKey($params['chemFormId'], $params['moleculeKey'],
                 base64_encode($params['imgData']));
             $chemForm = ChemForm::fromMolOrRxn(base64_decode($params['molOrRxn']), $params['smiles'], $params['inchi'], $params['inchikey']);

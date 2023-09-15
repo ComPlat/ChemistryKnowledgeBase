@@ -159,9 +159,9 @@ class Setup {
         if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
-            $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
+            $moleculeKey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
             $modifyMoleculePage = Title::newFromText("ModifyMolecule", NS_SPECIAL);
-            $url = $modifyMoleculePage->getFullURL(['inchikey'=>$inchikey]);
+            $url = $modifyMoleculePage->getFullURL(['moleculeKey'=>$moleculeKey]);
             $link = "<a href=\"$url\">Modify molecule</a>";
         }
         return $link;
