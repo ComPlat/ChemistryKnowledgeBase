@@ -135,5 +135,34 @@ class ChemForm
         return print_r($this, true);
     }
 
+    public function merge(ChemForm $chemForm) {
+        foreach ($this as $key => $value) {
+            if (is_null($this->{$key}) || $this->{$key} === '') {
+                $this->{$key} = $chemForm->{$key};
+            }
+        }
+    }
+
+    public function serializeAsWikitext() {
+        $atts = $this->serializeAttribute('smiles');
+        $atts .= $this->serializeAttribute('inchiKey');
+        $atts .= $this->serializeAttribute('inchi');
+        $atts .= $this->serializeAttribute('float');
+        $atts .= $this->serializeAttribute('width');
+        $atts .= $this->serializeAttribute('height');
+
+        for($i = 1; $i < ChemFormParser::MAX_RGROUPS; $i++) {
+            if (isset($this->{"r$i"})) {
+                $atts .= $this->serializeAttribute("r$i");
+            }
+        }
+        $atts = trim($atts);
+        return "<chemform $atts>{$this->molOrRxn}</chemform>";
+    }
+
+    private function serializeAttribute($name) {
+        $value = str_replace('"', '&quot;', $this->{$name});
+        return sprintf(strtolower($name).'="%s" ', $value);
+    }
 
 }

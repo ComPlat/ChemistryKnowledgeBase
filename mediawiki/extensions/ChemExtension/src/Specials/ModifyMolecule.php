@@ -121,6 +121,7 @@ class ModifyMolecule extends SpecialPage
             'id' => 'mp-ketcher-editor',
             'formula' => $this->getMolfileFromInChIKey(),
             'chemformid' => $chemFormId,
+            'moleculeKey' => $inchikey
             ]);
 
         $form = new FormLayout(['items' => [$inchikeyInput, $loadButton, $iframe, $modifyButton],

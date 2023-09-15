@@ -138,6 +138,18 @@ class ChemFormRepository
         return $id;
     }
 
+    public function updateImageAndMoleculeKey($chemformid, $moleculeKey, $imgData): int
+    {
+        $this->db->update('chem_form',
+            [
+                'molecule_key' => $moleculeKey,
+                'img_data' => $imgData
+            ], [
+                'id' => $chemformid
+            ]);
+        return $chemformid;
+    }
+
     public function replaceMoleculeKeyAndImage($moleculeKeyOld, $moleculeKeyNew, $imgData)
     {
         $this->db->update('chem_form',
@@ -289,7 +301,7 @@ class ChemFormRepository
             ]);
     }
 
-    public function getPageByChemFormId($chemformId)
+    public function getPagesByChemFormId($chemformId)
     {
         $res = $this->db->select('chem_form_index', ['page_id'],
             ['chem_form_id' => $chemformId]);

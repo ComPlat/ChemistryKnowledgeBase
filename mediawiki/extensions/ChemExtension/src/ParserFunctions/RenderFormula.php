@@ -125,7 +125,7 @@ class RenderFormula
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new ChemFormRepository($dbr);
-        $pagesThatUseFormula = $repo->getPageByChemFormId(ChemTools::getChemFormIdFromPageTitle($wgTitle->getPrefixedText()));
+        $pagesThatUseFormula = $repo->getPagesByChemFormId(ChemTools::getChemFormIdFromPageTitle($wgTitle->getPrefixedText()));
         if (count($pagesThatUseFormula) === 0) {
             return;
         }

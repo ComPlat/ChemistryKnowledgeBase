@@ -11,40 +11,48 @@
         this.modifyButton.on('click', (e) => {
             this.modifyButton.setDisabled(true);
             let chemformId = $('#mp-ketcher-editor').attr('chemformid');
-            this.saveMolecule(chemformId);
+            let moleculeKey = $('#mp-ketcher-editor').attr('moleculeKey');
+            this.saveMolecule(chemformId, moleculeKey);
         });
     };
     OO.initClass(ketcherOperation);
 
-    ketcherOperation.prototype.saveMolecule = function (chemformId) {
+    ketcherOperation.prototype.saveMolecule = function (chemformId, moleculeKey) {
         try {
             let ketcher = this.tools.getKetcher();
             if (ketcher == null) {
                 console.error("Ketcher not found.");
                 return;
             }
-            ketcher.getMolfile('v3000').then(this.updateMolecule.bind(this, chemformId));
+            ketcher.getMolfile('v3000').then(this.updateMolecule.bind(this, chemformId, moleculeKey));
         } catch (e) {
             mw.notify('Problem occured: ' + e, {type: 'error'});
         }
     }
 
-    ketcherOperation.prototype.updateMolecule = function (chemFormId, formulaV3000) {
+    ketcherOperation.prototype.updateMolecule = function (chemFormId, moleculeKey, formulaV3000) {
 
         this.ajax.getInchiKey(formulaV3000).then((response) => {
             let ketcher = this.tools.getKetcher();
             ketcher.generateImage(formulaV3000, {outputFormat: 'svg'}).then((svgBlob) => {
                 svgBlob.text().then((imgData) => {
-
-                    this.ajax.replaceImage(formulaV3000, response.InChIKey, chemFormId, imgData)
-                        .then(() => {
-                            this.modifyButton.setDisabled(false);
-                            mw.notify('Molecule updated');
-                        })
-                        .catch((res) => {
-                            this.modifyButton.setDisabled(false);
-                            mw.notify('Problem occured: ' + res.statusText, {type: 'error'});
-                        });
+                    ketcher.getSmiles().then((smiles) => {
+                        let newMoleculeKey;
+                        if (this.tools.getNumberOfMoleculeRGroups(formulaV3000) > 0) {
+                            newMoleculeKey = this.tools.createMoleculeKey(formulaV3000, smiles);
+                        } else {
+                            newMoleculeKey = response.InChIKey;
+                        }
+                        this.ajax.replaceImage(formulaV3000, smiles, response.InChI, response.InChIKey, newMoleculeKey, moleculeKey, chemFormId, imgData)
+                            .then(() => {
+                                this.modifyButton.setDisabled(false);
+                                mw.notify('Molecule updated');
+                            })
+                            .catch((res) => {
+                                this.modifyButton.setDisabled(false);
+                                mw.notify('Problem occured: ' + res.statusText, {type: 'error'});
+                            });
+                    });
 
                 });
             });
