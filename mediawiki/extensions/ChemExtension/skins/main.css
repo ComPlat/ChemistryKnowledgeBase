@@ -485,3 +485,12 @@ p.added-jobs-success {
     background: lightgreen;
     text-align: center;
 }
+
+table.ce-center-aligned-table td {
+    width: 50%;
+    text-align: center;
+}
+
+table.ce-center-aligned-table td:not(:first-child) {
+    border-left: 1px solid;
+}
