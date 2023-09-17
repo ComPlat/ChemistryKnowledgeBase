@@ -57,7 +57,7 @@ class Setup {
             if ($wgTitle->isSpecial("Userlogin")) {
                 return;
             }
-            self::accessDeniedBecauseUserAnon();
+            self::redirectToLogin();
         }
         $wikiId = str_replace("wiki", "", $wikiId);
 
@@ -84,10 +84,10 @@ class Setup {
         return defined('DIQA_WIKI_FARM');
     }
 
-    private static function accessDeniedBecauseUserAnon()
+    private static function redirectToLogin()
     {
-        global $wgServer,$wgScriptPath;
-        header("Location: $wgServer$wgScriptPath/Special:Userlogin");
+        global $wgTitle, $wgServer,$wgScriptPath;
+        header("Location: $wgServer$wgScriptPath/Special:Userlogin?returnto={$wgTitle->getPrefixedDBkey()}");
         die();
     }
 

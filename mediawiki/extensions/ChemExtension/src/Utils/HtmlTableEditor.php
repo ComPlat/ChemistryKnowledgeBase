@@ -280,6 +280,25 @@ class HtmlTableEditor
         }
     }
 
+    public function shortenTable($maxRows) {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+
+        foreach ($list as $tr) {
+            $i++;
+            if ($i > $maxRows) {
+                if ($i === $list->count()) {
+                    $table = $tr->parentNode;
+                    $newRow = $this->createFurtherResultsRow();
+                    $table->appendChild($newRow);
+                }
+                $tr->parentNode->removeChild($tr);
+            }
+        }
+
+    }
+
     public function hideTables()
     {
         $xpath = new DOMXPath($this->doc);
@@ -344,5 +363,21 @@ class HtmlTableEditor
             ->firstChild->firstChild; // ignore html/body
         $this->restoreInnerTables();
         return $this->doc->saveHTML($node);
+    }
+
+    /**
+     * @return \DOMElement|false
+     */
+    private function createFurtherResultsRow()
+    {
+        $a = $this->doc->createElement('span');
+        $text = $this->doc->createTextNode('further results hidden...');
+        $a->appendChild($text);
+        $newRow = $this->doc->createElement('tr');
+        $newColumn = $this->doc->createElement('td');
+        $newColumn->setAttribute('colspan', 2);
+        $newColumn->appendChild($a);
+        $newRow->appendChild($newColumn);
+        return $newRow;
     }
 }

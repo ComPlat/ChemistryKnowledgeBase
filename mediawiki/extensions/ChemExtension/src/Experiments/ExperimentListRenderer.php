@@ -75,10 +75,13 @@ class ExperimentListRenderer extends ExperimentRenderer {
                 }
             } else {
                 $htmlTableEditor->addEditButtonsAsFirstColumn();
+                // required because VE can handle only limited amount of HTML
+                $htmlTableEditor->shortenTable(25);
             }
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,
-                'experimentName' => $experimentName
+                'experimentName' => $experimentName,
+                'experimentPageTitle' => $experimentPageTitle
             ])->render ();
         }
 
