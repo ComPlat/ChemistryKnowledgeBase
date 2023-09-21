@@ -30,7 +30,7 @@
 ## remove “Faulty molecule” banner if all is corrected
 ## Save page: add “Fixed faulty molecule” or something similar in summary
 ## Repeat on as many pages as necessary
-# Add “new” molecule to the [https://docs.google.com/spreadsheets/d/1fxYfQA3uo5vMaVXReY5LyyusimdM_poe74K4oQD9hu8/edit#gid=0 list]
+# Add “new” molecule to the [https://docs.google.com/spreadsheets/d/1fxYfQA3uo5vMaVXReY5LyyusimdM_poe74K4oQD9hu8/edit#gid=0 list]  
 ## enter “ok” in “valid structure”
 ## link to new molecule from old molecule in “redirect”
 # Check old molecule page: it should have an empty “Molecule is used on following pages” section (or only test pages)

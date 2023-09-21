@@ -1,19 +1,27 @@
 {{BaseTemplate}}
 [[Category:Photocatalytic CO2 conversion]]
 
-=== Related important contents ===
-<!-- Related content -->test123 This topic relates to the higher level topics: 
- 
-[[:Category:Photocatalytic CO2 conversion|Photocatalytic CO2 conversion]]
+=== Scope of this topic and related important content ===
+<!-- Related content -->The content of this topic page covers information on homogeneous approaches that are relevant for the reduction of CO<sub>2</sub>. Currently, the information on this page is limited to information on the conversion of CO2 to CO, CH4 and CHOOH, further extension of the content is planned in the future. To get the right context and preceding information, reading the higher level topics [[:Category:CO2 conversion|<u>CO2 conversion</u>]] and [[:Category:Photocatalytic CO2 conversion|<u>Photocatalytic CO2 conversion</u>]] might be helpful.     
 
-[[:Category:CO2 conversion|Category:CO2 conversion]]
+=== Distinction from other articles within the topic [[:Category:Photocatalytic CO2 conversion|>Photocatalytic CO2 conversion]] ===
 
-Dear reader, I am a test molecule called phenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}, you can call me also benzenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}. 
+[[:Category:Photocatalytic CO2 conversion|>Photocatalytic CO2 conversion]] can be formally split into processes using homogeneous catalysis or heterogeneous catalysis for the conversion of the starting material CO2. In this article, we focus on the  homogeneous catalysis which involves a catalyst that is in the same phase (usually liquid or gas) as the reactants. In this case, the catalyst and the reactants are well-mixed and form a single phase throughout the reaction. The catalyst interacts directly with the reactants, forming an intermediate complex, which then undergoes a reaction to form the desired products. Homogeneous catalysis often involves the use of transition metal complexes or organocatalysts. One advantage of homogeneous catalysis is that the catalyst can be precisely tuned and controlled to promote specific reactions.
+
+The related topic >[[:Category:Heterogeneous photocatalytic CO2 conversion|Heterogeneous photocatalytic CO2 conversion]] refers to reactions that involve a catalyst that is in a different phase (typically solid) from the reactants. The reactants are in a different phase (liquid or gas) and come into contact with the solid catalyst, which is usually in the form of a powder or a material such as a modified surface or material in general. The reactants adsorb onto the surface of the catalyst, where the catalytic reaction occurs. 
+
+=== Important aspects of homogeneous photocatalytic CO2 conversion ===
+xxx  
+
+=== Summary of selected scientific progress ===  
+Table of all experiments that have a turnover number >100 for one of the products CO, CH4, HCOOH, H2 or MeOH. This table is sorted by catalyst.
+
+{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20HCOOH%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20CH%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20H2%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20MeOH%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CO, CH4, HCOOH, H2, MeOH >100, sorted by catalyst}}
+
+Table of all experiments that have a turnover number >100 for one of the products CO, CH4, HCOOH, H2 or MeOH. This table is sorted by the turnover number of H2 in descending order.
+
+{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20HCOOH%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20CH%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20H2%3A%3A%3E100%5D%5D%20OR%0A%5B%5BTurnover%20number%20MeOH%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Turnover number H2|order=descending|description=TON CO, CH4, HCOOH, H2, MeOH >100, sorted by TON H2 descending}}
 
 
 
-TON CO >100, sorted by catalyst{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=}}
-
-TON HCOOH, descending order{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Turnover number HCOOH|order=descending}}
-
-Cat conc 0.025, TON H2 <10{{#experimentlink:%5B%5BCatalyst%20concentration%3A%3A0.025%5D%5D%0A%5B%5BTurnover%20number%20H2%3A%3A%3C10%5D%5D%0A|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=}}
+Dear reader, I am a test molecule called phenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}, you can call me also benzenol {{#moleculelink:|link=ISWSIDIOOBJBQZ-UHFFFAOYSA-N}}.
