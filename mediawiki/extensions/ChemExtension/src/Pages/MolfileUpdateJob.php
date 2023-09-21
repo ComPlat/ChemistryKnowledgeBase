@@ -39,6 +39,13 @@ class MolfileUpdateJob extends Job
             'inchi' => $this->inchi,
             'inchikey' => $this->inchikey,
         ]);
+        $wikitext = $te->replaceTemplateParameters('MoleculeCollection', [
+            'molOrRxn' => base64_decode($this->molfile),
+            'moleculeKey' => $this->moleculeKey,
+            'smiles' => $this->smiles,
+            'inchi' => $this->inchi,
+            'inchikey' => $this->inchikey,
+        ]);
         WikiTools::doEditContent($this->title, $wikitext, "auto-generated", EDIT_UPDATE);
         $this->logger->log("done");
     }
