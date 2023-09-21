@@ -11,9 +11,6 @@ Experiments:
 
 {{{for template|Photocatalytic CO2 conversion|multiple|embed in field=Photocatalytic CO2 conversion experiments[experiments]}}}
 {| class="formtable"
-! Entry:
-| (should be automatically set)
-|-
 ! cat:
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
 |-

@@ -211,7 +211,21 @@ M  V30 17 1 16 14
 M  V30 END BOND
 M  V30 END CTAB
 M  END
-</chemform> 
+</chemform>
+{| class="wikitable"
+|+
+!BIH
+!BI(OH)H
+!BNAH
+!TEA
+!TEOA
+|-
+|{{#moleculelink:|link=VDFIVJSRRJXMAU-UHFFFAOYSA-N|image=true}}
+|{{#moleculelink:|link=NNENGKYNKIWEEY-UHFFFAOYSA-N|image=true}}
+|{{#moleculelink:|link=CMNUYDSETOTBDE-UHFFFAOYSA-N|image=true}}
+|{{#moleculelink:|link=ZMANZCXQSJIPKH-UHFFFAOYSA-N|image=true}}
+|{{#moleculelink:|link=GSEJCLTVZPLZKY-UHFFFAOYSA-N|image=true}}
+|}
 
 == Ruthenium Catalysts ==
 <chemform smiles="C1C=CN2[Ru]([*])([*])3(N4C=CC=CC=4C4C=CC=CN=43)N3C=CC=CC=3C=2C=1" isreaction="" inchi="" inchikey="" height="200px" width="300px" float="none" r1="Cl,H,Cl,CO,Cl,MECN,DMF,CO,nPropyl" r2="CO,CO,py,CO,Cl,MECN,DMF,H2O,nPropyl">

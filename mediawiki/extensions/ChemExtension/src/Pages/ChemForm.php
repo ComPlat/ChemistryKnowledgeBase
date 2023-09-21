@@ -152,8 +152,8 @@ class ChemForm
         $atts .= $this->serializeAttribute('height');
 
         for($i = 1; $i < ChemFormParser::MAX_RGROUPS; $i++) {
-            if (isset($this->{"r$i"})) {
-                $atts .= $this->serializeAttribute("r$i");
+            if (isset($this->rGroups["r$i"])) {
+                $atts .= $this->serializeRGroup("r$i");
             }
         }
         $atts = trim($atts);
@@ -162,6 +162,11 @@ class ChemForm
 
     private function serializeAttribute($name) {
         $value = str_replace('"', '&quot;', $this->{$name});
+        return sprintf(strtolower($name).'="%s" ', $value);
+    }
+
+    private function serializeRGroup($name) {
+        $value = str_replace('"', '&quot;', implode(',', $this->rGroups[$name]));
         return sprintf(strtolower($name).'="%s" ', $value);
     }
 

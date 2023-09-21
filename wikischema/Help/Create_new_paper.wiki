@@ -1,96 +1,66 @@
 This page will guide you in adding a new publication, set of experiments or dataset to the wiki.
 
-== Introduction to templates ==
-Templates give structure to the wiki and keep the data well organized. There are several templates to choose from for various needs in describing the contents of a publication or set of experiments.
+== Guidelines to style pages in this wiki ==
 
-All templates are found under "Insert". The following three are currently implemened:
-[[File:WikiTemplate open-book.png|left|frameless]]
+'''Auto generated pages according to templates (no edits possible):'''
 
-==== Literature reference ====
-Literature reference templates allow registering literature with a DOI to the wiki database and to cite sources.
+-	literature page (generated from DOI),<br>
+-	investigation (generated from investigation template input on publication page),<br>
+-	molecule page (only add abbreviation)
 
-Select ''Literature reference'', it will initially say "DOI is empty". Click on the text, select "Edit" and add in a DOI and confirm with "Apply changes". The reference will show an abbreviation in square brackets consting of the initials of the first three words in the title and the last two digits of the year of publication as follows [ABCxx]. Below is an example for the following paper: Krötzsch, Markus; Vrandečić, Denny; Völkel, Max (2006): Semantic MediaWiki. In:. International Semantic Web Conference: Springer, Berlin, Heidelberg, S. 935–942. Online verfügbar unter <nowiki>https://link.springer.com/content/pdf/10.1007/11926078_68.pdf</nowiki>    .
+=== Publication pages ===
+How to generate a new publication page: Authoring → Create a new Paper: enter title (default publication title, check formatting in the wiki), DOI, topic(s) it belongs to → Create paper<br>
+This leads to the new publication page with auto-generated infobox (About) from the DOI-generated literature page
 
-{{#literature:|doi=10.1007/11926078_68}}
-[[File:WikiTemplate chemistry.png|left|frameless]]
+Page titles cannot contain brackets [] or slashes /, or hashtags #. For a full list, see:
+https://www.mediawiki.org/wiki/Manual:Page_title
+ 
+'''Publication pages (and topic pages) are the only ones that can be freely edited! Any changes to molecules or investigations must be made on the publication page. Only exception is adding an abbreviation to a molecule, this happens on the molecule page.'''
 
-==== Chemical formula ====
-The chemical formula template is a way to directly draw a chemical compound (dubbed "molecule") in the wiki. It uses the [https://lifescience.opensource.epam.com/ketcher/ Ketcher 2] editor.
+Publication pages show the legally available data from published papers. These are:
 
-Select ''Chemical formula''. Pressing edit will open the form window and "Open Ketcher" opens the editor. Draw a chemical formula and confirm with "Apply changes". If the compound has R-groups, they need to be specified by selecting "Define R-groups". '''Important:''' Select the correct R-group from the dropdown menu, otherwise it might be an invalid entry. Ideally, the result will look something like the porphyrin ring below.
+I)	The investigations: Tables with data<br>
+II)	Molecules used in the publication
 
-<chemform smiles="N1=C2/C=C3/C=C/C(=C/C4C=C/C(=C/C5=CC=C(/C=C\1/C=C2)N5)/N=4)/N/3" inchi="1S/C20H14N4/c1-2-14-10-16-5-6-18(23-16)12-20-8-7-19(24-20)11-17-4-3-15(22-17)9-13(1)21-14/h1-12,21,24H/b13-9-,14-10-,15-9-,16-10-,17-11-,18-12-,19-11-,20-12-" inchikey="RKCAIXNGYQCCAL-CEVVSZFKSA-N" height="200px" width="300px" float="none">
-  -INDIGO-11142210272D
+Currently, the pages are structured by the headlines:
 
-  0  0  0  0  0  0  0  0  0  0  0 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 24 28 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 N 5.98871 -4.54988 0.0 0
-M  V30 2 C 4.56202 -3.74634 0.0 0
-M  V30 3 C 4.99445 -4.63645 0.0 0
-M  V30 4 C 5.30731 -3.08612 0.0 0
-M  V30 5 C 6.17466 -3.60897 0.0 0
-M  V30 6 N 8.34186 -4.56114 0.0 0
-M  V30 7 C 8.96423 -3.06908 0.0 0
-M  V30 8 C 8.11464 -3.60828 0.0 0
-M  V30 9 C 9.71958 -3.68546 0.0 0
-M  V30 10 C 9.35762 -4.57836 0.0 0
-M  V30 11 N 6.135 -6.34275 0.0 0
-M  V30 12 C 5.55175 -7.86269 0.0 0
-M  V30 13 C 6.38821 -7.30514 0.0 0
-M  V30 14 C 4.75198 -7.23278 0.0 0
-M  V30 15 C 5.10199 -6.32714 0.0 0
-M  V30 16 C 9.24382 -7.72002 0.0 0
-M  V30 17 N 8.49132 -6.30084 0.0 0
-M  V30 18 C 8.34354 -7.24092 0.0 0
-M  V30 19 C 9.47357 -6.17938 0.0 0
-M  V30 20 C 9.93544 -7.0252 0.0 0
-M  V30 21 C 7.13942 -3.14551 0.0 0
-M  V30 22 C 9.89232 -5.35675 0.0 0
-M  V30 23 C 7.4039 -7.75203 0.0 0
-M  V30 24 C 4.53491 -5.48916 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 1 1 5
-M  V30 2 1 2 3
-M  V30 3 2 3 1
-M  V30 4 2 4 2
-M  V30 5 1 5 4
-M  V30 6 1 6 10
-M  V30 7 2 7 8
-M  V30 8 1 8 6
-M  V30 9 1 9 7
-M  V30 10 2 10 9
-M  V30 11 1 11 15
-M  V30 12 1 12 13
-M  V30 13 1 13 11
-M  V30 14 2 14 12
-M  V30 15 1 15 14
-M  V30 16 2 16 20
-M  V30 17 2 17 18
-M  V30 18 1 18 16
-M  V30 19 1 19 17
-M  V30 20 1 20 19
-M  V30 21 2 5 21
-M  V30 22 1 21 8
-M  V30 23 1 10 22
-M  V30 24 2 22 19
-M  V30 25 1 18 23
-M  V30 26 2 23 13
-M  V30 27 2 15 24
-M  V30 28 1 24 3
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-</chemform>
+1)	Catalyst<br>
+2)	Photosensitizer<br>
+3)	Investigation<br>
+4)	Sacrificial electron donor<br>
+5)	Additives (optional)<br>
 
-Every molecule gets assigned a number upon its first registration in the wiki. Should the same molecule be drawn again, it will automatically be recognized as the previously entered structure. Molecules with R-groups will generate "Collections" and the R-groups van be viewed by clicking on '''[Show R-groups]'''.
-[[File:WikiTemplate experiment.png|left|frameless]]
+Each headline is formatted as sub-heading 2
+The investigations are named: currently Table 1, Table 2
 
-==== Investigation ====
-The investigation template is used to enter experimental data into the wiki. Note that "[https://www.ebi.ac.uk/ols/ontologies/obi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FOBI_0000066 Investigation]" designates any kind of planned process performed in a scientific study. There are two kinds of investigations: physical measurements and examinations are termed "[https://www.ebi.ac.uk/ols/ontologies/obi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FOBI_0000070 Assay]" and "[https://www.ebi.ac.uk/ols/ontologies/mop/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMOP_0000543 Molecular process]" denotes any process involving a reaction with one or more chemical compounds. Each investigation in turn consist of individual "experiments" wich are presented as rows in the table.
+The appropriate molecules for 1), 2), 4), 5) are drawn under their respective title. Solvents or gas atmosphere don’t need to be drawn, as do small (inorganic) additives.
 
-Selecting the template ''Investigation'' will prompt you to choose a form (e.g. Photocatalytic CO2 reduction) and give the experiments a name. Clicking on "Add experiment", then "+ Add another" will open the form in which to enter the data.
+=== Molecule Drawings ===
+To draw molecules in Ketcher 2:<br>
+Bonds between ligands and metal are '''hydrogen bonds''' by default, unless this adds surplus hydrogens to the structure and those hydrogens cannot be removed by an appropriate charge. In this case, use an '''any bond'''.
 
-{{#experimentlist:|form=DemoExperiment1|name=batch1}}
+Remember to add charges on the molecule, especially on metal centers in complexes with counter ions.<br>
+Position ligands with aromatic rings correctly around the center metal atom. Try to avoid using the clean-up function, as this distorts the aromatic rings.
+
+Molecule collections with R-groups: Add R-groups when multiple rests are mentioned in literature. Use different (R1, R2, R3…) groups for different positions on the molecule, unless two positions are always substituted with the same rest. Specify the R-groups in the Ketcher “Define R-groups” menu.<br>
+R-groups can also be used for counter ions: add an unconnected R-group on the top right of the molecule drawing and specify one or multiple counter ions in the “Define R-groups” menu.<br>
+Small organic molecule ligands: draw individually instead of abbreviation<br>
+CO: triple bond, negative charge on C, positive charge on O
+(example: https://pubchem.ncbi.nlm.nih.gov/compound/139130150) 
+
+'''Drawing molecules correctly is important to generate the right identifiers (InChIKey) and find molecule information in PubChem!'''
+
+=== Investigations ===
+
+Columns with free text but guidelines:
+
+Additives: free text; gases according to list (…)<br>
+Solvent ratio: e. g. 4:1<br>
+Irradiation wavelength: number, “dark” (or empty), description of source<br>
+Columns with numbers: Leave empty when number is not given or zero
+
+=== Comment banner ===
+ 
+Several comment banners can be found under “Templates”
+[[Test MissingTemplates|MissingTemplates]]
+[[Test MissingItems|MissingItems]]

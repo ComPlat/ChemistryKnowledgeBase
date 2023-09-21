@@ -13,12 +13,13 @@
 <span class="toggle-box" resource="chemdata">Click here to show SMILES and Molecule-Key.</span>
 {| id="chemdata" class="infobox wikitable" style="display:none;"
 |-
-| Key (SMILES + RGroups) || {{{inchikey}}}
+| Key (SMILES + RGroups) || {{{moleculeKey}}}
 |-
 | SMILES || {{#set: Smiles={{{smiles}}} }} {{{smiles}}}
 |-
 
 |}
+{{#set: Molfile={{{molOrRxn}}} }}
 </div>
 
 {{DISPLAYTITLE: Molecule collection {{PAGENAME}} }}
