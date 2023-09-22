@@ -91,6 +91,9 @@ TEMPLATE;
                 $htmlTableEditor->addLinkAsLastColumn($links);
                 $htmlTableEditor->hideTables();
                 $htmlTableEditor->addTableClass("experiment-link");
+            } else {
+                // required because VE can handle only limited amount of HTML
+                $htmlTableEditor->shortenTable(25);
             }
 
             self::$BUTTON_COUNTER++;

@@ -17,7 +17,7 @@ This is the Cyclic Voltammetry experiments template.
 <th title="scan direction" property="hidden">scan dir</th>
 <th title="gas (atmosphere)">gas</th>
 <th title="temperature [° C]" property="hidden">T [° C]</th>
-<th title="condition (wavelength [nm] or dark)" property="hidden">condition</th>
+<th title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
 <th title="working electrode (type and material)">WE</th>
 <th title="WE surface area [mm²]" property="hidden">WE surface area [mm²]</th>
 <th title="counter electrode" property="hidden">CE</th>

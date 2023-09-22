@@ -132,14 +132,8 @@ class Setup {
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
-        global $wgTitle;
 
-
-        $b = new NavigationBar($wgTitle);
-        $link = self::addModifyLink();
-        $out->addSubtitle('<div class="ce-subtitle-content">'.$b->getPageType() . self::$subTitleExtension."$link</div>");
-
-
+        self::addSubtitle($out);
         $out->addModules('ext.diqa.chemextension');
         $out->addModules('ext.diqa.md5');
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
@@ -158,16 +152,16 @@ class Setup {
         }
     }
 
-    private static function addModifyLink() {
+    private static function createModifyLink() {
         global $wgUser, $wgTitle;
         $link = '';
         $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
         if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
-            $inchikey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
+            $moleculeKey = $chemFormRepo->getMoleculeKey($wgTitle->getText());
             $modifyMoleculePage = Title::newFromText("ModifyMolecule", NS_SPECIAL);
-            $url = $modifyMoleculePage->getFullURL(['inchikey'=>$inchikey]);
+            $url = $modifyMoleculePage->getFullURL(['moleculeKey'=>$moleculeKey]);
             $link = "<a href=\"$url\">Modify molecule</a>";
         }
         return $link;
@@ -261,5 +255,34 @@ class Setup {
             return self::$cachedQueries[$queryKey];
         };
         $parser->setFunctionHook('showcache', $showCacheHandler, $flag);
+    }
+
+    /**
+     * @param Title $wgTitle
+     * @param OutputPage $out
+     */
+    private static function addSubtitle(OutputPage $out): void
+    {
+        $b = new NavigationBar($out->getTitle());
+        $link = self::createModifyLink();
+        $investigationHints = self::createInvestigationHint($out);
+        $out->addSubtitle('<div class="ce-subtitle-content">'
+            . $b->getPageType()
+            . $investigationHints
+            .  self::$subTitleExtension
+            . "$link</div>");
+    }
+
+    /**
+     * @param OutputPage $out
+     * @return string
+     */
+    private static function createInvestigationHint(OutputPage $out): string
+    {
+        $investigationHints = "";
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSubpage()) {
+            $investigationHints = WikiTools::getInvestigationCategoriesAsString($out->getTitle());
+        }
+        return $investigationHints;
     }
 }

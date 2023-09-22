@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ -f env.sh ]; then
+    source env.sh
+fi
+
 if [ ! -e $MEDIAWIKI/extensions/ChemExtension/maintenance/runImportInMainContext.php ]; then
    if [ ! -e ../extensions/ChemExtension/maintenance/runImportInMainContext.php ]; then
        echo Error: runImportInMainContext.php script not found

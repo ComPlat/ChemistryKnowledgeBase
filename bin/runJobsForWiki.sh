@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+if [ -f env.sh ]; then
+    source env.sh
+fi
 
 if [ ! -e $MEDIAWIKI/maintenance/runJobs.php ]; then
    if [ ! -e ../mediawiki/maintenance/runJobs.php ]; then

@@ -24,9 +24,9 @@
 console.log("ER: Loading scripts/FacetedSearch/FS_ResultWidget.js");
 
 if (typeof window.FacetedSearch == "undefined") {
-//	Define the FacetedSearch module	
+	// Define the FacetedSearch module
 	window.FacetedSearch = { 
-			classes : {}
+		classes : {}
 	};
 }
 
@@ -42,7 +42,7 @@ FacetedSearch.classes.ResultWidget = AjaxSolr.AbstractWidget.extend({
 	mASMforTitleCheck: null,
 		
 	beforeRequest: function () {
-//		$(this.target).html($('<img/>').attr('src', 'images/ajax-loader.gif'));
+		// $(this.target).html($('<img/>').attr('src', 'images/ajax-loader.gif'));
 	},
 
 	facetLinks: function (facet_field, facet_values) {
@@ -86,7 +86,6 @@ FacetedSearch.classes.ResultWidget = AjaxSolr.AbstractWidget.extend({
 		if (emptyQuery && facetQuery.length == 0) {
 			// No query present => hide results and show a message
 			$(this.target).append(AjaxSolr.theme('emptyQuery'));
-
 			return;
 		} 
 
@@ -117,7 +116,6 @@ FacetedSearch.classes.ResultWidget = AjaxSolr.AbstractWidget.extend({
 		this.updateCreateArticleWidget(fsi.getSearch());
 		
 		this.showInOverlay();
-		
 	},
 	
 	/**
@@ -247,7 +245,6 @@ FacetedSearch.classes.ResultWidget = AjaxSolr.AbstractWidget.extend({
 		
 		this.mArticlePropertiesWidget.setTarget(domElement);
 		asm.doRequest(0);
-		
 	},
 	
 	/**
@@ -312,36 +309,33 @@ FacetedSearch.classes.ResultWidget = AjaxSolr.AbstractWidget.extend({
 			title: title,
 			namespace: selectedNamespace
 		};
-		
 	},
 	
 	showInOverlay: function() {
-		
 		if (!jQuery.fancybox) {
 			return;
 		}
 		
 		$('a.imageOverlay').each(function(){
-		        $(this).click( function(){
-					jQuery.fancybox({
-						'href' : $(this).attr('href'),
-						'width' : '100%',
-						'height' : '100%',	
-						'border-width' : '0px',
-						'autoScale' : true,
-						'autoDimensions' : true,
-						'transitionIn' : 'none',
-						'transitionOut' : 'none',
-						'type' : 'iframe',
-						'overlayColor' : '#222',
-						'overlayOpacity' : '1.0',
-						'hideOnContentClick' : true,
-						'scrolling' : 'auto'
-					});
-					return false;
-		        });
-	        });
-		
+			$(this).click( function(){
+				jQuery.fancybox({
+					'href' : $(this).attr('href'),
+					'width' : '100%',
+					'height' : '100%',	
+					'border-width' : '0px',
+					'autoScale' : true,
+					'autoDimensions' : true,
+					'transitionIn' : 'none',
+					'transitionOut' : 'none',
+					'type' : 'iframe',
+					'overlayColor' : '#222',
+					'overlayOpacity' : '1.0',
+					'hideOnContentClick' : true,
+					'scrolling' : 'auto'
+				});
+				return false;
+			});
+		});
 	}
 	
 });

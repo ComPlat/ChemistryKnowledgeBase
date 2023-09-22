@@ -21,6 +21,7 @@ class SpecialImportPage extends PageCreationSpecial
 
     private $blade;
     private $logger;
+    private $addedJobs;
 
     function __construct()
     {
@@ -33,6 +34,7 @@ class SpecialImportPage extends PageCreationSpecial
         }
         $this->blade = new Blade ($views, $cache);
         $this->logger = new LoggerUtils('SpecialImportPage', 'ChemExtension');
+        $this->addedJobs = [];
     }
 
     /**
@@ -49,7 +51,8 @@ class SpecialImportPage extends PageCreationSpecial
             if ($wgRequest->getMethod() == 'POST') {
                 try {
                     $this->processRequest($wgRequest);
-                    $this->getOutput()->addHTML('<p>Import jobs were successfully created.</p>');
+                    $html = $this->blade->view()->make("importPages.added-jobs", ['jobs' => $this->addedJobs])->render();
+                    $this->getOutput()->addHTML($html);
                     return;
                 } catch (Exception $e) {
                     $this->getOutput()->addHTML($this->showErrorHint($e->getMessage()));
@@ -133,10 +136,12 @@ class SpecialImportPage extends PageCreationSpecial
                 continue;
             }
             $job = new PageImportJob($pageTitleObj, ['wikitext' => $text]);
+            $this->addedJobs[$pageTitleObj->getPrefixedText()] = ['main' => $job, 'subPages' => [] ];
             JobQueueGroup::singleton()->push($job);
             $subPages = $pageTitleObj->getSubpages();
             foreach ($subPages as $subPage) {
                 $job = new PageImportJob($subPage, ['wikitext' => WikiTools::getText($subPage)]);
+                $this->addedJobs[$pageTitleObj->getPrefixedText()]['subPages'][] = $job;
                 JobQueueGroup::singleton()->push($job);
             }
         }

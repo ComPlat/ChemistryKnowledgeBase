@@ -137,4 +137,15 @@ class WikiTools {
             $allCategories[] = Title::newFromText($name);
         }
     }
+
+    public static function getInvestigationCategoriesAsString($title) {
+        $parentCategories = $title->getParentCategories();
+        if (array_key_exists("Category:Investigation", $parentCategories)) {
+            unset($parentCategories["Category:Investigation"]);
+            return implode(', ', array_map(function ($t) {
+                return Title::newFromText($t)->getText();
+            }, array_keys($parentCategories)));
+        }
+        return "";
+    }
 }

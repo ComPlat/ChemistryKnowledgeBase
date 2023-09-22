@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ -f env.sh ]; then
+    source env.sh
+fi
+
 if [ ! -e $MEDIAWIKI/extensions/ChemExtension/maintenance/refreshChemFormIndex.php ]; then
    if [ ! -e ../mediawiki/extensions/ChemExtension/maintenance/refreshChemFormIndex.php ]; then
        echo Error: runRefreshIndexForAllWikis.php script not found

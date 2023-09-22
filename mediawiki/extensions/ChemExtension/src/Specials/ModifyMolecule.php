@@ -53,19 +53,25 @@ class ModifyMolecule extends SpecialPage
         }
     }
 
-    private function getMolfileFromInChIKey() {
+    private function getMolfileFromMoleculeKey() {
 
-        $inchikey = $this->getRequest()->getText('inchikey', '');
-        if ($inchikey === '') {
+        $moleculeKey = $this->getRequest()->getText('moleculeKey', '');
+        if ($moleculeKey === '') {
             return NULL;
         }
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $chemFormRepo = new ChemFormRepository($dbr);
+        $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
+        if (is_null($chemFormId)) {
+            throw new Exception("Cannot find molecule with molecule key: $moleculeKey");
+        }
         $molfile = NULL;
-        $queryResults = QueryUtils::executeBasicQuery("[[InChIKey::$inchikey]]", [QueryUtils::newPropertyPrintRequest("Molfile")]);
+        $queryResults = QueryUtils::executeBasicQuery("[[Molecule:$chemFormId]]", [QueryUtils::newPropertyPrintRequest("Molfile")]);
         if ($row = $queryResults->getNext()) {
-            $molfile = $this->getMolfile($row, $inchikey);
+            $molfile = $this->getMolfile($row, $moleculeKey);
         }
         if (is_null($molfile)) {
-            throw new Exception("Cannot find molecule with ID: $inchikey");
+            throw new Exception("Cannot find molecule with ID: $chemFormId");
         }
         return $molfile;
     }
@@ -77,13 +83,13 @@ class ModifyMolecule extends SpecialPage
      */
     private function createGUI(string $wgScriptPath): FormLayout
     {
-        $inchikey = $this->getRequest()->getText('inchikey', '');
-        $inchikeyInput = new FieldLayout(
+        $moleculeKey = $this->getRequest()->getText('moleculeKey', '');
+        $moleculeKeyInput = new FieldLayout(
             new MoleculeSearchWidget([
-                'id' => 'inchikey',
+                'id' => 'moleculeKey',
                 'infusable' => true,
-                'name' => 'inchikey',
-                'value' => $inchikey,
+                'name' => 'moleculeKey',
+                'value' => $moleculeKey,
                 'placeholder' => 'Enter Molecule ID, InChIKey, abbreviation or synonym'
             ]),
             [
@@ -109,7 +115,7 @@ class ModifyMolecule extends SpecialPage
         ]);
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
         $chemFormRepo = new ChemFormRepository($dbr);
-        $chemFormId = $chemFormRepo->getChemFormId($inchikey);
+        $chemFormId = $chemFormRepo->getChemFormId($moleculeKey);
         $moleculePage = \Title::newFromText($chemFormId, NS_MOLECULE);
         $modifyButton->setDisabled(is_null($moleculePage) || !$moleculePage->exists());
 
@@ -119,11 +125,12 @@ class ModifyMolecule extends SpecialPage
         $iframe->setAttributes([
             'src' => $ketcherURL,
             'id' => 'mp-ketcher-editor',
-            'formula' => $this->getMolfileFromInChIKey(),
+            'formula' => $this->getMolfileFromMoleculeKey(),
             'chemformid' => $chemFormId,
+            'moleculeKey' => $moleculeKey
             ]);
 
-        $form = new FormLayout(['items' => [$inchikeyInput, $loadButton, $iframe, $modifyButton],
+        $form = new FormLayout(['items' => [$moleculeKeyInput, $loadButton, $iframe, $modifyButton],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',

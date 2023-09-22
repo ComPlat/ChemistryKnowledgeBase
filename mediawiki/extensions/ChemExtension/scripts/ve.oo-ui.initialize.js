@@ -7,6 +7,7 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
+        $('table.wikitable:not(.infobox) th').off('click');
         $('table.wikitable:not(.infobox) th').click((e) => {
             let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
@@ -32,6 +33,7 @@
             }
         });
 
+        $('span.experiment-link-show-button').off('click');
         $('span.experiment-link-show-button').click(function(e) {
             let buttonLabel = $(e.target);
             let button = buttonLabel.closest('span.experiment-link-show-button');
@@ -61,6 +63,7 @@
     }
 
     function initializeToggleBoxes() {
+        $('.toggle-box').off('click');
         $('.toggle-box').click((e) => {
             let target = $(e.target).attr('resource');
             $('#'+target).toggle();
@@ -68,6 +71,7 @@
     }
 
     function initializeDOIInfoBoxToggle() {
+        $('.infobox th').off('click');
         $('.infobox th').click((e) => {
             let table = $(e.target).closest('table');
             $('tr', table).slice(1).toggle();
@@ -76,6 +80,7 @@
 
     function intializeExpandNavigationButton() {
         let expanded = false;
+        $('#ce-side-panel-expand-button').off('click');
         $('#ce-side-panel-expand-button').click(()=> {
            $('#ce-side-panel-content').css({width: expanded ? '400px' : '1000px'});
            expanded = !expanded;
@@ -83,6 +88,7 @@
     }
 
     function initializeRGroups() {
+        $('.rgroups-button').off('click');
         $('.rgroups-button').click((e)=> {
             let target = $(e.target);
             let moleculeKey = target.attr('moleculekey');

@@ -140,6 +140,7 @@
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob",
         "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob",
+        "ReplaceMoleculeJob": "DIQA\\ChemExtension\\Specials\\ReplaceMoleculeJob",
         "PageImportJob": "DIQA\\ChemExtension\\Pages\\PageImportJob"
     },
     "manifest_version": 2

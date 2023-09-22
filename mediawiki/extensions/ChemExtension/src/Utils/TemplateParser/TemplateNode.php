@@ -61,7 +61,7 @@ class TemplateNode extends AbstractTemplateNode {
 
     public function getTextContent(): string
     {
-        return implode('', array_map(function($node) { return $node->serialize();}, $this->childNodes));
+        return implode('', array_map(fn($node) => $node->serialize(), $this->childNodes));
     }
 
 }
