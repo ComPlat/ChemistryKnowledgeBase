@@ -150,7 +150,7 @@
             let importFileLabel = new OO.ui.LabelWidget({
                 label: "Investigation file to import",
             });
-            this.importFile = new mw.widgets.TitleInputWidget({namespace: 6});
+            this.importFile = new OO.ui.SelectFileInputWidget();
             items.push(experimentNameLabel);
             items.push(this.experimentName);
             items.push(importFileLabel);
@@ -215,7 +215,7 @@
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.getImportFile = function () {
-        return this.importFile.getValue();
+        return this.importFile.currentFiles;
     }
 
 }(OO));

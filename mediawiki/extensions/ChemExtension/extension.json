@@ -131,6 +131,10 @@
             "path": "/ChemExtension/v1/json-ld",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetJSONLD"
+        },{
+            "path": "/ChemExtension/v1/uploadfile",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\UploadFileToWiki"
         }
 
     ],
