@@ -41,4 +41,27 @@ class ParserFunctionParser {
         }
         return $parameters;
     }
+
+    public static function serializeFunction($fnName, $params) {
+        $firstParam = $params[''] ?? '';
+        unset($params['']);
+        $keyValues = [];
+        foreach($params as $key => $value) {
+            $keyValues[] = "$key=$value";
+        }
+        return "{{#$fnName: $firstParam|".join('|', $keyValues)."}}";
+    }
+
+    public function replaceFunction($wikitext, $fnName, $param, $value, $newParams): string {
+
+        $regex = str_replace('__fn_name__', $fnName, self::PARSER_FUNCTION_REGEX);
+        return preg_replace_callback($regex,  function($matches) use ($fnName, $param, $value, $newParams) {
+            $arguments = $this->parseFunction($fnName, $matches[0])[0];
+            if (($arguments[$param] ?? '') === $value) {
+               return self::serializeFunction($fnName, $newParams);
+            } else {
+                return $matches[0];
+            }
+        }, $wikitext);
+    }
 }

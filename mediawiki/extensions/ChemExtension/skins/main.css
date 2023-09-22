@@ -477,3 +477,24 @@ div.experiment-dialog label {
     margin-bottom: 0px !important;
     margin-top: 0.5rem;
 }
+
+p.added-jobs-success {
+    margin: 10px;
+    border: 1px solid;
+    padding: 10px;
+    background: lightgreen;
+    text-align: center;
+}
+
+table.ce-center-aligned-table {
+    width: 100%;
+}
+
+table.ce-center-aligned-table td {
+    width: 50%;
+    text-align: center;
+}
+
+table.ce-center-aligned-table td:not(:first-child) {
+    border-left: 1px solid;
+}

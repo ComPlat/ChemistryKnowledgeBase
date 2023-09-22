@@ -1,8 +1,10 @@
 <?php
 namespace DIQA\ChemExtension\Endpoints;
 
+use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MolfileUpdateJob;
+use DIQA\ChemExtension\Specials\ReplaceMoleculeJob;
 use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
@@ -33,18 +35,35 @@ class ReplaceChemFormImage extends SimpleHandler {
         $chemFormId = $chemFormRepo->getChemFormId($params['moleculeKey']);
 
         if (!is_null($chemFormId) && $chemFormId === $params['chemFormId']) {
+            // moleculeKey did not change, still refers to the old molecule. only image changed.
             $chemFormRepo->addOrUpdateChemFormImage($params['moleculeKey'], base64_encode($params['imgData']));
             $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
             JobQueueGroup::singleton()->push( $job );
             $res = new Response();
             $res->setStatus(200);
             return $res;
+        } else if (is_null($chemFormId)) {
+            // moleculeKey has changed, ie. chemFormId must be updated with a new moleculeKey and image
+
+            $chemFormRepo->updateImageAndMoleculeKey($params['chemFormId'], $params['moleculeKey'],
+                base64_encode($params['imgData']));
+            $chemForm = ChemForm::fromMolOrRxn(base64_decode($params['molOrRxn']), $params['smiles'], $params['inchi'], $params['inchikey']);
+            $title = Title::newFromText($params['chemFormId'], NS_MOLECULE);
+            $params['chemform'] = $chemForm;
+            $job = new ReplaceMoleculeJob($title, $params);
+            JobQueueGroup::singleton()->push( $job );
+            $job = new MolfileUpdateJob($title, $params);
+            JobQueueGroup::singleton()->push( $job );
+            $res = new Response();
+            $res->setStatus(200);
+            return $res;
+        } else {
+            // new molecule already exists
+            $res = new Response("Molecule with molecule_key '". $params['moleculeKey'] . "' already exists");
+            $res->setStatus(400);
+            return $res;
         }
 
-
-        $res = new Response();
-        $res->setStatus(400);
-        return $res;
     }
 
     public function needsWriteAccess() {
@@ -58,7 +77,11 @@ class ReplaceChemFormImage extends SimpleHandler {
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
             ],
-
+            'oldMoleculeKey' => [
+                self::PARAM_SOURCE => 'query',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => true,
+            ],
             'chemFormId' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
@@ -74,6 +97,21 @@ class ReplaceChemFormImage extends SimpleHandler {
                 self::PARAM_SOURCE => 'post',
                 ParamValidator::PARAM_TYPE => 'string',
                 ParamValidator::PARAM_REQUIRED => true,
+            ],
+            'smiles' => [
+                self::PARAM_SOURCE => 'post',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => false,
+            ],
+            'inchi' => [
+                self::PARAM_SOURCE => 'post',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => false,
+            ],
+            'inchikey' => [
+                self::PARAM_SOURCE => 'post',
+                ParamValidator::PARAM_TYPE => 'string',
+                ParamValidator::PARAM_REQUIRED => false,
             ],
         ];
     }

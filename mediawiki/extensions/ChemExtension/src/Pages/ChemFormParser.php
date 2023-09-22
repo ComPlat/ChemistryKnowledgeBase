@@ -20,12 +20,12 @@ class ChemFormParser
             $attributes = $this->parseAttributes($attributeStrings[$i]);
             $results[] = new ChemForm(
                 $formulas[$i],
-                $attributes['smiles'],
-                $attributes['inchi'],
-                $attributes['inchikey'],
-                $attributes['width'],
-                $attributes['height'],
-                $attributes['float'],
+                $attributes['smiles'] ?? '',
+                $attributes['inchi'] ?? '',
+                $attributes['inchikey'] ?? '',
+                $attributes['width'] ?? '',
+                $attributes['height'] ?? '',
+                $attributes['float'] ?? '',
                 self::parseRGroups($attributes));
         }
         return $results;
@@ -45,6 +45,20 @@ class ChemFormParser
         }
 
         return $result;
+    }
+
+    public function replaceChemForm($moleculeKey, $wikitext, ChemForm $chemFormToReplace): string {
+        return preg_replace_callback(self::CHEM_FORM_REGEX, function($matches) use ($moleculeKey, $chemFormToReplace) {
+            $parser = new ChemFormParser();
+            $chemForm = $parser->parse($matches[0])[0];
+            if ($chemForm->getMoleculeKey() === $moleculeKey) {
+                $chemFormToReplace->merge($chemForm);
+                return $chemFormToReplace->serializeAsWikitext();
+            } else {
+                return $matches[0];
+
+            }
+        }, $wikitext);
     }
 
     private function parseAttributes($attributeString): array

@@ -37,9 +37,9 @@
         });
     }
 
-    window.ChemExtension.AjaxEndpoints.prototype.replaceImage = function (formulaV3000, moleculeKey, chemFormId, imgData) {
+    window.ChemExtension.AjaxEndpoints.prototype.replaceImage = function (formulaV3000, smiles, inchi, inchikey, moleculeKey, oldMoleculeKey, chemFormId, imgData) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/chemform/replace?" + $.param({ moleculeKey: moleculeKey, chemFormId : chemFormId });
+        let url = baseUrl + "/v1/chemform/replace?" + $.param({ moleculeKey: moleculeKey, oldMoleculeKey: oldMoleculeKey, chemFormId : chemFormId });
 
         return $.ajax({
             method: "POST",
@@ -47,7 +47,10 @@
             contentType: "application/x-www-form-urlencoded",
             data: {
                 'imgData': imgData,
-                'molOrRxn': btoa(formulaV3000)
+                'molOrRxn': btoa(formulaV3000),
+                'smiles': smiles,
+                'inchi': inchi,
+                'inchikey': inchikey
             }
         });
     }
