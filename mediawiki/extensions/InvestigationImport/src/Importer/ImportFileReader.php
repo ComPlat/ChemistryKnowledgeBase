@@ -28,7 +28,10 @@ class ImportFileReader
                 $wikitext = str_replace("{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
             }
             $peak_string = $this->csv_parsing($temp_folder_location . "/" . $peak_file);
-            $val = $peak_string;
+            var_dump($peak_string);
+            $peak_list = explode(",", $peak_string);
+            $new_peak_string = "$peak_list[0],$peak_list[2];";
+            $val = $new_peak_string;
             $key = "redox potential";
             $new_data = "|$key=$val\n";
             if ($intial_start_int == count($file_array["3"]))
@@ -77,7 +80,8 @@ class ImportFileReader
         $output["3"] = $csv_array;
         return $output;
     }
-    public function csv_parsing($csv_file){
+    public function csv_parsing($csv_file)
+    {
         $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
         $spreadsheet = $reader->load($csv_file);
         $reader->setSheetIndex(0);
@@ -100,7 +104,8 @@ class ImportFileReader
         return ($output);
     }
 
-    public function jdx_parsing($jdx_file){
+    public function jdx_parsing($jdx_file)
+    {
         $output=[];
         $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
         $peaktable_array =["start"=>"$$ === CHEMSPECTRA CYCLIC VOLTAMMETRY ===","data"=>"##\$CSCYCLICVOLTAMMETRYDATA="
@@ -145,7 +150,9 @@ class ImportFileReader
         $output = $peak_string;
         return $output;
     }
-    function round_cleanly($number_in){
+
+    function round_cleanly($number_in)
+    {
         if (str_contains($number_in,"e") ){
             $e_value = "e" . explode("E",$number_in)[1];
             $number = explode("e",$number_in)[0];
@@ -161,6 +168,7 @@ class ImportFileReader
         $number = round($number,2);
         return($number . $e_value);
     }
+
     private function xml_parsing($file)
     {
         $reader = IOFactory::createReader("Xlsx");
@@ -192,7 +200,6 @@ class ImportFileReader
         foreach ($CV_metadata as $key => $value) {
             if (preg_match($regex, $key) || $key == " ") {
                 unset($CV_metadata[$key]);
-                // echo("key removed $key\n");
             }
         }
         // need to add code to change molecule common name to Molecule:Id
@@ -230,7 +237,7 @@ class ImportFileReader
             }
             // var_dump($val);
             if(is_numeric($val)){
-                $val = substr($val,0,4);
+                $val = $this->round_cleanly($val);
             }
             $new_data = "|$key=$val\n";
             $wikitext_data = $wikitext_data . $new_data;
