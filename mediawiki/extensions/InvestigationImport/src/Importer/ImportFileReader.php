@@ -3,6 +3,7 @@
 namespace DIQA\InvestigationImport\Importer;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use \PhpOffice\PhpSpreadsheet\Reader\Csv;
 use ZipArchive;
 use Exception;
 
@@ -20,17 +21,20 @@ class ImportFileReader
         $cv_data = ($this->xml_parsing($temp_folder_location . "/" . $file_array["1"]));
         $wikitext = $this->update_data($cv_data);
         $intial_start_int = 1;
-        foreach ($file_array["2"] as $peak_file) {
+        foreach ($file_array["3"] as $peak_file) {
             if ($intial_start_int == 1){
             }
             else {
                 $wikitext = str_replace("{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
             }
-            $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);
-            $val = $peak_string;
+            $peak_string = $this->csv_parsing($temp_folder_location . "/" . $peak_file);
+            var_dump($peak_string);
+            $peak_list = explode(",", $peak_string);
+            $new_peak_string = "$peak_list[0],$peak_list[2];";
+            $val = $new_peak_string;
             $key = "redox potential";
             $new_data = "|$key=$val\n";
-            if ($intial_start_int == count($file_array["2"]))
+            if ($intial_start_int == count($file_array["3"]))
                 $wikitext_data = $wikitext . $new_data . "}}\n}}";
             else{
                 $wikitext_data = $wikitext . $new_data . "}}";
@@ -60,6 +64,7 @@ class ImportFileReader
         $file_array = scandir($temp_folder_location);
         $output = [];
         $jdx_array = [];
+        $csv_array = [];
         foreach ($file_array as $file) {
             if (preg_match("/.xlsx/", $file)) {
                 $output["1"] = $file;
@@ -67,24 +72,40 @@ class ImportFileReader
             if (preg_match("/.bagit.edit.jdx/", $file)) {
                 $jdx_array[] = $file;
             }
+            if (preg_match("/.bagit.edit.csv/", $file)) {
+                $csv_array[] = $file;
+            }
         }
         $output["2"] = $jdx_array;
+        $output["3"] = $csv_array;
         return $output;
     }
-    public function csv_parsing($csv_file){
-        $reader = IOFactory::createReader("csv");
+    public function csv_parsing($csv_file)
+    {
+        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+        $spreadsheet = $reader->load($csv_file);
         $reader->setSheetIndex(0);
-        $dataArray1 = $spreadsheet->getActiveSheet()->rangeToArray('A1:G1');
-        $dataArray2 = $spreadsheet->getActiveSheet()->rangeToArray('A2:G2');
+        $dataArray1 = $spreadsheet->getActiveSheet()->rangeToArray('A9:G9');
+        $dataArray2 = $spreadsheet->getActiveSheet()->rangeToArray('A10:G10');
         $count = 0;
         $output = [];
-        foreach ($dataArray1 as $data_value){
-            $output[$dataArray1] = $dataArray2;
+        foreach ($dataArray1[0] as $data_value){
+            if (is_numeric($dataArray2[0][$count]) ){
+            $output[$data_value] = $this->round_cleanly($dataArray2[0][$count]);
+            }
+            else{
+            $output[$data_value] = ($dataArray2[0][$count]);  
+            }
+            $count = $count + 1;
         }
+        $output = array_values($output);
+
+        $output = implode(",", $output);
         return ($output);
     }
 
-    public function jdx_parsing($jdx_file){
+    public function jdx_parsing($jdx_file)
+    {
         $output=[];
         $term_array = ["##MAXX","##MAXY","##MINX","##MINY"];
         $peaktable_array =["start"=>"$$ === CHEMSPECTRA CYCLIC VOLTAMMETRY ===","data"=>"##\$CSCYCLICVOLTAMMETRYDATA="
@@ -118,22 +139,7 @@ class ImportFileReader
             $peak_array = explode(", ",$text_array[$x]);
             // var_dump($peak_array);
             foreach ($peak_array as $data_point){
-                if (str_contains($data_point,"e") ){
-                    $e_value = "e" . explode("e",$data_point)[1];
-                    $data_point = explode("e",$data_point)[0];
-                }
-                else{
-                    $e_value = "";
-                }
-                if (str_contains($data_point,"-") ){
-                    $negative_value ="-";
-                    $data_point = trim($data_point,"-");      
-                }                         
-                else{
-                    $negative_value = "";
-                }
-            $small_data = round($data_point,2);
-            $small_data = $negative_value . $small_data . $e_value;
+            $small_data = $this->round_cleanly($data_point,2);
             $single_peak_array[] = $small_data;    
             }
             $single_peak = implode(", ",$single_peak_array);
@@ -143,6 +149,24 @@ class ImportFileReader
 
         $output = $peak_string;
         return $output;
+    }
+
+    function round_cleanly($number_in)
+    {
+        if (str_contains($number_in,"e") ){
+            $e_value = "e" . explode("E",$number_in)[1];
+            $number = explode("e",$number_in)[0];
+        }
+        if (str_contains($number_in,"E") ){
+            $e_value = "e" . explode("E",$number_in)[1];
+            $number = explode("e",$number_in)[0];
+        }
+        else{
+            $e_value = "";
+            $number = $number_in;
+        }
+        $number = round($number,2);
+        return($number . $e_value);
     }
 
     private function xml_parsing($file)
@@ -176,7 +200,6 @@ class ImportFileReader
         foreach ($CV_metadata as $key => $value) {
             if (preg_match($regex, $key) || $key == " ") {
                 unset($CV_metadata[$key]);
-                // echo("key removed $key\n");
             }
         }
         // need to add code to change molecule common name to Molecule:Id
@@ -212,10 +235,9 @@ class ImportFileReader
                 // var_dump($new_string);
                 $val = $new_string;
             }
-            var_dump($val);
             // var_dump($val);
             if(is_numeric($val)){
-                $val = substr($val,0,4);
+                $val = $this->round_cleanly($val);
             }
             $new_data = "|$key=$val\n";
             $wikitext_data = $wikitext_data . $new_data;
