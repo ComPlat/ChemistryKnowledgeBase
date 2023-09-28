@@ -24,13 +24,20 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
                 let importFile = this.chooseExperimentsWidget.getImportFile();
                 if (importFile.length > 0) {
+                    var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Uploading...' });
+                    var windowManager = new OO.ui.WindowManager();
+                    $( document.body ).append( windowManager.$element );
+                    windowManager.addWindows( [ progressDialog ] );
+                    windowManager.openWindow( progressDialog);
                     let file = importFile[0], read = new FileReader();
                     read.readAsArrayBuffer(file);
                     read.onloadend = () => {
                         let ajax = new window.ChemExtension.AjaxEndpoints();
                         ajax.uploadFile(importFile[0].name, read.result).done(() => {
+                            progressDialog.close();
                             this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name);
                         }).error((e) => {
+                            progressDialog.close();
                             mw.notify('Error occured on file upload')
                             console.log(e);
                         });
