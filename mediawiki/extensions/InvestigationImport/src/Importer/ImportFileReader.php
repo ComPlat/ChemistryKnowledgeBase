@@ -21,7 +21,11 @@ class ImportFileReader
         $cv_data = ($this->xml_parsing($temp_folder_location . "/" . $file_array["1"]));
         $wikitext = $this->update_data($cv_data);
         $intial_start_int = 1;
-        foreach ($file_array["3"] as $peak_file) {
+        $jdx_or_csv = "csv";
+        if (sizeof($file_array["csv"]) == 0){
+            $jdx_or_csv="jdx";
+        }
+        foreach ($file_array[$jdx_or_csv] as $peak_file) {
             if ($intial_start_int == 1){
             }
             else {
@@ -34,7 +38,7 @@ class ImportFileReader
             $val = $new_peak_string;
             $key = "redox potential";
             $new_data = "|$key=$val\n";
-            if ($intial_start_int == count($file_array["3"]))
+            if ($intial_start_int == count($file_array[$jdx_or_csv]))
                 $wikitext_data = $wikitext . $new_data . "}}\n}}";
             else{
                 $wikitext_data = $wikitext . $new_data . "}}";
@@ -76,8 +80,8 @@ class ImportFileReader
                 $csv_array[] = $file;
             }
         }
-        $output["2"] = $jdx_array;
-        $output["3"] = $csv_array;
+        $output["jdx"] = $jdx_array;
+        $output["csv"] = $csv_array;
         return $output;
     }
     public function csv_parsing($csv_file)
