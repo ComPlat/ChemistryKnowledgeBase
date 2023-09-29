@@ -23,6 +23,9 @@ experiments:
 |
 | (''Format'': value pairs &lt;v1&gt;,&lt;v2&gt; separated by a semicolon. Values can be empty. ''For example'': 1,2 or 1, or 1,2;,4)
 |-
+! lambda:
+| {{{field|lambda|input type=regexp|property=lambda|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
 ! solvent:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
 |-

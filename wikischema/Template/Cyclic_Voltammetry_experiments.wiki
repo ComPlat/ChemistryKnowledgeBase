@@ -6,6 +6,7 @@ This is the Cyclic Voltammetry experiments template.
 <th title="analyte (catalyst)">analyte</th>
 <th title="analyte concentration [mM]">anl conc [mM]</th>
 <th title="Redox potential">redox potential</th>
+<th title="lambda">lamba</th>
 <th title="solvent">solvent</th>
 <th title="solvent volume [ml]" property="hidden">solvent vol [ml]</th>
 <th title="electrolyte">electrolyte</th>
