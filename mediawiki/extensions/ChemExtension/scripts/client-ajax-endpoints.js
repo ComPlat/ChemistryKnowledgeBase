@@ -9,6 +9,19 @@
 
     };
 
+    window.ChemExtension.AjaxEndpoints.prototype.uploadFile = function (fileName, content) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/uploadfile?fileName=" + encodeURIComponent(fileName);
+
+        return $.ajax({
+            method: "POST",
+            url: url,
+            contentType: "application/octet-stream",
+            data: content,
+            processData: false
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.uploadImage = function (moleculeKey, imgData) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/chemform/upload?moleculeKey=" + encodeURIComponent(moleculeKey);

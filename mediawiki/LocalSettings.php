@@ -161,7 +161,7 @@ $wgJobRunRate = 100;
 $wgUrlProtocols[] = "file://";
 $wgFileExtensions = array( 'png', 'gif', 'jpg', 'jpeg', 'doc',
     'xls', 'mpp', 'pdf', 'ppt', 'tiff', 'bmp', 'docx', 'xlsx',
-    'pptx', 'ps', 'odt', 'ods', 'odp', 'odg'
+    'pptx', 'ps', 'odt', 'ods', 'odp', 'odg', 'zip'
 );
 
 $wgRawHtml = true;

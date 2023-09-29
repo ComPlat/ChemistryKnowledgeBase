@@ -473,10 +473,15 @@ span.experiment-link-show-button button {
     border-color: grey !important;
 }
 
-div.experiment-dialog label {
-    margin-bottom: 0px !important;
-    margin-top: 0.5rem;
+div.experiment-dialog div.oo-ui-actionFieldLayout-input, div.experiment-dialog div.oo-ui-actionFieldLayout-button {
+    display: table-cell;
+    vertical-align: top !important;
 }
+
+div.experiment-dialog div.oo-ui-selectFileInputWidget span.oo-ui-fieldLayout-header {
+    display:none !important;
+}
+
 
 p.added-jobs-success {
     margin: 10px;

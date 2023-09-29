@@ -55,3 +55,7 @@ Thumbs.db
 /mediawiki/web.config
 /mediawiki/extensions/WikiFarm/cache/*.php
 /mediawiki/extensions/ChemExtension/cache/*.php
+mediawiki/extensions/InvestigationImport/maintenance/test1.txt
+.vscode/launch.json
+mediawiki/extensions/InvestigationImport/resources/~$CV_generic_dataset_withExValues.xlsx
+mediawiki/extensions/InvestigationImport/maintenance/test198.txt

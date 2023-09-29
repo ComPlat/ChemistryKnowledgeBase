@@ -1,0 +1,34 @@
+{
+    "@context" :{
+        "OLS":"http://www.ebi.ac.uk/ols/api/ontologies/",
+        "CID":"OLS:CHEMINF/terms/http://www.ebi.ac.uk/ols/api/ontologies/CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000140",
+        "CAS":"OLS:CHEMINF/terms/http%3A%2F%2Fsemanticscience.org%2Fresource%2FCHEMINF_000446",
+        "Iupac_Name":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000107",
+        "Trivial_Name":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000109",
+        "Exact_Mass":"OLS:AFO/terms/http%253A%252F%252Fpurl.allotrope.org%252Fontologies%252Fquality%2523AFQ_0000123",
+        "Molecular_formula":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000042",
+        "LogP":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000251",
+        "SMILES":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000018",
+        "Inchi_key":"OLS:CHEMINF/terms/http%253A%252F%252Fsemanticscience.org%252Fresource%252FCHEMINF_000059"
+    },
+    "@type":"Molecule",
+    "@id":"water",
+    "CID":"cid1",
+    "CAS":"cas2",
+    "Iupac_Name":"ip4",
+    "Abbreviation":"",
+    "Trivial_Name":"",
+    "Exact_Mass":"EM",
+    "Molecular_formula":"H20",
+    "LogP":"p1",
+    "Has_Vendors":"",
+    "Synoynms":"",
+    "SMILES":"",
+    "Inchi":"",
+    "Inchi_key":""
+}
+    
+    
+    
+     
+     

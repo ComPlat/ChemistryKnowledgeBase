@@ -17,40 +17,67 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     OO.inheritClass(ve.ui.ChooseExperimentDialog, ve.ui.FragmentDialog);
 
-
     ve.ui.ChooseExperimentDialog.prototype.getActionProcess = function (action) {
         if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(() => {
                 let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
                 let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
-                let toInsert = [ [
-                    {
-                        type: 'mwTransclusionInline',
-                        attributes: {
-                            mw: {
-                                parts:  [
-                                    {
-                                        template: {
-                                            i: 0,
-                                            params: {
-                                                form: { wt: selectedExperiment },
-                                                name: { wt: selectedExperimentName }
-                                            },
-                                            target: { wt: "#experimentlist:", "function": "experimentlist"}
-                                        }
-                                    }
-                                ]
-                            },
-                            originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlist:","function":"experimentlist"},"params":{"form":{"wt":""}},"i":0}}]}"'
-                        }
+                let importFile = this.chooseExperimentsWidget.getImportFile();
+                if (importFile.length > 0) {
+                    var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Uploading...' });
+                    var windowManager = new OO.ui.WindowManager();
+                    $( document.body ).append( windowManager.$element );
+                    windowManager.addWindows( [ progressDialog ] );
+                    windowManager.openWindow( progressDialog);
+                    let file = importFile[0], read = new FileReader();
+                    read.readAsArrayBuffer(file);
+                    read.onloadend = () => {
+                        let ajax = new window.ChemExtension.AjaxEndpoints();
+                        ajax.uploadFile(importFile[0].name, read.result).done(() => {
+                            progressDialog.close();
+                            this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name);
+                        }).error((e) => {
+                            progressDialog.close();
+                            mw.notify('Error occured on file upload')
+                            console.log(e);
+                        });
                     }
+                } else {
+                    this.insertExperiment(selectedExperiment, selectedExperimentName, '');
+                }
 
-                ]];
-                this.surface.execute.apply( this.surface, [ 'content', 'insert' ].concat( toInsert ) );
-                ve.ui.MWMediaDialog.super.prototype.close.call(this);
             }, this);
         }
         return ve.ui.MWMediaDialog.super.prototype.getActionProcess.call(this, action);
+    }
+
+    ve.ui.ChooseExperimentDialog.prototype.insertExperiment = function(selectedExperiment, selectedExperimentName, importFileName) {
+        let toInsert = [ [
+            {
+                type: 'mwTransclusionInline',
+                attributes: {
+                    mw: {
+                        parts:  [
+                            {
+                                template: {
+                                    i: 0,
+                                    params: {
+                                        form: { wt: selectedExperiment },
+                                        name: { wt: selectedExperimentName },
+                                        importFile: { wt: importFileName }
+                                    },
+                                    target: { wt: "#experimentlist:", "function": "experimentlist"}
+                                }
+                            }
+                        ]
+                    },
+                    originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlist:","function":"experimentlist"},"params":{"form":{"wt":""}, "name":{"wt":""}, "importFile":{"wt":""}},"i":0}}]}"'
+                }
+            }
+
+        ]];
+        this.surface.execute.apply( this.surface, [ 'content', 'insert' ].concat( toInsert ) );
+        ve.ui.MWMediaDialog.super.prototype.close.call(this);
     }
 
     ve.ui.ChooseExperimentDialog.prototype.attachActions = function() {
@@ -75,7 +102,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentDialog.prototype.getBodyHeight = function () {
-        return 250;
+        return 430;
     };
 
     /* Static Properties */

@@ -84,7 +84,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentLinkDialog.prototype.getBodyHeight = function () {
-        return 590;
+        return 730;
     };
 
     /* Static Properties */
