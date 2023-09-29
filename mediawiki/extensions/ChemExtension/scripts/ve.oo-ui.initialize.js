@@ -126,9 +126,7 @@
     });
 
     mw.hook( 've.deactivationComplete' ).add(function() {
-        initialize();
-        initializeToggleBoxes();
-        initializeDOIInfoBoxToggle();
+        window.location.reload();
     });
     mw.hook( 'postEdit' ).add(function() {
         initialize();
