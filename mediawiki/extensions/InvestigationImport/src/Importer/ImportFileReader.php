@@ -21,29 +21,37 @@ class ImportFileReader
         $cv_data = ($this->xml_parsing($temp_folder_location . "/" . $file_array["1"]));
         $wikitext = $this->update_data($cv_data);
         $intial_start_int = 1;
-        foreach ($file_array["3"] as $peak_file) {
+        $jdx_or_csv = "csv";
+        if (sizeof($file_array["csv"]) == 0){
+            $jdx_or_csv="jdx";
+        }
+        foreach ($file_array[$jdx_or_csv] as $peak_file) {
             if ($intial_start_int == 1){
             }
             else {
                 $wikitext = str_replace("{{Cyclic Voltammetry experiments\n|experiments=","",$wikitext);
             }
-            $peak_string = $this->csv_parsing($temp_folder_location . "/" . $peak_file);
-            var_dump($peak_string);
+            if ($jdx_or_csv != "jdx"){
+            $peak_string = $this->csv_parsing($temp_folder_location . "/" . $peak_file);}
+            else{
+            $peak_string = $this->jdx_parsing($temp_folder_location . "/" . $peak_file);}
+            }
             $peak_list = explode(",", $peak_string);
             $new_peak_string = "$peak_list[0],$peak_list[2];";
             $val = $new_peak_string;
             $key = "redox potential";
             $new_data = "|$key=$val\n";
-            if ($intial_start_int == count($file_array["3"]))
-                $wikitext_data = $wikitext . $new_data . "}}\n}}";
+            $lambda = "|lambda=$peak_list[5]\n";
+            if ($intial_start_int == count($file_array[$jdx_or_csv]))
+                $wikitext_data = $wikitext . $new_data . $lambda ."}}\n}}";
             else{
-                $wikitext_data = $wikitext . $new_data . "}}";
+                $wikitext_data = $wikitext . $new_data . $lambda. "}}";
             }
             $intial_start_int = $intial_start_int + 1;
             echo($intial_start_int);
             $output[] = $wikitext_data;
 
-        }
+        
         FileUtil::rrmdir($temp_folder_location);
         return $output;
     }
@@ -76,8 +84,8 @@ class ImportFileReader
                 $csv_array[] = $file;
             }
         }
-        $output["2"] = $jdx_array;
-        $output["3"] = $csv_array;
+        $output["jdx"] = $jdx_array;
+        $output["csv"] = $csv_array;
         return $output;
     }
     public function csv_parsing($csv_file)
@@ -130,9 +138,12 @@ class ImportFileReader
             }
             $count = $count + 1;
         }
+        // var_dump($text_array[$data_index[0]]);
+        // var_dump($text_array[$data_index[1]]);
         $data_index[0]= $data_index[0] + 1;
         $data_index[1]= $data_index[1] - 1;
         $peak_string  ="";
+        
         for($x= $data_index[0];$x <= $data_index[1]; $x++){    
             $single_peak_array =[];        
             $text_array[$x] =trim($text_array[$x],"()");
@@ -153,8 +164,9 @@ class ImportFileReader
 
     function round_cleanly($number_in)
     {
+        var_dump($number_in);
         if (str_contains($number_in,"e") ){
-            $e_value = "e" . explode("E",$number_in)[1];
+            $e_value = "e" . explode("e",$number_in)[1];
             $number = explode("e",$number_in)[0];
         }
         if (str_contains($number_in,"E") ){

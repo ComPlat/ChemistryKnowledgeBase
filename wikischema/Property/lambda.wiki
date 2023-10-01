@@ -1,0 +1,5 @@
+;Purpose
+* lambda from cyclic voltammetry data
+
+;Datatype
+* [[Has type::Number]]
