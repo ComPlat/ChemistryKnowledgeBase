@@ -503,3 +503,11 @@ table.ce-center-aligned-table td {
 table.ce-center-aligned-table td:not(:first-child) {
     border-left: 1px solid;
 }
+
+#molecule-log-table {
+    width: 90%;
+}
+
+#molecule-log-table td:nth-child(1) {
+    width: 30%;
+}

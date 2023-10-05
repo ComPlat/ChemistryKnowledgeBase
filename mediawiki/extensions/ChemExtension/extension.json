@@ -22,7 +22,8 @@
         "FindUnusedMolecules": "DIQA\\ChemExtension\\Specials\\FindUnusedMolecules",
         "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
         "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule",
-        "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage"
+        "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage",
+        "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog"
 
     },
     "AutoloadNamespaces": {

@@ -31,5 +31,9 @@
 	"specialimportpage": "Seite aus privatem Wiki ins Hauptwiki exportieren",
 	"page-title-label": "Seite, die ins Hauptwiki exportiert werden soll",
 	"page-title-hint": "Seitentitel eingeben",
-	"chemext-import-page": "Ins Hauptwiki exportieren"
+	"chemext-import-page": "Ins Hauptwiki exportieren",
+	"specialmodifymoleculelog": "Modification-Log für Moleküle",
+	"molecule-id-label" : "Molekül-ID",
+	"molecule-id-hint": "Molekül-ID eingeben",
+	"chemext-show-log-button": "Zeige Log"
 }

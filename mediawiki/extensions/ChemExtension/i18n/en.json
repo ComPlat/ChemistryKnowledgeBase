@@ -38,5 +38,9 @@
 	"specialimportpage": "Export page from subwiki to main wiki",
 	"page-title-label": "Page title to import into main wiki",
 	"page-title-hint": "Enter page title",
-	"chemext-import-page": "Import page to main wiki"
+	"chemext-import-page": "Import page to main wiki",
+	"specialmodifymoleculelog": "Modification log for molecules",
+	"molecule-id-label" : "Molecule-ID",
+	"molecule-id-hint": "Molecule-ID eingeben",
+	"chemext-show-log-button": "Show Log"
 }

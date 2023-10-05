@@ -5,6 +5,8 @@
         // Parent constructor
         this.tools = new OO.VisualEditorTools();
         this.ajax = new window.ChemExtension.AjaxEndpoints();
+        let moleculeKeyField = $('#moleculeKey');
+        this.moleculeKeyField = OO.ui.infuse(moleculeKeyField);
         let modifyButtonJQ = $('#modify-molecule');
         if (modifyButtonJQ.length === 0) return;
         this.modifyButton = OO.ui.infuse(modifyButtonJQ);
@@ -46,6 +48,8 @@
                         this.ajax.replaceImage(formulaV3000, smiles, response.InChI, response.InChIKey, newMoleculeKey, moleculeKey, chemFormId, imgData)
                             .then(() => {
                                 this.modifyButton.setDisabled(false);
+                                this.moleculeKeyField.setValue(newMoleculeKey);
+                                $('#mp-ketcher-editor').attr('moleculeKey', newMoleculeKey);
                                 mw.notify('Molecule updated');
                             })
                             .catch((res) => {
