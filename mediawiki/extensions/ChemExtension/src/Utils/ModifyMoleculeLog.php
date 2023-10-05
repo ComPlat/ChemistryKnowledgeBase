@@ -46,6 +46,9 @@ class ModifyMoleculeLog {
     }
 
     public function getLog($chemformId) {
+        if (!self::startsWith(realpath($this->tmpDir . '/' . $chemformId), $this->tmpDir)) {
+            return [];
+        }
         $data = file_get_contents($this->tmpDir . '/' . $chemformId);
         if ($data === false) {
             return [];
@@ -57,5 +60,10 @@ class ModifyMoleculeLog {
             return $arr;
             }, $entries);
 
+    }
+
+    private static function startsWith( $haystack, $needle ) {
+        $length = strlen( $needle );
+        return substr( $haystack, 0, $length ) === $needle;
     }
 }
