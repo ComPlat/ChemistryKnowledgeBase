@@ -40,29 +40,19 @@ class SpecialModifyMoleculeLog extends SpecialPage {
             $this->setHeaders();
 
             OutputPage::setupOOUI();
-
             $form = $this->createGUI();
 
             global $wgRequest;
-            if ($wgRequest->getMethod() == 'POST') {
-                try {
-                    $moleculeLog = $this->processRequest($wgRequest);
-                    $html = $this->blade->view()->make("show-molecule-modification-log", [
-                        'moleculeLog' => $moleculeLog,
-                        'form' => $form,
-                        'wgScriptPath' => $wgScriptPath
-                    ])->render();
-                    $this->getOutput()->addHTML($html);
+            $moleculeLog = $this->processRequest($wgRequest);
+            $html = $this->blade->view()->make("show-molecule-modification-log", [
+                'moleculeLog' => $moleculeLog,
+                'form' => $form,
+                'wgScriptPath' => $wgScriptPath
+            ])->render();
+            $this->getOutput()->addHTML($html);
 
-                } catch (Exception $e) {
-                    $this->getOutput()->addHTML($this->showErrorHint($e->getMessage()));
-                }
-
-            }
-
-
-        } catch (\Exception $e) {
-            $output->addHTML($e->getMessage());
+        } catch (Exception $e) {
+            $output->addHTML($this->showErrorHint($e->getMessage()));
         }
     }
 
@@ -108,6 +98,9 @@ class SpecialModifyMoleculeLog extends SpecialPage {
     {
         $modificationLog = new ModifyMoleculeLog();
         $moleculeId = $wgRequest->getText('molecule-id', '');
+        if ($moleculeId == '') {
+            return [];
+        }
         return $modificationLog->getLog($moleculeId);
     }
 
