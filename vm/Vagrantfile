@@ -49,8 +49,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # VirtualBox
     config.vm.provider "virtualbox" do |v, override|
         v.name = "Chemwiki-Ubuntu"
-        v.memory = 2024
-        v.cpus = 2
+        v.memory = 4048
+        v.cpus = 4
         override.vm.provision "shell", path: "bootstrap-ubuntu.sh", privileged: false
 
         # Every Vagrant virtual environment requires a box to build off of.
