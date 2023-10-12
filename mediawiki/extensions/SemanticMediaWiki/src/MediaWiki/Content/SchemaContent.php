@@ -8,7 +8,7 @@ use SMW\Exception\JSONParseException;
 use SMW\Schema\Schema;
 use SMW\ParserData;
 use SMW\Message;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
 use JsonContent;
@@ -433,6 +433,7 @@ class SchemaContent extends JsonContent {
 
 		// Allow to use the schema validation against a possible
 		// required naming convention (aka title prefix)
+		// TODO: Illegal dynamic property (#5421)
 		$this->parse->title_prefix = $title_prefix;
 	}
 

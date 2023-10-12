@@ -40,17 +40,16 @@ ve.ui.MWLinkAction.static.methods = ve.ui.MWLinkAction.super.static.methods.conc
  * @return {ve.dm.MWExternalLinkAnnotation|ve.dm.MWInternalLinkAnnotation} The annotation to use
  */
 ve.ui.MWLinkAction.static.getLinkAnnotation = function ( linktext, doc ) {
-	var title, targetData,
-		href = linktext;
+	var href = linktext;
 
 	// Is this a "magic link"?
 	if ( ve.dm.MWMagicLinkNode.static.validateContent( linktext ) ) {
 		return ve.dm.MWMagicLinkNode.static.annotationFromContent( linktext );
 	}
 	// Is this an internal link?
-	targetData = mw.libs.ve.getTargetDataFromHref( href, doc );
+	var targetData = mw.libs.ve.getTargetDataFromHref( href, doc );
 	if ( targetData.isInternal ) {
-		title = mw.Title.newFromText( targetData.title );
+		var title = mw.Title.newFromText( targetData.title );
 		return ve.dm.MWInternalLinkAnnotation.static.newFromTitle( title );
 	}
 	// It's an external link.
@@ -144,7 +143,7 @@ ve.ui.MWLinkAction.prototype.open = function () {
 	} else if ( selectedNode instanceof ve.dm.MWMagicLinkNode ) {
 		windowName = 'linkMagicNode';
 	}
-	this.surface.execute( 'window', 'open', windowName );
+	this.surface.executeWithSource( 'window', 'open', this.source, windowName );
 	return true;
 };
 
@@ -162,14 +161,42 @@ ve.ui.commandRegistry.register(
 // The regexps don't have to be precise; we'll validate the magic
 // link in #autolinkMagicLink above.
 ve.ui.sequenceRegistry.register(
-	new ve.ui.Sequence( 'autolinkMagicLinkIsbn10', 'autolinkMagicLink', /\bISBN\s+(?!97[89])([0-9][ -]?){9}[0-9Xx]$/, 0, true, false, true )
+	new ve.ui.Sequence(
+		'autolinkMagicLinkIsbn10', 'autolinkMagicLink', /\bISBN\s+(?!97[89])([0-9][ -]?){9}[0-9Xx]$/, 0,
+		{
+			setSelection: true,
+			delayed: false,
+			checkOnPaste: true
+		}
+	)
 );
 ve.ui.sequenceRegistry.register(
-	new ve.ui.Sequence( 'autolinkMagicLinkIsbn13', 'autolinkMagicLink', /\bISBN\s+(97[89])[ -]?([0-9][ -]?){9}[0-9Xx]$/, 0, true, false, true )
+	new ve.ui.Sequence(
+		'autolinkMagicLinkIsbn13', 'autolinkMagicLink', /\bISBN\s+(97[89])[ -]?([0-9][ -]?){9}[0-9Xx]$/, 0,
+		{
+			setSelection: true,
+			delayed: false,
+			checkOnPaste: true
+		}
+	)
 );
 ve.ui.sequenceRegistry.register(
-	new ve.ui.Sequence( 'autolinkMagicLinkIsbn', 'autolinkMagicLink', /\bISBN\s+(97[89][ -]?)?([0-9][ -]?){9}[0-9Xx]$/, 0, true, true, true )
+	new ve.ui.Sequence(
+		'autolinkMagicLinkIsbn', 'autolinkMagicLink', /\bISBN\s+(97[89][ -]?)?([0-9][ -]?){9}[0-9Xx]$/, 0,
+		{
+			setSelection: true,
+			delayed: true,
+			checkOnPaste: true
+		}
+	)
 );
 ve.ui.sequenceRegistry.register(
-	new ve.ui.Sequence( 'autolinkMagicLinkRfcPmid', 'autolinkMagicLink', /\b(RFC|PMID)\s+[0-9]+$/, 0, true, true, true )
+	new ve.ui.Sequence(
+		'autolinkMagicLinkRfcPmid', 'autolinkMagicLink', /\b(RFC|PMID)\s+[0-9]+$/, 0,
+		{
+			setSelection: true,
+			delayed: true,
+			checkOnPaste: true
+		}
+	)
 );

@@ -1,12 +1,17 @@
 @import 'variables.less';
 
 // remove duplicates we're not using here
-#sidebar .generated-sidebar,
 #p-search-mobilejs,
 #p-tb-mobilejs,
 #p-lang-mobilejs,
 #t-contributions {
 	display: none;
+}
+
+#sidebar #p-tb,
+#sidebar #p-lang,
+#sidebar #p-search {
+	display: block;
 }
 
 // popouts
@@ -53,6 +58,10 @@
 		padding: 0.65em 0;
 	}
 
+	a.feedlink {
+		padding-left: 16px; // T291274
+	}
+
 	h3:first-child {
 		margin-right: 2em;
 	}
@@ -64,7 +73,7 @@
 	.mobile-close-button {
 		width: 20px;
 		height: 20px;
-		.background-image-svg( 'images/icon-close.svg', 'images/icon-close.gif' );
+		background-image: url( images/icon-close.svg );
 		background-position: 0 0;
 		background-repeat: no-repeat;
 		position: absolute;
@@ -96,7 +105,7 @@
 #menus-cover-background {
 	position: absolute;
 	background-color: @background;
-	.background-image-svg( 'images/headbg.svg', 'images/headbg.jpg' );
+	background-image: url( images/headbg.svg );
 	background-position: 0 0;
 	background-repeat: no-repeat;
 	opacity: 0.55;
@@ -104,10 +113,10 @@
 
 #p-cactions-mobile li {
 	&#ca-edit-mobile a {
-		.background-image-svg( 'images/icon-edit.svg', 'images/icon-edit.gif' );
+		background-image: url( images/icon-edit.svg );
 	}
 
 	&#t-contributions-mobile a {
-		.background-image-svg( 'images/icon-user.svg', 'images/icon-user.gif' );
+		background-image: url( images/icon-user.svg );
 	}
 }

@@ -6,8 +6,7 @@ use ConfigException;
 use DatabaseUpdater;
 use FormatJson;
 use MediaWiki\MediaWikiServices;
-use Wikimedia;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 class UpdateTables {
 	/**
@@ -25,7 +24,7 @@ class UpdateTables {
 	 * @return bool
 	 */
 	public static function callback( $updater ) {
-		$dir = dirname( dirname( dirname( __DIR__ ) ) );
+		$dir = dirname( __DIR__, 3 );
 		$handler = new static( $updater, $dir );
 		return $handler->execute();
 	}
@@ -41,21 +40,21 @@ class UpdateTables {
 
 	protected function execute() {
 		$type = $this->updater->getDB()->getType();
+		$typePath = "{$this->base}/sql/{$type}";
+
+		$this->updater->addExtensionTable(
+			'oathauth_users',
+			"$typePath/tables-generated.sql"
+		);
+
 		switch ( $type ) {
 			case 'mysql':
 			case 'sqlite':
-				$this->updater->addExtensionTable( 'oathauth_users', "{$this->base}/sql/mysql/tables.sql" );
-				$this->updater->addExtensionUpdate( [ [ $this, 'schemaUpdateOldUsersFromInstaller' ] ] );
-				$this->updater->dropExtensionField(
-					'oathauth_users',
-					'secret_reset',
-					"{$this->base}/sql/mysql/patch-remove_reset.sql"
-				);
-
+				// 1.34
 				$this->updater->addExtensionField(
 					'oathauth_users',
 					'module',
-					"{$this->base}/sql/{$type}/patch-add_generic_fields.sql"
+					"$typePath/patch-add_generic_fields.sql"
 				);
 
 				$this->updater->addExtensionUpdate(
@@ -64,17 +63,25 @@ class UpdateTables {
 				$this->updater->dropExtensionField(
 					'oathauth_users',
 					'secret',
-					"{$this->base}/sql/{$type}/patch-remove_module_specific_fields.sql"
+					"$typePath/patch-remove_module_specific_fields.sql"
 				);
 
 				$this->updater->addExtensionUpdate(
 					[ [ __CLASS__, 'schemaUpdateTOTPToMultipleKeys' ] ]
 				);
 
+				$this->updater->addExtensionUpdate(
+					[ [ __CLASS__, 'schemaUpdateTOTPScratchTokensToArray' ] ]
+				);
+
 				break;
 
 			case 'postgres':
-				$this->updater->addExtensionTable( 'oathauth_users', "{$this->base}/sql/postgres/tables.sql" );
+				// 1.38
+				$this->updater->modifyExtensionTable(
+					'oathauth_users',
+					"$typePath/patch-oathauth_users-drop-oathauth_users_id_seq.sql"
+				);
 				break;
 		}
 
@@ -82,24 +89,15 @@ class UpdateTables {
 	}
 
 	/**
-	 * @return Wikimedia\Rdbms\DBConnRef
+	 * @return IMaintainableDatabase
 	 */
 	private static function getDatabase() {
 		global $wgOATHAuthDatabase;
+		// Global can be `null` during installation, ensure we pass `false` instead (T270147)
+		$database = $wgOATHAuthDatabase ?? false;
 		$lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory()
-			->getMainLB( $wgOATHAuthDatabase );
-		return $lb->getConnectionRef( DB_MASTER, [], $wgOATHAuthDatabase );
-	}
-
-	/**
-	 * Helper function for converting old users to the new schema
-	 *
-	 * @param DatabaseUpdater $updater
-	 *
-	 * @return bool
-	 */
-	public function schemaUpdateOldUsersFromInstaller( DatabaseUpdater $updater ) {
-		return self::schemaUpdateOldUsers( self::getDatabase() );
+			->getMainLB( $database );
+		return $lb->getConnectionRef( DB_PRIMARY, [], $database );
 	}
 
 	/**
@@ -123,12 +121,22 @@ class UpdateTables {
 	}
 
 	/**
-	 * Converts old, TOTP specific, column values to new structure
-	 * @param IDatabase $db
+	 * Helper function for converting single TOTP keys to multi-key system
+	 * @param DatabaseUpdater $updater
 	 * @return bool
 	 * @throws ConfigException
 	 */
-	public static function convertToGenericFields( IDatabase $db ) {
+	public static function schemaUpdateTOTPScratchTokensToArray( DatabaseUpdater $updater ) {
+		return self::switchTOTPScratchTokensToArray( self::getDatabase() );
+	}
+
+	/**
+	 * Converts old, TOTP specific, column values to new structure
+	 * @param IMaintainableDatabase $db
+	 * @return bool
+	 * @throws ConfigException
+	 */
+	public static function convertToGenericFields( IMaintainableDatabase $db ) {
 		if ( !$db->fieldExists( 'oathauth_users', 'secret', __METHOD__ ) ) {
 			return true;
 		}
@@ -172,18 +180,16 @@ class UpdateTables {
 				);
 			}
 		}
-
-		return true;
 	}
 
 	/**
 	 * Switch from using single keys to multi-key support
 	 *
-	 * @param IDatabase $db
+	 * @param IMaintainableDatabase $db
 	 * @return bool
 	 * @throws ConfigException
 	 */
-	public static function switchTOTPToMultipleKeys( IDatabase $db ) {
+	public static function switchTOTPToMultipleKeys( IMaintainableDatabase $db ) {
 		if ( !$db->fieldExists( 'oathauth_users', 'data', __METHOD__ ) ) {
 			return true;
 		}
@@ -218,40 +224,52 @@ class UpdateTables {
 	}
 
 	/**
-	 * Helper function for converting old users to the new schema
+	 * Switch scratch tokens from string to an array
 	 *
-	 * @param IDatabase $db
+	 * @param IMaintainableDatabase $db
 	 * @return bool
+	 * @throws ConfigException
 	 */
-	public static function schemaUpdateOldUsers( IDatabase $db ) {
-		if ( !$db->fieldExists( 'oathauth_users', 'secret_reset', __METHOD__ ) ) {
+	public static function switchTOTPScratchTokensToArray( IMaintainableDatabase $db ) {
+		if ( !$db->fieldExists( 'oathauth_users', 'data' ) ) {
 			return true;
 		}
 
 		$res = $db->select(
 			'oathauth_users',
-			[ 'id', 'scratch_tokens' ],
-			[ 'is_validated != 0' ],
+			[ 'id', 'data' ],
+			[
+				'module' => 'totp'
+			],
 			__METHOD__
 		);
 
 		foreach ( $res as $row ) {
-			Wikimedia\suppressWarnings();
-			$scratchTokens = unserialize( base64_decode( $row->scratch_tokens ) );
-			Wikimedia\restoreWarnings();
-			if ( $scratchTokens ) {
-				$db->update(
-					'oathauth_users',
-					[ 'scratch_tokens' => implode( ',', $scratchTokens ) ],
-					[ 'id' => $row->id ],
-					__METHOD__
-				);
-			}
-		}
+			$data = FormatJson::decode( $row->data, true );
 
-		// Remove rows from the table where user never completed the setup process
-		$db->delete( 'oathauth_users', [ 'is_validated' => 0 ], __METHOD__ );
+			$updated = false;
+			foreach ( $data['keys'] as &$k ) {
+				if ( is_string( $k['scratch_tokens'] ) ) {
+					$k['scratch_tokens'] = explode( ',', $k['scratch_tokens'] );
+					$updated = true;
+				}
+			}
+
+			if ( !$updated ) {
+				continue;
+			}
+
+			$db->update(
+				'oathauth_users',
+				[
+					'data' => FormatJson::encode( $data )
+				],
+				[ 'id' => $row->id ],
+				__METHOD__
+			);
+		}
 
 		return true;
 	}
+
 }

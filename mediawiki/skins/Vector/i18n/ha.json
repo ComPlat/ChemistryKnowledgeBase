@@ -1,10 +1,20 @@
 {
 	"@metadata": {
 		"authors": [
+			"Amire80",
 			"Ammarpad",
-			"DonCamillo"
+			"Bello Na'im",
+			"DonCamillo",
+			"Edith Nwobu",
+			"Em-em",
+			"Gwanki",
+			"Salihu aliyu",
+			"Moyogo"
 		]
 	},
+	"vector-language-button-aria-label": "Je zuwa maƙala domin wani harshen. Akwai a {{PLURAL:$1|$1 language|$1 languages}}",
+	"vector-language-button-label": "{{PLURAL:$1|$1 harshe|$1 harsuna}}",
+	"vector-language-variant-switcher-label": "Sauya bambancin harshe",
 	"vector-action-addsection": "Sabon sashe",
 	"vector-action-delete": "Soke",
 	"vector-action-move": "Gusarwa",
@@ -13,5 +23,8 @@
 	"vector-view-edit": "Gyara",
 	"vector-view-history": "Nuna tarihin",
 	"vector-view-view": "Karanta",
-	"vector-more-actions": "Mafi"
+	"vector-more-actions": "Mafi",
+	"vector-searchsuggest-containing": "Duba shafukan dake dauke da <strong class=\"cdx-typeahead-search__search-footer__query\">$1</strong>",
+	"vector-intro-page": "Taimako:Gabatarwa",
+	"vector-toc-beginning": "Farawa"
 }

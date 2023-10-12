@@ -2,8 +2,9 @@
 
 namespace SMW\Tests\Integration\MediaWiki;
 
+use ExtensionRegistry;
 use SMW\MediaWiki\Search\ExtendedSearchEngine;
-use SMW\Tests\MwDBaseUnitTestCase;
+use SMW\Tests\DatabaseTestCase;
 use SMW\Tests\Utils\PageCreator;
 use SMW\Tests\Utils\PageDeleter;
 use Title;
@@ -22,7 +23,7 @@ use Title;
  *
  * @author mwjames
  */
-class SearchInPageDBIntegrationTest extends MwDBaseUnitTestCase {
+class SearchInPageDBIntegrationTest extends DatabaseTestCase {
 
 	public function testSearchForPageValueAsTerm() {
 
@@ -61,7 +62,7 @@ class SearchInPageDBIntegrationTest extends MwDBaseUnitTestCase {
 
 	public function testSearchForGeographicCoordinateValueAsTerm() {
 
-		if ( !defined( 'SM_VERSION' ) ) {
+		if ( !ExtensionRegistry::getInstance()->isLoaded( 'Maps' ) ) {
 			$this->markTestSkipped( "Requires 'Geographic coordinate' to be a supported data type (see Semantic Maps)" );
 		}
 

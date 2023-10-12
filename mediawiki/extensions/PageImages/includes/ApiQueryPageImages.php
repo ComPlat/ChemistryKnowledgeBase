@@ -7,6 +7,8 @@ use ApiQuery;
 use ApiQueryBase;
 use MediaWiki\MediaWikiServices;
 use Title;
+use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 /**
  * Expose image information for a page via a new prop=pageimages API.
@@ -35,7 +37,7 @@ class ApiQueryPageImages extends ApiQueryBase {
 	 * (see {@see ApiPageSet::getGoodTitles}) union the set of "missing"
 	 * titles in the File namespace that might correspond to foreign files.
 	 * The latter are included because titles in the File namespace are
-	 * expected to be found with {@see wfFindFile}.
+	 * expected to be found with {@see \RepoGroup::findFile}.
 	 *
 	 * @return Title[] A map of page ID, which will be negative in the case
 	 *  of missing titles in the File namespace, to Title object
@@ -63,7 +65,6 @@ class ApiQueryPageImages extends ApiQueryBase {
 	/**
 	 * Evaluates the parameters, performs the requested retrieval of page images,
 	 * and sets up the result
-	 * @return null
 	 */
 	public function execute() {
 		$params = $this->extractRequestParams();
@@ -111,6 +112,7 @@ class ApiQueryPageImages extends ApiQueryBase {
 		}
 
 		$size = $params['thumbsize'];
+		$lang = $params['langcode'];
 		// Extract page images from the page_props table
 		if ( count( $titles ) > 0 ) {
 			$this->addTables( 'page_props' );
@@ -131,7 +133,7 @@ class ApiQueryPageImages extends ApiQueryBase {
 
 			foreach ( $buffer as $pageId => $row ) {
 				$fileName = $row->pp_value;
-				$this->setResultValues( $prop, $pageId, $fileName, $size );
+				$this->setResultValues( $prop, $pageId, $fileName, $size, $lang );
 			}
 		// End page props image extraction
 		}
@@ -140,7 +142,7 @@ class ApiQueryPageImages extends ApiQueryBase {
 		// the file itself rather than searching for a page_image. (Bug 50252)
 		foreach ( $filePageTitles as $pageId => $title ) {
 			$fileName = $title->getDBkey();
-			$this->setResultValues( $prop, $pageId, $fileName, $size );
+			$this->setResultValues( $prop, $pageId, $fileName, $size, $lang );
 		}
 	}
 
@@ -161,14 +163,19 @@ class ApiQueryPageImages extends ApiQueryBase {
 	 * @param int $pageId The ID of the page
 	 * @param string $fileName The name of the file to transform
 	 * @param int $size The thumbsize value from the API request
+	 * @param string $lang The language code from the API request
 	 */
-	protected function setResultValues( array $prop, $pageId, $fileName, $size ) {
+	protected function setResultValues( array $prop, $pageId, $fileName, $size, $lang ) {
 		$vals = [];
 		if ( isset( $prop['thumbnail'] ) || isset( $prop['original'] ) ) {
 			$file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $fileName );
 			if ( $file ) {
 				if ( isset( $prop['thumbnail'] ) ) {
-					$thumb = $file->transform( [ 'width' => $size, 'height' => $size ] );
+					$thumb = $file->transform( [
+						'width' => $size,
+						'height' => $size,
+						'lang' => $lang
+					] );
 					if ( $thumb && $thumb->getUrl() ) {
 						// You can request a thumb 1000x larger than the original
 						// which (in case of bitmap original) will return a Thumb object
@@ -183,12 +190,23 @@ class ApiQueryPageImages extends ApiQueryBase {
 				}
 
 				if ( isset( $prop['original'] ) ) {
+					$originalSize = [
+						'width' => $file->getWidth(),
+						'height' => $file->getHeight()
+					];
+					if ( $lang ) {
+						$file = $file->transform( [
+							'lang' => $lang,
+							'width' => $originalSize['width'],
+							'height' => $originalSize['height']
+						] );
+					}
 					$original_url = wfExpandUrl( $file->getUrl(), PROTO_CURRENT );
 
 					$vals['original'] = [
 						'source' => $original_url,
-						'width' => $file->getWidth(),
-						'height' => $file->getHeight()
+						'width' => $originalSize['width'],
+						'height' => $originalSize['height']
 					];
 				}
 			}
@@ -208,30 +226,34 @@ class ApiQueryPageImages extends ApiQueryBase {
 	public function getAllowedParams() {
 		return [
 			'prop' => [
-				ApiBase::PARAM_TYPE => [ 'thumbnail', 'name', 'original' ],
-				ApiBase::PARAM_ISMULTI => true,
-				ApiBase::PARAM_DFLT => 'thumbnail|name',
+				ParamValidator::PARAM_TYPE => [ 'thumbnail', 'name', 'original' ],
+				ParamValidator::PARAM_ISMULTI => true,
+				ParamValidator::PARAM_DEFAULT => 'thumbnail|name',
 			],
 			'thumbsize' => [
-				ApiBase::PARAM_TYPE => 'integer',
-				ApiBase::PARAM_DFLT => 50,
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_DEFAULT => 50,
 			],
 			'limit' => [
-				ApiBase::PARAM_DFLT => 50,
-				ApiBase::PARAM_TYPE => 'limit',
-				ApiBase::PARAM_MIN => 1,
-				ApiBase::PARAM_MAX => 50,
-				ApiBase::PARAM_MAX2 => 100,
+				ParamValidator::PARAM_DEFAULT => 50,
+				ParamValidator::PARAM_TYPE => 'limit',
+				IntegerDef::PARAM_MIN => 1,
+				IntegerDef::PARAM_MAX => 50,
+				IntegerDef::PARAM_MAX2 => 100,
 			],
 			'license' => [
-				ApiBase::PARAM_TYPE => [ PageImages::LICENSE_FREE, PageImages::LICENSE_ANY ],
-				ApiBase::PARAM_ISMULTI => false,
-				ApiBase::PARAM_DFLT => $this->getConfig()->get( 'PageImagesAPIDefaultLicense' ),
+				ParamValidator::PARAM_TYPE => [ PageImages::LICENSE_FREE, PageImages::LICENSE_ANY ],
+				ParamValidator::PARAM_ISMULTI => false,
+				ParamValidator::PARAM_DEFAULT => $this->getConfig()->get( 'PageImagesAPIDefaultLicense' ),
 			],
 			'continue' => [
-				ApiBase::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_TYPE => 'integer',
 				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
 			],
+			'langcode' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_DEFAULT => null
+			]
 		];
 	}
 

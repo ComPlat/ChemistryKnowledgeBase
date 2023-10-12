@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"S.O.E. Ansems"
+		]
+	},
+	"urlgetparameters-desc": "Allows to use and/or display the \"GET\" parameters of the URL on a wiki page"
+}

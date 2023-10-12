@@ -45,6 +45,8 @@
 ve.ui.MWDefinedTransclusionContextItem = function VeUiMWDefinedTransclusionContextItem() {
 	// Parent constructor
 	ve.ui.MWDefinedTransclusionContextItem.super.apply( this, arguments );
+
+	this.tool = this.constructor.static.getMatchedTool( this.model );
 };
 
 /* Inheritance */
@@ -92,8 +94,8 @@ ve.ui.MWDefinedTransclusionContextItem.static.isCompatibleWith = function ( mode
  * @return {Object} Collection of tool definitions
  */
 ve.ui.MWDefinedTransclusionContextItem.static.getToolsByTitle = function () {
-	var toolsByTitle;
 	if ( !this.toolsByTitle ) {
+		var toolsByTitle;
 		this.toolsByTitle = toolsByTitle = {};
 		( this.toolDefinitions[ this.name ] || [] ).forEach( function ( template ) {
 			var titles = Array.isArray( template.title ) ? template.title : [ template.title ];
@@ -109,15 +111,36 @@ ve.ui.MWDefinedTransclusionContextItem.static.getToolsByTitle = function () {
 /**
  * Get the tool definition that matches a specific model, if any
  *
- * @param {ve.dm.Model} model Model
+ * @param {ve.dm.Model} model
  * @return {Object|null} Tool definition, or null if no match
  */
 ve.ui.MWDefinedTransclusionContextItem.static.getMatchedTool = function ( model ) {
-	var resource, title;
-	resource = ve.getProp( model.getAttribute( 'mw' ), 'parts', 0, 'template', 'target', 'href' );
+	var resource = ve.getProp( model.getAttribute( 'mw' ), 'parts', 0, 'template', 'target', 'href' );
 	if ( resource ) {
-		title = mw.Title.newFromText( mw.libs.ve.normalizeParsoidResourceName( resource ) ).getPrefixedText();
+		var title = mw.Title.newFromText( mw.libs.ve.normalizeParsoidResourceName( resource ) ).getPrefixedText();
 		return this.getToolsByTitle()[ title ] || null;
+	}
+	return null;
+};
+
+/**
+ * Get a template param using its canonical name
+ *
+ * @param {string} name Canonical parameter name
+ * @return {string|null} Param wikitext, null if not found
+ */
+ve.ui.MWDefinedTransclusionContextItem.prototype.getCanonicalParam = function ( name ) {
+	var params = this.tool.params || {};
+
+	if ( Object.prototype.hasOwnProperty.call( params, name ) ) {
+		var aliases = Array.isArray( params[ name ] ) ? params[ name ] : [ params[ name ] ];
+		// Find the first non-empty value from the alias list
+		for ( var i = 0; i < aliases.length; i++ ) {
+			var value = ve.getProp( this.model.getAttribute( 'mw' ), 'parts', 0, 'template', 'params', aliases[ i ], 'wt' );
+			if ( value ) {
+				return value;
+			}
+		}
 	}
 	return null;
 };

@@ -29,19 +29,19 @@
 		"issues": "https://github.com/cmln/mw-bootstrap/issues",
 		"forum": "https://www.mediawiki.org/wiki/Extension_talk:Bootstrap",
 		"wiki": "https://www.mediawiki.org/wiki/Extension:Bootstrap",
-		"irc": "irc://irc.freenode.org/mediawiki",
+		"irc": "irc://libera.chat:6667/mediawiki",
 		"source": "https://github.com/cmln/mw-bootstrap",
 		"docs": "https://github.com/cmln/mw-bootstrap/tree/latest/docs",
 		"rss": "https://github.com/cmln/mw-bootstrap/releases.atom"
 	},
 	"require": {
 		"php": ">=5.6",
-		"composer/installers": "^1.0.1",
-		"mediawiki/scss": "~2.0"
+		"composer/installers": "^2|^1.0.1",
+		"mediawiki/scss": "~3.0|~2.0"
 	},
 	"require-dev": {
-		"mediawiki/mediawiki-codesniffer": "31.0.0",
-		"mediawiki/mediawiki-phan-config": "0.10.2",
+		"mediawiki/mediawiki-codesniffer": "39.0.0",
+		"mediawiki/mediawiki-phan-config": "0.11.1",
 		"php": ">=7.2"
 	},
 	"autoload": {
@@ -59,6 +59,11 @@
 	"extra": {
 		"branch-alias": {
 			"dev-master": "4.x-dev"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true
 		}
 	}
 }

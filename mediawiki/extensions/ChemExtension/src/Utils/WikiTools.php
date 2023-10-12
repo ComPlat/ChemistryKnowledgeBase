@@ -18,7 +18,7 @@ class WikiTools {
     public static function sanitizeHTML($html) {
         if (self::isInVisualEditor()) {
             $html = str_replace(array("<tbody>", "</tbody>"), "", $html);
-            $html = strip_tags($html, '<table><tr><th><td><span><a>');
+            $html = strip_tags($html, '<table><tr><th><td><span>');
         }
         return str_replace("\n", "", $html);
     }
@@ -26,8 +26,10 @@ class WikiTools {
     public static function isInVisualEditor(): bool
     {
         global $wgRequest;
+        //return $wgRequest->getVal('veaction') === 'edit';
         return (strpos($wgRequest->getText('title'), '/v3/page/html/') !== false
             || strpos($wgRequest->getText('title'), '/v3/transform/wikitext/to/html/') !== false)
+            || $wgRequest->getText('action') == 'visualeditor'
             || $wgRequest->getText('veaction') == 'edit';
     }
 
@@ -39,16 +41,13 @@ class WikiTools {
     public static function getCurrentTitle(Parser $parser): ?Title
     {
         global $wgRequest;
-        $titleParam = $wgRequest->getVal('title');
-        $res = preg_match('/v3\/page\/html\/([^\/]+)/', $titleParam, $matches);
-        if ($res === 0) {
-            $res = preg_match('/v3\/transform\/wikitext\/to\/html\/([^\/]+)/', $titleParam, $matches);
-            if ($res === 0) {
-                global $wgTitle;
-                return is_null($wgTitle) ? $parser->getTitle() : $wgTitle;
-            }
+        $titleParam = $wgRequest->getVal('page');
+        if (!is_null($titleParam) && $titleParam !== '') {
+            return Title::newFromText($titleParam);
         }
-        return Title::newFromText($matches[1]);
+        global $wgTitle;
+        return is_null($wgTitle) ? $parser->getTitle() : $wgTitle;
+
     }
 
     public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null, $force = false) {

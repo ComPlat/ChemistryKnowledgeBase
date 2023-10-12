@@ -29,7 +29,7 @@ class PFHelperFormAction extends Action {
 	 * @return false
 	 */
 	public function show() {
-		return self::displayForm( $this, $this->page );
+		return self::displayForm( $this->getArticle() );
 	}
 
 	/**
@@ -41,11 +41,12 @@ class PFHelperFormAction extends Action {
 	}
 
 	/**
+	 * Handler for the SkinTemplateNavigation hook.
+	 *
 	 * Adds an "action" (i.e., a tab) to edit the current article with
 	 * a form
-	 * @param Title $obj
+	 * @param SkinTemplate $obj
 	 * @param array &$links
-	 * @return bool
 	 */
 	static function displayTab( $obj, &$links ) {
 		$title = $obj->getTitle();
@@ -59,10 +60,10 @@ class PFHelperFormAction extends Action {
 		}
 		if ( !isset( $title ) ||
 			( !in_array( $title->getNamespace(), $namespacesWithHelperForms ) ) ) {
-			return true;
+			return;
 		}
 		if ( $title->exists() ) {
-			return true;
+			return;
 		}
 
 		// The tab should show up automatically for properties and
@@ -71,19 +72,14 @@ class PFHelperFormAction extends Action {
 		if ( in_array( $title->getNamespace(), [ NS_TEMPLATE, NS_CATEGORY ] ) ) {
 			global $wgPageFormsShowTabsForAllHelperForms;
 			if ( !$wgPageFormsShowTabsForAllHelperForms ) {
-				return true;
+				return;
 			}
 		}
 
 		$content_actions = &$links['views'];
 
-		if ( method_exists( 'MediaWiki\Permissions\PermissionManager', 'userCan' ) ) {
-			// MW 1.33+
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-			$userCanEdit = $permissionManager->userCan( 'edit', $user, $title );
-		} else {
-			$userCanEdit = $title->userCan( 'edit', $user ) && $user->isAllowed( 'edit' );
-		}
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$userCanEdit = $permissionManager->userCan( 'edit', $user, $title );
 		$form_create_tab_text = ( $userCanEdit ) ? 'pf_formcreate' : 'pf_viewform';
 
 		$class_name = ( $obj->getRequest()->getVal( 'action' ) == 'formcreate' ) ? 'selected' : '';
@@ -127,18 +123,15 @@ class PFHelperFormAction extends Action {
 			unset( $content_actions['edit'] );
 			unset( $content_actions['viewsource'] );
 		}
-
-		return true; // always return true, in order not to stop MW's hook processing!
 	}
 
 	/**
 	 * The function called if we're in index.php (as opposed to one of the
 	 * special pages).
-	 * @param string $action
 	 * @param Article $article
 	 * @return false
 	 */
-	static function displayForm( $action, $article ) {
+	private static function displayForm( $article ) {
 		$title = $article->getTitle();
 		if ( defined( 'SMW_NS_PROPERTY' ) && $title->getNamespace() == SMW_NS_PROPERTY ) {
 			$createPropertyPage = new PFCreateProperty();

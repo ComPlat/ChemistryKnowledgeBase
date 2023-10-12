@@ -3,7 +3,7 @@
 namespace SMW\Tests\Integration\MediaWiki\Import;
 
 use SMW\DIProperty;
-use SMW\Tests\MwDBaseUnitTestCase;
+use SMW\Tests\DatabaseTestCase;
 use SMW\Tests\Utils\ByPageSemanticDataFinder;
 use SMW\Tests\Utils\UtilityFactory;
 use Title;
@@ -21,7 +21,7 @@ use SMW\Tests\PHPUnitCompat;
  *
  * @author mwjames
  */
-class TimeDataTypeTest extends MwDBaseUnitTestCase {
+class TimeDataTypeTest extends DatabaseTestCase {
 
 	use PHPUnitCompat;
 
@@ -31,6 +31,7 @@ class TimeDataTypeTest extends MwDBaseUnitTestCase {
 	private $runnerFactory;
 	private $titleValidator;
 	private $semanticDataValidator;
+	private ByPageSemanticDataFinder $semanticDataFinder;
 
 	protected function setUp() : void {
 		parent::setUp();

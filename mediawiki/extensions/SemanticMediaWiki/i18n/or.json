@@ -39,7 +39,7 @@
 	"smw-unusedproperty-template": "$2 ର $1 ପ୍ରକାର",
 	"wantedproperties": "ଦରକାରୀ ଗୁଣସବୁ",
 	"smw-wantedproperty-template": "$1 ({{PLURAL:$2|ଇଉଜ|ଇଉଜ ଗୁଡିକ}})",
-	"smw_purge": "ସତେଜନ",
+	"smw_purge": "ସତେଜ କରନ୍ତୁ",
 	"types": "ପ୍ରକାର ଗୁଡିକ",
 	"smw-special-types-no-such-type": "ବିନିର୍ଦ୍ଧିଷ୍ଟ ପ୍ରକାର ର ତଥ୍ୟ ବିଦ୍ୟମାନ ନୁହେଁ",
 	"smw-statistics": "ସେମାଣ୍ଟିକ ପରିସଙ୍ଖ୍ୟାନ",
@@ -62,5 +62,7 @@
 	"smw_ask_show_embed": "ଅନ୍ତଃସ୍ଥାପିତ ସାଙ୍କେତିକ ଚିହ୍ନ ଦେଖାନ୍ତୁ",
 	"smw_ask_hide_embed": "ଅନ୍ତଃସ୍ଥାପିତ ସାଙ୍କେତିକ ଚିହ୍ନ ଲୁଚାନ୍ତୁ",
 	"browse": "ଉଇକି ଦେଖିବେ",
-	"smw-livepreview-loading": "ଖୋଲୁଅଛି..."
+	"smw-livepreview-loading": "ଖୋଲୁଅଛି...",
+	"smw-listingcontinuesabbrev": "ଆହୁରି ଅଛି..",
+	"smw-showingresults": "ତଳେ {{PLURAL:$1|'''ଗୋଟିଏ'''  ଫଳାଫଳ|'''$1'''ଟି ଫଳାଫଳ}} ଦେଖାଉଛୁ ଯାହା #'''$2'''ରେ ଆରମ୍ଭ ହୋଇଅଛି ।"
 }

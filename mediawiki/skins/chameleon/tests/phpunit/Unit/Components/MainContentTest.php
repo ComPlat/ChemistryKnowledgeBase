@@ -24,7 +24,8 @@
 
 namespace Skins\Chameleon\Tests\Unit\Components;
 
-use Skins\Chameleon\Components\MainContent;
+use Message;
+use Skins\Chameleon\ChameleonTemplate;
 
 /**
  * @coversDefaultClass \Skins\Chameleon\Components\MainContent
@@ -45,8 +46,9 @@ class MainContentTest extends GenericComponentTestCase {
 
 	/**
 	 * @covers ::getHtml
+	 * @dataProvider domElementProviderFromSyntheticLayoutFiles
 	 */
-	public function testGetHtml_OnEmptyDataProperty() {
+	public function testGetHtml_OnEmptyDataProperty( $domElement ) {
 		$chameleonTemplate = $this->getChameleonSkinTemplateStub();
 
 		$chameleonTemplate->data = [
@@ -56,13 +58,63 @@ class MainContentTest extends GenericComponentTestCase {
 			'dataAfterContent' => ''
 		];
 
-		$instance = new MainContent( $chameleonTemplate );
-		if ( method_exists( '\PHPUnit\Framework\TestCase', 'assertIsString' ) ) {
-			$this->assertIsString( $instance->getHtml() );
-		} else {
-			// @codingStandardsIgnoreStart
-			$this->assertInternalType( 'string', $instance->getHtml() );
-			// @codingStandardsIgnoreEnd
-		}
+		$instance = new $this->classUnderTest( $chameleonTemplate, $domElement );
+		$this->assertIsString( $instance->getHtml() );
 	}
+
+	/**
+	 * @covers ::getHtml
+	 * @throws \MWException
+	 */
+	public function testGetHtml_AllSubComponentsDisplayed() {
+		$chameleonTemplate = $this->createChameleonTemplateStub();
+		$instance = new $this->classUnderTest( $chameleonTemplate, null );
+
+		$html = $instance->getHtml();
+
+		$this->assertStringContainsString( 'SomeTitle', $html );
+		$this->assertStringContainsString( 'SomeBodytext', $html );
+		$this->assertStringContainsString( 'SomeIndicatorId', $html );
+		$this->assertStringContainsString( 'SomeIndicatorContent', $html );
+		$this->assertStringContainsString( 'SomeCategory', $html );
+	}
+
+	/**
+	 * @covers ::getHtml
+	 * @throws \MWException
+	 * @dataProvider domElementProviderFromSyntheticLayoutFiles
+	 */
+	public function testGetHtml_AllSubComponentsHidden( $domElement ) {
+		$chameleonTemplate = $this->createChameleonTemplateStub();
+		$domElement->setAttribute('hideContentHeader', 'yes');
+		$domElement->setAttribute('hideContentBody', 'yes');
+		$domElement->setAttribute('hideIndicators', 'yes');
+		$domElement->setAttribute('hideCatLinks', 'yes');
+		$instance = new $this->classUnderTest( $chameleonTemplate, $domElement );
+
+		$html = $instance->getHtml();
+
+		$this->assertStringNotContainsString( 'SomeTitle', $html );
+		$this->assertStringNotContainsString( 'SomeBodytext', $html );
+		$this->assertStringNotContainsString( 'SomeIndicatorId', $html );
+		$this->assertStringNotContainsString( 'SomeIndicatorContent', $html );
+		$this->assertStringNotContainsString( 'SomeCategory', $html );
+	}
+
+	/**
+	 * @return \PHPUnit\Framework\MockObject\Stub|ChameleonTemplate
+	 */
+	private function createChameleonTemplateStub() {
+		$chameleonTemplate = $this->createStub( ChameleonTemplate::class );
+		$chameleonTemplate->method( 'get' )->willReturnMap( [
+			[ 'title', null, 'SomeTitle' ],
+			[ 'bodytext', null, 'SomeBodytext' ],
+			[ 'indicators', null, [ 'SomeIndicatorId', 'SomeIndicatorContent' ] ],
+			[ 'catlinks', null, 'SomeCategory' ],
+		] );
+		$chameleonTemplate->method( 'getMsg' )->willReturn( new Message( '' ) );
+
+		return $chameleonTemplate;
+	}
+
 }

@@ -13,9 +13,19 @@
  * @extends ve.ui.TargetWidget
  *
  * @constructor
- * @param {Object} [config] Configuration options
+ * @param {Object} config
+ * @cfg {string[]} [surfaceClasses] Surface classes to apply
  */
-ve.ui.MWTargetWidget = function VeUiMWTargetWidget() {
+ve.ui.MWTargetWidget = function VeUiMWTargetWidget( config ) {
+	this.surfaceClasses = ve.copy( config.surfaceClasses ) || [];
+
+	// HACK: T287733
+	// This assumes the target widget is being shown outside of vector-body, otherwise this
+	// will apply the class a second time and cause problems.
+	if ( mw.config.get( 'skin' ) === 'vector' || mw.config.get( 'skin' ) === 'vector-2022' ) {
+		this.surfaceClasses.push( 'vector-body' );
+	}
+
 	// Parent constructor
 	ve.ui.MWTargetWidget.super.apply( this, arguments );
 
@@ -34,20 +44,8 @@ ve.ui.MWTargetWidget.prototype.createTarget = function () {
 	return new ve.init.mw.Target( {
 		register: false,
 		toolbarGroups: this.toolbarGroups,
-		inTargetWidget: true,
 		modes: this.modes,
-		defaultMode: this.defaultMode
+		defaultMode: this.defaultMode,
+		surfaceClasses: this.surfaceClasses
 	} );
-};
-
-/**
- * @inheritdoc
- */
-ve.ui.MWTargetWidget.prototype.setDocument = function () {
-	// Parent method
-	ve.ui.MWTargetWidget.super.prototype.setDocument.apply( this, arguments );
-
-	// Add MW specific classes to the surface
-	this.getSurface().getView().$element.addClass( 'mw-body-content' );
-	this.getSurface().$placeholder.addClass( 'mw-body-content' );
 };

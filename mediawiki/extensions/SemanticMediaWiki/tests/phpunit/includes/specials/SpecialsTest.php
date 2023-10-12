@@ -1,9 +1,10 @@
 <?php
 
-namespace SMW\Test;
+namespace SMW\Tests;
 
 use FauxRequest;
 use Language;
+use MediaWiki\MediaWikiServices;
 use RequestContext;
 use SpecialPage;
 use SpecialPageFactory;
@@ -77,12 +78,15 @@ class SpecialsTest extends SemanticMediaWikiTestCase {
 	 */
 	public function testSpecialAliasesContLang( SpecialPage $specialPage ) {
 
+		$languageFactory = MediaWikiServices::getInstance()->getLanguageFactory();
+
 		// Test for languages
 		$langCodes = [ 'en', 'fr', 'de', 'es', 'zh', 'ja' ];
 
 		// Test aliases for a specific language
 		foreach ( $langCodes as $langCode ) {
-			$langObj = Language::factory( $langCode );
+			$langObj = $languageFactory->getLanguage( $langCode );
+
 			$aliases = $langObj->getSpecialPageAliases();
 			$found = false;
 			$name = $specialPage->getName();
@@ -132,14 +136,11 @@ class SpecialsTest extends SemanticMediaWikiTestCase {
 
 		foreach ( $specialPages as $special ) {
 
-			$specialPage = SpecialPageFactory::getPage(
+			$specialPage = MediaWikiServices::getInstance()->getSpecialPageFactory()->getPage(
 				$special
 			);
 
-			// Deprecated: Use of SpecialPage::getTitle was deprecated in MediaWiki 1.23
-			$title = method_exists( $specialPage, 'getPageTitle') ? $specialPage->getPageTitle() : $specialPage->getTitle();
-
-			$context = RequestContext::newExtraneousContext( $title );
+			$context = RequestContext::newExtraneousContext( $specialPage->getPageTitle() );
 			$context->setRequest( $request );
 
 			$specialPage->setContext( clone $context );

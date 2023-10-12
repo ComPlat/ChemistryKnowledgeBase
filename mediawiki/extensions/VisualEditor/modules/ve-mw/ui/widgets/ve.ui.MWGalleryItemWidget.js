@@ -15,16 +15,23 @@
  * @constructor
  * @param {Object} imageInfo Image information object
  * @param {Object} [config] Configuration options
+ * @cfg {boolean} [isMobile=false]
+ * @cfg {boolean} [draggable=true]
  */
 ve.ui.MWGalleryItemWidget = function VeUiMWGalleryItemWidget( imageInfo, config ) {
 	this.resource = imageInfo.resource;
 	this.altText = imageInfo.altText || '';
+	this.altTextSame = imageInfo.altTextSame;
+	// Keep the original value which may be null
+	this.originalAltText = imageInfo.altText;
 	this.src = imageInfo.src;
 	this.height = imageInfo.height;
 	this.width = imageInfo.width;
 	this.thumbUrl = imageInfo.thumbUrl;
 	this.captionDocument = imageInfo.captionDocument;
 	this.highlighted = false;
+	this.tagName = imageInfo.tagName;
+	this.isError = imageInfo.isError;
 
 	// Configuration initialization
 	config = config || {};
@@ -67,6 +74,8 @@ OO.mixinClass( ve.ui.MWGalleryItemWidget, OO.ui.mixin.TabIndexedElement );
 
 /**
  * Handle clicking on an item
+ *
+ * @fires edit
  */
 ve.ui.MWGalleryItemWidget.prototype.onItemClick = function () {
 	this.emit( 'edit', this );
@@ -77,6 +86,7 @@ ve.ui.MWGalleryItemWidget.prototype.onItemClick = function () {
  *
  * @param {jQuery.Event} e Key press event
  * @return {boolean}
+ * @fires edit
  */
 ve.ui.MWGalleryItemWidget.prototype.onItemKeyPress = function ( e ) {
 	if ( e.which === OO.ui.Keys.ENTER ) {
@@ -101,6 +111,15 @@ ve.ui.MWGalleryItemWidget.prototype.setCaptionDocument = function ( captionDocum
  */
 ve.ui.MWGalleryItemWidget.prototype.setAltText = function ( altText ) {
 	this.altText = altText;
+};
+
+/**
+ * Set the altTextSame property
+ *
+ * @param {boolean} same
+ */
+ve.ui.MWGalleryItemWidget.prototype.setAltTextSame = function ( same ) {
+	this.altTextSame = same;
 };
 
 /**

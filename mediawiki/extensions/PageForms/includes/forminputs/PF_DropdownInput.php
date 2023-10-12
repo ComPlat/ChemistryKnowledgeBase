@@ -8,7 +8,8 @@
  * @ingroup PFFormInput
  */
 class PFDropdownInput extends PFEnumInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'dropdown';
 	}
 
@@ -33,7 +34,7 @@ class PFDropdownInput extends PFEnumInput {
 	}
 
 	public static function getHTML( $cur_value, $input_name, $is_mandatory, $is_disabled, array $other_args ) {
-		global $wgPageFormsTabIndex, $wgPageFormsFieldNum, $wgPageFormsShowOnSelect;
+		global $wgPageFormsTabIndex, $wgPageFormsFieldNum;
 
 		// Standardize $cur_value
 		if ( $cur_value === null ) {
@@ -47,13 +48,7 @@ class PFDropdownInput extends PFEnumInput {
 		$input_id = "input_$wgPageFormsFieldNum";
 		if ( array_key_exists( 'show on select', $other_args ) ) {
 			$className .= ' pfShowIfSelected';
-			foreach ( $other_args['show on select'] as $div_id => $options ) {
-				if ( array_key_exists( $input_id, $wgPageFormsShowOnSelect ) ) {
-					$wgPageFormsShowOnSelect[$input_id][] = [ $options, $div_id ];
-				} else {
-					$wgPageFormsShowOnSelect[$input_id] = [ [ $options, $div_id ] ];
-				}
-			}
+			PFFormUtils::setShowOnSelect( $other_args['show on select'], $input_id );
 		}
 		$innerDropdown = '';
 		// Add a blank value at the beginning, unless this is a
@@ -63,7 +58,8 @@ class PFDropdownInput extends PFEnumInput {
 		if ( !$is_mandatory || $cur_value === '' ) {
 			$innerDropdown .= "	<option value=\"\"></option>\n";
 		}
-		if ( ( $possible_values = $other_args['possible_values'] ) == null ) {
+		$possible_values = $other_args['possible_values'];
+		if ( $possible_values == null ) {
 			// If it's a Boolean property, display 'Yes' and 'No'
 			// as the values.
 			if ( array_key_exists( 'property_type', $other_args ) && $other_args['property_type'] == '_boo' ) {
@@ -116,7 +112,7 @@ class PFDropdownInput extends PFEnumInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,

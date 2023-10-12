@@ -106,9 +106,7 @@ ve.ce.Document.prototype.getSlugAtOffset = function ( offset ) {
  * @throws {Error} Offset could not be translated to a DOM element and offset
  */
 ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
-	var branchNode, count, i, ceChild, position, step, node, model, steps, found, prevNode,
-		$viewNodes,
-		countedNodes = [];
+	var countedNodes = [];
 
 	// 1. Step with ve.adjacentDomPosition( …, { stop: function () { return true; } } )
 	// until we hit a position at the correct offset (which is guaranteed to be the first
@@ -132,12 +130,14 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 	if ( !this.model.getDocumentRange().containsRange( new ve.Range( offset ) ) ) {
 		throw new Error( 'Offset is out of bounds' );
 	}
-	branchNode = this.getBranchNodeFromOffset( offset );
-	count = branchNode.getOffset() + ( ( branchNode.isWrapped() ) ? 1 : 0 );
+	var branchNode = this.getBranchNodeFromOffset( offset );
+	var count = branchNode.getOffset() + ( branchNode.isWrapped() ? 1 : 0 );
 
+	var node;
 	if ( !( branchNode instanceof ve.ce.ContentBranchNode ) ) {
 		// The cursor does not lie in a ContentBranchNode, so we can determine
 		// everything from the DM tree
+		var i, ceChild;
 		for ( i = 0; ; i++ ) {
 			ceChild = branchNode.children[ i ];
 			if ( count === offset ) {
@@ -181,7 +181,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 
 	// Else the cursor lies in a ContentBranchNode, so we must traverse the DOM, keeping
 	// count of the corresponding DM position until it reaches offset.
-	position = { node: branchNode.$element[ 0 ], offset: 0 };
+	var position = { node: branchNode.$element[ 0 ], offset: 0 };
 
 	function noDescend() {
 		return this.classList.contains( 've-ce-branchNode-blockSlug' ) ||
@@ -200,7 +200,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 				stop: function () { return true; }
 			}
 		);
-		step = position.steps[ 0 ];
+		var step = position.steps[ 0 ];
 		node = step.node;
 		if ( node.nodeType === Node.TEXT_NODE ) {
 			if ( step.type === 'leave' ) {
@@ -240,7 +240,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 			continue;
 		} // else step.type === 'enter' || step.type === 'cross'
 
-		model = $.data( node, 'view' ).model;
+		var model = $.data( node, 'view' ).model;
 
 		if ( countedNodes.indexOf( model ) !== -1 ) {
 			// This DM node is rendered as multiple DOM elements, and we have already
@@ -270,12 +270,12 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 
 	// If the position is exactly after the first of multiple view nodes sharing a model,
 	// then jump to the position exactly after the final such view node.
-	prevNode = position.node.childNodes[ position.offset - 1 ];
+	var prevNode = position.node.childNodes[ position.offset - 1 ];
 	if ( prevNode && prevNode.nodeType === Node.ELEMENT_NODE && (
 		prevNode.classList.contains( 've-ce-branchNode' ) ||
 		prevNode.classList.contains( 've-ce-leafNode' )
 	) ) {
-		$viewNodes = $.data( prevNode, 'view' ).$element;
+		var $viewNodes = $.data( prevNode, 'view' ).$element;
 		if ( $viewNodes.length > 1 ) {
 			position.node = $viewNodes.get( -1 ).parentNode;
 			position.offset = 1 + ve.parentIndex( $viewNodes.get( -1 ) );
@@ -283,41 +283,41 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 	}
 
 	// Find all subsequent DOM positions at the same model offset
-	found = {};
-	function stop( step ) {
-		var model;
-		if ( step.node.nodeType === Node.TEXT_NODE ) {
-			return step.type === 'internal';
+	var found = {};
+	function stop( s ) {
+		var m;
+		if ( s.node.nodeType === Node.TEXT_NODE ) {
+			return s.type === 'internal';
 		}
 
 		if (
-			step.node.classList.contains( 've-ce-branchNode' ) ||
-			step.node.classList.contains( 've-ce-leafNode' )
+			s.node.classList.contains( 've-ce-branchNode' ) ||
+			s.node.classList.contains( 've-ce-leafNode' )
 		) {
-			model = $.data( step.node, 'view' ).model;
-			if ( countedNodes.indexOf( model ) !== -1 ) {
+			m = $.data( s.node, 'view' ).model;
+			if ( countedNodes.indexOf( m ) !== -1 ) {
 				return false;
 			}
-			countedNodes.push( model );
+			countedNodes.push( m );
 			return true;
 		}
 		return false;
 	}
-	steps = ve.adjacentDomPosition( position, 1, { stop: stop, noDescend: noDescend } ).steps;
-	steps.slice( 0, -1 ).forEach( function ( step ) {
+	var steps = ve.adjacentDomPosition( position, 1, { stop: stop, noDescend: noDescend } ).steps;
+	steps.slice( 0, -1 ).forEach( function ( s ) {
 		// Step type cannot be "internal", else the offset would have incremented
 		var hasClass = function ( className ) {
-			return step.node.nodeType === Node.ELEMENT_NODE &&
-				step.node.classList.contains( className );
+			return s.node.nodeType === Node.ELEMENT_NODE &&
+				s.node.classList.contains( className );
 		};
-		found.preUnicorn = found.preUnicorn || ( hasClass( 've-ce-pre-unicorn' ) && step );
-		found.postUnicorn = found.postUnicorn || ( hasClass( 've-ce-post-unicorn' ) && step );
-		found.preOpenNail = found.preOpenNail || ( hasClass( 've-ce-nail-pre-open' ) && step );
-		found.postOpenNail = found.postOpenNail || ( hasClass( 've-ce-nail-post-open' ) && step );
-		found.preCloseNail = found.preCloseNail || ( hasClass( 've-ce-nail-pre-close' ) && step );
-		found.postCloseNail = found.postCloseNail || ( hasClass( 've-ce-nail-post-close' ) && step );
-		found.focusableNode = found.focusableNode || ( hasClass( 've-ce-focusableNode' ) && step );
-		found.text = found.text || ( step.node.nodeType === Node.TEXT_NODE && step );
+		found.preUnicorn = found.preUnicorn || ( hasClass( 've-ce-pre-unicorn' ) && s );
+		found.postUnicorn = found.postUnicorn || ( hasClass( 've-ce-post-unicorn' ) && s );
+		found.preOpenNail = found.preOpenNail || ( hasClass( 've-ce-nail-pre-open' ) && s );
+		found.postOpenNail = found.postOpenNail || ( hasClass( 've-ce-nail-post-open' ) && s );
+		found.preCloseNail = found.preCloseNail || ( hasClass( 've-ce-nail-pre-close' ) && s );
+		found.postCloseNail = found.postCloseNail || ( hasClass( 've-ce-nail-post-close' ) && s );
+		found.focusableNode = found.focusableNode || ( hasClass( 've-ce-focusableNode' ) && s );
+		found.text = found.text || ( s.node.nodeType === Node.TEXT_NODE && s );
 	} );
 
 	// If there is a unicorn, it should be a unique pre/post-Unicorn pair containing text or
@@ -354,13 +354,13 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
  *
  * Uses the computed CSS direction value of the current node
  *
- * @param {ve.Range} range Range
+ * @param {ve.Range} range
  * @return {string} 'rtl', 'ltr'
  */
 ve.ce.Document.prototype.getDirectionalityFromRange = function ( range ) {
-	var effectiveNode,
-		selectedNodes = this.selectNodes( range, 'covered' );
+	var selectedNodes = this.selectNodes( range, 'covered' );
 
+	var effectiveNode;
 	if ( selectedNodes.length > 1 ) {
 		// Selection of multiple nodes
 		// Get the common parent node

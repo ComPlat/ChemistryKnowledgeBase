@@ -2,7 +2,8 @@
 
 namespace SMW\SQLStore;
 
-use SMW\ApplicationFactory;
+use MediaWiki\MediaWikiServices;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\DIWikiPage;
 use Onoi\EventDispatcher\EventDispatcherAwareTrait;
 use SMW\Iterators\ResultIterator;
@@ -278,10 +279,12 @@ class PropertyTableIdReferenceDisposer {
 		$this->cleanUpSecondaryReferencesById( $id, $isRedirect );
 		$this->connection->endAtomicTransaction( __METHOD__ );
 
-		\Hooks::run(
-			'SMW::SQLStore::EntityReferenceCleanUpComplete',
-			[ $this->store, $id, $subject, $isRedirect ]
-		);
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run(
+				'SMW::SQLStore::EntityReferenceCleanUpComplete',
+				[ $this->store, $id, $subject, $isRedirect ]
+			);
 	}
 
 	private function cleanUpSecondaryReferencesById( $id, $isRedirect ) {

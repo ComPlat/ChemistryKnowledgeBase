@@ -1,119 +1,134 @@
 <?php
 
-use PHPUnit\Framework\TestSuite;
+use MediaWiki\Interwiki\ClassicInterwikiLookup;
+use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Parser\ParserOutputFlags;
+use MediaWiki\Permissions\RestrictionStore;
 
 /**
  * @covers Scribunto_LuaTitleLibrary
  * @group Database
  */
 class Scribunto_LuaTitleLibraryTest extends Scribunto_LuaEngineTestBase {
+	/** @inheritDoc */
 	protected static $moduleName = 'TitleLibraryTests';
 
 	/** @var Title|null */
 	private $testTitle = null;
 
+	/** @var int */
 	private $testPageId = null;
 
-	public static function suite( $className ) {
-		global $wgInterwikiCache;
-		if ( $wgInterwikiCache ) {
-			$suite = new TestSuite;
-			$suite->setName( $className );
-			$suite->addTest(
-				new Scribunto_LuaEngineTestSkip(
-					$className, 'Cannot run TitleLibrary tests when $wgInterwikiCache is set'
-				), [ 'Lua' ]
-			);
-			return $suite;
-		}
-
-		return parent::suite( $className );
-	}
-
-	protected function setUp() : void {
-		global $wgHooks;
-
+	protected function setUp(): void {
 		$this->setTestTitle( null );
 		parent::setUp();
 
-		// Hook to inject our interwiki prefix
-		$this->hooks = $wgHooks;
-		$wgHooks['InterwikiLoadPrefix'][] = function ( $prefix, &$data ) {
-			if ( $prefix !== 'interwikiprefix' ) {
-				return true;
-			}
+		// Set up interwikis (via wgInterwikiCache) before creating any Titles
+		$this->setMwGlobals( [
+			'wgServer' => '//wiki.local',
+			'wgCanonicalServer' => 'http://wiki.local',
+			'wgUsePathInfo' => true,
+			'wgActionPaths' => [],
+			'wgScript' => '/w/index.php',
+			'wgScriptPath' => '/w',
+			'wgArticlePath' => '/wiki/$1',
+			'wgInterwikiCache' => ClassicInterwikiLookup::buildCdbHash( [
+				[
+					'iw_prefix' => 'interwikiprefix',
+					'iw_url'    => '//test.wikipedia.org/wiki/$1',
+					'iw_local'  => 0,
+				],
+			] ),
+		] );
 
-			$data = [
-				'iw_prefix' => 'interwikiprefix',
-				'iw_url'    => '//test.wikipedia.org/wiki/$1',
-				'iw_api'    => 1,
-				'iw_wikiid' => 0,
-				'iw_local'  => 0,
-				'iw_trans'  => 0,
-			];
-			return false;
-		};
+		$editor = self::getTestSysop()->getUser();
+
+		$wikiPageFactory = $this->getServiceContainer()->getWikiPageFactory();
 
 		// Page for getContent test
-		$page = WikiPage::factory( Title::newFromText( 'ScribuntoTestPage' ) );
-		$page->doEditContent(
+		$page = $wikiPageFactory->newFromTitle( Title::newFromText( 'ScribuntoTestPage' ) );
+		$page->doUserEditContent(
 			new WikitextContent(
 				'{{int:mainpage}}<includeonly>...</includeonly><noinclude>...</noinclude>'
 			),
+			$editor,
 			'Summary'
 		);
 		$this->testPageId = $page->getId();
 
 		// Pages for redirectTarget tests
-		$page = WikiPage::factory( Title::newFromText( 'ScribuntoTestRedirect' ) );
-		$page->doEditContent(
+		$page = $wikiPageFactory->newFromTitle( Title::newFromText( 'ScribuntoTestRedirect' ) );
+		$page->doUserEditContent(
 			new WikitextContent( '#REDIRECT [[ScribuntoTestTarget]]' ),
+			$editor,
 			'Summary'
 		);
-		$page = WikiPage::factory( Title::newFromText( 'ScribuntoTestNonRedirect' ) );
-		$page->doEditContent(
+		$page = $wikiPageFactory->newFromTitle( Title::newFromText( 'ScribuntoTestNonRedirect' ) );
+		$page->doUserEditContent(
 			new WikitextContent( 'Not a redirect.' ),
+			$editor,
 			'Summary'
 		);
 
 		// Set restrictions for protectionLevels and cascadingProtection tests
-		// Since mRestrictionsLoaded is true, they don't count as expensive
-		$title = Title::newFromText( 'Main Page' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [ 'edit' => [], 'move' => [] ];
-		$title->mCascadeSources = [
-			Title::makeTitle( NS_MAIN, "Lockbox" ),
-			Title::makeTitle( NS_MAIN, "Lockbox2" ),
+
+		$restrictionStore = $this->createNoOpMock(
+			RestrictionStore::class,
+			[
+				'getCascadeProtectionSources',
+				'getRestrictions',
+				'areRestrictionsLoaded',
+				'areCascadeProtectionSourcesLoaded',
+				'getAllRestrictions',
+				// just do nothing
+				'registerOldRestrictions'
+			]
+		);
+
+		$this->setService( 'RestrictionStore', $restrictionStore );
+
+		$restrictionStore->method( 'areRestrictionsLoaded' )->willReturn( true );
+		$restrictionStore->method( 'areCascadeProtectionSourcesLoaded' )->willReturn( true );
+
+		$restrictions = [
+			'Main_Page' => [ 'edit' => [], 'move' => [] ],
+			'Module:TestFramework' => [
+				'edit' => [ 'sysop', 'bogus' ],
+				'move' => [ 'sysop', 'bogus' ],
+			],
+			'interwikiprefix:Module:TestFramework' => [],
+			'Talk:Has/A/Subpage' => [ 'create' => [ 'sysop' ] ],
+			'Not/A/Subpage' => [ 'edit' => [ 'autoconfirmed' ], 'move' => [ 'sysop' ] ],
+			'Module_talk:Test_Framework' => [ 'edit' => [], 'move' => [ 'sysop' ] ],
 		];
-		$title->mCascadingRestrictions = [ 'edit' => [ 'sysop' ] ];
-		$title = Title::newFromText( 'Module:TestFramework' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [
-			'edit' => [ 'sysop', 'bogus' ],
-			'move' => [ 'sysop', 'bogus' ],
-		];
-		$title->mCascadeSources = [];
-		$title->mCascadingRestrictions = [];
-		$title = Title::newFromText( 'interwikiprefix:Module:TestFramework' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [];
-		$title->mCascadeSources = [];
-		$title->mCascadingRestrictions = [];
-		$title = Title::newFromText( 'Talk:Has/A/Subpage' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [ 'create' => [ 'sysop' ] ];
-		$title->mCascadeSources = [];
-		$title->mCascadingRestrictions = [];
-		$title = Title::newFromText( 'Not/A/Subpage' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [ 'edit' => [ 'autoconfirmed' ], 'move' => [ 'sysop' ] ];
-		$title->mCascadeSources = [];
-		$title->mCascadingRestrictions = [];
-		$title = Title::newFromText( 'Module talk:Test Framework' );
-		$title->mRestrictionsLoaded = true;
-		$title->mRestrictions = [ 'edit' => [], 'move' => [ 'sysop' ] ];
-		$title->mCascadeSources = [];
-		$title->mCascadingRestrictions = [];
+
+		$restrictionStore->method( 'getAllRestrictions' )
+			->willReturnCallback( static function ( $title ) use ( $restrictions ) {
+				$key = $title->getPrefixedDBkey();
+				return $restrictions[$key] ?? [];
+			} );
+
+		$restrictionStore->method( 'getRestrictions' )
+			->willReturnCallback( static function ( $title, $action ) {
+				$key = $title->getPrefixedDBkey();
+				$pageRestrictions = $restrictions[$key] ?? [];
+				return $pageRestrictions[$action] ?? [];
+			} );
+
+		$restrictionStore->method( 'getCascadeProtectionSources' )
+			->willReturnCallback( static function ( $title ) {
+				if ( $title->getPrefixedDBkey() === 'Main_Page' ) {
+					return [
+						[
+							PageIdentityValue::localIdentity( 5678, NS_MAIN, "Lockbox" ),
+							PageIdentityValue::localIdentity( 8765, NS_MAIN, "Lockbox2" ),
+						],
+						[ 'edit' => [ 'sysop' ] ]
+					];
+				} else {
+					return [ [], [] ];
+				}
+			} );
 
 		// Note this depends on every iteration of the data provider running with a clean parser
 		$this->getEngine()->getParser()->getOptions()->setExpensiveParserFunctionLimit( 10 );
@@ -123,22 +138,6 @@ class Scribunto_LuaTitleLibraryTest extends Scribunto_LuaEngineTestBase {
 		$interpreter->callFunction(
 			$interpreter->loadString( "mw.title.testPageId = $this->testPageId", 'fortest' )
 		);
-
-		$this->setMwGlobals( [
-			'wgServer' => '//wiki.local',
-			'wgCanonicalServer' => 'http://wiki.local',
-			'wgUsePathInfo' => true,
-			'wgActionPaths' => [],
-			'wgScript' => '/w/index.php',
-			'wgScriptPath' => '/w',
-			'wgArticlePath' => '/wiki/$1',
-		] );
-	}
-
-	protected function tearDown() : void {
-		global $wgHooks;
-		$wgHooks = $this->hooks;
-		parent::tearDown();
 	}
 
 	protected function getTestTitle() {
@@ -187,8 +186,6 @@ class Scribunto_LuaTitleLibraryTest extends Scribunto_LuaEngineTestBase {
 
 	/**
 	 * @dataProvider provideVaryPageId
-	 * @param string $code Code to create the mw.title
-	 * @param bool $flag Whether the flag gets set in the end
 	 */
 	public function testVaryPageId( $testTitle, $code, $flag ) {
 		$this->setTestTitle( $testTitle );
@@ -198,18 +195,18 @@ class Scribunto_LuaTitleLibraryTest extends Scribunto_LuaEngineTestBase {
 		$engine = $this->getEngine();
 		$interpreter = $engine->getInterpreter();
 		$this->assertFalse(
-			$engine->getParser()->getOutput()->getFlag( 'vary-page-id' ), 'sanity check'
+			$engine->getParser()->getOutput()->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ), 'sanity check'
 		);
 
 		$interpreter->callFunction( $interpreter->loadString(
 			"local _ = $code", 'reference title but not id'
 		) );
-		$this->assertFalse( $engine->getParser()->getOutput()->getFlag( 'vary-page-id' ) );
+		$this->assertFalse( $engine->getParser()->getOutput()->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
 
 		$interpreter->callFunction( $interpreter->loadString(
 			"local _ = $code.id", 'reference id'
 		) );
-		$this->assertSame( $flag, $engine->getParser()->getOutput()->getFlag( 'vary-page-id' ) );
+		$this->assertSame( $flag, $engine->getParser()->getOutput()->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
 	}
 
 	public function provideVaryPageId() {

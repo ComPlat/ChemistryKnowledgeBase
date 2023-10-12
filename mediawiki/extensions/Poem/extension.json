@@ -9,18 +9,24 @@
 	"url": "https://www.mediawiki.org/wiki/Extension:Poem",
 	"descriptionmsg": "poem-desc",
 	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.39.0"
+	},
 	"MessagesDirs": {
 		"Poem": [
 			"i18n"
 		]
 	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\Poem\\Poem"
+		}
+	},
 	"Hooks": {
-		"ParserFirstCallInit": [
-			"Poem::init"
-		]
+		"ParserFirstCallInit": "main"
 	},
-	"AutoloadClasses": {
-		"Poem": "includes/Poem.php"
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Poem\\": "includes/"
 	},
-	"manifest_version": 1
+	"manifest_version": 2
 }

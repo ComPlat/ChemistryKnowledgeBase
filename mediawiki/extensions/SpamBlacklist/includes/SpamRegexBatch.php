@@ -1,5 +1,9 @@
 <?php
 
+namespace MediaWiki\Extension\SpamBlacklist;
+
+use Wikimedia\AtEase\AtEase;
+
 /**
  * Utility class for working with blacklists
  */
@@ -60,10 +64,10 @@ class SpamRegexBatch {
 	 */
 	private static function validateRegexes( $regexes ) {
 		foreach ( $regexes as $regex ) {
-			Wikimedia\suppressWarnings();
+			AtEase::suppressWarnings();
 			// @phan-suppress-next-line PhanParamSuspiciousOrder False positive
 			$ok = preg_match( $regex, '' );
-			Wikimedia\restoreWarnings();
+			AtEase::restoreWarnings();
 
 			if ( $ok === false ) {
 				return false;
@@ -82,7 +86,9 @@ class SpamRegexBatch {
 		return array_filter(
 			array_map( 'trim',
 				preg_replace( '/#.*$/', '',
-					$lines ) ) );
+					$lines )
+			)
+		);
 	}
 
 	/**

@@ -13,7 +13,7 @@
  * @param {string} name Symbolic name for the command
  * @param {string} action Action to execute when command is triggered
  * @param {string} method Method to call on action when executing
- * @param {Object} [options] Command options
+ * @param {Object} [options]
  * @param {string[]|null} [options.supportedSelections] List of supported selection types, or null for all
  * @param {Array} [options.args] Additional arguments to pass to the action when executing
  */
@@ -32,27 +32,14 @@ ve.ui.Command = function VeUiCommand( name, action, method, options ) {
  * Execute command on a surface.
  *
  * @param {ve.ui.Surface} surface Surface to execute command on
- * @param {Object} [args] Custom arguments to override defaults
+ * @param {Array} [args] Custom arguments to override defaults
  * @param {string} [source] Label for the source of the command, for tracking
  * @return {boolean} Command was executed
  */
 ve.ui.Command.prototype.execute = function ( surface, args, source ) {
-	var action = this.action;
 	args = args || this.args;
 	if ( this.isExecutable( surface.getModel().getFragment() ) ) {
-		// We want to log things that are functionally a window being opened. We
-		// rely on the convention of the method being "open", regardless of what the
-		// action is. (Commonly window, but overridden in places.)
-		if ( this.method === 'open' ) {
-			if ( typeof args[ 0 ] === 'string' ) {
-				action = args[ 0 ];
-			}
-			ve.track(
-				'activity.' + action,
-				{ action: 'window-open-from-' + ( source || 'command' ) }
-			);
-		}
-		return surface.execute.apply( surface, [ this.action, this.method ].concat( args ) );
+		return surface.executeWithSource.apply( surface, [ this.action, this.method, source ].concat( args ) );
 	} else {
 		return false;
 	}

@@ -10,7 +10,7 @@
  *
  * @class
  * @extends ve.ce.LeafNode
- * @mixins ve.ce.FocusableNode
+ * @mixin ve.ce.FocusableNode
  *
  * @constructor
  * @param {ve.dm.MWReferenceNode} model Model to observe
@@ -25,10 +25,7 @@ ve.ce.MWReferenceNode = function VeCeMWReferenceNode() {
 
 	// DOM changes
 	this.$link = $( '<a>' ).attr( 'href', '#' );
-	this.$element.addClass( 've-ce-mwReferenceNode mw-ref' ).append( this.$link )
-		// In case we have received a version with old-style Cite HTML, remove the
-		// old reference class
-		.removeClass( 'reference' );
+	this.$element.addClass( 've-ce-mwReferenceNode mw-ref reference' ).append( this.$link );
 	// Add a backwards-compatible text for browsers that don't support counters
 	this.$text = $( '<span>' ).addClass( 'mw-reflink-text' );
 	this.$link.append( this.$text );
@@ -113,13 +110,12 @@ ve.ce.MWReferenceNode.prototype.onAttributeChange = function ( key ) {
  * @inheritdoc ve.ce.FocusableNode
  */
 ve.ce.MWReferenceNode.prototype.executeCommand = function () {
-	var command, contextItem,
-		items = ve.ui.contextItemFactory.getRelatedItems( [ this.model ] );
+	var items = ve.ui.contextItemFactory.getRelatedItems( [ this.model ] );
 
 	if ( items.length ) {
-		contextItem = ve.ui.contextItemFactory.lookup( items[ 0 ].name );
+		var contextItem = ve.ui.contextItemFactory.lookup( items[ 0 ].name );
 		if ( contextItem ) {
-			command = this.getRoot().getSurface().getSurface().commandRegistry.lookup( contextItem.static.commandName );
+			var command = this.getRoot().getSurface().getSurface().commandRegistry.lookup( contextItem.static.commandName );
 			if ( command ) {
 				command.execute( this.focusableSurface.getSurface() );
 			}
@@ -131,9 +127,9 @@ ve.ce.MWReferenceNode.prototype.executeCommand = function () {
  * Update the rendering
  */
 ve.ce.MWReferenceNode.prototype.update = function () {
-	var group = this.model.getGroup();
 	this.$text.text( this.model.getIndexLabel() );
 	this.$link.css( 'counterReset', 'mw-Ref ' + this.model.getIndex() );
+	var group = this.model.getGroup();
 	if ( group ) {
 		this.$link.attr( 'data-mw-group', group );
 	} else {

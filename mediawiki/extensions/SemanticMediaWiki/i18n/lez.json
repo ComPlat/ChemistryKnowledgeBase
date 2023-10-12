@@ -1,6 +1,10 @@
 {
 	"@metadata": {
-		"authors": []
+		"authors": [
+			"Soul Train"
+		]
 	},
-	"smw-livepreview-loading": "Ппарзава..."
+	"browse": "Чинрин обзор",
+	"smw-livepreview-loading": "Ппарзава...",
+	"smw-listingcontinuesabbrev": "(кьатӀ)"
 }

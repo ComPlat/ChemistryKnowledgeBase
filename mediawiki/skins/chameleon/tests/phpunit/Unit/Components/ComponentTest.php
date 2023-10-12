@@ -62,6 +62,7 @@ class ComponentTest extends \PHPUnit\Framework\TestCase {
 
 	/**
 	 * @covers ::__construct
+	 * @requires PHP < 8.1
 	 */
 	public function testCanConstruct_withClassAttribute() {
 		$chameleonTemplate = $this->getChameleonSkinTemplateStub();
@@ -159,6 +160,7 @@ class ComponentTest extends \PHPUnit\Framework\TestCase {
 
 	/**
 	 * @covers ::getDomElement
+	 * @requires PHP < 8.1
 	 */
 	public function testGetDomElement() {
 		$chameleonTemplate = $this->getChameleonSkinTemplateStub();
@@ -190,13 +192,7 @@ class ComponentTest extends \PHPUnit\Framework\TestCase {
 			->method( 'getHtml' )
 			->will( $this->returnValue( 'SomeHtml' ) );
 
-		if ( method_exists( '\PHPUnit\Framework\TestCase', 'assertIsString' ) ) {
-			$this->assertIsString( $instance->getClassString() );
-		} else {
-			// @codingStandardsIgnoreStart
-			$this->assertInternalType( 'string', $instance->getClassString() );
-			// @codingStandardsIgnoreEnd
-		}
+		$this->assertIsString( $instance->getClassString() );
 	}
 
 	/**
@@ -329,13 +325,7 @@ class ComponentTest extends \PHPUnit\Framework\TestCase {
 	 * @param string $message
 	 */
 	public function assertValidHTML( $actual, $message = '' ) {
-		if ( method_exists( '\PHPUnit\Framework\TestCase', 'assertIsString' ) ) {
-			$this->assertIsString( $actual, $message );
-		} else {
-			// @codingStandardsIgnoreStart
-			$this->assertInternalType( 'string', $actual, $message );
-			// @codingStandardsIgnoreEnd
-		}
+		$this->assertIsString( $actual, $message );
 	}
 
 }

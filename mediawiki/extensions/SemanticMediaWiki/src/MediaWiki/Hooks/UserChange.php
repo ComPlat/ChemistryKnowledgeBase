@@ -2,12 +2,12 @@
 
 namespace SMW\MediaWiki\Hooks;
 
-use SMW\ApplicationFactory;
+use MediaWiki\User\UserIdentity;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\MediaWiki\Jobs\UpdateJob;
 use SMW\NamespaceExaminer;
 use SMW\MediaWiki\HookListener;
 use Title;
-use User;
 
 /**
  * @see https://www.mediawiki.org/wiki/Manual:Hooks/BlockIpComplete
@@ -55,7 +55,7 @@ class UserChange implements HookListener {
 	/**
 	 * @since 3.0
 	 *
-	 * @param User|string $user
+	 * @param UserIdentity|string|null $user
 	 */
 	public function process( $user ) {
 
@@ -63,7 +63,13 @@ class UserChange implements HookListener {
 			return false;
 		}
 
-		if ( $user instanceof User ) {
+		// getTargetUserIdentity returns null if it is not user(eg. CIDR) 
+		// https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues/5263
+		if ( $user === null ) {
+			return false;
+		}
+
+		if ( $user instanceof UserIdentity ) {
 			$user = $user->getName();
 		}
 

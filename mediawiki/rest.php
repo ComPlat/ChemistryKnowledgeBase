@@ -1,5 +1,5 @@
 <?php
-$_SERVER['REQUEST_URI'] = utf8_encode($_SERVER['REQUEST_URI']);
+
 /**
  * This is the entry point for the REST API.
  *

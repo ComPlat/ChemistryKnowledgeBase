@@ -21,6 +21,8 @@
  * @ingroup Maintenance
  */
 
+use MediaWiki\MediaWikiServices;
+
 require_once __DIR__ . '/Maintenance.php';
 
 /**
@@ -34,13 +36,14 @@ class ManageJobs extends Maintenance {
 		$this->addDescription( 'Perform administrative tasks on a job queue' );
 		$this->addOption( 'type', 'Job type', true, true );
 		$this->addOption( 'action', 'Queue operation ("delete", "repush-abandoned")', true, true );
+		$this->setBatchSize( 100 );
 	}
 
 	public function execute() {
 		$type = $this->getOption( 'type' );
 		$action = $this->getOption( 'action' );
 
-		$group = JobQueueGroup::singleton();
+		$group = MediaWikiServices::getInstance()->getJobQueueGroup();
 		$queue = $group->get( $type );
 
 		if ( $action === 'delete' ) {

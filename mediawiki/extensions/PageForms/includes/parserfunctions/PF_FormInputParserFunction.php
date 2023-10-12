@@ -10,15 +10,16 @@
  * name of a page to be added or edited using a Page Forms form. All
  * arguments are optional. 'form' is the name of the PF form to be used;
  * if it is left empty, a dropdown will appear, letting the user chose among
- * all existing forms. 'size' represents the size of the text input (default
- * is 25), and 'default value' is the starting value of the input.
- * 'button text' is the text that will appear on the "submit" button, and
- * 'query string' is the set of values that you want passed in through the
- * query string to the form. (Query string values can also be passed in
- * directly as parameters.) Finally, you can can specify that the user will
- * get autocompletion using the values from a category or namespace of your
- * choice, using 'autocomplete on category' or 'autocomplete on namespace'
- * (you can only use one). To autcomplete on all pages in the main (blank)
+ * all existing forms. 'size' represents the size of the text input (the
+ * default is the one set by OOUI), and 'default value' is the starting
+ * value of the input. 'button text' is the text that will appear on the
+ * "submit" button, and 'query string' is the set of values that you want
+ * passed in through the query string to the form. (Query string values can
+ * also be passed in directly as parameters.)
+ * Finally, you can can specify that the user will get autocompletion using
+ * the values from a category or namespace of your choice, using
+ * 'autocomplete on category' or 'autocomplete on namespace' (you can only
+ * use one). To autocomplete on all pages in the main (blank)
  * namespace, specify "autocomplete on namespace=main".
  * 'reload' is an optional parameter that can be used alongside either
  * 'popup' or 'returnto'; it causes the page that the user ends up on after
@@ -33,23 +34,26 @@
  */
 
 class PFFormInputParserFunction {
-	// static variable to guarantee that Javascript for autocompletion
-	// only gets added to the page once
+	/**
+	 * static variable to guarantee that JavaScript for autocompletion
+	 * only gets added to the page once.
+	 */
 	private static $num_autocompletion_inputs = 0;
 
 	public static function run( Parser $parser ) {
 		global $wgCapitalLinks;
 
 		$params = func_get_args();
-		array_shift( $params ); // don't need the parser
+		// We don't need the parser.
+		array_shift( $params );
 
-		$parser->getOutput()->addModules( 'ext.pageforms.forminput' );
+		$parser->getOutput()->addModules( [ 'ext.pageforms.forminput' ] );
 
 		// Set defaults.
 		$inFormName = $inValue = $inButtonStr = '';
 		$inQueryArr = [];
 		$inAutocompletionSource = '';
-		$inSize = 25;
+		$inSize = '';
 		$classStr = "pfFormInput";
 		$inNamespaceSelector = null;
 		$inPlaceholder = null;
@@ -105,7 +109,7 @@ class PFFormInputParserFunction {
 			} else {
 				$value = urlencode( $value );
 				parse_str( "$paramName=$value", $arr );
-				$inQueryArr = PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+				$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 				if ( $paramName == 'returnto' ) {
 					$hasReturnTo = true;
 				}
@@ -168,7 +172,8 @@ class PFFormInputParserFunction {
 		// hidden value
 		$fs = PFUtils::getSpecialPage( 'FormStart' );
 		$fsURL = $fs->getPageTitle()->getLocalURL();
-		if ( ( $pos = strpos( $fsURL, "title=" ) ) > -1 ) {
+		$pos = strpos( $fsURL, "title=" );
+		if ( $pos > -1 ) {
 			$formContents .= Html::hidden( "title", urldecode( substr( $fsURL, $pos + 6 ) ) );
 		}
 		$listOfForms = preg_split( '~(?<!\\\)' . preg_quote( ',', '~' ) . '~', $inFormName );

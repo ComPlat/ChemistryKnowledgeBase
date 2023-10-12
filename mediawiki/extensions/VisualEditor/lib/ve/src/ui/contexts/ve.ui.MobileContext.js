@@ -18,13 +18,22 @@ ve.ui.MobileContext = function VeUiMobileContext() {
 	// Parent constructor
 	ve.ui.MobileContext.super.apply( this, arguments );
 
+	this.openingTimeout = null;
+
+	this.closeButton = new OO.ui.ButtonWidget( {
+		classes: [ 've-ui-mobileContext-close' ],
+		framed: false,
+		label: ve.msg( 'visualeditor-contextitemwidget-label-close' ),
+		invisibleLabel: true,
+		icon: 'close'
+	} );
+
 	// Events
+	this.closeButton.connect( this, { click: 'onCloseButtonClick' } );
 	this.inspectors.connect( this, {
 		setup: [ 'toggle', true ],
 		teardown: [ 'toggle', false ]
 	} );
-
-	this.openingTimeout = null;
 
 	// Initialization
 	this.$element.addClass( 've-ui-mobileContext' );
@@ -40,9 +49,26 @@ OO.inheritClass( ve.ui.MobileContext, ve.ui.LinearContext );
 
 ve.ui.MobileContext.static.isMobile = true;
 
-ve.ui.MobileContext.static.showDeleteButton = true;
-
 /* Methods */
+
+/**
+ * Handle click events from the close button
+ */
+ve.ui.MobileContext.prototype.onCloseButtonClick = function () {
+	this.hide();
+	ve.track( 'activity.mobileContext', { action: 'context-close' } );
+};
+
+/**
+ * @inheritdoc
+ */
+ve.ui.MobileContext.prototype.setupMenuItems = function () {
+	// Parent method
+	ve.ui.MobileContext.super.prototype.setupMenuItems.apply( this, arguments );
+
+	// Ensure close button is at start after $group has been modified.
+	this.$group.prepend( this.closeButton.$element );
+};
 
 /**
  * @inheritdoc
@@ -116,12 +142,11 @@ ve.ui.MobileContext.prototype.toggleMenu = function ( show ) {
  * @inheritdoc
  */
 ve.ui.MobileContext.prototype.toggle = function ( show ) {
-	var deferred,
-		context = this;
+	var context = this;
 
 	show = show === undefined ? !this.visible : !!show;
 	if ( show && !this.visible ) {
-		deferred = ve.createDeferred();
+		var deferred = ve.createDeferred();
 		// Set opening flag immediately
 		this.openingTimeout = setTimeout( function () {
 			// Parent method
@@ -155,6 +180,7 @@ ve.ui.MobileContext.prototype.isVisible = function () {
  * @inheritdoc
  */
 ve.ui.MobileContext.prototype.isInspectable = function () {
+	// Parent method
 	return ve.ui.MobileContext.super.prototype.isInspectable.call( this ) &&
 		// Suppress context when surface is active (virtual keyboard)
 		this.surface.getView().isDeactivated();

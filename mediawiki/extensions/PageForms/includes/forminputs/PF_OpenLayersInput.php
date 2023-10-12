@@ -8,7 +8,8 @@
  * @ingroup PFFormInput
  */
 class PFOpenLayersInput extends PFFormInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'openlayers';
 	}
 
@@ -46,8 +47,20 @@ class PFOpenLayersInput extends PFFormInput {
 		return $width;
 	}
 
-	// @todo - change to non-static functions for all the map-based
-	// form input classes, so we don't need all these parameters.
+	/**
+	 * @todo - change to non-static functions for all the map-based
+	 * form input classes, so we don't need all these parameters.
+	 *
+	 * @param string $cur_value
+	 * @param string $input_name
+	 * @param bool $is_mandatory
+	 * @param bool $is_disabled
+	 * @param array $other_args
+	 * @param int $height
+	 * @param int $width
+	 * @param bool $includeAddressLookup
+	 * @return string
+	 */
 	public static function mapLookupHTML( $cur_value, $input_name, $is_mandatory, $is_disabled, $other_args, $height, $width, $includeAddressLookup = true ) {
 		global $wgPageFormsFieldNum, $wgPageFormsTabIndex;
 		global $wgPageFormsMapsWithFeeders;
@@ -124,7 +137,7 @@ class PFOpenLayersInput extends PFFormInput {
 
 		if ( ExtensionRegistry::getInstance()->isLoaded( 'OpenLayers' ) ) {
 			$wgOut->addModuleStyles( 'ext.openlayers.main' );
-			$wgOut->addModuleScripts( 'ext.openlayers.main' );
+			$wgOut->addModules( 'ext.openlayers.main' );
 		} else {
 			$scripts = [
 				"https://openlayers.org/api/OpenLayers.js"
@@ -166,7 +179,7 @@ class PFOpenLayersInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,

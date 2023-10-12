@@ -25,6 +25,7 @@ ve.dm.Node = function VeDmNode( element ) {
 
 	// Properties
 	this.length = 0;
+	this.offset = null;
 	this.element = element;
 };
 
@@ -76,8 +77,15 @@ OO.mixinClass( ve.dm.Node, OO.EventEmitter );
 ve.dm.Node.static.handlesOwnChildren = false;
 
 /**
- * Whether this node's children should be ignored. If true, this node will be treated as a leaf
- * node even if it has children. Often used in combination with handlesOwnChildren.
+ * Whether this node's children should be ignored when iterating over the model, for example
+ * content which is stored inline, but is actually conceptually out-of-band data, such as a
+ * reference node which contains the reference content (like `<ref>` tags in MediaWiki).
+ *
+ * This property should not be used for data which isn't out-of-band but is less accessible in
+ * the view, e.g. content in table cells or image captions.
+ *
+ * If true, this node will be treated as a leaf node even if it has children.
+ * Often used in combination with handlesOwnChildren.
  *
  * @static
  * @property {boolean}
@@ -331,13 +339,13 @@ ve.dm.Node.static.remapInternalListKeys = function () {
  *
  * @static
  * @param {HTMLElement[]} domElements DOM elements being converted
- * @param {ve.dm.Converter} converter Converter object
+ * @param {ve.dm.Converter} converter
  * @return {boolean} The element is inline
  */
 ve.dm.Node.static.isHybridInline = function ( domElements, converter ) {
-	var i, length, allTagsInline = true;
+	var allTagsInline = true;
 
-	for ( i = 0, length = domElements.length; i < length; i++ ) {
+	for ( var i = 0, length = domElements.length; i < length; i++ ) {
 		if ( ve.isBlockElement( domElements[ i ] ) ) {
 			allTagsInline = false;
 			break;
@@ -359,26 +367,25 @@ ve.dm.Node.static.isHybridInline = function ( domElements, converter ) {
  * property will be removed if present.
  *
  * @static
- * @param {Object} element Element object
+ * @param {Object} element
  * @param {ve.dm.HashValueStore} store Hash-value store used by element
  * @param {boolean} preserveGenerated Preserve internal.generated property of element
  * @return {Object} Cloned element object
  */
 ve.dm.Node.static.cloneElement = function ( element, store, preserveGenerated ) {
-	var about, originalDomElements, domElements,
-		modified = false,
+	var modified = false,
 		clone = ve.copy( element );
 
 	if ( !preserveGenerated ) {
 		ve.deleteProp( clone, 'internal', 'generated' );
 	}
-	originalDomElements = store.value( clone.originalDomElementsHash );
+	var originalDomElements = store.value( clone.originalDomElementsHash );
 	// Generate a new about attribute to prevent about grouping of cloned nodes
 	if ( originalDomElements ) {
 		// TODO: The '#mwtNNN' is required by Parsoid. Make the name used here
 		// more generic and specify the #mwt pattern in MW code.
-		about = '#mwt' + Math.floor( 1000000000 * Math.random() );
-		domElements = originalDomElements.map( function ( el ) {
+		var about = '#mwt' + Math.floor( 1000000000 * Math.random() );
+		var domElements = originalDomElements.map( function ( el ) {
 			var elClone = el.cloneNode( true );
 			// Check for hasAttribute as comments don't have them
 			if ( elClone.hasAttribute && elClone.hasAttribute( 'about' ) ) {
@@ -538,6 +545,13 @@ ve.dm.Node.prototype.isDiffedAsLeaf = function () {
 };
 
 /**
+ * @inheritdoc ve.Node
+ */
+ve.dm.Node.prototype.isDiffedAsDocument = function () {
+	return this.getChildNodeTypes() === null;
+};
+
+/**
  * Check if the node can have a slug before it.
  *
  * @return {boolean} Whether the node can have a slug before it
@@ -598,6 +612,19 @@ ve.dm.Node.prototype.isSurfaceable = function () {
 };
 
 /**
+ * Find the first ancestor with matching type and attribute values.
+ *
+ * @param {string} type Node type to match
+ * @param {Object} [attributes] Node attributes to match
+ * @return {ve.dm.Node|null} Ancestor with matching type and attribute values
+ */
+ve.dm.Node.prototype.findMatchingAncestor = function ( type, attributes ) {
+	return this.traverseUpstream( function ( node ) {
+		return !node.matches( type, attributes );
+	} );
+};
+
+/**
  * Check if the node has an ancestor with matching type and attribute values.
  *
  * @param {string} type Node type to match
@@ -605,16 +632,7 @@ ve.dm.Node.prototype.isSurfaceable = function () {
  * @return {boolean} Node has an ancestor with matching type and attribute values
  */
 ve.dm.Node.prototype.hasMatchingAncestor = function ( type, attributes ) {
-	var node = this;
-	// Traverse up to matching node
-	while ( node && !node.matches( type, attributes ) ) {
-		node = node.getParent();
-		// Return false if we reach the root without finding anything
-		if ( node === null ) {
-			return false;
-		}
-	}
-	return true;
+	return !!this.findMatchingAncestor( type, attributes );
 };
 
 /**
@@ -625,18 +643,26 @@ ve.dm.Node.prototype.hasMatchingAncestor = function ( type, attributes ) {
  * @return {boolean} Node matches type and attribute values
  */
 ve.dm.Node.prototype.matches = function ( type, attributes ) {
-	var key;
-
 	if ( this.getType() !== type ) {
 		return false;
 	}
 
-	// Check attributes
 	if ( attributes ) {
-		for ( key in attributes ) {
-			if ( this.getAttribute( key ) !== attributes[ key ] ) {
-				return false;
-			}
+		return this.compareAttributes( attributes );
+	}
+	return true;
+};
+
+/**
+ * Check if specific attributes match those in the node
+ *
+ * @param {Object} attributes Node attributes to match
+ * @return {boolean} Attributes sepcified match those in the node
+ */
+ve.dm.Node.prototype.compareAttributes = function ( attributes ) {
+	for ( var key in attributes ) {
+		if ( this.getAttribute( key ) !== attributes[ key ] ) {
+			return false;
 		}
 	}
 	return true;
@@ -661,12 +687,11 @@ ve.dm.Node.prototype.getLength = function () {
  * @throws {Error} Invalid content length error if length is less than 0
  */
 ve.dm.Node.prototype.setLength = function ( length ) {
-	var diff;
 	if ( length < 0 ) {
 		throw new Error( 'Length cannot be negative' );
 	}
 	// Compute length adjustment from old length
-	diff = length - this.length;
+	var diff = length - this.length;
 	// Set new length
 	this.length = length;
 	// Adjust the parent's length
@@ -697,15 +722,18 @@ ve.dm.Node.prototype.adjustLength = function ( adjustment ) {
  * @inheritdoc ve.Node
  */
 ve.dm.Node.prototype.getOffset = function () {
-	var i, len, siblings, offset;
-
 	if ( !this.parent ) {
 		return 0;
 	}
 
+	if ( this.doc.isReadOnly() && this.offset !== null ) {
+		return this.offset;
+	}
+
 	// Find our index in the parent and add up lengths while we do so
-	siblings = this.parent.children;
-	offset = this.parent.getOffset() + ( this.parent === this.root ? 0 : 1 );
+	var siblings = this.parent.children;
+	var offset = this.parent.getOffset() + ( this.parent === this.root ? 0 : 1 );
+	var i, len;
 	for ( i = 0, len = siblings.length; i < len; i++ ) {
 		if ( siblings[ i ] === this ) {
 			break;
@@ -714,6 +742,11 @@ ve.dm.Node.prototype.getOffset = function () {
 	}
 	if ( i === len ) {
 		throw new Error( 'Node not found in parent\'s children array' );
+	}
+	if ( this.doc.isReadOnly() ) {
+		// Cache offset, only used in read-only mode (when the offset can't change)
+		// This cache is additionally cleared when leaving read-only mode in ve.dm.Document#setReadOnly
+		this.offset = offset;
 	}
 	return offset;
 };

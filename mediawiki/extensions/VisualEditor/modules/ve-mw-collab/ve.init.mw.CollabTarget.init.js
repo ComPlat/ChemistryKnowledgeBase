@@ -27,7 +27,11 @@
 		} ),
 		importButton = OO.ui.infuse( $( '.ve-init-mw-collabTarget-importButton' ) ),
 		// Infuse the form last to avoid recursive infusion with no config
-		form = OO.ui.infuse( $( '.ve-init-mw-collabTarget-form' ) );
+		form = OO.ui.infuse( $( '.ve-init-mw-collabTarget-form' ) ),
+		$targetContainer = $(
+			document.querySelector( '[data-mw-ve-target-container]' ) ||
+			document.getElementById( 'content' )
+		);
 
 	if ( !VisualEditorSupportCheck() ) {
 		// VE not supported - say something?
@@ -59,26 +63,26 @@
 		form.toggle( false );
 
 		modulePromise.done( function () {
-			var dummySurface, surfaceModel,
-				isNewAuthor = !ve.init.platform.sessionStorage.get( 've-collab-author' ),
-				username = mw.user.getName(),
-				progressDeferred = ve.createDeferred();
-
 			target = ve.init.mw.targetFactory.create( 'collab', title, conf.rebaserUrl, { importTitle: importTitle } );
+			// If the target emits a 'close' event (via the toolbar back button on mobile) then go to the landing page.
+			target.once( 'close', function () {
+				showForm( true );
+			} );
 
 			$( 'body' ).addClass( 've-activated ve-active' );
 
-			$( '#content' ).prepend( target.$element );
+			$targetContainer.prepend( target.$element );
 
 			target.transformPage();
 			$( '#firstHeading' ).addClass( 've-init-mw-desktopArticleTarget-uneditableContent' );
 
 			// Add a dummy surface while the doc is loading
-			dummySurface = target.addSurface( ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( '' ) ) );
+			var dummySurface = target.addSurface( ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( '' ) ) );
 			dummySurface.setReadOnly( true );
 
 			// TODO: Create the correct model surface type (ve.ui.Surface#createModel)
-			surfaceModel = new ve.dm.Surface( ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( '' ) ) );
+			var surfaceModel = new ve.dm.Surface( ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( '' ) ) );
+			var username = mw.user.getName();
 			surfaceModel.createSynchronizer(
 				mw.config.get( 'wgWikiID' ) + '/' + title.toString(),
 				{
@@ -90,6 +94,7 @@
 				}
 			);
 
+			var progressDeferred = ve.createDeferred();
 			dummySurface.createProgress( progressDeferred.promise(), ve.msg( 'visualeditor-rebase-client-connecting' ), true );
 
 			surfaceModel.synchronizer.once( 'initDoc', function ( error ) {
@@ -103,36 +108,38 @@
 					// Don't add the surface until the history has been applied
 					target.addSurface( surfaceModel );
 					if ( error ) {
+						var $errorMsg = ve.htmlMsg( 'visualeditor-rebase-corrupted-document-error', $( '<pre>' ).text( error.stack ) );
 						OO.ui.alert(
-							$( '<p>' ).append(
-								ve.htmlMsg( 'visualeditor-corrupted-document-error', $( '<pre>' ).text( error.stack ) )
-							),
-							{ title: ve.msg( 'visualeditor-corrupted-document-title' ), size: 'large' }
+							$( '<p>' ).append( $errorMsg ),
+							{ title: ve.msg( 'visualeditor-rebase-corrupted-document-title' ), size: 'large' }
 						).then( function () {
-							// eslint-disable-next-line no-use-before-define
 							showForm( true );
 						} );
 						return;
 					}
 					target.once( 'surfaceReady', function () {
 						initPromise.then( function () {
-							surfaceModel.selectFirstContentOffset();
+							target.getSurface().getView().selectFirstSelectableContentOffset();
+							var isNewAuthor = !ve.init.platform.sessionStorage.get( 've-collab-author' );
 							// For new anon users, open the author list so they can set their name
 							if ( isNewAuthor && !username ) {
-								target.actionsToolbar.tools.authorList.onSelect();
+								// Something (an animation?) steals focus during load, so wait a bit
+								// before opening and focusing the authorList.
+								setTimeout( function () {
+									target.actionsToolbar.tools.authorList.onSelect();
+								}, 500 );
 							}
 						} );
 					} );
 
 					if ( target.importTitle && !surfaceModel.getDocument().getCompleteHistoryLength() ) {
 						initPromise = mw.libs.ve.targetLoader.requestParsoidData( target.importTitle.toString(), { targetName: 'collabpad' } ).then( function ( response ) {
-							var doc, dmDoc, fragment,
-								data = response.visualeditor;
+							var data = response.visualeditor;
 
 							if ( data && data.content ) {
-								doc = target.constructor.static.parseDocument( data.content );
-								dmDoc = target.constructor.static.createModelFromDom( doc );
-								fragment = surfaceModel.getLinearFragment( new ve.Range( 0, 2 ) );
+								var doc = target.constructor.static.parseDocument( data.content );
+								var dmDoc = target.constructor.static.createModelFromDom( doc );
+								var fragment = surfaceModel.getLinearFragment( new ve.Range( 0, 2 ) );
 								fragment.insertDocument( dmDoc );
 
 								target.etag = data.etag;
@@ -196,7 +203,6 @@
 			progressBar.toggle( false );
 		} ).fail( function ( err ) {
 			mw.log.error( err );
-			// eslint-disable-next-line no-use-before-define
 			showForm( true );
 		} );
 	}
@@ -205,7 +211,7 @@
 		var specialTitle = mw.Title.newFromText( 'Special:CollabPad' );
 
 		if ( pushState ) {
-			history.pushState( { tag: 'collabTarget' }, mw.msg( 'collabpad' ), specialTitle.getUrl() );
+			history.pushState( { tag: 'collabTarget' }, '', specialTitle.getUrl() );
 		}
 
 		if ( target ) {
@@ -232,10 +238,10 @@
 		var specialTitle = mw.Title.newFromText( 'Special:CollabPad/' + title.toString() );
 		if ( history.pushState ) {
 			// TODO: Handle popstate
-			history.pushState( { tag: 'collabTarget', title: title.toString() }, title.getMain(), specialTitle.getUrl() );
+			history.pushState( { tag: 'collabTarget', title: title.toString() }, '', specialTitle.getUrl() );
 			showPage( title, importTitle );
 		} else {
-			location.href = specialTitle.getUrl();
+			location.href = specialTitle.getUrl( { import: importTitle } );
 		}
 	}
 
@@ -284,7 +290,7 @@
 		} );
 	}
 
-	function importTitle() {
+	function onImportSubmit() {
 		importInput.getValidity().then( function () {
 			var title = mw.Title.newFromText( importInput.getValue().trim() );
 
@@ -301,12 +307,15 @@
 		return !!mw.Title.newFromText( value );
 	} );
 	importInput.on( 'change', onImportChange );
-	importInput.on( 'enter', importTitle );
-	importButton.on( 'click', importTitle );
+	importInput.on( 'enter', onImportSubmit );
+	importButton.on( 'click', onImportSubmit );
 	onImportChange();
 
 	if ( pageTitle ) {
-		showPage( pageTitle );
+		var uri = new mw.Uri( location.href ),
+			importTitleText = uri.query.import,
+			importTitleParam = ( importTitleText ? mw.Title.newFromText( importTitleText ) : null );
+		showPage( pageTitle, importTitleParam );
 	} else {
 		showForm();
 	}
@@ -318,7 +327,7 @@
 
 	// Tag current state
 	if ( history.replaceState ) {
-		history.replaceState( { tag: 'collabTarget', title: pageName }, document.title, location.href );
+		history.replaceState( { tag: 'collabTarget', title: pageName }, '', location.href );
 	}
 	window.addEventListener( 'popstate', function ( e ) {
 		if ( e.state && e.state.tag === 'collabTarget' ) {

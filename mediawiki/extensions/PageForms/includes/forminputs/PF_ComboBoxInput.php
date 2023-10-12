@@ -10,7 +10,8 @@ use MediaWiki\MediaWikiServices;
  * @ingroup PFFormInput
  */
 class PFComboBoxInput extends PFFormInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'combobox';
 	}
 
@@ -30,17 +31,17 @@ class PFComboBoxInput extends PFFormInput {
 		global $wgPageFormsTabIndex, $wgPageFormsFieldNum, $wgPageFormsEDSettings;
 
 		$className = 'pfComboBox';
-		if ( $is_mandatory ) {
-			$className .= ' mandatoryField';
-		}
 		if ( array_key_exists( 'class', $other_args ) ) {
 			$className .= ' ' . $other_args['class'];
 		}
 
 		if ( array_key_exists( 'size', $other_args ) ) {
-			$size = $other_args['size'];
+			$size = intval( $other_args['size'] );
+			if ( $size == 0 ) {
+				$size = 35;
+			}
 		} else {
-			$size = '35';
+			$size = 35;
 		}
 		if ( array_key_exists( 'values from external data', $other_args ) ) {
 			$autocompleteSettings = 'external data';
@@ -55,12 +56,7 @@ class PFComboBoxInput extends PFFormInput {
 				$wgPageFormsEDSettings[$name]['title'] = $other_args['values from external data'];
 			}
 			if ( array_key_exists( 'image', $other_args ) ) {
-				if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
-					// MediaWiki 1.34+
-					$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
-				} else {
-					$repoGroup = RepoGroup::singleton();
-				}
+				$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
 				$image_param = $other_args['image'];
 				$wgPageFormsEDSettings[$name]['image'] = $image_param;
 				global $edgValues;
@@ -98,7 +94,7 @@ class PFComboBoxInput extends PFFormInput {
 			'tabindex' => $wgPageFormsTabIndex,
 			'autocompletesettings' => $autocompleteSettings,
 			'value' => $cur_value,
-			'data-size' => $size * 6 . 'px',
+			'data-size' => $size * 6,
 			'style' => 'width:' . $size * 6 . 'px',
 			'disabled' => $is_disabled
 		];
@@ -116,12 +112,12 @@ class PFComboBoxInput extends PFFormInput {
 		}
 
 		$innerDropdown = '';
-		$isValueInPossibleValues = false;
 
 		if ( !$is_mandatory || $cur_value === '' ) {
 			$innerDropdown .= "	<option value=\"\"></option>\n";
 		}
-		if ( ( $possible_values = $other_args['possible_values'] ) == null ) {
+		$possible_values = $other_args['possible_values'];
+		if ( $possible_values == null ) {
 			// If it's a Boolean property, display 'Yes' and 'No'
 			// as the values.
 			if ( array_key_exists( 'property_type', $other_args ) && $other_args['property_type'] == '_boo' ) {
@@ -133,29 +129,10 @@ class PFComboBoxInput extends PFFormInput {
 				$possible_values = [];
 			}
 		}
-		foreach ( $possible_values as $possible_value ) {
-			$optionAttrs = [ 'value' => $possible_value ];
-			if ( $possible_value == $cur_value ) {
-				$optionAttrs['selected'] = "selected";
-				$isValueInPossibleValues = true;
-			}
-			if (
-				array_key_exists( 'value_labels', $other_args ) &&
-				is_array( $other_args['value_labels'] ) &&
-				array_key_exists( $possible_value, $other_args['value_labels'] )
-			) {
-				$label = $other_args['value_labels'][$possible_value];
-			} else {
-				$label = $possible_value;
-			}
-			$innerDropdown .= Html::element( 'option', $optionAttrs, $label );
-		}
-		if ( $isValueInPossibleValues === false ) {
-			$optionAttrs = [ 'value' => $cur_value ];
-			$optionAttrs['selected'] = "selected";
-			$label = $cur_value;
-			$innerDropdown .= Html::element( 'option', $optionAttrs, $label );
-		}
+
+		// Make sure that the current value always shows up when the
+		// form is first displayed.
+		$innerDropdown .= Html::element( 'option', [ 'selected' => true ], $cur_value );
 
 		$inputText = Html::rawElement( 'select', $inputAttrs, $innerDropdown );
 
@@ -169,12 +146,37 @@ class PFComboBoxInput extends PFFormInput {
 			$inputText .= PFTextInput::uploadableHTML( $input_id, $delimiter = null, $default_filename, $cur_value, $other_args );
 		}
 
+		$spanID = 'span_' . $wgPageFormsFieldNum;
 		$spanClass = 'comboboxSpan';
 		if ( $is_mandatory ) {
 			$spanClass .= ' mandatoryFieldSpan';
 		}
 
-		$text = Html::rawElement( 'span', [ 'class' => $spanClass ], $inputText );
+		if ( array_key_exists( 'show on select', $other_args ) ) {
+			$spanClass .= ' pfShowIfSelected';
+			PFFormUtils::setShowOnSelect( $other_args['show on select'], $spanID );
+		}
+
+		$spanAttrs = [
+			'id' => $spanID,
+			'class' => $spanClass,
+			'data-input-type' => 'combobox'
+		];
+		$text = Html::rawElement( 'span', $spanAttrs, $inputText );
+		if ( array_key_exists( 'feeds to map', $other_args ) ) {
+			global $wgPageFormsMapsWithFeeders;
+			$targetMapName = $other_args['feeds to map'];
+			if ( array_key_exists( 'part_of_multiple', $other_args ) ) {
+				$targetMapName = str_replace( '[', '[num][', $targetMapName );
+			}
+			$mapField = Html::rawElement( 'input', [
+				'class' => 'combobox_map_feed',
+				'data-feeds-to-map' => $targetMapName,
+				'style' => 'display:none;'
+			] );
+			$wgPageFormsMapsWithFeeders[$targetMapName] = true;
+			$text .= $mapField;
+		}
 		return $text;
 	}
 
@@ -208,7 +210,7 @@ class PFComboBoxInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,
@@ -216,5 +218,9 @@ class PFComboBoxInput extends PFFormInput {
 			$this->mIsDisabled,
 			$this->mOtherArgs
 		);
+	}
+
+	public function getResourceModuleNames() {
+		return [ 'ext.pageforms.ooui.combobox' ];
 	}
 }

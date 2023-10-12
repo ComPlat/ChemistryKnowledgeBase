@@ -2,6 +2,8 @@
 
 use MediaWiki\Auth\AuthenticationRequest;
 use MediaWiki\Auth\AuthManager;
+use MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -26,7 +28,7 @@ class FancyCaptcha extends SimpleCaptcha {
 			if ( !$backend ) {
 				$backend = new FSFileBackend( [
 					'name'           => 'captcha-backend',
-					'wikiId'         => wfWikiID(),
+					'wikiId'         => WikiMap::getCurrentWikiId(),
 					'lockManager'    => new NullLockManager( [] ),
 					'containerPaths' => [ 'captcha-render' => $wgCaptchaDirectory ],
 					'fileMode'       => 777,

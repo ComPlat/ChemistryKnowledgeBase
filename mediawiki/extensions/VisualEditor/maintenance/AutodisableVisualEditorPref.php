@@ -19,6 +19,7 @@ $maintenancePath = getenv( 'MW_INSTALL_PATH' ) !== false
 require_once $maintenancePath;
 
 class AutodisableVisualEditorPref extends Maintenance {
+
 	/**
 	 * @inheritDoc
 	 */
@@ -34,35 +35,33 @@ class AutodisableVisualEditorPref extends Maintenance {
 	 */
 	public function execute() {
 		$dbr = wfGetDB( DB_REPLICA );
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		$services = MediaWikiServices::getInstance();
+		$lbFactory = $services->getDBLoadBalancerFactory();
+		$userOptionsManager = $services->getUserOptionsManager();
 
 		$lastUserId = -1;
 		do {
-			$results = $dbr->select(
-				[ 'user', 'user_properties' ],
-				'user_id',
-				[
+			$results = $dbr->newSelectQueryBuilder()
+				->from( 'user' )
+				->leftJoin( 'user_properties', null, [
+					'user_id = up_user',
+					'up_property' => "visualeditor-enable"
+				] )
+				->field( 'user_id' )
+				->where( [
 					'user_id > ' . $dbr->addQuotes( $lastUserId ),
 					// only select users with no entry in user_properties
 					'up_value IS NULL',
 					'user_editcount > 0'
-				],
-				__METHOD__,
-				[
-					'LIMIT' => $this->mBatchSize,
-					'ORDER BY' => 'user_id'
-				],
-				[
-					'user_properties' => [
-						'LEFT OUTER JOIN',
-						'user_id = up_user and up_property = "visualeditor-enable"'
-					]
-				]
-			);
+				] )
+				->limit( $this->mBatchSize )
+				->orderBy( 'user_id' )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 			foreach ( $results as $userRow ) {
 				$user = User::newFromId( $userRow->user_id );
 				$user->load( User::READ_LATEST );
-				$user->setOption( 'visualeditor-autodisable', true );
+				$userOptionsManager->setOption( $user, 'visualeditor-autodisable', true );
 				$user->saveSettings();
 				$lastUserId = $userRow->user_id;
 			}

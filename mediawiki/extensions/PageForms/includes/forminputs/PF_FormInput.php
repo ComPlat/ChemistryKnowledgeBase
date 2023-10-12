@@ -23,7 +23,10 @@ abstract class PFFormInput {
 	protected $mInputNumber;
 	protected $mCurrentValue;
 	protected $mInputName;
-	protected $mIsMandatory; // @deprecated, check for array_key_exists('mandatory', $this->mOtherArgs) instead
+	/**
+	 * @deprecated, check for array_key_exists('mandatory', $this->mOtherArgs) instead
+	 */
+	protected $mIsMandatory;
 	protected $mIsDisabled;
 	protected $mOtherArgs;
 
@@ -54,16 +57,11 @@ abstract class PFFormInput {
 	 * Returns the name of the input type this class handles.
 	 *
 	 * This is the name to be used in the field definition for the "input type"
-	 * parameter.
+	 * parameter. Used in PFFormPrinter::registerInputType().
 	 *
 	 * @return string The name of the input type this class handles.
-	 * @fixme Should be declared abstract. Static functions cannot be abstract.
-	 * Do we need this method at all? The name should be set outside this class
-	 * when the input type is registered.
 	 */
-	public static function getName() {
-		return null;
-	}
+	abstract public static function getName();
 
 	/**
 	 * Returns the set of SMW property types which this input can
@@ -144,11 +142,9 @@ abstract class PFFormInput {
 	 * Ideally this HTML code should provide a basic functionality even if the
 	 * browser is not JavaScript capable. I.e. even without JavaScript the user
 	 * should be able to input values.
-	 * @return null
+	 * @return string
 	 */
-	public function getHtmlText() {
-		return null;
-	}
+	abstract public function getHtmlText();
 
 	/**
 	 *
@@ -214,7 +210,7 @@ abstract class PFFormInput {
 	 *
 	 *
 	 * @param string $name The name of the initialization function.
-	 * @param string|null $param The parameter passed to the initialization function.
+	 * @param string|array|null $param The parameter passed to the initialization function.
 	 */
 	public function addJsInitFunctionData( $name, $param = null ) {
 		if ( is_string( $param ) ) {
@@ -245,7 +241,7 @@ abstract class PFFormInput {
 	 *
 	 *
 	 * @param string $name The name of the initialization function.
-	 * @param string $param The parameter passed to the initialization function.
+	 * @param string|array $param The parameter passed to the initialization function.
 	 */
 	public function addJsValidationFunctionData( $name, $param = 'null' ) {
 		$this->mJsValidationFunctionData[] = [ 'name' => $name, 'param' => $param ];
@@ -299,7 +295,6 @@ abstract class PFFormInput {
 		return [];
 	}
 
-	// Now the same set of methods, but for Cargo instead of SMW.
 	public static function getDefaultCargoTypes() {
 		return [];
 	}

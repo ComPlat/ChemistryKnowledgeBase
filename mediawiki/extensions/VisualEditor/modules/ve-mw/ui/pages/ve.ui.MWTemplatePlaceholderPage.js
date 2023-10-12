@@ -6,7 +6,9 @@
  */
 
 /**
- * MediaWiki transclusion dialog placeholder page.
+ * The placeholder is shown in the template dialog content pane, and allows the
+ * user to enter a template name.  Once a name is chosen, the placeholder is
+ * replaced with elements for the concrete template.
  *
  * @class
  * @extends OO.ui.PageLayout
@@ -18,7 +20,6 @@
  * @cfg {jQuery} [$overlay] Overlay to render dropdowns in
  */
 ve.ui.MWTemplatePlaceholderPage = function VeUiMWTemplatePlaceholderPage( placeholder, name, config ) {
-	var addTemplateActionFieldLayout;
 	// Configuration initialization
 	config = ve.extendObject( {
 		scrollable: false
@@ -47,43 +48,47 @@ ve.ui.MWTemplatePlaceholderPage = function VeUiMWTemplatePlaceholderPage( placeh
 	this.addTemplateInput.$input.attr( 'aria-label', ve.msg( 'visualeditor-dialog-transclusion-add-template' ) );
 
 	this.addTemplateButton = new OO.ui.ButtonWidget( {
-		label: ve.msg( 'visualeditor-dialog-transclusion-add-template' ),
+		label: ve.msg( 'visualeditor-dialog-transclusion-add-template-save' ),
 		flags: [ 'progressive' ],
 		classes: [ 've-ui-mwTransclusionDialog-addButton' ],
 		disabled: true
 	} )
 		.connect( this, { click: 'onAddTemplate' } );
 
-	this.removeButton = new OO.ui.ButtonWidget( {
-		framed: false,
-		icon: 'trash',
-		title: ve.msg( 'visualeditor-dialog-transclusion-remove-template' ),
-		flags: [ 'destructive' ],
-		classes: [ 've-ui-mwTransclusionDialog-removeButton' ]
-	} )
-		.connect( this, { click: 'onRemoveButtonClick' } );
-
-	if ( this.placeholder.getTransclusion().parts.length === 1 ) {
-		this.removeButton.toggle( false );
-	}
-
-	addTemplateActionFieldLayout = new OO.ui.ActionFieldLayout(
+	var addTemplateActionFieldLayout = new OO.ui.ActionFieldLayout(
 		this.addTemplateInput,
 		this.addTemplateButton,
 		{ align: 'top' }
 	);
 
-	this.addTemplateFieldset = new OO.ui.FieldsetLayout( {
+	var addTemplateFieldsetConfig = {
 		label: ve.msg( 'visualeditor-dialog-transclusion-placeholder' ),
 		icon: 'puzzle',
 		classes: [ 've-ui-mwTransclusionDialog-addTemplateFieldset' ],
 		items: [ addTemplateActionFieldLayout ]
+	};
+
+	var dialogTitle = this.placeholder.getTransclusion().isSingleTemplate() ?
+		'visualeditor-dialog-transclusion-template-search' :
+		'visualeditor-dialog-transclusion-add-template';
+
+	// TODO: Remove `mw.storage.remove` after a few months, let's say December 2022.
+	mw.storage.remove( 'mwe-visualeditor-hide-visualeditor-dialog-transclusion-feedback-message' );
+
+	addTemplateFieldsetConfig = ve.extendObject( addTemplateFieldsetConfig, {
+		// The following messages are used here:
+		// * visualeditor-dialog-transclusion-template-search
+		// * visualeditor-dialog-transclusion-add-template
+		label: ve.msg( dialogTitle ),
+		help: ve.msg( 'visualeditor-dialog-transclusion-template-search-help' ),
+		helpInline: true
 	} );
+	this.addTemplateFieldset = new OO.ui.FieldsetLayout( addTemplateFieldsetConfig );
 
 	// Initialization
 	this.$element
 		.addClass( 've-ui-mwTemplatePlaceholderPage' )
-		.append( this.addTemplateFieldset.$element, this.removeButton.$element );
+		.append( this.addTemplateFieldset.$element );
 };
 
 /* Inheritance */
@@ -93,57 +98,60 @@ OO.inheritClass( ve.ui.MWTemplatePlaceholderPage, OO.ui.PageLayout );
 /* Methods */
 
 /**
- * @inheritdoc
+ * @inheritDoc OO.ui.PanelLayout
  */
-ve.ui.MWTemplatePlaceholderPage.prototype.setOutlineItem = function () {
-	// Parent method
-	ve.ui.MWTemplatePlaceholderPage.super.prototype.setOutlineItem.apply( this, arguments );
-
-	if ( this.outlineItem ) {
-		this.outlineItem
-			.setIcon( 'puzzle' )
-			.setMovable( true )
-			.setRemovable( true )
-			.setFlags( [ 'placeholder' ] )
-			.setLabel( ve.msg( 'visualeditor-dialog-transclusion-placeholder' ) );
-	}
-};
-
 ve.ui.MWTemplatePlaceholderPage.prototype.focus = function () {
-	// Parent method
-	ve.ui.MWTemplatePlaceholderPage.super.prototype.focus.apply( this, arguments );
+	// The parent method would focus the first element, which might be the message widget
+	this.addTemplateInput.focus();
 
 	// HACK: Set the width of the lookupMenu to the width of the input
 	// TODO: This should be handled upstream in OOUI
 	this.addTemplateInput.lookupMenu.width = this.addTemplateInput.$input[ 0 ].clientWidth;
 };
 
+/**
+ * @private
+ */
 ve.ui.MWTemplatePlaceholderPage.prototype.onAddTemplate = function () {
-	var part, name,
-		transclusion = this.placeholder.getTransclusion(),
+	var transclusion = this.placeholder.getTransclusion(),
 		menu = this.addTemplateInput.getLookupMenu();
 
 	if ( menu.isVisible() ) {
 		menu.chooseItem( menu.findSelectedItem() );
 	}
-	name = this.addTemplateInput.getMWTitle();
+	var name = this.addTemplateInput.getMWTitle();
 	if ( !name ) {
 		// Invalid titles return null, so abort here.
 		return;
 	}
-	part = ve.dm.MWTemplateModel.newFromName( transclusion, name );
-	transclusion.replacePart( this.placeholder, part );
+
+	// TODO tracking will only be implemented temporarily to answer questions on
+	// template usage for the Technical Wishes topic area see T258917
+	var event = {
+		action: 'add-template',
+		// eslint-disable-next-line camelcase
+		template_names: [ name.getPrefixedText() ]
+	};
+	var editCountBucket = mw.config.get( 'wgUserEditCountBucket' );
+	if ( editCountBucket !== null ) {
+		// eslint-disable-next-line camelcase
+		event.user_edit_count_bucket = editCountBucket;
+	}
+	mw.track( 'event.VisualEditorTemplateDialogUse', event );
+
+	var part = ve.dm.MWTemplateModel.newFromName( transclusion, name );
+	transclusion.replacePart( this.placeholder, part ).then(
+		transclusion.addPromptedParameters.bind( transclusion )
+	);
 	this.addTemplateInput.pushPending();
 	// abort pending lookups, also, so the menu can't appear after we've left the page
 	this.addTemplateInput.closeLookupMenu();
 	this.addTemplateButton.setDisabled( true );
-	this.removeButton.setDisabled( true );
 };
 
+/**
+ * @private
+ */
 ve.ui.MWTemplatePlaceholderPage.prototype.onTemplateInputChange = function () {
 	this.addTemplateButton.setDisabled( this.addTemplateInput.getMWTitle() === null );
-};
-
-ve.ui.MWTemplatePlaceholderPage.prototype.onRemoveButtonClick = function () {
-	this.placeholder.remove();
 };

@@ -35,9 +35,9 @@
 		};
 	}
 
-	QUnit.test( 'EmbedFileFormatter constructor sanity check', function ( assert ) {
+	QUnit.test( 'EmbedFileFormatter constructor sense check', function ( assert ) {
 		var formatter = new mw.mmv.EmbedFileFormatter();
-		assert.ok( formatter, 'constructor with no argument works' );
+		assert.true( formatter instanceof mw.mmv.EmbedFileFormatter, 'constructor with no argument works' );
 	} );
 
 	QUnit.test( 'getByline():', function ( assert ) {
@@ -53,19 +53,19 @@
 
 		// Attribution present
 		byline = formatter.getByline( author, source, attribution );
-		assert.ok( byline.match( /Cat/ ), 'Attribution found in bylines' );
+		assert.true( /Cat/.test( byline ), 'Attribution found in bylines' );
 
 		// Author and source present
 		byline = formatter.getByline( author, source );
-		assert.ok( byline.match( /Homer|Iliad/ ), 'Author and source found in bylines' );
+		assert.true( /Homer|Iliad/.test( byline ), 'Author and source found in bylines' );
 
 		// Only author present
 		byline = formatter.getByline( author );
-		assert.ok( byline.match( /Homer/ ), 'Author found in bylines.' );
+		assert.true( /Homer/.test( byline ), 'Author found in bylines.' );
 
 		// Only source present
 		byline = formatter.getByline( undefined, source );
-		assert.ok( byline.match( /Iliad/ ), 'Source found in bylines.' );
+		assert.true( /Iliad/.test( byline ), 'Source found in bylines.' );
 	} );
 
 	QUnit.test( 'getSiteLink():', function ( assert ) {
@@ -75,8 +75,8 @@
 			siteUrl = repoInfo.getSiteLink(),
 			siteLink = formatter.getSiteLink( info );
 
-		assert.strictEqual( siteLink.indexOf( 'Wikipedia' ) !== -1, true, 'Site name is present in site link' );
-		assert.strictEqual( siteLink.indexOf( siteUrl ) !== -1, true, 'Site URL is present in site link' );
+		assert.notStrictEqual( siteLink.indexOf( 'Wikipedia' ), -1, 'Site name is present in site link' );
+		assert.notStrictEqual( siteLink.indexOf( siteUrl ), -1, 'Site URL is present in site link' );
 	} );
 
 	QUnit.test( 'getThumbnailHtml():', function ( assert ) {
@@ -107,17 +107,17 @@
 			licenseLongName: licenseLongName, licenseUrl: licenseUrl, author: author, source: source } );
 
 		generatedHtml = formatter.getThumbnailHtml( info, thumbUrl, width, height );
-		assert.ok( generatedHtml.match( titleText ), 'Title appears in generated HTML.' );
-		assert.ok( generatedHtml.match( filePageUrl ), 'Page url appears in generated HTML.' );
-		assert.ok( generatedHtml.match( thumbUrl ), 'Thumbnail url appears in generated HTML' );
-		assert.ok( generatedHtml.match( 'Public License' ), 'License appears in generated HTML' );
-		assert.ok( generatedHtml.match( 'Homer' ), 'Author appears in generated HTML' );
-		assert.ok( generatedHtml.match( 'Iliad' ), 'Source appears in generated HTML' );
-		assert.ok( generatedHtml.match( width ), 'Width appears in generated HTML' );
-		assert.ok( generatedHtml.match( height ), 'Height appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( titleText ), null, 'Title appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( filePageUrl ), null, 'Page url appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( thumbUrl ), null, 'Thumbnail url appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Public License' ), null, 'License appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Homer' ), null, 'Author appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Iliad' ), null, 'Source appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( width ), null, 'Width appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( height ), null, 'Height appears in generated HTML' );
 		// .includes() for checking the short url since it contains a ? (bad for regex). Could escape instead.
 		// eslint-disable-next-line no-restricted-syntax
-		assert.ok( generatedHtml.includes( filePageShortUrl ), 'Short URL appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.includes( filePageShortUrl ), null, 'Short URL appears in generated HTML' );
 
 		// Bylines, no license and site
 		info = createEmbedFileInfo( { title: title, imgUrl: imgUrl, filePageUrl: filePageUrl,
@@ -125,16 +125,16 @@
 			author: author, source: source } );
 		generatedHtml = formatter.getThumbnailHtml( info, thumbUrl, width, height );
 
-		assert.ok( generatedHtml.match( titleText ), 'Title appears in generated HTML.' );
-		assert.ok( generatedHtml.match( filePageUrl ), 'Page url appears in generated HTML.' );
-		assert.ok( generatedHtml.match( thumbUrl ), 'Thumbnail url appears in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Public License' ), 'License should not appear in generated HTML' );
-		assert.ok( generatedHtml.match( 'Homer' ), 'Author appears in generated HTML' );
-		assert.ok( generatedHtml.match( 'Iliad' ), 'Source appears in generated HTML' );
-		assert.ok( generatedHtml.match( width ), 'Width appears in generated HTML' );
-		assert.ok( generatedHtml.match( height ), 'Height appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( titleText ), null, 'Title appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( filePageUrl ), null, 'Page url appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( thumbUrl ), null, 'Thumbnail url appears in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Public License' ), null, 'License should not appear in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Homer' ), null, 'Author appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Iliad' ), null, 'Source appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( width ), null, 'Width appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( height ), null, 'Height appears in generated HTML' );
 		// eslint-disable-next-line no-restricted-syntax
-		assert.ok( generatedHtml.includes( filePageShortUrl ), 'Short URL appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.includes( filePageShortUrl ), null, 'Short URL appears in generated HTML' );
 
 		// No bylines, license and site
 		info = createEmbedFileInfo( { title: title, imgUrl: imgUrl, filePageUrl: filePageUrl,
@@ -143,32 +143,32 @@
 			licenseUrl: licenseUrl, shortFilePageUrl: filePageShortUrl } );
 		generatedHtml = formatter.getThumbnailHtml( info, thumbUrl, width, height );
 
-		assert.ok( generatedHtml.match( titleText ), 'Title appears in generated HTML.' );
-		assert.ok( generatedHtml.match( filePageUrl ), 'Page url appears in generated HTML.' );
-		assert.ok( generatedHtml.match( thumbUrl ), 'Thumbnail url appears in generated HTML' );
-		assert.ok( generatedHtml.match( 'Public License' ), 'License appears in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Homer' ), 'Author should not appear in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Iliad' ), 'Source should not appear in generated HTML' );
-		assert.ok( generatedHtml.match( width ), 'Width appears in generated HTML' );
-		assert.ok( generatedHtml.match( height ), 'Height appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( titleText ), null, 'Title appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( filePageUrl ), null, 'Page url appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( thumbUrl ), null, 'Thumbnail url appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( 'Public License' ), null, 'License appears in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Homer' ), null, 'Author should not appear in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Iliad' ), null, 'Source should not appear in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( width ), null, 'Width appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( height ), null, 'Height appears in generated HTML' );
 		// eslint-disable-next-line no-restricted-syntax
-		assert.ok( generatedHtml.includes( filePageShortUrl ), 'Short URL appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.includes( filePageShortUrl ), null, 'Short URL appears in generated HTML' );
 
 		// No bylines, no license and site
 		info = createEmbedFileInfo( { title: title, imgUrl: imgUrl, filePageUrl: filePageUrl,
 			siteName: siteName, siteUrl: siteUrl, shortFilePageUrl: filePageShortUrl } );
 		generatedHtml = formatter.getThumbnailHtml( info, thumbUrl, width, height );
 
-		assert.ok( generatedHtml.match( titleText ), 'Title appears in generated HTML.' );
-		assert.ok( generatedHtml.match( filePageUrl ), 'Page url appears in generated HTML.' );
-		assert.ok( generatedHtml.match( thumbUrl ), 'Thumbnail url appears in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Public License' ), 'License should not appear in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Homer' ), 'Author should not appear in generated HTML' );
-		assert.notOk( generatedHtml.match( 'Iliad' ), 'Source should not appear in generated HTML' );
-		assert.ok( generatedHtml.match( width ), 'Width appears in generated HTML' );
-		assert.ok( generatedHtml.match( height ), 'Height appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( titleText ), null, 'Title appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( filePageUrl ), null, 'Page url appears in generated HTML.' );
+		assert.notStrictEqual( generatedHtml.match( thumbUrl ), null, 'Thumbnail url appears in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Public License' ), null, 'License should not appear in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Homer' ), null, 'Author should not appear in generated HTML' );
+		assert.strictEqual( generatedHtml.match( 'Iliad' ), null, 'Source should not appear in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( width ), null, 'Width appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.match( height ), null, 'Height appears in generated HTML' );
 		// eslint-disable-next-line no-restricted-syntax
-		assert.ok( generatedHtml.includes( filePageShortUrl ), 'Short URL appears in generated HTML' );
+		assert.notStrictEqual( generatedHtml.includes( filePageShortUrl ), null, 'Short URL appears in generated HTML' );
 
 	} );
 
@@ -229,7 +229,7 @@
 			}
 		} );
 
-		assert.strictEqual( txt, '(multimediaviewer-text-embed-credit-text-b: (multimediaviewer-credit: Author, Source), link)', 'Sanity check' );
+		assert.strictEqual( txt, '(multimediaviewer-text-embed-credit-text-b: (multimediaviewer-credit: Author, Source), link)', 'Sense check' );
 
 		txt = formatter.getCreditText( {
 			repoInfo: {
@@ -276,7 +276,7 @@
 		assert.strictEqual(
 			html,
 			'(multimediaviewer-html-embed-credit-text-b: (multimediaviewer-credit: Author, Source), <a href="some link">(multimediaviewer-html-embed-credit-link-text)</a>)',
-			'Sanity check'
+			'Sense check'
 		);
 
 		html = formatter.getCreditHtml( {
@@ -303,7 +303,7 @@
 		assert.strictEqual(
 			html,
 			'(multimediaviewer-html-embed-credit-text-bl: (multimediaviewer-credit: Author, Source), <a href="http://www.wtfpl.net/">WTFPL v2</a>, <a href="some link">(multimediaviewer-html-embed-credit-link-text)</a>)',
-			'Sanity check'
+			'Sense check'
 		);
 	} );
 }() );

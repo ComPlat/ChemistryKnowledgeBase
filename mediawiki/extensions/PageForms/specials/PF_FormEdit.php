@@ -87,13 +87,8 @@ class PFFormEdit extends UnlistedSpecialPage {
 
 		if ( $req->getCheck( 'wpSave' ) || $req->getCheck( 'wpPreview' ) || $req->getCheck( 'wpDiff' ) ) {
 			// If the page was submitted, form data should be
-			// complete => do not preload (unless it's a partial
-			// form).
-			if ( $req->getCheck( 'partial' ) ) {
-				$module->setOption( 'preload', true );
-			} else {
-				$module->setOption( 'preload', false );
-			}
+			// complete => do not preload
+			$module->setOption( 'preload', false );
 		} elseif ( !empty( $targetName ) && Title::newFromText( $targetName )->exists() ) {
 			// If target page exists, do not overwrite it with
 			// preload data; just preload the page's data.
@@ -129,7 +124,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 				foreach ( $resultData['errors'] as $error ) {
 					// FIXME: This should probably not be hard-coded to WARNING but put into a setting
 					if ( $error[ 'level' ] <= PFAutoeditAPI::WARNING ) {
-						$text .= Html::rawElement( 'p', [ 'class' => 'error' ], $error[ 'message' ] ) . "\n";
+						$text .= Html::rawElement( 'div', [ 'class' => 'error' ], $error[ 'message' ] ) . "\n";
 					}
 				}
 			}
@@ -168,7 +163,8 @@ class PFFormEdit extends UnlistedSpecialPage {
 			// "Creating ..." and "Create ...", respectively.
 			// Does this make any difference? Who knows.
 			$pageTitle = $this->msg( 'creating', $targetName )->text();
-		} elseif ( $result[ 'form' ] == '' ) { // FIXME: This looks weird; a simple else should be enough, right?
+		} elseif ( $result[ 'form' ] == '' ) {
+			// FIXME: The "elseif" looks weird; a simple else should be enough, right?
 			// Display error message if the form is not specified in the URL.
 			$text .= Html::element( 'p', [ 'class' => 'error' ], $this->msg( 'pf_formedit_badurl' )->text() ) . "\n";
 			$out->addHTML( $text );
@@ -193,7 +189,8 @@ class PFFormEdit extends UnlistedSpecialPage {
 		$text .= $pre_form_html;
 
 		$out->addHTML( $text );
-		$this->showCaptcha( $targetTitle ); // Should be before the closing </form> tag from $result
+		// This should be before the closing </form> tag from $result
+		$this->showCaptcha( $targetTitle );
 
 		if ( isset( $result[ 'formHTML' ] ) ) {
 			$out->addHTML( $result[ 'formHTML' ] );
@@ -208,11 +205,13 @@ class PFFormEdit extends UnlistedSpecialPage {
 	 */
 	protected function showCaptcha( $targetTitle ) {
 		if ( !method_exists( 'ConfirmEditHooks', 'getInstance' ) ) {
-			return; // No Extension:ConfirmEdit
+			// ConfirmEdit extension is not installed.
+			return;
 		}
 
 		if ( !$targetTitle ) {
-			return; // Not an edit form (target page is not yet selected)
+			// This is not an edit form (target page is not yet selected).
+			return;
 		}
 
 		$article = new Article( $targetTitle );

@@ -13,7 +13,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "antispam",
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.39.0"
 	},
 	"GroupPermissions": {
 		"*": {
@@ -41,10 +41,10 @@
 		}
 	},
 	"ExtensionFunctions": [
-		"ConfirmEditHooks::confirmEditSetup"
+		"MediaWiki\\Extension\\ConfirmEdit\\Hooks::confirmEditSetup"
 	],
 	"SpecialPages": {
-		"Captcha": "SpecialCaptcha"
+		"Captcha": "MediaWiki\\Extension\\ConfirmEdit\\Specials\\SpecialCaptcha"
 	},
 	"MessagesDirs": {
 		"ConfirmEdit": [
@@ -56,18 +56,18 @@
 		"ConfirmEditAlias": "ConfirmEdit.alias.php"
 	},
 	"AutoloadClasses": {
-		"ConfirmEditHooks": "includes/ConfirmEditHooks.php",
+		"CaptchaCacheStore": "includes/Store/CaptchaCacheStore.php",
+		"ConfirmEditHooks": "includes/Hooks.php",
+		"MediaWiki\\Extension\\ConfirmEdit\\Hooks": "includes/Hooks.php",
+		"MediaWiki\\Extension\\ConfirmEdit\\Store\\CaptchaCacheStore": "includes/Store/CaptchaCacheStore.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ConfirmEdit\\": "includes/",
+		"MediaWiki\\Extension\\ConfirmEdit\\SimpleCaptcha\\": "SimpleCaptcha/"
+	},
+	"TestAutoloadClasses": {
 		"HTMLFancyCaptchaField": "FancyCaptcha/includes/HTMLFancyCaptchaField.php",
 		"HTMLReCaptchaNoCaptchaField": "ReCaptchaNoCaptcha/includes/HTMLReCaptchaNoCaptchaField.php",
-		"SimpleCaptcha": "SimpleCaptcha/SimpleCaptcha.php",
-		"CaptchaStore": "includes/store/CaptchaStore.php",
-		"CaptchaSessionStore": "includes/store/CaptchaSessionStore.php",
-		"CaptchaCacheStore": "includes/store/CaptchaCacheStore.php",
-		"CaptchaHashStore": "includes/store/CaptchaHashStore.php",
-		"CaptchaTriggers": "includes/CaptchaTriggers.php",
-		"SpecialCaptcha": "includes/specials/SpecialCaptcha.php",
-		"CaptchaPreAuthenticationProvider": "includes/auth/CaptchaPreAuthenticationProvider.php",
-		"CaptchaAuthenticationRequest": "includes/auth/CaptchaAuthenticationRequest.php",
 		"ReCaptchaNoCaptchaAuthenticationRequest": "ReCaptchaNoCaptcha/includes/ReCaptchaNoCaptchaAuthenticationRequest.php"
 	},
 	"ResourceModules": {
@@ -97,23 +97,28 @@
 		"localBasePath": "resources",
 		"remoteExtPath": "ConfirmEdit/resources"
 	},
+	"HookHandlers": {
+		"ConfirmEditHooks": {
+			"class": "MediaWiki\\Extension\\ConfirmEdit\\Hooks"
+		}
+	},
 	"Hooks": {
-		"EditPageBeforeEditButtons": "ConfirmEditHooks::confirmEditPage",
-		"EmailUserForm": "ConfirmEditHooks::injectEmailUser",
-		"EmailUser": "ConfirmEditHooks::confirmEmailUser",
-		"PageSaveComplete": "ConfirmEditHooks::onPageSaveComplete",
-		"EditPage::showEditForm:fields": "ConfirmEditHooks::showEditFormFields",
-		"EditFilterMergedContent": "ConfirmEditHooks::confirmEditMerged",
-		"APIGetAllowedParams": "ConfirmEditHooks::onAPIGetAllowedParams",
-		"TitleReadWhitelist": "ConfirmEditHooks::onTitleReadWhitelist",
-		"AlternateEditPreview": "ConfirmEditHooks::onAlternateEditPreview",
-		"AuthChangeFormFields": "ConfirmEditHooks::onAuthChangeFormFields",
-		"ResourceLoaderRegisterModules": "ConfirmEditHooks::onResourceLoaderRegisterModules"
+		"EditPageBeforeEditButtons": "ConfirmEditHooks",
+		"EmailUserForm": "ConfirmEditHooks",
+		"EmailUser": "ConfirmEditHooks",
+		"PageSaveComplete": "ConfirmEditHooks",
+		"TitleReadWhitelist": "ConfirmEditHooks",
+		"AlternateEditPreview": "ConfirmEditHooks",
+		"ResourceLoaderRegisterModules": "ConfirmEditHooks",
+		"EditPage::showEditForm:fields": "MediaWiki\\Extension\\ConfirmEdit\\Hooks::showEditFormFields",
+		"EditFilterMergedContent": "MediaWiki\\Extension\\ConfirmEdit\\Hooks::confirmEditMerged",
+		"APIGetAllowedParams": "MediaWiki\\Extension\\ConfirmEdit\\Hooks::onAPIGetAllowedParams",
+		"AuthChangeFormFields": "MediaWiki\\Extension\\ConfirmEdit\\Hooks::onAuthChangeFormFields"
 	},
 	"AuthManagerAutoConfig": {
 		"preauth": {
 			"CaptchaPreAuthenticationProvider": {
-				"class": "CaptchaPreAuthenticationProvider",
+				"class": "MediaWiki\\Extension\\ConfirmEdit\\Auth\\CaptchaPreAuthenticationProvider",
 				"sort": 10
 			}
 		}
@@ -142,7 +147,7 @@
 			"merge_strategy": "array_plus_2d"
 		},
 		"CaptchaStorageClass": {
-			"value": "CaptchaSessionStore"
+			"value": "MediaWiki\\Extension\\ConfirmEdit\\Store\\CaptchaSessionStore"
 		},
 		"CaptchaSessionExpiration": {
 			"value": 1800

@@ -48,10 +48,10 @@ class UpdateDatabaseValueFormat extends Maintenance {
 		global $wgOATHAuthDatabase;
 		$lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory()
 			->getMainLB( $wgOATHAuthDatabase );
-		$dbw = $lb->getConnectionRef( DB_MASTER, [], $wgOATHAuthDatabase );
+		$dbw = $lb->getConnectionRef( DB_PRIMARY, [], $wgOATHAuthDatabase );
 
 		if ( !UpdateTables::convertToGenericFields( $dbw ) ) {
-			$this->error( "Failed to update the data structure rows.\n", 1 );
+			$this->fatalError( "Failed to update the data structure rows.\n" );
 		}
 		$this->output( "Done.\n" );
 	}

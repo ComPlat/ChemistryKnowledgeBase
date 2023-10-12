@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (C) 2018 Kunal Mehta <legoktm@member.fsf.org>
+ * Copyright (C) 2018 Kunal Mehta <legoktm@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,14 @@
 namespace MediaWiki\SecureLinkFixer;
 
 use Benchmarker;
+use MediaWiki\MediaWikiServices;
 use const RUN_MAINTENANCE_IF_MAIN;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
-require_once "$IP/maintenance/benchmarks/Benchmarker.php";
+require_once "$IP/maintenance/includes/Benchmarker.php";
 
 /**
  * Benchmark the current HSTSPreloadLookup implementation
@@ -36,10 +37,11 @@ class BenchLookup extends Benchmarker {
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( 'Benchmark for HSTSPreloadLookup' );
+		$this->requireExtension( 'SecureLinkFixer' );
 	}
 
 	public function execute() {
-		$lookup = HSTSPreloadLookup::getInstance();
+		$lookup = MediaWikiServices::getInstance()->getService( 'HSTSPreloadLookup' );
 		$domains = [
 			// Need to traverse up one domain to find it
 			'foobar.dev',

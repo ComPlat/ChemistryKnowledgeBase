@@ -1,11 +1,27 @@
 <?php
 
-class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
-	public $options, $loaded = false;
+namespace MediaWiki\Extension\Scribunto\Engines\LuaSandbox;
+
+use Html;
+use Language;
+use LuaSandbox;
+use MediaWiki\MediaWikiServices;
+use ParserOutput;
+use Scribunto_LuaEngine;
+use Scribunto_LuaInterpreterBadVersionError;
+use Scribunto_LuaInterpreterNotFoundError;
+use Title;
+
+class LuaSandboxEngine extends Scribunto_LuaEngine {
+	/** @var array */
+	public $options;
+	/** @var bool */
+	public $loaded = false;
+	/** @var array */
 	protected $lineCache = [];
 
 	/**
-	 * @var Scribunto_LuaSandboxInterpreter
+	 * @var LuaSandboxInterpreter
 	 */
 	protected $interpreter;
 
@@ -19,13 +35,14 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 	/** @inheritDoc */
 	public function getSoftwareInfo( array &$software ) {
 		try {
-			Scribunto_LuaSandboxInterpreter::checkLuaSandboxVersion();
+			LuaSandboxInterpreter::checkLuaSandboxVersion();
 		} catch ( Scribunto_LuaInterpreterNotFoundError $e ) {
 			// They shouldn't be using this engine if the extension isn't
 			// loaded. But in case they do for some reason, let's not have
 			// Special:Version fatal.
 			return;
 		} catch ( Scribunto_LuaInterpreterBadVersionError $e ) {
+			// @phan-suppress-previous-line PhanPluginDuplicateCatchStatementBody
 			// Same for if the extension is too old.
 			return;
 		}
@@ -79,13 +96,13 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 		}
 
 		$percentProfile = $this->interpreter->getProfilerFunctionReport(
-			Scribunto_LuaSandboxInterpreter::PERCENT
+			LuaSandboxInterpreter::PERCENT
 		);
 		if ( !count( $percentProfile ) ) {
 			return $ret;
 		}
 		$timeProfile = $this->interpreter->getProfilerFunctionReport(
-			Scribunto_LuaSandboxInterpreter::SECONDS
+			LuaSandboxInterpreter::SECONDS
 		);
 
 		$lines = [];
@@ -102,7 +119,8 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 						$name = $m[2] . ' ' . $name;
 					}
 				}
-				$lines[] = [ $name, sprintf( '%.0f', $time ), sprintf( '%.1f', $percent ) ];
+				$utf8Name = $this->fixTruncation( $name );
+				$lines[] = [ $utf8Name, sprintf( '%.0f', $time ), sprintf( '%.1f', $percent ) ];
 			} else {
 				$otherTime += $time;
 				$otherPercent += $percent;
@@ -116,36 +134,48 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 		return $ret;
 	}
 
-	/** @inheritDoc */
-	public function reportLimitData( ParserOutput $output ) {
-		$data = $this->getLimitReportData();
-		foreach ( $data as $k => $v ) {
-			$output->setLimitReportData( $k, $v );
-		}
-		if ( isset( $data['scribunto-limitreport-logs'] ) ) {
-			$output->addModules( 'ext.scribunto.logs' );
-		}
+	/**
+	 * Lua truncates symbols at 60 bytes, but this may create invalid UTF-8.
+	 *
+	 * MediaWiki has Language::normalize() but that's complex and seems like
+	 * overkill. A no-op iconv() with errors ignored does the job.
+	 *
+	 * @param string $s
+	 * @return string
+	 */
+	private function fixTruncation( $s ) {
+		$lang = Language::factory( 'en' );
+		return $lang->iconv( 'UTF-8', 'UTF-8', $s );
 	}
 
 	/** @inheritDoc */
+	public function reportLimitData( ParserOutput $parserOutput ) {
+		$data = $this->getLimitReportData();
+		foreach ( $data as $k => $v ) {
+			$parserOutput->setLimitReportData( $k, $v );
+		}
+		if ( isset( $data['scribunto-limitreport-logs'] ) ) {
+			$parserOutput->addModules( [ 'ext.scribunto.logs' ] );
+		}
+	}
+
+	/**
+	 * @inheritDoc
+	 * @suppress SecurityCheck-DoubleEscaped phan false positive
+	 */
 	public function formatLimitData( $key, &$value, &$report, $isHTML, $localize ) {
-		global $wgLang;
-		$lang = $localize ? $wgLang : Language::factory( 'en' );
 		switch ( $key ) {
 			case 'scribunto-limitreport-logs':
 				if ( $isHTML ) {
 					$report .= $this->formatHtmlLogs( $value, $localize );
 				}
 				return false;
-
-			case 'scribunto-limitreport-memusage':
-				$value = array_map( [ $lang, 'formatSize' ], $value );
-				break;
 		}
 
 		if ( $key !== 'scribunto-limitreport-profile' ) {
 			return true;
 		}
+		'@phan-var string[] $value';
 
 		$keyMsg = wfMessage( 'scribunto-limitreport-profile' );
 		$msMsg = wfMessage( 'scribunto-limitreport-profile-ms' );
@@ -168,6 +198,9 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 				Html::openElement( 'tr' ) .
 				Html::openElement( 'td', [ 'colspan' => 2 ] ) .
 				Html::openElement( 'table' );
+
+			$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
+
 			foreach ( $value as $line ) {
 				$name = $line[0];
 				$location = '';
@@ -175,7 +208,8 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 					$name = $m[1];
 					$title = Title::newFromText( $m[2] );
 					if ( $title && $title->hasContentModel( CONTENT_MODEL_SCRIBUNTO ) ) {
-						$location = '&lt;' . Linker::link( $title ) . ":{$m[3]}&gt;";
+						$location = '&lt;' .
+							$linkRenderer->makeLink( $title ) . ":{$m[3]}&gt;";
 					} else {
 						$location = htmlspecialchars( "<{$m[2]}:{$m[3]}>" );
 					}
@@ -221,6 +255,6 @@ class Scribunto_LuaSandboxEngine extends Scribunto_LuaEngine {
 	}
 
 	protected function newInterpreter() {
-		return new Scribunto_LuaSandboxInterpreter( $this, $this->options );
+		return new LuaSandboxInterpreter( $this, $this->options );
 	}
 }

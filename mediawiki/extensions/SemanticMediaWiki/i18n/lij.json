@@ -1,9 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Giromin Cangiaxo"
+			"Giromin Cangiaxo",
+			"N. Longo"
 		]
 	},
-	"browse": "Esplora o scito",
-	"smw-livepreview-loading": "Camallando…"
+	"browse": "Esplóra o scîto",
+	"smw-livepreview-loading": "Camallando…",
+	"smw-listingcontinuesabbrev": "cont.",
+	"smw-showingresults": "Chì appreuvo se mostra a-o mascimo {{PLURAL:$1|'''1''' risultou|'''$1''' risultæ}} a partî da-o nummero '''$2'''."
 }

@@ -3,7 +3,7 @@
 namespace SMW\SQLStore\Lookup;
 
 use Exception;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\DataValueFactory;
 use SMW\DIProperty;
 use SMW\PropertySpecificationLookup;
@@ -144,7 +144,7 @@ class PropertyLabelSimilarityLookup {
 		$similarities = $this->matchLabels( $propertyList, $withType );
 
 		usort( $similarities, function ( $a, $b ) {
-			return $a['similarity'] < $b['similarity'];
+			return $b['similarity'] <=> $a['similarity'];
 		} );
 
 		return $similarities;

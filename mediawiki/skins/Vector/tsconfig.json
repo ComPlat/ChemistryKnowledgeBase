@@ -1,5 +1,9 @@
 {
-	"exclude": ["docs", "vendor"],
+	"exclude": [
+		"docs",
+		"vendor",
+		"coverage"
+	],
 	"compilerOptions": {
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
@@ -9,9 +13,10 @@
 		"noImplicitReturns": true,
 		"newLine": "lf",
 		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
 		"pretty": true,
 		"target": "es5",
-		"lib": ["dom"],
+		"lib": [ "dom" ],
 		"allowJs": true,
 		"checkJs": true,
 		"noEmit": true

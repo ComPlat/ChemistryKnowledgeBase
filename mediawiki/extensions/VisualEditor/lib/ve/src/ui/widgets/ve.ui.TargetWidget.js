@@ -83,6 +83,12 @@ OO.mixinClass( ve.ui.TargetWidget, OO.ui.mixin.PendingElement );
  */
 
 /**
+ * The target's surface has been cancelled, e.g. Escape
+ *
+ * @event cancel
+ */
+
+/**
  * A document has been attached to the target, and a toolbar and surface created.
  *
  * @event setup
@@ -91,13 +97,12 @@ OO.mixinClass( ve.ui.TargetWidget, OO.ui.mixin.PendingElement );
 /**
  * Create the target for this widget to use
  *
- * @return {ve.init.Target} Target
+ * @return {ve.init.Target}
  */
 ve.ui.TargetWidget.prototype.createTarget = function () {
 	return new ve.init.Target( {
 		register: false,
 		toolbarGroups: this.toolbarGroups,
-		inTargetWidget: true,
 		modes: this.modes,
 		defaultMode: this.defaultMode
 	} );
@@ -108,13 +113,12 @@ ve.ui.TargetWidget.prototype.createTarget = function () {
  *
  * This replaces the entire surface in the target.
  *
- * @param {ve.dm.Document} doc Document
+ * @param {ve.dm.Document} doc
  */
 ve.ui.TargetWidget.prototype.setDocument = function ( doc ) {
-	var surface;
 	// Destroy the previous surface
 	this.clear();
-	surface = this.target.addSurface( doc, {
+	var surface = this.target.addSurface( doc, {
 		inTargetWidget: true,
 		includeCommands: this.includeCommands,
 		excludeCommands: this.excludeCommands,
@@ -122,20 +126,61 @@ ve.ui.TargetWidget.prototype.setDocument = function ( doc ) {
 		multiline: this.multiline,
 		placeholder: this.placeholder,
 		readOnly: this.readOnly,
+		// Reduce from default 10 so inspector callouts are positioned correctly
+		overlayPadding: 5,
 		inDialog: this.inDialog
 	} );
 	this.target.setSurface( surface );
 
 	// Events
-	this.getSurface().getView().connect( this, {
+	surface.getView().connect( this, {
+		activation: 'onFocusChange',
 		focus: 'onFocusChange',
 		blur: 'onFocusChange'
 	} );
 	// Rethrow as target events so users don't have to re-bind when the surface is changed
-	this.getSurface().getModel().connect( this, { history: [ 'emit', 'change' ] } );
-	this.getSurface().connect( this, { submit: [ 'emit', 'submit' ] } );
+	surface.getModel().connect( this, { history: [ 'emit', 'change' ] } );
+	surface.connect( this, {
+		submit: 'onSurfaceSubmit',
+		cancel: 'onSurfaceCancel'
+	} );
+	// Emit 'position' on first focus, as target widgets are often setup before being made visible. (T303795)
+	surface.getView().once( 'focus', function () {
+		surface.getView().emit( 'position' );
+	} );
 
 	this.emit( 'setup' );
+};
+
+/**
+ * Handle surface submit events
+ *
+ * @fires submit
+ */
+ve.ui.TargetWidget.prototype.onSurfaceSubmit = function () {
+	var handled = this.emit( 'submit' );
+	if ( !handled && this.inDialog ) {
+		// If we are in a dialog, re-throw a fake keydown event for OO.ui.Dialog#onDialogKeyDown
+		this.$element.parent().trigger( $.Event( 'keydown', {
+			which: OO.ui.Keys.ENTER,
+			ctrlKey: true
+		} ) );
+	}
+};
+
+/**
+ * Handle surface cancel events
+ *
+ * @fires cancel
+ */
+ve.ui.TargetWidget.prototype.onSurfaceCancel = function () {
+	var handled = this.emit( 'cancel' );
+	if ( !handled && this.inDialog ) {
+		// If we are in a dialog, re-throw a fake keydown event for OO.ui.Dialog#onDialogKeyDown
+		this.$element.parent().trigger( $.Event( 'keydown', {
+			which: OO.ui.Keys.ESCAPE
+		} ) );
+	}
 };
 
 /**
@@ -172,7 +217,7 @@ ve.ui.TargetWidget.prototype.isReadOnly = function () {
 /**
  * Get surface.
  *
- * @return {ve.ui.Surface|null} Surface
+ * @return {ve.ui.Surface|null}
  */
 ve.ui.TargetWidget.prototype.getSurface = function () {
 	return this.target.getSurface();
@@ -181,7 +226,7 @@ ve.ui.TargetWidget.prototype.getSurface = function () {
 /**
  * Get toolbar.
  *
- * @return {OO.ui.Toolbar} Toolbar
+ * @return {OO.ui.Toolbar}
  */
 ve.ui.TargetWidget.prototype.getToolbar = function () {
 	return this.target.getToolbar();
@@ -223,7 +268,10 @@ ve.ui.TargetWidget.prototype.onFocusChange = function () {
 	var surface = this.getSurface();
 	// Replacement for the :focus pseudo selector one would be able to
 	// use on a regular input widget
-	this.$element.toggleClass( 've-ui-targetWidget-focused', surface && surface.getView().isFocused() );
+	this.$element.toggleClass(
+		've-ui-targetWidget-focused',
+		surface && surface.getView().isFocused() && !surface.getView().isDeactivated()
+	);
 };
 
 /**

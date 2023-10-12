@@ -19,7 +19,7 @@
  */
 ve.init.mw.CollabTarget = function VeInitMwCollabTarget( title, rebaserUrl, config ) {
 	config = config || {};
-	config.toolbarConfig = $.extend( {
+	config.toolbarConfig = ve.extendObject( {
 		shadow: true,
 		actions: true,
 		floatable: true
@@ -107,6 +107,14 @@ ve.init.mw.CollabTarget.prototype.getSurfaceConfig = function ( config ) {
 };
 
 /**
+ * @inheritdoc
+ */
+ve.init.mw.CollabTarget.prototype.getSurfaceClasses = function () {
+	var classes = ve.init.mw.CollabTarget.super.prototype.getSurfaceClasses.call( this );
+	return classes.concat( [ 'mw-body-content' ] );
+};
+
+/**
  * Page modifications after editor load.
  */
 ve.init.mw.CollabTarget.prototype.transformPage = function () {
@@ -116,6 +124,13 @@ ve.init.mw.CollabTarget.prototype.transformPage = function () {
  * Page modifications after editor teardown.
  */
 ve.init.mw.CollabTarget.prototype.restorePage = function () {
+};
+
+/**
+ * MWBackTool calls tryTeardown
+ */
+ve.init.mw.CollabTarget.prototype.tryTeardown = function () {
+	this.emit( 'close' );
 };
 
 /**
@@ -157,7 +172,7 @@ ve.ui.MWExportTool.static.group = 'export';
 ve.ui.MWExportTool.static.autoAddToCatchall = false;
 ve.ui.MWExportTool.static.flags = [ 'progressive', 'primary' ];
 ve.ui.MWExportTool.static.title =
-	OO.ui.deferMsg( 'visualeditor-rebase-client-export' );
+	OO.ui.deferMsg( 'visualeditor-rebase-client-export-start' );
 ve.ui.MWExportTool.static.commandName = 'mwExportWikitext';
 ve.ui.toolFactory.register( ve.ui.MWExportTool );
 

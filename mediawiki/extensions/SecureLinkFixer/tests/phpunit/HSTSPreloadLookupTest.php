@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (C) 2018 Kunal Mehta <legoktm@member.fsf.org>
+ * Copyright (C) 2018 Kunal Mehta <legoktm@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,20 @@
 namespace MediaWiki\SecureLinkFixer\Test;
 
 use MediaWiki\SecureLinkFixer\HSTSPreloadLookup;
-use MediaWikiTestCase;
+use MediaWikiIntegrationTestCase;
+use Wikimedia\TestingAccessWrapper;
 
 /**
  * @covers \MediaWiki\SecureLinkFixer\HSTSPreloadLookup
  */
-class HSTSPreloadLookupTest extends MediaWikiTestCase {
+class HSTSPreloadLookupTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider provideIsPreloaded
 	 */
 	public function testIsPreloaded( $host, $expected ) {
-		$lookup = new HSTSPreloadLookup( [
+		$lookup = new HSTSPreloadLookup( 'dummy' );
+		TestingAccessWrapper::newFromObject( $lookup )->domains = [
 			// TLD
 			'foobar' => 1,
 			'secure-example.org' => 1,
@@ -38,7 +40,7 @@ class HSTSPreloadLookupTest extends MediaWikiTestCase {
 			'insecure-subdomains-example.org' => 0,
 			// Subdomain is secure, root domain isn't
 			'secure.insecure-example.org' => 1,
-		] );
+		];
 		$this->assertSame( $expected, $lookup->isPreloaded( $host ) );
 	}
 
@@ -52,6 +54,7 @@ class HSTSPreloadLookupTest extends MediaWikiTestCase {
 			[ 'secure.insecure-example.org', true ],
 			[ 'insecure-example.org', false ],
 			[ 'not-preloaded.org', false ],
+			[ 'pathological.case.that.is.not.preloaded.org', false ],
 		];
 	}
 }

@@ -5,6 +5,9 @@ namespace MediaWiki\ResourceLoader\Hook;
 use Config;
 
 /**
+ * This is a hook handler interface, see docs/Hooks.md.
+ * Use the hook name "ResourceLoaderGetConfigVars" to register handlers implementing this interface.
+ *
  * @stable to implement
  * @ingroup ResourceLoaderHooks
  */
@@ -24,5 +27,5 @@ interface ResourceLoaderGetConfigVarsHook {
 	 * @param Config $config since 1.34
 	 * @return void This hook must not abort, it must return no value
 	 */
-	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ) : void;
+	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ): void;
 }

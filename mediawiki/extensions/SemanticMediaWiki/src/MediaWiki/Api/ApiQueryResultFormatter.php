@@ -34,6 +34,14 @@ class ApiQueryResultFormatter {
 	protected $isRawMode = false;
 
 	/**
+	 *
+	 * @var SMWQueryResult
+	 */
+	protected $queryResult = null;
+
+	protected array $result;
+
+	/**
 	 * @since 1.9
 	 *
 	 * @param SMWQueryResult $queryResult
@@ -175,7 +183,7 @@ class ApiQueryResultFormatter {
 	 *
 	 * @return array
 	 */
-	protected function formatErrors( array $errors ) {
+	protected function formatErrors( array $errors ): array {
 
 		$this->type      = 'error';
 		$result['query'] = $errors;

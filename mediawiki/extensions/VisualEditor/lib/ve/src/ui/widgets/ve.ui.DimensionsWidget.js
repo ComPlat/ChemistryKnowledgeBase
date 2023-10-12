@@ -18,8 +18,6 @@
  * @cfg {boolean} [readOnly=false] Prevent changes to the value of the widget.
  */
 ve.ui.DimensionsWidget = function VeUiDimensionsWidget( config ) {
-	var labelTimes, labelPx;
-
 	// Configuration
 	config = config || {};
 
@@ -29,18 +27,20 @@ ve.ui.DimensionsWidget = function VeUiDimensionsWidget( config ) {
 	this.widthInput = new OO.ui.TextInputWidget( {
 		validate: config.validate || $.isNumeric
 	} );
+	this.widthInput.$input.attr( 'aria-label', ve.msg( 'visualeditor-dimensionswidget-width' ) );
 	this.heightInput = new OO.ui.TextInputWidget( {
 		validate: config.validate || $.isNumeric
 	} );
+	this.heightInput.$input.attr( 'aria-label', ve.msg( 'visualeditor-dimensionswidget-height' ) );
 
 	this.defaults = config.defaults || { width: '', height: '' };
 	this.setReadOnly( !!config.readOnly );
 	this.renderDefaults();
 
-	labelTimes = new OO.ui.LabelWidget( {
+	var labelTimes = new OO.ui.LabelWidget( {
 		label: ve.msg( 'visualeditor-dimensionswidget-times' )
 	} );
-	labelPx = new OO.ui.LabelWidget( {
+	var labelPx = new OO.ui.LabelWidget( {
 		label: ve.msg( 'visualeditor-dimensionswidget-px' )
 	} );
 

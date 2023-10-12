@@ -36,7 +36,7 @@ $specialPageAliases['as'] = [
 
 /** Avaric (авар) */
 $specialPageAliases['av'] = [
-	'Gadgets' => [ 'Гаджеты' ],
+	'Gadgets' => [ 'Гаджетал', 'Гаджеты' ],
 ];
 
 /** Bulgarian (български) */
@@ -211,6 +211,7 @@ $specialPageAliases['ja'] = [
 /** Korean (한국어) */
 $specialPageAliases['ko'] = [
 	'Gadgets' => [ '소도구', '가젯' ],
+	'GadgetUsage' => [ '소도구사용량' ],
 ];
 
 /** Ladino (Ladino) */
@@ -258,6 +259,12 @@ $specialPageAliases['mt'] = [
 	'Gadgets' => [ 'Aġġeġġi', 'Aċċessorji' ],
 ];
 
+/** Burmese (မြန်မာဘာသာ) */
+$specialPageAliases['my'] = [
+	'Gadgets' => [ 'ကိရိယာငယ်များ' ],
+	'GadgetUsage' => [ 'ကိရိယာငယ်အသုံးပြုမှု' ],
+];
+
 /** Neapolitan (napulitano) */
 $specialPageAliases['nap'] = [
 	'Gadgets' => [ 'Pazzielle' ],
@@ -297,6 +304,7 @@ $specialPageAliases['pa'] = [
 /** Polish (polski) */
 $specialPageAliases['pl'] = [
 	'Gadgets' => [ 'Gadżety' ],
+	'GadgetUsage' => [ 'Użycie_gadżetów', 'Statystyki_gadżetów' ],
 ];
 
 /** Romanian (română) */
@@ -347,13 +355,13 @@ $specialPageAliases['sl'] = [
 	'Gadgets' => [ 'Vtičniki', 'Vticniki' ],
 ];
 
-/** Serbian (Cyrillic script) (српски (ћирилица)‎) */
+/** Serbian (Cyrillic script) (српски (ћирилица)) */
 $specialPageAliases['sr-ec'] = [
 	'Gadgets' => [ 'Справице', 'Гаџети', 'Геџети' ],
 	'GadgetUsage' => [ 'УпотребаСправица', 'УпотребаГаџета', 'УпотребаГеџета' ],
 ];
 
-/** Serbian (Latin script) (srpski (latinica)‎) */
+/** Serbian (Latin script) (srpski (latinica)) */
 $specialPageAliases['sr-el'] = [
 	'Gadgets' => [ 'Spravice', 'Gadžeti', 'Gedžeti' ],
 	'GadgetUsage' => [ 'UpotrebaSpravica', 'UpotrebaGadžeta', 'UpotrebaGedžeta' ],
@@ -410,12 +418,12 @@ $specialPageAliases['zh'] = [
 	'Gadgets' => [ '小工具' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'Gadgets' => [ '小工具' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'Gadgets' => [ '小工具' ],
 ];

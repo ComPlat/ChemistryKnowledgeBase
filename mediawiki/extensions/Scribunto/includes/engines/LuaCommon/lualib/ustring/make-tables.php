@@ -7,7 +7,8 @@ if ( PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' ) {
 
 $chars = [];
 for ( $i = 0; $i <= 0x10ffff; $i++ ) {
-	if ( $i < 0xd800 || $i > 0xdfff ) { // Skip UTF-16 surrogates
+	// Skip UTF-16 surrogates
+	if ( $i < 0xd800 || $i > 0xdfff ) {
 		$chars[$i] = mb_convert_encoding( pack( 'N', $i ), 'UTF-8', 'UTF-32BE' );
 	}
 }
@@ -56,15 +57,21 @@ $pats = [
 	'p' => [ '\p{P}', null ],
 	's' => [ '\p{Xps}', null ],
 	'u' => [ '\p{Lu}', null ],
-	'w' => [ null, 'da' ], # '[\p{L}\p{Nd}]' exactly matches 'a' + 'd'
+	# '[\p{L}\p{Nd}]' exactly matches 'a' + 'd'
+	'w' => [ null, 'da' ],
 	'x' => [ '[0-9A-Fa-f０-９Ａ-Ｆａ-ｆ]', null ],
 	'z' => [ '\0', null ],
 ];
 
 $ranges = [];
-// @codingStandardsIgnoreLine MediaWiki.NamingConventions.PrefixedGlobalFunctions
-function addRange( $k, $start, $end ) {
-	// @codingStandardsIgnoreLine MediaWiki.NamingConventions.ValidGlobalName
+
+/**
+ * @param string $k
+ * @param int $start
+ * @param int $end
+ */
+function addRange( $k, $start, $end ) { // phpcs:ignore MediaWiki.NamingConventions.PrefixedGlobalFunctions
+	// phpcs:ignore MediaWiki.NamingConventions.ValidGlobalName
 	global $fh, $ranges;
 	// Speed/memory tradeoff
 	if ( !( $start >= 0x20 && $start < 0x7f ) && $end - $start >= 10 ) {
@@ -102,11 +109,9 @@ foreach ( $pats as $k => $pp ) {
 			if ( $rstart === null ) {
 				$rstart = $i;
 			}
-		} else {
-			if ( $rstart !== null ) {
-				addRange( $k, $rstart, $i );
-				$rstart = null;
-			}
+		} elseif ( $rstart !== null ) {
+			addRange( $k, $rstart, $i );
+			$rstart = null;
 		}
 	}
 	if ( $rstart !== null ) {

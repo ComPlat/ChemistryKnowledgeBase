@@ -3,9 +3,10 @@
 namespace SMW\MediaWiki;
 
 use Language;
+use MediaWiki\Revision\RevisionRecord;
 use Parser;
-use Revision;
-use SMW\ApplicationFactory;
+use RequestContext;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\MediaWiki\Connection\LoadBalancerConnectionProvider;
 use SMW\MediaWiki\Connection\ConnectionProvider;
 use SMW\MediaWiki\Renderer\HtmlColumnListRenderer;
@@ -160,17 +161,25 @@ class MwCollaboratorFactory {
 	/**
 	 * @since 2.0
 	 *
-	 * @param WikiPage $wkiPage
-	 * @param Revision|null $revision
-	 * @param User|null $user
+	 * @param WikiPage $wikiPage
+	 * @param ?RevisionRecord $revision
+	 * @param ?User $user
 	 *
 	 * @return PageInfoProvider
 	 */
-	public function newPageInfoProvider( WikiPage $wkiPage, Revision $revision = null, User $user = null ) {
-		$pageInfoProvider = new PageInfoProvider( $wkiPage, $revision, $user );
+	public function newPageInfoProvider(
+		WikiPage $wikiPage,
+		?RevisionRecord $revision = null,
+		?User $user = null
+	) {
+		$pageInfoProvider = new PageInfoProvider( $wikiPage, $revision, $user );
 
 		$pageInfoProvider->setRevisionGuard(
 			$this->applicationFactory->singleton( 'RevisionGuard' )
+		);
+
+		$pageInfoProvider->setRevisionLookup(
+			$this->applicationFactory->singleton( 'RevisionLookup' )
 		);
 
 		return $pageInfoProvider;
@@ -180,28 +189,39 @@ class MwCollaboratorFactory {
 	 * @deprecated since 3.1
 	 * @since 2.5
 	 *
-	 * @param WikiPage $wkiPage
-	 * @param Revision $revision
-	 * @param User|null $user
+	 * @param WikiPage $wikiPage
+	 * @param RevisionRecord $revision
+	 * @param ?User $user
 	 *
 	 * @return EditInfo
 	 */
-	public function newEditInfoProvider( WikiPage $wkiPage, Revision $revision, User $user = null ) {
-		return $this->newEditInfo( $wkiPage, $revision, $user );
+	public function newEditInfoProvider(
+		WikiPage $wikiPage,
+		RevisionRecord $revision,
+		?User $user = null
+	) {
+		return $this->newEditInfo( $wikiPage, $revision, $user );
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param WikiPage $wkiPage
-	 * @param Revision $revision
-	 * @param User|null $user
+	 * @param WikiPage $wikiPage
+	 * @param ?RevisionRecord $revision
+	 * @param ?User $user
 	 *
 	 * @return EditInfo
 	 */
-	public function newEditInfo( WikiPage $wkiPage, Revision $revision = null, User $user = null ) {
+	public function newEditInfo(
+		WikiPage $wikiPage,
+		?RevisionRecord $revision = null,
+		?User $user = null
+	) {
+		if ( $user === null ) {
+			$user = RequestContext::getMain()->getUser();
+		}
 
-		$editInfo = new EditInfo( $wkiPage, $revision, $user );
+		$editInfo = new EditInfo( $wikiPage, $revision, $user );
 
 		$editInfo->setRevisionGuard(
 			$this->applicationFactory->singleton( 'RevisionGuard' )

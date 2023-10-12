@@ -4,7 +4,7 @@ namespace SMW\Factbox;
 
 use IContextSource;
 use OutputPage;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use Title;
 use ParserOutput;
 
@@ -38,7 +38,8 @@ class FactboxFactory {
 		$settings = $applicationFactory->getSettings();
 
 		$cachedFactbox = new CachedFactbox(
-			$applicationFactory->getEntityCache()
+			$applicationFactory->getEntityCache(),
+			$applicationFactory->getFactboxText()
 		);
 
 		// Month = 30 * 24 * 3600
@@ -62,10 +63,6 @@ class FactboxFactory {
 
 		$cachedFactbox->setLogger(
 			$applicationFactory->getMediaWikiLogger()
-		);
-
-		$cachedFactbox->setRevisionGuard(
-			$applicationFactory->singleton( 'RevisionGuard' )
 		);
 
 		return $cachedFactbox;

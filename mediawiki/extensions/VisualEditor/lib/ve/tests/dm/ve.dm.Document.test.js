@@ -9,8 +9,7 @@ QUnit.module( 've.dm.Document' );
 /* Tests */
 
 QUnit.test( 'constructor', function ( assert ) {
-	var data, htmlDoc,
-		doc = ve.dm.example.createExampleDocument();
+	var doc = ve.dm.example.createExampleDocument();
 
 	assert.equalNodeTree( doc.getDocumentNode(), ve.dm.example.tree, 'node tree matches example data' );
 	assert.throws(
@@ -73,11 +72,11 @@ QUnit.test( 'constructor', function ( assert ) {
 	assert.strictEqual( doc.getMetadata().join( ',' ), ',,,', 'Empty metadata array' );
 	assert.strictEqual( doc.getHtmlDocument().body.innerHTML, '', 'Empty HTML document is created' );
 
-	htmlDoc = ve.createDocumentFromHtml( 'abcd' );
+	var htmlDoc = ve.createDocumentFromHtml( 'abcd' );
 	doc = new ve.dm.Document( [ 'a', 'b', 'c', 'd' ], htmlDoc );
 	assert.strictEqual( doc.getHtmlDocument(), htmlDoc, 'Provided HTML document is used' );
 
-	data = new ve.dm.ElementLinearData(
+	var data = new ve.dm.ElementLinearData(
 		new ve.dm.HashValueStore(),
 		[ { type: 'paragraph' }, { type: '/paragraph' } ]
 	);
@@ -91,18 +90,16 @@ QUnit.test( 'constructor', function ( assert ) {
 } );
 
 QUnit.test( 'newBlankDocument', function ( assert ) {
-	var doc;
+	var doc = ve.dm.Document.static.newBlankDocument();
 
-	doc = ve.dm.Document.static.newBlankDocument();
-
-	assert.strictEqual( doc instanceof ve.dm.Document, true, 'newBlankDocument creates a document' );
+	assert.true( doc instanceof ve.dm.Document, 'newBlankDocument creates a document' );
 	assert.strictEqual( doc.data.data[ 0 ].internal.generated, 'empty', 'Creates an "empty" paragraph with no args' );
 
 	doc = ve.dm.Document.static.newBlankDocument( 'wrapper' );
 	assert.strictEqual( doc.data.data[ 0 ].internal.generated, 'wrapper', 'Creates an "wrapper" paragraph when requested' );
 
 	doc = ve.dm.Document.static.newBlankDocument( null );
-	assert.strictEqual( 'internal' in doc.data.data[ 0 ], false, 'Creates an regular paragraph with null' );
+	assert.false( 'internal' in doc.data.data[ 0 ], 'Creates an regular paragraph with null' );
 } );
 
 QUnit.test( 'getData', function ( assert ) {
@@ -117,7 +114,7 @@ QUnit.test( 'getFullData', function ( assert ) {
 } );
 
 QUnit.test( 'cloneFromRange', function ( assert ) {
-	var i, doc2, doc = ve.dm.example.createExampleDocument( 'internalData' ),
+	var doc = ve.dm.example.createExampleDocument( 'internalData' ),
 		cases = [
 			{
 				msg: 'range undefined',
@@ -151,23 +148,24 @@ QUnit.test( 'cloneFromRange', function ( assert ) {
 			}
 		];
 
-	for ( i = 0; i < cases.length; i++ ) {
-		doc = ve.dm.example.createExampleDocument( cases[ i ].doc );
-		doc2 = doc.cloneFromRange( cases[ i ].range );
-		assert.deepEqual( doc2.data.data, cases[ i ].expectedData,
-			cases[ i ].msg + ': sliced data' );
-		assert.notStrictEqual( doc2.data[ 0 ], cases[ i ].expectedData[ 0 ],
-			cases[ i ].msg + ': data is cloned, not the same' );
-		assert.deepEqual( doc2.store, doc.store,
-			cases[ i ].msg + ': store is copied' );
-		assert.notStrictEqual( doc2.store, doc.store,
-			cases[ i ].msg + ': store is a clone, not the same' );
-	}
+	cases.forEach( function ( caseItem ) {
+		var doc1 = ve.dm.example.createExampleDocument( caseItem.doc ),
+			doc2 = doc1.cloneFromRange( caseItem.range );
+		assert.deepEqual( doc2.data.data, caseItem.expectedData,
+			caseItem.msg + ': sliced data' );
+		assert.notStrictEqual( doc2.data[ 0 ], caseItem.expectedData[ 0 ],
+			caseItem.msg + ': data is cloned, not the same' );
+		assert.deepEqual( doc2.store, doc1.store,
+			caseItem.msg + ': store is copied' );
+		assert.notStrictEqual( doc2.store, doc1.store,
+			caseItem.msg + ': store is a clone, not the same' );
+		assert.strictEqual( doc2.getStorage(), doc1.getStorage(),
+			caseItem.msg + ': persistentStorage is copied' );
+	} );
 } );
 
 QUnit.test( 'getRelativeOffset', function ( assert ) {
-	var i, j,
-		documentModel = ve.dm.example.createExampleDocument( 'alienData' ),
+	var documentModel = ve.dm.example.createExampleDocument( 'alienData' ),
 		tests = [
 			{
 				direction: 1,
@@ -222,213 +220,211 @@ QUnit.test( 'getRelativeOffset', function ( assert ) {
 				]
 			}
 		];
-	for ( i = 0; i < tests.length; i++ ) {
-		for ( j = 0; j < tests[ i ].cases.length; j++ ) {
+	tests.forEach( function ( testItem ) {
+		testItem.cases.forEach( function ( caseItem ) {
 			assert.strictEqual(
 				documentModel.getRelativeOffset(
-					tests[ i ].cases[ j ].input,
-					tests[ i ].direction,
-					tests[ i ].unit
+					caseItem.input,
+					testItem.direction,
+					testItem.unit
 				),
-				tests[ i ].cases[ j ].output,
-				tests[ i ].cases[ j ].input + ', ' + tests[ i ].direction + ', ' + tests[ i ].unit
+				caseItem.output,
+				caseItem.input + ', ' + testItem.direction + ', ' + testItem.unit
 			);
-		}
-	}
+		} );
+	} );
 } );
 
 QUnit.test( 'getRelativeRange', function ( assert ) {
-	var documentModel, i, j,
-		tests = [
-			{
-				data: [
-					{ type: 'paragraph' }, // 0
-					'a', // 1
-					{ type: 'alienInline' }, // 2
-					{ type: '/alienInline' }, // 3
-					'b', // 4
-					{ type: '/paragraph' } // 5
-				],
-				cases: [
-					{
-						direction: 1,
-						given: new ve.Range( 1 ),
-						expected: new ve.Range( 2 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 2 ),
-						expected: new ve.Range( 2, 4 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 2, 4 ),
-						expected: new ve.Range( 4 )
-					},
+	var tests = [
+		{
+			data: [
+				{ type: 'paragraph' }, // 0
+				'a', // 1
+				{ type: 'alienInline' }, // 2
+				{ type: '/alienInline' }, // 3
+				'b', // 4
+				{ type: '/paragraph' } // 5
+			],
+			cases: [
+				{
+					direction: 1,
+					given: new ve.Range( 1 ),
+					expected: new ve.Range( 2 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 2 ),
+					expected: new ve.Range( 2, 4 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 2, 4 ),
+					expected: new ve.Range( 4 )
+				},
 
-					{
-						direction: 1,
-						expand: true,
-						given: new ve.Range( 1 ),
-						expected: new ve.Range( 1, 2 )
-					},
-					{
-						direction: 1,
-						expand: true,
-						given: new ve.Range( 1, 2 ),
-						expected: new ve.Range( 1, 4 )
-					},
-					{
-						direction: 1,
-						expand: true,
-						given: new ve.Range( 1, 4 ),
-						expected: new ve.Range( 1, 5 )
-					}
-				]
-			},
-			{
-				data: [
-					{ type: 'paragraph' }, // 0
-					{ type: 'alienInline' }, // 1
-					{ type: '/alienInline' }, // 2
-					{ type: 'alienInline' }, // 3
-					{ type: '/alienInline' }, // 4
-					{ type: '/paragraph' } // 5
-				],
-				cases: [
-					{
-						direction: 1,
-						given: new ve.Range( 3 ),
-						expected: new ve.Range( 3, 5 )
-					},
-					{
-						direction: 1,
-						expand: true,
-						given: new ve.Range( 1, 3 ),
-						expected: new ve.Range( 1, 5 )
-					},
-					{
-						direction: -1,
-						expand: true,
-						given: new ve.Range( 1, 5 ),
-						expected: new ve.Range( 1, 3 )
-					},
-					{
-						direction: 1,
-						expand: true,
-						given: new ve.Range( 5, 1 ),
-						expected: new ve.Range( 5, 3 )
-					}
-				]
-			},
-			{
-				data: ve.copy( ve.dm.example.alienData ),
-				cases: [
-					{
-						direction: 1,
-						given: new ve.Range( 0 ),
-						expected: new ve.Range( 0, 2 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 0, 2 ),
-						expected: new ve.Range( 3 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 3 ),
-						expected: new ve.Range( 4 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 4 ),
-						expected: new ve.Range( 4, 6 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 4, 6 ),
-						expected: new ve.Range( 6 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 6 ),
-						expected: new ve.Range( 7 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 7 ),
-						expected: new ve.Range( 8, 10 )
-					},
-					{
-						direction: 1,
-						given: new ve.Range( 10 ),
-						expected: new ve.Range( 10 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 10 ),
-						expected: new ve.Range( 10, 8 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 10, 8 ),
-						expected: new ve.Range( 7 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 7 ),
-						expected: new ve.Range( 6 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 6 ),
-						expected: new ve.Range( 6, 4 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 6, 4 ),
-						expected: new ve.Range( 4 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 4 ),
-						expected: new ve.Range( 3 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 3 ),
-						expected: new ve.Range( 2, 0 )
-					},
-					{
-						direction: -1,
-						given: new ve.Range( 2, 0 ),
-						expected: new ve.Range( 0 )
-					}
-				]
-			}
-		];
-	for ( i = 0; i < tests.length; i++ ) {
-		documentModel = new ve.dm.Document( tests[ i ].data );
-		for ( j = 0; j < tests[ i ].cases.length; j++ ) {
+				{
+					direction: 1,
+					expand: true,
+					given: new ve.Range( 1 ),
+					expected: new ve.Range( 1, 2 )
+				},
+				{
+					direction: 1,
+					expand: true,
+					given: new ve.Range( 1, 2 ),
+					expected: new ve.Range( 1, 4 )
+				},
+				{
+					direction: 1,
+					expand: true,
+					given: new ve.Range( 1, 4 ),
+					expected: new ve.Range( 1, 5 )
+				}
+			]
+		},
+		{
+			data: [
+				{ type: 'paragraph' }, // 0
+				{ type: 'alienInline' }, // 1
+				{ type: '/alienInline' }, // 2
+				{ type: 'alienInline' }, // 3
+				{ type: '/alienInline' }, // 4
+				{ type: '/paragraph' } // 5
+			],
+			cases: [
+				{
+					direction: 1,
+					given: new ve.Range( 3 ),
+					expected: new ve.Range( 3, 5 )
+				},
+				{
+					direction: 1,
+					expand: true,
+					given: new ve.Range( 1, 3 ),
+					expected: new ve.Range( 1, 5 )
+				},
+				{
+					direction: -1,
+					expand: true,
+					given: new ve.Range( 1, 5 ),
+					expected: new ve.Range( 1, 3 )
+				},
+				{
+					direction: 1,
+					expand: true,
+					given: new ve.Range( 5, 1 ),
+					expected: new ve.Range( 5, 3 )
+				}
+			]
+		},
+		{
+			data: ve.copy( ve.dm.example.alienData ),
+			cases: [
+				{
+					direction: 1,
+					given: new ve.Range( 0 ),
+					expected: new ve.Range( 0, 2 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 0, 2 ),
+					expected: new ve.Range( 3 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 3 ),
+					expected: new ve.Range( 4 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 4 ),
+					expected: new ve.Range( 4, 6 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 4, 6 ),
+					expected: new ve.Range( 6 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 6 ),
+					expected: new ve.Range( 7 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 7 ),
+					expected: new ve.Range( 8, 10 )
+				},
+				{
+					direction: 1,
+					given: new ve.Range( 10 ),
+					expected: new ve.Range( 10 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 10 ),
+					expected: new ve.Range( 10, 8 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 10, 8 ),
+					expected: new ve.Range( 7 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 7 ),
+					expected: new ve.Range( 6 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 6 ),
+					expected: new ve.Range( 6, 4 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 6, 4 ),
+					expected: new ve.Range( 4 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 4 ),
+					expected: new ve.Range( 3 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 3 ),
+					expected: new ve.Range( 2, 0 )
+				},
+				{
+					direction: -1,
+					given: new ve.Range( 2, 0 ),
+					expected: new ve.Range( 0 )
+				}
+			]
+		}
+	];
+	tests.forEach( function ( testItem, i ) {
+		var documentModel = new ve.dm.Document( testItem.data );
+		testItem.cases.forEach( function ( caseItem ) {
 			assert.equalRange(
 				documentModel.getRelativeRange(
-					tests[ i ].cases[ j ].given,
-					tests[ i ].cases[ j ].direction,
+					caseItem.given,
+					caseItem.direction,
 					'character',
-					!!tests[ i ].cases[ j ].expand
+					!!caseItem.expand
 				),
-				tests[ i ].cases[ j ].expected,
+				caseItem.expected,
 				'Test document ' + i +
-				', range ' + tests[ i ].cases[ j ].given.toJSON() +
-				', direction ' + tests[ i ].cases[ j ].direction
+				', range ' + caseItem.given.toJSON() +
+				', direction ' + caseItem.direction
 			);
-		}
-	}
+		} );
+	} );
 } );
 
 QUnit.test( 'getBranchNodeFromOffset', function ( assert ) {
-	var i, j, node,
-		doc = ve.dm.example.createExampleDocument(),
+	var doc = ve.dm.example.createExampleDocument(),
 		root = doc.getDocumentNode().getRoot(),
 		expected = [
 			[], // 0 - document
@@ -495,24 +491,23 @@ QUnit.test( 'getBranchNodeFromOffset', function ( assert ) {
 			[] // 61 - document
 		];
 
-	for ( i = 0; i < expected.length; i++ ) {
-		node = root;
-		for ( j = 0; j < expected[ i ].length; j++ ) {
-			node = node.children[ expected[ i ][ j ] ];
-		}
+	expected.forEach( function ( expectedItem, i ) {
+		var node = root;
+		expectedItem.forEach( function ( offset ) {
+			node = node.children[ offset ];
+		} );
 		assert.strictEqual( node, doc.getBranchNodeFromOffset( i ), 'reference at offset ' + i );
-	}
+	} );
 } );
 
 QUnit.test( 'hasSlugAtOffset', function ( assert ) {
-	var i, l,
-		expected = {
+	var expected = {
 			0: true,
 			10: true
 		},
 		doc = ve.dm.example.createExampleDocument( 'alienData' );
 
-	for ( i = 0, l = doc.data.getLength(); i <= l; i++ ) {
+	for ( var i = 0, l = doc.data.getLength(); i <= l; i++ ) {
 		assert.strictEqual( doc.hasSlugAtOffset( i ), !!expected[ i ], 'hasSlugAtOffset ' + i + ' = ' + !!expected[ i ] );
 	}
 
@@ -547,36 +542,8 @@ QUnit.test( 'getOuterLength', function ( assert ) {
 	);
 } );
 
-QUnit.test( 'rebuildNodes', function ( assert ) {
-	var tree,
-		doc = ve.dm.example.createExampleDocument(),
-		documentNode = doc.getDocumentNode();
-	// Rebuild table without changes
-	doc.rebuildNodes( documentNode, 1, 1, 5, 32 );
-	assert.equalNodeTree(
-		documentNode,
-		ve.dm.example.tree,
-		'rebuild without changes'
-	);
-
-	// XXX: Create a new document node tree from the old one
-	tree = new ve.dm.DocumentNode( ve.dm.example.tree.getChildren() );
-	// Replace table with paragraph
-	doc.data.batchSplice( 5, 32, [ { type: 'paragraph' }, 'a', 'b', 'c', { type: '/paragraph' } ] );
-	tree.splice( 1, 1, new ve.dm.ParagraphNode(
-		doc.data.getData( 5 ), [ new ve.dm.TextNode( 3 ) ]
-	) );
-	// Rebuild with changes
-	doc.rebuildNodes( documentNode, 1, 1, 5, 5 );
-	assert.equalNodeTree(
-		documentNode,
-		tree,
-		'replace table with paragraph'
-	);
-} );
-
 QUnit.test( 'selectNodes', function ( assert ) {
-	var i, doc, expectedSelection,
+	var doc,
 		mainDoc = ve.dm.example.createExampleDocument(),
 		cases = ve.dm.example.selectNodesCases;
 
@@ -588,18 +555,18 @@ QUnit.test( 'selectNodes', function ( assert ) {
 		return newItem;
 	}
 
-	for ( i = 0; i < cases.length; i++ ) {
-		doc = cases[ i ].doc ? ve.dm.example.createExampleDocument( cases[ i ].doc ) : mainDoc;
-		expectedSelection = cases[ i ].expected.map( resolveNode );
+	cases.forEach( function ( caseItem ) {
+		var expectedSelection;
+		doc = caseItem.doc ? ve.dm.example.createExampleDocument( caseItem.doc ) : mainDoc;
+		expectedSelection = caseItem.expected.map( resolveNode );
 		assert.equalNodeSelection(
-			doc.selectNodes( cases[ i ].range, cases[ i ].mode ), expectedSelection, cases[ i ].msg
+			doc.selectNodes( caseItem.range, caseItem.mode ), expectedSelection, caseItem.msg
 		);
-	}
+	} );
 } );
 
 QUnit.test( 'rangeInsideOneLeafNode', function ( assert ) {
-	var i,
-		doc = ve.dm.example.createExampleDocument(),
+	var doc = ve.dm.example.createExampleDocument(),
 		cases = [
 			{
 				range: new ve.Range( 1, 4 ),
@@ -639,286 +606,299 @@ QUnit.test( 'rangeInsideOneLeafNode', function ( assert ) {
 			}
 		];
 
-	for ( i = 0; i < cases.length; i++ ) {
+	cases.forEach( function ( caseItem ) {
 		assert.strictEqual(
-			doc.rangeInsideOneLeafNode( cases[ i ].range ),
-			cases[ i ].result,
-			'Range ' + cases[ i ].range.from + ', ' + cases[ i ].range.to + ' ' +
-			( cases[ i ].result ? 'is' : 'isn\'t' ) + ' inside one leaf node'
+			doc.rangeInsideOneLeafNode( caseItem.range ),
+			caseItem.result,
+			'Range ' + caseItem.range.from + ', ' + caseItem.range.to + ' ' +
+			( caseItem.result ? 'is' : 'isn\'t' ) + ' inside one leaf node'
 		);
-	}
+	} );
 } );
 QUnit.test( 'shallowCloneFromRange', function ( assert ) {
-	var i, expectedData, slice, range, doc,
-		cases = [
-			{
-				msg: 'no range',
-				range: undefined,
-				expected: ve.copy( ve.dm.example.data.slice( 0, -2 ) )
-			},
-			{
-				msg: 'collapsed range',
-				range: new ve.Range( 2 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'empty' } },
-					{ type: 'paragraph' }
-				],
-				originalRange: new ve.Range( 1 ),
-				balancedRange: new ve.Range( 1 )
-			},
-			{
-				doc: 'alienWithEmptyData',
-				msg: 'collapsed range in empty paragraph',
-				range: new ve.Range( 1 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'empty' } },
-					{ type: 'paragraph' }
-				],
-				originalRange: new ve.Range( 1 ),
-				balancedRange: new ve.Range( 1 )
-			},
-			{
-				msg: 'range with one character',
-				range: new ve.Range( 2, 3 ),
-				expected: [
-					{ type: 'heading', attributes: { level: 1 }, internal: { generated: 'wrapper' } },
-					[ 'b', [ ve.dm.example.bold ] ],
-					{ type: '/heading' }
-				],
-				originalRange: new ve.Range( 1, 2 ),
-				balancedRange: new ve.Range( 1, 2 )
-			},
-			{
-				msg: 'range with two characters',
-				range: new ve.Range( 2, 4 ),
-				expected: [
-					{ type: 'heading', attributes: { level: 1 }, internal: { generated: 'wrapper' } },
-					[ 'b', [ ve.dm.example.bold ] ],
-					[ 'c', [ ve.dm.example.italic ] ],
-					{ type: '/heading' }
-				],
-				originalRange: new ve.Range( 1, 3 ),
-				balancedRange: new ve.Range( 1, 3 )
-			},
-			{
-				msg: 'range with two characters and a header closing',
-				range: new ve.Range( 2, 5 ),
-				expected: [
-					{ type: 'heading', attributes: { level: 1 } },
-					[ 'b', [ ve.dm.example.bold ] ],
-					[ 'c', [ ve.dm.example.italic ] ],
-					{ type: '/heading' }
-				],
-				originalRange: new ve.Range( 1, 4 )
-			},
-			{
-				msg: 'range with one character, a header closing and a table opening',
-				range: new ve.Range( 3, 6 ),
-				expected: [
-					{ type: 'heading', attributes: { level: 1 } },
-					[ 'c', [ ve.dm.example.italic ] ],
-					{ type: '/heading' },
-					{ type: 'table' },
-					{ type: '/table' }
-				],
-				originalRange: new ve.Range( 1, 4 )
-			},
-			{
-				msg: 'range from a paragraph into a list',
-				range: new ve.Range( 15, 21 ),
-				expected: [
-					{ type: 'paragraph' },
-					'e',
-					{ type: '/paragraph' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'f',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' }
-				],
-				originalRange: new ve.Range( 1, 7 )
-			},
-			{
-				msg: 'range from a paragraph inside a nested list into the next list',
-				range: new ve.Range( 20, 27 ),
-				expected: [
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'f',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: 'list', attributes: { style: 'number' } },
-					{ type: '/list' }
-				],
-				originalRange: new ve.Range( 5, 12 )
-			},
-			{
-				msg: 'range from a paragraph inside a nested list out of both lists',
-				range: new ve.Range( 20, 26 ),
-				expected: [
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'f',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: '/listItem' },
-					{ type: '/list' }
-				],
-				originalRange: new ve.Range( 5, 11 )
-			},
-			{
-				msg: 'range from a paragraph inside a nested list out of the outer listItem',
-				range: new ve.Range( 20, 25 ),
-				expected: [
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'f',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: '/listItem' },
-					{ type: '/list' }
-				],
-				originalRange: new ve.Range( 5, 10 ),
-				balancedRange: new ve.Range( 1, 10 )
-			},
-			{
-				msg: 'table cell',
-				range: new ve.Range( 8, 34 ),
-				expected: [
-					{ type: 'table' },
-					{ type: 'tableSection', attributes: { style: 'body' } },
-					{ type: 'tableRow' },
-					{ type: 'tableCell', attributes: { style: 'data' } },
-					{ type: 'paragraph' },
-					'd',
-					{ type: '/paragraph' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'e',
-					{ type: '/paragraph' },
-					{ type: 'list', attributes: { style: 'bullet' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'f',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: 'list', attributes: { style: 'number' } },
-					{ type: 'listItem' },
-					{ type: 'paragraph' },
-					'g',
-					{ type: '/paragraph' },
-					{ type: '/listItem' },
-					{ type: '/list' },
-					{ type: '/tableCell' },
-					{ type: '/tableRow' },
-					{ type: '/tableSection' },
-					{ type: '/table' }
-				],
-				originalRange: new ve.Range( 3, 29 ),
-				balancedRange: new ve.Range( 3, 29 )
-			},
-			{
-				doc: 'inlineAtEdges',
-				msg: 'inline node at start',
-				range: new ve.Range( 1, 3 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'wrapper' } },
-					ve.dm.example.image.data,
-					{ type: '/inlineImage' },
-					{ type: '/paragraph' }
-				],
-				originalRange: new ve.Range( 1, 3 ),
-				balancedRange: new ve.Range( 1, 3 )
-			},
-			{
-				doc: 'inlineAtEdges',
-				msg: 'inline node at end',
-				range: new ve.Range( 6, 8 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'wrapper' } },
-					{ type: 'alienInline', originalDomElements: $( '<foobar />' ).toArray() },
-					{ type: '/alienInline' },
-					{ type: '/paragraph' }
-				],
-				originalRange: new ve.Range( 1, 3 ),
-				balancedRange: new ve.Range( 1, 3 )
-			},
-			{
-				doc: 'inlineAtEdges',
-				msg: 'inline node at start with text',
-				range: new ve.Range( 1, 5 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'wrapper' } },
-					ve.dm.example.image.data,
-					{ type: '/inlineImage' },
-					'F', 'o',
-					{ type: '/paragraph' }
-				],
-				originalRange: new ve.Range( 1, 5 ),
-				balancedRange: new ve.Range( 1, 5 )
-			},
-			{
-				doc: 'inlineAtEdges',
-				msg: 'inline node at end with text',
-				range: new ve.Range( 4, 8 ),
-				expected: [
-					{ type: 'paragraph', internal: { generated: 'wrapper' } },
-					'o', 'o',
-					{ type: 'alienInline', originalDomElements: $( '<foobar />' ).toArray() },
-					{ type: '/alienInline' },
-					{ type: '/paragraph' }
-				],
-				originalRange: new ve.Range( 1, 5 ),
-				balancedRange: new ve.Range( 1, 5 )
-			}
-		];
+	var cases = [
+		{
+			msg: 'no range',
+			range: undefined,
+			expected: ve.copy( ve.dm.example.data.slice( 0, -2 ) )
+		},
+		{
+			msg: 'collapsed range',
+			range: new ve.Range( 2 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'empty' } },
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1 ),
+			balancedRange: new ve.Range( 1 )
+		},
+		{
+			doc: 'alienWithEmptyData',
+			msg: 'collapsed range in empty paragraph',
+			range: new ve.Range( 1 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'empty' } },
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1 ),
+			balancedRange: new ve.Range( 1 )
+		},
+		{
+			doc: 'alienData',
+			msg: 'range ending inside alienBlock node',
+			range: new ve.Range( 7, 9 ),
+			expected: [
+				{ type: 'paragraph' },
+				{ type: '/paragraph' },
+				{ type: 'alienBlock', originalDomElements: $.parseHTML( '<foobar />' ) },
+				{ type: '/alienBlock' }
+			],
+			originalRange: new ve.Range( 1, 3 ),
+			balancedRange: new ve.Range( 0, 4 )
+		},
+		{
+			msg: 'range with one character',
+			range: new ve.Range( 2, 3 ),
+			expected: [
+				{ type: 'heading', attributes: { level: 1 }, internal: { generated: 'wrapper' } },
+				[ 'b', [ ve.dm.example.bold ] ],
+				{ type: '/heading' }
+			],
+			originalRange: new ve.Range( 1, 2 ),
+			balancedRange: new ve.Range( 1, 2 )
+		},
+		{
+			msg: 'range with two characters',
+			range: new ve.Range( 2, 4 ),
+			expected: [
+				{ type: 'heading', attributes: { level: 1 }, internal: { generated: 'wrapper' } },
+				[ 'b', [ ve.dm.example.bold ] ],
+				[ 'c', [ ve.dm.example.italic ] ],
+				{ type: '/heading' }
+			],
+			originalRange: new ve.Range( 1, 3 ),
+			balancedRange: new ve.Range( 1, 3 )
+		},
+		{
+			msg: 'range with two characters and a header closing',
+			range: new ve.Range( 2, 5 ),
+			expected: [
+				{ type: 'heading', attributes: { level: 1 } },
+				[ 'b', [ ve.dm.example.bold ] ],
+				[ 'c', [ ve.dm.example.italic ] ],
+				{ type: '/heading' }
+			],
+			originalRange: new ve.Range( 1, 4 )
+		},
+		{
+			msg: 'range with one character, a header closing and a table opening',
+			range: new ve.Range( 3, 6 ),
+			expected: [
+				{ type: 'heading', attributes: { level: 1 } },
+				[ 'c', [ ve.dm.example.italic ] ],
+				{ type: '/heading' },
+				{ type: 'table' },
+				{ type: '/table' }
+			],
+			originalRange: new ve.Range( 1, 4 )
+		},
+		{
+			msg: 'range from a paragraph into a list',
+			range: new ve.Range( 15, 21 ),
+			expected: [
+				{ type: 'paragraph' },
+				'e',
+				{ type: '/paragraph' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'f',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' }
+			],
+			originalRange: new ve.Range( 1, 7 )
+		},
+		{
+			msg: 'range from a paragraph inside a nested list into the next list',
+			range: new ve.Range( 20, 27 ),
+			expected: [
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'f',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: 'list', attributes: { style: 'number' } },
+				{ type: '/list' }
+			],
+			originalRange: new ve.Range( 5, 12 )
+		},
+		{
+			msg: 'range from a paragraph inside a nested list out of both lists',
+			range: new ve.Range( 20, 26 ),
+			expected: [
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'f',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: '/listItem' },
+				{ type: '/list' }
+			],
+			originalRange: new ve.Range( 5, 11 )
+		},
+		{
+			msg: 'range from a paragraph inside a nested list out of the outer listItem',
+			range: new ve.Range( 20, 25 ),
+			expected: [
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'f',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: '/listItem' },
+				{ type: '/list' }
+			],
+			originalRange: new ve.Range( 5, 10 ),
+			balancedRange: new ve.Range( 1, 10 )
+		},
+		{
+			msg: 'table cell',
+			range: new ve.Range( 8, 34 ),
+			expected: [
+				{ type: 'table' },
+				{ type: 'tableSection', attributes: { style: 'body' } },
+				{ type: 'tableRow' },
+				{ type: 'tableCell', attributes: { style: 'data' } },
+				{ type: 'paragraph' },
+				'd',
+				{ type: '/paragraph' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'e',
+				{ type: '/paragraph' },
+				{ type: 'list', attributes: { style: 'bullet' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'f',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: 'list', attributes: { style: 'number' } },
+				{ type: 'listItem' },
+				{ type: 'paragraph' },
+				'g',
+				{ type: '/paragraph' },
+				{ type: '/listItem' },
+				{ type: '/list' },
+				{ type: '/tableCell' },
+				{ type: '/tableRow' },
+				{ type: '/tableSection' },
+				{ type: '/table' }
+			],
+			originalRange: new ve.Range( 3, 29 ),
+			balancedRange: new ve.Range( 3, 29 )
+		},
+		{
+			doc: 'inlineAtEdges',
+			msg: 'inline node at start',
+			range: new ve.Range( 1, 3 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'wrapper' } },
+				ve.dm.example.image.data,
+				{ type: '/inlineImage' },
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1, 3 ),
+			balancedRange: new ve.Range( 1, 3 )
+		},
+		{
+			doc: 'inlineAtEdges',
+			msg: 'inline node at end',
+			range: new ve.Range( 6, 8 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'wrapper' } },
+				{ type: 'alienInline', originalDomElements: $.parseHTML( '<foobar />' ) },
+				{ type: '/alienInline' },
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1, 3 ),
+			balancedRange: new ve.Range( 1, 3 )
+		},
+		{
+			doc: 'inlineAtEdges',
+			msg: 'inline node at start with text',
+			range: new ve.Range( 1, 5 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'wrapper' } },
+				ve.dm.example.image.data,
+				{ type: '/inlineImage' },
+				'F', 'o',
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1, 5 ),
+			balancedRange: new ve.Range( 1, 5 )
+		},
+		{
+			doc: 'inlineAtEdges',
+			msg: 'inline node at end with text',
+			range: new ve.Range( 4, 8 ),
+			expected: [
+				{ type: 'paragraph', internal: { generated: 'wrapper' } },
+				'o', 'o',
+				{ type: 'alienInline', originalDomElements: $.parseHTML( '<foobar />' ) },
+				{ type: '/alienInline' },
+				{ type: '/paragraph' }
+			],
+			originalRange: new ve.Range( 1, 5 ),
+			balancedRange: new ve.Range( 1, 5 )
+		}
+	];
 
-	for ( i = 0; i < cases.length; i++ ) {
-		doc = ve.dm.example.createExampleDocument( cases[ i ].doc );
-		expectedData = ve.dm.example.preprocessAnnotations( cases[ i ].expected.slice(), doc.getStore() ).getData();
-		range = new ve.Range( 0, cases[ i ].expected.length );
+	cases.forEach( function ( caseItem ) {
+		var doc = ve.dm.example.createExampleDocument( caseItem.doc ),
+			expectedData = ve.dm.example.preprocessAnnotations( caseItem.expected.slice(), doc.getStore() ).getData(),
+			range = new ve.Range( 0, caseItem.expected.length );
+
 		expectedData = expectedData.concat( [
 			{ type: 'internalList' },
 			{ type: '/internalList' }
 		] );
-		slice = doc.shallowCloneFromRange( cases[ i ].range );
+		var slice = doc.shallowCloneFromRange( caseItem.range );
 		assert.equalLinearDataWithDom(
 			doc.getStore(),
 			slice.getData(),
 			expectedData,
-			cases[ i ].msg + ': data'
+			caseItem.msg + ': data'
 		);
 		assert.equalRange(
 			slice.originalRange,
-			cases[ i ].originalRange || range,
-			cases[ i ].msg + ': original range'
+			caseItem.originalRange || range,
+			caseItem.msg + ': original range'
 		);
 		assert.equalRange(
 			slice.balancedRange,
-			cases[ i ].balancedRange || range,
-			cases[ i ].msg + ': balanced range'
+			caseItem.balancedRange || range,
+			caseItem.msg + ': balanced range'
 		);
-	}
+	} );
 } );
 
 QUnit.test( 'protection against double application of transactions', function ( assert ) {
@@ -937,10 +917,10 @@ QUnit.test( 'protection against double application of transactions', function ( 
 } );
 
 QUnit.test( 'getNearestCursorOffset', function ( assert ) {
-	var i, c, dir, doc, cases = [
+	var cases = [
 		{
 			name: 'example',
-			htmlDoc: ve.dm.example.html,
+			doc: ve.dm.example.createExampleDocument(),
 			expected: {
 				// 10 offsets per row
 				'-1': [
@@ -965,41 +945,55 @@ QUnit.test( 'getNearestCursorOffset', function ( assert ) {
 		},
 		{
 			name: 'figcaption',
-			htmlDoc: ve.dm.example.figcaptionHtml,
+			doc: ve.dm.example.createExampleDocument( 'figcaption' ),
 			expected: {
 				// 10 offsets per row
 				'-1': [
-					// The results here look incorrect.
-					// Should be `6, 6` instead of `-1, -1`?
-					1, 1, 2, 2, -1, -1, 6, 7, 7, 7,
-					2, 11, 12, 12, 12
+					1, 1, 2, 2, 2, 2, 6, 7, 7, 7,
+					7, 11, 12, 12, 12
 				],
 				1: [
-					// Should be `7, 7` instead of `-1, -1`?
-					1, 1, 2, 11, 6, 6, 6, 7, -1, -1,
+					1, 1, 2, 6, 6, 6, 6, 7, 11, 11,
 					11, 11, 12, 12, 12
+				]
+			}
+		},
+		{
+			name: 'internalData',
+			doc: ve.dm.example.createExampleDocument( 'internalData' ),
+			expected: {
+				// TODO: Better define behaviour around ignoreChildren node
+				// boundaries so the offsets are less erratic here.
+				// 10 offsets per row
+				'-1': [
+					1, 1, 2, 3, 4, 4, 4, -1, 8, 9,
+					10, 11, 11, 4, -1, 15, 16, 17, 18, 18,
+					4, 4, 22, 23, 24, 25, 26
+				],
+				1: [
+					1, 1, 2, 3, 4, 4, 4, 8, 8, 9,
+					10, 11, -1, 4, 15, 15, 16, 17, 18, -1,
+					4, 22, 22, 23, 24, 25, 26
 				]
 			}
 		}
 	];
 
-	for ( c = 0; c < cases.length; c++ ) {
-		doc = ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( cases[ c ].htmlDoc ) );
-		for ( dir = -1; dir <= 1; dir += 2 ) {
-			for ( i = 0; i < doc.data.getLength(); i++ ) {
+	cases.forEach( function ( caseItem ) {
+		for ( var dir = -1; dir <= 1; dir += 2 ) {
+			for ( var i = 0; i < caseItem.doc.data.getLength(); i++ ) {
 				assert.strictEqual(
-					doc.getNearestCursorOffset( i, dir ),
-					cases[ c ].expected[ dir ][ i ],
-					'Document "' + cases[ c ].name + '" - Direction: ' + dir + ' Offset: ' + i
+					caseItem.doc.getNearestCursorOffset( i, dir ),
+					caseItem.expected[ dir ][ i ],
+					'Document "' + caseItem.name + '" - Direction: ' + dir + ' Offset: ' + i
 				);
 			}
 		}
-	}
+	} );
 } );
 
 QUnit.test( 'Selection equality', function ( assert ) {
-	var selections, i, iLen, j, jLen, iSel, jSel;
-	selections = [
+	var selections = [
 		new ve.dm.LinearSelection( new ve.Range( 1, 1 ) ),
 		new ve.dm.LinearSelection( new ve.Range( 1, 3 ) ),
 		new ve.dm.LinearSelection( new ve.Range( 3, 1 ) ),
@@ -1010,21 +1004,18 @@ QUnit.test( 'Selection equality', function ( assert ) {
 		'foo'
 	];
 
-	for ( i = 0, iLen = selections.length; i < iLen; i++ ) {
-		iSel = selections[ i ];
+	selections.forEach( function ( iSel, i ) {
 		if ( !( iSel instanceof ve.dm.Selection ) ) {
-			continue;
+			return;
 		}
-		for ( j = 0, jLen = selections.length; j < jLen; j++ ) {
-			jSel = selections[ j ];
+		selections.forEach( function ( jSel, j ) {
 			assert.strictEqual( iSel.equals( jSel ), i === j, 'Selections ' + i + ' and ' + j );
-		}
-	}
+		} );
+	} );
 } );
 
 QUnit.test( 'findText (plain text)', function ( assert ) {
-	var i, ranges,
-		supportsIntl = ve.supportsIntl,
+	var supportsIntl = ve.supportsIntl,
 		doc = ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml(
 			// 0
 			'<p>Foo bar fooq.</p>' +
@@ -1271,22 +1262,21 @@ QUnit.test( 'findText (plain text)', function ( assert ) {
 			}
 		];
 
-	for ( i = 0; i < cases.length; i++ ) {
-		doc.lang = cases[ i ].lang || 'en';
-		ranges = doc.findText( cases[ i ].query, cases[ i ].options );
-		assert.deepEqual( ranges, cases[ i ].ranges, cases[ i ].msg );
-		if ( !cases[ i ].options.diacriticInsensitiveString ) {
+	cases.forEach( function ( caseItem ) {
+		doc.lang = caseItem.lang || 'en';
+		var ranges = doc.findText( caseItem.query, caseItem.options );
+		assert.deepEqual( ranges, caseItem.ranges, caseItem.msg );
+		if ( !caseItem.options.diacriticInsensitiveString ) {
 			ve.supportsIntl = false;
-			ranges = doc.findText( cases[ i ].query, cases[ i ].options );
-			assert.deepEqual( ranges, cases[ i ].ranges, cases[ i ].msg + ': without Intl API' );
+			ranges = doc.findText( caseItem.query, caseItem.options );
+			assert.deepEqual( ranges, caseItem.ranges, caseItem.msg + ': without Intl API' );
 			ve.supportsIntl = supportsIntl;
 		}
-	}
+	} );
 } );
 
 QUnit.test( 'findText (non-text content)', function ( assert ) {
-	var i, ranges,
-		doc = ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml(
+	var doc = ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml(
 			//   1 3     5     7 9
 			//  / /     /     / /
 			'<p>ab<img/><img/>cd</p>'
@@ -1357,10 +1347,10 @@ QUnit.test( 'findText (non-text content)', function ( assert ) {
 			}
 		];
 
-	for ( i = 0; i < cases.length; i++ ) {
-		ranges = doc.findText( cases[ i ].query, cases[ i ].options );
-		assert.deepEqual( ranges, cases[ i ].ranges, cases[ i ].msg );
-	}
+	cases.forEach( function ( caseItem ) {
+		var ranges = doc.findText( caseItem.query, caseItem.options );
+		assert.deepEqual( ranges, caseItem.ranges, caseItem.msg );
+	} );
 } );
 
 QUnit.test( 'fixupInsertion', function ( assert ) {
@@ -1427,4 +1417,28 @@ QUnit.test( 'fixupInsertion', function ( assert ) {
 	);
 
 	ve.dm.modelRegistry.unregister( ListlessNode );
+} );
+
+QUnit.test( 'read-only and offset caching', function ( assert ) {
+	var doc = ve.dm.example.createExampleDocument(),
+		surface = new ve.dm.Surface( doc );
+
+	assert.strictEqual( doc.isReadOnly(), false, 'New document is not read-only' );
+
+	// Set up offset caching test
+	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 5, 'Second child node has offset 6' );
+	surface.getLinearFragment( new ve.Range( 1 ) ).insertContent( 'Test' );
+
+	doc.setReadOnly( true );
+	assert.strictEqual( doc.isReadOnly(), true, 'Document is read-only' );
+
+	// Offset caching test
+	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 9, 'Second child node offset has been translated, not cached from before' );
+
+	// Document modified after cache set
+	doc.setReadOnly( false );
+	surface.getLinearFragment( new ve.Range( 1 ) ).insertContent( 'Quux' );
+
+	doc.setReadOnly( true );
+	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 13, 'Second child node offset has been translated again, not cached from before' );
 } );

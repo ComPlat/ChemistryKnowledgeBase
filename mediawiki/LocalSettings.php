@@ -211,7 +211,9 @@ if (file_exists(__DIR__ . '/env.php')) {
 #################################################################
 # Extensions - SMW
 #################################################################
+wfLoadExtension( 'SemanticMediaWiki' );
 enableSemantics(explode( '://', $wgServer)[1]);
+
 
 $smwgChangePropagationProtection = false;
 $smwgNamespacesWithSemanticLinks[NS_USER] = true;

@@ -5,67 +5,55 @@
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
-.ve-ui-mwTransclusionDialog-addTemplateFieldset > .oo-ui-widget {
-	display: inline-block;
+.ve-ui-mwTemplateDialog .mw-widget-titleWidget-menu-withDescriptions .mw-widget-titleOptionWidget .oo-ui-labelElement-label {
+	font-weight: bold;
 }
 
-.ve-ui-mwTransclusionDialog-addTemplateFieldset > .oo-ui-buttonElement-framed {
-	margin-left: 0.5em;
+.ve-ui-mwTemplateDialog .mw-widget-titleWidget-menu-withDescriptions .mw-widget-titleOptionWidget .oo-ui-labelElement-label .oo-ui-labelElement-label-highlight {
+	font-weight: normal;
 }
 
-.ve-ui-mwTransclusionDialog-addTemplateFieldset .mw-widget-titleInputWidget {
-	min-width: 10em;
+.ve-ui-mwTemplateTitleInputWidget-redirectedfrom {
+	font-style: italic;
 }
 
-.ve-ui-mwTransclusionDialog-addParameterFieldset .ve-ui-mwParameterSearchWidget {
-	position: relative;
-	overflow: hidden;
-	margin-bottom: 1em;
-}
-
-.ve-ui-mwTransclusionDialog-addParameterFieldset .oo-ui-searchWidget-results {
-	position: relative;
-	padding-bottom: 5em;
-}
-
-.ve-ui-mwTransclusionDialog-removeButton {
-	position: absolute;
-	top: 0.85714286em; /* Equals ≈`12px` */
-	right: 1.5em;
-}
-
-.ve-ui-mwTransclusionDialog-addButton {
-	white-space: nowrap;
-}
-
-.ve-ui-mwTemplateDialog .oo-ui-outlineOptionWidget.oo-ui-flaggedElement-empty .oo-ui-iconElement-icon {
-	opacity: 0.51;
-}
-
-.ve-ui-mwTemplateDialog .oo-ui-outlineOptionWidget.oo-ui-flaggedElement-empty .oo-ui-labelElement-label {
-	color: #72777d;
-}
-
-.ve-ui-mwTransclusionDialog .oo-ui-bookletLayout .oo-ui-fieldsetLayout > .oo-ui-labelElement-label {
-	height: 1.5em;
-	overflow: hidden;
-}
-
-.ve-ui-mwTransclusionDialog-single .oo-ui-bookletLayout .oo-ui-fieldsetLayout > .oo-ui-iconElement-icon,
-.ve-ui-mwTransclusionDialog-single .oo-ui-bookletLayout .oo-ui-fieldsetLayout > .oo-ui-labelElement-label,
-.ve-ui-mwTransclusionDialog-single .oo-ui-bookletLayout .ve-ui-mwTransclusionDialog-removeButton,
-.ve-ui-mwTransclusionDialog-multiple .oo-ui-bookletLayout .ve-ui-mwTemplatePage-more,
-.ve-ui-mwTransclusionDialog-multiple .oo-ui-bookletLayout .ve-ui-mwParameterPage-more {
+.ve-ui-mwTransclusionDialog-single-transclusion .ve-ui-mwTransclusionOutlineWidget .ve-ui-mwTransclusionOutlinePartWidget .ve-ui-mwTransclusionOutlineButtonWidget {
 	display: none;
 }
 
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout .oo-ui-fieldsetLayout > .oo-ui-labelElement-label,
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout .oo-ui-fieldsetLayout > .oo-ui-iconElement-icon,
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout .ve-ui-mwTransclusionDialog-removeButton,
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout .ve-ui-mwTemplatePage-more,
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout .ve-ui-mwParameterPage-more,
-.ve-ui-mwTransclusionDialog.ve-ui-mwTemplateDialog-ready .oo-ui-bookletLayout > .oo-ui-gridLayout > .oo-ui-panelLayout {
-	-webkit-transition: all 250ms ease-in-out;
-	-moz-transition: all 250ms ease-in-out;
-	transition: all 250ms ease-in-out;
+.ve-ui-mwTransclusionDialog-single-transclusion .ve-ui-mwTransclusionOutlineWidget .ve-ui-mwTransclusionOutlinePartWidget .ve-ui-mwTransclusionOutlineTemplateWidget-sticky {
+	margin-top: -8px;
+	margin-bottom: 8px;
+	padding-top: 8px;
+}
+
+.ve-ui-mwTransclusionDialog-single-transclusion .ve-ui-mwTransclusionOutlineTemplateWidget-no-template-parameters {
+	margin: 24px;
+}
+
+.ve-ui-mwTemplateDialog.ve-ui-mwTransclusionDialog-small-screen.ve-ui-mwTransclusionDialog-expanded .oo-ui-menuLayout > .oo-ui-menuLayout-menu {
+	border-right: 0;
+	width: 100%;
+}
+
+.ve-ui-mwTemplateDialog.ve-ui-mwTransclusionDialog-small-screen.ve-ui-mwTransclusionDialog-expanded .oo-ui-menuLayout > .oo-ui-menuLayout-content {
+	display: none;
+}
+
+.ve-ui-mwTransclusionDialog-floatingHelpElement {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+}
+
+.ve-ui-mwTransclusionDialog-small-screen .ve-ui-mwTransclusionDialog-floatingHelpElement {
+	display: none;
+}
+
+.ve-ui-mwTransclusionDialog-floatingHelpElement-fieldsetLayout label {
+	margin-bottom: 16px;
+}
+
+.ve-ui-mwTransclusionDialog-floatingHelpElement-fieldsetLayout .oo-ui-buttonWidget {
+	width: 100%;
 }

@@ -58,3 +58,13 @@
 .alert p:last-child {
 	margin-bottom: 0;
 }
+
+.navbar-nav {
+	// in minor axis direction, center-align navbar items
+	align-items: center;
+
+	.nav-link {
+		// prevent ugly linebreaks within navbar links
+		white-space: nowrap;
+	}
+}

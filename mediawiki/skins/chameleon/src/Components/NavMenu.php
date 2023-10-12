@@ -39,6 +39,9 @@ use Skins\Chameleon\IdRegistry;
  */
 class NavMenu extends Component {
 
+	private const ATTR_INCLUDE = 'include';
+	private const ATTR_EXCLUDE = 'exclude';
+
 	/**
 	 * Builds the HTML code for this component
 	 *
@@ -55,6 +58,26 @@ class NavMenu extends Component {
 				'languages' => false,
 			]
 		);
+
+		$include = $this->getAttribute( self::ATTR_INCLUDE, false );
+		if ( $include !== false ) {
+			$sidebar = array_intersect_key(
+				$sidebar,
+				// Split on ';', trim whitespace, remove empty strings,
+				// and shove resulting tokens into an arrays as keys.
+				array_fill_keys( preg_split('/\s*;+\s*/', $include,
+						NULL, PREG_SPLIT_NO_EMPTY ), true ) );
+		}
+
+		$exclude = $this->getAttribute( self::ATTR_EXCLUDE, false );
+		if ( $exclude !== false ) {
+			$sidebar = array_diff_key(
+				$sidebar,
+				// Split on ';', trim whitespace, remove empty strings,
+				// and shove resulting tokens into an arrays as keys.
+				array_fill_keys( preg_split('/\s*;+\s*/', $exclude,
+						NULL, PREG_SPLIT_NO_EMPTY ), true ) );
+		}
 
 		$flatten = $this->getMenusToBeFlattened();
 
@@ -150,12 +173,19 @@ class NavMenu extends Component {
 	 * @throws \MWException
 	 */
 	protected function buildDropdownMenuStub( $menuDescription ) {
+		$menuId = $menuDescription['id'];
+
 		return $this->indent() . \Html::rawElement( 'div',
 				[
-					'class' => 'nav-item',
-					'title' => Linker::titleAttrib( $menuDescription['id'] )
+					'class' => 'nav-item ' . $menuId . '-dropdown',
 				],
-				'<a href="#" class="nav-link">' . htmlspecialchars( $menuDescription['header'] ) . '</a>'
+				\Html::rawElement( 'a',
+					[
+						'href' => '#',
+						'class' => 'nav-link ' . $menuId . '-toggle',
+						'title' => Linker::titleAttrib( $menuId ),
+					],
+					htmlspecialchars( $menuDescription['header'] ) )
 			);
 	}
 
@@ -166,24 +196,32 @@ class NavMenu extends Component {
 	 * @throws \MWException
 	 */
 	protected function buildDropdownOpeningTags( $menuDescription ) {
+		$menuId = $menuDescription['id'];
+
 		// open list item containing the dropdown
 		$ret = $this->indent() . \Html::openElement( 'div',
 				[
-					'class' => 'nav-item dropdown',
-					'title' => Linker::titleAttrib( $menuDescription['id'] ),
+					'class' => 'nav-item dropdown ' . $menuId . '-dropdown',
 				] );
 
 		// add the dropdown toggle
 		$ret .= $this->indent( 1 ) .
-			'<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" data-boundary="viewport">' .
-			htmlspecialchars( $menuDescription['header'] ) . '</a>';
+			\Html::rawElement( 'a',
+				[
+					'href' => '#',
+					'class' => 'nav-link dropdown-toggle ' . $menuId . '-toggle',
+					'data-toggle' => 'dropdown',
+					'data-boundary' => 'viewport',
+					'title' => Linker::titleAttrib( $menuId ),
+				],
+				htmlspecialchars( $menuDescription['header'] ) );
 
 		// open list of dropdown menu items
 		$ret .=
 			$this->indent() . \Html::openElement( 'div',
 				[
-					'class' => 'dropdown-menu ' . $menuDescription['id'],
-					'id'    => IdRegistry::getRegistry()->getId( $menuDescription['id'] ),
+					'class' => 'dropdown-menu ' . $menuId,
+					'id'    => IdRegistry::getRegistry()->getId( $menuId ),
 				]
 			);
 		return $ret;

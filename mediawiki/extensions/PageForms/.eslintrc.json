@@ -69,7 +69,6 @@
 		"no-useless-escape": "off",
 		"no-whitespace-before-property": "off",
 		"object-curly-spacing": "off",
-		"one-var": "off",
 		"operator-linebreak": "off",
 		"quote-props": "off",
 		"quotes": "off",
@@ -82,7 +81,6 @@
 		"space-in-parens": "off",
 		"space-unary-ops": "off",
 		"valid-jsdoc": "off",
-		"vars-on-top": "off",
 		"wrap-iife": "off",
 		"yoda": "off",
 		"no-jquery/no-class-state": "warn",
@@ -92,6 +90,12 @@
 		"no-unreachable-loop": "warn",
 		"mediawiki/msg-doc": "warn",
 		"compat/compat": "warn",
-		"block-scoped-var": "warn"
+		"block-scoped-var": "warn",
+		"unicorn/prefer-string-slice": "warn",
+		"es-x/no-array-prototype-includes": "warn",
+		"es-x/no-block-scoped-variables": "warn",
+		"es-x/no-default-parameters": "warn",
+		"es-x/no-for-of-loops": "warn",
+		"es-x/no-string-prototype-includes": "warn"
 	}
 }

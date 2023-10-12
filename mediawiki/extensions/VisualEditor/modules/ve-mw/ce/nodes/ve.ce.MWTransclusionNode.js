@@ -45,40 +45,23 @@ ve.ce.MWTransclusionNode.static.iconWhenInvisible = 'puzzle';
 /* Static Methods */
 
 /**
- * Get a list of descriptions of template parts in a transclusion node
+ * Get a plain text description of the template parts in a transclusion node, excluding raw wikitext
+ * snippets.
  *
  * @static
- * @param {ve.dm.MWTransclusionNode} model Node model
- * @return {string[]} List of template part descriptions
- */
-ve.ce.MWTransclusionNode.static.getTemplatePartDescriptions = function ( model ) {
-	return model.getPartsList().map( this.getTemplatePartDescription );
-};
-
-/**
- * Get a description of a template part in a transclusion node
- *
- * @static
- * @param {Object} part Template part
- * @return {string} Template part description
- */
-ve.ce.MWTransclusionNode.static.getTemplatePartDescription = function ( part ) {
-	var title;
-	// Ignore parts that are just content
-	if ( part.templatePage ) {
-		title = mw.Title.newFromText( part.templatePage );
-		return title.getRelativeText( mw.config.get( 'wgNamespaceIds' ).template );
-	} else if ( part.template ) {
-		// Not actually a template, but e.g. a parser function
-		return part.template;
-	}
-};
-
-/**
- * @inheritdoc
+ * @param {ve.dm.MWTransclusionNode} model
+ * @return {string} Comma-separated list of template names
  */
 ve.ce.MWTransclusionNode.static.getDescription = function ( model ) {
-	return this.getTemplatePartDescriptions( model )
+	return model.getPartsList()
+		.map( function ( part ) {
+			if ( part.templatePage ) {
+				return mw.Title.newFromText( part.templatePage )
+					.getRelativeText( mw.config.get( 'wgNamespaceIds' ).template );
+			}
+			// Not actually a template, but e.g. a parser function
+			return part.template || '';
+		} )
 		.filter( function ( desc ) {
 			return desc;
 		} )
@@ -93,13 +76,11 @@ ve.ce.MWTransclusionNode.static.getDescription = function ( model ) {
  * @return {Node[]} Filtered rendered nodes
  */
 ve.ce.MWTransclusionNode.static.filterRendering = function ( contentNodes ) {
-	var whitespaceRegex;
-
 	if ( !contentNodes.length ) {
-		return;
+		return [];
 	}
 
-	whitespaceRegex = new RegExp( '^[' + ve.dm.Converter.static.whitespaceList + ']+$' );
+	var whitespaceRegex = new RegExp( '^[' + ve.dm.Converter.static.whitespaceList + ']+$' );
 
 	// Filter out auto-generated items, e.g. reference lists
 	contentNodes = contentNodes.filter( function ( node ) {
@@ -118,7 +99,7 @@ ve.ce.MWTransclusionNode.static.filterRendering = function ( contentNodes ) {
 	} );
 
 	function isWhitespaceNode( node ) {
-		return node && node.nodeType === Node.TEXT_NODE && !!node.data.match( whitespaceRegex );
+		return node && node.nodeType === Node.TEXT_NODE && whitespaceRegex.test( node.data );
 	}
 
 	while ( isWhitespaceNode( contentNodes[ 0 ] ) ) {
@@ -138,12 +119,26 @@ ve.ce.MWTransclusionNode.static.filterRendering = function ( contentNodes ) {
 
 /* Methods */
 
+/** @inheritDoc */
+ve.ce.MWTransclusionNode.prototype.executeCommand = function () {
+	var contextItems = this.focusableSurface.getSurface().getContext().items;
+	if ( contextItems[ 0 ] instanceof ve.ui.MWTransclusionContextItem ) {
+		// Utilize the context item when it's there instead of triggering the command manually.
+		// Required to make the context item show the "Loading…" message (see T297773).
+		contextItems[ 0 ].onEditButtonClick( 'command' );
+		return;
+	}
+
+	// Parent method
+	ve.ce.FocusableNode.prototype.executeCommand.apply( this, arguments );
+};
+
 /**
  * @inheritdoc
  */
 ve.ce.MWTransclusionNode.prototype.generateContents = function ( config ) {
-	var xhr, deferred = ve.createDeferred();
-	xhr = ve.init.target.parseWikitextFragment(
+	var deferred = ve.createDeferred();
+	var xhr = ve.init.target.parseWikitextFragment(
 		( config && config.wikitext ) || this.model.getWikitext(),
 		true,
 		this.getModel().getDocument()
@@ -161,15 +156,13 @@ ve.ce.MWTransclusionNode.prototype.generateContents = function ( config ) {
  * @param {Object} response Response data
  */
 ve.ce.MWTransclusionNode.prototype.onParseSuccess = function ( deferred, response ) {
-	var contentNodes;
-
 	if ( ve.getProp( response, 'visualeditor', 'result' ) !== 'success' ) {
 		this.onParseError( deferred );
 		return;
 	}
 
 	// Work around https://github.com/jquery/jquery/issues/1997
-	contentNodes = $.parseHTML( response.visualeditor.content, this.model && this.getModelHtmlDocument() ) || [];
+	var contentNodes = $.parseHTML( response.visualeditor.content, this.model && this.getModelHtmlDocument() ) || [];
 	deferred.resolve( this.constructor.static.filterRendering( contentNodes ) );
 };
 
@@ -217,7 +210,7 @@ ve.ce.MWTransclusionNode.prototype.getRenderedDomElements = function () {
  */
 ve.ce.MWTransclusionNode.prototype.filterRenderedDomElements = function ( domElements ) {
 	// We want to remove all styles and links which aren't from TemplateStyles.
-	var selector = 'style:not([data-mw-deduplicate^="TemplateStyles:"]), link:not([rel="mw-deduplicated-inline-style"][href^="mw-data:TemplateStyles:"])';
+	var selector = 'style:not([data-mw-deduplicate^="TemplateStyles:"]), link:not([rel~="mw-deduplicated-inline-style"][href^="mw-data:TemplateStyles:"])';
 	return $( domElements ).find( selector ).addBack( selector ).remove().end().end().toArray();
 };
 

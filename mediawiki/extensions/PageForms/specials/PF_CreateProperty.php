@@ -55,7 +55,7 @@ class PFCreateProperty extends SpecialPage {
 		// local variables.
 		$presetPropertyName = str_replace( '_', ' ', $query );
 		if ( $presetPropertyName !== '' ) {
-			$out->setPageTitle( wfMessage( 'pf-createproperty-with-name', $presetPropertyName )->text() );
+			$out->setPageTitle( $this->msg( 'pf-createproperty-with-name', $presetPropertyName )->text() );
 			$property_name = $presetPropertyName;
 		} else {
 			$property_name = $req->getVal( 'property_name' );
@@ -63,8 +63,8 @@ class PFCreateProperty extends SpecialPage {
 		$property_type = $req->getVal( 'property_type' );
 		$allowed_values = $req->getVal( 'values' );
 
-		$save_button_text = wfMessage( 'savearticle' )->text();
-		$preview_button_text = wfMessage( 'preview' )->text();
+		$save_button_text = $this->msg( 'savearticle' )->text();
+		$preview_button_text = $this->msg( 'preview' )->text();
 
 		$property_name_error_str = '';
 		$save_page = $req->getCheck( 'wpSave' );
@@ -79,14 +79,14 @@ class PFCreateProperty extends SpecialPage {
 
 			// Validate property name.
 			if ( $property_name === '' ) {
-				$property_name_error_str = wfMessage( 'pf_blank_error' )->escaped();
+				$property_name_error_str = $this->msg( 'pf_blank_error' )->escaped();
 			} else {
 				// Redirect to wiki interface.
 				$out->setArticleBodyOnly( true );
 				$title = Title::makeTitleSafe( SMW_NS_PROPERTY, $property_name );
 				$full_text = self::createPropertyText( $property_type, $allowed_values );
-				$edit_summary = wfMessage( 'pf_createproperty_editsummary', $property_type )->inContentLanguage()->text();
-				$text = PFUtils::printRedirectForm( $title, $full_text, $edit_summary, $save_page, $preview_page, false, false, false, null, null );
+				$edit_summary = $this->msg( 'pf_createproperty_editsummary', $property_type )->inContentLanguage()->text();
+				$text = PFUtils::printRedirectForm( $title, $full_text, $edit_summary, $save_page, $this->getUser() );
 				$out->addHTML( $text );
 				return;
 			}
@@ -103,8 +103,8 @@ class PFCreateProperty extends SpecialPage {
 		$emailTypeLabel = $datatypeLabels['_ema'];
 
 		$mw_namespace_labels = PFUtils::getContLang()->getNamespaces();
-		$name_label = wfMessage( 'pf_createproperty_propname' )->escaped();
-		$type_label = wfMessage( 'pf_createproperty_proptype' )->escaped();
+		$name_label = $this->msg( 'pf_createproperty_propname' )->escaped();
+		$type_label = $this->msg( 'pf_createproperty_proptype' )->escaped();
 		$text = <<<END
 	<form action="" method="post">
 
@@ -114,7 +114,7 @@ END;
 		if ( $presetPropertyName === '' ) {
 			$text .= Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() ) . "\n";
 			$text .= "$name_label\n";
-			$text .= Html::input( 'property_name', '', [ 'size' => 25 ] );
+			$text .= Html::input( 'property_name', '', 'text', [ 'size' => 25 ] );
 			$text .= Html::element( 'span', [ 'style' => "color: red;" ], $property_name_error_str );
 		}
 		$text .= "\n$type_label\n";
@@ -124,7 +124,7 @@ END;
 		}
 		$text .= Html::rawElement( 'select', [ 'id' => 'property_dropdown', 'name' => 'property_type' ], $select_body ) . "\n";
 
-		$values_input = wfMessage( 'pf_createproperty_allowedvalsinput' )->escaped();
+		$values_input = $this->msg( 'pf_createproperty_allowedvalsinput' )->escaped();
 		$text .= <<<END
 	<div id="allowed_values" style="margin-bottom: 15px;">
 	<p>$values_input</p>

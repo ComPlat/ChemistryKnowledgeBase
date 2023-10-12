@@ -34,6 +34,11 @@ OO.inheritClass( ve.init.mw.MobileCollabTarget, ve.init.mw.CollabTarget );
 /* Static Properties */
 
 ve.init.mw.MobileCollabTarget.static.toolbarGroups = [
+	// Back
+	{
+		name: 'back',
+		include: [ 'back' ]
+	},
 	// History
 	{
 		name: 'history',
@@ -58,10 +63,6 @@ ve.init.mw.MobileCollabTarget.static.toolbarGroups = [
 		name: 'link',
 		include: [ 'link' ]
 	},
-	{
-		name: 'commentAnnotation',
-		include: [ 'commentAnnotation' ]
-	},
 	// Placeholder for reference tools (e.g. Cite and/or Citoid)
 	{
 		name: 'reference'
@@ -74,6 +75,7 @@ ve.init.mw.MobileCollabTarget.static.toolbarGroups = [
 		invisibleLabel: true,
 		type: 'list',
 		icon: 'add',
+		promote: [ 'commentAnnotation' ],
 		include: '*',
 		exclude: [ 'comment', 'indent', 'outdent', { group: 'format' } ]
 	},
@@ -94,11 +96,9 @@ ve.init.mw.MobileCollabTarget.static.actionGroups = [];
 /**
  * @inheritdoc
  */
-ve.init.mw.MobileCollabTarget.prototype.setSurface = function ( surface ) {
-	surface.$element.addClass( 'content' );
-
-	// Parent method
-	ve.init.mw.MobileCollabTarget.super.prototype.setSurface.apply( this, arguments );
+ve.init.mw.MobileCollabTarget.prototype.getSurfaceClasses = function () {
+	var classes = ve.init.mw.MobileCollabTarget.super.prototype.getSurfaceClasses.call( this );
+	return classes.concat( [ 'content' ] );
 };
 
 /* Registration */

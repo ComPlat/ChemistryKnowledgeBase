@@ -2,10 +2,11 @@
 
 namespace SMW\Listener\EventListener;
 
+use MediaWiki\MediaWikiServices;
 use Onoi\EventDispatcher\EventListenerCollection;
 use SMW\Query\QueryComparator;
 use SMWExporter as Exporter;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Listener\EventListener\EventListeners\InvalidatePropertySpecificationLookupCacheEventListener;
 use SMW\Listener\EventListener\EventListeners\InvalidateEntityCacheEventListener;
 use SMW\Listener\EventListener\EventListeners\InvalidateResultCacheEventListener;
@@ -88,7 +89,9 @@ class EventListenerRegistry implements EventListenerCollection {
 
 		$this->addListenersToCollection();
 
-		\Hooks::run( 'SMW::Event::RegisterEventListeners', [ $this->eventListenerCollection ] );
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run( 'SMW::Event::RegisterEventListeners', [ $this->eventListenerCollection ] );
 
 		return $this->eventListenerCollection->getCollection();
 	}

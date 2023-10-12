@@ -1,29 +1,32 @@
 <?php
 
 use MediaWiki\FileBackend\LockManager\LockManagerGroupFactory;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\MainConfigNames;
 
 /**
  * @coversDefaultClass FileBackendGroup
- * @covers ::singleton
- * @covers ::destroySingleton
  */
 class FileBackendGroupIntegrationTest extends MediaWikiIntegrationTestCase {
 	use FileBackendGroupTestTrait;
 
 	private static function getWikiID() {
-		return wfWikiID();
+		return WikiMap::getCurrentWikiId();
 	}
 
-	private function getLockManagerGroupFactory( $domain ) : LockManagerGroupFactory {
-		return MediaWikiServices::getInstance()->getLockManagerGroupFactory();
+	private function getLockManagerGroupFactory( $domain ): LockManagerGroupFactory {
+		return $this->getServiceContainer()->getLockManagerGroupFactory();
 	}
 
-	private function newObj( array $options = [] ) : FileBackendGroup {
-		$globals = [ 'DirectoryMode', 'FileBackends', 'ForeignFileRepos', 'LocalFileRepo' ];
+	private function newObj( array $options = [] ): FileBackendGroup {
+		$globals = [
+			MainConfigNames::DirectoryMode,
+			MainConfigNames::FileBackends,
+			MainConfigNames::ForeignFileRepos,
+			MainConfigNames::LocalFileRepo,
+		];
 		foreach ( $globals as $global ) {
-			$this->setMwGlobals(
-				"wg$global", $options[$global] ?? self::getDefaultOptions()[$global] );
+			$this->overrideConfigValue(
+				$global, $options[$global] ?? self::getDefaultOptions()[$global] );
 		}
 
 		$serviceMembers = [
@@ -44,14 +47,14 @@ class FileBackendGroupIntegrationTest extends MediaWikiIntegrationTestCase {
 		$this->assertEmpty(
 			array_diff( array_keys( $options ), $globals, array_keys( $serviceMembers ) ) );
 
-		$this->resetServices();
-		FileBackendGroup::destroySingleton();
+		$services = $this->getServiceContainer();
 
-		$services = MediaWikiServices::getInstance();
-
-		$obj = FileBackendGroup::singleton();
+		$obj = $services->getFileBackendGroup();
 
 		foreach ( $serviceMembers as $key => $name ) {
+			if ( $key === 'configuredROMode' || $key === 'mimeAnalyzer' ) {
+				continue;
+			}
 			$this->$key = $services->getService( $name );
 			if ( $key === 'srvCache' && $this->$key instanceof EmptyBagOStuff ) {
 				// ServiceWiring will have created its own HashBagOStuff that we don't have a

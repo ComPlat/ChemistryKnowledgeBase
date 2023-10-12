@@ -54,8 +54,9 @@ TEMPLATE;
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
         $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($templateCall)), $cache::TTL_DAY,
             function() use($templateCall){
-                $parser = new Parser();
-                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions());
+                global $wgUser;
+                $parser = clone MediaWikiServices::getInstance()->getParser();
+                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions($wgUser->_newObject()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 

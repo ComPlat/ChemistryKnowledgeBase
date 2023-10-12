@@ -57,21 +57,21 @@ ve.ui.MWAlienExtensionInspector.prototype.initialize = function () {
 ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function ( data ) {
 	return ve.ui.MWAlienExtensionInspector.super.prototype.getSetupProcess.call( this, data )
 		.next( function () {
-			var key, attributeInput, field,
-				attributes = this.selectedNode.getAttribute( 'mw' ).attrs;
+			var attributes = this.selectedNode.getAttribute( 'mw' ).attrs;
 
 			// Patch: KK to extend tag edit panel
 			if (ve.ui.MWAlienExtensionInspectorExtension) {
 				ve.ui.MWAlienExtensionInspectorExtension.extend(this);
 			}
+
 			if ( attributes && !ve.isEmptyObject( attributes ) ) {
-				for ( key in attributes ) {
-					attributeInput = new OO.ui.TextInputWidget( {
+				for ( var key in attributes ) {
+					var attributeInput = new OO.ui.TextInputWidget( {
 						value: attributes[ key ]
 					} );
 					attributeInput.connect( this, { change: 'onChangeHandler' } );
 					this.attributeInputs[ key ] = attributeInput;
-					field = new OO.ui.FieldLayout(
+					var field = new OO.ui.FieldLayout(
 						attributeInput,
 						{
 							align: 'left',
@@ -101,15 +101,13 @@ ve.ui.MWAlienExtensionInspector.prototype.getTeardownProcess = function ( data )
  * @inheritdoc ve.ui.MWExtensionWindow
  */
 ve.ui.MWAlienExtensionInspector.prototype.updateMwData = function ( mwData ) {
-	var key;
-
 	// Parent method
 	ve.ui.MWAlienExtensionInspector.super.prototype.updateMwData.call( this, mwData );
 
 	if ( !ve.isEmptyObject( this.attributeInputs ) ) {
 		// Make sure we have an attrs object to populate
 		mwData.attrs = mwData.attrs || {};
-		for ( key in this.attributeInputs ) {
+		for ( var key in this.attributeInputs ) {
 			mwData.attrs[ key ] = this.attributeInputs[ key ].getValue();
 		}
 	}

@@ -1,4 +1,5 @@
 !! version 2
+
 !! test
 Smoke test for duplicated references with the same text
 !! wikitext
@@ -94,22 +95,6 @@ Smoke test for references that are reused *before* defined in <references>
 <li id="cite_note-a-1"><span class="mw-cite-backlink">↑ <sup><a href="#cite_ref-a_1-0">1.0</a></sup> <sup><a href="#cite_ref-a_1-1">1.1</a></sup></span> <span class="reference-text">text</span>
 </li>
 <li id="cite_note-b-2"><span class="mw-cite-backlink"><a href="#cite_ref-b_2-0">↑</a></span> <span class="reference-text">other</span>
-</li>
-</ol></div>
-!! end
-
-!! test
-T240248: Erroring parser function shouldn't break references
-!! wikitext
-<ref>something</ref>
-{{#ifeq: {{#expr: string < 5 }} | 1 | true | false or error }}
-<references />
-!! html
-<p><sup id="cite_ref-1" class="reference"><a href="#cite_note-1">&#91;1&#93;</a></sup>
-false or error
-</p>
-<div class="mw-references-wrap"><ol class="references">
-<li id="cite_note-1"><span class="mw-cite-backlink"><a href="#cite_ref-1">↑</a></span> <span class="reference-text">something</span>
 </li>
 </ol></div>
 !! end

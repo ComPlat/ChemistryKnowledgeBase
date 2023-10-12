@@ -15,7 +15,7 @@ class PFTreeInput extends PFFormInput {
 
 	private static $multipleSelect = false;
 
-	public static function getName() {
+	public static function getName(): string {
 		return 'tree';
 	}
 
@@ -102,9 +102,6 @@ class PFTreeInput extends PFFormInput {
 			$top_category = $other_args['top category'];
 
 			$title = self::makeTitle( $top_category );
-			if ( $title->getNamespace() != NS_CATEGORY ) {
-				return null;
-			}
 			$hideroot = array_key_exists( 'hideroot', $other_args );
 
 			$pftree = new PFTree( $depth, $cur_values );
@@ -117,7 +114,7 @@ class PFTreeInput extends PFFormInput {
 
 		} else {
 			// Escape - we can't do anything.
-			return null;
+			Html::element( 'div', [ 'class' => 'errorMessage' ], "Tree input: either 'structure' or 'top category' must be set." );
 		}
 
 		$cur_value = implode( $delimiter, $pftree->current_values );
@@ -186,7 +183,7 @@ class PFTreeInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,
@@ -204,7 +201,7 @@ class PFTreeInput extends PFFormInput {
 	static function makeTitle( $title ) {
 		$title = trim( $title );
 
-		if ( strval( $title ) === '' ) {
+		if ( $title === '' ) {
 			return null;
 		}
 

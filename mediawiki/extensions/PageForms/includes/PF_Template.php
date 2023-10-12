@@ -9,10 +9,13 @@
  * @ingroup PF
  */
 
+use MediaWiki\MediaWikiServices;
+
 class PFTemplate {
 	private $mTemplateName;
 	private $mTemplateText;
 	private $mTemplateFields;
+	private $mTemplateParams;
 	private $mConnectingProperty;
 	private $mCategoryName;
 	private $mCargoTable;
@@ -23,6 +26,7 @@ class PFTemplate {
 	private $mFieldEnd;
 	private $mTemplateStart;
 	private $mTemplateEnd;
+	private $mFullWikiText;
 
 	public function __construct( $templateName, $templateFields ) {
 		$this->mTemplateName = $templateName;
@@ -31,8 +35,42 @@ class PFTemplate {
 
 	public static function newFromName( $templateName ) {
 		$template = new PFTemplate( $templateName, [] );
+		$template->loadTemplateParams();
 		$template->loadTemplateFields();
 		return $template;
+	}
+
+	/**
+	 * Get (and store in memory) the values from this template's
+	 * #template_params call, if it exists.
+	 */
+	public function loadTemplateParams() {
+		$embeddedTemplate = null;
+		$templateTitle = Title::makeTitleSafe( NS_TEMPLATE, $this->mTemplateName );
+		if ( $templateTitle === null ) {
+			return;
+		}
+		$services = MediaWikiServices::getInstance();
+		if ( method_exists( $services, 'getPageProps' ) ) {
+			// MW 1.36+
+			$pageProps = $services->getPageProps();
+		} else {
+			$pageProps = PageProps::getInstance();
+		}
+		$properties = $pageProps->getProperties(
+			[ $templateTitle ], [ 'PageFormsTemplateParams' ]
+		);
+		if ( count( $properties ) == 0 ) {
+			return;
+		}
+
+		$paramsForPage = reset( $properties );
+		$paramsForProperty = reset( $paramsForPage );
+		$this->mTemplateParams = unserialize( $paramsForProperty );
+	}
+
+	public function getTemplateParams() {
+		return $this->mTemplateParams;
 	}
 
 	/**
@@ -45,7 +83,7 @@ class PFTemplate {
 			return;
 		}
 
-		$templateText = PFUtils::getPageText( $templateTitle );
+		$templateText = PFUtils::getPageText( $templateTitle ) ?? '';
 		// Ignore 'noinclude' sections and 'includeonly' tags.
 		$templateText = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $templateText );
 		$this->mTemplateText = strtr( $templateText, [ '<includeonly>' => '', '</includeonly>' => '' ] );
@@ -88,24 +126,26 @@ class PFTemplate {
 		// get the #arraymap check regexp to find both kinds of SMW
 		// property tags seemed too hard to do.
 		$this->mTemplateText = preg_replace( '/#arraymap.*{{\s*#set:\s*([^=]*)=([^}]*)}}/', '[[$1:$2]]', $this->mTemplateText );
-
-		// Look for "arraymap" parser function calls that map a
-		// property onto a list.
-		if ( $ret = preg_match_all( '/{{#arraymap:{{{([^|}]*:?[^|}]*)[^\[]*\[\[([^:]*:?[^:]*)::/mis', $this->mTemplateText, $matches ) ) {
-			foreach ( $matches[1] as $i => $field_name ) {
-				if ( !in_array( $field_name, $fieldNamesArray ) ) {
-					$propertyName = $matches[2][$i];
-					$this->loadPropertySettingInTemplate( $field_name, $propertyName, true );
-					$fieldNamesArray[] = $field_name;
-				}
-			}
-		} elseif ( $ret === false ) {
-			// There was an error in the preg_match_all()
-			// call - let the user know about it.
-			if ( preg_last_error() == PREG_BACKTRACK_LIMIT_ERROR ) {
-				print 'Page Forms error: backtrace limit exceeded during parsing! Please increase the value of <a href="http://www.php.net/manual/en/pcre.configuration.php#ini.pcre.backtrack-limit">pcre.backtrack_limit</a> in php.ini or LocalSettings.php.';
-			}
-		}
+        
+        // Patch by DIQA to fix weird forms rendering problem. https://phabricator.wikimedia.org/T338753
+		// // Look for "arraymap" parser function calls that map a
+		// // property onto a list.
+		// $ret = preg_match_all( '/{{#arraymap:{{{([^|}]*:?[^|}]*)[^\[]*\[\[([^:]*:?[^:]*)::/mis', $this->mTemplateText, $matches );
+		// if ( $ret ) {
+		// 	foreach ( $matches[1] as $i => $field_name ) {
+		// 		if ( !in_array( $field_name, $fieldNamesArray ) ) {
+		// 			$propertyName = $matches[2][$i];
+		// 			$this->loadPropertySettingInTemplate( $field_name, $propertyName, true );
+		// 			$fieldNamesArray[] = $field_name;
+		// 		}
+		// 	}
+		// } elseif ( $ret === false ) {
+		// 	// There was an error in the preg_match_all()
+		// 	// call - let the user know about it.
+		// 	if ( preg_last_error() == PREG_BACKTRACK_LIMIT_ERROR ) {
+		// 		print 'Page Forms error: backtrace limit exceeded during parsing! Please increase the value of <a href="http://www.php.net/manual/en/pcre.configuration.php#ini.pcre.backtrack-limit">pcre.backtrack_limit</a> in php.ini or LocalSettings.php.';
+		// 	}
+		// }
 
 		// Look for normal property calls.
 		if ( preg_match_all( '/\[\[([^:|\[\]]*:*?[^:|\[\]]*)::{{{([^\]\|}]*).*?\]\]/mis', $this->mTemplateText, $matches ) ) {
@@ -166,6 +206,25 @@ class PFTemplate {
 				}
 			}
 		}
+
+		// If #template_params was declared for this template, go
+		// through the declared fields, and, for any that were not
+		// already found by parsing the template, populate
+		// $mTemplateFields with it.
+		// @todo - it would be good to combine the #template_params
+		// data with any SMW data found, instead of just getting one
+		// or the other. In practice, though, it doesn't really matter.
+		if ( $this->mTemplateParams !== null ) {
+			foreach ( $this->mTemplateParams as $fieldName => $fieldParams ) {
+				if ( in_array( $fieldName, $fieldNamesArray ) ) {
+					continue;
+				}
+				$templateField = PFTemplateField::newFromParams( $fieldName, $fieldParams );
+				$this->mTemplateFields[$fieldName] = $templateField;
+			}
+			return;
+		}
+
 		ksort( $this->mTemplateFields );
 	}
 
@@ -190,27 +249,41 @@ class PFTemplate {
 		$cargoFieldsOfTemplateParams = [];
 
 		// First, get the table name, and fields, declared for this
-		// template.
-		$templatePageID = $templateTitle->getArticleID();
-		$tableSchemaString = CargoUtils::getPageProp( $templatePageID, 'CargoFields' );
-		// See if there even is DB storage for this template - if not,
-		// exit.
-		if ( $tableSchemaString === null ) {
-			// There's no declared table - but see if there's an
-			// attached table.
-			list( $tableName, $isDeclared ) = CargoUtils::getTableNameForTemplate( $templateTitle );
-			if ( $tableName == null ) {
-				return null;
-			}
-			$mainTemplatePageID = CargoUtils::getTemplateIDForDBTable( $tableName );
-			$tableSchemaString = CargoUtils::getPageProp( $mainTemplatePageID, 'CargoFields' );
+		// template, if any.
+		list( $tableName, $tableSchema ) = $this->getCargoTableAndSchema( $templateTitle );
+		if ( $tableName == null ) {
+			$fieldDescriptions = [];
 		} else {
-			$tableName = CargoUtils::getPageProp( $templatePageID, 'CargoTableName' );
+			$fieldDescriptions = $tableSchema->mFieldDescriptions;
 		}
-		$tableSchema = CargoTableSchema::newFromDBString( $tableSchemaString );
 
-		// Then, match template params to Cargo table fields, by
-		// parsing call(s) to #cargo_store.
+		// If #template_params was declared for this template, our
+		// job is easy - we just go through the declared fields, get
+		// the Cargo data for each field if it exists, and populate
+		// $mTemplateFields with it.
+		if ( $this->mTemplateParams !== null ) {
+			foreach ( $this->mTemplateParams as $fieldName => $fieldParams ) {
+				$templateField = PFTemplateField::newFromParams( $fieldName, $fieldParams );
+				$cargoField = $templateField->getExpectedCargoField();
+				if ( array_key_exists( $cargoField, $fieldDescriptions ) ) {
+					$fieldDescription = $fieldDescriptions[$cargoField];
+					$templateField->setCargoFieldData( $tableName, $cargoField, $fieldDescription );
+				}
+				$this->mTemplateFields[$fieldName] = $templateField;
+			}
+			return;
+		}
+
+		// If there are no declared template params *or* Cargo fields,
+		// exit.
+		if ( count( $fieldDescriptions ) == 0 ) {
+			return;
+		}
+
+		// No #template_params call, so we have to do a more manual
+		// process.
+		// Match template params to Cargo table fields, by parsing
+		// call(s) to #cargo_store.
 		// Let's find every #cargo_store tag.
 		// Unfortunately, it doesn't seem possible to use a regexp
 		// search for this, because it's hard to know which set of
@@ -264,7 +337,6 @@ class PFTemplate {
 
 		// Now, combine the two sets of information into an array of
 		// PFTemplateFields objects.
-		$fieldDescriptions = $tableSchema->mFieldDescriptions;
 		// First, go through the #cargo_store parameters, add add them
 		// all to the array, matching them with Cargo field descriptions
 		// where possible.
@@ -293,6 +365,27 @@ class PFTemplate {
 		}
 	}
 
+	function getCargoTableAndSchema( $templateTitle ) {
+		$templatePageID = $templateTitle->getArticleID();
+		$tableSchemaString = CargoUtils::getPageProp( $templatePageID, 'CargoFields' );
+		// See if there even is DB storage for this template - if not,
+		// exit.
+		if ( $tableSchemaString === null ) {
+			// There's no declared table - but see if there's an
+			// attached table.
+			list( $tableName, $isDeclared ) = CargoUtils::getTableNameForTemplate( $templateTitle );
+			if ( $tableName == null ) {
+				return [ null, null ];
+			}
+			$mainTemplatePageID = CargoUtils::getTemplateIDForDBTable( $tableName );
+			$tableSchemaString = CargoUtils::getPageProp( $mainTemplatePageID, 'CargoFields' );
+		} else {
+			$tableName = CargoUtils::getPageProp( $templatePageID, 'CargoTableName' );
+		}
+		$tableSchema = CargoTableSchema::newFromDBString( $tableSchemaString );
+		return [ $tableName, $tableSchema ];
+	}
+
 	public function getTemplateFields() {
 		return $this->mTemplateFields;
 	}
@@ -318,21 +411,13 @@ class PFTemplate {
 		$this->mCargoTable = str_replace( ' ', '_', $cargoTable );
 	}
 
+	public function setFullWikiTextStatus( $status ) {
+		$this->mFullWikiText = $status;
+	}
+
 	public function setAggregatingInfo( $aggregatingProperty, $aggregationLabel ) {
 		$this->mAggregatingProperty = $aggregatingProperty;
 		$this->mAggregationLabel = $aggregationLabel;
-	}
-
-	// Currently unused method.
-	public function setFieldStartAndEnd( $fieldStart, $fieldEnd ) {
-		$this->mFieldStart = $fieldStart;
-		$this->mFieldEnd = $fieldEnd;
-	}
-
-	// Currently unused method.
-	public function setTemplateStartAndEnd( $templateStart, $templateEnd ) {
-		$this->mTemplateStart = $templateStart;
-		$this->mTemplateEnd = $templateEnd;
 	}
 
 	public function setFormat( $templateFormat ) {
@@ -397,43 +482,80 @@ class PFTemplate {
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$template = $this;
 		Hooks::run( 'PageForms::CreateTemplateText', [ &$template ] );
-		$text = <<<END
+		// Check whether the user needs the full wikitext instead of #template_display
+		if ( $this->mFullWikiText ) {
+			$templateHeader = wfMessage( 'pf_template_docu', $this->mTemplateName )->inContentLanguage()->text();
+			$text = <<<END
+<noinclude>
+$templateHeader
+<pre>
+
+END;
+			$text .= '{{' . $this->mTemplateName;
+			if ( count( $this->mTemplateFields ) > 0 ) {
+				$text .= "\n";
+			}
+			foreach ( $this->mTemplateFields as $field ) {
+				if ( $field->getFieldName() == '' ) {
+					continue;
+				}
+				$text .= "|" . $field->getFieldName() . "=\n";
+			}
+			if ( defined( 'CARGO_VERSION' ) && !defined( 'SMW_VERSION' ) && $this->mCargoTable != '' ) {
+				$cargoInUse = true;
+				$cargoDeclareCall = $this->createCargoDeclareCall() . "\n";
+				$cargoStoreCall = $this->createCargoStoreCall();
+			} else {
+				$cargoInUse = false;
+				$cargoDeclareCall = '';
+				$cargoStoreCall = '';
+			}
+
+			$templateFooter = wfMessage( 'pf_template_docufooter' )->inContentLanguage()->text();
+			$text .= <<<END
+}}
+</pre>
+$templateFooter
+$cargoDeclareCall</noinclude><includeonly>$cargoStoreCall
+END;
+		} else {
+			$text = <<<END
 <noinclude>
 {{#template_params:
 END;
-		foreach ( $this->mTemplateFields as $i => $field ) {
-			if ( $field->getFieldName() == '' ) {
-				continue;
+			foreach ( $this->mTemplateFields as $i => $field ) {
+				if ( $field->getFieldName() == '' ) {
+					continue;
+				}
+				if ( $i > 0 ) {
+					$text .= "|";
+				}
+				$text .= $field->toWikitext();
 			}
-			if ( $i > 0 ) {
-				$text .= "|";
+			if ( defined( 'CARGO_VERSION' ) && !defined( 'SMW_VERSION' ) && $this->mCargoTable != '' ) {
+				$cargoInUse = true;
+				$cargoDeclareCall = $this->createCargoDeclareCall() . "\n";
+				$cargoStoreCall = $this->createCargoStoreCall();
+			} else {
+				$cargoInUse = false;
+				$cargoDeclareCall = '';
+				$cargoStoreCall = '';
 			}
-			$text .= $field->toWikitext();
-		}
-		if ( defined( 'CARGO_VERSION' ) && !defined( 'SMW_VERSION' ) && $this->mCargoTable != '' ) {
-			$cargoInUse = true;
-			$cargoDeclareCall = $this->createCargoDeclareCall() . "\n";
-			$cargoStoreCall = $this->createCargoStoreCall();
-		} else {
-			$cargoInUse = false;
-			$cargoDeclareCall = '';
-			$cargoStoreCall = '';
-		}
 
-		$text .= <<<END
+			$text .= <<<END
 }}
 $cargoDeclareCall</noinclude><includeonly>$cargoStoreCall
 END;
-
-		if ( !defined( 'SMW_VERSION' ) ) {
-			$text .= "\n{{#template_display:";
-			if ( $this->mTemplateFormat != null ) {
-				$text .= "_format=" . $this->mTemplateFormat;
+			if ( !defined( 'SMW_VERSION' ) ) {
+				$text .= "\n{{#template_display:";
+				if ( $this->mTemplateFormat != null ) {
+					$text .= "_format=" . $this->mTemplateFormat;
+				}
+				$text .= "}}";
+				$text .= $this->printCategoryTag();
+				$text .= "</includeonly>";
+				return $text;
 			}
-			$text .= "}}";
-			$text .= $this->printCategoryTag();
-			$text .= "</includeonly>";
-			return $text;
 		}
 
 		// Before text
@@ -529,7 +651,9 @@ END;
 					$tableText .= '==' . $fieldLabel . "==\n";
 					$separator = '';
 				}
-			} // If it's 'hidden', do nothing
+			} else {
+				// If it's 'hidden', do nothing
+			}
 			// Value column
 			if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
 				if ( $fieldDisplay == 'hidden' ) {

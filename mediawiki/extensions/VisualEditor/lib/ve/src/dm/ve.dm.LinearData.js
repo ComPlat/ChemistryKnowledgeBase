@@ -16,7 +16,7 @@
  */
 ve.dm.LinearData = function VeDmLinearData( store, data ) {
 	this.store = store;
-	this.data = data || [];
+	this.data = data ? ve.deepFreeze( data, true ) : [];
 };
 
 /* Inheritance */
@@ -94,7 +94,27 @@ ve.dm.LinearData.prototype.getData = function ( offset ) {
  * @param {Object|string} value Value to store
  */
 ve.dm.LinearData.prototype.setData = function ( offset, value ) {
-	this.data[ offset ] = value;
+	this.data[ offset ] = typeof value === 'object' ? ve.deepFreeze( value ) : value;
+	// this.data[ offset ] = value;
+};
+
+/**
+ * Modify an existing object in the linear model
+ *
+ * As objects in the model and immutable, this creates
+ * a clone which is passed to a callback function for
+ * modification, then the clone is inserted into the model.
+ *
+ * @param {number} offset Offset to modify data at
+ * @param {Function} modify Modification function. First argument is the data element to modify.
+ */
+ve.dm.LinearData.prototype.modifyData = function ( offset, modify ) {
+	// Unfreeze object by creating a new copy
+	var newItem = ve.copy( this.getData( offset ) );
+	// Modify via callback
+	modify( newItem );
+	// Insert into linear model, re-freezing it
+	this.setData( offset, newItem );
 };
 
 /**
@@ -208,7 +228,7 @@ ve.dm.LinearData.prototype.batchSpliceObject = function ( offset, remove, data )
  * @return {Array} Slice or copy of data
  */
 ve.dm.LinearData.prototype.getDataSlice = function ( range, deep ) {
-	var end, data,
+	var end,
 		start = 0,
 		length = this.getLength();
 	if ( range !== undefined ) {
@@ -217,7 +237,7 @@ ve.dm.LinearData.prototype.getDataSlice = function ( range, deep ) {
 	}
 	// Support: IE
 	// IE work-around: arr.slice( 0, undefined ) returns [] while arr.slice( 0 ) behaves correctly
-	data = end === undefined ? this.slice( start ) : this.slice( start, end );
+	var data = end === undefined ? this.slice( start ) : this.slice( start, end );
 	// Return either the slice or a deep copy of the slice
 	return deep ? ve.copy( data ) : data;
 };

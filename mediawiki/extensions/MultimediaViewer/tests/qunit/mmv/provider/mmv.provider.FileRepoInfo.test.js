@@ -18,11 +18,11 @@
 ( function () {
 	QUnit.module( 'mmv.provider.FileRepoInfo', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'FileRepoInfo constructor sanity check', function ( assert ) {
+	QUnit.test( 'FileRepoInfo constructor sense check', function ( assert ) {
 		var api = { get: function () {} },
 			fileRepoInfoProvider = new mw.mmv.provider.FileRepoInfo( api );
 
-		assert.ok( fileRepoInfoProvider );
+		assert.true( fileRepoInfoProvider instanceof mw.mmv.provider.FileRepoInfo );
 	} );
 
 	QUnit.test( 'FileRepoInfo get test', function ( assert ) {
@@ -119,7 +119,7 @@
 			fileRepoInfoProvider = new mw.mmv.provider.FileRepoInfo( api );
 
 		fileRepoInfoProvider.get().fail( function () {
-			assert.ok( true, 'promise rejected when no data is returned' );
+			assert.true( true, 'promise rejected when no data is returned' );
 			done();
 		} );
 	} );

@@ -3,17 +3,15 @@
 namespace SMW\Tests\Integration\MediaWiki;
 
 use LinksUpdate;
+use MediaWiki\MediaWikiServices;
 use ParserOutput;
-use Revision;
 use SMW\Services\ServicesFactory;
 use SMW\DIWikiPage;
 use SMW\ParserData;
-use SMW\Tests\MwDBaseUnitTestCase;
+use SMW\Tests\DatabaseTestCase;
 use SMW\Tests\Utils\PageCreator;
 use Title;
 use UnexpectedValueException;
-use User;
-use WikiPage;
 
 /**
  * @group semantic-mediawiki
@@ -24,7 +22,7 @@ use WikiPage;
  *
  * @author mwjames
  */
-class LinksUpdateSQLStoreDBIntegrationTest extends MwDBaseUnitTestCase {
+class LinksUpdateSQLStoreDBIntegrationTest extends DatabaseTestCase {
 
 	protected $destroyDatabaseTablesBeforeRun = true;
 
@@ -33,11 +31,13 @@ class LinksUpdateSQLStoreDBIntegrationTest extends MwDBaseUnitTestCase {
 	private $semanticDataValidator;
 	private $pageDeleter;
 	private $revisionGuard;
+	private $pageCreator;
 
 	protected function setUp() : void {
 		parent::setUp();
 
-		$this->revisionGuard = ServicesFactory::getInstance()->singleton( 'RevisionGuard' );
+		$serviceFactory = ServicesFactory::getInstance();
+		$this->revisionGuard = $serviceFactory->singleton( 'RevisionGuard' );
 
 		$this->testEnvironment->addConfiguration(
 			'smwgPageSpecialProperties',
@@ -51,6 +51,7 @@ class LinksUpdateSQLStoreDBIntegrationTest extends MwDBaseUnitTestCase {
 
 		$this->semanticDataValidator = $this->testEnvironment->getUtilityFactory()->newValidatorFactory()->newSemanticDataValidator();
 		$this->pageDeleter = $this->testEnvironment->getUtilityFactory()->newPageDeleter();
+		$this->pageCreator = $serviceFactory->newPageCreator();
 	}
 
 	public function tearDown() : void {
@@ -123,8 +124,7 @@ class LinksUpdateSQLStoreDBIntegrationTest extends MwDBaseUnitTestCase {
 	}
 
 	protected function assertSemanticDataBeforeContentAlteration() {
-
-		$wikiPage = WikiPage::factory( $this->title );
+		$wikiPage = $this->pageCreator->createPage( $this->title );
 		$revision = $this->revisionGuard->newRevisionFromPage( $wikiPage );
 
 		$parserData = $this->retrieveAndLoadData();
@@ -187,7 +187,9 @@ class LinksUpdateSQLStoreDBIntegrationTest extends MwDBaseUnitTestCase {
 
 	protected function retrieveAndLoadData( $revId = null ) {
 
-		$revision = $revId ? Revision::newFromId( $revId ) : null;
+		$revision = $revId !== null
+				  ? MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $revId )
+				  : null;
 
 		$contentParser = ServicesFactory::getInstance()->newContentParser(
 			$this->title

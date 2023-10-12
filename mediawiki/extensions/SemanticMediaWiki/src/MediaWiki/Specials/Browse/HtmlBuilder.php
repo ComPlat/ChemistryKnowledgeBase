@@ -3,7 +3,8 @@
 namespace SMW\MediaWiki\Specials\Browse;
 
 use Html;
-use SMW\ApplicationFactory;
+use MediaWiki\MediaWikiServices;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\DataValueFactory;
 use SMW\DIProperty;
 use SMW\DIWikiPage;
@@ -12,6 +13,7 @@ use SMW\RequestOptions;
 use SMW\SemanticData;
 use SMW\Store;
 use SMW\Utils\HtmlDivTable;
+use SMWDataValue;
 
 /**
  * @license GNU GPL v2+
@@ -86,6 +88,10 @@ class HtmlBuilder {
 	 * @var array
 	 */
 	private $language = 'en';
+
+	private SMWDataValue $dataValue;
+
+	private string $articletext;
 
 	/**
 	 * @since 2.5
@@ -359,15 +365,17 @@ class HtmlBuilder {
 		$this->articletext = $this->dataValue->getWikiValue();
 		$html .= "</div>";
 
-		\Hooks::run(
-			'SMW::Browse::AfterDataLookupComplete',
-			[
-				$this->store,
-				$semanticData,
-				&$html,
-				&$this->extraModules
-			]
-		);
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run(
+				'SMW::Browse::AfterDataLookupComplete',
+				[
+					$this->store,
+					$semanticData,
+					&$html,
+					&$this->extraModules
+				]
+			);
 
 		if ( $this->getOption( 'printable' ) !== 'yes' && !$this->getOption( 'including' ) ) {
 			$html .= FieldBuilder::createQueryForm( $this->articletext, $this->language );
@@ -616,15 +624,17 @@ class HtmlBuilder {
 			if ( $moreIncoming ) {
 				// Added in 2.3
 				// link to the remaining incoming pages
-				$hook = \Hooks::run(
-					'SMW::Browse::BeforeIncomingPropertyValuesFurtherLinkCreate',
-					[
-						$diProperty,
-						$contextPage,
-						&$value_html,
-						$this->store
-					]
-				);
+				MediaWikiServices::getInstance()
+					->getHookContainer()
+					->run(
+						'SMW::Browse::BeforeIncomingPropertyValuesFurtherLinkCreate',
+						[
+							$diProperty,
+							$contextPage,
+							&$value_html,
+							$this->store
+						]
+					);
 			}
 
 			if ( $hook ) {
@@ -896,14 +906,16 @@ class HtmlBuilder {
 		// Added in 2.3
 		// Whether to show a more link or not can be set via
 		// SMW::Browse::BeforeIncomingPropertyValuesFurtherLinkCreate
-		\Hooks::run(
-			'SMW::Browse::AfterIncomingPropertiesLookupComplete',
-			[
-				$this->store,
-				$indata,
-				$valRequestOptions
-			]
-		);
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run(
+				'SMW::Browse::AfterIncomingPropertiesLookupComplete',
+				[
+					$this->store,
+					$indata,
+					$valRequestOptions
+				]
+			);
 
 		return [ $indata, $more ];
 	}

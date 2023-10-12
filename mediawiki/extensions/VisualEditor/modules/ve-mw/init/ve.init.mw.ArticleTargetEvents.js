@@ -23,18 +23,7 @@ ve.init.mw.ArticleTargetEvents = function VeInitMwArticleTargetEvents( target ) 
 		saveInitiated: 'onSaveInitiated',
 		save: 'onSaveComplete',
 		saveReview: 'onSaveReview',
-		saveErrorEmpty: [ 'trackSaveError', 'empty' ],
-		saveErrorSpamBlacklist: [ 'trackSaveError', 'spamblacklist' ],
-		saveErrorAbuseFilter: [ 'trackSaveError', 'abusefilter' ],
-		saveErrorBadToken: [ 'trackSaveError', 'badtoken' ],
-		saveErrorNewUser: [ 'trackSaveError', 'newuser' ],
-		saveErrorPageDeleted: [ 'trackSaveError', 'pagedeleted' ],
-		saveErrorHookAborted: [ 'trackSaveError', 'responseUnknown' ], // FIXME: Make a specific one.
-		saveErrorTitleBlacklist: [ 'trackSaveError', 'titleblacklist' ],
-		saveErrorCaptcha: [ 'trackSaveError', 'captcha' ],
-		saveErrorReadOnly: [ 'trackSaveError', 'unknown', 'readonly' ],
-		saveErrorUnknown: [ 'trackSaveError', 'unknown' ],
-		editConflict: [ 'trackSaveError', 'editconflict' ],
+		saveError: 'trackSaveError',
 		surfaceReady: 'onSurfaceReady',
 		showChanges: 'onShowChanges',
 		showChangesError: 'onShowChangesError',
@@ -51,7 +40,7 @@ ve.init.mw.ArticleTargetEvents = function VeInitMwArticleTargetEvents( target ) 
  * @param {Object} data Additional data describing the event, encoded as an object
  */
 ve.init.mw.ArticleTargetEvents.prototype.track = function ( topic, data ) {
-	ve.track( topic, $.extend( {
+	ve.track( topic, ve.extendObject( {
 		mode: this.target.surface ? this.target.surface.getMode() : this.target.getDefaultMode()
 	}, data ) );
 };
@@ -133,49 +122,42 @@ ve.init.mw.ArticleTargetEvents.prototype.onSaveComplete = function ( data ) {
 /**
  * Track a save error by type
  *
- * @param {string} type Text for error type
+ * @param {string} code Error code
  */
-ve.init.mw.ArticleTargetEvents.prototype.trackSaveError = function ( type ) {
-	var key, data,
-		failureArguments = [],
-		// Maps mwtiming types to mwedit types
-		typeMap = {
+ve.init.mw.ArticleTargetEvents.prototype.trackSaveError = function ( code ) {
+	// Maps mwtiming types to mwedit types
+	var typeMap = {
 			badtoken: 'userBadToken',
-			newuser: 'userNewUser',
-			abusefilter: 'extensionAbuseFilter',
+			assertanonfailed: 'userNewUser',
+			assertuserfailed: 'userNewUser',
+			assertnameduserfailed: 'userNewUser',
+			'abusefilter-disallowed': 'extensionAbuseFilter',
+			'abusefilter-warning': 'extensionAbuseFilter',
 			captcha: 'extensionCaptcha',
 			spamblacklist: 'extensionSpamBlacklist',
-			empty: 'responseEmpty',
-			unknown: 'responseUnknown',
+			'titleblacklist-forbidden': 'extensionTitleBlacklist',
 			pagedeleted: 'editPageDeleted',
-			titleblacklist: 'extensionTitleBlacklist',
 			editconflict: 'editConflict'
 		},
-		// Types that are logged as performance.user.saveError.{type}
+		// Types that are logged as performance.user.saveError.{code}
 		// (for historical reasons; this sucks)
 		specialTypes = [ 'editconflict' ];
 
-	if ( arguments ) {
-		failureArguments = Array.prototype.slice.call( arguments, 1 );
-	}
-
-	key = 'performance.user.saveError';
-	if ( specialTypes.indexOf( type ) !== -1 ) {
-		key += '.' + type;
+	var key = 'performance.user.saveError';
+	if ( specialTypes.indexOf( code ) !== -1 ) {
+		key += '.' + code;
 	}
 	this.trackTiming( key, {
 		duration: ve.now() - this.timings.saveInitiated,
 		retries: this.timings.saveRetries,
-		type: type
+		type: code
 	} );
 
-	data = {
-		type: typeMap[ type ] || 'responseUnknown',
+	var data = {
+		message: code,
+		type: typeMap[ code ] || 'responseUnknown',
 		timing: ve.now() - this.timings.saveInitiated + ( this.timings.serializeForCache || 0 )
 	};
-	if ( type === 'unknown' && failureArguments[ 0 ] ) {
-		data.message = failureArguments[ 0 ];
-	}
 	this.track( 'mwedit.saveFailure', data );
 };
 

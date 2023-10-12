@@ -9,15 +9,20 @@
 	box-shadow: 0 2px 1px 0 rgba( 0, 0, 0, 0.1 );
 
 	/* Groups */
+	.group,
+	.section-secondary .group {
+		border-color: #eaecf0;
+	}
+
 	.group {
 		min-height: 32px;
 		margin: 0;
-		border-color: #eaecf0;
 		padding-right: 0;
 
 		.label {
 			height: 28px;
 			margin-left: 8px;
+			/* stylelint-disable-next-line declaration-property-unit-disallowed-list */
 			line-height: 28px;
 		}
 
@@ -30,6 +35,7 @@
 			.label {
 				height: 32px;
 				padding-left: 8px;
+				/* stylelint-disable-next-line declaration-property-unit-disallowed-list */
 				line-height: 32px;
 
 				&:after {

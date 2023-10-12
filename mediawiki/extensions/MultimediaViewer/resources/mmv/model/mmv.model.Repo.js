@@ -15,8 +15,6 @@
  * along with MultimediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* eslint-disable no-use-before-define */
-
 ( function () {
 	/**
 	 * Represents information about a single image repository
@@ -77,7 +75,7 @@
 	 * @return {boolean}
 	 */
 	Repo.prototype.isCommons = function () {
-		// there does not seem to be a sane way to do this
+		// there does not seem to be a sensible way to do this
 		return this.displayName === 'Wikimedia Commons';
 	};
 

@@ -8,14 +8,26 @@
 
 $namespaceNames = [];
 
+$namespaceAliases = [];
+
 $namespaceNames['en'] = [
 	828 => 'Module',
 	829 => 'Module_talk',
 ];
 
 $namespaceNames['ab'] = [
-	828 => 'Амодул',
-	829 => 'Амодул_ахцәажәара',
+	828 => 'Амодуль',
+	829 => 'Амодуль_ахцәажәара',
+];
+
+$namespaceAliases['ab'] = [
+	'Амодул' => 828,
+	'Амодул_ахцәажәара' => 829,
+];
+
+$namespaceNames['alt'] = [
+	828 => 'Модуль',
+	829 => 'Модульды_шӱӱжери',
 ];
 
 $namespaceNames['an'] = [
@@ -41,6 +53,11 @@ $namespaceNames['atj'] = [
 $namespaceNames['avk'] = [
 	828 => 'Siba',
 	829 => 'Sibaprilara',
+];
+
+$namespaceNames['az'] = [
+	828 => 'Modul',
+	829 => 'Modul_müzakirəsi',
 ];
 
 $namespaceNames['azb'] = [
@@ -298,6 +315,11 @@ $namespaceNames['ku'] = [
 	829 => 'Gotûbêja_modulê',
 ];
 
+$namespaceNames['ky'] = [
+	828 => 'Модуль',
+	829 => 'Модулду_талкуулоо',
+];
+
 $namespaceNames['lb'] = [
 	828 => 'Modul',
 	829 => 'Modul_Diskussioun',
@@ -355,6 +377,12 @@ $namespaceNames['mr'] = [
 
 $namespaceNames['ms'] = [
 	828 => 'Modul',
+	829 => 'Perbincangan_modul',
+];
+
+$namespaceNames['ms-arab'] = [
+	828 => 'مودول',
+	829 => 'ڤربينچڠن_مودول',
 ];
 
 $namespaceNames['mwl'] = [
@@ -412,6 +440,11 @@ $namespaceNames['pa'] = [
 	829 => 'ਮੌਡਿਊਲ_ਗੱਲ-ਬਾਤ',
 ];
 
+$namespaceNames['pcm'] = [
+	828 => 'Modul',
+	829 => 'Modul_tok_abaut_am',
+];
+
 $namespaceNames['pl'] = [
 	828 => 'Moduł',
 	829 => 'Dyskusja_modułu',
@@ -452,6 +485,16 @@ $namespaceNames['sat'] = [
 	829 => 'ᱢᱳᱰᱩᱞ_ᱜᱟᱞᱢᱟᱨᱟᱣ',
 ];
 
+$namespaceNames['scn'] = [
+	828 => 'Mòdulu',
+	829 => 'Discussioni_mòdulu',
+];
+
+$namespaceAliases['scn'] = [
+	'Modulo' => 828,
+	'Discussioni_modulo' => 829,
+];
+
 $namespaceNames['sd'] = [
 	828 => 'ماڊيول',
 	829 => 'ماڊيول_بحث',
@@ -490,6 +533,11 @@ $namespaceNames['skr-arab'] = [
 $namespaceNames['sl'] = [
 	828 => 'Modul',
 	829 => 'Pogovor_o_modulu',
+];
+
+$namespaceNames['smn'] = [
+	828 => 'Mooduul',
+	829 => 'Savâstâllâm_modulist',
 ];
 
 $namespaceNames['sq'] = [
@@ -534,7 +582,7 @@ $namespaceNames['te'] = [
 
 $namespaceNames['ti'] = [
 	828 => 'ሞድዩል',
-	829 => 'ሞድዩል_ምይይጥ',
+	829 => 'ምይይጥ_ሞድዩል',
 ];
 
 $namespaceNames['tg'] = [
@@ -573,8 +621,8 @@ $namespaceNames['yue'] = [
 ];
 
 $namespaceNames['zh'] = [
-	828 => '模块',
-	829 => '模块讨论',
+	828 => 'Module',
+	829 => 'Module_talk',
 ];
 
 $namespaceNames['zh-hans'] = [
@@ -582,7 +630,25 @@ $namespaceNames['zh-hans'] = [
 	829 => '模块讨论',
 ];
 
+$namespaceAliases['zh-hans'] = [
+	'模块' => 828,
+	'模组' => 828,
+	'模块对话' => 829,
+	'模块讨论' => 829,
+	'模组对话' => 829,
+	'模组讨论' => 829,
+];
+
 $namespaceNames['zh-hant'] = [
 	828 => '模組',
 	829 => '模組討論',
+];
+
+$namespaceAliases['zh-hant'] = [
+	'模組' => 828,
+	'模塊' => 828,
+	'模組對話' => 829,
+	'模組討論' => 829,
+	'模塊對話' => 829,
+	'模塊討論' => 829,
 ];

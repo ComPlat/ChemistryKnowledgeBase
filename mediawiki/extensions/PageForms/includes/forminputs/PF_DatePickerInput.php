@@ -16,6 +16,10 @@ use MediaWiki\Widget\DateInputWidget;
 
 class PFDatePickerInput extends PFFormInput {
 
+	public static function getName(): string {
+		return 'datepicker';
+	}
+
 	/**
 	 * @param string $input_number The number of the input in the form.
 	 * @param string $cur_value The current value of the input field.
@@ -31,18 +35,6 @@ class PFDatePickerInput extends PFFormInput {
 		}
 
 		parent::__construct( $input_number, $cur_value, $input_name, $disabled, $other_args );
-	}
-
-	/**
-	 * Returns the name of the input type this class handles.
-	 *
-	 * This is the name to be used in the field definition for the
-	 * "input type" parameter.
-	 *
-	 * @return string The name of the input type this class handles.
-	 */
-	public static function getName() {
-		return 'datepicker';
 	}
 
 	/**
@@ -95,7 +87,7 @@ class PFDatePickerInput extends PFFormInput {
 	 * the user should be able to input values.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		$options = array_merge( $this->getOptions(), [
 			'type' => 'date',
 			'name' => $this->mInputName,
@@ -105,6 +97,7 @@ class PFDatePickerInput extends PFFormInput {
 			'infusable' => true
 		] );
 		$widget = new DateInputWidget( $options );
+		$widget->setDisabled( $this->mIsDisabled );
 		$text = $widget->toString();
 
 		// We need a wrapper div so that OOUI won't override
@@ -149,6 +142,7 @@ class PFDatePickerInput extends PFFormInput {
 	private function getConvertedFormat() {
 		$oldFormat = $this->mOtherArgs['date format'];
 		$j = 0;
+		$newFormat = [];
 		for ( $i = 0; $i < strlen( $oldFormat ); $i++ ) {
 			if ( $oldFormat[$i] === "d" && isset( $oldFormat[$i + 1] ) && $oldFormat[$i + 1] !== "d" ) {
 				// If the letter is "d" and next letter is not "d"

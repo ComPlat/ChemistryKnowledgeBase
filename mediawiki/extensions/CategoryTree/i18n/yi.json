@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"פוילישער"
+			"פוילישער",
+			"Pacha Tchernof"
 		]
 	},
 	"categorytree": "קאַטעגאריע בוים",
@@ -9,7 +10,7 @@
 	"categorytree-legend": "ווײַזן קאַטעגאריע בוים",
 	"categorytree-desc": "נאוויגירן דינאמיש דעם [[Special:CategoryTree|קאטעגאריע סטרוקטור]]",
 	"categorytree-header": "לייגט אריין א קאטעגאריע נאמען צו זען איר אינהאלט אלס א בוים סטרוקטור.(פֿאדערט JavaScript.)",
-	"categorytree-category": "קאטעגאריע:",
+	"categorytree-category": "קאַטעגאָריע:",
 	"categorytree-go": "ווײַזן בוים",
 	"categorytree-parents": "העכערע קאַטעגאריעס",
 	"categorytree-mode-label": "מאדע:",
@@ -18,8 +19,6 @@
 	"categorytree-mode-all": "אַלע בלעטער",
 	"categorytree-collapse": "אײַנציען",
 	"categorytree-expand": "פֿאַרברייטערן",
-	"categorytree-expand-bullet": "◄",
-	"categorytree-empty-bullet": "◄",
 	"categorytree-member-counts": "אנטהאלט {{PLURAL:$1|1 אונטערקאטעגאריע|$1 אונטערקאטעגאריעס}}, {{PLURAL:$2|1 בלאט|$2 בלעטער}}, און {{PLURAL:$3|1 טעקע|$3 טעקעס}}",
 	"categorytree-num-categories": "$1 קאַט",
 	"categorytree-num-pages": "$1 ב",

@@ -139,8 +139,8 @@ ve.init.Platform.prototype.getMetadataIdRegExp = function () {
  * Show a read-only notification to the user.
  *
  * @abstract
- * @param {jQuery|string} message Message
- * @param {jQuery|string} [title] Title
+ * @param {jQuery|string} message
+ * @param {jQuery|string} [title]
  */
 ve.init.Platform.prototype.notify = null;
 
@@ -186,7 +186,7 @@ ve.init.Platform.prototype.createSafeStorage = null;
  * @return {ve.init.ListStorage}
  */
 ve.init.Platform.prototype.createListStorage = function ( safeStorage ) {
-	return new ve.init.ListStorage( safeStorage );
+	return ve.init.createListStorage( safeStorage );
 };
 
 ve.init.Platform.prototype.createLocalStorage = function () {
@@ -368,19 +368,45 @@ ve.init.Platform.prototype.getInitializedPromise = function () {
  * @return {jQuery.Promise}
  */
 ve.init.Platform.prototype.fetchSpecialCharList = function () {
-	var charsObj = {};
-
-	try {
-		charsObj = JSON.parse(
-			ve.msg( 'visualeditor-specialcharinspector-characterlist-insert' )
-		);
-	} catch ( err ) {
-		// There was no character list found, or the character list message is
-		// invalid json string. Force a fallback to the minimal character list
-		ve.log( 've.init.Platform: Could not parse the Special Character list.' );
-		ve.log( err.message );
+	function tryParseJSON( json ) {
+		try {
+			return JSON.parse( json );
+		} catch ( err ) {
+			// There was no character list found, or the character list message is
+			// invalid json string. Force a fallback to the minimal character list
+			ve.log( 've.init.Platform: Could not parse the special character list ' + json );
+			ve.log( err.message );
+		}
+		return {};
 	}
+
+	var charsObj = {},
+		groups = [ 'accents', 'mathematical', 'symbols' ];
+
+	groups.forEach( function ( group ) {
+		charsObj[ group ] = {
+			// The following messages are used here:
+			// * visualeditor-specialcharacter-group-label-accents
+			// * visualeditor-specialcharacter-group-label-mathematical
+			// * visualeditor-specialcharacter-group-label-symbols
+			label: ve.msg( 'visualeditor-specialcharacter-group-label-' + group ),
+			// The following messages are used here:
+			// * visualeditor-specialcharacter-group-set-accents
+			// * visualeditor-specialcharacter-group-set-mathematical
+			// * visualeditor-specialcharacter-group-set-symbols
+			characters: tryParseJSON( ve.msg( 'visualeditor-specialcharacter-group-set-' + group ) )
+		};
+	} );
 
 	// This implementation always resolves instantly
 	return ve.createDeferred().resolve( charsObj ).promise();
 };
+
+/**
+ * Decode HTML entities for insertion into the document
+ *
+ * @method
+ * @param {string} html HTML string
+ * @return {string}
+ */
+ve.init.Platform.prototype.decodeEntities = ve.safeDecodeEntities;

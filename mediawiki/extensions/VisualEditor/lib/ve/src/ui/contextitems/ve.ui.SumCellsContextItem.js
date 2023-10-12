@@ -34,8 +34,6 @@ ve.ui.SumCellsContextItem.static.icon = 'mathematics';
 
 ve.ui.SumCellsContextItem.static.editable = false;
 
-ve.ui.SumCellsContextItem.static.deletable = false;
-
 ve.ui.SumCellsContextItem.static.embeddable = false;
 
 /* Methods */
@@ -51,9 +49,11 @@ ve.ui.SumCellsContextItem.static.isCompatibleWith = function ( model ) {
  * @inheritdoc
  */
 ve.ui.SumCellsContextItem.prototype.setup = function () {
+	// Parent method
+	ve.ui.SumCellsContextItem.super.prototype.setup.apply( this, arguments );
+
 	// If not disabled, selection must be table and spanning multiple matrix cells
-	var sum, cells, viewCell,
-		count = 0,
+	var count = 0,
 		selection = this.getFragment().getSurface().getSelection(),
 		documentModel = this.getFragment().getDocument(),
 		documentView = this.context.getSurface().getView().getDocument();
@@ -61,23 +61,24 @@ ve.ui.SumCellsContextItem.prototype.setup = function () {
 	// There's some situations involving transclusion table cells which
 	// can make us have a LinearSelection here, so make sure this will
 	// work:
+	var sum;
 	if ( selection instanceof ve.dm.TableSelection ) {
-		cells = selection.getMatrixCells( documentModel, true );
+		var cells = selection.getMatrixCells( documentModel, true );
 		if ( cells.length > 1 ) {
-			sum = cells.reduce( function ( sum, cell ) {
+			sum = cells.reduce( function ( s, cell ) {
 				var number;
 				if ( !cell.isPlaceholder() ) {
 					// Get text from view rendering to catch numbers in alien nodes, etc.
-					viewCell = documentView.getBranchNodeFromOffset( cell.node.getRange().start );
+					var viewCell = documentView.getBranchNodeFromOffset( cell.node.getRange().start );
 					number = ve.init.platform.parseNumber(
 						viewCell.$element.text()
 					);
 					if ( !isNaN( number ) ) {
 						count++;
-						return sum + number;
+						return s + number;
 					}
 				}
-				return sum;
+				return s;
 			}, 0 );
 		}
 	}

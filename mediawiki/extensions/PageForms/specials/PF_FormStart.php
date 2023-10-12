@@ -9,6 +9,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\MediaWikiServices;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -41,7 +43,8 @@ class PFFormStart extends SpecialPage {
 			}
 
 			// Get namespace from the URL, if it's there.
-			if ( $namespace_label_loc = strpos( $form_name, "/Namespace:" ) ) {
+			$namespace_label_loc = strpos( $form_name, "/Namespace:" );
+			if ( $namespace_label_loc !== false ) {
 				$target_namespace = substr( $form_name, $namespace_label_loc + 11 );
 				$form_name = substr( $form_name, 0, $namespace_label_loc );
 			}
@@ -151,7 +154,12 @@ END;
 		if ( $page_title->exists() ) {
 			// It exists - see if page is a redirect; if
 			// it is, edit the target page instead.
-			$content = WikiPage::factory( $page_title )->getContent();
+			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
+				// MW 1.36+
+				$content = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $page_title )->getContent();
+			} else {
+				$content = WikiPage::factory( $page_title )->getContent();
+			}
 			if ( $content && $content->getRedirectTarget() ) {
 				$page_title = $content->getRedirectTarget();
 				$page_name = PFUtils::titleURLString( $page_title );

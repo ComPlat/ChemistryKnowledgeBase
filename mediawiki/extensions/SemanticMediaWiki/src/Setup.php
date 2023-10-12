@@ -87,15 +87,10 @@ final class Setup {
 	 *
 	 * @since 3.0
 	 */
-	public static function initExtension( &$vars ) {
+	public static function initExtension( array $vars ): array {
 		Hooks::registerEarly( $vars );
 
-		// Register connection providers early to ensure the invocation of SMW
-		// related extensions such as `wfLoadExtension( 'SemanticCite' );` can
-		// happen before or after `enableSemantics` so that the check by the
-		// `ConnectionManager` (#4170) doesn't throw an error when an extension
-		// access the `Store` during `onExtensionFunction`
-		self::initConnectionProviders();
+		return $vars;
 	}
 
 	/**
@@ -114,14 +109,12 @@ final class Setup {
 
 	/**
 	 * @since 1.9
-	 *
-	 * @param array &$vars
-	 * @param string $rootDir
 	 */
-	public function init( &$vars, $rootDir ) {
+	public function init( array $vars, string $rootDir ): array {
 
 		$setupFile = new SetupFile();
-		$setupFile->loadSchema( $vars );
+		$vars = $setupFile->loadSchema( $vars );
+		Globals::replace( $vars );
 
 		$setupCheck = new SetupCheck(
 			[
@@ -147,6 +140,7 @@ final class Setup {
 			$setupCheck->showErrorAndAbort( $setupCheck->isCli() );
 		}
 
+		$this->initConnectionProviders();
 		$this->initMessageCallbackHandler();
 		$this->addDefaultConfigurations( $vars, $rootDir );
 
@@ -155,9 +149,11 @@ final class Setup {
 
 		$this->registerParamDefinitions( $vars );
 		$this->registerFooterIcon( $vars, $rootDir );
-		$this->registerHooks( $vars, $rootDir );
+		$this->registerHooks( $vars );
 
 		$this->hookDispatcher->onSetupAfterInitializationComplete( $vars );
+
+		return $vars;
 	}
 
 	private function addDefaultConfigurations( &$vars, $rootDir ) {
@@ -165,7 +161,8 @@ final class Setup {
 		// Convenience function for extensions depending on a SMW specific
 		// test infrastructure
 		if ( !defined( 'SMW_PHPUNIT_AUTOLOADER_FILE' ) ) {
-			define( 'SMW_PHPUNIT_AUTOLOADER_FILE', "$rootDir/tests/autoloader.php" );
+			$smwDir = dirname( $rootDir );
+			define( 'SMW_PHPUNIT_AUTOLOADER_FILE', "$smwDir/tests/autoloader.php" );
 		}
 
 		$vars['wgLogTypes'][] = 'smw';
@@ -197,7 +194,7 @@ final class Setup {
 		}
 	}
 
-	private static function initConnectionProviders() {
+	private function initConnectionProviders() {
 
 		$applicationFactory = ApplicationFactory::getInstance();
 
@@ -387,8 +384,8 @@ final class Setup {
 	 * @note $wgHooks contains a list of hooks which specifies for every event an
 	 * array of functions to be called.
 	 */
-	private function registerHooks( &$vars, $localDirectory ) {
-		$hooks = new Hooks( $localDirectory );
+	private function registerHooks( &$vars ) {
+		$hooks = new Hooks();
 		$hooks->register( $vars );
 	}
 

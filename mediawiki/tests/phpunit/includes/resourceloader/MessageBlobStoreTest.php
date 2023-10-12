@@ -1,18 +1,33 @@
 <?php
 
+namespace MediaWiki\Tests\ResourceLoader;
+
+use EmptyResourceLoader;
+use HashBagOStuff;
+use MediaWiki\ResourceLoader\MessageBlobStore;
+use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWikiCoversValidator;
 use Psr\Log\NullLogger;
+use ResourceLoaderTestModule;
+use WANObjectCache;
 
 /**
  * @group ResourceLoader
- * @covers MessageBlobStore
+ * @covers \MediaWiki\ResourceLoader\MessageBlobStore
  */
-class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
+class MessageBlobStoreTest extends \PHPUnit\Framework\TestCase {
 
 	use MediaWikiCoversValidator;
 
 	private const NAME = 'test.blobstore';
 
-	protected function setUp() : void {
+	/** @var WANObjectCache */
+	private $wanCache;
+
+	/** @var float */
+	private $clock;
+
+	protected function setUp(): void {
 		parent::setUp();
 		// MediaWiki's test wrapper sets $wgMainWANCache to CACHE_NONE.
 		// Use HashBagOStuff here so that we can observe caching.
@@ -81,7 +96,7 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 		// Arrange version 1 of a message
 		$blobStore->expects( $this->once() )
 			->method( 'fetchMessage' )
-			->will( $this->returnValue( 'First version' ) );
+			->willReturn( 'First version' );
 
 		// Assert
 		$blob = $blobStore->getBlob( $module, 'en' );
@@ -91,7 +106,7 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 		$blobStore = $this->makeBlobStore( [ 'fetchMessage' ], $rl );
 		$blobStore->expects( $this->once() )
 			->method( 'fetchMessage' )
-			->will( $this->returnValue( 'Second version' ) );
+			->willReturn( 'Second version' );
 		$this->clock += 20;
 
 		// Assert
@@ -149,10 +164,10 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 		$blobStore = $this->makeBlobStore( [ 'fetchMessage' ], $rl );
 		$blobStore->expects( $this->once() )
 			->method( 'fetchMessage' )
-			->will( $this->returnValueMap( [
+			->willReturnMap( [
 				// message key, language code, message value
 				[ 'foo', 'en', 'Hello' ],
-			] ) );
+			] );
 
 		// Assert
 		$blob = $blobStore->getBlob( $module, 'en' );
@@ -167,11 +182,11 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 		$blobStore = $this->makeBlobStore( [ 'fetchMessage' ], $rl );
 		$blobStore->expects( $this->exactly( 2 ) )
 			->method( 'fetchMessage' )
-			->will( $this->returnValueMap( [
+			->willReturnMap( [
 				// message key, language code, message value
 				[ 'foo', 'en', 'Hello' ],
 				[ 'bar', 'en', 'World' ],
-			] ) );
+			] );
 
 		// Assert
 		$blob = $blobStore->getBlob( $module, 'en' );
@@ -190,7 +205,7 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 				null,
 				$this->wanCache
 			] )
-			->setMethods( $methods )
+			->onlyMethods( $methods ?: [] )
 			->getMock();
 
 		return $blobStore;

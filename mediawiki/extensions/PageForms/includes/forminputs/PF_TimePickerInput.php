@@ -3,13 +3,13 @@
 /**
  * @author Stephan Gambke
  * @file
- * @ingroup SemanticFormsInputs
  */
 
-/**
- * @ingroup SemanticFormsInputs
- */
 class PFTimePickerInput extends PFFormInput {
+
+	public static function getName(): string {
+		return 'timepicker';
+	}
 
 	/**
 	 * @param string $input_number The number of the input in the form.
@@ -21,7 +21,8 @@ class PFTimePickerInput extends PFFormInput {
 	 */
 	public function __construct( $input_number, $cur_value, $input_name, $disabled, array $other_args ) {
 		if ( $cur_value == 'now' ) {
-			$cur_value = date( 'H:i' ); // hours and minutes
+			// Hours and minutes.
+			$cur_value = date( 'H:i' );
 		}
 		parent::__construct( $input_number, $cur_value, $input_name, $disabled, $other_args );
 
@@ -29,21 +30,9 @@ class PFTimePickerInput extends PFFormInput {
 	}
 
 	/**
-	 * Returns the name of the input type this class handles: menuselect.
-	 *
-	 * This is the name to be used in the field definition for the "input type"
-	 * parameter.
-	 *
-	 * @return string The name of the input type this class handles.
-	 */
-	public static function getName() {
-		return 'timepicker';
-	}
-
-	/**
 	 * Set up JS attributes
 	 *
-	 * @return string
+	 * @return string[]
 	 */
 	protected function setupJsInitAttribs() {
 		global $wgExtensionAssetsPath;
@@ -109,7 +98,7 @@ class PFTimePickerInput extends PFFormInput {
 	 * should be able to input values.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		// create visible input field (for display) and invisible field (for data)
 		$html = PFDatePickerInput::genericTextHTML( $this->mCurrentValue, $this->mInputName, $this->mIsDisabled, $this->mOtherArgs, 'input_' . $this->mInputNumber );
 

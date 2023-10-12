@@ -7,22 +7,20 @@
  * @ingroup PF
  */
 
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\RevisionRecord;
 
 class PFUtils {
+
 	/**
-	 * Get a content language (old $wgContLang) object. For MW < 1.32,
-	 * return the global. For all others, use MediaWikiServices.
+	 * Get a content language object.
 	 *
 	 * @return Language
 	 */
 	public static function getContLang() {
-		if ( method_exists( "MediaWiki\\MediaWikiServices", "getContentLanguage" ) ) {
-			return MediaWikiServices::getInstance()->getContentLanguage();
-		} else {
-			global $wgContLang;
-			return $wgContLang;
-		}
+		return MediaWikiServices::getInstance()->getContentLanguage();
 	}
 
 	public static function getSMWContLang() {
@@ -93,7 +91,7 @@ class PFUtils {
 		if ( $namespace !== '' ) {
 			$namespace .= ':';
 		}
-		if ( MWNamespace::isCapitalized( $title->getNamespace() ) ) {
+		if ( self::isCapitalized( $title->getNamespace() ) ) {
 			return $namespace . self::getContLang()->ucfirst( $title->getPartialURL() );
 		} else {
 			return $namespace . $title->getPartialURL();
@@ -101,47 +99,30 @@ class PFUtils {
 	}
 
 	/**
-	 * A very similar function to titleURLString(), to get the
-	 * non-URL-encoded title string
-	 * @param Title $title
-	 * @return string
-	 */
-	public static function titleString( $title ) {
-		$namespace = $title->getNsText();
-		if ( $namespace !== '' ) {
-			$namespace .= ':';
-		}
-		if ( MWNamespace::isCapitalized( $title->getNamespace() ) ) {
-			return $namespace . self::getContLang()->ucfirst( $title->getText() );
-		} else {
-			return $namespace . $title->getText();
-		}
-	}
-
-	/**
 	 * Gets the text contents of a page with the passed-in Title object.
 	 * @param Title $title
+	 * @param int $audience
 	 * @return string|null
 	 */
-	public static function getPageText( $title ) {
-		$wikiPage = new WikiPage( $title );
-		$content = $wikiPage->getContent();
-		if ( $content !== null ) {
-			return $content->getNativeData();
+	public static function getPageText( $title, $audience = RevisionRecord::FOR_PUBLIC ) {
+		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
+			// MW 1.36+
+			$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+		} else {
+			$wikiPage = new WikiPage( $title );
+		}
+		$content = $wikiPage->getContent( $audience );
+		if ( $content instanceof TextContent ) {
+			return $content->getText();
 		} else {
 			return null;
 		}
 	}
 
 	public static function getSpecialPage( $pageName ) {
-		if ( class_exists( 'MediaWiki\Special\SpecialPageFactory' ) ) {
-			// MW 1.32+
-			return MediaWikiServices::getInstance()
-				->getSpecialPageFactory()
-				->getPage( $pageName );
-		} else {
-			return SpecialPageFactory::getPage( $pageName );
-		}
+		return MediaWikiServices::getInstance()
+			->getSpecialPageFactory()
+			->getPage( $pageName );
 	}
 
 	/**
@@ -166,7 +147,8 @@ class PFUtils {
 	public static function linkText( $namespace, $name, $text = null ) {
 		$title = Title::makeTitleSafe( $namespace, $name );
 		if ( $title === null ) {
-			return $name; // TODO maybe report an error here?
+			// TODO maybe report an error here?
+			return $name;
 		}
 		if ( $text === null ) {
 			return '[[:' . $title->getPrefixedText() . '|' . $name . ']]';
@@ -176,19 +158,15 @@ class PFUtils {
 	}
 
 	/**
-	 * Prints the mini-form contained at the bottom of various pages, that
-	 * allows pages to spoof a normal edit page, that can preview, save,
-	 * etc.
+	 * Returns a hidden mini-form to be printed at the bottom of various helper
+	 * forms, like Special:CreateForm, so that the main form can either save or
+	 * preview the resulting page.
+	 *
 	 * @param string $title
 	 * @param string $page_contents
 	 * @param string $edit_summary
 	 * @param bool $is_save
-	 * @param bool $is_preview
-	 * @param bool $is_diff
-	 * @param bool $is_minor_edit
-	 * @param bool $watch_this
-	 * @param string $start_time
-	 * @param string $edit_time
+	 * @param User $user
 	 * @return string
 	 */
 	public static function printRedirectForm(
@@ -196,21 +174,14 @@ class PFUtils {
 		$page_contents,
 		$edit_summary,
 		$is_save,
-		$is_preview,
-		$is_diff,
-		$is_minor_edit,
-		$watch_this,
-		$start_time,
-		$edit_time
+		$user
 	) {
-		global $wgUser, $wgPageFormsScriptPath;
+		global $wgPageFormsScriptPath;
 
 		if ( $is_save ) {
 			$action = "wpSave";
-		} elseif ( $is_preview ) {
+		} else {
 			$action = "wpPreview";
-		} else { // $is_diff
-			$action = "wpDiff";
 		}
 
 		$text = <<<END
@@ -220,23 +191,17 @@ END;
 		$form_body = Html::hidden( 'wpTextbox1', $page_contents );
 		$form_body .= Html::hidden( 'wpUnicodeCheck', 'ℳ𝒲♥𝓊𝓃𝒾𝒸ℴ𝒹ℯ' );
 		$form_body .= Html::hidden( 'wpSummary', $edit_summary );
-		$form_body .= Html::hidden( 'wpStarttime', $start_time );
-		$form_body .= Html::hidden( 'wpEdittime', $edit_time );
+		// @TODO - add this in at some point.
+		//$form_body .= Html::hidden( 'editRevId', $edit_rev_id );
 
-		if ( $wgUser->isLoggedIn() ) {
-			$edit_token = $wgUser->getEditToken();
+		$userIsRegistered = $user->isRegistered();
+		if ( $userIsRegistered ) {
+			$edit_token = $user->getEditToken();
 		} else {
 			$edit_token = \MediaWiki\Session\Token::SUFFIX;
 		}
 		$form_body .= Html::hidden( 'wpEditToken', $edit_token );
 		$form_body .= Html::hidden( $action, null );
-
-		if ( $is_minor_edit ) {
-			$form_body .= Html::hidden( 'wpMinoredit', null );
-		}
-		if ( $watch_this ) {
-			$form_body .= Html::hidden( 'wpWatchthis', null );
-		}
 
 		$form_body .= Html::hidden( 'wpUltimateParam', true );
 
@@ -259,7 +224,8 @@ END;
 	</script>
 
 END;
-		Hooks::run( 'PageForms::PrintRedirectForm', [ $is_save, $is_preview, $is_diff, &$text ] );
+		// @TODO - remove this hook? It seems useless.
+		Hooks::run( 'PageForms::PrintRedirectForm', [ $is_save, !$is_save, false, &$text ] );
 		return $text;
 	}
 
@@ -286,7 +252,6 @@ END;
 			'ext.pageforms.main',
 			'ext.pageforms.submit',
 			'ext.smw.tooltips',
-			'ext.smw.sorttable',
 			// @TODO - the inclusion of modules for specific
 			// form inputs is wasteful, and should be removed -
 			// it should only be done as needed for each input.
@@ -305,14 +270,26 @@ END;
 			'jquery.makeCollapsible'
 		];
 
+		$mainModuleStyles = [
+			'ext.pageforms.main.styles',
+			'ext.pageforms.submit.styles',
+			"ext.pageforms.checkboxes.styles",
+			'ext.pageforms.select2.styles',
+			'ext.pageforms.rating.styles',
+			'ext.pageforms.fancybox.styles',
+			"ext.pageforms.forminput.styles"
+		];
+
 		if ( $wgPageFormsSimpleUpload ) {
 			$mainModules[] = 'ext.pageforms.simpleupload';
 		}
 
 		$output->addModules( $mainModules );
+		$output->addModuleStyles( $mainModuleStyles );
 
 		$otherModules = [];
 		Hooks::run( 'PageForms::AddRLModules', [ &$otherModules ] );
+		// @phan-suppress-next-line PhanEmptyForeach
 		foreach ( $otherModules as $rlModule ) {
 			$output->addModules( $rlModule );
 		}
@@ -331,10 +308,10 @@ END;
 			__METHOD__,
 			[ 'ORDER BY' => 'page_title' ] );
 		$form_names = [];
-		while ( $row = $dbr->fetchRow( $res ) ) {
+		while ( $row = $res->fetchRow() ) {
 			$form_names[] = str_replace( '_', ' ', $row[0] );
 		}
-		$dbr->freeResult( $res );
+		$res->free();
 		if ( count( $form_names ) == 0 ) {
 			// This case requires special handling in the UI.
 			throw new MWException( wfMessage( 'pf-noforms-error' )->parse() );
@@ -409,8 +386,11 @@ END;
 		// convert them back.
 		// regex adapted from:
 		// https://www.regular-expressions.info/recurse.html
-		$pattern = '/{{(?>[^{}]|(?R))*?}}/'; // needed to fix highlighting - <?
-		$str = preg_replace_callback( $pattern, function ( $match ) {
+		$pattern = '/{{(?>[^{}]|(?R))*?}}/';
+		// needed to fix highlighting - <?
+		// Remove HTML comments
+		$str = preg_replace( '/<!--.*?-->/s', '', $str );
+		$str = preg_replace_callback( $pattern, static function ( $match ) {
 			$hasPipe = strpos( $match[0], '|' );
 			return $hasPipe ? str_replace( "|", "\1", $match[0] ) : $match[0];
 		}, $str );
@@ -434,7 +414,7 @@ END;
 	 * keys to arrays rather than overwriting the value in the first array with the duplicate
 	 * value in the second array, as array_merge does.
 	 *
-	 * array_merge_recursive_distinct does not change the datatypes of the values in the arrays.
+	 * arrayMergeRecursiveDistinct() does not change the datatypes of the values in the arrays.
 	 * Matching keys' values in the second array overwrite those in the first array.
 	 *
 	 * Parameters are passed by reference, though only for performance reasons. They're not
@@ -448,12 +428,12 @@ END;
 	 * @author Daniel <daniel (at) danielsmedegaardbuus (dot) dk>
 	 * @author Gabriel Sobrinho <gabriel (dot) sobrinho (at) gmail (dot) com>
 	 */
-	public static function array_merge_recursive_distinct( array &$array1, array &$array2 ) {
+	public static function arrayMergeRecursiveDistinct( array &$array1, array &$array2 ) {
 		$merged = $array1;
 
 		foreach ( $array2 as $key => &$value ) {
 			if ( is_array( $value ) && isset( $merged[$key] ) && is_array( $merged[$key] ) ) {
-				$merged[$key] = self::array_merge_recursive_distinct( $merged[$key], $value );
+				$merged[$key] = self::arrayMergeRecursiveDistinct( $merged[$key], $value );
 			} else {
 				$merged[$key] = $value;
 			}
@@ -483,5 +463,34 @@ END;
 		}
 
 		return false;
+	}
+
+	public static function isCapitalized( $index ) {
+		return MediaWikiServices::getInstance()
+			->getNamespaceInfo()
+			->isCapitalized( $index );
+	}
+
+	public static function getCanonicalName( $index ) {
+		return MediaWikiServices::getInstance()
+			->getNamespaceInfo()
+			->getCanonicalName( $index );
+	}
+
+	public static function isTranslateEnabled() {
+		return ExtensionRegistry::getInstance()->isLoaded( 'Translate' );
+	}
+
+	public static function getCargoFieldDescription( $cargoTable, $cargoField ) {
+		try {
+			$tableSchemas = CargoUtils::getTableSchemas( [ $cargoTable ] );
+		} catch ( MWException $e ) {
+			return null;
+		}
+		if ( !array_key_exists( $cargoTable, $tableSchemas ) ) {
+			return null;
+		}
+		$tableSchema = $tableSchemas[$cargoTable];
+		return $tableSchema->mFieldDescriptions[$cargoField] ?? null;
 	}
 }

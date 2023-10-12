@@ -6,7 +6,8 @@
 			"Jeblad",
 			"Jon Harald Søby",
 			"Kingu",
-			"SuperPotato"
+			"SuperPotato",
+			"EdoAug"
 		]
 	},
 	"categorytree": "Kategoritre",
@@ -23,13 +24,13 @@
 	"categorytree-mode-all": "alle sider",
 	"categorytree-collapse": "skjul",
 	"categorytree-expand": "utvid",
-	"categorytree-member-counts": "Inneholder {{PLURAL:$1|én underkategori|$1 underkategorier}}, {{PLURAL:$2|én side|$2 sider}}, og {{PLURAL:$3|én fil|$3 filer}}",
+	"categorytree-member-counts": "Inneholder {{PLURAL:$1|én underkategori|$1 underkategorier}}, {{PLURAL:$2|én side|$2 sider}} og {{PLURAL:$3|én fil|$3 filer}}",
 	"categorytree-num-categories": "$1 K",
 	"categorytree-num-pages": "$1 S",
 	"categorytree-num-files": "$1 F",
 	"categorytree-num-empty": "tom",
 	"categorytree-load": "last",
-	"categorytree-loading": "laster...",
+	"categorytree-loading": "laster ...",
 	"categorytree-nothing-found": "ingenting funnet",
 	"categorytree-no-subcategories": "ingen underkategorier",
 	"categorytree-no-parent-categories": "ingen foreldrekategorier",

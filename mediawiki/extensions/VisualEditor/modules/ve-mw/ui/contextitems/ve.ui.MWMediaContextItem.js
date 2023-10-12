@@ -16,27 +16,29 @@
  * @param {Object} config Configuration options
  */
 ve.ui.MWMediaContextItem = function VeUiMWMediaContextItem( context, model ) {
-	var mediaClass;
-
 	// Parent constructor
 	ve.ui.MWMediaContextItem.super.apply( this, arguments );
 
 	// Initialization
 	this.$element.addClass( 've-ui-mwMediaContextItem' );
 
-	mediaClass = model.getAttribute( 'mediaClass' ) || 'Image';
+	var mediaTag = model.getAttribute( 'mediaTag' ) || 'img';
 
-	this.setIcon( model.getAttribute( 'isError' ) ? 'imageBroken' : {
-		Image: 'image',
+	this.setIcon( {
+		img: 'image',
+		span: 'imageBroken',
 		// TODO: Better icons for audio/video
-		Audio: 'play',
-		Video: 'play'
-	}[ mediaClass ] );
+		audio: 'play',
+		video: 'play'
+	}[ mediaTag ] );
+
+	var messagePostfix = ( mediaTag === 'audio' || mediaTag === 'video' ) ? mediaTag : 'image';
+
 	// The following messages are used here:
 	// * visualeditor-media-title-audio
 	// * visualeditor-media-title-image
 	// * visualeditor-media-title-video
-	this.setLabel( ve.msg( 'visualeditor-media-title-' + mediaClass.toLowerCase() ) );
+	this.setLabel( ve.msg( 'visualeditor-media-title-' + messagePostfix ) );
 };
 
 /* Inheritance */

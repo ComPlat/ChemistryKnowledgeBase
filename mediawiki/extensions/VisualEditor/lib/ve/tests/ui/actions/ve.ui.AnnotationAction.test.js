@@ -9,8 +9,7 @@ QUnit.module( 've.ui.AnnotationAction' );
 /* Tests */
 
 QUnit.test( 'toggle', function ( assert ) {
-	var i,
-		newBold = { type: 'textStyle/bold' },
+	var newBold = { type: 'textStyle/bold' },
 		html = '<p>Foo<b>bar</b><strong>baz</strong><i>quux</i> white\u3000space</p>',
 		cases = [
 			{
@@ -100,16 +99,50 @@ QUnit.test( 'toggle', function ( assert ) {
 					data.splice( 12, 3, 'B', 'a', 'r' );
 				},
 				msg: 'toggle bold on comparable bold annotations spanning multiple table cells'
+			},
+			{
+				html: '<table><tr><td><b>A</b></td><td></td></tr></table>',
+				rangeOrSelection: {
+					type: 'table',
+					tableRange: new ve.Range( 0, 15 ),
+					fromCol: 0,
+					fromRow: 0,
+					toCol: 1,
+					toRow: 0
+				},
+				method: 'toggle',
+				args: [ 'textStyle/bold' ],
+				expectedData: function ( data ) {
+					data.splice( 5, 1, 'A' );
+				},
+				msg: 'toggle bold off when selection includes an content-less cell'
+			},
+			{
+				html: '<table><tr><td></td><td><b>A</b></td></tr></table>',
+				rangeOrSelection: {
+					type: 'table',
+					tableRange: new ve.Range( 0, 15 ),
+					fromCol: 0,
+					fromRow: 0,
+					toCol: 1,
+					toRow: 0
+				},
+				method: 'toggle',
+				args: [ 'textStyle/bold' ],
+				expectedData: function ( data ) {
+					data.splice( 9, 1, 'A' );
+				},
+				msg: 'toggle bold off when first cell is content-less cell'
 			}
 		];
 
-	for ( i = 0; i < cases.length; i++ ) {
+	cases.forEach( function ( caseItem ) {
 		ve.test.utils.runActionTest(
-			'annotation', assert, cases[ i ].html, false, cases[ i ].method, cases[ i ].args, cases[ i ].rangeOrSelection, cases[ i ].msg,
+			'annotation', assert, caseItem.html, false, caseItem.method, caseItem.args, caseItem.rangeOrSelection, caseItem.msg,
 			{
-				expectedData: cases[ i ].expectedData,
-				expectedRangeOrSelection: cases[ i ].expectedRangeOrSelection
+				expectedData: caseItem.expectedData,
+				expectedRangeOrSelection: caseItem.expectedRangeOrSelection
 			}
 		);
-	}
+	} );
 } );

@@ -13,8 +13,11 @@
  */
 class PFCreateTemplate extends SpecialPage {
 
-	public function __construct() {
+	private $mCalledFromCreateClass;
+
+	public function __construct( $calledFromCreateClass = false ) {
 		parent::__construct( 'CreateTemplate' );
+		$this->mCalledFromCreateClass = $calledFromCreateClass;
 	}
 
 	public function execute( $query ) {
@@ -72,77 +75,181 @@ class PFCreateTemplate extends SpecialPage {
 	}
 
 	public static function printPropertiesComboBox( $all_properties, $id, $selected_property = null ) {
-		$selectBody = "<option value=\"\"></option>\n";
+		$optionAttrs = [];
+		$value = '';
 		foreach ( $all_properties as $prop_name ) {
-			$optionAttrs = [ 'value' => $prop_name ];
+			array_push( $optionAttrs, [ 'data' => $prop_name, 'label' => $prop_name ] );
 			if ( $selected_property == $prop_name ) {
-				$optionAttrs['selected'] = 'selected';
+				$value = $prop_name;
 			}
-			$selectBody .= Html::element( 'option', $optionAttrs, $prop_name ) . "\n";
 		}
-		return Html::rawElement( 'select', [ 'id' => "semantic_property_$id", 'name' => "semantic_property_$id", 'class' => 'pfComboBox' ], $selectBody ) . "\n";
+		return new OOUI\DropdownInputWidget( [
+			'options' => $optionAttrs,
+			'id' => "semantic_property_$id",
+			'name' => "semantic_property_$id",
+			'classes' => [ 'pfComboBox' ]
+		] );
 	}
 
 	function printFieldTypeDropdown( $id ) {
-		global $wgCargoFieldTypes;
-
-		$selectBody = '';
-		foreach ( $wgCargoFieldTypes as $type ) {
-			$optionAttrs = [ 'value' => $type ];
-			$selectBody .= Html::element( 'option', $optionAttrs, $type ) . "\n";
+		if ( defined( 'SMW_VERSION' ) ) {
+			$possibleTypes = PFUtils::getSMWContLang()->getDatatypeLabels();
+		} elseif ( defined( 'CARGO_VERSION' ) ) {
+			global $wgCargoFieldTypes;
+			$possibleTypes = $wgCargoFieldTypes;
+		} else {
+			$possibleTypes = [];
 		}
-		return Html::rawElement( 'select', [ 'id' => "field_type_$id", 'name' => "field_type_$id", ], $selectBody ) . "\n";
+
+		$optionAttrs = [];
+		foreach ( $possibleTypes as $type ) {
+			array_push( $optionAttrs, [ 'data' => $type, 'label' => $type ] );
+		}
+		return new OOUI\DropdownInputWidget( [
+			'options' => $optionAttrs,
+			'id' => "field_type_$id",
+			'name' => "field_type_$id",
+			'classes' => [ 'pfFieldTypeDropdown' ],
+			'value' => ''
+		] );
 	}
 
 	public function printFieldEntryBox( $id, $all_properties, $display = true ) {
+		$items = [
+			new OOUI\LabelWidget( [
+				'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_fieldname' )->escaped() )
+			] ),
+			new OOUI\TextInputWidget( [
+				'name' => 'name_' . $id,
+				'classes' => [ 'pfFieldName' ]
+			] ),
+			new OOUI\LabelWidget( [
+				'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_displaylabel' )->escaped() )
+			] ),
+			new OOUI\TextInputWidget( [
+				'name' => 'label_' . $id,
+				'classes' => [ 'pfDisplayLabel' ]
+			] )
+		];
 		$fieldString = $display ? '' : 'id="starterField" style="display: none"';
 		$text = "\t<div class=\"fieldBox\" $fieldString>\n";
 		$text .= "\t<table style=\"width: 100%;\"><tr><td class=\"instanceRearranger\"></td>";
 		$text .= "<td style=\"padding-left:10px\">\n";
-		$text .= "\t<p><label>" . $this->msg( 'pf_createtemplate_fieldname' )->escaped() . ' ' .
-			Html::input( 'name_' . $id, null, 'text',
-				[ 'size' => '15' ]
-			) . "</label>&nbsp;&nbsp;&nbsp;\n";
-		$text .= "\t<label>" . $this->msg( 'pf_createtemplate_displaylabel' )->escaped() . ' ' .
-			Html::input( 'label_' . $id, null, 'text',
-				[ 'size' => '15' ]
-			) . "</label>&nbsp;&nbsp;&nbsp;\n";
 
 		if ( defined( 'SMW_VERSION' ) ) {
-			$text .= "\t<p><label>" . $this->msg( 'pf_createproperty_propname' )->escaped() . ' ' .
-				Html::input( 'property_name_' . $id, null, 'text',
-					[ 'size' => '15' ]
-				) . "</label>&nbsp;&nbsp;&nbsp;\n";
-			$dropdown_html = self::printPropertiesComboBox( $all_properties, $id );
-			$text .= "\t<label>" . $this->msg( 'pf_createtemplate_semanticproperty' )->escaped() . ' ' . $dropdown_html . "</label></p>\n";
+			// If it's CreateClass, the property is created as
+			// well; if it's CreateTemplate, the user just chooses
+			// from a dropdown.
+			if ( $this->mCalledFromCreateClass ) {
+				$propertyTypeDropdown = $this->printFieldTypeDropdown( $id );
+				array_push(
+					$items,
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_propname' )->escaped() )
+					] ),
+					new OOUI\TextInputWidget( [
+						'name' => 'property_name_' . $id,
+						'classes' => [ 'pfPropertyName' ]
+					] ),
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_proptype' )->escaped() )
+					] ),
+					$propertyTypeDropdown
+				);
+			} else {
+				$propertiesDropdown = self::printPropertiesComboBox( $all_properties, $id );
+				array_push(
+					$items,
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_semanticproperty' )->escaped() )
+					] ),
+					$propertiesDropdown
+				);
+			}
 		} elseif ( defined( 'CARGO_VERSION' ) ) {
-			$dropdown_html = $this->printFieldTypeDropdown( $id );
-			$text .= "\t<label class=\"cargo_field_type\">" . $this->msg( 'pf_createproperty_proptype' )->escaped() . ' ' . $dropdown_html . "</label></p>\n";
+			$fieldTypeDropdown = $this->printFieldTypeDropdown( $id );
+			array_push(
+				$items,
+				new OOUI\LabelWidget( [
+					'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_proptype' )->escaped() ),
+					'classes' => [ 'cargo_field_type' ]
+				] ),
+				$fieldTypeDropdown
+			);
 		}
-
-		$text .= "\t<p>" . '<label><input type="checkbox" name="is_list_' . $id . '" class="isList" /> ' . $this->msg( 'pf_createtemplate_fieldislist' )->escaped() . "</label>&nbsp;&nbsp;&nbsp;\n";
-		$text .= "\t" . '<label class="delimiter" style="display: none;">' . $this->msg( 'pf_createtemplate_delimiter' )->escaped() . ' ' .
-			Html::input( 'delimiter_' . $id, ',', 'text',
-				[ 'size' => '2' ]
-			) . "</label>\n";
-		$text .= "\t</p>\n";
+		$fieldBoxFirstRow = new OOUI\HorizontalLayout( [
+			'items' => $items
+		] );
+		$text .= $fieldBoxFirstRow;
+		$fieldBoxSecondRow = new OOUI\HorizontalLayout( [
+			'items' => [
+				new OOUI\CheckboxInputWidget( [
+					'name' => "is_list_$id",
+					'classes' => [ 'isList' ]
+				] ),
+				new OOUI\LabelWidget( [
+					'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_fieldislist' )->escaped() )
+				] ),
+				new OOUI\LabelWidget( [
+					'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_delimiter' )->escaped() ),
+					'classes' => [ 'delimiter' ]
+				] ),
+				new OOUI\TextInputWidget( [
+					'name' => "delimiter_$id",
+					'value' => ',',
+					'classes' => [ 'delimiter' ]
+				] )
+			]
+		] );
+		$text .= $fieldBoxSecondRow;
 		if ( !defined( 'SMW_VERSION' ) && defined( 'CARGO_VERSION' ) ) {
-			$text .= "\t<p>\n";
-			$text .= "<label class=\"is_hierarchy\"><input type=\"checkbox\" name=\"is_hierarchy_" . $id . "\"/> " . $this->msg( 'pf_createtemplate_fieldishierarchy' )->escaped() . "</label>&nbsp;&nbsp;&nbsp;\n";
-			$text .= "\t</p>\n";
-
-			$text .= "\t<p>\n";
-			$text .= "\t<label class=\"allowed_values_input\">" . $this->msg( 'pf_createproperty_allowedvalsinput' )->escaped();
-			$text .= Html::input( 'allowed_values_' . $id, null, 'text',
-				[ 'size' => '80' ] ) . "</label>\n";
-
-			$text .= "\t<label class=\"hierarchy_structure_input\" style=\"display: none;\">" . $this->msg( 'pf_createproperty_allowedvalsforhierarchy' )->escaped();
-			$text .= '<textarea class="hierarchy_structure" rows="10" cols="20" name="hierarchy_structure_' . $id . '"></textarea></label>';
-			$text .= "\t</p>\n";
+			$fieldBoxThirdRow = new OOUI\HorizontalLayout( [
+				'items' => [
+					new OOUI\CheckboxInputWidget( [
+						'name' => "is_hierarchy_$id",
+						'classes' => [ 'is_hierarchy' ]
+					] ),
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_fieldishierarchy' )->escaped() ),
+					] )
+				]
+			] );
+			$text .= $fieldBoxThirdRow;
+			$text .= new OOUI\LabelWidget( [
+				'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_allowedvalsinput' )->escaped() ),
+				'classes' => [ 'allowed_values_input' ]
+			] );
+			$text .= new OOUI\TextInputWidget( [
+				'name' => "allowed_values_$id",
+				'classes' => [ 'allowed_values_input' ]
+			] );
+			$text .= new OOUI\LabelWidget( [
+				'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_allowedvalsforhierarchy' )->escaped() ),
+				'classes' => [ 'hierarchy_structure_input' ]
+			] );
+			$text .= new OOUI\MultilineTextInputWidget( [
+				'classes' => [ 'hierarchy_structure' ],
+				'name' => "hierarchy_structure_$id",
+				'rows' => 10,
+			] );
 		}
+
+		// If this code is being called from Special:CreateClass, we want to have the "allowed values"
+		// input in there no matter what.
+		if ( !defined( 'SMW_VERSION' ) && !defined( 'CARGO_VERSION' ) && $this->mCalledFromCreateClass ) {
+			$text .= new OOUI\LabelWidget( [
+				'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createproperty_allowedvalsinput' )->escaped() ),
+				'classes' => [ 'allowed_values_input' ]
+			] );
+			$text .= new OOUI\TextInputWidget( [
+				'name' => "allowed_values_$id",
+				'classes' => [ 'allowed_values_input' ]
+			] );
+		}
+
 		$text .= "\t</td>\n";
-		$addAboveButton = Html::element( 'a', [ 'class' => "addAboveButton", 'title' => wfMessage( 'pf_createtemplate_addanotherabove' )->text() ] );
-		$removeButton = Html::element( 'a', [ 'class' => "removeButton", 'title' => wfMessage( 'pf_createtemplate_deletefield' )->text() ] );
+		$addAboveButton = Html::element( 'a', [ 'class' => "addAboveButton", 'title' => $this->msg( 'pf_createtemplate_addanotherabove' )->text() ] );
+		$removeButton = Html::element( 'a', [ 'class' => "removeButton", 'title' => $this->msg( 'pf_createtemplate_deletefield' )->text() ] );
 
 		$text .= <<<END
 			<td class="instanceAddAbove">$addAboveButton</td>
@@ -158,22 +265,26 @@ END;
 	static function printTemplateStyleButton( $formatStr, $formatMsg, $htmlFieldName, $curSelection ) {
 		$attrs = [ 'id' => $formatStr ];
 		if ( $formatStr === $curSelection ) {
-			$attrs['checked'] = true;
+			$attrs['selected'] = true;
 		}
-		return "\t" . Html::input( $htmlFieldName, $formatStr, 'radio', $attrs ) .
-			' ' . Html::element( 'label', [ 'for' => $formatStr ], wfMessage( $formatMsg )->escaped() ) . "\n";
+		$attrs[ 'name' ] = $htmlFieldName;
+		$attrs[ 'value' ] = $formatStr;
+		$radioButton = new OOUI\RadioInputWidget(
+			$attrs
+		);
+		return $radioButton . Html::element( 'label', [ 'for' => $formatStr ], wfMessage( $formatMsg )->escaped() ) . "&nbsp;&nbsp;&nbsp;\n";
 	}
 
 	static function printTemplateStyleInput( $htmlFieldName, $curSelection = null ) {
 		if ( !$curSelection ) {
 			$curSelection = 'standard';
 		}
-		$text = "\t<p>" . wfMessage( 'pf_createtemplate_outputformat' )->escaped() . "\n";
+		$text = "<p class=\"pfCreateTemplateStyle\">" . wfMessage( 'pf_createtemplate_outputformat' )->escaped() . "\n";
 		$text .= self::printTemplateStyleButton( 'standard', 'pf_createtemplate_standardformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'infobox', 'pf_createtemplate_infoboxformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'plain', 'pf_createtemplate_plainformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'sections', 'pf_createtemplate_sectionsformat', $htmlFieldName, $curSelection );
-		$text .= "</p>\n";
+		$text .= "</p>";
 		return $text;
 	}
 
@@ -191,6 +302,7 @@ END;
 		}
 
 		$out->addModules( [ 'ext.pageforms.main', 'ext.pageforms.PF_CreateTemplate' ] );
+		$out->addModuleStyles( [ 'ext.pageforms.main.styles' ] );
 
 		$text = '';
 		$save_page = $req->getCheck( 'wpSave' );
@@ -205,6 +317,7 @@ END;
 
 			$use_cargo = $req->getBool( 'use_cargo' );
 			$cargo_table = $req->getVal( 'cargo_table' );
+			$use_fullwikitext = $req->getBool( 'use_fullwikitext' );
 
 			$fields = [];
 			// Cycle through the query values, setting the
@@ -256,31 +369,81 @@ END;
 			if ( $use_cargo ) {
 				$pfTemplate->setCargoTable( $cargo_table );
 			}
+			$pfTemplate->setFullWikiTextStatus( $use_fullwikitext );
 			$pfTemplate->setAggregatingInfo( $aggregating_property, $aggregation_label );
 			$pfTemplate->setFormat( $template_format );
 			$full_text = $pfTemplate->createText();
 
-			$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $preview_page, false, false, false, null, null );
+			$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $this->getUser() );
 			$out->addHTML( $text );
 			return;
 		}
 
-		$text .= '	<form id="createTemplateForm" action="" method="post">' . "\n";
+		// to avoid the FOUC (flash of unstyled content) hide the form until the css loads
+		$text .= '	<form id="createTemplateForm" action="" method="post" style="display:none">' . "\n";
 		if ( $presetTemplateName === null ) {
 			// Set 'title' field, in case there's no URL niceness.
 			$text .= Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() ) . "\n";
-			$text .= "\t<p id=\"template_name_p\">" .
-				$this->msg( 'pf_createtemplate_namelabel' )->escaped() .
-				' <input size="25" id="template_name" name="template_name" /></p>' . "\n";
+			$templateNameRow = new OOUI\HorizontalLayout( [
+				'items' => [
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_namelabel' )->escaped() )
+					] ),
+					new OOUI\TextInputWidget( [
+						'id' => 'template_name',
+						'name' => 'template_name',
+					] ),
+					new OOUI\MessageWidget( [
+						'type' => 'error',
+						'inline' => true,
+						'label' => $this->msg( 'pf_blank_error' )->escaped(),
+						'classes' => [ 'pfTemplateNameBlankError' ]
+					] )
+				]
+			] );
+			$text .= $templateNameRow;
 		}
-		$text .= "\t<p>" . $this->msg( 'pf_createtemplate_categorylabel' )->escaped() . ' <input size="25" name="category" /></p>' . "\n";
+		$categoryNameRow = new OOUI\HorizontalLayout( [
+			'items' => [
+				new OOUI\LabelWidget( [
+					'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_categorylabel' )->escaped() )
+				] ),
+				new OOUI\TextInputWidget( [
+					'id' => 'category',
+					'name' => 'category',
+				] )
+			]
+		] );
+		$text .= $categoryNameRow;
 		if ( !defined( 'SMW_VERSION' ) && defined( 'CARGO_VERSION' ) ) {
-			$text .= "\t<p><label>" . Html::check( 'use_cargo', true, [ 'id' => 'use_cargo' ] ) .
+			$text .= "\t<p><label id='cargo_toggle'>" . Html::hidden( 'use_cargo', true ) .
 				' ' . $this->msg( 'pf_createtemplate_usecargo' )->escaped() . "</label></p>\n";
-			$text .= "\t<p id=\"cargo_table_input\"><label>" .
-				$this->msg( 'pf_createtemplate_cargotablelabel' )->escaped() .
-				' <input id="cargo_table" size="25" name="cargo_table" /></label></p>' . "\n";
+
+			$cargoTableNameRow = new OOUI\HorizontalLayout( [
+				'items' => [
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_cargotablelabel' )->escaped() )
+					] ),
+					new OOUI\TextInputWidget( [
+						'id' => 'cargo_table',
+						'name' => 'cargo_table',
+					] ),
+					new OOUI\MessageWidget( [
+						'type' => 'error',
+						'inline' => true,
+						'label' => $this->msg( 'pf_blank_error' )->escaped(),
+						'classes' => [ 'pfCargoTableNameBlankError' ]
+					] )
+				],
+				'id' => 'cargo_table_input'
+			] );
+			$text .= $cargoTableNameRow;
 		}
+
+		$text .= "\t<p><label id='fullwikitext_toggle'>" .
+			Html::hidden( 'use_fullwikitext', false ) .
+			$this->msg( 'pf_createtemplate_fullwikitext', '#template_display' )->escaped() .
+			"</label></p>";
 
 		$text .= "\t<fieldset>\n";
 		$text .= "\t" . Html::element( 'legend', null, $this->msg( 'pf_createtemplate_templatefields' )->text() ) . "\n";
@@ -308,12 +471,26 @@ END;
 			$text .= "\t<fieldset>\n";
 			$text .= "\t" . Html::element( 'legend', null, $this->msg( 'pf_createtemplate_aggregation' )->text() ) . "\n";
 			$text .= "\t" . Html::element( 'p', null, $this->msg( 'pf_createtemplate_aggregationdesc' )->text() ) . "\n";
-			$text .= "\t<p>" . $this->msg( 'pf_createtemplate_semanticproperty' )->escaped() . ' ' .
-				$this->printPropertiesComboBox( $all_properties, "aggregation" ) . "</p>\n";
-			$text .= "\t<p>" . $this->msg( 'pf_createtemplate_aggregationlabel' )->escaped() . ' ' .
-				Html::input( 'aggregation_label', null, 'text',
-					[ 'size' => '25' ] ) .
-				"</p>\n";
+			$dropdownHtml = $this->printPropertiesComboBox( $all_properties, "aggregation" );
+			$text .= new OOUI\HorizontalLayout( [
+				'items' => [
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_semanticproperty' )->escaped() )
+					] ),
+					$dropdownHtml
+				]
+			] );
+			$text .= new OOUI\HorizontalLayout( [
+				'items' => [
+					new OOUI\LabelWidget( [
+						'label' => new OOUI\HtmlSnippet( $this->msg( 'pf_createtemplate_aggregationlabel' )->escaped() )
+					] ),
+					new OOUI\TextInputWidget( [
+						'name' => 'aggregation_label',
+						'classes' => [ 'pfAggregationLabel' ]
+					] )
+				]
+			] );
 			$text .= "\t</fieldset>\n";
 		}
 

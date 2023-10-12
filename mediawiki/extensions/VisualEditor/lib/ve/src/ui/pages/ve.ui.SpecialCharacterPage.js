@@ -14,30 +14,29 @@
  * @constructor
  * @param {string} name Unique symbolic name of page
  * @param {Object} [config] Configuration options
+ * @cfg {string} [label]
+ * @cfg {Object} [characters] Character set
+ * @cfg {Object} [attributes] Extra attributes, currently `lang` and `dir`
+ * @cfg {boolean} [source] Source mode only set
  */
 ve.ui.SpecialCharacterPage = function VeUiSpecialCharacterPage( name, config ) {
-	var character, characterNode, characters, $characters, charactersNode,
-		source = config.source;
-
 	// Parent constructor
 	ve.ui.SpecialCharacterPage.super.apply( this, arguments );
 
 	this.label = config.label;
 
-	characters = config.characters;
-	$characters = $( '<div>' ).addClass( 've-ui-specialCharacterPage-characters' );
-	charactersNode = $characters[ 0 ];
+	var characters = config.characters;
+	var $characters = $( '<div>' ).addClass( 've-ui-specialCharacterPage-characters' );
+	var charactersNode = $characters[ 0 ];
+	var source = config.source;
 
 	// The body of this loop is executed a few thousand times when opening
 	// ve.ui.SpecialCharacterDialog, avoid jQuery wrappers.
-	for ( character in characters ) {
+	for ( var character in characters ) {
 		if ( !source && characters[ character ].source ) {
 			continue;
 		}
-		if ( character === 'attributes' ) {
-			continue;
-		}
-		characterNode = document.createElement( 'div' );
+		var characterNode = document.createElement( 'div' );
 		characterNode.className = 've-ui-specialCharacterPage-character';
 		if ( characters[ character ].titleMsg ) {
 			// eslint-disable-next-line mediawiki/msg-doc
@@ -51,14 +50,14 @@ ve.ui.SpecialCharacterPage = function VeUiSpecialCharacterPage( name, config ) {
 		charactersNode.appendChild( characterNode );
 	}
 
-	if ( characters.attributes ) {
-		$characters.attr( 'lang', characters.attributes.lang );
-		$characters.attr( 'dir', characters.attributes.dir );
+	if ( config.attributes ) {
+		$characters.attr( 'lang', config.attributes.lang );
+		$characters.attr( 'dir', config.attributes.dir );
 	}
 
 	this.$element
 		.addClass( 've-ui-specialCharacterPage' )
-		.append( $( '<h3>' ).text( name ), $characters );
+		.append( $( '<h3>' ).text( this.label ), $characters );
 };
 
 /* Inheritance */

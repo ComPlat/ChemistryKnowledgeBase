@@ -2,21 +2,27 @@
 
 namespace PageImages\Tests\Hooks;
 
-use MediaWiki\Rest\Entity\SearchResultPageIdentityValue;
-use MediaWikiTestCase;
+use LocalFile;
+use MediaWiki\Page\PageIdentity;
+use MediaWiki\Page\PageIdentityValue;
+use MediaWikiIntegrationTestCase;
 use PageImages\Hooks\SearchResultProvideThumbnailHookHandler;
 use PageImages\PageImages;
 use PageProps;
 use RepoGroup;
+use ThumbnailImage;
 
 /**
  * @covers \PageImages\Hooks\SearchResultProvideThumbnailHookHandler
  *
  * @group PageImages
  */
-class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiTestCase {
+class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Creates mock object for LocalFile
+	 * @param int $size
+	 * @param LocalFile $file
+	 * @param string $thumbFilePath
 	 * @return ThumbnailImage
 	 */
 	private function getMockThumbnailImage(
@@ -26,7 +32,7 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiTestCase {
 	): ThumbnailImage {
 		$thumbnail = $this->getMockBuilder( ThumbnailImage::class )
 			->disableOriginalConstructor()
-			->setMethods( [
+			->onlyMethods( [
 				'getLocalCopyPath',
 				'getWidth',
 				'getHeight',
@@ -60,12 +66,14 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiTestCase {
 
 	/**
 	 * Creates mock object for LocalFile
+	 * @param int $size
+	 * @param string $thumbFilePath
 	 * @return LocalFile
 	 */
 	private function getMockLocalFile( int $size, $thumbFilePath ): LocalFile {
 		$file = $this->getMockBuilder( LocalFile::class )
 			->disableOriginalConstructor()
-			->setMethods( [
+			->onlyMethods( [
 				'transform',
 				'getMimeType'
 			] )
@@ -86,14 +94,14 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiTestCase {
 	public function testProvideThumbnail() {
 		$pageProps = $this->getMockBuilder( PageProps::class )
 			->disableOriginalConstructor()
-			->setMethods( [ 'getProperties' ] )
+			->onlyMethods( [ 'getProperties' ] )
 			->getMock();
 
 		$pageIdentities = [
-			1 => new SearchResultPageIdentityValue( 1, NS_MAIN, 'dbKey1' ),
-			2 => new SearchResultPageIdentityValue( 2, NS_MAIN, 'dbKey2' ),
-			3 => new SearchResultPageIdentityValue( 3, NS_FILE, 'dbKey3' ),
-			4 => new SearchResultPageIdentityValue( 4, NS_FILE, 'dbKey4' )
+			1 => new PageIdentityValue( 1, NS_MAIN, 'dbKey1', PageIdentity::LOCAL ),
+			2 => new PageIdentityValue( 2, NS_MAIN, 'dbKey2', PageIdentity::LOCAL ),
+			3 => new PageIdentityValue( 3, NS_FILE, 'dbKey3', PageIdentity::LOCAL ),
+			4 => new PageIdentityValue( 4, NS_FILE, 'dbKey4', PageIdentity::LOCAL )
 		];
 
 		$pageProps->expects( $this->once() )
@@ -112,29 +120,29 @@ class SearchResultProvideThumbnailHookHandlerTest extends MediaWikiTestCase {
 
 		$repoGroup = $this->getMockBuilder( RepoGroup::class )
 			->disableOriginalConstructor()
-			->setMethods( [ 'findFile' ] )
+			->onlyMethods( [ 'findFile' ] )
 			->getMock();
 
 		$repoGroup->expects( $this->exactly( 4 ) )
-					->method( 'findFile' )
-					->withConsecutive( [ 'File1.jpg' ], [ 'File2_any.jpg' ], [ 'dbKey3' ], [ 'dbKey4' ] )
-					->willReturnOnConsecutiveCalls(
-						$this->getMockLocalFile(
-							SearchResultProvideThumbnailHookHandler::THUMBNAIL_SIZE,
-							__FILE__
-						),
-						null,
-						$this->getMockLocalFile(
-							SearchResultProvideThumbnailHookHandler::THUMBNAIL_SIZE,
-							false
-						),
-						null
-					);
+			->method( 'findFile' )
+			->withConsecutive( [ 'File1.jpg' ], [ 'File2_any.jpg' ], [ 'dbKey3' ], [ 'dbKey4' ] )
+			->willReturnOnConsecutiveCalls(
+				$this->getMockLocalFile(
+					SearchResultProvideThumbnailHookHandler::THUMBNAIL_SIZE,
+					__FILE__
+				),
+				null,
+				$this->getMockLocalFile(
+					SearchResultProvideThumbnailHookHandler::THUMBNAIL_SIZE,
+					false
+				),
+				null
+			);
 
 		$handler = new SearchResultProvideThumbnailHookHandler( $pageProps, $repoGroup );
 
 		$results = [ 1 => null, 2 => null, 3 => null, 4 => null ];
-		$handler->doSearchResultProvideThumbnail( $pageIdentities, $results );
+		$handler->onSearchResultProvideThumbnail( $pageIdentities, $results );
 
 		$this->assertNull( $results[ 2 ] );
 		$this->assertNull( $results[ 4 ] );

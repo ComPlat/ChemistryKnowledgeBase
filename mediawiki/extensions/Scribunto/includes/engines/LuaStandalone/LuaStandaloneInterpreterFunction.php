@@ -1,7 +1,11 @@
 <?php
 
-class Scribunto_LuaStandaloneInterpreterFunction {
+namespace MediaWiki\Extension\Scribunto\Engines\LuaStandalone;
+
+class LuaStandaloneInterpreterFunction {
+	/** @var bool[] */
 	public static $anyChunksDestroyed = [];
+	/** @var int[][] */
 	public static $activeChunkIds = [];
 
 	/**
@@ -57,3 +61,6 @@ class Scribunto_LuaStandaloneInterpreterFunction {
 		}
 	}
 }
+
+// Alias exists due to serialization of class name into MWServer.lua
+class_alias( LuaStandaloneInterpreterFunction::class, 'Scribunto_LuaStandaloneInterpreterFunction' );

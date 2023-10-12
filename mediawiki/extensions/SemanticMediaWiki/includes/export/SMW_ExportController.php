@@ -1,9 +1,10 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
 use SMW\Exporter\Serializer\Serializer;
 use SMW\Exporter\ExpDataFactory;
 use SMW\Exporter\Controller\Queue;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\DIProperty;
 use SMW\DIWikiPage;
 use SMW\Exporter\Escaper;
@@ -177,15 +178,17 @@ class SMWExportController {
 		// let other extensions add additional RDF data for this page
 		$expDataList = [];
 
-		\Hooks::run(
-			'SMW::Exporter::Controller::AddExpData',
-			[
-				$diWikiPage,
-				&$expDataList,
-				( $recursiondepth != 0 ),
-				$this->add_backlinks
-			]
-		);
+		MediaWikiServices::getInstance()
+			->getHookContainer()
+			->run(
+				'SMW::Exporter::Controller::AddExpData',
+				[
+					$diWikiPage,
+					&$expDataList,
+					( $recursiondepth != 0 ),
+					$this->add_backlinks
+				]
+			);
 
 		foreach ( $expDataList as $data ) {
 
@@ -400,8 +403,10 @@ class SMWExportController {
 	 * functionality. Is anybody using this?
 	 */
 	public function printPages( $pages, $recursion = 1, $revisiondate = false  ) {
+		$mwServices = MediaWikiServices::getInstance();
+		$linkCache = $mwServices->getLinkCache();
+		$revisionStore = $mwServices->getRevisionStore();
 
-		$linkCache = LinkCache::singleton();
 		$this->prepareSerialization();
 		$this->delay_flush = 10; // flush only after (fully) printing 11 objects
 
@@ -412,7 +417,7 @@ class SMWExportController {
 				continue; // invalid title name given
 			}
 			if ( $revisiondate !== '' ) { // filter page list by revision date
-				$rev = Revision::getTimeStampFromID( $title, $title->getLatestRevID() );
+				$rev = $revisionStore->getTimeStampFromID( $title, $title->getLatestRevID() );
 				if ( $rev < $revisiondate ) {
 					continue;
 				}
@@ -482,7 +487,7 @@ class SMWExportController {
 	 * @since 2.0 made protected; use printAllToFile or printAllToOutput
 	 */
 	protected function printAll( $ns_restriction, $delay, $delayeach ) {
-		$linkCache = LinkCache::singleton();
+		$linkCache = MediaWikiServices::getInstance()->getLinkCache();
 		$db = wfGetDB( DB_REPLICA );
 
 		$this->delay_flush = 10;
@@ -553,7 +558,7 @@ class SMWExportController {
 		$db = wfGetDB( DB_REPLICA );
 		$this->prepareSerialization();
 		$this->delay_flush = 35; // don't do intermediate flushes with default parameters
-		$linkCache = LinkCache::singleton();
+		$linkCache = MediaWikiServices::getInstance()->getLinkCache();
 
 		$this->serializer->startSerialization();
 		$this->serializer->serializeExpData( $this->expDataFactory->newOntologyExpData( '' ) );

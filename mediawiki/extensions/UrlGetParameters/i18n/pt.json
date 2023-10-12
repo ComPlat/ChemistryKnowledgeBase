@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"urlgetparameters-desc": "Permite utilizar ou apresentar os parâmetros \"GET\" do URL numa página da wiki"
+}

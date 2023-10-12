@@ -18,14 +18,14 @@
 ( function () {
 	QUnit.module( 'mmv.model.IwTitle', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'constructor sanity test', function ( assert ) {
+	QUnit.test( 'constructor sense test', function ( assert ) {
 		var namespace = 4,
 			fullPageName = 'User_talk:John_Doe',
 			domain = 'en.wikipedia.org',
 			url = 'https://en.wikipedia.org/wiki/User_talk:John_Doe',
 			title = new mw.mmv.model.IwTitle( namespace, fullPageName, domain, url );
 
-		assert.ok( title );
+		assert.true( title instanceof mw.mmv.model.IwTitle );
 	} );
 
 	QUnit.test( 'getters', function ( assert ) {

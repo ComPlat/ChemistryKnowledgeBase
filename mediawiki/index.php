@@ -1,5 +1,5 @@
 <?php // For broken web servers: ><pre>
-$_SERVER['REQUEST_URI'] = utf8_encode($_SERVER['REQUEST_URI']);
+
 // If you are reading this in your web browser, your server is probably
 // not configured correctly to run PHP applications!
 //
@@ -46,9 +46,6 @@ require __DIR__ . '/includes/WebStart.php';
 wfIndexMain();
 
 function wfIndexMain() {
-	// @todo Deprecate global $mediaWiki
-	// phpcs:ignore MediaWiki.NamingConventions.ValidGlobalName.allowedPrefix
-	global $mediaWiki;
 	$mediaWiki = new MediaWiki();
 	$mediaWiki->run();
 }

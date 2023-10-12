@@ -1,11 +1,35 @@
 <?php
 
+namespace MediaWiki\Extension\Nuke;
+
+use CommentStore;
+use DeletePageJob;
+use FileDeleteForm;
+use Html;
+use HTMLForm;
+use ListToggle;
+use MediaWiki\Extension\Nuke\Hooks\NukeHookRunner;
 use MediaWiki\MediaWikiServices;
+use OOUI\DropdownInputWidget;
+use OOUI\FieldLayout;
+use OOUI\TextInputWidget;
+use PermissionsError;
+use SpecialPage;
+use Title;
+use User;
+use UserBlockedError;
+use UserNamePrefixSearch;
+use WebRequest;
+use Xml;
 
 class SpecialNuke extends SpecialPage {
 
+	/** @var NukeHookRunner */
+	private $hookRunner;
+
 	public function __construct() {
 		parent::__construct( 'Nuke', 'nuke' );
+		$this->hookRunner = new NukeHookRunner( $this->getHookContainer() );
 	}
 
 	public function doesWrites() {
@@ -23,13 +47,19 @@ class SpecialNuke extends SpecialPage {
 		$this->addHelpLink( 'Help:Extension:Nuke' );
 
 		$currentUser = $this->getUser();
-		if ( $currentUser->isBlocked() ) {
-			$block = $currentUser->getBlock();
+		$block = $currentUser->getBlock();
+
+		// appliesToRight is presently a no-op, since there is no handling for `delete`,
+		// and so will return `null`. `true` will be returned if the block actively
+		// applies to `delete`, and both `null` and `true` should result in an error
+		if ( $block && ( $block->isSitewide() ||
+			( $block->appliesToRight( 'delete' ) !== false ) )
+		) {
 			throw new UserBlockedError( $block );
 		}
 
 		$req = $this->getRequest();
-		$target = trim( $req->getText( 'target', $par ) );
+		$target = trim( $req->getText( 'target', $par ?? '' ) );
 
 		// Normalise name
 		if ( $target !== '' ) {
@@ -39,21 +69,15 @@ class SpecialNuke extends SpecialPage {
 			}
 		}
 
-		$msg = $target === '' ?
-			$this->msg( 'nuke-multiplepeople' )->inContentLanguage()->text() :
-			$this->msg( 'nuke-defaultreason', $target )->
-			inContentLanguage()->text();
-
-		$reason = $req->getText( 'wpReason', $msg );
+		$reason = $this->getDeleteReason( $this->getRequest(), $target );
 
 		$limit = $req->getInt( 'limit', 500 );
-		$namespace = $req->getVal( 'namespace' );
-		$namespace = ctype_digit( $namespace ) ? (int)$namespace : null;
+		$namespace = $req->getIntOrNull( 'namespace' );
 
 		if ( $req->wasPosted()
 			&& $currentUser->matchEditToken( $req->getVal( 'wpEditToken' ) )
 		) {
-			if ( $req->getVal( 'action' ) === 'delete' ) {
+			if ( $req->getRawVal( 'action' ) === 'delete' ) {
 				$pages = $req->getArray( 'pages' );
 
 				if ( $pages ) {
@@ -61,7 +85,7 @@ class SpecialNuke extends SpecialPage {
 
 					return;
 				}
-			} elseif ( $req->getVal( 'action' ) === 'submit' ) {
+			} elseif ( $req->getRawVal( 'action' ) === 'submit' ) {
 				$this->listForm( $target, $reason, $limit, $namespace );
 			} else {
 				$this->promptForm();
@@ -123,7 +147,6 @@ class SpecialNuke extends SpecialPage {
 			->setSubmitTextMsg( 'nuke-submit-user' )
 			->setSubmitName( 'nuke-submit-user' )
 			->setAction( $this->getPageTitle()->getLocalURL( 'action=submit' ) )
-			->addHiddenField( 'wpEditToken', $this->getUser()->getEditToken() )
 			->prepareForm()
 			->displayForm( false );
 	}
@@ -163,6 +186,42 @@ class SpecialNuke extends SpecialPage {
 
 		$nuke = $this->getPageTitle();
 
+		$options = Xml::listDropDownOptions(
+			$this->msg( 'deletereason-dropdown' )->inContentLanguage()->text(),
+			[ 'other' => $this->msg( 'deletereasonotherlist' )->inContentLanguage()->text() ]
+		);
+
+		$dropdown = new FieldLayout(
+			new DropdownInputWidget( [
+				'name' => 'wpDeleteReasonList',
+				'inputId' => 'wpDeleteReasonList',
+				'tabIndex' => 1,
+				'infusable' => true,
+				'value' => '',
+				'options' => Xml::listDropDownOptionsOoui( $options ),
+			] ),
+			[
+				'label' => $this->msg( 'deletecomment' )->text(),
+				'align' => 'top',
+			]
+		);
+		$reasonField = new FieldLayout(
+			new TextInputWidget( [
+				'name' => 'wpReason',
+				'inputId' => 'wpReason',
+				'tabIndex' => 2,
+				'maxLength' => CommentStore::COMMENT_CHARACTER_LIMIT,
+				'infusable' => true,
+				'value' => $reason,
+				'autofocus' => true,
+			] ),
+			[
+				'label' => $this->msg( 'deleteotherreason' )->text(),
+				'align' => 'top',
+			]
+		);
+
+		$out->enableOOUI();
 		$out->addHTML(
 			Xml::openElement( 'form', [
 					'action' => $nuke->getLocalURL( 'action=delete' ),
@@ -170,16 +229,7 @@ class SpecialNuke extends SpecialPage {
 					'name' => 'nukelist' ]
 			) .
 			Html::hidden( 'wpEditToken', $this->getUser()->getEditToken() ) .
-			Xml::tags( 'p',
-				null,
-				Xml::inputLabel(
-					$this->msg( 'deletecomment' )->text(),
-					'wpReason',
-					'wpReason',
-					70,
-					$reason
-				)
-			)
+			$dropdown . $reasonField
 		);
 
 		// Select: All, None, Invert
@@ -221,7 +271,7 @@ class SpecialNuke extends SpecialPage {
 					'pages[]',
 					true,
 					[ 'value' => $title->getPrefixedDBkey() ]
-				) . '&#160;' .
+				) . "\u{00A0}" .
 				( $thumb ? $thumb->toHtml( [ 'desc-link' => true ] ) : '' ) .
 				$linkRenderer->makeKnownLink( $title ) . $wordSeparator .
 				$this->msg( 'parentheses' )->rawParams( $userNameText . $changesLink )->escaped() .
@@ -250,27 +300,22 @@ class SpecialNuke extends SpecialPage {
 		$what = [
 			'rc_namespace',
 			'rc_title',
-			'rc_timestamp',
 		];
 
-		$where = [ "(rc_new = 1) OR (rc_log_type = 'upload' AND rc_log_action = 'upload')" ];
+		$where = [
+			$dbr->makeList( [
+				'rc_new' => 1,
+				$dbr->makeList( [
+					'rc_log_type' => 'upload',
+					'rc_log_action' => 'upload',
+				], LIST_AND ),
+			], LIST_OR ),
+		];
 
-		if ( class_exists( ActorMigration::class ) ) {
-			if ( $username === '' ) {
-				$actorQuery = ActorMigration::newMigration()->getJoin( 'rc_user' );
-				$what['rc_user_text'] = $actorQuery['fields']['rc_user_text'];
-			} else {
-				$actorQuery = ActorMigration::newMigration()
-					->getWhere( $dbr, 'rc_user', User::newFromName( $username, false ) );
-				$where[] = $actorQuery['conds'];
-			}
+		if ( $username === '' ) {
+			$what['rc_user_text'] = 'actor_name';
 		} else {
-			$actorQuery = [ 'tables' => [], 'joins' => [] ];
-			if ( $username === '' ) {
-				$what[] = 'rc_user_text';
-			} else {
-				$where['rc_user_text'] = $username;
-			}
+			$where['actor_name'] = $username;
 		}
 
 		if ( $namespace !== null ) {
@@ -283,19 +328,17 @@ class SpecialNuke extends SpecialPage {
 			// will not work.
 			$where[] = 'rc_title LIKE ' . $dbr->addQuotes( $pattern );
 		}
-		$group = implode( ', ', $what );
 
 		$result = $dbr->select(
-			[ 'recentchanges' ] + $actorQuery['tables'],
+			[ 'recentchanges', 'actor' ],
 			$what,
 			$where,
 			__METHOD__,
 			[
 				'ORDER BY' => 'rc_timestamp DESC',
-				'GROUP BY' => $group,
 				'LIMIT' => $limit
 			],
-			$actorQuery['joins']
+			[ 'actor' => [ 'JOIN', 'actor_id=rc_actor' ] ]
 		);
 
 		$pages = [];
@@ -309,7 +352,7 @@ class SpecialNuke extends SpecialPage {
 
 		// Allows other extensions to provide pages to be nuked that don't use
 		// the recentchanges table the way mediawiki-core does
-		Hooks::run( 'NukeGetNewPages', [ $username, $pattern, $namespace, $limit, &$pages ] );
+		$this->hookRunner->onNukeGetNewPages( $username, $pattern, $namespace, $limit, $pages );
 
 		// Re-enforcing the limit *after* the hook because other extensions
 		// may add and/or remove pages. We need to make sure we don't end up
@@ -330,6 +373,8 @@ class SpecialNuke extends SpecialPage {
 	 */
 	protected function doDelete( array $pages, $reason ) {
 		$res = [];
+		$jobs = [];
+		$user = $this->getUser();
 
 		$services = MediaWikiServices::getInstance();
 		$localRepo = $services->getRepoGroup()->getLocalRepo();
@@ -338,23 +383,26 @@ class SpecialNuke extends SpecialPage {
 			$title = Title::newFromText( $page );
 
 			$deletionResult = false;
-			if ( !Hooks::run( 'NukeDeletePage', [ $title, $reason, &$deletionResult ] ) ) {
+			if ( !$this->hookRunner->onNukeDeletePage( $title, $reason, $deletionResult ) ) {
 				if ( $deletionResult ) {
-					$res[] = $this->msg( 'nuke-deleted', $title->getPrefixedText() )->parse();
+					$res[] = $this->msg( 'nuke-deleted' )
+						->plaintextParams( $title->getPrefixedText() )
+						->parse();
 				} else {
-					$res[] = $this->msg( 'nuke-not-deleted', $title->getPrefixedText() )->parse();
+					$res[] = $this->msg( 'nuke-not-deleted' )
+						->plaintextParams( $title->getPrefixedText() )
+						->parse();
 				}
 				continue;
 			}
 
-			$user = $this->getUser();
-			$file = $title->getNamespace() === NS_FILE ? $localRepo->newFile( $title ) : false;
 			$permission_errors = $permissionManager->getPermissionErrors( 'delete', $user, $title );
 
 			if ( $permission_errors !== [] ) {
 				throw new PermissionsError( 'delete', $permission_errors );
 			}
 
+			$file = $title->getNamespace() === NS_FILE ? $localRepo->newFile( $title ) : false;
 			if ( $file ) {
 				$oldimage = null; // Must be passed by reference
 				$status = FileDeleteForm::doDelete(
@@ -366,19 +414,44 @@ class SpecialNuke extends SpecialPage {
 					$user
 				);
 			} else {
-				$status = WikiPage::factory( $title )
-					->doDeleteArticleReal( $reason, $user );
+				$job = new DeletePageJob( [
+					'namespace' => $title->getNamespace(),
+					'title' => $title->getDBKey(),
+					'reason' => $reason,
+					'userId' => $user->getId(),
+					'wikiPageId' => $title->getId(),
+					'suppress' => false,
+					'tags' => '[]',
+					'logsubtype' => 'delete',
+				] );
+				$jobs[] = $job;
+				$status = 'job';
 			}
 
-			if ( $status->isOK() ) {
-				$res[] = $this->msg( 'nuke-deleted', $title->getPrefixedText() )->parse();
+			if ( $status === 'job' ) {
+				$res[] = $this->msg( 'nuke-deletion-queued' )
+					->plaintextParams( $title->getPrefixedText() )
+					->parse();
+			} elseif ( $status->isOK() ) {
+				$res[] = $this->msg( 'nuke-deleted' )
+					->plaintextParams( $title->getPrefixedText() )
+					->parse();
 			} else {
-				$res[] = $this->msg( 'nuke-not-deleted', $title->getPrefixedText() )->parse();
+				$res[] = $this->msg( 'nuke-not-deleted' )
+					->plaintextParams( $title->getPrefixedText() )
+					->parse();
 			}
 		}
 
-		$this->getOutput()->addHTML( "<ul>\n<li>" . implode( "</li>\n<li>", $res ) .
-			"</li>\n</ul>\n" );
+		if ( $jobs ) {
+			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
+		}
+
+		$this->getOutput()->addHTML(
+			"<ul>\n<li>" .
+			implode( "</li>\n<li>", $res ) .
+			"</li>\n</ul>\n"
+		);
 		$this->getOutput()->addWikiMsg( 'nuke-delete-more' );
 	}
 
@@ -401,7 +474,36 @@ class SpecialNuke extends SpecialPage {
 		return UserNamePrefixSearch::search( 'public', $search, $limit, $offset );
 	}
 
+	/**
+	 * Group Special:Nuke with pagetools
+	 *
+	 * @return string
+	 */
 	protected function getGroupName() {
 		return 'pagetools';
+	}
+
+	/**
+	 * @param WebRequest $request
+	 * @param string $target
+	 * @return string
+	 */
+	private function getDeleteReason( WebRequest $request, string $target ): string {
+		$defaultReason = $target === ''
+			? $this->msg( 'nuke-multiplepeople' )->inContentLanguage()->text()
+			: $this->msg( 'nuke-defaultreason', $target )->inContentLanguage()->text();
+
+		$dropdownSelection = $request->getText( 'wpDeleteReasonList', 'other' );
+		$reasonInput = $request->getText( 'wpReason', $defaultReason );
+
+		if ( $dropdownSelection === 'other' ) {
+			return $reasonInput;
+		} elseif ( $reasonInput !== '' ) {
+			// Entry from drop down menu + additional comment
+			$separator = $this->msg( 'colon-separator' )->inContentLanguage()->text();
+			return $dropdownSelection . $separator . $reasonInput;
+		} else {
+			return $dropdownSelection;
+		}
 	}
 }

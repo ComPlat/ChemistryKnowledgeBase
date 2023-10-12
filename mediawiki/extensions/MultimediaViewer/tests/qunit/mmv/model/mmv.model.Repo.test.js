@@ -18,7 +18,7 @@
 ( function () {
 	QUnit.module( 'mmv.model.Repo', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Repo constructor sanity check', function ( assert ) {
+	QUnit.test( 'Repo constructor sense check', function ( assert ) {
 		var displayName = 'Wikimedia Commons',
 			favicon = '//commons.wikimedia.org/favicon.ico',
 			apiUrl = '//commons.wikimedia.org/w/api.php',
@@ -30,10 +30,10 @@
 				false, apiUrl, server, articlePath ),
 			foreignDbRepo = new mw.mmv.model.ForeignDbRepo( displayName, favicon, false, descBaseUrl );
 
-		assert.ok( localRepo, 'Local repo creation works' );
-		assert.ok( foreignApiRepo,
+		assert.true( localRepo instanceof mw.mmv.model.Repo, 'Local repo creation works' );
+		assert.true( foreignApiRepo instanceof mw.mmv.model.ForeignApiRepo,
 			'Foreign API repo creation works' );
-		assert.ok( foreignDbRepo, 'Foreign DB repo creation works' );
+		assert.true( foreignDbRepo instanceof mw.mmv.model.ForeignDbRepo, 'Foreign DB repo creation works' );
 	} );
 
 	QUnit.test( 'getArticlePath()', function ( assert ) {

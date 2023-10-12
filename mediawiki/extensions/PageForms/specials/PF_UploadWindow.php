@@ -27,10 +27,15 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	}
 
 	/** Misc variables */
-	public $mRequest;			// The WebRequest or FauxRequest this form is supposed to handle
+
+	/** @var WebRequest|FauxRequest The request this form is supposed to handle */
+	public $mRequest;
 	public $mSourceType;
+
 	/** @var UploadBase */
 	public $mUpload;
+
+	/** @var LocalFile */
 	public $mLocalFile;
 	public $mUploadClicked;
 
@@ -38,7 +43,9 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	protected $mTextAfterSummary;
 
 	/** User input variables from the "description" section */
-	public $mDesiredDestName;	// The requested target file name
+
+	/** @var string The requested target file name */
+	public $mDesiredDestName;
 	public $mComment;
 	public $mLicense;
 
@@ -49,13 +56,20 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	public $mCopyrightSource;
 
 	/** Hidden variables */
-	public $mForReUpload;		// The user followed an "overwrite this file" link
-	public $mCancelUpload;		// The user clicked "Cancel and return to upload form" button
+
+	/** @var bool The user followed an "overwrite this file" link */
+	public $mForReUpload;
+
+	/** @var bool The user clicked "Cancel and return to upload form" button */
+	public $mCancelUpload;
 	public $mTokenOk;
 
 	/** used by Page Forms */
 	public $mInputID;
 	public $mDelimiter;
+
+	private $uploadFormTextTop;
+	private $uploadFormTextAfterSummary;
 
 	/**
 	 * Initialize instance variables from request and create an Upload handler
@@ -78,16 +92,17 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		$this->mComment	   = $request->getText( 'wpUploadDescription' );
 		$this->mLicense	   = $request->getText( 'wpLicense' );
 
-		$this->mDestWarningAck    = $request->getText( 'wpDestFileWarningAck' );
 		$this->mIgnoreWarning     = $request->getCheck( 'wpIgnoreWarning' )
 			|| $request->getCheck( 'wpUploadIgnoreWarning' );
-		$this->mWatchthis	 = $request->getBool( 'wpWatchthis' );
+		$this->mWatchThis	 = $request->getBool( 'wpWatchthis' );
 		$this->mCopyrightStatus   = $request->getText( 'wpUploadCopyStatus' );
 		$this->mCopyrightSource   = $request->getText( 'wpUploadSource' );
 
-		$this->mForReUpload       = $request->getBool( 'wpForReUpload' ); // updating a file
+		// updating a file
+		$this->mForReUpload       = $request->getBool( 'wpForReUpload' );
 		$this->mCancelUpload      = $request->getCheck( 'wpCancelUpload' )
-			|| $request->getCheck( 'wpReUpload' ); // b/w compat
+		// b/w compat
+			|| $request->getCheck( 'wpReUpload' );
 
 		// If it was posted check for the token (no remote POST'ing with user credentials)
 		$token = $request->getVal( 'wpEditToken' );
@@ -131,12 +146,12 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		}
 
 		# Check blocks
-		if ( $this->getUser()->isBlocked() ) {
+		if ( $this->getUser()->getBlock() ) {
 			throw new UserBlockedError( $this->getUser()->getBlock() );
 		}
 
 		# Check whether we actually want to allow changing stuff
-		if ( wfReadOnly() ) {
+		if ( MediaWikiServices::getInstance()->getReadOnlyMode()->isReadOnly() ) {
 			throw new ReadOnlyError();
 		}
 
@@ -173,7 +188,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	/**
 	 * Show the main upload form.
 	 *
-	 * @param UploadForm $form
+	 * @param PFUploadForm $form
 	 */
 	protected function showUploadForm( $form ) {
 		# Add links if file was previously deleted
@@ -190,7 +205,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	 * @param string $message HTML string to add to the form
 	 * @param string $sessionKey Session key in case this is a stashed upload
 	 * @param bool $hideIgnoreWarning
-	 * @return UploadForm
+	 * @return PFUploadForm
 	 */
 	protected function getUploadForm( $message = '', $sessionKey = '', $hideIgnoreWarning = false ) {
 		# Initialize form
@@ -232,7 +247,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	}
 
 	/**
-	 * Shows the "view X deleted revivions link""
+	 * Shows the "view X deleted revisions link"
 	 */
 	protected function showViewDeletedLinks() {
 		$title = Title::makeTitleSafe( NS_FILE, $this->mDesiredDestName );
@@ -266,7 +281,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	 * @param string $message HTML message to be passed to mainUploadForm
 	 */
 	protected function recoverableUploadError( $message ) {
-		$sessionKey = $this->mUpload->stashFile()->getFileKey();
+		$sessionKey = $this->mUpload->tryStashFile( $this->getUser() )->getStatusValue()->getValue()->getFileKey();
 		$message = '<h2>' . $this->msg( 'uploadwarning' )->escaped() . "</h2>\n" .
 			'<div class="errorbox">' . $message . "</div>\n";
 
@@ -281,11 +296,16 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	 * @param array $warnings
 	 */
 	protected function uploadWarning( $warnings ) {
-		$sessionKey = $this->mUpload->stashFile()->getFileKey();
+		$sessionKey = $this->mUpload->tryStashFile( $this->getUser() )->getStatusValue()->getValue()->getFileKey();
 
 		$warningHtml = '<h2>' . $this->msg( 'uploadwarning' )->escaped() . "</h2>\n"
 			. '<ul class="warningbox">';
 		foreach ( $warnings as $warning => $args ) {
+				// Unlike the other warnings, this one can be worked around.
+				if ( $warning == 'badfilename' ) {
+					$this->mDesiredDestName = Title::makeTitle( NS_FILE, $args )->getText();
+				}
+
 				if ( $warning == 'exists' ) {
 					$msg = self::getExistsWarning( $args );
 				} elseif ( $warning == 'duplicate' ) {
@@ -308,10 +328,10 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		$warningHtml .= "</ul>\n";
 		$warningHtml .= $this->msg( 'uploadwarning-text' )->parseAsBlock();
 
-		$form = $this->getUploadForm( $warningHtml, $sessionKey, /* $hideIgnoreWarning */ true );
+		$form = $this->getUploadForm( $warningHtml, $sessionKey, true );
 		$form->setSubmitText( $this->msg( 'upload-tryagain' )->text() );
-		$form->addButton( 'wpUploadIgnoreWarning', $this->msg( 'ignorewarning' )->text() );
-		$form->addButton( 'wpCancelUpload', $this->msg( 'reuploaddesc' )->text() );
+		$form->addButton( [ 'name' => 'wpUploadIgnoreWarning', 'value' => $this->msg( 'ignorewarning' )->text() ] );
+		$form->addButton( [ 'name' => 'wpCancelUpload', 'value' => $this->msg( 'reuploaddesc' )->text() ] );
 
 		$this->showUploadForm( $form );
 	}
@@ -386,7 +406,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		} else {
 			$pageText = false;
 		}
-		$status = $this->mUpload->performUpload( $this->mComment, $pageText, $this->mWatchthis, $this->getUser() );
+		$status = $this->mUpload->performUpload( $this->mComment, $pageText, $this->mWatchThis, $this->getUser() );
 		if ( !$status->isGood() ) {
 			if ( method_exists( $output, 'parseAsInterface' ) ) {
 				$statusText = $output->parseAsInterface( $status->getWikiText() );
@@ -408,59 +428,53 @@ class PFUploadWindow extends UnlistedSpecialPage {
 			$imageTitle = $this->mUpload->getTitle();
 			$basename = $imageTitle->getText();
 		} else {
-			$basename = $this->mSrcName;
+			$basename = '';
 		}
 
 		$basename = str_replace( '_', ' ', $basename );
-		// UTF8-decoding is needed for IE.
-		// Actually, this doesn't seem to fix the encoding in IE
-		// any more... and it messes up the encoding for all other
-		// browsers. @TODO - fix handling in IE!
-		// $basename = utf8_decode( $basename );
 
 		$output = <<<END
 		<script type="text/javascript">
-		var input = parent.window.jQuery( parent.document.getElementById("{$this->mInputID}") );
-END;
-
-		if ( $this->mDelimiter == null ) {
-			$output .= <<<END
-		input.val( '$basename' );
-		input.change();
-END;
-		} else {
-			$output .= <<<END
-		// if the current value is blank, set it to this file name;
-		// if it's not blank and ends in a space or delimiter, append
-		// the file name; if it ends with a normal character, append
-		// both a delimiter and a file name; and add on a delimiter
-		// at the end in any case
-		var cur_value = parent.document.getElementById("{$this->mInputID}").value;
-
-		if (cur_value === '') {
-			input.val( '$basename' + '{$this->mDelimiter} ' );
+		var input = parent.window.jQuery( parent.document.getElementById( "{$this->mInputID}" ) );
+		var classes = input.attr( "class" ).split( /\s+/ );
+		var checkIfPresent = false;
+		if ( classes.indexOf( 'pfTokens' ) > -1 ) {
+			var inputData = input.data( "select2" );
+			var newValue = parent.window.jQuery.grep( inputData.val(), function ( value ) {
+				if( value === '$basename' ){
+					checkIfPresent = true;
+				}
+				return value !== '$basename';
+			});
+			if( checkIfPresent === false && '$basename' !== "" ) {
+				newValue.push( '$basename' );
+			}
+			if ( !input.find( "option[value='" + '$basename' + "']" ).length ) {
+				var newOption = new Option( '$basename', '$basename', false, false );
+				input.append( newOption ).trigger( 'change' );
+			}
+			input.val( newValue );
 			input.change();
 		} else {
-			var last_char = cur_value.charAt(cur_value.length - 1);
-			if (last_char == '{$this->mDelimiter}' || last_char == ' ') {
-				parent.document.getElementById("{$this->mInputID}").value += '$basename' + '{$this->mDelimiter} ';
-				input.change();
+			var cur_value = parent.document.getElementById( "{$this->mInputID}" ).value;
+			if ( cur_value === '' ) {
+				input.val( '$basename' );
 			} else {
-				parent.document.getElementById("{$this->mInputID}").value += '{$this->mDelimiter} $basename{$this->mDelimiter} ';
-				input.change();
+				var last_char = cur_value.charAt( cur_value.length - 1 );
+				if ( last_char == '{$this->mDelimiter}' || last_char == ' ' ) {
+					input.val( cur_value + '$basename' + '{$this->mDelimiter} ' );
+				} else {
+					input.val( cur_value + '{$this->mDelimiter} $basename{$this->mDelimiter} ' );
+				}
 			}
+			input.change();
 		}
-
-END;
-		}
-		$output .= <<<END
 		parent.jQuery.fancybox.close( true );
 	</script>
 
 END;
 		// $this->getOutput()->addHTML( $output );
 		print $output;
-		$img = null; // @todo: added to avoid passing a ref to null - should this be defined somewhere?
 
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$page = $this;
@@ -511,26 +525,28 @@ END;
 	 * @return bool
 	 */
 	protected function watchCheck() {
-		if ( $this->getUser()->getOption( 'watchdefault' ) ) {
+		if ( MediaWikiServices::getInstance()->getUserOptionsLookup()
+			->getOption( $this->getUser(), 'watchdefault' ) ) {
 			// Watch all edits!
 			return true;
 		}
 
-		if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
-			// MediaWiki 1.34+
-			$local = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
-				->newFile( $this->mDesiredDestName );
-		} else {
-			$local = wfLocalFile( $this->mDesiredDestName );
-		}
+		$local = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
+			->newFile( $this->mDesiredDestName );
 		if ( $local && $local->exists() ) {
 			// We're uploading a new version of an existing file.
 			// No creation, so don't watch it if we're not already.
-			return $this->getUser()->isWatched( $local->getTitle() );
-		} else {
-			// New page should get watched if that's our option.
-			return $this->getUser()->getOption( 'watchcreations' );
+			if ( method_exists( \MediaWiki\Watchlist\WatchlistManager::class, 'isWatched' ) ) {
+				// MediaWiki 1.37+
+				return MediaWikiServices::getInstance()->getWatchlistManager()
+					->isWatched( $this->getUser(), $local->getTitle() );
+			} else {
+				return $this->getUser()->isWatched( $local->getTitle() );
+			}
 		}
+		// New page should get watched if that's our option.
+		return MediaWikiServices::getInstance()->getUserOptionsLookup()
+			->getOption( $this->getUser(), 'watchcreations' );
 	}
 
 	/**
@@ -569,7 +585,8 @@ END;
 				$finalExt = $details['finalExt'];
 				$this->uploadError(
 					$this->msg( 'filetype-banned-type',
-						htmlspecialchars( $finalExt ), // @todo Double escaping?
+						// @todo Double escaping?
+						htmlspecialchars( $finalExt ),
 						implode(
 							$this->msg( 'comma-separator' )->text(),
 							$wgFileExtensions
@@ -594,7 +611,7 @@ END;
 	/**
 	 * Remove a temporarily kept file stashed by saveTempUploadedFile().
 	 * @private
-	 * @return success
+	 * @return bool Success
 	 */
 	protected function unsaveUploadedFile() {
 		if ( !( $this->mUpload instanceof UploadFromStash ) ) {
@@ -672,55 +689,6 @@ END;
 	}
 
 	/**
-	 * Get a list of warnings
-	 *
-	 * @param string $filename local filename, e.g. 'file exists', 'non-descriptive filename'
-	 * @return array list of warning messages
-	 */
-	public static function ajaxGetExistsWarning( $filename ) {
-		if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
-			// MediaWiki 1.34+
-			$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
-		} else {
-			$repoGroup = RepoGroup::singleton();
-		}
-		$file = $repoGroup->findFile( $filename );
-		if ( !$file ) {
-			// Force local file so we have an object to do further checks against
-			// if there isn't an exact match...
-			$file = $repoGroup->getLocalRepo()->newFile( $filename );
-		}
-		$s = '&#160;';
-		if ( $file ) {
-			$exists = UploadBase::getExistsWarning( $file );
-			$warning = self::getExistsWarning( $exists );
-			if ( $warning !== '' ) {
-				$s = "<ul>$warning</ul>";
-			}
-		}
-		return $s;
-	}
-
-	/**
-	 * Render a preview of a given license for the AJAX preview on upload
-	 *
-	 * @param string $license
-	 * @return string
-	 */
-	public static function ajaxGetLicensePreview( $license ) {
-		global $wgUser;
-		$text = '{{' . $license . '}}';
-		$title = Title::makeTitle( NS_FILE, 'Sample.jpg' );
-		$options = ParserOptions::newFromUser( $wgUser );
-
-		// Expand subst: first, then live templates...
-		$text = PFUtils::getParser()->preSaveTransform( $text, $title, $wgUser, $options );
-		$output = PFUtils::getParser()->parse( $text, $title, $options );
-
-		return $output->getText();
-	}
-
-	/**
 	 * Construct a warning and a gallery from an array of duplicate files.
 	 * @param File[] $dupes
 	 * @return string
@@ -735,12 +703,7 @@ END;
 					"|" . $title->getText() . "\n";
 			}
 			$msg .= "</gallery>";
-			if ( method_exists( $out, 'parseAsInterface' ) ) {
-				// MW 1.32+
-				$galleryText = $out->parseAsInterface( $msg );
-			} else {
-				$galleryText = $out->parse( $msg );
-			}
+			$galleryText = $out->parseAsInterface( $msg );
 			return "<li>" .
 				$this->msg( "file-exists-duplicate" )->numParams( count( $dupes ) )->parseAsBlock() .
 				$galleryText .

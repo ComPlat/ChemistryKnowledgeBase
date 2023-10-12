@@ -12,9 +12,9 @@ trait TempFSFileTestTrait {
 	 */
 	public function testPurge() {
 		$file = $this->newFile();
-		$this->assertTrue( file_exists( $file->getPath() ) );
+		$this->assertTrue( is_file( $file->getPath() ) );
 		$file->purge();
-		$this->assertFalse( file_exists( $file->getPath() ) );
+		$this->assertFalse( is_file( $file->getPath() ) );
 	}
 
 	/**
@@ -26,13 +26,19 @@ trait TempFSFileTestTrait {
 	public function testBind() {
 		$file = $this->newFile();
 		$path = $file->getPath();
-		$this->assertTrue( file_exists( $path ) );
-		$obj = (object)[];
+		$this->assertTrue( is_file( $path ) );
+		$obj = new class {
+		};
 		$file->bind( $obj );
 		unset( $file );
-		$this->assertTrue( file_exists( $path ) );
+		$this->assertTrue( is_file( $path ) );
+
+		// Make sure the file still exists after garbage collection
+		gc_collect_cycles();
+		$this->assertTrue( is_file( $path ) );
+
 		unset( $obj );
-		$this->assertFalse( file_exists( $path ) );
+		$this->assertFalse( is_file( $path ) );
 	}
 
 	/**
@@ -43,12 +49,10 @@ trait TempFSFileTestTrait {
 	public function testPreserve() {
 		$file = $this->newFile();
 		$path = $file->getPath();
-		$this->assertTrue( file_exists( $path ) );
+		$this->assertTrue( is_file( $path ) );
 		$file->preserve();
 		unset( $file );
-		$this->assertTrue( file_exists( $path ) );
-		Wikimedia\suppressWarnings();
-		unlink( $path );
-		Wikimedia\restoreWarnings();
+		$this->assertTrue( is_file( $path ) );
+		@unlink( $path );
 	}
 }

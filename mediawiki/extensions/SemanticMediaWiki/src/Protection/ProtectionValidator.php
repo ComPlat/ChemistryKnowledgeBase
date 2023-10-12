@@ -11,6 +11,7 @@ use SMW\EntityCache;
 use SMW\MediaWiki\PermissionManager;
 use SMW\Listener\ChangeListener\ChangeListeners\PropertyChangeListener;
 use SMW\Listener\ChangeListener\ChangeRecord;
+use SMW\Services\ServicesFactory;
 use Title;
 use User;
 
@@ -216,13 +217,15 @@ class ProtectionValidator {
 
 		$key = md5( $title->getDBKey() . "#" . $user->getName() );
 
-		// `WikiPage::getCreator` -> `Title::getFirstRevision` isn't cached therefore
+		// `WikiPage::getCreator` -> `RevisionLookup::getFirstRevision` isn't cached therefore
 		// avoid repeated requests for the `key` combination
 		if ( isset( $this->importPerformerProtectionLookupCache[$key] ) ) {
 			return $this->importPerformerProtectionLookupCache[$key];
 		}
 
-		$creator = \WikiPage::factory( $title )->getCreator();
+		$creator = ServicesFactory::getInstance()->newPageCreator()
+			->createPage( $title )
+			->getCreator();
 
 		if ( !$creator instanceof User ) {
 			return $this->importPerformerProtectionLookupCache[$key] = false;

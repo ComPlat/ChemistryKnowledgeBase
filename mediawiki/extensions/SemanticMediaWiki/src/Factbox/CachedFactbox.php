@@ -5,12 +5,11 @@ namespace SMW\Factbox;
 use SMW\EntityCache;
 use OutputPage;
 use ParserOutput;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Parser\InTextAnnotationParser;
 use Title;
 use Psr\Log\LoggerAwareTrait;
 use SMW\Utils\HmacSerializer;
-use SMW\MediaWiki\RevisionGuardAwareTrait;
 
 /**
  * Factbox output caching
@@ -26,7 +25,6 @@ use SMW\MediaWiki\RevisionGuardAwareTrait;
 class CachedFactbox {
 
 	use LoggerAwareTrait;
-	use RevisionGuardAwareTrait;
 
 	/**
 	 * @var EntityCache
@@ -68,13 +66,16 @@ class CachedFactbox {
 	 */
 	private $timestamp;
 
+	private FactboxText $factboxText;
+
 	/**
 	 * @since 1.9
 	 *
 	 * @param EntityCache $entityCache
 	 */
-	public function __construct( EntityCache $entityCache ) {
+	public function __construct( EntityCache $entityCache, FactboxText $factboxText ) {
 		$this->entityCache = $entityCache;
+		$this->factboxText = $factboxText;
 	}
 
 	/**
@@ -170,7 +171,7 @@ class CachedFactbox {
 	 */
 	public function prepare( OutputPage &$outputPage, ParserOutput $parserOutput ) {
 
-		$outputPage->mSMWFactboxText = null;
+		$this->factboxText->clear();
 		$time = -microtime( true );
 
 		$context = $outputPage->getContext();
@@ -192,7 +193,7 @@ class CachedFactbox {
 		$outputPage->addModules( Factbox::getModules() );
 		$title = $outputPage->getTitle();
 
-		$rev_id = $this->findRevId( $title, $request );
+		$rev_id = $outputPage->getRevisionId();
 		$lang = $context->getLanguage()->getCode();
 		$content = '';
 
@@ -210,7 +211,8 @@ class CachedFactbox {
 				[ 'rev_id' => $rev_id, 'lang' => $lang, 'procTime' => microtime( true ) + $time ]
 			);
 
-			return $outputPage->mSMWFactboxText = $content['text'];
+			$this->factboxText->setText( $content['text'] );
+			return;
 		}
 
 		$text = $this->rebuild(
@@ -219,7 +221,7 @@ class CachedFactbox {
 			$checkMagicWords
 		);
 
-		$outputPage->mSMWFactboxText = $text;
+		$this->factboxText->setText( $text );
 
 		if ( $isPreview ) {
 			return;
@@ -281,16 +283,14 @@ class CachedFactbox {
 			return $text;
 		}
 
-		if ( isset( $outputPage->mSMWFactboxText ) ) {
-			$text = $outputPage->mSMWFactboxText;
+		if ( $this->factboxText->hasText() ) {
+			$text = $this->factboxText->getText();
 		} elseif ( $title instanceof Title ) {
 
 			$context = $outputPage->getContext();
 			$lang = $context->getLanguage()->getCode();
 
-			$rev_id = $this->findRevId(
-				$title, $context->getRequest()
-			);
+			$rev_id = $outputPage->getRevisionId();
 
 			$sub = $this->makeSubCacheKey( $rev_id, $lang, $this->featureSet );
 
@@ -309,23 +309,6 @@ class CachedFactbox {
 		}
 
 		return $text;
-	}
-
-	/**
-	 * Return a revisionId either from the WebRequest object (display an old
-	 * revision or permalink etc.) or from the title object
-	 */
-	private function findRevId( Title $title, $request ) {
-
-		if ( $request->getInt( 'diff' ) > 0 ) {
-			return $request->getInt( 'diff' );
-		}
-
-		if ( $request->getInt( 'oldid' ) > 0 ) {
-			return $request->getInt( 'oldid' );
-		}
-
-		return $this->revisionGuard->getLatestRevID( $title );
 	}
 
 	/**

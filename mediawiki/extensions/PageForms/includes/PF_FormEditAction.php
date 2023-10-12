@@ -29,7 +29,7 @@ class PFFormEditAction extends Action {
 	 * @return false
 	 */
 	public function show() {
-		return self::displayForm( $this, $this->page );
+		return self::displayForm( $this, $this->getArticle() );
 	}
 
 	/**
@@ -43,9 +43,8 @@ class PFFormEditAction extends Action {
 	/**
 	 * Adds an "action" (i.e., a tab) to edit the current article with
 	 * a form
-	 * @param Title $obj
+	 * @param IContextSource $obj
 	 * @param array &$links
-	 * @return true
 	 */
 	static function displayTab( $obj, &$links ) {
 		$title = $obj->getTitle();
@@ -59,25 +58,20 @@ class PFFormEditAction extends Action {
 		// special-page check is there.
 		if ( !isset( $title ) ||
 			( $title->getNamespace() == NS_SPECIAL ) ) {
-			return true;
+			return;
 		}
 
 		$form_names = PFFormLinker::getDefaultFormsForPage( $title );
 		if ( count( $form_names ) == 0 ) {
-			return true;
+			return;
 		}
 
 		global $wgPageFormsRenameEditTabs, $wgPageFormsRenameMainEditTab;
 
 		$content_actions = &$links['views'];
 
-		if ( method_exists( 'MediaWiki\Permissions\PermissionManager', 'userCan' ) ) {
-			// MW 1.33+
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-			$user_can_edit = $permissionManager->userCan( 'edit', $user, $title );
-		} else {
-			$user_can_edit = $title->userCan( 'edit', $user );
-		}
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$user_can_edit = $permissionManager->userCan( 'edit', $user, $title );
 
 		// Create the form edit tab, and apply whatever changes are
 		// specified by the edit-tab global variables.
@@ -144,8 +138,6 @@ class PFFormEditAction extends Action {
 			unset( $content_actions['edit'] );
 			unset( $content_actions['viewsource'] );
 		}
-
-		return true; // always return true, in order not to stop MW's hook processing!
 	}
 
 	static function displayFormChooser( $output, $title ) {
@@ -250,7 +242,7 @@ class PFFormEditAction extends Action {
 		);
 
 		$pagesPerForm = [];
-		while ( $row = $dbr->fetchRow( $res ) ) {
+		while ( $row = $res->fetchRow() ) {
 			$formName = $row['pp_value'];
 			$pagesPerForm[$formName] = $row['total_pages'];
 		}
@@ -261,7 +253,7 @@ class PFFormEditAction extends Action {
 		$text = '';
 		foreach ( $formNames as $i => $formName ) {
 			if ( $i > 0 ) {
-				$text .= " &middot; ";
+				$text .= ' <span class="pageforms-separator">&middot;</span> ';
 			}
 
 			// Special handling for forms whose name contains a slash.
@@ -295,17 +287,12 @@ class PFFormEditAction extends Action {
 		}
 
 		if ( count( $form_names ) > 1 ) {
-			$warning_text = "\t" . '<div class="warningbox">' . wfMessage( 'pf_formedit_morethanoneform' )->text() . "</div>\n";
-			if ( method_exists( $output, 'addWikiTextAsInterface' ) ) {
-				// MW 1.32+
-				$output->addWikiTextAsInterface( $warning_text );
-			} else {
-				$output->addWikiText( $warning_text );
-			}
+			$warning_text = Html::warningBox( wfMessage( 'pf_formedit_morethanoneform' )->text() );
+			$output->addWikiTextAsInterface( $warning_text );
 		}
 
 		$form_name = $form_names[0];
-		$page_name = PFUtils::titleString( $title );
+		$page_name = $title->getPrefixedText();
 
 		$pfFormEdit = new PFFormEdit();
 		$pfFormEdit->printForm( $form_name, $page_name );

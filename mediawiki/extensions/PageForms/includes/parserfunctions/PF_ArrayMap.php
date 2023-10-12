@@ -26,9 +26,9 @@ class PFArrayMap {
 		$formula = isset( $args[3] ) ? $args[3] : 'x';
 		$new_delimiter = isset( $args[4] ) ? trim( $frame->expand( $args[4] ) ) : ', ';
 		$conjunction = isset( $args[5] ) ? trim( $frame->expand( $args[5] ) ) : $new_delimiter;
-		# Unstrip some
-		$delimiter = $parser->mStripState->unstripNoWiki( $delimiter );
-		# Let '\n' represent newlines, and '\s' represent spaces.
+		// Unstrip some.
+		$delimiter = $parser->getStripState()->unstripNoWiki( $delimiter );
+		// Let '\n' represent newlines, and '\s' represent spaces.
 		$delimiter = str_replace( [ '\n', '\s' ], [ "\n", ' ' ], $delimiter );
 		$new_delimiter = str_replace( [ '\n', '\s' ], [ "\n", ' ' ], $new_delimiter );
 		$conjunction = str_replace( [ '\n', '\s' ], [ "\n", ' ' ], $conjunction );

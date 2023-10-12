@@ -52,7 +52,7 @@ ve.dm.Model.static.matchTagNames = null;
  * For more information about element matching, see ve.dm.ModelRegistry.
  *
  * @static
- * @property {Array}
+ * @property {(string|RegExp)[]|null}
  * @inheritable
  */
 ve.dm.Model.static.matchRdfaTypes = null;
@@ -64,7 +64,7 @@ ve.dm.Model.static.matchRdfaTypes = null;
  * For more information about element matching, see ve.dm.ModelRegistry.
  *
  * @static
- * @property {Array}
+ * @property {(string|RegExp)[]|null}
  * @inheritable
  */
 ve.dm.Model.static.allowedRdfaTypes = [];
@@ -122,7 +122,7 @@ ve.dm.Model.static.matchFunction = null;
  *
  * For these purposes, annotations are considered content. Meta-items can occur anywhere, so if
  * a meta-element is returned no special action is taken. Note that "alienate" always means an alien
- * *node* (ve.dm.AlienNode) will be generated, never an alien meta-item (ve.dm.AlienMetaItem),
+ * **node** (ve.dm.AlienNode) will be generated, never an alien meta-item (ve.dm.AlienMetaItem),
  * regardless of whether the subclass attempting the conversion is a node or a meta-item.
  *
  * The returned linear model element must have a type property set to a registered model name
@@ -138,7 +138,7 @@ ve.dm.Model.static.matchFunction = null;
  * @static
  * @inheritable
  * @param {Node[]} domElements DOM elements to convert. Usually only one element
- * @param {ve.dm.Converter} converter Converter object
+ * @param {ve.dm.Converter} converter
  * @return {Object|Array|null} Linear model element, or array with linear model data, or null to alienate
  */
 ve.dm.Model.static.toDataElement = function () {
@@ -151,7 +151,7 @@ ve.dm.Model.static.toDataElement = function () {
  *
  * If this model is a node with handlesOwnChildren set to true, dataElement will be an array of
  * the linear model data of this node and all of its children, rather than a single element.
- * In this case, this function way want to recursively convert linear model data to DOM, which can
+ * In this case, this function may want to recursively convert linear model data to DOM, which can
  * be done with ve.dm.Converter#getDomSubtreeFromData.
  *
  * NOTE: If this function returns multiple DOM elements, the DOM elements produced by the children
@@ -228,7 +228,7 @@ ve.dm.Model.static.getHashObject = function ( dataElement ) {
  * Array of RDFa types that this model should be a match candidate for.
  *
  * @static
- * @return {Array} Array of strings or regular expressions
+ * @return {(string|RegExp)[]|null} Array of strings or regular expressions
  */
 ve.dm.Model.static.getMatchRdfaTypes = function () {
 	return this.matchRdfaTypes;
@@ -238,7 +238,7 @@ ve.dm.Model.static.getMatchRdfaTypes = function () {
  * Extra RDFa types that the element is allowed to have.
  *
  * @static
- * @return {Array} Array of strings or regular expressions
+ * @return {(string|RegExp)[]|null} Array of strings or regular expressions
  */
 ve.dm.Model.static.getAllowedRdfaTypes = function () {
 	return this.allowedRdfaTypes;
@@ -253,10 +253,9 @@ ve.dm.Model.static.getAllowedRdfaTypes = function () {
  * @return {Array} Descriptions, list of strings or Node arrays
  */
 ve.dm.Model.static.describeChanges = function ( attributeChanges ) {
-	var key, change,
-		descriptions = [];
-	for ( key in attributeChanges ) {
-		change = this.describeChange( key, attributeChanges[ key ] );
+	var descriptions = [];
+	for ( var key in attributeChanges ) {
+		var change = this.describeChange( key, attributeChanges[ key ] );
 		if ( change ) {
 			descriptions.push( change );
 		}
@@ -274,20 +273,71 @@ ve.dm.Model.static.describeChanges = function ( attributeChanges ) {
 ve.dm.Model.static.describeChange = function ( key, change ) {
 	if ( ( typeof change.from === 'object' && change.from !== null ) || ( typeof change.to === 'object' && change.to !== null ) ) {
 		return ve.htmlMsg( 'visualeditor-changedesc-unknown', key );
-	} else if ( change.from === undefined ) {
+	} else if ( change.from === undefined || change.from === null ) {
 		return ve.htmlMsg( 'visualeditor-changedesc-set', key, this.wrapText( 'ins', change.to ) );
-	} else if ( change.to === undefined ) {
+	} else if ( change.to === undefined || change.to === null ) {
 		return ve.htmlMsg( 'visualeditor-changedesc-unset', key, this.wrapText( 'del', change.from ) );
+	} else if ( key === 'listItemDepth' ) {
+		// listItemDepth is a special key used on nodes which have isDiffedAsList set
+		if ( change.to > change.from ) {
+			return ve.msg( 'visualeditor-changedesc-list-indent' );
+		} else if ( change.to < change.from ) {
+			return ve.msg( 'visualeditor-changedesc-list-outdent' );
+		}
 	} else {
-		return ve.htmlMsg( 'visualeditor-changedesc-changed', key, this.wrapText( 'del', change.from ), this.wrapText( 'ins', change.to ) );
+		// Use String() for string casting as values could be null
+		var diff = this.getAttributeDiff( String( change.from ), String( change.to ) );
+		if ( diff ) {
+			return ve.htmlMsg( 'visualeditor-changedesc-changed-diff', key, diff );
+		} else {
+			return ve.htmlMsg( 'visualeditor-changedesc-changed', key, this.wrapText( 'del', change.from ), this.wrapText( 'ins', change.to ) );
+		}
 	}
+};
+
+/**
+ * Compare two attribute strings and return an HTML diff
+ *
+ * @param {string} oldText Old attribute text
+ * @param {string} newText New attribute text
+ * @param {boolean} [allowRemoveInsert] Allow the diff to be a full remove insert
+ * @return {HTMLElement|null} An HTML diff in a span element, or null if the diff
+ * was a simple remove-insert, and allowRemoveInsert wasn't set.
+ */
+ve.dm.Model.static.getAttributeDiff = function ( oldText, newText, allowRemoveInsert ) {
+	var span = document.createElement( 'span' ),
+		isRemoveInsert = true,
+		model = this,
+		/* global diff_match_patch */
+		// eslint-disable-next-line new-cap
+		differ = new diff_match_patch();
+
+	var diff = differ.diff_main( oldText, newText );
+	differ.diff_cleanupEfficiency( diff );
+
+	diff.forEach( function ( part ) {
+		switch ( part[ 0 ] ) {
+			case -1:
+				span.appendChild( model.wrapText( 'del', part[ 1 ] ) );
+				break;
+			case 1:
+				span.appendChild( model.wrapText( 'ins', part[ 1 ] ) );
+				break;
+			case 0:
+				isRemoveInsert = false;
+				span.appendChild( document.createTextNode( part[ 1 ] ) );
+				break;
+		}
+	} );
+
+	return !isRemoveInsert || allowRemoveInsert ? span : null;
 };
 
 /**
  * Utility function for wrapping text in a tag, equivalent to `$( '<tag>' ).text( text )`
  *
  * @param {string} tag Wrapping element's tag
- * @param {string} text Text
+ * @param {string} text
  * @return {HTMLElement} Element wrapping text
  */
 ve.dm.Model.static.wrapText = function ( tag, text ) {
@@ -384,11 +434,10 @@ ve.dm.Model.prototype.getAttribute = function ( key ) {
  * @return {Object} Attributes
  */
 ve.dm.Model.prototype.getAttributes = function ( prefix ) {
-	var key, filtered,
-		attributes = this.element && this.element.attributes ? this.element.attributes : {};
+	var attributes = this.element && this.element.attributes ? this.element.attributes : {};
 	if ( prefix ) {
-		filtered = {};
-		for ( key in attributes ) {
+		var filtered = {};
+		for ( var key in attributes ) {
 			if ( key.indexOf( prefix ) === 0 ) {
 				filtered[ key.slice( prefix.length ) ] = attributes[ key ];
 			}

@@ -37,7 +37,7 @@ class ErrorReporter {
 	 *
 	 * @return string Half-parsed wikitext with extension's tags already being expanded
 	 */
-	public function halfParsed( Parser $parser, string $key, ...$params ) : string {
+	public function halfParsed( Parser $parser, string $key, ...$params ): string {
 		$msg = $this->msg( $parser, $key, ...$params );
 		$wikitext = $parser->recursiveTagParse( $msg->plain() );
 		return $this->wrapInHtmlContainer( $wikitext, $key, $msg->getLanguage() );
@@ -51,7 +51,7 @@ class ErrorReporter {
 	 * @return string Plain, unparsed wikitext
 	 * @return-taint tainted
 	 */
-	public function plain( Parser $parser, string $key, ...$params ) : string {
+	public function plain( Parser $parser, string $key, ...$params ): string {
 		$msg = $this->msg( $parser, $key, ...$params );
 		$wikitext = $msg->plain();
 		return $this->wrapInHtmlContainer( $wikitext, $key, $msg->getLanguage() );
@@ -64,11 +64,11 @@ class ErrorReporter {
 	 *
 	 * @return Message
 	 */
-	private function msg( Parser $parser, string $key, ...$params ) : Message {
+	private function msg( Parser $parser, string $key, ...$params ): Message {
 		$language = $this->getInterfaceLanguageAndSplitCache( $parser );
 		$msg = $this->messageLocalizer->msg( $key, ...$params )->inLanguage( $language );
 
-		[ $type, ] = $this->parseTypeAndIdFromMessageKey( $msg->getKey() );
+		[ $type ] = $this->parseTypeAndIdFromMessageKey( $msg->getKey() );
 
 		if ( $type === 'error' ) {
 			// Take care; this is a sideeffect that might not belong to this class.
@@ -86,7 +86,7 @@ class ErrorReporter {
 	 *
 	 * @return Language
 	 */
-	private function getInterfaceLanguageAndSplitCache( Parser $parser ) : Language {
+	private function getInterfaceLanguageAndSplitCache( Parser $parser ): Language {
 		if ( !$this->cachedInterfaceLanguage ) {
 			$this->cachedInterfaceLanguage = $parser->getOptions()->getUserLangObj();
 		}
@@ -104,7 +104,7 @@ class ErrorReporter {
 		string $wikitext,
 		string $key,
 		Language $language
-	) : string {
+	): string {
 		[ $type, $id ] = $this->parseTypeAndIdFromMessageKey( $key );
 		$extraClass = $type === 'warning'
 			? ' mw-ext-cite-warning-' . Sanitizer::escapeClass( $id )
@@ -124,10 +124,10 @@ class ErrorReporter {
 	/**
 	 * @param string $messageKey Expected to be a message key like "cite_error_ref_too_many_keys"
 	 *
-	 * @return string[]
+	 * @return string[] Two elements, e.g. "error" and "ref_too_many_keys"
 	 */
-	private function parseTypeAndIdFromMessageKey( string $messageKey ) : array {
-		return array_slice( explode( '_', $messageKey, 3 ), 1 );
+	private function parseTypeAndIdFromMessageKey( string $messageKey ): array {
+		return array_slice( explode( '_', str_replace( '-', '_', $messageKey ), 3 ), 1 );
 	}
 
 }

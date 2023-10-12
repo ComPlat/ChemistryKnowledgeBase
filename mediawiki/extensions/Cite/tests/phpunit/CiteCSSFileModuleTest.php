@@ -4,7 +4,7 @@ namespace Cite\Tests;
 
 use Cite\ResourceLoader\CiteCSSFileModule;
 use MediaWiki\MediaWikiServices;
-use ResourceLoaderContext;
+use MediaWiki\ResourceLoader\Context;
 
 /**
  * @covers \Cite\ResourceLoader\CiteCSSFileModule
@@ -13,7 +13,7 @@ use ResourceLoaderContext;
  */
 class CiteCSSFileModuleTest extends \MediaWikiIntegrationTestCase {
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
 		$this->setService(
@@ -24,7 +24,7 @@ class CiteCSSFileModuleTest extends \MediaWikiIntegrationTestCase {
 
 	public function testModule() {
 		$module = new CiteCSSFileModule( [], __DIR__ . '/../../modules' );
-		$styles = $module->getStyleFiles( $this->createMock( ResourceLoaderContext::class ) );
+		$styles = $module->getStyleFiles( $this->createMock( Context::class ) );
 		$this->assertSame( [ 'ext.cite.style.fa.css' ], $styles['all'] );
 	}
 

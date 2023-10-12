@@ -3,6 +3,9 @@
 namespace SMW\MediaWiki\Connection;
 
 use RuntimeException;
+use Wikimedia\Rdbms\ILBFactory;
+use Wikimedia\Rdbms\TransactionProfiler;
+use Wikimedia\ScopedCallback;
 
 /**
  * @license GNU GPL v2+
@@ -13,7 +16,7 @@ use RuntimeException;
 class TransactionHandler {
 
 	/**
-	 * @var LBFactory
+	 * @var ILBFactory
 	 */
 	private $loadBalancerFactory;
 
@@ -27,19 +30,12 @@ class TransactionHandler {
 	 */
 	private $mutedTransactionProfiler;
 
+	private TransactionProfiler $transactionProfiler;
+
 	/**
 	 * @since 3.1
-	 *
-	 * @param ILBFactory|LBFactory $loadBalancerFactory
 	 */
-	public function __construct( $loadBalancerFactory ) {
-
-		if (
-			!$loadBalancerFactory instanceof \LBFactory &&
-			!$loadBalancerFactory instanceof \Wikimedia\Rdbms\ILBFactory ) {
-			throw new RuntimeException( "Expected a LBFactory instance!" );
-		}
-
+	public function __construct( ILBFactory $loadBalancerFactory ) {
 		$this->loadBalancerFactory = $loadBalancerFactory;
 	}
 
@@ -49,11 +45,7 @@ class TransactionHandler {
 	 * @param TransactionProfiler $transactionProfiler
 	 */
 	public function setTransactionProfiler( $transactionProfiler ) {
-
-		// MW 1.28+
-		if ( method_exists( $transactionProfiler, 'setSilenced' ) ) {
-			$this->transactionProfiler = $transactionProfiler;
-		}
+		$this->transactionProfiler = $transactionProfiler;
 	}
 
 	/**
@@ -67,17 +59,19 @@ class TransactionHandler {
 	 *
 	 * @since 3.1
 	 */
-	public function muteTransactionProfiler( $mute ) {
+	public function muteTransactionProfiler(): ?ScopedCallback {
 
 		if ( $this->transactionProfiler === null ) {
-			return;
+			return null;
 		}
 
-		if ( $this->mutedTransactionProfiler === null && $mute !== false ) {
-			$this->mutedTransactionProfiler = $this->transactionProfiler->setSilenced( $mute );
-		} elseif ( $this->mutedTransactionProfiler !== null && $mute === false ) {
-			$this->transactionProfiler->setSilenced( $this->mutedTransactionProfiler );
-			$this->mutedTransactionProfiler = null;
+		if ( method_exists( $this->transactionProfiler, 'silenceForScope' ) ) {
+			return $this->transactionProfiler->silenceForScope();
+		} else {
+			$this->transactionProfiler->setSilenced( true );
+			return new ScopedCallback( function () {
+				$this->transactionProfiler->setSilenced( false );
+			} );
 		}
 	}
 
@@ -159,14 +153,11 @@ class TransactionHandler {
 
 		$ticket = null;
 
-		if ( !method_exists( $this->loadBalancerFactory, 'getEmptyTransactionTicket' ) ) {
-			return $ticket;
-		}
-
 		// @see LBFactory::getEmptyTransactionTicket
 		// We don't try very hard at this point and will continue without a ticket
 		// if the check fails and hereby avoid a "... does not have outer scope" error
-		if ( !$this->loadBalancerFactory->hasMasterChanges() ) {
+
+		if ( !$this->primaryDbHasChanges() ) {
 			$ticket = $this->loadBalancerFactory->getEmptyTransactionTicket( $fname );
 		}
 
@@ -193,6 +184,14 @@ class TransactionHandler {
 		}
 
 		return $this->loadBalancerFactory->commitAndWaitForReplication( $fname, $ticket, $opts );
+	}
+
+	private function primaryDbHasChanges(): bool {
+		if ( method_exists( $this->loadBalancerFactory, 'hasPrimaryChanges' ) ) {
+			return $this->loadBalancerFactory->hasPrimaryChanges();
+		} else {
+			return $this->loadBalancerFactory->hasMasterChanges();
+		}
 	}
 
 }

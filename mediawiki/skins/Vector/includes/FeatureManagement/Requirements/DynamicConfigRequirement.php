@@ -20,9 +20,9 @@
  * @since 1.35
  */
 
-namespace Vector\FeatureManagement\Requirements;
+namespace MediaWiki\Skins\Vector\FeatureManagement\Requirements;
 
-use Vector\FeatureManagement\Requirement;
+use MediaWiki\Skins\Vector\FeatureManagement\Requirement;
 
 /**
  * Some application state changes throughout the lifetime of the application, e.g. `wgSitename` or
@@ -61,7 +61,7 @@ use Vector\FeatureManagement\Requirement;
  *
  * @unstable
  *
- * @package FeatureManagement
+ * @package MediaWiki\Skins\Vector\FeatureManagement\Requirements
  * @internal
  */
 final class DynamicConfigRequirement implements Requirement {
@@ -98,14 +98,14 @@ final class DynamicConfigRequirement implements Requirement {
 	/**
 	 * @inheritDoc
 	 */
-	public function getName() : string {
+	public function getName(): string {
 		return $this->requirementName;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function isMet() : bool {
+	public function isMet(): bool {
 		return (bool)$this->config->get( $this->configName );
 	}
 }

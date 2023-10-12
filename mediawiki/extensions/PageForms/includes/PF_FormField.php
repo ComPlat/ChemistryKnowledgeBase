@@ -5,6 +5,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\MediaWikiServices;
+
 /**
  * This class is distinct from PFTemplateField in that it represents a template
  * field defined in a form definition - it contains an PFTemplateField object
@@ -25,8 +27,10 @@ class PFFormField {
 	private $mPossibleValues;
 	private $mUseDisplayTitle;
 	private $mIsList;
-	// The following fields are not set by the form-creation page
-	// (though they could be).
+	/**
+	 * The following fields are not set by the form-creation page
+	 * (though they could be).
+	 */
 	private $mDefaultValue;
 	private $mPreloadPage;
 	private $mHoldsTemplate;
@@ -35,11 +39,13 @@ class PFFormField {
 	private $mDescriptionArgs;
 	private $mLabel;
 	private $mLabelMsg;
-	// somewhat of a hack - these two fields are for a field in a specific
-	// representation of a form, not the form definition; ideally these
-	// should be contained in a third 'field' class, called something like
-	// PFFormInstanceField, which holds these fields plus an instance of
-	// PFFormField. Too much work?
+	/**
+	 * somewhat of a hack - these two fields are for a field in a specific
+	 * representation of a form, not the form definition; ideally these
+	 * should be contained in a third 'field' class, called something like
+	 * PFFormInstanceField, which holds these fields plus an instance of
+	 * PFFormField. Too much work?
+	 */
 	private $mInputName;
 	private $mIsDisabled;
 
@@ -176,6 +182,8 @@ class PFFormField {
 		$form_is_disabled,
 		User $user
 	) {
+		global $wgPageFormsEmbeddedTemplates;
+
 		$parser = PFUtils::getParser();
 
 		$f = new PFFormField();
@@ -202,11 +210,39 @@ class PFFormField {
 			$f->template_field = PFTemplateField::create( $field_name, null );
 		}
 
+		$embeddedTemplate = $f->template_field->getHoldsTemplate();
+		if ( $embeddedTemplate != '' ) {
+			$f->mIsHidden = true;
+			$f->mHoldsTemplate = true;
+			// Store this information so that the embedded/"held"
+			// template - which is hopefully after this one in the
+			// form definition - can be handled correctly. In forms,
+			// both the embedding field and the embedded template are
+			// specified as such, but in templates (i.e., with
+			// #template_params), it's only the embedding field.
+			$wgPageFormsEmbeddedTemplates[$embeddedTemplate] = [ $template_name, $field_name ];
+		}
+
 		$semantic_property = null;
-		$cargo_table = $cargo_field = null;
+		$cargo_table = $cargo_field = $cargo_where = null;
 		$show_on_select = [];
 		$fullFieldName = $template_name . '[' . $field_name . ']';
 		$values = $valuesSourceType = $valuesSource = null;
+
+		// We set "values from ..." params if there are corresponding
+		// values set in #template_params - this is a bit of a @hack,
+		// since we should really just use these values directly, but
+		// there are various places in the code that check for "values
+		// from ...", so it's easier to just pretend that these params
+		// were set.
+		$categoryFromTemplate = $f->getTemplateField()->getCategory();
+		if ( $categoryFromTemplate !== null ) {
+			$f->mFieldArgs['values from category'] = $categoryFromTemplate;
+		}
+		$namespaceFromTemplate = $f->getTemplateField()->getNSText();
+		if ( $namespaceFromTemplate !== null ) {
+			$f->mFieldArgs['values from namespace'] = $namespaceFromTemplate;
+		}
 
 		// Cycle through the other components.
 		for ( $i = 2; $i < count( $tag_components ); $i++ ) {
@@ -222,7 +258,8 @@ class PFFormField {
 				$f->mIsList = true;
 			} elseif ( $component == 'unique' ) {
 				$f->mFieldArgs['unique'] = true;
-			} elseif ( $component == 'edittools' ) { // free text only
+			} elseif ( $component == 'edittools' ) {
+				// free text only
 				$f->mFieldArgs['edittools'] = true;
 			}
 
@@ -284,6 +321,9 @@ class PFFormField {
 				} elseif ( $sub_components[0] == 'values from property' ) {
 					$propertyName = $sub_components[1];
 					$f->mPossibleValues = PFValuesUtils::getAllValuesForProperty( $propertyName );
+				} elseif ( $sub_components[0] == 'values from wikidata' ) {
+					$valuesSourceType = 'wikidata';
+					$valuesSource = urlencode( $sub_components[1] );
 				} elseif ( $sub_components[0] == 'values from query' ) {
 					$valuesSourceType = 'query';
 					$valuesSource = $sub_components[1];
@@ -318,6 +358,8 @@ class PFFormField {
 					$cargo_table = $sub_components[1];
 				} elseif ( $sub_components[0] == 'cargo field' ) {
 					$cargo_field = $sub_components[1];
+				} elseif ( $sub_components[0] == 'cargo where' ) {
+					$cargo_where = $parser->recursiveTagParse( $sub_components[1] );
 				} elseif ( $sub_components[0] == 'default filename' ) {
 					global $wgTitle;
 					$page_name = $wgTitle->getText();
@@ -336,19 +378,18 @@ class PFFormField {
 					$default_filename = $parser->recursiveTagParse( $default_filename );
 					$f->mFieldArgs['default filename'] = $default_filename;
 				} elseif ( $sub_components[0] == 'restricted' ) {
+					$effectiveGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserEffectiveGroups( $user );
 					$f->mIsRestricted = !array_intersect(
-						$user->getEffectiveGroups(), array_map( 'trim', explode( ',', $sub_components[1] ) )
+						$effectiveGroups, array_map( 'trim', explode( ',', $sub_components[1] ) )
 					);
 				}
 			}
-		} // end for
+		}
+		// end for
 
-		if ( $valuesSourceType !== null ) {
-			$f->mPossibleValues = PFValuesUtils::getAutocompleteValues( $valuesSource, $valuesSourceType );
-			if ( in_array( $valuesSourceType, [ 'category', 'namespace', 'concept' ] ) ) {
-				global $wgPageFormsUseDisplayTitle;
-				$f->mUseDisplayTitle = $wgPageFormsUseDisplayTitle;
-			}
+		if ( in_array( $valuesSourceType, [ 'category', 'namespace', 'concept' ] ) ) {
+			global $wgPageFormsUseDisplayTitle;
+			$f->mUseDisplayTitle = $wgPageFormsUseDisplayTitle;
 		}
 
 		if ( !array_key_exists( 'delimiter', $f->mFieldArgs ) ) {
@@ -360,42 +401,19 @@ class PFFormField {
 				$f->mIsList = true;
 			}
 		}
-		$delimiter = $f->mFieldArgs['delimiter'];
 
-		// If the 'values' parameter was set, separate it based on the
-		// 'delimiter' parameter, if any.
-		if ( $values != null ) {
-			// Remove whitespaces, and un-escape characters
-			$valuesArray = array_map( 'trim', explode( $delimiter, $values ) );
-			$f->mPossibleValues = array_map( 'htmlspecialchars_decode', $valuesArray );
-		}
-
-		// If we're using Cargo, there's no equivalent for "values from
-		// property" - instead, we just always get the values if a
-		// field and table have been specified.
-		if ( $f->mPossibleValues === null && defined( 'CARGO_VERSION' ) && $cargo_table != null && $cargo_field != null ) {
-			// We only want the non-null values. Ideally this could
-			// be done by calling getValuesForCargoField() with
-			// an "IS NOT NULL" clause, but unfortunately that fails
-			// for array/list fields.
-			// Instead of getting involved with all that, we'll just
-			// remove the null/blank values afterward.
-			$cargoValues = PFValuesUtils::getAllValuesForCargoField( $cargo_table, $cargo_field );
-			$f->mPossibleValues = array_filter( $cargoValues, 'strlen' );
-		}
+		$f->setPossibleValues( $valuesSourceType, $valuesSource, $values, $cargo_table, $cargo_field, $cargo_where );
 
 		$mappingType = null;
-		if ( $f->mPossibleValues !== null ) {
-			if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
-				$mappingType = 'template';
-			} elseif ( array_key_exists( 'mapping property', $f->mFieldArgs ) ) {
-				$mappingType = 'property';
-			} elseif ( array_key_exists( 'mapping cargo table', $f->mFieldArgs ) &&
-				array_key_exists( 'mapping cargo field', $f->mFieldArgs ) ) {
-				$mappingType = 'cargo field';
-			} elseif ( $f->mUseDisplayTitle ) {
-				$f->mPossibleValues = PFValuesUtils::disambiguateLabels( $f->mPossibleValues );
-			}
+		if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
+			$mappingType = 'template';
+		} elseif ( array_key_exists( 'mapping property', $f->mFieldArgs ) ) {
+			$mappingType = 'property';
+		} elseif ( array_key_exists( 'mapping cargo table', $f->mFieldArgs ) &&
+			array_key_exists( 'mapping cargo field', $f->mFieldArgs ) ) {
+			$mappingType = 'cargo field';
+		} elseif ( $f->mUseDisplayTitle ) {
+			$f->mPossibleValues = PFValuesUtils::disambiguateLabels( $f->mPossibleValues );
 		}
 
 		if ( $mappingType !== null && !empty( $f->mPossibleValues ) ) {
@@ -459,7 +477,7 @@ class PFFormField {
 			}
 		}
 
-		if ( $template_name == null || $template_name === '' ) {
+		if ( $template_name === null || $template_name === '' ) {
 			$f->mInputName = $field_name;
 		} elseif ( $template_in_form->allowsMultiple() ) {
 			// 'num' will get replaced by an actual index, either in PHP
@@ -473,8 +491,64 @@ class PFFormField {
 		return $f;
 	}
 
-	function isTranslateEnabled() {
-		return class_exists( 'SpecialTranslate' );
+	private function setPossibleValues( $valuesSourceType, $valuesSource, $values, $cargo_table, $cargo_field, $cargo_where ) {
+		// Set the $mPossibleValues field, using the following logic:
+		// - If "values" was set in the form definition, use that.
+		// - If any "values from ..." parameter was set, use that.
+		// - If "cargo where" was set, use it, if a Cargo table and field have also been defined.
+		// - If "cargo table" and "cargo field" were set, then:
+		//     - If there are "allowed values" for that field use those.
+		//     - Otherwise, use that field's existing values.
+		// - Otherwise, use the possible values defined within the corresponding template field, if any.
+
+		if ( $values != null ) {
+			$delimiter = $this->mFieldArgs['delimiter'];
+			// Remove whitespaces, and un-escape characters
+			$valuesArray = array_map( 'trim', explode( $delimiter, $values ) );
+			$this->mPossibleValues = array_map( 'htmlspecialchars_decode', $valuesArray );
+			return;
+		}
+
+		if ( $valuesSourceType !== null && ( $valuesSourceType !== 'wikidata' || ( $this->mInputType !== 'combobox' &&
+		$this->mInputType !== 'tokens' ) ) ) {
+			$this->mPossibleValues = PFValuesUtils::getAutocompleteValues( $valuesSource, $valuesSourceType );
+			return;
+		}
+
+		if ( defined( 'CARGO_VERSION' ) && $cargo_where != null ) {
+			if ( $cargo_table == null || $cargo_field == null ) {
+				$fullCargoField = $this->template_field->getFullCargoField();
+				$table_and_field = explode( '|', $fullCargoField );
+				$cargo_table = $table_and_field[0];
+				$cargo_field = $table_and_field[1];
+			}
+			$cargoValues = PFValuesUtils::getValuesForCargoField( $cargo_table, $cargo_field, $cargo_where );
+			$this->mPossibleValues = array_filter( $cargoValues, 'strlen' );
+			return;
+		}
+
+		// If we're using Cargo, there's no equivalent for "values from
+		// property" - instead, we just always get the values if a
+		// field and table have been specified.
+		if ( defined( 'CARGO_VERSION' ) && $cargo_table != null && $cargo_field != null ) {
+			// If there are "allowed values" defined, use those.
+			$fieldDesc = PFUtils::getCargoFieldDescription( $cargo_table, $cargo_field );
+			if ( $fieldDesc !== null && $fieldDesc->mAllowedValues !== null ) {
+				$this->mPossibleValues = $fieldDesc->mAllowedValues;
+				return;
+			}
+			// We only want the non-null values. Ideally this could
+			// be done by calling getValuesForCargoField() with
+			// an "IS NOT NULL" clause, but unfortunately that fails
+			// for array/list fields.
+			// Instead of getting involved with all that, we'll just
+			// remove the null/blank values afterward.
+			$cargoValues = PFValuesUtils::getAllValuesForCargoField( $cargo_table, $cargo_field );
+			$this->mPossibleValues = array_filter( $cargoValues, 'strlen' );
+			return;
+		}
+
+		$this->mPossibleValues = $this->template_field->getPossibleValues();
 	}
 
 	function cleanupTranslateTags( &$value ) {
@@ -513,19 +587,18 @@ class PFFormField {
 	function getCurrentValue( $template_instance_query_values, $form_submitted, $source_is_page, $all_instances_printed, &$val_modifier = null ) {
 		// Get the value from the request, if
 		// it's there, and if it's not an array.
-		$cur_value = null;
 		$field_name = $this->template_field->getFieldName();
 		$delimiter = $this->mFieldArgs['delimiter'];
 		$escaped_field_name = str_replace( "'", "\'", $field_name );
 
-		if ( $this->isTranslateEnabled() && $this->hasFieldArg( 'translatable' ) && $this->getFieldArg( 'translatable' ) ) {
+		if ( PFUtils::isTranslateEnabled() && $this->hasFieldArg( 'translatable' ) && $this->getFieldArg( 'translatable' ) ) {
 			// If this is a translatable field, and both it and its corresponding translate ID tag are passed in, we add it.
 			$fieldName = $this->getTemplateField()->getFieldName();
 			$fieldNameTag = $fieldName . '_translate_number_tag';
 			if ( isset( $template_instance_query_values[$fieldName] ) && isset( $template_instance_query_values[$fieldNameTag] ) ) {
 				$tag = $template_instance_query_values[$fieldNameTag];
 				if ( !preg_match( '/( |\n)$/', $tag ) ) {
-					$tag = $tag . "\n";
+					$tag .= "\n";
 				}
 				if ( trim( $template_instance_query_values[$fieldName] ) ) {
 					// Don't add the tag if field content has been removed.
@@ -571,7 +644,6 @@ class PFFormField {
 				if ( is_array( $field_query_val ) ) {
 					$cur_values = [];
 					if ( $map_field && $this->mPossibleValues !== null ) {
-						$cur_values = [];
 						foreach ( $field_query_val as $key => $val ) {
 							$val = trim( $val );
 							if ( $key === 'is_list' ) {
@@ -615,10 +687,6 @@ class PFFormField {
 				return str_replace( [ '<', '>' ], [ '&lt;', '&gt;' ], $str );
 
 			}
-		}
-
-		if ( !empty( $cur_value ) ) {
-			return $cur_value;
 		}
 
 		// Default values in new instances of multiple-instance
@@ -847,9 +915,15 @@ class PFFormField {
 		return $text;
 	}
 
-	// For now, HTML of an individual field depends on whether or not it's
-	// part of multiple-instance template; this may change if handling of
-	// such templates in form definitions gets more sophisticated.
+	/**
+	 * For now, HTML of an individual field depends on whether or not it's
+	 * part of multiple-instance template; this may change if handling of
+	 * such templates in form definitions gets more sophisticated.
+	 *
+	 * @param bool $part_of_multiple
+	 * @param bool $is_last_field_in_template
+	 * @return string
+	 */
 	function createMarkup( $part_of_multiple, $is_last_field_in_template ) {
 		$text = "";
 		$descPlaceholder = "";
@@ -862,7 +936,10 @@ class PFFormField {
 					// The wikitext we use for tooltips
 					// depends on which other extensions
 					// are installed.
-					if ( defined( 'SMW_VERSION' ) ) {
+					if ( class_exists( 'RegularTooltipsParser' ) ) {
+						// RegularTooltips
+						$descPlaceholder = " {{#info-tooltip:$fieldDesc}}";
+					} elseif ( defined( 'SMW_VERSION' ) ) {
 						// Semantic MediaWiki
 						$descPlaceholder = " {{#info:$fieldDesc}}";
 					} elseif ( class_exists( 'SimpleTooltipParserFunction' ) ) {
@@ -883,6 +960,9 @@ class PFFormField {
 		}
 
 		$fieldLabel = $this->template_field->getLabel();
+		if ( $fieldLabel == '' ) {
+			$fieldLabel = $this->template_field->getFieldName();
+		}
 		if ( $textBeforeField != '' ) {
 			$fieldLabel = $textBeforeField . ' ' . $fieldLabel;
 		}
@@ -899,7 +979,7 @@ class PFFormField {
 		$text .= "{{{field|" . $this->template_field->getFieldName();
 		if ( $this->mIsHidden ) {
 			$text .= "|hidden";
-		} elseif ( $this->getInputType() !== null ) {
+		} elseif ( $this->getInputType() !== null && $this->getInputType() !== '' ) {
 			$text .= "|input type=" . $this->getInputType();
 		}
 		foreach ( $this->mFieldArgs as $arg => $value ) {
@@ -913,6 +993,37 @@ class PFFormField {
 				$text .= "|$arg=$value";
 			}
 		}
+
+		// Special handling if neither SMW nor Cargo are installed - the
+		// form has to handle stuff that otherwise would go in the
+		// template.
+		if (
+			!defined( 'SMW_VERSION' ) &&
+			!defined( 'CARGO_VERSION' ) &&
+			!array_key_exists( 'values', $this->mFieldArgs ) &&
+			is_array( $this->template_field->getPossibleValues() ) &&
+			count( $this->template_field->getPossibleValues() ) > 0
+		) {
+			if ( $this->getInputType() == null ) {
+				if ( $this->template_field->isList() ) {
+					$text .= '|input type=checkboxes';
+				} else {
+					$text .= '|input type=dropdown';
+				}
+			}
+			$delimiter = ',';
+			if ( $this->template_field->isList() ) {
+				$delimiter = $this->template_field->getDelimiter();
+				if ( $delimiter == '' ) {
+					$delimiter = ',';
+				}
+				// @todo - we need to add a "|delimiter=" param
+				// here too, if #template_params is not being
+				// called in the template.
+			}
+			$text .= '|values=' . implode( $delimiter, $this->template_field->getPossibleValues() );
+		}
+
 		if ( $this->mIsMandatory ) {
 			$text .= "|mandatory";
 		} elseif ( $this->mIsRestricted ) {
@@ -951,6 +1062,10 @@ class PFFormField {
 	function getArgumentsForInputCallCargo( array &$other_args ) {
 		$fullCargoField = $this->template_field->getFullCargoField();
 		if ( $fullCargoField !== null &&
+			array_key_exists( 'cargo where', $other_args ) ) {
+			$fullCargoField .= '|' . $other_args['cargo where'];
+		}
+		if ( $fullCargoField !== null &&
 			!array_key_exists( 'full_cargo_field', $other_args ) ) {
 			$other_args['full_cargo_field'] = $fullCargoField;
 		}
@@ -965,14 +1080,21 @@ class PFFormField {
 				array_key_exists( 'autocomplete', $other_args ) ||
 				array_key_exists( 'remote autocompletion', $other_args )
 			) {
-				$other_args['autocompletion source'] = $this->template_field->getFullCargoField();
+				if ( array_key_exists( 'mapping cargo table', $other_args ) &&
+				array_key_exists( 'mapping cargo field', $other_args ) ) {
+					$mapping_cargo_field = $other_args[ 'mapping cargo field' ];
+					$mapping_cargo_table = $other_args[ 'mapping cargo table' ];
+					$other_args['autocompletion source'] = $mapping_cargo_table . '|' . $mapping_cargo_field;
+				} else {
+					$other_args['autocompletion source'] = $fullCargoField;
+				}
 				$other_args['autocomplete field type'] = 'cargo field';
 			}
 		}
 	}
 
 	/**
-	 * Since Semantic Forms uses a hook system for the functions that
+	 * Since Page Forms uses a hook system for the functions that
 	 * create HTML inputs, most arguments are contained in the "$other_args"
 	 * array - create this array, using the attributes of this form
 	 * field and the template field it corresponds to, if any.

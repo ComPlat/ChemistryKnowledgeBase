@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Fitoschido",
 			"Xuacu"
 		]
 	},
@@ -125,7 +126,7 @@
 	"pf_createform_inputtype": "Tipu d'entrada:",
 	"pf_createform_inputtypedefault": "(predetermináu)",
 	"pf_createform_formlabel": "Etiqueta del formulariu:",
-	"pf_createform_hidden": "Tapecíu",
+	"pf_createform_hidden": "(Anubríu)",
 	"pf_createform_removetemplate": "Desaniciar plantía",
 	"pf_createform_addtemplate": "Añadir plantía:",
 	"pf_createform_atend": "Al final",
@@ -248,10 +249,10 @@
 	"action-viewedittab": "ver la llingüeta \"{{int:edit}}\" nes páxines editables con un formulariu",
 	"action-multipageedit": "editar delles páxines usando una fueya de cálculu",
 	"tooltip-ca-formedit": "Editar esta páxina con un formulariu",
-	"pf-select2-no-matches": "Nun hai coincidencies",
-	"pf-select2-searching": "Buscando...",
-	"pf-select2-input-too-short": "Escribi $1 o más caráuteres.",
-	"pf-select2-selection-too-big": "Esti campu nun pue contener más de {{PLURAL:$1|$1 valor|$1 valores}}.",
+	"pf-autocomplete-no-matches": "Nun hai coincidencies",
+	"pf-autocomplete-searching": "Buscando...",
+	"pf-autocomplete-input-too-short": "Escribi $1 o más caráuteres.",
+	"pf-autocomplete-selection-too-big": "Esti campu nun pue contener más de {{PLURAL:$1|$1 valor|$1 valores}}.",
 	"pf-maps-enteraddress": "Escribi la direición equí",
 	"pf-maps-lookupcoordinates": "Calcular les coordenaes usando una direición",
 	"pf-adminlinks-datastructure": "Estructura de datos",

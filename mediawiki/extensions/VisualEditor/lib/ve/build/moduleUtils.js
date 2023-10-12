@@ -56,7 +56,6 @@ const self = module.exports = {
 				}
 				targets[ variant ].push( filepath[ variant ] );
 			}
-
 		} );
 		return targets;
 	},
@@ -73,12 +72,11 @@ const self = module.exports = {
 		 * Given a list of modules and targets, returns an object splitting the scripts
 		 * and styles.
 		 *
-		 * @param {Array} modules List of modules
 		 * @param {Array} buildlist List of targets to work through
 		 * @param {Object|null} filelist Object to extend
 		 * @return {Object} Object of two arrays listing the file paths
 		 */
-		function expandBuildList( modules, buildlist, filelist ) {
+		function expandBuildList( buildlist, filelist ) {
 			filelist = filelist || {};
 			filelist.scripts = filelist.scripts || [];
 			filelist.styles = filelist.styles || [];
@@ -101,7 +99,7 @@ const self = module.exports = {
 			return filelist;
 		}
 
-		return expandBuildList( modules, self.buildDependencyList( modules, targets ) );
+		return expandBuildList( self.buildDependencyList( modules, targets ) );
 	},
 
 	/**
@@ -129,7 +127,7 @@ const self = module.exports = {
 			}
 
 			// Append target load module to the end of the current list
-			if ( list.indexOf( module ) === -1 ) {
+			if ( !list.includes( module ) ) {
 				list.push( module );
 			}
 		}

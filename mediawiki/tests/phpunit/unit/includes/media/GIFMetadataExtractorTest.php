@@ -5,7 +5,10 @@
  */
 class GIFMetadataExtractorTest extends \MediaWikiUnitTestCase {
 
-	protected function setUp() : void {
+	/** @var string */
+	private $mediaPath;
+
+	protected function setUp(): void {
 		parent::setUp();
 
 		$this->mediaPath = __DIR__ . '/../../../data/media/';
@@ -77,6 +80,9 @@ EOF;
 			[
 				'nonanimated.gif',
 				[
+					'width' => 45,
+					'height' => 30,
+					'bits' => 1,
 					'comment' => [ 'GIF test file ⁕ Created with GIMP' ],
 					'duration' => 0.1,
 					'frameCount' => 1,
@@ -87,6 +93,9 @@ EOF;
 			[
 				'animated.gif',
 				[
+					'width' => 45,
+					'height' => 30,
+					'bits' => 1,
 					'comment' => [ 'GIF test file . Created with GIMP' ],
 					'duration' => 2.4,
 					'frameCount' => 4,
@@ -98,6 +107,9 @@ EOF;
 			[
 				'animated-xmp.gif',
 				[
+					'width' => 45,
+					'height' => 30,
+					'bits' => 1,
 					'xmp' => $xmpNugget,
 					'duration' => 2.4,
 					'frameCount' => 4,

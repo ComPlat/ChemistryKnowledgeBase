@@ -9,7 +9,7 @@ use ManualLogEntry;
 use MediaWiki\Extension\OATHAuth\IModule;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\User\UserFactory;
 use Message;
 use MWException;
 use User;
@@ -20,10 +20,18 @@ class DisableOATHForUser extends FormSpecialPage {
 	/** @var OATHUserRepository */
 	private $userRepo;
 
-	public function __construct() {
+	/** @var UserFactory */
+	private $userFactory;
+
+	/**
+	 * @param OATHUserRepository $userRepo
+	 * @param UserFactory $userFactory
+	 */
+	public function __construct( $userRepo, $userFactory ) {
 		parent::__construct( 'DisableOATHForUser', 'oathauth-disable-for-user' );
 
-		$this->userRepo = MediaWikiServices::getInstance()->getService( 'OATHUserRepository' );
+		$this->userRepo = $userRepo;
+		$this->userFactory = $userFactory;
 	}
 
 	public function doesWrites() {
@@ -44,7 +52,7 @@ class DisableOATHForUser extends FormSpecialPage {
 	 */
 	public function alterForm( HTMLForm $form ) {
 		$form->setMessagePrefix( 'oathauth' );
-		$form->setWrapperLegendMsg( 'oathauth-disable-header' );
+		$form->setWrapperLegendMsg( 'oathauth-disable-for-user' );
 		$form->setPreText( $this->msg( 'oathauth-disable-intro' )->parse() );
 		$form->getOutput()->setPageTitle( $this->msg( 'oathauth-disable-for-user' ) );
 	}
@@ -111,8 +119,8 @@ class DisableOATHForUser extends FormSpecialPage {
 	 * @throws MWException
 	 */
 	public function onSubmit( array $formData ) {
-		$user = User::newFromName( $formData['user'] );
-		if ( $user && $user->getId() === 0 ) {
+		$user = $this->userFactory->newFromName( $formData['user'] );
+		if ( !$user || ( $user->getId() === 0 ) ) {
 			return [ 'oathauth-user-not-found' ];
 		}
 		$oathUser = $this->userRepo->findByUser( $user );
@@ -127,9 +135,10 @@ class DisableOATHForUser extends FormSpecialPage {
 			return [ 'oathauth-throttled', Message::durationParam( 60 ) ];
 		}
 
+		$this->userRepo->remove( $oathUser, $this->getRequest()->getIP(), false );
 		$oathUser->disable();
-		$this->userRepo->remove( $oathUser, $this->getRequest()->getIP() );
 
+		// message used: logentry-oath-disable-other
 		$logEntry = new ManualLogEntry( 'oath', 'disable-other' );
 		$logEntry->setPerformer( $this->getUser() );
 		$logEntry->setTarget( $user->getUserPage() );

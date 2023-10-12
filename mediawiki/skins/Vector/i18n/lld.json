@@ -1,10 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
+			"Amire80",
 			"Asenoner",
 			"Starladin"
 		]
 	},
+	"vector-languages": "Rujenedes",
+	"vector-language-button-label": "{{PLURAL:$1|$1 lingaz|$1 lingac}}",
+	"vector-no-language-button-label": "Jonta rujenedes",
 	"vector-action-addsection": "Mët leprò n tema de descuscion",
 	"vector-action-delete": "Straihëia",
 	"vector-action-move": "Spostëia",
@@ -13,5 +17,6 @@
 	"vector-view-edit": "Muda",
 	"vector-view-history": "Storia dl documënt",
 	"vector-view-view": "Liej",
-	"vector-more-actions": "De plu"
+	"vector-more-actions": "De plu",
+	"vector-searchsuggest-containing": "Chir les plates cun laite <strong class=\"cdx-typeahead-search__search-footer__query\">$1</strong>"
 }

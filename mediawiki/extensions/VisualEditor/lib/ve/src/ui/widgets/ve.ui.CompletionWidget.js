@@ -17,8 +17,6 @@
  * @cfg {boolean} [readOnly=false] Prevent changes to the value of the widget.
  */
 ve.ui.CompletionWidget = function VeUiCompletionWidget( surface, config ) {
-	var $doc = surface.getView().getDocument().getDocumentNode().$element;
-
 	this.surface = surface;
 	this.surfaceModel = surface.getModel();
 
@@ -32,19 +30,39 @@ ve.ui.CompletionWidget = function VeUiCompletionWidget( surface, config ) {
 
 	this.$tabIndexed = this.$element;
 
+	var $doc = surface.getView().getDocument().getDocumentNode().$element;
+	this.popup = new OO.ui.PopupWidget( {
+		anchor: false,
+		align: 'forwards',
+		hideWhenOutOfView: false,
+		autoFlip: false,
+		width: null,
+		$container: config.$popupContainer || this.surface.$element,
+		containerPadding: config.popupPadding
+	} );
 	this.menu = new OO.ui.MenuSelectWidget( {
 		widget: this,
-		$input: $doc,
-		width: 'auto'
+		$input: $doc
+	} );
+	// This may be better semantically as a MenuSectionOptionWidget,
+	// but that causes all subsequent options to be indented.
+	this.header = new OO.ui.MenuOptionWidget( {
+		classes: [ 've-ui-completionWidget-header' ],
+		disabled: true
 	} );
 
 	// Events
-	this.menu.connect( this, { choose: 'onMenuChoose' } );
+	this.menu.connect( this, {
+		choose: 'onMenuChoose',
+		toggle: 'onMenuToggle'
+	} );
+
+	this.popup.$body.append( this.menu.$element );
 
 	// Setup
 	this.$element.addClass( 've-ui-completionWidget' )
 		.append(
-			this.menu.$element
+			this.popup.$element
 		);
 };
 
@@ -66,9 +84,11 @@ ve.ui.CompletionWidget.prototype.setup = function ( action ) {
 };
 
 ve.ui.CompletionWidget.prototype.teardown = function () {
-	this.menu.toggle( false );
+	this.tearingDown = true;
+	this.popup.toggle( false );
 	this.surfaceModel.disconnect( this );
 	this.action = undefined;
+	this.tearingDown = false;
 };
 
 ve.ui.CompletionWidget.prototype.update = function () {
@@ -91,13 +111,35 @@ ve.ui.CompletionWidget.prototype.update = function () {
 	}
 	this.$element.css( style );
 
-	this.action.getSuggestions( input ).then( function ( items ) {
-		this.menu.clearItems().addItems( items.map( this.action.getMenuItemForSuggestion.bind( this.action ) ) );
-		if ( this.menu.getItems().length ) {
-			this.menu.highlightItem( this.menu.getItems()[ 0 ] );
-		}
-		this.menu.toggle( true );
+	this.updateMenu( input );
+	this.action.getSuggestions( input ).then( function ( suggestions ) {
+		this.menu.clearItems();
+		this.menu.addItems( suggestions.map( this.action.getMenuItemForSuggestion.bind( this.action ) ) );
+		this.menu.highlightItem( this.menu.findFirstSelectableItem() );
+		this.updateMenu( input, suggestions );
 	}.bind( this ) );
+};
+
+ve.ui.CompletionWidget.prototype.updateMenu = function ( input, suggestions ) {
+	// Update the header based on the input
+	var label = this.action.getHeaderLabel( input, suggestions );
+	if ( label !== undefined ) {
+		this.header.setLabel( label );
+	}
+	if ( this.header.getLabel() !== null ) {
+		this.menu.addItems( [ this.header ], 0 );
+	} else {
+		this.menu.removeItems( [ this.header ] );
+	}
+	// If there is a header or menu items, show the menu
+	if ( this.menu.items.length ) {
+		this.menu.toggle( true );
+		this.popup.toggle( true );
+		// Menu may have changed size, so recalculate position
+		this.popup.updateDimensions();
+	} else {
+		this.popup.toggle( false );
+	}
 };
 
 ve.ui.CompletionWidget.prototype.onMenuChoose = function ( item ) {
@@ -106,6 +148,13 @@ ve.ui.CompletionWidget.prototype.onMenuChoose = function ( item ) {
 	fragment.collapseToEnd().select();
 
 	this.teardown();
+};
+
+ve.ui.CompletionWidget.prototype.onMenuToggle = function ( visible ) {
+	if ( !visible && !this.tearingDown ) {
+		// Menu was hidden by the user (e.g. pressed ESC) - trigger a teardown
+		this.teardown();
+	}
 };
 
 ve.ui.CompletionWidget.prototype.onModelSelect = function () {

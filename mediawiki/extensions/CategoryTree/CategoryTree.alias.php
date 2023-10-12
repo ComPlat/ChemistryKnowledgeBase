@@ -61,7 +61,7 @@ $specialPageAliases['bcl'] = [
 	'CategoryTree' => [ 'KahoyNinKategorya' ],
 ];
 
-/** Belarusian (Taraškievica orthography) (беларуская (тарашкевіца)‎) */
+/** Belarusian (Taraškievica orthography) (беларуская (тарашкевіца)) */
 $specialPageAliases['be-tarask'] = [
 	'CategoryTree' => [ 'Дрэва_катэгорыяў' ],
 ];
@@ -83,7 +83,7 @@ $specialPageAliases['bjn'] = [
 
 /** Bengali (বাংলা) */
 $specialPageAliases['bn'] = [
-	'CategoryTree' => [ 'বিষয়শ্রেণী_বৃক্ষ' ],
+	'CategoryTree' => [ 'বিষয়শ্রেণী_বৃক্ষ' ],
 ];
 
 /** Breton (brezhoneg) */
@@ -501,17 +501,17 @@ $specialPageAliases['yi'] = [
 	'CategoryTree' => [ 'קאטעגאריע_בוים' ],
 ];
 
-/** Simplified Chinese (中文（简体）‎) */
+/** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
 	'CategoryTree' => [ '分类树' ],
 ];
 
-/** Traditional Chinese (中文（繁體）‎) */
+/** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
 	'CategoryTree' => [ '分類樹' ],
 ];
 
-/** Chinese (Taiwan) (中文（台灣）‎) */
+/** Chinese (Taiwan) (中文（台灣）) */
 $specialPageAliases['zh-tw'] = [
 	'CategoryTree' => [ '分類樹' ],
 ];

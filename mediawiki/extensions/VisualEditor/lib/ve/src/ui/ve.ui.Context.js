@@ -112,6 +112,26 @@ ve.ui.Context.prototype.getSurface = function () {
 };
 
 /**
+ * Hide the context while it has valid items in the menu
+ *
+ * This could be triggered by clicking the close button on
+ * mobile or by pressing escape.
+ */
+ve.ui.Context.prototype.hide = function () {
+	var surfaceModel = this.surface.getModel();
+	this.toggleMenu( false );
+	this.toggle( false );
+	// Desktop: Ensure the next cursor movement re-evaluates the context,
+	// e.g. if moving within a link, the context is re-shown.
+	surfaceModel.once( 'select', function () {
+		surfaceModel.emitContextChange();
+	} );
+	// Mobile: Clear last-known contexedAnnotations so that clicking the annotation
+	// again just brings up this context item. (T232172)
+	this.getSurface().getView().contexedAnnotations = [];
+};
+
+/**
  * Toggle the menu.
  *
  * @param {boolean} [show] Show the menu, omit to toggle
@@ -142,12 +162,12 @@ ve.ui.Context.prototype.toggleMenu = function ( show ) {
  * @chainable
  */
 ve.ui.Context.prototype.setupMenuItems = function () {
-	var i, len, source,
-		sources = this.getRelatedSources(),
+	var sources = this.getRelatedSources(),
 		items = [];
 
+	var i, len;
 	for ( i = 0, len = sources.length; i < len; i++ ) {
-		source = sources[ i ];
+		var source = sources[ i ];
 		if ( source.type === 'item' ) {
 			items.push( ve.ui.contextItemFactory.create(
 				sources[ i ].name, this, sources[ i ].model
@@ -158,6 +178,10 @@ ve.ui.Context.prototype.setupMenuItems = function () {
 			) );
 		}
 	}
+
+	items.sort( function ( a, b ) {
+		return a.constructor.static.sortOrder - b.constructor.static.sortOrder;
+	} );
 
 	this.addItems( items );
 	for ( i = 0, len = items.length; i < len; i++ ) {
@@ -176,9 +200,7 @@ ve.ui.Context.prototype.setupMenuItems = function () {
  * @chainable
  */
 ve.ui.Context.prototype.teardownMenuItems = function () {
-	var i, len;
-
-	for ( i = 0, len = this.items.length; i < len; i++ ) {
+	for ( var i = 0, len = this.items.length; i < len; i++ ) {
 		this.items[ i ].teardown();
 	}
 	this.clearItems();

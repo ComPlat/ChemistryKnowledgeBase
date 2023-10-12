@@ -10,7 +10,7 @@
 	"type": "antispam",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.34.0"
+		"MediaWiki": ">= 1.39.0"
 	},
 	"GroupPermissions": {
 		"user": {
@@ -18,7 +18,8 @@
 		}
 	},
 	"AvailableRights": [
-		"spamblacklistlog"
+		"spamblacklistlog",
+		"sboverride"
 	],
 	"LogTypes": [
 		"spamblacklist"
@@ -27,15 +28,18 @@
 		"spamblacklist": "spamblacklistlog"
 	},
 	"LogActionsHandlers": {
-		"spamblacklist/*": "SpamBlacklistLogFormatter"
+		"spamblacklist/*": "MediaWiki\\Extension\\SpamBlacklist\\SpamBlacklistLogFormatter"
 	},
 	"GrantPermissions": {
 		"viewrestrictedlogs": {
 			"spamblacklistlog": true
+		},
+		"editprotected": {
+			"sboverride": true
 		}
 	},
 	"APIModules": {
-		"spamblacklist": "ApiSpamBlacklist"
+		"spamblacklist": "MediaWiki\\Extension\\SpamBlacklist\\ApiSpamBlacklist"
 	},
 	"MessagesDirs": {
 		"SpamBlackList": [
@@ -44,63 +48,66 @@
 		]
 	},
 	"AutoloadClasses": {
-		"ApiSpamBlacklist": "includes/ApiSpamBlacklist.php",
 		"BaseBlacklist": "includes/BaseBlacklist.php",
-		"EmailBlacklist": "includes/EmailBlacklist.php",
-		"SpamBlacklistHooks": "includes/SpamBlacklistHooks.php",
-		"SpamBlacklist": "includes/SpamBlacklist.php",
-		"SpamBlacklistLogFormatter": "includes/SpamBlacklistLogFormatter.php",
-		"SpamRegexBatch": "includes/SpamRegexBatch.php",
-		"SpamBlacklistPreAuthenticationProvider": "includes/SpamBlacklistPreAuthenticationProvider.php"
+		"MediaWiki\\Extension\\SpamBlacklist\\BaseBlacklist": "includes/BaseBlacklist.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\SpamBlacklist\\": "includes/"
 	},
 	"ResourceModules": {
 		"ext.spamBlacklist.visualEditor": {
 			"scripts": "ve-spamblacklist/ve.init.mw.SpamBlacklistSaveErrorHandler.js",
-			"targets": [ "desktop", "mobile" ]
+			"targets": [
+				"desktop",
+				"mobile"
+			]
 		}
 	},
-	"VisualEditorPluginModules": [
-		"ext.spamBlacklist.visualEditor"
-	],
+	"attributes": {
+		"VisualEditor": {
+			"PluginModules": [
+				"ext.spamBlacklist.visualEditor"
+			]
+		}
+	},
 	"ResourceFileModulePaths": {
 		"localBasePath": "modules",
 		"remoteExtPath": "SpamBlacklist/modules"
 	},
 	"Hooks": {
-		"EditFilterMergedContent": [
-			"SpamBlacklistHooks::filterMergedContent"
-		],
-		"EditFilter": [
-			"SpamBlacklistHooks::validate"
-		],
-		"PageContentSaveComplete": [
-			"SpamBlacklistHooks::pageSaveContent"
-		],
-		"UserCanSendEmail": [
-			"SpamBlacklistHooks::userCanSendEmail"
-		],
-		"ParserOutputStashForEdit": [
-			"SpamBlacklistHooks::onParserOutputStashForEdit"
-		],
-		"UploadVerifyUpload": [
-			"SpamBlacklistHooks::onUploadVerifyUpload"
-		]
+		"EditFilterMergedContent": "SpamBlacklistHookHandler",
+		"EditFilter": "SpamBlacklistHookHandler",
+		"PageSaveComplete": "SpamBlacklistHookHandler",
+		"UserCanSendEmail": "SpamBlacklistHookHandler",
+		"ParserOutputStashForEdit": "SpamBlacklistHookHandler",
+		"UploadVerifyUpload": "SpamBlacklistHookHandler"
+	},
+	"HookHandlers": {
+		"SpamBlacklistHookHandler": {
+			"class": "MediaWiki\\Extension\\SpamBlacklist\\Hooks"
+		}
 	},
 	"config": {
 		"BlacklistSettings": {
-			"spam": {
-				"files": [ "https://meta.wikimedia.org/w/index.php?title=Spam_blacklist&action=raw&sb_ver=1" ]
+			"value": {
+				"spam": {
+					"files": [
+						"https://meta.wikimedia.org/w/index.php?title=Spam_blacklist&action=raw&sb_ver=1"
+					]
+				}
 			},
-			"_merge_strategy": "array_plus_2d"
+			"merge_strategy": "array_plus_2d"
 		},
-		"LogSpamBlacklistHits": false
+		"LogSpamBlacklistHits": {
+			"value": false
+		}
 	},
 	"AuthManagerAutoConfig": {
 		"preauth": {
 			"SpamBlacklistPreAuthenticationProvider": {
-				"class": "SpamBlacklistPreAuthenticationProvider"
+				"class": "MediaWiki\\Extension\\SpamBlacklist\\SpamBlacklistPreAuthenticationProvider"
 			}
 		}
 	},
-	"manifest_version": 1
+	"manifest_version": 2
 }

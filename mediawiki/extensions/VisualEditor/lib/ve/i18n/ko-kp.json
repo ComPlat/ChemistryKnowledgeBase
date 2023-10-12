@@ -6,7 +6,6 @@
 		]
 	},
 	"visualeditor": "시각편집기",
-	"visualeditor-aliencontextitem-title": "항목",
 	"visualeditor-aliennode-tooltip": "죄송합니다만, 이 요소는 지금은 원본 모드에서만 편집할수 있습니다.",
 	"visualeditor-align-widget-center": "가운데",
 	"visualeditor-align-widget-default": "기본값",
@@ -72,8 +71,8 @@
 	"visualeditor-mediasizewidget-sizeoptions-default": "기본값",
 	"visualeditor-mediasizewidget-sizeoptions-scale": "비률",
 	"visualeditor-rebase-client-author-name": "이름",
-	"visualeditor-rebase-client-document-name": "문서 제목",
 	"visualeditor-rebase-client-document-create-edit": "생성/편집",
+	"visualeditor-rebase-client-document-name": "문서 제목",
 	"visualeditor-shortcuts-clipboard": "오려둠판",
 	"visualeditor-shortcuts-dialog": "대화 창",
 	"visualeditor-shortcuts-formatting": "문단 형식",

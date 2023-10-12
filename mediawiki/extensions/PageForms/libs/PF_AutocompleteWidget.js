@@ -8,12 +8,18 @@
  * @constructor
  * @param {Object} config Configuration options
  * @author Yaron Koren
+ * @author Sahaj Khandelwal
+ * @author Yash Varshney
  */
 
 pf.AutocompleteWidget = function( config ) {
 	// Parent constructor
 	var textInputConfig = {
 		name: 'page_name',
+		// The following classes are used here:
+		// * pfPageNameWithNamespace
+		// * pfPageNameWithoutNamespace
+		classes: config.classes,
 		// This turns off the local, browser-based autocompletion,
 		// which would normally suggest values that the user has
 		// typed before on that computer.
@@ -35,6 +41,13 @@ pf.AutocompleteWidget = function( config ) {
 	}
 
 	this.config = config;
+
+	// Initialization
+	if ( config.size !== undefined && config.size !== '' ) {
+		this.$element.css('width', 'initial');
+		this.$input.css('width', 'initial');
+		this.$input.attr('size', config.size);
+	}
 
 	// dataCache will temporarily store entity id => entity data mappings of
 	// entities, so that if we somehow then alter the text (add characters,
@@ -97,7 +110,7 @@ pf.AutocompleteWidget.prototype.getLookupMenuOptionsFromData = function ( data )
 		return [
 			new OO.ui.MenuOptionWidget( {
 				disabled: true,
-				label: mw.message( 'pf-select2-no-matches' ).text()
+				label: mw.message( 'pf-autocomplete-no-matches' ).text()
 			} )
 		];
 	}
@@ -122,9 +135,9 @@ pf.AutocompleteWidget.prototype.highlightText = function ( suggestion ) {
 	var t;
 
 	if (loc >= 0) {
-		t = itemLabel.substr(0, loc) +
+		t = itemLabel.slice(0, Math.max(0, loc)) +
 			 '<strong>' + itemLabel.substr(loc, searchTerm.length) + '</strong>' +
-			itemLabel.substr(loc + searchTerm.length);
+			itemLabel.slice(loc + searchTerm.length);
 	} else {
 		t = itemLabel;
 	}

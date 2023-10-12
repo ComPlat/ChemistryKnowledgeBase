@@ -20,9 +20,9 @@
  * @since 1.35
  */
 
-namespace Vector\FeatureManagement;
+namespace MediaWiki\Skins\Vector\FeatureManagement;
 
-use Vector\FeatureManagement\Requirements\SimpleRequirement;
+use MediaWiki\Skins\Vector\FeatureManagement\Requirements\SimpleRequirement;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -33,7 +33,7 @@ use Wikimedia\Assert\Assert;
  *
  * @unstable
  *
- * @package FeatureManagement
+ * @package MediaWiki\Skins\Vector\FeatureManagement
  * @internal
  */
 final class FeatureManager {
@@ -127,6 +127,21 @@ final class FeatureManager {
 	}
 
 	/**
+	 * Return a list of classes that should be added to the body tag
+	 *
+	 * @return array
+	 */
+	public function getFeatureBodyClass() {
+		$featureManager = $this;
+		return array_map( static function ( $featureName ) use ( $featureManager ) {
+			// switch to lower case and switch from camel case to hyphens
+			$featureClass = ltrim( strtolower( preg_replace( '/[A-Z]([A-Z](?![a-z]))*/', '-$0', $featureName ) ), '-' );
+			$prefix = 'vector-feature-' . $featureClass . '-';
+			return $featureManager->isFeatureEnabled( $featureName ) ? $prefix . 'enabled' : $prefix . 'disabled';
+		}, array_keys( $this->features ) );
+	}
+
+	/**
 	 * Gets whether the feature's requirements are met.
 	 *
 	 * @param string $feature
@@ -134,7 +149,7 @@ final class FeatureManager {
 	 *
 	 * @throws \InvalidArgumentException If the feature isn't registered
 	 */
-	public function isFeatureEnabled( string $feature ) : bool {
+	public function isFeatureEnabled( string $feature ): bool {
 		if ( !array_key_exists( $feature, $this->features ) ) {
 			throw new \InvalidArgumentException( "The feature \"{$feature}\" isn't registered." );
 		}
@@ -200,7 +215,7 @@ final class FeatureManager {
 	 *
 	 * @throws \InvalidArgumentException If the requirement isn't registered
 	 */
-	public function isRequirementMet( string $name ) : bool {
+	public function isRequirementMet( string $name ): bool {
 		if ( !array_key_exists( $name, $this->requirements ) ) {
 			throw new \InvalidArgumentException( "Requirement \"{$name}\" isn't registered." );
 		}

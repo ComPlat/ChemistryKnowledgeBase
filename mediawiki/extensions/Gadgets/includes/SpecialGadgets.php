@@ -9,18 +9,27 @@
  * @license GPL-2.0-or-later
  */
 
+namespace MediaWiki\Extension\Gadgets;
+
+use Html;
+use HTMLForm;
+use InvalidArgumentException;
 use MediaWiki\MediaWikiServices;
+use Sanitizer;
+use SpecialPage;
+use Title;
+use Xml;
 
 class SpecialGadgets extends SpecialPage {
 	public function __construct() {
-		parent::__construct( 'Gadgets', '', true );
+		parent::__construct( 'Gadgets' );
 	}
 
 	/**
 	 * @param string|null $par Parameters passed to the page
 	 */
 	public function execute( $par ) {
-		$parts = explode( '/', $par );
+		$parts = $par !== null ? explode( '/', $par ) : [];
 
 		if ( count( $parts ) == 2 && $parts[0] == 'export' ) {
 			$this->showExportForm( $parts[1] );
@@ -29,6 +38,10 @@ class SpecialGadgets extends SpecialPage {
 		}
 	}
 
+	/**
+	 * @param string $gadgetName
+	 * @return string
+	 */
 	private function makeAnchor( $gadgetName ) {
 		return 'gadget-' . Sanitizer::escapeIdForAttribute( $gadgetName );
 	}
@@ -48,20 +61,26 @@ class SpecialGadgets extends SpecialPage {
 			return;
 		}
 
+		$services = MediaWikiServices::getInstance();
+
 		$output->disallowUserJs();
 		$lang = $this->getLanguage();
 		$langSuffix = "";
-		if ( !$lang->equals( MediaWikiServices::getInstance()->getContentLanguage() ) ) {
+		if ( !$lang->equals( $services->getContentLanguage() ) ) {
 			$langSuffix = "/" . $lang->getCode();
 		}
 
 		$listOpen = false;
 
-		$editInterfaceMessage = $this->getUser()->isAllowed( 'editinterface' )
+		$editDefinitionMessage = $this->getUser()->isAllowed( 'gadgets-definition-edit' )
 			? 'edit'
 			: 'viewsource';
+		$editInterfaceMessage = $this->getUser()->isAllowed( 'editinterface' )
+			? 'gadgets-editdescription'
+			: 'gadgets-viewdescription';
 
 		$linkRenderer = $this->getLinkRenderer();
+		$skinFactory = $services->getSkinFactory();
 		foreach ( $gadgets as $section => $entries ) {
 			if ( $section !== false && $section !== '' ) {
 				$t = Title::makeTitleSafe( NS_MEDIAWIKI, "Gadget-section-$section$langSuffix" );
@@ -92,6 +111,15 @@ class SpecialGadgets extends SpecialPage {
 				}
 
 				$links = [];
+				$definitionTitle = GadgetRepo::singleton()->getGadgetDefinitionTitle( $name );
+				if ( $definitionTitle ) {
+					$links[] = $linkRenderer->makeLink(
+						$definitionTitle,
+						$this->msg( $editDefinitionMessage )->text(),
+						[],
+						[ 'action' => 'edit' ]
+					);
+				}
 				$links[] = $linkRenderer->makeLink(
 					$t,
 					$this->msg( $editInterfaceMessage )->text(),
@@ -146,17 +174,26 @@ class SpecialGadgets extends SpecialPage {
 				}
 				$output->addHTML( $lang->commaList( $lnk ) );
 
+				if ( $gadget->isPackaged() ) {
+					if ( $needLineBreakAfter ) {
+						$output->addHTML( '<br />' );
+					}
+					$output->addHTML( $this->msg( 'gadgets-packaged',
+						GadgetRepo::singleton()->titleWithoutPrefix( $gadget->getScripts()[0] ) ) );
+					$needLineBreakAfter = true;
+				}
+
 				// Portion: Legacy scripts
 				if ( $gadget->getLegacyScripts() ) {
 					if ( $needLineBreakAfter ) {
 						$output->addHTML( '<br />' );
 					}
-					$output->addHTML( Html::rawElement(
-						'span',
-						[ 'class' => 'mw-gadget-legacy errorbox' ],
-						$this->msg( 'gadgets-legacy' )->parse()
+					$output->addHTML( Html::errorBox(
+						$this->msg( 'gadgets-legacy' )->parse(),
+						'',
+						'mw-gadget-legacy'
 					) );
-					$needLineBreakAfter = true;
+					$needLineBreakAfter = false;
 				}
 
 				// Portion: Show required rights (optional)
@@ -183,7 +220,7 @@ class SpecialGadgets extends SpecialPage {
 				// $requiredSkins can be an array, or true (if all skins are supported)
 				if ( is_array( $requiredSkins ) ) {
 					$skins = [];
-					$validskins = Skin::getSkinNames();
+					$validskins = $skinFactory->getSkinNames();
 					foreach ( $requiredSkins as $skinid ) {
 						if ( isset( $validskins[$skinid] ) ) {
 							$skins[] = $this->msg( "skinname-$skinid" )->plain();
@@ -201,6 +238,27 @@ class SpecialGadgets extends SpecialPage {
 						);
 						$needLineBreakAfter = true;
 					}
+				}
+
+				// Portion: Show required actions (optional)
+				$actions = $gadget->getRequiredActions();
+				if ( $actions ) {
+					if ( $needLineBreakAfter ) {
+						$output->addHTML( '<br />' );
+					}
+					$output->addHTML(
+						$this->msg( 'gadgets-required-actions', $lang->commaList( $actions ) )
+							->numParams( count( $actions ) )->parse()
+					);
+					$needLineBreakAfter = true;
+				}
+
+				if ( $gadget->supportsUrlLoad() ) {
+					if ( $needLineBreakAfter ) {
+						$output->addHTML( '<br />' );
+					}
+					$output->addHTML( $this->msg( 'gadgets-supports-urlload' )->parse() );
+					$needLineBreakAfter = true;
 				}
 
 				// Portion: Show on by default (optional)
@@ -248,7 +306,7 @@ class SpecialGadgets extends SpecialPage {
 
 		$htmlForm = HTMLForm::factory( 'ooui', [], $this->getContext() );
 		$htmlForm
-			->addHiddenField( 'title', SpecialPage::getTitleFor( 'Export' )->getPrefixedDBKey() )
+			->setTitle( SpecialPage::getTitleFor( 'Export' ) )
 			->addHiddenField( 'pages', $exportList )
 			->addHiddenField( 'wpDownload', '1' )
 			->addHiddenField( 'templates', '1' )
@@ -259,6 +317,9 @@ class SpecialGadgets extends SpecialPage {
 			->displayForm( false );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	protected function getGroupName() {
 		return 'wiki';
 	}

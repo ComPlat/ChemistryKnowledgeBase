@@ -114,7 +114,7 @@ class RandomImageGenerator {
 		} else {
 			// figure out how to write images
 			global $wgExiv2Command;
-			if ( class_exists( 'Imagick' ) && $wgExiv2Command && is_executable( $wgExiv2Command ) ) {
+			if ( class_exists( Imagick::class ) && $wgExiv2Command && is_executable( $wgExiv2Command ) ) {
 				return 'writeImageWithApi';
 			} elseif ( $wgUseImageMagick
 				&& $wgImageMagickConvertCommand
@@ -135,7 +135,7 @@ class RandomImageGenerator {
 	 * @param int $number Number of filenames to generate
 	 * @param string $extension Optional, defaults to 'jpg'
 	 * @param string|null $dir Optional, defaults to current working directory
-	 * @return array Array of filenames
+	 * @return string[]
 	 */
 	private function getRandomFilenames( $number, $extension = 'jpg', $dir = null ) {
 		if ( $dir === null ) {
@@ -173,13 +173,13 @@ class RandomImageGenerator {
 
 		$draws = [];
 		for ( $i = 0; $i <= $this->shapesToDraw; $i++ ) {
-			$radius = mt_rand( 0, $diagonalLength / 4 );
+			$radius = mt_rand( 0, (int)( $diagonalLength / 4 ) );
 			if ( $radius == 0 ) {
 				continue;
 			}
 			$originX = mt_rand( -1 * $radius, $spec['width'] + $radius );
 			$originY = mt_rand( -1 * $radius, $spec['height'] + $radius );
-			$angle = mt_rand( 0, ( 3.141592 / 2 ) * $radius ) / $radius;
+			$angle = mt_rand() / mt_getrandmax() * M_PI / 2;
 			$legDeltaX = round( $radius * sin( $angle ) );
 			$legDeltaY = round( $radius * cos( $angle ) );
 

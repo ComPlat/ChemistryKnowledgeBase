@@ -35,7 +35,7 @@ ve.ui.MWExportWikitextDialog.static.title = ve.msg( 'visualeditor-rebase-client-
 ve.ui.MWExportWikitextDialog.static.actions = [
 	{
 		label: OO.ui.deferMsg( 'visualeditor-dialog-action-done' ),
-		flags: 'safe'
+		flags: [ 'safe', 'close' ]
 	}
 ];
 
@@ -45,9 +45,6 @@ ve.ui.MWExportWikitextDialog.static.size = 'larger';
  * @inheritdoc
  */
 ve.ui.MWExportWikitextDialog.prototype.initialize = function () {
-	var panel,
-		$content = $( '<div>' );
-
 	// Parent method
 	ve.ui.MWExportWikitextDialog.super.prototype.initialize.call( this );
 
@@ -55,42 +52,49 @@ ve.ui.MWExportWikitextDialog.prototype.initialize = function () {
 		value: ve.init.target.getImportTitle()
 	}, { api: ve.init.target.getContentApi() } );
 	this.titleButton = new OO.ui.ButtonWidget( {
-		label: ve.msg( 'visualeditor-rebase-client-export' ),
+		label: ve.msg( 'visualeditor-rebase-client-export-start' ),
 		flags: [ 'primary', 'progressive' ]
 	} );
 	this.titleField = new OO.ui.ActionFieldLayout( this.titleInput, this.titleButton, {
 		align: 'top',
-		label: ve.msg( 'visualeditor-rebase-client-import-name' )
+		label: ve.msg( 'visualeditor-rebase-client-import-name' ),
+		help: ve.msg( 'visualeditor-rebase-client-title-help' ),
+		helpInline: true
 	} );
 
 	this.titleButton.on( 'click', this.export.bind( this ) );
 
-	this.wikitext = new OO.ui.MultilineTextInputWidget( {
-		// The following classes are used here:
-		// * mw-editfont-monospace
-		// * mw-editfont-sans-serif
-		// * mw-editfont-serif
-		classes: [ 'mw-editfont-' + mw.user.options.get( 'editfont' ) ],
-		autosize: true,
-		readOnly: true,
-		rows: 20
-	} );
-	this.wikitextField = new OO.ui.FieldLayout( this.wikitext, {
+	this.wikitextLayout = new mw.widgets.CopyTextLayout( {
 		align: 'top',
-		label: ve.msg( 'visualeditor-savedialog-review-wikitext' )
+		label: ve.msg( 'visualeditor-savedialog-review-wikitext' ),
+		multiline: true,
+		textInput: {
+			// The following classes are used here:
+			// * mw-editfont-monospace
+			// * mw-editfont-sans-serif
+			// * mw-editfont-serif
+			classes: [ 'mw-editfont-' + mw.user.options.get( 'editfont' ) ],
+			autosize: true,
+			readOnly: true,
+			// Height will be trimmed in getReadyProcess
+			rows: 99
+		}
 	} );
 
-	// Move to CSS
+	// TODO: Move to CSS
 	this.titleField.$element.css( 'max-width', 'none' );
 	this.titleInput.$element.css( 'max-width', 'none' );
-	this.wikitext.$element.css( 'max-width', 'none' );
+	this.wikitextLayout.$element.css( 'max-width', 'none' );
+	this.wikitextLayout.$field.css( 'max-width', 'none' );
+	this.wikitextLayout.textInput.$element.css( 'max-width', 'none' );
 
+	var $content = $( '<div>' );
 	$content.append(
 		this.titleField.$element,
-		this.wikitextField.$element
+		this.wikitextLayout.$element
 	);
 
-	panel = new OO.ui.PanelLayout( {
+	var panel = new OO.ui.PanelLayout( {
 		padded: true,
 		expanded: false,
 		$content: $content
@@ -105,18 +109,19 @@ ve.ui.MWExportWikitextDialog.prototype.getSetupProcess = function ( data ) {
 	return ve.ui.MWExportWikitextDialog.super.prototype.getSetupProcess.call( this, data )
 		.next( function () {
 			var dialog = this,
-				surface = ve.init.target.getSurface();
+				surface = ve.init.target.getSurface(),
+				wikitextInput = this.wikitextLayout.textInput;
 			this.titleButton.setDisabled( true );
-			this.wikitext.pushPending();
+			this.wikitextLayout.textInput.pushPending();
 			ve.init.target.getWikitextFragment( surface.getModel().getDocument() ).then( function ( wikitext ) {
-				dialog.wikitext.setValue( wikitext.trim() );
-				dialog.wikitext.$input.scrollTop( 0 );
-				dialog.wikitext.popPending();
+				wikitextInput.setValue( wikitext.trim() );
+				wikitextInput.$input.scrollTop( 0 );
+				wikitextInput.popPending();
 				dialog.titleButton.setDisabled( false );
 				dialog.updateSize();
 			}, function () {
 				// TODO: Display API errors
-				dialog.wikitext.popPending();
+				wikitextInput.popPending();
 			} );
 		}, this );
 };
@@ -128,6 +133,21 @@ ve.ui.MWExportWikitextDialog.prototype.getReadyProcess = function ( data ) {
 	return ve.ui.MWExportWikitextDialog.super.prototype.getReadyProcess.call( this, data )
 		.next( function () {
 			this.titleInput.focus();
+
+			// Fix height of wikitext input
+			this.wikitextLayout.textInput.$input.css( 'max-height', '' );
+			var overflow = this.$body[ 0 ].scrollHeight - this.$body[ 0 ].clientHeight;
+			if ( overflow > 0 ) {
+				// If body is too tall, take the excess height off the wikitext input
+				this.wikitextLayout.textInput.$input.css(
+					'max-height',
+					Math.max(
+						this.wikitextLayout.textInput.$input[ 0 ].clientHeight - overflow,
+						50 // minimum height
+					)
+				);
+			}
+
 		}, this );
 };
 
@@ -137,7 +157,7 @@ ve.ui.MWExportWikitextDialog.prototype.getReadyProcess = function ( data ) {
 ve.ui.MWExportWikitextDialog.prototype.getTeardownProcess = function ( data ) {
 	return ve.ui.MWExportWikitextDialog.super.prototype.getTeardownProcess.call( this, data )
 		.next( function () {
-			this.wikitext.setValue( '' );
+			this.wikitextLayout.textInput.setValue( '' );
 		}, this );
 };
 
@@ -145,17 +165,17 @@ ve.ui.MWExportWikitextDialog.prototype.getTeardownProcess = function ( data ) {
  * Export the document to a specific title
  */
 ve.ui.MWExportWikitextDialog.prototype.export = function () {
-	var key, $form, params,
-		wikitext = this.wikitext.getValue(),
+	var wikitext = this.wikitextLayout.textInput.getValue(),
 		title = this.titleInput.getMWTitle(),
+		importTitle = ve.init.target.getImportTitle(),
 		submitUrl = ( new mw.Uri( title.getUrl() ) )
 			.extend( {
 				action: 'submit',
 				veswitched: 1
 			} );
 
-	$form = $( '<form>' ).attr( { method: 'post', enctype: 'multipart/form-data' } ).addClass( 'oo-ui-element-hidden' );
-	params = {
+	var $form = $( '<form>' ).attr( { method: 'post', enctype: 'multipart/form-data' } ).addClass( 'oo-ui-element-hidden' );
+	var params = {
 		format: 'text/x-wiki',
 		model: 'wikitext',
 		wpTextbox1: wikitext,
@@ -166,7 +186,10 @@ ve.ui.MWExportWikitextDialog.prototype.export = function () {
 		wpUltimateParam: true,
 		wpDiff: true
 	};
-	if ( ve.init.target.getImportTitle().toString() === title.toString() ) {
+	if (
+		importTitle && title &&
+		importTitle.toString() === title.toString()
+	) {
 		params = ve.extendObject( {
 			oldid: ve.init.target.revid,
 			basetimestamp: ve.init.target.baseTimeStamp,
@@ -174,7 +197,7 @@ ve.ui.MWExportWikitextDialog.prototype.export = function () {
 		}, params );
 	}
 	// Add params as hidden fields
-	for ( key in params ) {
+	for ( var key in params ) {
 		$form.append( $( '<input>' ).attr( { type: 'hidden', name: key, value: params[ key ] } ) );
 	}
 	// Submit the form, mimicking a traditional edit

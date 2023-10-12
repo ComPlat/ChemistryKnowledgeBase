@@ -10,14 +10,13 @@
  * @see https://meta.wikimedia.org/wiki/Schema:ReferencePreviewsBaseline
  * @see https://meta.wikimedia.org/wiki/Schema:ReferencePreviewsCite
  */
-( function () {
+
+// EventLogging may not be installed
+mw.loader.using( 'ext.eventLogging' ).then( function () {
 	'use strict';
 
 	$( function () {
 		var isReferencePreviewsEnabled = mw.config.get( 'wgPopupsReferencePreviews', false ),
-			loggingTopic = isReferencePreviewsEnabled ?
-				'event.ReferencePreviewsCite' :
-				'event.ReferencePreviewsBaseline',
 			samplingRate = isReferencePreviewsEnabled ? 1 : 1000;
 
 		if ( !navigator.sendBeacon ||
@@ -28,6 +27,9 @@
 			return;
 		}
 
+		var loggingTopic = isReferencePreviewsEnabled ?
+			'event.ReferencePreviewsCite' :
+			'event.ReferencePreviewsBaseline';
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( '#mw-content-text' ).on(
 			'click',
@@ -45,4 +47,4 @@
 
 		mw.track( loggingTopic, { action: 'pageview' } );
 	} );
-}() );
+} );

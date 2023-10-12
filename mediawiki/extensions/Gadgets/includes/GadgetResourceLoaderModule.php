@@ -1,10 +1,15 @@
 <?php
 
+namespace MediaWiki\Extension\Gadgets;
+
+use InvalidArgumentException;
+use MediaWiki\ResourceLoader as RL;
+
 /**
  * Class representing a list of resources for one gadget, basically a wrapper
  * around the Gadget class.
  */
-class GadgetResourceLoaderModule extends ResourceLoaderWikiModule {
+class GadgetResourceLoaderModule extends RL\WikiModule {
 	/**
 	 * @var string
 	 */
@@ -39,11 +44,11 @@ class GadgetResourceLoaderModule extends ResourceLoaderWikiModule {
 	}
 
 	/**
-	 * Overrides the function from ResourceLoaderWikiModule class
-	 * @param ResourceLoaderContext $context
+	 * Overrides the function from RL\WikiModule class
+	 * @param RL\Context $context
 	 * @return array
 	 */
-	protected function getPages( ResourceLoaderContext $context ) {
+	protected function getPages( RL\Context $context ) {
 		$gadget = $this->getGadget();
 		$pages = [];
 
@@ -55,28 +60,49 @@ class GadgetResourceLoaderModule extends ResourceLoaderWikiModule {
 			foreach ( $gadget->getScripts() as $script ) {
 				$pages[$script] = [ 'type' => 'script' ];
 			}
+			foreach ( $gadget->getJSONs() as $json ) {
+				$pages[$json] = [ 'type' => 'data' ];
+			}
 		}
 
 		return $pages;
 	}
 
 	/**
-	 * Overrides ResourceLoaderModule::getDependencies()
-	 * @param ResourceLoaderContext|null $context
+	 * Overrides RL\WikiModule::getRequireKey()
+	 * @param string $titleText
+	 * @return string
+	 */
+	public function getRequireKey( $titleText ): string {
+		return GadgetRepo::singleton()->titleWithoutPrefix( $titleText );
+	}
+
+	/**
+	 * Overrides RL\WikiModule::isPackaged()
+	 * Returns whether this gadget is packaged.
+	 * @return bool
+	 */
+	public function isPackaged(): bool {
+		return $this->gadget->isPackaged();
+	}
+
+	/**
+	 * Overrides RL\Module::getDependencies()
+	 * @param RL\Context|null $context
 	 * @return string[] Names of resources this module depends on
 	 */
-	public function getDependencies( ResourceLoaderContext $context = null ) {
+	public function getDependencies( RL\Context $context = null ) {
 		return $this->getGadget()->getDependencies();
 	}
 
 	/**
-	 * Overrides ResourceLoaderWikiModule::getType()
-	 * @return string ResourceLoaderModule::LOAD_STYLES or ResourceLoaderModule::LOAD_GENERAL
+	 * Overrides RL\WikiModule::getType()
+	 * @return string RL\Module::LOAD_STYLES or RL\Module::LOAD_GENERAL
 	 */
 	public function getType() {
 		return $this->getGadget()->getType() === 'styles'
-			? ResourceLoaderModule::LOAD_STYLES
-			: ResourceLoaderModule::LOAD_GENERAL;
+			? RL\Module::LOAD_STYLES
+			: RL\Module::LOAD_GENERAL;
 	}
 
 	public function getMessages() {
@@ -85,6 +111,10 @@ class GadgetResourceLoaderModule extends ResourceLoaderWikiModule {
 
 	public function getTargets() {
 		return $this->getGadget()->getTargets();
+	}
+
+	public function getSkins(): ?array {
+		return $this->getGadget()->getRequiredSkins() ?: null;
 	}
 
 	public function getGroup() {

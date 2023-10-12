@@ -2,11 +2,12 @@
 	"@metadata": {
 		"authors": [
 			"Har-wradim",
-			"פוילישער"
+			"פוילישער",
+			"Pacha Tchernof"
 		]
 	},
 	"multimediaviewer-repository-local": "מער פּרטים",
-	"multimediaviewer-datetime-created": "געשאפן: $1",
+	"multimediaviewer-datetime-created": "געשאַפֿן: $1",
 	"multimediaviewer-datetime-uploaded": "ארויפגעלאדן: $1",
 	"multimediaviewer-credit-fallback": "באקוקן שאפֿער אינפארמאציע",
 	"multimediaviewer-multiple-authors": "נאך {{PLURAL:$1|איין|$1}} שאפער",
@@ -21,8 +22,6 @@
 	"multimediaviewer-permission-link-hide": "באהאלטן באדינגונגען",
 	"multimediaviewer-permission-viewmore": "ווײזן נאך",
 	"multimediaviewer-about-mmv": "וועגן דעם אייבערפֿלאך",
-	"multimediaviewer-discuss-mmv": "שמועס",
-	"multimediaviewer-help-mmv": "הילף",
 	"multimediaviewer-optin-mmv": "אקטיווירן מעדיע־ווייזער",
 	"multimediaviewer-optin-help": "מען וועט ניצן מעדיע־באקוקער צו ווײַזן בילדער.",
 	"multimediaviewer-geolocation": "לאקאציע: $1",

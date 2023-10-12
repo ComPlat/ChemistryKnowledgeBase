@@ -27,6 +27,11 @@
  * @ingroup SpecialPage
  */
 class SpecialUserLogout extends FormSpecialPage {
+	/**
+	 * @var string
+	 */
+	private $oldUserName;
+
 	public function __construct() {
 		parent::__construct( 'Userlogout' );
 	}
@@ -52,18 +57,22 @@ class SpecialUserLogout extends FormSpecialPage {
 	}
 
 	public function execute( $par ) {
-		if ( $this->getUser()->isAnon() ) {
+		$user = $this->getUser();
+		if ( $user->isAnon() ) {
 			$this->setHeaders();
 			$this->showSuccess();
 			return;
 		}
+		$this->oldUserName = $user->getName();
 
 		parent::execute( $par );
 	}
 
 	public function alterForm( HTMLForm $form ) {
 		$form->setTokenSalt( 'logoutToken' );
-		$form->addHeaderText( $this->msg( 'userlogout-continue' ) );
+		$form->addHeaderHtml( $this->msg(
+			$this->getUser()->isTemp() ? 'userlogout-temp' : 'userlogout-continue'
+		) );
 
 		$form->addHiddenFields( $this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
 	}
@@ -85,7 +94,7 @@ class SpecialUserLogout extends FormSpecialPage {
 				'cannotlogoutnow-title',
 				'cannotlogoutnow-text',
 				[
-					$session->getProvider()->describe( RequestContext::getMain()->getLanguage() )
+					$session->getProvider()->describe( $this->getLanguage() )
 				]
 			);
 		}
@@ -99,12 +108,10 @@ class SpecialUserLogout extends FormSpecialPage {
 	public function onSuccess() {
 		$this->showSuccess();
 
-		$user = $this->getUser();
-		$oldName = $user->getName();
 		$out = $this->getOutput();
 		// Hook.
 		$injected_html = '';
-		$this->getHookRunner()->onUserLogoutComplete( $user, $injected_html, $oldName );
+		$this->getHookRunner()->onUserLogoutComplete( $this->getUser(), $injected_html, $this->oldUserName );
 		$out->addHTML( $injected_html );
 	}
 

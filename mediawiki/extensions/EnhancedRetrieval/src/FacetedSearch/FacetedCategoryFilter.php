@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch;
 
+use MediaWiki\MediaWikiServices;
+
 class FacetedCategoryFilter {
 
     /**
@@ -18,13 +20,23 @@ class FacetedCategoryFilter {
             return true;
         }
 
-        global $wgContLang;
+        $wgContLang = MediaWikiServices::getInstance()->getContentLanguage();
         $categoryLabel = $wgContLang->getNsText(NS_CATEGORY);
+        $html = "<span id='fs_category_filter_label'>$categoryLabel: </span><br/>";
 
-        $html = "<span id='fs_category_filter_label'>$categoryLabel: </span><br/><select id='fs_category_filter' name='fs_category_filter'>";
-        $html .= '<option value="" selected="true">Alle Wikiseiten</option>';
+        $hasAllCategory = false;
+        $selected = ' selected="true"'; // the first entry is selected
+
+        $html .= "<select id='fs_category_filter' name='fs_category_filter'>";
         foreach ( $fsgCategoryFilter as $cat => $label ) {
-            $html .= "<option value='$cat'>$label</option>";
+            $html .= "<option value='$cat'$selected>$label</option>";
+            $selected = ''; // only the first entry is selected
+            if($cat == '') {
+                $hasAllCategory = true;
+            }
+        }
+        if( !$hasAllCategory ) {
+            $html .= "<option value=''$selected>Alle Wikiseiten</option>";
         }
         $html .= "</select>";
 

@@ -6,7 +6,7 @@
 	"license-name": "WTFPL",
 	"type": "api",
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.39.0"
 	},
 	"APIPropModules": {
 		"pageimages": "PageImages\\ApiQueryPageImages"
@@ -24,21 +24,36 @@
 		"PageImages\\Tests\\": "tests/phpunit/"
 	},
 	"Hooks": {
-		"AfterParserFetchFileAndTitle": "PageImages\\Hooks\\ParserFileProcessingHookHandlers::onAfterParserFetchFileAndTitle",
-		"ApiOpenSearchSuggest": "PageImages\\PageImages::onApiOpenSearchSuggest",
-		"BeforePageDisplay": "PageImages\\PageImages::onBeforePageDisplay",
-		"InfoAction": "PageImages\\PageImages::onInfoAction",
-		"SearchResultProvideThumbnail": "PageImages\\Hooks\\SearchResultProvideThumbnailHookHandler::onSearchResultProvideThumbnail",
-		"LinksUpdate": "PageImages\\Hooks\\LinksUpdateHookHandler::onLinksUpdate",
-		"ParserMakeImageParams": "PageImages\\Hooks\\ParserFileProcessingHookHandlers::onParserMakeImageParams",
+		"ApiOpenSearchSuggest": "main",
+		"BeforePageDisplay": "main",
+		"InfoAction": "main",
+		"ParserAfterTidy": "parser",
+		"ParserModifyImageHTML": "parser",
+		"ParserTestGlobals": "parser",
+		"SearchResultProvideThumbnail": "search",
 		"SpecialMobileEditWatchlist::images": "PageImages\\PageImages::onSpecialMobileEditWatchlistImages"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "PageImages\\PageImages"
+		},
+		"parser": {
+			"class": "PageImages\\Hooks\\ParserFileProcessingHookHandlers"
+		},
+		"search": {
+			"class": "PageImages\\Hooks\\SearchResultProvideThumbnailHookHandler",
+			"services": [
+				"PageProps",
+				"RepoGroup"
+			]
+		}
 	},
 	"JobClasses": {
 		"InitImageDataJob": "PageImages\\Job\\InitImageDataJob"
 	},
 	"config": {
 		"PageImagesScores": {
-			"description": "Images <120px are usually from maintenace or stub templates; >600px are panoramas, less suitable.",
+			"description": "Images <120px are usually from maintenance or stub templates; >600px are panoramas, less suitable.",
 			"value": {
 				"position": [
 					8,
@@ -65,16 +80,21 @@
 				}
 			}
 		},
-		"PageImagesBlacklist": {
+		"PageImagesDenylist": {
 			"value": [
 				{
 					"type": "db",
-					"page": "MediaWiki:Pageimages-blacklist",
+					"page": "MediaWiki:Pageimages-denylist",
 					"db": false
 				}
 			]
 		},
-		"PageImagesBlacklistExpiry": {
+		"PageImagesOpenGraph": {
+			"description": "Enable the OpenGraph meta tags",
+			"public": true,
+			"value": true
+		},
+		"PageImagesDenylistExpiry": {
 			"value": 900
 		},
 		"PageImagesExpandOpenSearchXml": {
@@ -86,15 +106,16 @@
 			]
 		},
 		"PageImagesLeadSectionOnly": {
-			"description": [
-				"Temporary feature flag - Whether page images should be restricted to those in section id 0.",
-				"FIXME: Please remove a month after it has defaulted to true on the cluster (T152115)"
-			],
+			"description": "Whether page images should be restricted to those in section 0",
 			"value": true
 		},
 		"PageImagesAPIDefaultLicense": {
 			"description": "Get images with either a 'free' license or 'any' (including free and non-free) license by default, via 'pilicense' option, in pageprops query api. The value of this setting should be either 'free' or 'any'.",
 			"value": "free"
+		},
+		"PageImagesOpenGraphFallbackImage": {
+			"description": "A url to fallback image that will be shown when there is no image on a page.",
+			"value": false
 		}
 	},
 	"manifest_version": 2

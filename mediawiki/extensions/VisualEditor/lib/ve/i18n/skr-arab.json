@@ -4,7 +4,6 @@
 			"Saraiki"
 		]
 	},
-	"visualeditor-aliencontextitem-title": "آئٹم",
 	"visualeditor-align-desc-center": "ادھ وچ",
 	"visualeditor-align-desc-left": "کھبے",
 	"visualeditor-align-desc-none": "کوئی وی کائنی",
@@ -52,6 +51,8 @@
 	"visualeditor-dialog-language-auto-direction": "خود بخود",
 	"visualeditor-dialog-language-search-title": "زبان چݨو",
 	"visualeditor-dialog-table-caption": "عنوان",
+	"visualeditor-diff-moved-down": "ہیٹھاں ٹور ݙتا",
+	"visualeditor-diff-moved-up": "اُتے ٹور ݙتا",
 	"visualeditor-find-and-replace-done": "مکمل",
 	"visualeditor-find-and-replace-find-text": "لبھو",
 	"visualeditor-find-and-replace-replace-button": "بدل گھنو",

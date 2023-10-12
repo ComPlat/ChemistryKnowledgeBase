@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Siebrand",
+			"Wiki13"
+		]
+	},
+	"urlgetparameters-desc": "Maakt het mogelijk om de \"GET\"-parameters van een URL op een pagina te zien en/of te gebruiken"
+}

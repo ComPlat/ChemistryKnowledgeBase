@@ -6,11 +6,13 @@ use Wikimedia\ScopedCallback;
  * @covers Scribunto_LuaUstringLibrary
  */
 class Scribunto_LuaUstringLibraryTest extends Scribunto_LuaEngineUnitTestBase {
+	/** @inheritDoc */
 	protected static $moduleName = 'UstringLibraryTests';
 
+	/** @var UstringLibraryNormalizationTestProvider|null */
 	private $normalizationDataProvider = null;
 
-	protected function tearDown() : void {
+	protected function tearDown(): void {
 		if ( $this->normalizationDataProvider ) {
 			$this->normalizationDataProvider->destroy();
 			$this->normalizationDataProvider = null;
@@ -48,10 +50,14 @@ class Scribunto_LuaUstringLibraryTest extends Scribunto_LuaEngineUnitTestBase {
 		$this->luaTestName = "UstringLibraryNormalization: $name";
 		$dataProvider = $this->provideUstringLibraryNormalizationTests();
 		$expected = [
-			$c2, $c2, $c2, $c4, $c4, // NFC
-			$c3, $c3, $c3, $c5, $c5, // NFD
-			$c4, $c4, $c4, $c4, $c4, // NFKC
-			$c5, $c5, $c5, $c5, $c5, // NFKD
+			// NFC
+			$c2, $c2, $c2, $c4, $c4,
+			// NFD
+			$c3, $c3, $c3, $c5, $c5,
+			// NFKC
+			$c4, $c4, $c4, $c4, $c4,
+			// NFKD
+			$c5, $c5, $c5, $c5, $c5,
 		];
 		foreach ( $expected as &$e ) {
 			$chars = array_values( unpack( 'N*', mb_convert_encoding( $e, 'UTF-32BE', 'UTF-8' ) ) );

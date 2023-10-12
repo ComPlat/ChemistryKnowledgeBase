@@ -1,8 +1,18 @@
+/**
+ * This adds behaviour to Vector's tabs in the bottom right so that at smaller
+ * displays they collapse under the more menu.
+ */
+
 /** @interface CollapsibleTabsOptions */
 function init() {
 	/** @type {boolean|undefined} */ var boundEvent;
 	var isRTL = document.documentElement.dir === 'rtl';
 	var rAF = window.requestAnimationFrame || setTimeout;
+
+	// Mark the tabs which can be collapsed under the more menu
+	// eslint-disable-next-line no-jquery/no-global-selector
+	$( '#p-views li' )
+		.not( '#ca-watch, #ca-unwatch' ).addClass( 'collapsible' );
 
 	$.fn.collapsibleTabs = function ( options ) {
 		// Merge options into the defaults
@@ -28,13 +38,15 @@ function init() {
 		// if we haven't already bound our resize handler, bind it now
 		if ( !boundEvent ) {
 			boundEvent = true;
-			$( window ).on( 'resize', mw.util.debounce( 10, function () {
+			$( window ).on( 'resize', mw.util.debounce( function () {
 				rAF( $.collapsibleTabs.handleResize );
-			} ) );
+			}, 10 ) );
 		}
 
 		// call our resize handler to setup the page
 		rAF( $.collapsibleTabs.handleResize );
+		// When adding new links, a resize should be triggered (T139830).
+		mw.hook( 'util.addPortletLink' ).add( $.collapsibleTabs.handleResize );
 		return this;
 	};
 	$.collapsibleTabs = {
@@ -71,14 +83,20 @@ function init() {
 				$.collapsibleTabs.addData( $collapsible );
 				settings = $collapsible.data( 'collapsibleTabsSettings' );
 			}
-			return settings;
+			// it's possible for getSettings to return undefined
+			// if no data attributes have been set
+			// see T177108#6310908.
+			// In particular, a gadget may have added a collapsible link to the list:
+			// e.g.
+			// $('<li class="collapsible">my link</a>').appendTo( $('#p-cactions ul') )
+			return settings || {};
 		},
 		handleResize: function () {
 			$.collapsibleTabs.instances.forEach( function ( $el ) {
 				var $tab,
 					data = $.collapsibleTabs.getSettings( $el );
 
-				if ( data.shifting ) {
+				if ( $.isEmptyObject( data ) || data.shifting ) {
 					return;
 				}
 

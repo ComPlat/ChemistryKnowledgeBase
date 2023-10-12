@@ -1,8 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Angpradesh"
+			"Angpradesh",
+			"Proabscorp!"
 		]
 	},
-	"browse": "विकि देखऽ"
+	"browse": "विकि देखौ",
+	"smw-admin-tab-alerts": "चेतावनी सिनी",
+	"smw-listingcontinuesabbrev": "जारी."
 }

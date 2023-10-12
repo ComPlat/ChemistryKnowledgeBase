@@ -18,11 +18,11 @@
 ( function () {
 	QUnit.module( 'mmv.provider.ImageInfo', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'ImageInfo constructor sanity check', function ( assert ) {
+	QUnit.test( 'ImageInfo constructor sense check', function ( assert ) {
 		var api = { get: function () {} },
 			imageInfoProvider = new mw.mmv.provider.ImageInfo( api );
 
-		assert.ok( imageInfoProvider );
+		assert.true( imageInfoProvider instanceof mw.mmv.provider.ImageInfo );
 	} );
 
 	QUnit.test( 'ImageInfo get test', function ( assert ) {
@@ -187,7 +187,7 @@
 			imageInfoProvider = new mw.mmv.provider.ImageInfo( api );
 
 		imageInfoProvider.get( file ).fail( function () {
-			assert.ok( true, 'promise rejected when no data is returned' );
+			assert.true( true, 'promise rejected when no data is returned' );
 			done();
 		} );
 	} );
@@ -209,7 +209,7 @@
 			imageInfoProvider = new mw.mmv.provider.ImageInfo( api );
 
 		imageInfoProvider.get( file ).fail( function () {
-			assert.ok( true, 'promise rejected when imageinfo is missing' );
+			assert.true( true, 'promise rejected when imageinfo is missing' );
 			done();
 		} );
 	} );

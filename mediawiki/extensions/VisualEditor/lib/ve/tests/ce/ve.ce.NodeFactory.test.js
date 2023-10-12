@@ -16,8 +16,6 @@ ve.ce.NodeFactoryNodeStub.static.splitOnEnter = true;
 
 ve.ce.NodeFactoryNodeStub.static.name = 'node-factory-node-stub';
 
-ve.ce.NodeFactoryNodeStub.static.primaryCommandName = 'stubCommand';
-
 ve.ce.NodeFactoryNodeStub.static.getDescription = function () {
 	return 'description';
 };
@@ -37,14 +35,6 @@ QUnit.test( 'splitNodeOnEnter/getDescription', function ( assert ) {
 
 	assert.throws(
 		function () {
-			factory.getNodePrimaryCommandName( 'node-factory-node-stub' );
-		},
-		Error,
-		'throws an exception when calling getNodePrimaryCommandName on an unregistered type'
-	);
-
-	assert.throws(
-		function () {
 			factory.getDescription( new ve.dm.NodeFactoryNodeStub() );
 		},
 		Error,
@@ -60,12 +50,6 @@ QUnit.test( 'splitNodeOnEnter/getDescription', function ( assert ) {
 	);
 
 	assert.strictEqual(
-		factory.getNodePrimaryCommandName( 'node-factory-node-stub' ),
-		'stubCommand',
-		'getNodePrimaryCommandName'
-	);
-
-	assert.strictEqual(
 		factory.getDescription( new ve.dm.NodeFactoryNodeStub() ),
 		'description',
 		'getDescription'
@@ -73,5 +57,5 @@ QUnit.test( 'splitNodeOnEnter/getDescription', function ( assert ) {
 } );
 
 QUnit.test( 'initialization', function ( assert ) {
-	assert.ok( ve.ce.nodeFactory instanceof ve.ce.NodeFactory, 'factory is initialized at ve.ce.nodeFactory' );
+	assert.true( ve.ce.nodeFactory instanceof ve.ce.NodeFactory, 'factory is initialized at ve.ce.nodeFactory' );
 } );

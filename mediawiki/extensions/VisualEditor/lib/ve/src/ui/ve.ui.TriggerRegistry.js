@@ -30,17 +30,18 @@ OO.inheritClass( ve.ui.TriggerRegistry, OO.Registry );
  * The only supported platforms are 'mac' and 'pc'. All platforms not identified as 'mac' will be
  * considered to be 'pc', including 'win', 'linux', 'solaris', etc.
  *
- * @param {string|string[]} name Symbolic name or list of symbolic names
+ * @param {string|string[]} name Symbolic name or list of symbolic names. Will trigger a command with
+ *  the same name.
  * @param {ve.ui.Trigger[]|Object} triggers Trigger object(s) or map of trigger object(s) keyed by
  * platform name e.g. 'mac' or 'pc'
  * @throws {Error} Trigger must be an instance of ve.ui.Trigger
  * @throws {Error} Incomplete trigger
  */
 ve.ui.TriggerRegistry.prototype.register = function ( name, triggers ) {
-	var i, l, triggerList, trigger,
-		platform = ve.getSystemPlatform(),
+	var platform = ve.getSystemPlatform(),
 		platformKey = platform === 'mac' ? 'mac' : 'pc';
 
+	var triggerList;
 	if ( ve.isPlainObject( triggers ) ) {
 		if ( Object.prototype.hasOwnProperty.call( triggers, platformKey ) ) {
 			triggerList = Array.isArray( triggers[ platformKey ] ) ? triggers[ platformKey ] : [ triggers[ platformKey ] ];
@@ -52,8 +53,8 @@ ve.ui.TriggerRegistry.prototype.register = function ( name, triggers ) {
 	}
 
 	// Validate arguments
-	for ( i = 0, l = triggerList.length; i < l; i++ ) {
-		trigger = triggerList[ i ];
+	for ( var i = 0, l = triggerList.length; i < l; i++ ) {
+		var trigger = triggerList[ i ];
 		if ( !( triggerList[ i ] instanceof ve.ui.Trigger ) ) {
 			throw new Error( 'Trigger must be an instance of ve.ui.Trigger' );
 		}
@@ -276,6 +277,9 @@ ve.ui.triggerRegistry.register(
 		mac: new ve.ui.Trigger( 'cmd+enter' ),
 		pc: new ve.ui.Trigger( 'ctrl+enter' )
 	}
+);
+ve.ui.triggerRegistry.register(
+	'cancel', new ve.ui.Trigger( 'escape' )
 );
 ve.ui.triggerRegistry.register(
 	'focusContext', {

@@ -1,11 +1,11 @@
 module.exports = function () {
-	var done = arguments[ arguments.length - 1 ];
+	var veDone = arguments[ arguments.length - 1 ];
 
 	window.seleniumUtils = {
 		getBoundingRect: function ( elements ) {
-			var i, l, rect, boundingRect;
-			for ( i = 0, l = elements.length; i < l; i++ ) {
-				rect = elements[ i ].getBoundingClientRect();
+			var boundingRect;
+			for ( var i = 0, l = elements.length; i < l; i++ ) {
+				var rect = elements[ i ].getBoundingClientRect();
 				if ( !boundingRect ) {
 					boundingRect = {
 						left: rect.left,
@@ -114,7 +114,7 @@ module.exports = function () {
 			target.actionsToolbar.tools.notices.getPopup().toggle( false );
 			// Wait for save button fade
 			setTimeout( function () {
-				done( { width: window.innerWidth, height: window.innerHeight } );
+				veDone( { width: window.innerWidth, height: window.innerHeight } );
 			}, 100 );
 		} );
 	} );

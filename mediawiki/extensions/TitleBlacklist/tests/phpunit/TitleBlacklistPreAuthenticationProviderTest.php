@@ -1,19 +1,23 @@
 <?php
 
 use MediaWiki\Auth\AuthManager;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Extension\TitleBlacklist\TitleBlacklistAuthenticationRequest;
+use MediaWiki\Extension\TitleBlacklist\TitleBlacklistPreAuthenticationProvider;
+use MediaWiki\Tests\Unit\Auth\AuthenticationProviderTestTrait;
 
 /**
  * @group Database
- * @covers TitleBlacklistPreAuthenticationProvider
+ * @covers \MediaWiki\Extension\TitleBlacklist\TitleBlacklistPreAuthenticationProvider
  */
-class TitleBlacklistPreAuthenticationProviderTest extends MediaWikiTestCase {
+class TitleBlacklistPreAuthenticationProviderTest extends MediaWikiIntegrationTestCase {
+	use AuthenticationProviderTestTrait;
+
 	/**
 	 * @dataProvider provideGetAuthenticationRequests
 	 */
 	public function testGetAuthenticationRequests( $action, $username, $expectedReqs ) {
 		$provider = new TitleBlacklistPreAuthenticationProvider();
-		$provider->setManager( MediaWikiServices::getInstance()->getAuthManager() );
+		$this->initProvider( $provider, null, null, $this->getServiceContainer()->getAuthManager() );
 		$reqs = $provider->getAuthenticationRequests( $action, [ 'username' => $username ] );
 		$this->assertEquals( $expectedReqs, $reqs );
 	}

@@ -28,18 +28,34 @@ class CiteParserHooksTest extends \MediaWikiUnitTestCase {
 				[ 'references', $this->isType( 'callable' ) ]
 			);
 
-		CiteParserHooks::onParserFirstCallInit( $parser );
+		$citeParserHooks = new CiteParserHooks();
+		$citeParserHooks->onParserFirstCallInit( $parser );
 	}
 
 	/**
-	 * @covers ::onParserClearStateOrCloned
+	 * @covers ::onParserClearState
 	 */
-	public function testOnParserCloned() {
-		$parser = $this->createMock( Parser::class );
+	public function testOnParserClearState() {
+		$parser = $this->createParser();
 		$parser->extCite = $this->createMock( Cite::class );
 
+		$citeParserHooks = new CiteParserHooks();
 		/** @var Parser $parser */
-		CiteParserHooks::onParserClearStateOrCloned( $parser );
+		$citeParserHooks->onParserClearState( $parser );
+
+		$this->assertFalse( isset( $parser->extCite ) );
+	}
+
+	/**
+	 * @covers ::onParserCloned
+	 */
+	public function testOnParserCloned() {
+		$parser = $this->createParser();
+		$parser->extCite = $this->createMock( Cite::class );
+
+		$citeParserHooks = new CiteParserHooks();
+		/** @var Parser $parser */
+		$citeParserHooks->onParserCloned( $parser );
 
 		$this->assertFalse( isset( $parser->extCite ) );
 	}
@@ -56,7 +72,7 @@ class CiteParserHooksTest extends \MediaWikiUnitTestCase {
 		$parserOptions->method( 'getIsSectionPreview' )
 			->willReturn( false );
 
-		$parser = $this->createMock( Parser::class );
+		$parser = $this->createParser( [ 'getOptions', 'getOutput' ] );
 		$parser->method( 'getOptions' )
 			->willReturn( $parserOptions );
 		$parser->method( 'getOutput' )
@@ -64,7 +80,19 @@ class CiteParserHooksTest extends \MediaWikiUnitTestCase {
 		$parser->extCite = $cite;
 
 		$text = '';
-		CiteParserHooks::onParserAfterParse( $parser, $text, $this->createMock( StripState::class ) );
+		$citeParserHooks = new CiteParserHooks();
+		$citeParserHooks->onParserAfterParse( $parser, $text, $this->createMock( StripState::class ) );
+	}
+
+	/**
+	 * @param array $configurableMethods
+	 * @return Parser
+	 */
+	private function createParser( $configurableMethods = [] ) {
+		return $this->getMockBuilder( Parser::class )
+			->disableOriginalConstructor()
+			->onlyMethods( $configurableMethods )
+			->getMock();
 	}
 
 }

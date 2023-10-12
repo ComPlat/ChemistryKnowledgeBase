@@ -20,7 +20,12 @@ ve.ui.MWEditSummaryWidget = function VeUiMWEditSummaryWidget( config ) {
 	config = config || {};
 
 	// Parent method
-	ve.ui.MWEditSummaryWidget.super.apply( this, arguments );
+	ve.ui.MWEditSummaryWidget.super.call( this, ve.extendObject( {
+		inputFilter: function ( value ) {
+			// Prevent the user from inputting newlines (this kicks in on paste, etc.)
+			return value.replace( /\r?\n/g, ' ' );
+		}
+	}, config ) );
 
 	// Mixin method
 	OO.ui.mixin.LookupElement.call( this, ve.extendObject( {
@@ -41,14 +46,14 @@ OO.mixinClass( ve.ui.MWEditSummaryWidget, OO.ui.mixin.LookupElement );
 
 /* Static properties */
 
-ve.ui.MWEditSummaryWidget.static.summarySplitter = /^(\/\*.*?\*\/\s*)?(.*)$/;
+ve.ui.MWEditSummaryWidget.static.summarySplitter = /^(\/\*.*?\*\/\s*)?([^]*)$/;
 
 /* Static methods */
 
 /**
  * Split a summary into the section and the actual summary
  *
- * @param {string} summary Summary
+ * @param {string} summary
  * @return {Object} Object with section and comment string properties
  */
 ve.ui.MWEditSummaryWidget.static.splitSummary = function ( summary ) {
@@ -60,7 +65,7 @@ ve.ui.MWEditSummaryWidget.static.splitSummary = function ( summary ) {
 };
 
 /**
- * Filter a list of edit summaries to a specific query stirng
+ * Filter a list of edit summaries to a specific query string
  *
  * @param {string[]} summaries Edit summaries
  * @param {string} query User query
@@ -84,7 +89,7 @@ ve.ui.MWEditSummaryWidget.static.getMatchingSummaries = function ( summaries, qu
 				summaryPrefixMatches.push( summary );
 			}
 		} else if ( index !== -1 ) {
-			if ( lowerSummary[ index - 1 ].match( /\s/ ) ) {
+			if ( /\s/.test( lowerSummary[ index - 1 ] ) ) {
 				// Character before match is whitespace
 				wordPrefixMatches.push( summary );
 			} else {
@@ -96,6 +101,19 @@ ve.ui.MWEditSummaryWidget.static.getMatchingSummaries = function ( summaries, qu
 };
 
 /* Methods */
+
+/**
+ * @inheritdoc
+ */
+ve.ui.MWEditSummaryWidget.prototype.onKeyPress = function ( e ) {
+	if ( e.which === OO.ui.Keys.ENTER ) {
+		e.preventDefault();
+	}
+	// Grand-parent method
+	// Multi-line only fires 'enter' on ctrl+enter, but this should
+	// fire on plain enter as it behaves like a single line input.
+	OO.ui.TextInputWidget.prototype.onKeyPress.call( this, e );
+};
 
 /**
  * Get recent edit summaries for the logged in user
@@ -112,14 +130,17 @@ ve.ui.MWEditSummaryWidget.prototype.getSummaries = function () {
 				action: 'query',
 				list: 'usercontribs',
 				ucuser: mw.user.getName(),
-				ucprop: 'comment|title',
-				uclimit: 500,
-				format: 'json'
+				ucprop: 'comment',
+				uclimit: 500
 			} ).then( function ( response ) {
 				var usedComments = {},
 					changes = ve.getProp( response, 'query', 'usercontribs' ) || [];
 
 				return changes
+					// Filter out changes without comment (e.g. due to RevisionDelete)
+					.filter( function ( change ) {
+						return Object.prototype.hasOwnProperty.call( change, 'comment' );
+					} )
 					// Remove section /* headings */
 					.map( function ( change ) {
 						return splitSummary( change.comment ).comment.trim();

@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lokal Profil"
+		]
+	},
+	"urlgetparameters-desc": "Gör det möjligt att använda och/eller visa URL:ens \"GET\"-parametrar på en wikisida"
+}

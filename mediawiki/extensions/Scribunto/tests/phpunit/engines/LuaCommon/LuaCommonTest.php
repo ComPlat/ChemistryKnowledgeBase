@@ -1,17 +1,22 @@
 <?php
 
+use MediaWiki\Extension\Scribunto\ScribuntoException;
+
 /**
- * @covers ScribuntoEngineBase
+ * @covers \MediaWiki\Extension\Scribunto\ScribuntoEngineBase
  * @covers Scribunto_LuaEngine
- * @covers Scribunto_LuaStandaloneEngine
- * @covers Scribunto_LuaSandboxEngine
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaStandalone\LuaStandaloneEngine
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaSandbox\LuaSandboxEngine
  * @covers Scribunto_LuaInterpreter
- * @covers Scribunto_LuaStandaloneInterpreter
- * @covers Scribunto_LuaSandboxInterpreter
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaStandalone\LuaStandaloneInterpreter
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaSandbox\LuaSandboxInterpreter
+ * @group Database
  */
 class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
+	/** @inheritDoc */
 	protected static $moduleName = 'CommonTests';
 
+	/** @var string[] */
 	private static $allowedGlobals = [
 		// Functions
 		'assert',
@@ -49,26 +54,41 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		'_VERSION',
 	];
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
 		// Register libraries for self::testPHPLibrary()
-		$this->mergeMwGlobalArrayValue( 'wgHooks', [
-			'ScribuntoExternalLibraries' => [
-				function ( $engine, &$libs ) {
-					$libs += [
-						'CommonTestsLib' => [
-							'class' => Scribunto_LuaCommonTestsLibrary::class,
-							'deferLoad' => true,
-						],
-						'CommonTestsFailLib' => [
-							'class' => Scribunto_LuaCommonTestsFailLibrary::class,
-							'deferLoad' => true,
-						],
-					];
-				}
-			]
-		] );
+		$this->setTemporaryHook(
+			'ScribuntoExternalLibraries',
+			static function ( $engine, &$libs ) {
+				$libs += [
+					'CommonTestsLib' => [
+						'class' => Scribunto_LuaCommonTestsLibrary::class,
+						'deferLoad' => true,
+					],
+					'CommonTestsFailLib' => [
+						'class' => Scribunto_LuaCommonTestsFailLibrary::class,
+						'deferLoad' => true,
+					],
+				];
+			}
+		);
+
+		$status = $this->editPage(
+			Title::makeTitle( NS_MODULE, 'CommonTests-data.json' ),
+			file_get_contents( __DIR__ . '/CommonTests-data.json' )
+		);
+		if ( !$status->isOK() ) {
+			throw new \Exception( "Failed to create Module:CommonTests-data.json: " . $status->getWikitext() );
+		}
+		// Create a non-JSON/Module page for loadJsonData()
+		$status = $this->editPage(
+			Title::makeTitle( NS_HELP, 'Foo' ),
+			'help'
+		);
+		if ( !$status->isOK() ) {
+			throw new \Exception( "Failed to create Help:Foo: " . $status->getWikitext() );
+		}
 
 		// Note this depends on every iteration of the data provider running with a clean parser
 		$this->getEngine()->getParser()->getOptions()->setExpensiveParserFunctionLimit( 10 );
@@ -286,7 +306,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		$loadcount = 0;
 		$interpreter->callFunction(
 			$interpreter->loadString( 'mw.markLoaded = ...', 'fortest' ),
-			$interpreter->wrapPHPFunction( function () use ( &$loadcount ) {
+			$interpreter->wrapPHPFunction( static function () use ( &$loadcount ) {
 				$loadcount++;
 			} )
 		);
@@ -321,6 +341,31 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 				'return tostring( package.loaded["Module:TestLoadDataLoadedOnce-data"] )', 'getLoaded'
 			) ),
 			'data module was stored in top level\'s package.loaded'
+		);
+	}
+
+	public function testLoadJsonDataLoadedOnce() {
+		$this->extraModules['Module:TestLoadDataLoadedOnce'] = '
+			local data = mw.loadJsonData( "Module:CommonTests-data.json" )
+			return {
+				foo = function() end,
+			}
+		';
+
+		$engine = $this->getEngine();
+		$interpreter = $engine->getInterpreter();
+		$frame = $engine->getParser()->getPreprocessor()->newFrame();
+
+		// Make sure JSON data isn't parsed twice. Simulate several {{#invoke:}}s
+		$title = Title::makeTitle( NS_MODULE, 'TestLoadDataLoadedOnce' );
+		for ( $i = 0; $i < 10; $i++ ) {
+			$module = $engine->fetchModuleFromParser( $title );
+			$module->invoke( 'foo', $frame->newChild() );
+		}
+
+		$this->assertSame(
+			1, $this->templateLoadCounts['Module:CommonTests-data.json'],
+			'JSON data was loaded more than once'
 		);
 	}
 
@@ -438,7 +483,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		] + $args );
 		$this->assertSame(
 			'<pre style="margin-left: 1.6em">foo</pre>',
-			$parser->mStripState->unstripBoth( $ret['return'] ),
+			$parser->getStripState()->unstripBoth( $ret['return'] ),
 			'callParserFunction works for {{#tag:pre|foo|style=margin-left: 1.6em}}'
 		);
 
@@ -450,7 +495,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		] + $args );
 		$this->assertSame(
 			'<pre style="margin-left: 1.6em">foo</pre>',
-			$parser->mStripState->unstripBoth( $ret['return'] ),
+			$parser->getStripState()->unstripBoth( $ret['return'] ),
 			'extensionTag works for {{#tag:pre|foo|style=margin-left: 1.6em}}'
 		);
 
@@ -461,13 +506,13 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		] + $args );
 		$this->assertSame(
 			'<pre style="margin-left: 1.6em">foo</pre>',
-			$parser->mStripState->unstripBoth( $ret['return'] ),
+			$parser->getStripState()->unstripBoth( $ret['return'] ),
 			'extensionTag works for {{#tag:pre|foo|style=margin-left: 1.6em}}'
 		);
 
 		// Test calling a non-existent function
 		try {
-			$ret = $engine->runConsole( [
+			$engine->runConsole( [
 				'question' => '=mw.getCurrentFrame():callParserFunction{
 					name = "thisDoesNotExist", args = { "" }
 				}',
@@ -624,7 +669,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		$pp = $parser->getPreprocessor();
 
 		$count = 0;
-		$parser->setHook( 'scribuntocount', function ( $str, $argv, $parser, $frame ) use ( &$count ) {
+		$parser->setHook( 'scribuntocount', static function ( $str, $argv, $parser, $frame ) use ( &$count ) {
 			$frame->setVolatile();
 			return ++$count;
 		} );
@@ -648,7 +693,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		$count = 0;
 		$wikitext = "{{#invoke:TestVolatileCaching|$func}}";
 		$text = $frame->expand( $pp->preprocessToObj( "$wikitext $wikitext" ) );
-		$text = $parser->mStripState->unstripBoth( $text );
+		$text = $parser->getStripState()->unstripBoth( $text );
 		$this->assertTrue( $frame->isVolatile(), "Frame is marked volatile" );
 		$this->assertEquals( '1 2', $text, "Volatile wikitext was not cached" );
 	}
@@ -677,7 +722,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 
 		$frame = $pp->newFrame();
 		$text = $frame->expand( $pp->preprocessToObj( "{{#invoke:Bug65687|test|foo}}" ) );
-		$text = $parser->mStripState->unstripBoth( $text );
+		$text = $parser->getStripState()->unstripBoth( $text );
 		$this->assertEquals( 'ok', $text, 'mw.loadData allowed access to frame args' );
 	}
 
@@ -718,7 +763,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 			$text = $frame->expand( $pp->preprocessToObj(
 				"{{#invoke:Bug67498-$how|test|foo}} -- {{#invoke:Bug67498-$how|test|bar}}"
 			) );
-			$text = $parser->mStripState->unstripBoth( $text );
+			$text = $parser->getStripState()->unstripBoth( $text );
 			$text = explode( ' -- ', $text );
 			$this->assertEquals( 'foo foo', $text[0],
 				"mw.getCurrentFrame() failed from a module loaded $how"
@@ -763,7 +808,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 		$text = $frame->expand( $pp->preprocessToObj(
 			"{{#invoke:Outer|echo|oarg|{{#invoke:Inner|test|iarg}}}}"
 		) );
-		$text = $parser->mStripState->unstripBoth( $text );
+		$text = $parser->getStripState()->unstripBoth( $text );
 		$this->assertSame(
 			'(Outer: 1=oarg, 2=(Inner: mod_name=Module:Inner, mod_1=iarg, name=Module:Inner, 1=iarg))',
 			$text
@@ -825,7 +870,7 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 
 		$frame = $pp->newFrame();
 		$text = $frame->expand( $pp->preprocessToObj( ">{{#invoke:T236092|foo}}<" ) );
-		$text = $parser->mStripState->unstripBoth( $text );
+		$text = $parser->getStripState()->unstripBoth( $text );
 		$this->assertSame( '>false<', $text );
 	}
 
@@ -847,8 +892,8 @@ class Scribunto_LuaCommonTest extends Scribunto_LuaEngineTestBase {
 
 		$frame = $pp->newFrame();
 		$text = $frame->expand( $pp->preprocessToObj( ">{{#invoke:TestAddWarning|foo}}<" ) );
-		$text = $parser->mStripState->unstripBoth( $text );
+		$text = $parser->getStripState()->unstripBoth( $text );
 		$this->assertSame( '>ok<', $text );
-		$this->assertSame( [ 'Don\'t panic!' ], $parser->getOutput()->getWarnings() );
+		$this->assertSame( [ 'Script warning: Don\'t panic!' ], $parser->getOutput()->getWarnings() );
 	}
 }

@@ -1,5 +1,23 @@
 ## Release Notes
 
+### MediaWiki Bootstrap 4.6.2
+
+Released on June 6, 2023.
+
+* Allow using SCSS 3.x dependency (thanks @robis24)
+
+### MediaWiki Bootstrap 4.6.1
+
+Released on June 4, 2023.
+
+* Upgraded Bootstrap from 4.6.1 to 4.6.2 (thanks @malberts)
+
+### MediaWiki Bootstrap 4.6.0
+
+Released on March 30, 2022.
+
+* Upgraded Bootstrap from 4.6.0 to 4.6.1 (thanks @malberts)
+
 ### MediaWiki Bootstrap 4.5.0
 
 Released on April 10, 2021.
@@ -11,7 +29,7 @@ Released on April 10, 2021.
 
 Released on April 1, 2021.
 
-* Fixed issue about the registered version 
+* Fixed issue about the registered version
 
 ### MediaWiki Bootstrap 4.4.2
 
@@ -65,7 +83,7 @@ Released on April 29, 2019.
 Released on January 15, 2019,
 
 * Drop dependency on oyejorge/less.php compiler, just depend on the one used by
-  MediaWiki core instead 
+  MediaWiki core instead
 * Raise minimum MW version to 1.27+
 
 ### MediaWiki Bootstrap 1.2.4

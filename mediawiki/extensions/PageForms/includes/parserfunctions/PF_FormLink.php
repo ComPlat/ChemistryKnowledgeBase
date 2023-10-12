@@ -39,7 +39,8 @@ class PFFormLink {
 
 	public static function run( Parser $parser ) {
 		$params = func_get_args();
-		array_shift( $params ); // We don't need the parser.
+		// We don't need the parser.
+		array_shift( $params );
 		$str = self::createFormLink( $parser, $params );
 		return [ $str, 'noparse' => true, 'isHTML' => true ];
 	}
@@ -59,7 +60,7 @@ class PFFormLink {
 		$targetWindow = '_self';
 
 		// Needed for the 'next' icon.
-		$parser->getOutput()->addModules( 'oojs-ui.styles.icons-movement' );
+		$parser->getOutput()->addModules( [ 'oojs-ui.styles.icons-movement' ] );
 
 		// assign params
 		// - support unlabelled params, for backwards compatibility
@@ -93,7 +94,7 @@ class PFFormLink {
 			} elseif ( $param_name == 'tooltip' ) {
 				$inTooltip = Sanitizer::decodeCharReferences( $value );
 			} elseif ( $param_name == 'target' ) {
-				$inTargetName = $value;
+				$inTargetName = Sanitizer::decodeCharReferences( $value );
 			} elseif ( $param_name == null && $value == 'popup' ) {
 				self::loadScriptsForPopupForm( $parser );
 				$classStr = 'popupformlink';
@@ -108,7 +109,7 @@ class PFFormLink {
 			} elseif ( $param_name !== null ) {
 				$value = urlencode( $value );
 				parse_str( "$param_name=$value", $arr );
-				$inQueryArr = PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+				$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 				if ( $param_name == 'returnto' ) {
 					$hasReturnTo = true;
 				}
@@ -231,7 +232,7 @@ class PFFormLink {
 	}
 
 	public static function loadScriptsForPopupForm( Parser $parser ) {
-		$parser->getOutput()->addModules( 'ext.pageforms.popupformedit' );
+		$parser->getOutput()->addModules( [ 'ext.pageforms.popupformedit' ] );
 		return true;
 	}
 }

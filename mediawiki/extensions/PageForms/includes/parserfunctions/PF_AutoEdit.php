@@ -17,12 +17,19 @@
  * or link.
  */
 
+use MediaWiki\MediaWikiServices;
+
 class PFAutoEdit {
 	public static function run( Parser $parser ) {
 		global $wgPageFormsAutoeditNamespaces;
 
-		$parser->getOutput()->addModules( 'ext.pageforms.autoedit' );
-		$parser->getOutput()->preventClickjacking( true );
+		$parser->getOutput()->addModules( [ 'ext.pageforms.autoedit' ] );
+		if ( method_exists( $parser->getOutput(), 'setPreventClickjacking' ) ) {
+			// MW 1.38+
+			$parser->getOutput()->setPreventClickjacking( true );
+		} else {
+			$parser->getOutput()->preventClickjacking( true );
+		}
 
 		// Set defaults.
 		$formcontent = '';
@@ -34,11 +41,23 @@ class PFAutoEdit {
 		$inTooltip = null;
 		$inQueryArr = [];
 		$editTime = null;
+		$latestRevId = null;
 		$confirmEdit = false;
+		$redirect = '';
+		$bringToPage = false;
+		$linkToPage = '#';
 
 		// Parse parameters.
 		$params = func_get_args();
-		array_shift( $params ); // don't need the parser
+		// We don't need the parser.
+		array_shift( $params );
+
+		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
+			// MW 1.36+
+			$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
+		} else {
+			$wikiPageFactory = null;
+		}
 
 		foreach ( $params as $param ) {
 			$elements = explode( '=', $param, 2 );
@@ -65,7 +84,7 @@ class PFAutoEdit {
 				case 'confirm':
 					$confirmEdit = true;
 					break;
-				case 'query string' :
+				case 'query string':
 					$inQueryArr = self::convertQueryString( $value, $inQueryArr );
 					break;
 
@@ -73,7 +92,7 @@ class PFAutoEdit {
 				case 'error text':
 					// do not parse ok text or error text yet. Will be parsed on api call
 					$arr = [ $key => $value ];
-					$inQueryArr = PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+					$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 					break;
 				case 'tooltip':
 					$inTooltip = Sanitizer::decodeCharReferences( $value );
@@ -83,7 +102,7 @@ class PFAutoEdit {
 				case 'title':
 					$value = $parser->recursiveTagParse( $value );
 					$arr = [ $key => $value ];
-					$inQueryArr = PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+					$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 
 					$targetTitle = Title::newFromText( $value );
 
@@ -96,16 +115,40 @@ class PFAutoEdit {
 							$errorMsg = wfMessage( 'pf-autoedit-invalidnamespace', $targetTitle->getNsText() )->parse();
 							return Html::element( 'div', [ 'class' => 'error' ], $errorMsg );
 						}
-						$targetWikiPage = WikiPage::factory( $targetTitle );
+						if ( $wikiPageFactory !== null ) {
+							// MW 1.36+
+							$targetWikiPage = $wikiPageFactory->newFromTitle( $targetTitle );
+						} else {
+							$targetWikiPage = WikiPage::factory( $targetTitle );
+						}
 						$targetWikiPage->clear();
 						$editTime = $targetWikiPage->getTimestamp();
+						$latestRevId = $targetWikiPage->getLatest();
 					}
+					break;
+				case 'redirect':
+					$redirect = $value;
+					break;
+				case 'bring to page':
+					$bringToPage = true;
+					break;
 
 				default:
 					$value = $parser->recursiveTagParse( $value );
 					$arr = [ $key => $value ];
-					$inQueryArr = PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+					$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 			}
+		}
+
+		if ( $redirect != '' && $bringToPage ) {
+			$errorMsg = wfMessage( 'pf_autoedit_notsettogether', 'redirect', 'bring to page' )->parse();
+			return Html::element( 'div', [ 'class' => 'error' ], $errorMsg );
+		}
+
+		if ( $redirect != '' ) {
+			$linkToPage = $redirect;
+		} elseif ( $bringToPage ) {
+			$linkToPage = $targetTitle->getFullURL();
 		}
 
 		// query string has to be turned into hidden inputs.
@@ -128,7 +171,8 @@ class PFAutoEdit {
 			$attrs = [
 				'flags' => 'progressive',
 				'label' => $linkString,
-				'classes' => [ $classString ]
+				'classes' => [ $classString ],
+				'href' => $linkToPage
 			];
 			if ( $inTooltip != null ) {
 				$attrs['title'] = $inTooltip;
@@ -137,7 +181,7 @@ class PFAutoEdit {
 			OutputPage::setupOOUI();
 			$linkElement = new OOUI\ButtonWidget( $attrs );
 		} elseif ( $linkType == 'link' ) {
-			$attrs = [ 'class' => $classString, 'href' => "#" ];
+			$attrs = [ 'class' => $classString, 'href' => $linkToPage ];
 			if ( $inTooltip != null ) {
 				$attrs['title'] = $inTooltip;
 			}
@@ -158,6 +202,9 @@ class PFAutoEdit {
 
 		if ( $editTime !== null ) {
 			$formcontent .= Html::hidden( 'wpEdittime', $editTime );
+		}
+		if ( $latestRevId !== null ) {
+			$formcontent .= Html::hidden( 'editRevId', $latestRevId );
 		}
 
 		if ( $confirmEdit ) {
@@ -188,10 +235,11 @@ class PFAutoEdit {
 		// and do the same for -=
 		// This way, parse_str won't strip out the += and -=
 		$queryString = preg_replace( "/\[([^\]]+)\]\s*(\+|-)=/", "[$1$2]=", $queryString );
-		$queryString = str_replace( '+', '%2B', $queryString ); // prevent decoding + to space character
+		// Prevent "decoding" + into a space character
+		$queryString = str_replace( '+', '%2B', $queryString );
 
 		parse_str( $queryString, $arr );
 
-		return PFUtils::array_merge_recursive_distinct( $inQueryArr, $arr );
+		return PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 	}
 }

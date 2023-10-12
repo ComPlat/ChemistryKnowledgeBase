@@ -171,18 +171,8 @@ ve.ce.View.prototype.setLive = function ( live ) {
 };
 
 /**
- * Check if the node is inside a contentEditable node
- *
- * @return {boolean} Node is inside a contentEditable node
- */
-ve.ce.View.prototype.isInContentEditable = function () {
-	return ve.isContentEditable( this.$element[ 0 ].parentNode );
-};
-
-/**
  * Get a resolved URL from a model attribute.
  *
- * @abstract
  * @param {string} key Attribute name whose value is a URL
  * @return {string} URL resolved according to the document's base
  */

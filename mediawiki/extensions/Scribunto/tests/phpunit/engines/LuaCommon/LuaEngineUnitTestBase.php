@@ -1,5 +1,8 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestSuite;
+
 /**
  * This is the subclass for Lua library tests. It will automatically run all
  * tests against LuaSandbox and LuaStandalone.
@@ -9,13 +12,17 @@
  * - getTestModules(): Add a mapping from $moduleName to the file containing
  *   the code.
  */
-abstract class Scribunto_LuaEngineUnitTestBase extends \PHPUnit\Framework\TestCase {
+abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
 	use MediaWikiCoversValidator;
 	use Scribunto_LuaEngineTestHelper;
 
+	/** @var string|null */
 	private static $staticEngineName = null;
+	/** @var string|null */
 	private $engineName = null;
+	/** @var Scribunto_LuaEngine|null */
 	private $engine = null;
+	/** @var Scribunto_LuaDataProvider|null */
 	private $luaDataProvider = null;
 
 	/**
@@ -61,13 +68,13 @@ abstract class Scribunto_LuaEngineUnitTestBase extends \PHPUnit\Framework\TestCa
 	/**
 	 * Create a PHPUnit test suite to run the test against all engines
 	 * @param string $className Test class name
-	 * @return \PHPUnit\Framework\TestSuite
+	 * @return TestSuite
 	 */
 	public static function suite( $className ) {
 		return self::makeSuite( $className );
 	}
 
-	protected function tearDown() : void {
+	protected function tearDown(): void {
 		if ( $this->luaDataProvider ) {
 			$this->luaDataProvider->destroy();
 			$this->luaDataProvider = null;

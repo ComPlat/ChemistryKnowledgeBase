@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (C) 2018 Kunal Mehta <legoktm@member.fsf.org>
+ * Copyright (C) 2018 Kunal Mehta <legoktm@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,21 @@
 namespace MediaWiki\SecureLinkFixer\Test;
 
 use MediaWiki\SecureLinkFixer\Hooks;
-use MediaWikiTestCase;
+use MediaWikiIntegrationTestCase;
 
 /**
  * @covers \MediaWiki\SecureLinkFixer\Hooks
  */
-class HooksTest extends MediaWikiTestCase {
+class HooksTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider provideOnLinkerMakeExternalLink
 	 */
 	public function testOnLinkerMakeExternalLink( $input, $expected ) {
-		Hooks::onLinkerMakeExternalLink( $input );
+		$hooks = new Hooks( $this->getServiceContainer()->getService( 'HSTSPreloadLookup' ) );
+		$dummy = '';
+		$dummy2 = [];
+		$hooks->onLinkerMakeExternalLink( $input, $dummy, $dummy, $dummy2, $dummy );
 		$this->assertSame( $expected, $input );
 	}
 

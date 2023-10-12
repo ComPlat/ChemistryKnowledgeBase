@@ -119,16 +119,15 @@ ve.dm.Annotation.prototype.getComparableObject = function () {
  * @return {Object} An object all HTML attributes except data-parsoid & RESTBase IDs
  */
 ve.dm.Annotation.prototype.getComparableHtmlAttributes = function () {
-	var comparableAttributes, metadataIdRegExp,
-		domElements = this.store && this.getOriginalDomElements( this.store );
+	var domElements = this.store && this.getOriginalDomElements( this.store );
 
 	if ( domElements && domElements[ 0 ] ) {
-		comparableAttributes = ve.getDomAttributes( domElements[ 0 ] );
+		var comparableAttributes = ve.getDomAttributes( domElements[ 0 ] );
 		delete comparableAttributes[ 'data-parsoid' ];
 
 		if ( comparableAttributes.id ) {
-			metadataIdRegExp = ve.init.platform.getMetadataIdRegExp();
-			if ( metadataIdRegExp && comparableAttributes.id.match( metadataIdRegExp ) ) {
+			var metadataIdRegExp = ve.init.platform.getMetadataIdRegExp();
+			if ( metadataIdRegExp && metadataIdRegExp.test( comparableAttributes.id ) ) {
 				delete comparableAttributes.id;
 			}
 		}
@@ -203,4 +202,22 @@ ve.dm.Annotation.prototype.compareToForSerialization = function ( annotation ) {
 		this.getComparableObjectForSerialization(),
 		annotation.getComparableObjectForSerialization()
 	);
+};
+
+/**
+ * Describe the addition of this annotation to some text
+ *
+ * @return {Array} Descriptions, list of strings or Node arrays
+ */
+ve.dm.Annotation.prototype.describeAdded = function () {
+	return [];
+};
+
+/**
+ * Describe the removal of this annotation from some text
+ *
+ * @return {Array} Descriptions, list of strings or Node arrays
+ */
+ve.dm.Annotation.prototype.describeRemoved = function () {
+	return [];
 };

@@ -2,15 +2,20 @@
 	"@metadata": {
 		"authors": [
 			"Amire80",
+			"Patriot Kor",
 			"Patriot Kur",
 			"Гусейн"
 		]
 	},
 	"smw_finallistconjunct": ", ијән",
 	"smw_printername_list": "Сијоһи",
-	"smw_printername_template": "Ғәлиб",
+	"smw_printername_template": "Шаблон",
 	"smw_printername_category": "Kateqoriya",
+	"smw_exportrdf_submit": "İxroc",
 	"smw_purge": "Тожә кардеј",
-	"browse": "Səhifon diyəkə",
-	"smw-admin-supplementary-elastic-version-info": "Versiyə"
+	"browse": "Səhifon dijə karde",
+	"smw-admin-supplementary-elastic-version-info": "Versiya",
+	"smw-format-datatable-toolbar-export": "İxroc",
+	"smw-entity-examiner-deferred-fake": "Pesoxtə",
+	"smw-listingcontinuesabbrev": "dəvom"
 }

@@ -3,12 +3,9 @@
 use Composer\Semver\Semver;
 use MediaWiki\Shell\Shell;
 use MediaWiki\ShellDisabledError;
-use Wikimedia\AtEase\AtEase;
 use Wikimedia\ScopedCallback;
 
 /**
- * ExtensionRegistry class
- *
  * The Registry loads JSON files, and uses a Processor
  * to extract information from them. It also registers
  * classes with the autoloader.
@@ -42,7 +39,7 @@ class ExtensionRegistry {
 	/**
 	 * Bump whenever the registration cache needs resetting
 	 */
-	private const CACHE_VERSION = 7;
+	private const CACHE_VERSION = 8;
 
 	private const CACHE_EXPIRY = 60 * 60 * 24;
 
@@ -59,6 +56,7 @@ class ExtensionRegistry {
 	private const LAZY_LOADED_ATTRIBUTES = [
 		'TrackingCategories',
 		'QUnitTestModules',
+		'SkinLessImportPaths',
 	];
 
 	/**
@@ -68,7 +66,7 @@ class ExtensionRegistry {
 	 * by ExtensionProcessor::CREDIT_ATTRIBS (plus a 'path' key that
 	 * points to the skin or extension JSON file).
 	 *
-	 * This info may be accessed via via ExtensionRegistry::getAllThings.
+	 * This info may be accessed via ExtensionRegistry::getAllThings.
 	 *
 	 * @var array[]
 	 */
@@ -77,7 +75,7 @@ class ExtensionRegistry {
 	/**
 	 * List of paths that should be loaded
 	 *
-	 * @var array
+	 * @var int[]
 	 */
 	protected $queued = [];
 
@@ -111,6 +109,13 @@ class ExtensionRegistry {
 	protected $lazyAttributes = [];
 
 	/**
+	 * The hash of cache-varying options, lazy-initialised
+	 *
+	 * @var string|null
+	 */
+	private $varyHash;
+
+	/**
 	 * Whether to check dev-requires
 	 *
 	 * @var bool
@@ -130,6 +135,11 @@ class ExtensionRegistry {
 	private static $instance;
 
 	/**
+	 * @var ?BagOStuff
+	 */
+	private $cache = null;
+
+	/**
 	 * @codeCoverageIgnore
 	 * @return ExtensionRegistry
 	 */
@@ -142,11 +152,24 @@ class ExtensionRegistry {
 	}
 
 	/**
+	 * Set the cache to use for extension info.
+	 * Intended for use during testing.
+	 *
+	 * @internal
+	 *
+	 * @param BagOStuff $cache
+	 */
+	public function setCache( BagOStuff $cache ): void {
+		$this->cache = $cache;
+	}
+
+	/**
 	 * @since 1.34
 	 * @param bool $check
 	 */
 	public function setCheckDevRequires( $check ) {
 		$this->checkDev = $check;
+		$this->invalidateProcessCache();
 	}
 
 	/**
@@ -168,9 +191,8 @@ class ExtensionRegistry {
 
 		$mtime = $wgExtensionInfoMTime;
 		if ( $mtime === false ) {
-			AtEase::suppressWarnings();
-			$mtime = filemtime( $path );
-			AtEase::restoreWarnings();
+			// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+			$mtime = @filemtime( $path );
 			// @codeCoverageIgnoreStart
 			if ( $mtime === false ) {
 				$err = error_get_last();
@@ -179,32 +201,55 @@ class ExtensionRegistry {
 			}
 		}
 		$this->queued[$path] = $mtime;
+		$this->invalidateProcessCache();
 	}
 
-	private function getCache() : BagOStuff {
-		// Can't call MediaWikiServices here, as we must not cause services
-		// to be instantiated before extensions have loaded.
-		return ObjectCache::makeLocalServerCache();
+	private function getCache(): BagOStuff {
+		if ( !$this->cache ) {
+			// Can't call MediaWikiServices here, as we must not cause services
+			// to be instantiated before extensions have loaded.
+			return ObjectCache::makeLocalServerCache();
+		}
+
+		return $this->cache;
 	}
 
 	private function makeCacheKey( BagOStuff $cache, $component, ...$extra ) {
-		// Everything we vary the cache on
-		$vary = [
-			'registration' => self::CACHE_VERSION,
-			'mediawiki' => MW_VERSION,
-			'abilities' => $this->getAbilities(),
-			'checkDev' => $this->checkDev,
-			'queue' => $this->queued,
-		];
-
 		// Allow reusing cached ExtensionRegistry metadata between wikis (T274648)
 		return $cache->makeGlobalKey(
 			"registration-$component",
-			// We vary the cache on the current queue (what will be or already was loaded)
-			// plus various versions of stuff for VersionChecker
-			md5( json_encode( $vary ) ),
+			$this->getVaryHash(),
 			...$extra
 		);
+	}
+
+	/**
+	 * Get the cache varying hash
+	 *
+	 * @return string
+	 */
+	private function getVaryHash() {
+		if ( $this->varyHash === null ) {
+			// We vary the cache on the current queue (what will be or already was loaded)
+			// plus various versions of stuff for VersionChecker
+			$vary = [
+				'registration' => self::CACHE_VERSION,
+				'mediawiki' => MW_VERSION,
+				'abilities' => $this->getAbilities(),
+				'checkDev' => $this->checkDev,
+				'queue' => $this->queued,
+			];
+			$this->varyHash = md5( json_encode( $vary ) );
+		}
+		return $this->varyHash;
+	}
+
+	/**
+	 * Invalidate the cache of the vary hash and the lazy options.
+	 */
+	private function invalidateProcessCache() {
+		$this->varyHash = null;
+		$this->lazyAttributes = [];
 	}
 
 	/**
@@ -269,7 +314,7 @@ class ExtensionRegistry {
 	 * Get the current load queue. Not intended to be used
 	 * outside of the installer.
 	 *
-	 * @return array
+	 * @return int[] Map of extension.json files' modification timestamps keyed by absolute path
 	 */
 	public function getQueue() {
 		return $this->queued;
@@ -281,6 +326,7 @@ class ExtensionRegistry {
 	 */
 	public function clearQueue() {
 		$this->queued = [];
+		$this->invalidateProcessCache();
 	}
 
 	/**
@@ -303,7 +349,7 @@ class ExtensionRegistry {
 	}
 
 	/**
-	 * Queries information about the software environment and constructs an appropiate version checker
+	 * Queries information about the software environment and constructs an appropriate version checker
 	 *
 	 * @return VersionChecker
 	 */
@@ -326,15 +372,14 @@ class ExtensionRegistry {
 	/**
 	 * Process a queue of extensions and return their extracted data
 	 *
-	 * @param array $queue keys are filenames, values are ignored
+	 * @internal since 1.39. Extensions should use ExtensionProcessor instead.
+	 *
+	 * @param int[] $queue keys are filenames, values are ignored
 	 * @return array extracted info
 	 * @throws Exception
 	 * @throws ExtensionDependencyError
 	 */
 	public function readFromQueue( array $queue ) {
-		$autoloadClasses = [];
-		$autoloadNamespaces = [];
-		$autoloaderPaths = [];
 		$processor = new ExtensionProcessor();
 		$versionChecker = $this->buildVersionChecker();
 		$extDependencies = [];
@@ -364,23 +409,6 @@ class ExtensionRegistry {
 				throw new Exception( "$path: unsupported manifest_version: {$version}" );
 			}
 
-			$dir = dirname( $path );
-			self::exportAutoloadClassesAndNamespaces(
-				$dir,
-				$info,
-				$autoloadClasses,
-				$autoloadNamespaces
-			);
-
-			if ( $this->loadTestClassesAndNamespaces ) {
-				self::exportTestAutoloadClassesAndNamespaces(
-					$dir,
-					$info,
-					$autoloadClasses,
-					$autoloadNamespaces
-				);
-			}
-
 			// get all requirements/dependencies for this extension
 			$requires = $processor->getRequirements( $info, $this->checkDev );
 
@@ -389,14 +417,10 @@ class ExtensionRegistry {
 				$extDependencies[$info['name']] = $requires;
 			}
 
-			// Get extra paths for later inclusion
-			$autoloaderPaths = array_merge( $autoloaderPaths,
-				$processor->getExtraAutoloaderPaths( $dir, $info ) );
 			// Compatible, read and extract info
 			$processor->extractInfo( $path, $info, $version );
 		}
-		
-		$data = $processor->getExtractedInfo();
+		$data = $processor->getExtractedInfo( $this->loadTestClassesAndNamespaces );
 		$data['warnings'] = $warnings;
 
 		// check for incompatible extensions
@@ -408,57 +432,7 @@ class ExtensionRegistry {
 			throw new ExtensionDependencyError( $incompatible );
 		}
 
-		// FIXME: It was a design mistake to handle autoloading separately (T240535)
-		$data['globals']['wgAutoloadClasses'] = $autoloadClasses;
-		$data['autoloaderPaths'] = $autoloaderPaths;
-		$data['autoloaderNS'] = $autoloadNamespaces;
 		return $data;
-	}
-
-	/**
-	 * Export autoload classes and namespaces for a given directory and parsed JSON info file.
-	 *
-	 * @param string $dir
-	 * @param array $info
-	 * @param array &$autoloadClasses
-	 * @param array &$autoloadNamespaces
-	 */
-	public static function exportAutoloadClassesAndNamespaces(
-		$dir, $info, &$autoloadClasses = [], &$autoloadNamespaces = []
-	) {
-		if ( isset( $info['AutoloadClasses'] ) ) {
-			$autoload = self::processAutoLoader( $dir, $info['AutoloadClasses'] );
-			// @phan-suppress-next-line PhanUndeclaredVariableAssignOp
-			$GLOBALS['wgAutoloadClasses'] += $autoload;
-			$autoloadClasses += $autoload;
-		}
-		if ( isset( $info['AutoloadNamespaces'] ) ) {
-			$autoloadNamespaces += self::processAutoLoader( $dir, $info['AutoloadNamespaces'] );
-			AutoLoader::$psr4Namespaces += $autoloadNamespaces;
-		}
-	}
-
-	/**
-	 * Export test autoload classes and namespaces for a given directory and parsed JSON info file.
-	 *
-	 * @since 1.35
-	 * @param string $dir
-	 * @param array $info
-	 * @param array &$autoloadClasses
-	 * @param array &$autoloadNamespaces
-	 */
-	public static function exportTestAutoloadClassesAndNamespaces(
-		$dir, $info, &$autoloadClasses = [], &$autoloadNamespaces = []
-	) {
-		if ( isset( $info['TestAutoloadClasses'] ) ) {
-			$autoload = self::processAutoLoader( $dir, $info['TestAutoloadClasses'] );
-			$GLOBALS['wgAutoloadClasses'] += $autoload;
-			$autoloadClasses += $autoload;
-		}
-		if ( isset( $info['TestAutoloadNamespaces'] ) ) {
-			$autoloadNamespaces += self::processAutoLoader( $dir, $info['TestAutoloadNamespaces'] );
-			AutoLoader::$psr4Namespaces += $autoloadNamespaces;
-		}
 	}
 
 	protected function exportExtractedData( array $info ) {
@@ -470,6 +444,13 @@ class ExtensionRegistry {
 				unset( $val[self::MERGE_STRATEGY] );
 			} else {
 				$mergeStrategy = 'array_merge';
+			}
+
+			if ( $mergeStrategy === 'provide_default' ) {
+				if ( !array_key_exists( $key, $GLOBALS ) ) {
+					$GLOBALS[$key] = $val;
+				}
+				continue;
 			}
 
 			// Optimistic: If the global is not set, or is an empty array, replace it entirely.
@@ -489,7 +470,7 @@ class ExtensionRegistry {
 					$GLOBALS[$key] = array_merge_recursive( $GLOBALS[$key], $val );
 					break;
 				case 'array_replace_recursive':
-					$GLOBALS[$key] = array_replace_recursive( $GLOBALS[$key], $val );
+					$GLOBALS[$key] = array_replace_recursive( $val, $GLOBALS[$key] );
 					break;
 				case 'array_plus_2d':
 					$GLOBALS[$key] = wfArrayPlus2d( $GLOBALS[$key], $val );
@@ -506,7 +487,11 @@ class ExtensionRegistry {
 		}
 
 		if ( isset( $info['autoloaderNS'] ) ) {
-			AutoLoader::$psr4Namespaces += $info['autoloaderNS'];
+			AutoLoader::registerNamespaces( $info['autoloaderNS'] );
+		}
+
+		if ( isset( $info['autoloaderClasses'] ) ) {
+			AutoLoader::registerClasses( $info['autoloaderClasses'] );
 		}
 
 		foreach ( $info['defines'] as $name => $val ) {
@@ -519,10 +504,8 @@ class ExtensionRegistry {
 			}
 		}
 
-		foreach ( $info['autoloaderPaths'] as $path ) {
-			if ( file_exists( $path ) ) {
-				require_once $path;
-			}
+		if ( isset( $info['autoloaderPaths'] ) ) {
+			AutoLoader::loadFiles( $info['autoloaderPaths'] );
 		}
 
 		$this->loaded += $info['credits'];
@@ -549,7 +532,7 @@ class ExtensionRegistry {
 	 * Whether a thing has been loaded
 	 * @param string $name
 	 * @param string $constraint The required version constraint for this dependency
-	 * @throws LogicException if a specific contraint is asked for,
+	 * @throws LogicException if a specific constraint is asked for,
 	 *                        but the extension isn't versioned
 	 * @return bool
 	 */
@@ -594,12 +577,16 @@ class ExtensionRegistry {
 		if ( isset( $this->testAttributes[$name] ) ) {
 			return $this->testAttributes[$name];
 		}
+		if ( isset( $this->lazyAttributes[$name] ) ) {
+			return $this->lazyAttributes[$name];
+		}
 
 		// See if it's in the cache
 		$cache = $this->getCache();
 		$key = $this->makeCacheKey( $cache, 'lazy-attrib', $name );
 		$data = $cache->get( $key );
 		if ( $data !== false ) {
+			$this->lazyAttributes[$name] = $data;
 			return $data;
 		}
 
@@ -613,6 +600,7 @@ class ExtensionRegistry {
 		$result = $this->readFromQueue( $paths );
 		$data = $result['attributes'][$name] ?? [];
 		$this->saveToCache( $cache, $result );
+		$this->lazyAttributes[$name] = $data;
 
 		return $data;
 	}
@@ -653,7 +641,7 @@ class ExtensionRegistry {
 	 * Fully expand autoloader paths
 	 *
 	 * @param string $dir
-	 * @param array $files
+	 * @param string[] $files
 	 * @return array
 	 */
 	protected static function processAutoLoader( $dir, array $files ) {

@@ -12,9 +12,12 @@
  * @extends ve.init.Target
  *
  * @constructor
- * @param {Object} [config] Configuration options
+ * @param {Object} config
+ * @cfg {string[]} [surfaceClasses=[]] Surface classes to apply
  */
 ve.init.mw.Target = function VeInitMwTarget( config ) {
+	this.surfaceClasses = config.surfaceClasses || [];
+
 	// Parent constructor
 	ve.init.mw.Target.super.call( this, config );
 
@@ -145,6 +148,17 @@ ve.init.mw.Target.static.integrationType = null;
  */
 ve.init.mw.Target.static.platformType = null;
 
+/**
+ * Enable conversion of formatted text to wikitext in source mode
+ *
+ * Unstable, temporary flag.
+ *
+ * @static
+ * @property {boolean}
+ * @inheritable
+ */
+ve.init.mw.Target.static.convertToWikitextOnPaste = true;
+
 /* Static Methods */
 
 /**
@@ -189,12 +203,12 @@ ve.init.mw.Target.prototype.createModelFromDom = function () {
  * @param {string} documentString
  * @param {string} mode
  * @param {string|null} [section] Section. Use null to unwrap all sections.
- * @param {boolean} [onlySection] Only return the requested section, otherwise returns the
+ * @param {boolean} [onlySection=false] Only return the requested section, otherwise returns the
  *  whole document with just the requested section still wrapped (visual mode only).
  * @return {HTMLDocument|string} HTML document, or document string (source mode)
  */
 ve.init.mw.Target.static.parseDocument = function ( documentString, mode, section, onlySection ) {
-	var doc, sectionNode;
+	var doc;
 	if ( mode === 'source' ) {
 		// Parent method
 		doc = ve.init.mw.Target.super.static.parseDocument.call( this, documentString, mode );
@@ -203,7 +217,7 @@ ve.init.mw.Target.static.parseDocument = function ( documentString, mode, sectio
 		doc = ve.parseXhtml( documentString );
 		if ( section !== undefined ) {
 			if ( onlySection ) {
-				sectionNode = doc.body.querySelector( '[data-mw-section-id="' + section + '"]' );
+				var sectionNode = doc.body.querySelector( '[data-mw-section-id="' + section + '"]' );
 				doc.body.innerHTML = '';
 				if ( sectionNode ) {
 					doc.body.appendChild( sectionNode );
@@ -215,8 +229,24 @@ ve.init.mw.Target.static.parseDocument = function ( documentString, mode, sectio
 		}
 		// Strip legacy IDs, for example in section headings
 		mw.libs.ve.stripParsoidFallbackIds( doc.body );
+		// Re-duplicate deduplicated TemplateStyles, for correct rendering when editing a section or
+		// when templates are removed during the edit
+		mw.libs.ve.reduplicateStyles( doc.body );
 		// Fix relative or missing base URL if needed
 		this.fixBase( doc );
+		// Test: Remove tags injected by plugins during parse (T298147)
+		Array.prototype.forEach.call( doc.querySelectorAll( 'script' ), function ( element ) {
+			function truncate( text, l ) {
+				return text.length > l ? text.slice( 0, l ) + '…' : text;
+			}
+			var errorMessage = 'DOM content matching deny list found during parse:\n' + truncate( element.outerHTML, 100 ) +
+				'\nContext:\n' + truncate( element.parentNode.outerHTML, 200 );
+			mw.log.error( errorMessage );
+			var err = new Error( errorMessage );
+			err.name = 'VeDomDenyListWarning';
+			mw.errorLogger.logError( err, 'error.visualeditor' );
+			element.parentNode.removeChild( element );
+		} );
 	}
 
 	return doc;
@@ -261,6 +291,15 @@ ve.init.mw.Target.prototype.getHtml = function ( newDoc, oldDoc ) {
 ve.init.mw.Target.prototype.track = function () {};
 
 /**
+ * Get a list of CSS classes to be added to surfaces, and target widget surfaces
+ *
+ * @return {string[]} CSS classes
+ */
+ve.init.mw.Target.prototype.getSurfaceClasses = function () {
+	return this.surfaceClasses;
+};
+
+/**
  * @inheritdoc
  */
 ve.init.mw.Target.prototype.createTargetWidget = function ( config ) {
@@ -268,7 +307,8 @@ ve.init.mw.Target.prototype.createTargetWidget = function ( config ) {
 		// Reset to visual mode for target widgets
 		modes: [ 'visual' ],
 		defaultMode: 'visual',
-		toolbarGroups: this.toolbarGroups
+		toolbarGroups: this.toolbarGroups,
+		surfaceClasses: this.getSurfaceClasses()
 	}, config ) );
 };
 
@@ -276,10 +316,8 @@ ve.init.mw.Target.prototype.createTargetWidget = function ( config ) {
  * @inheritdoc
  */
 ve.init.mw.Target.prototype.createSurface = function ( dmDoc, config ) {
-	var importRules;
-
 	if ( config && config.mode === 'source' ) {
-		importRules = ve.copy( this.constructor.static.importRules );
+		var importRules = ve.copy( this.constructor.static.importRules );
 		importRules.all = importRules.all || {};
 		// Preserve empty linebreaks on paste in source editor
 		importRules.all.keepEmptyContentBranches = true;
@@ -298,11 +336,13 @@ ve.init.mw.Target.prototype.createSurface = function ( dmDoc, config ) {
 ve.init.mw.Target.prototype.getSurfaceConfig = function ( config ) {
 	// If we're not asking for a specific mode's config, use the default mode.
 	config = ve.extendObject( { mode: this.defaultMode }, config );
+	// eslint-disable-next-line mediawiki/class-doc
 	return ve.init.mw.Target.super.prototype.getSurfaceConfig.call( this, ve.extendObject( {
 		// Provide the wikitext versions of the registries, if we're using source mode
 		commandRegistry: config.mode === 'source' ? ve.ui.wikitextCommandRegistry : ve.ui.commandRegistry,
 		sequenceRegistry: config.mode === 'source' ? ve.ui.wikitextSequenceRegistry : ve.ui.sequenceRegistry,
-		dataTransferHandlerFactory: config.mode === 'source' ? ve.ui.wikitextDataTransferHandlerFactory : ve.ui.dataTransferHandlerFactory
+		dataTransferHandlerFactory: config.mode === 'source' ? ve.ui.wikitextDataTransferHandlerFactory : ve.ui.dataTransferHandlerFactory,
+		classes: this.getSurfaceClasses()
 	}, config ) );
 };
 
@@ -315,10 +355,8 @@ ve.init.mw.Target.prototype.setupSurface = function ( doc ) {
 	var target = this;
 	setTimeout( function () {
 		// Build model
-		var dmDoc;
-
 		target.track( 'trace.convertModelFromDom.enter' );
-		dmDoc = target.constructor.static.createModelFromDom( doc, target.getDefaultMode() );
+		var dmDoc = target.constructor.static.createModelFromDom( doc, target.getDefaultMode() );
 		target.track( 'trace.convertModelFromDom.exit' );
 
 		// Build DM tree now (otherwise it gets lazily built when building the CE tree)
@@ -336,8 +374,7 @@ ve.init.mw.Target.prototype.setupSurface = function ( doc ) {
  * @inheritdoc
  */
 ve.init.mw.Target.prototype.addSurface = function () {
-	var surface,
-		target = this;
+	var target = this;
 
 	// Clear dummy surfaces
 	// TODO: Move to DesktopArticleTarget
@@ -346,10 +383,12 @@ ve.init.mw.Target.prototype.addSurface = function () {
 	// Create ui.Surface (also creates ce.Surface and dm.Surface and builds CE tree)
 	this.track( 'trace.createSurface.enter' );
 	// Parent method
-	surface = ve.init.mw.Target.super.prototype.addSurface.apply( this, arguments );
+	var surface = ve.init.mw.Target.super.prototype.addSurface.apply( this, arguments );
 	// Add classes specific to surfaces attached directly to the target,
 	// as opposed to TargetWidget surfaces
-	surface.$element.addClass( 've-init-mw-target-surface' );
+	if ( !surface.inTargetWidget ) {
+		surface.$element.addClass( 've-init-mw-target-surface' );
+	}
 	this.track( 'trace.createSurface.exit' );
 
 	this.setSurface( surface );
@@ -383,19 +422,44 @@ ve.init.mw.Target.prototype.setSurface = function ( surface ) {
 };
 
 /**
- * Intiailise autosave, recovering changes if applicable
+ * Intialise autosave, recovering changes if applicable
+ *
+ * @param {Object} [config] Configuration options
+ * @cfg {boolean} [suppressNotification=false] Don't notify the user if changes are recovered
+ * @cfg {string} [docId] Document ID for storage grouping
+ * @cfg {ve.init.SafeStorage} [storage] Storage interface
  */
-ve.init.mw.Target.prototype.initAutosave = function () {
-	var target = this,
-		surfaceModel = this.getSurface().getModel();
+ve.init.mw.Target.prototype.initAutosave = function ( config ) {
+	var target = this;
+
+	// Old function signature
+	// TODO: Remove after fixed downstream
+	if ( typeof config === 'boolean' ) {
+		config = { suppressNotification: config };
+	} else {
+		config = config || {};
+	}
+
+	var surfaceModel = this.getSurface().getModel();
+
+	if ( config.docId ) {
+		surfaceModel.setAutosaveDocId( config.docId );
+	}
+
+	if ( config.storage ) {
+		surfaceModel.setStorage( config.storage );
+	}
+
 	if ( this.recovered ) {
 		// Restore auto-saved transactions if document state was recovered
 		try {
 			surfaceModel.restoreChanges();
-			ve.init.platform.notify(
-				ve.msg( 'visualeditor-autosave-recovered-text' ),
-				ve.msg( 'visualeditor-autosave-recovered-title' )
-			);
+			if ( !config.suppressNotification ) {
+				ve.init.platform.notify(
+					ve.msg( 'visualeditor-autosave-recovered-text' ),
+					ve.msg( 'visualeditor-autosave-recovered-title' )
+				);
+			}
 		} catch ( e ) {
 			mw.log.warn( e );
 			ve.init.platform.notify(
@@ -500,22 +564,22 @@ ve.init.mw.Target.prototype.refreshUser = function ( doc ) {
 /**
  * Get a wikitext fragment from a document
  *
- * @param {ve.dm.Document} doc Document
+ * @param {ve.dm.Document} doc
  * @param {boolean} [useRevision=true] Whether to use the revision ID + ETag
  * @return {jQuery.Promise} Abortable promise which resolves with a wikitext string
  */
 ve.init.mw.Target.prototype.getWikitextFragment = function ( doc, useRevision ) {
-	var xhr, params;
-
 	// Shortcut for empty document
 	if ( !doc.data.hasContent() ) {
 		return ve.createDeferred().resolve( '' );
 	}
 
-	params = {
+	var params = {
 		action: 'visualeditoredit',
 		paction: 'serialize',
-		html: ve.dm.converter.getDomFromModel( doc ).body.innerHTML,
+		html: mw.libs.ve.targetSaver.getHtml(
+			ve.dm.converter.getDomFromModel( doc )
+		),
 		page: this.getPageName()
 	};
 
@@ -524,7 +588,7 @@ ve.init.mw.Target.prototype.getWikitextFragment = function ( doc, useRevision ) 
 		params.etag = this.etag;
 	}
 
-	xhr = this.getContentApi( doc ).postWithToken( 'csrf',
+	var xhr = this.getContentApi( doc ).postWithToken( 'csrf',
 		params,
 		{ contentType: 'multipart/form-data' }
 	);
@@ -540,7 +604,7 @@ ve.init.mw.Target.prototype.getWikitextFragment = function ( doc, useRevision ) 
 /**
  * Parse a fragment of wikitext into HTML
  *
- * @param {string} wikitext Wikitext
+ * @param {string} wikitext
  * @param {boolean} pst Perform pre-save transform
  * @param {ve.dm.Document} [doc] Parse for a specific document, defaults to current surface's
  * @return {jQuery.Promise} Abortable promise
@@ -573,7 +637,9 @@ ve.init.mw.Target.prototype.getPageName = function () {
  *
  * @param {ve.dm.Document} [doc] API for a specific document, should default to document of current surface.
  * @param {Object} [options] API options
- * @return {mw.Api} API object
+ * @param {Object} [options.parameters] Default query parameters for all API requests. Defaults
+ *  include action=query, format=json, and formatversion=2 if not specified otherwise.
+ * @return {mw.Api}
  */
 ve.init.mw.Target.prototype.getContentApi = function ( doc, options ) {
 	options = options || {};
@@ -588,7 +654,7 @@ ve.init.mw.Target.prototype.getContentApi = function ( doc, options ) {
  * associated with the current user.
  *
  * @param {Object} [options] API options
- * @return {mw.Api} API object
+ * @return {mw.Api}
  */
 ve.init.mw.Target.prototype.getLocalApi = function ( options ) {
 	options = options || {};

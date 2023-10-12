@@ -24,17 +24,17 @@ class DisableOATHAuthForUser extends Maintenance {
 
 		$user = User::newFromName( $username );
 		if ( $user && $user->getId() === 0 ) {
-			$this->error( "User $username doesn't exist!", 1 );
+			$this->fatalError( "User $username doesn't exist!" );
 		}
 
 		$repo = MediaWikiServices::getInstance()->getService( 'OATHUserRepository' );
 		$oathUser = $repo->findByUser( $user );
 		$module = $oathUser->getModule();
 		if ( !( $module instanceof IModule ) || $module->isEnabled( $oathUser ) === false ) {
-			$this->error( "User $username doesn't have OATHAuth enabled!", 1 );
+			$this->fatalError( "User $username doesn't have OATHAuth enabled!" );
 		}
 
-		$repo->remove( $oathUser, 'Maintenance script' );
+		$repo->remove( $oathUser, 'Maintenance script', false );
 		// Kill all existing sessions. If this disable was social-engineered by an attacker,
 		// the legitimate user will hopefully login again and notice that the second factor
 		// is missing or different, and alert the operators.

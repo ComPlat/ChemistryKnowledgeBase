@@ -6,9 +6,9 @@
  */
 
 /**
- * Link action.
+ * Citation action.
  *
- * Opens either MWLinkAnnotationInspector or MWLinkNodeInspector depending on what is selected.
+ * Opens the {@see ve.ui.MWCitationDialog} (via it's name "cite") in VisualEditor.
  *
  * @class
  * @extends ve.ui.Action
@@ -28,9 +28,6 @@ OO.inheritClass( ve.ui.MWCitationAction, ve.ui.Action );
 
 ve.ui.MWCitationAction.static.name = 'mwcite';
 
-/**
- * @inheritdoc
- */
 ve.ui.MWCitationAction.static.methods = [ 'open' ];
 
 /* Methods */

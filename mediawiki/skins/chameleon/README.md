@@ -1,6 +1,6 @@
 # Chameleon skin
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ProfessionalWiki/chameleon/CI/master)](https://github.com/ProfessionalWiki/chameleon/actions?query=workflow%3ACI)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ProfessionalWiki/chameleon/ci.yml?branch=master)](https://github.com/ProfessionalWiki/chameleon/actions?query=workflow%3ACI)
 [![Latest Stable Version](https://poser.pugx.org/mediawiki/chameleon-skin/version.png)](https://packagist.org/packages/mediawiki/chameleon-skin)
 [![Packagist download count](https://poser.pugx.org/mediawiki/chameleon-skin/d/total.png)](https://packagist.org/packages/mediawiki/chameleon-skin)
 
@@ -38,11 +38,11 @@ talk page on MediaWiki.org][chameleon-talk]. For direct contact with the maintai
 please use [our contact form][contact-form].
 
 Finally there are the MediaWiki IRC channel (Server: [libera.chat][irc],
-Channel: #mediawiki) and the [MediaWiki mailing list][mw-ml]. 
+Channel: #mediawiki) and the [MediaWiki mailing list][mw-ml].
 
 ## Professional Support
 
-Chameleon is maintained by [Professional.Wiki](https://professional.wiki).
+Chameleon is maintained by [Professional Wiki](https://professional.wiki).
 You can [contract us][contact-form] to help you with installation or customization of Chameleon.
 We also do development work.
 

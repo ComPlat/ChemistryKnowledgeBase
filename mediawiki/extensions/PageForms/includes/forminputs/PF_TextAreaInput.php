@@ -12,6 +12,10 @@ class PFTextAreaInput extends PFFormInput {
 
 	protected $mEditor = null;
 
+	public static function getName(): string {
+		return 'textarea';
+	}
+
 	public static function getDefaultCargoTypes() {
 		return [
 			'Text' => [],
@@ -48,8 +52,7 @@ class PFTextAreaInput extends PFFormInput {
 		if (
 			array_key_exists( 'editor', $this->mOtherArgs ) &&
 			$this->mOtherArgs['editor'] == 'wikieditor' &&
-			in_array( 'ext.wikiEditor', $wgOut->getResourceLoader()->getModuleNames() ) &&
-			class_exists( 'WikiEditorHooks' )
+			in_array( 'ext.wikiEditor', $wgOut->getResourceLoader()->getModuleNames() )
 		) {
 			$this->mEditor = 'wikieditor';
 			$this->addJsInitFunctionData( 'window.ext.wikieditor.init' );
@@ -88,10 +91,6 @@ class PFTextAreaInput extends PFFormInput {
 		} else {
 			$this->mOtherArgs['class'] = $newClasses;
 		}
-	}
-
-	public static function getName() {
-		return 'textarea';
 	}
 
 	public static function getDefaultPropTypes() {
@@ -190,12 +189,9 @@ class PFTextAreaInput extends PFFormInput {
 		$input_id = $this->mInputName == 'pf_free_text' ? 'pf_free_text' : "input_$wgPageFormsFieldNum";
 
 		if ( $this->mEditor == 'wikieditor' ) {
-			global $wgTitle, $wgOut;
-			if ( $wgTitle !== null ) {
-				$article = new Article( $wgTitle );
-				$editPage = new EditPage( $article );
-				WikiEditorHooks::editPageShowEditFormInitial( $editPage, $wgOut );
-			}
+			global $wgOut;
+			$wgOut->addModuleStyles( 'ext.wikiEditor.styles' );
+			$wgOut->addModules( 'ext.wikiEditor' );
 			$className = 'wikieditor ';
 		} elseif ( $this->mEditor == 'visualeditor' ) {
 			$className = 'visualeditor ';
@@ -276,6 +272,9 @@ class PFTextAreaInput extends PFFormInput {
 		if ( array_key_exists( 'feeds to map', $this->mOtherArgs ) ) {
 			global $wgPageFormsMapsWithFeeders;
 			$targetMapName = $this->mOtherArgs['feeds to map'];
+			if ( array_key_exists( 'part_of_multiple', $this->mOtherArgs ) ) {
+				$targetMapName = str_replace( '[', '[num][', $targetMapName );
+			}
 			$wgPageFormsMapsWithFeeders[$targetMapName] = true;
 			$textarea_attrs['data-feeds-to-map'] = $targetMapName;
 		}
@@ -287,7 +286,7 @@ class PFTextAreaInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		$textarea_attrs = $this->getTextAreaAttributes();
 
 		$text = Html::element( 'textarea', $textarea_attrs, $this->mCurrentValue );
@@ -313,13 +312,24 @@ class PFTextAreaInput extends PFFormInput {
 			// which is fine in a regular edit page, but not good
 			// in a form. So we add a "max height" value, which in
 			// turn gets processed by VEForAll into true CSS.
+			$maxHeightNumOnly = true;
 			if ( array_key_exists( 'max height', $this->mOtherArgs ) ) {
-				$maxHeight = (int)$this->mOtherArgs['max height'];
+				$maxHeightStr = $this->mOtherArgs['max height'];
+				if ( substr( $maxHeightStr, -2 ) == 'em' || substr( $maxHeightStr, -2 ) == 'vh' ) {
+					$maxHeightNumOnly = false;
+					$maxHeight = $maxHeightStr;
+				} else {
+					$maxHeight = (int)$maxHeightStr;
+				}
 			} else {
 				$config = RequestContext::getMain()->getConfig();
 				$maxHeight = $config->get( 'PageFormsVisualEditorMaxHeight' );
 			}
-			$spanAttrs['data-max-height'] = $maxHeight . 'px';
+			if ( $maxHeightNumOnly ) {
+				$spanAttrs['data-max-height'] = $maxHeight . 'px';
+			} else {
+				$spanAttrs['data-max-height'] = $maxHeight;
+			}
 		}
 
 		$text = Html::rawElement( 'span', $spanAttrs, $text );

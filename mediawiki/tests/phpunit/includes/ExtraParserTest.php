@@ -1,6 +1,7 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Interwiki\ClassicInterwikiLookup;
+use MediaWiki\MainConfigNames;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -15,18 +16,17 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 	/** @var Parser */
 	protected $parser;
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
-		$this->setMwGlobals( [
-			'wgShowExceptionDetails' => true,
-			'wgCleanSignatures' => true,
-		] );
 		$this->setUserLang( 'en' );
-		$this->setContentLang( 'en' );
+		$this->overrideConfigValues( [
+			MainConfigNames::ShowExceptionDetails => true,
+			MainConfigNames::CleanSignatures => true,
+			MainConfigNames::LanguageCode => 'en',
+		] );
 
-		$services = MediaWikiServices::getInstance();
-
+		$services = $this->getServiceContainer();
 		$contLang = $services->getContentLanguage();
 
 		// FIXME: This test should pass without setting global content language
@@ -53,7 +53,7 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @covers Parser::braceSubstitution
-	 * @covers SpecialPageFactory::capturePath
+	 * @covers \MediaWiki\SpecialPage\SpecialPageFactory::capturePath
 	 */
 	public function testSpecialPageTransclusionRestoresGlobalState() {
 		$text = "{{Special:ApiHelp/help}}";
@@ -61,13 +61,9 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 		$options = ParserOptions::newFromUser( new User() );
 
 		RequestContext::getMain()->setTitle( $title );
-		RequestContext::getMain()->getWikiPage()->CustomTestProp = true;
 
 		$parsed = $this->parser->parse( $text, $title, $options )->getText();
 		$this->assertStringContainsString( 'apihelp-header', $parsed );
-
-		// Verify that this property wasn't wiped out by the parse
-		$this->assertTrue( RequestContext::getMain()->getWikiPage()->CustomTestProp );
 	}
 
 	/**
@@ -94,8 +90,16 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 			new User(),
 			$this->options
 		);
-
 		$this->assertEquals( "Test\nContent of ''Template:Foo''\n{{Bar}}", $outputText );
+
+		$outputText = $this->parser->preSaveTransform(
+			"hello\n\n{{subst:ns:0}}",
+			$title,
+			new User(),
+			$this->options
+		);
+		$this->assertEquals( "hello", $outputText,
+			"Pre-save transform removes trailing whitespace after substituting templates" );
 	}
 
 	/**
@@ -127,9 +131,8 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 	 * @covers Parser::cleanSig
 	 */
 	public function testCleanSigDisabled() {
-		$this->setMwGlobals( 'wgCleanSignatures', false );
+		$this->overrideConfigValue( MainConfigNames::CleanSignatures, false );
 
-		$title = Title::newFromText( __FUNCTION__ );
 		$outputText = $this->parser->cleanSig( "{{Foo}} ~~~~" );
 
 		$this->assertEquals( "{{Foo}} ~~~~", $outputText );
@@ -225,7 +228,7 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 		$cat = Title::makeTitleSafe( NS_CATEGORY, $catName );
 		$expected = [ $cat->getDBkey() ];
 		$parserOutput = $this->parser->parse( "[[file:nonexistent]]", $title, $this->options );
-		$result = $parserOutput->getCategoryLinks();
+		$result = $parserOutput->getCategoryNames();
 		$this->assertEquals( $expected, $result );
 	}
 
@@ -236,7 +239,7 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 		// Special pages shouldn't have tracking cats.
 		$title = SpecialPage::getTitleFor( 'Contributions' );
 		$parserOutput = $this->parser->parse( "[[file:nonexistent]]", $title, $this->options );
-		$result = $parserOutput->getCategoryLinks();
+		$result = $parserOutput->getCategoryNames();
 		$this->assertSame( [], $result );
 	}
 
@@ -245,29 +248,26 @@ class ExtraParserTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideParseLinkParameter
 	 */
 	public function testParseLinkParameter( $input, $expected, $expectedLinks, $desc ) {
-		$this->setTemporaryHook( 'InterwikiLoadPrefix', function ( $prefix, &$iwData ) {
-			static $testInterwikis = [
-				'local' => [
-					'iw_url' => 'http://doesnt.matter.invalid/$1',
-					'iw_api' => '',
-					'iw_wikiid' => '',
-					'iw_local' => 0
-				],
-				'mw' => [
-					'iw_url' => 'https://www.mediawiki.org/wiki/$1',
-					'iw_api' => 'https://www.mediawiki.org/w/api.php',
-					'iw_wikiid' => '',
-					'iw_local' => 0
-				]
-			];
-			if ( array_key_exists( $prefix, $testInterwikis ) ) {
-				$iwData = $testInterwikis[$prefix];
-			}
-
-			// We only want to rely on the above fixtures
-			return false;
-		} );
-
+		static $testInterwikis = [
+			[
+				'iw_prefix' => 'local',
+				'iw_url' => 'http://doesnt.matter.invalid/$1',
+				'iw_api' => '',
+				'iw_wikiid' => '',
+				'iw_local' => 0
+			],
+			[
+				'iw_prefix' => 'mw',
+				'iw_url' => 'https://www.mediawiki.org/wiki/$1',
+				'iw_api' => 'https://www.mediawiki.org/w/api.php',
+				'iw_wikiid' => '',
+				'iw_local' => 0
+			]
+		];
+		$this->overrideConfigValue(
+			MainConfigNames::InterwikiCache,
+			ClassicInterwikiLookup::buildCdbHash( $testInterwikis )
+		);
 		Title::clearCaches();
 		$this->parser->startExternalParse(
 			Title::newFromText( __FUNCTION__ ),

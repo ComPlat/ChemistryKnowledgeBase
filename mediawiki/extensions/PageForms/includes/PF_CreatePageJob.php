@@ -31,7 +31,12 @@ class PFCreatePageJob extends Job {
 			return false;
 		}
 
-		$wikiPage = WikiPage::factory( $this->title );
+		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
+			// MW 1.36+
+			$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->title );
+		} else {
+			$wikiPage = WikiPage::factory( $this->title );
+		}
 		if ( !$wikiPage ) {
 			$this->error = 'pageFormsCreatePage: Wiki page not found "' . $this->title->getPrefixedDBkey() . '"';
 			return false;
@@ -55,28 +60,16 @@ class PFCreatePageJob extends Job {
 
 		// It's strange that doEditContent() doesn't automatically
 		// attach the 'bot' flag when the user is a bot...
-		// @TODO - is all this code still necessary for MW 1.32+?
+		// @TODO - is all this code still necessary?
 		$flags = 0;
-		if ( method_exists( 'MediaWiki\Permissions\PermissionManager', 'userHasRight' ) ) {
-			// MW 1.34+
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-			if ( $permissionManager->userHasRight( $user, 'bot' ) ) {
-				$flags = EDIT_FORCE_BOT;
-			}
-		} else {
-			if ( $user->isAllowed( 'bot' ) ) {
-				$flags = EDIT_FORCE_BOT;
-			}
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		if ( $permissionManager->userHasRight( $user, 'bot' ) ) {
+			$flags = EDIT_FORCE_BOT;
 		}
 
-		if ( class_exists( 'MediaWiki\Storage\PageUpdater' ) ) {
-			// MW 1.32+
-			$updater = $wikiPage->newPageUpdater( $user );
-			$updater->setContent( MediaWiki\Storage\SlotRecord::MAIN, $newContent );
-			$updater->saveRevision( CommentStoreComment::newUnsavedComment( $editSummary ), $flags );
-		} else {
-			$wikiPage->doEditContent( $newContent, $editSummary, $flags, $originalRevId = false, $user );
-		}
+		$updater = $wikiPage->newPageUpdater( $user );
+		$updater->setContent( MediaWiki\Revision\SlotRecord::MAIN, $newContent );
+		$updater->saveRevision( CommentStoreComment::newUnsavedComment( $editSummary ), $flags );
 	}
 
 }

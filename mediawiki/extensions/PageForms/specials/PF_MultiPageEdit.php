@@ -12,6 +12,8 @@
  * @author Yaron Koren
  */
 
+use MediaWiki\Revision\RevisionRecord;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -32,7 +34,6 @@ class PFMultiPageEdit extends QueryPage {
 		// Check permissions.
 		if ( !$this->getUser()->isAllowed( 'multipageedit' ) ) {
 			$this->displayRestrictionError();
-			return;
 		}
 
 		$this->mTemplate = $this->getRequest()->getText( 'template' );
@@ -57,7 +58,6 @@ class PFMultiPageEdit extends QueryPage {
 	 */
 	private function displaySpreadsheet( $template_name, $form_name ) {
 		global $wgPageFormsGridParams, $wgPageFormsScriptPath;
-		global $wgPageFormsAutocompleteValues, $wgPageFormsMaxLocalAutocompleteValues;
 
 		$out = $this->getOutput();
 		$req = $this->getRequest();
@@ -79,13 +79,20 @@ class PFMultiPageEdit extends QueryPage {
 			$gridParamValues = [ 'name' => $templateField->getFieldName() ];
 			$gridParamValues['title'] = $templateField->getLabel();
 			$gridParamValues['type'] = 'text';
-			if ( !empty( $allowedValues = $templateField->getPossibleValues() ) ) {
-				$gridParamValues['values'] = $allowedValues;
+			$possibleValues = $templateField->getPossibleValues();
+			$fieldType = $templateField->getFieldType();
+			$propertyType = $templateField->getPropertyType();
+			if ( $templateField->isList() ) {
+				$autocompletedatatype = '';
+				$autocompletesettings = '';
+				$gridParamValues['type'] = 'text';
+			} elseif ( !empty( $possibleValues ) ) {
+				$gridParamValues['values'] = $possibleValues;
 				if ( $templateField->isList() ) {
 					$gridParamValues['list'] = true;
 					$gridParamValues['delimiter'] = $templateField->getDelimiter();
 				}
-			} elseif ( !empty( $fieldType = $templateField->getFieldType() ) ) {
+			} elseif ( !empty( $fieldType ) ) {
 				if ( $fieldType == 'Date' ) {
 					$gridParamValues['type'] = 'date';
 				} elseif ( $fieldType == 'Datetime' ) {
@@ -100,17 +107,14 @@ class PFMultiPageEdit extends QueryPage {
 						$gridParamValues['delimiter'] = $templateField->getDelimiter();
 					} else {
 						$gridParamValues['type'] = 'combobox';
+						$gridParamValues['inputType'] = 'combobox';
 					}
 					$fullCargoField = $templateField->getFullCargoField();
-					$autocompleteValues = PFValuesUtils::getAutocompleteValues( $fullCargoField, 'cargo field' );
+					// these attributes would be utilised for the autocompletion
 					$gridParamValues['autocompletesettings'] = $fullCargoField;
-					if ( count( $autocompleteValues ) > $wgPageFormsMaxLocalAutocompleteValues ) {
-						$gridParamValues['autocompletedatatype'] = 'cargo field';
-					} else {
-						$wgPageFormsAutocompleteValues[$fullCargoField] = $autocompleteValues;
-					}
+					$gridParamValues['autocompletedatatype'] = 'cargo field';
 				}
-			} elseif ( !empty( $propertyType = $templateField->getPropertyType() ) ) {
+			} elseif ( !empty( $propertyType ) ) {
 				if ( $propertyType == '_dat' ) {
 					$gridParamValues['type'] = 'date';
 				} elseif ( $propertyType == '_boo' ) {
@@ -123,16 +127,12 @@ class PFMultiPageEdit extends QueryPage {
 						$gridParamValues['delimiter'] = $templateField->getDelimiter();
 					} else {
 						$gridParamValues['type'] = 'combobox';
+						$gridParamValues['inputType'] = 'combobox';
 					}
 					$property = $templateField->getSemanticProperty();
-					$autocompleteValues = PFValuesUtils::getAutocompleteValues( $property, 'property' );
+					// these attributes would be utilised for the autocompletion
 					$gridParamValues['autocompletesettings'] = $property;
-					if ( count( $autocompleteValues ) > $wgPageFormsMaxLocalAutocompleteValues ) {
-						$gridParamValues['autocompletedatatype'] = 'property';
-					} else {
-						$wgPageFormsAutocompleteValues[$property] = $autocompleteValues;
-					}
-
+					$gridParamValues['autocompletedatatype'] = 'property';
 				}
 			}
 			$gridParams[] = $gridParamValues;
@@ -146,7 +146,7 @@ class PFMultiPageEdit extends QueryPage {
 			'height' => '500px',
 			'editMultiplePages' => true
 		];
-		$text .= Html::element( 'p', null, wfMessage( 'pf-spreadsheet-addrowinstructions' )->parse() );
+		$text .= Html::element( 'p', null, $this->msg( 'pf-spreadsheet-addrowinstructions' )->parse() );
 		$loadingImage = Html::element( 'img', [ 'src' => "$wgPageFormsScriptPath/skins/loading.gif" ] );
 		$loadingImageDiv = '<div class="loadingImage">' . $loadingImage . '</div>';
 		$text .= Html::rawElement( 'div', $templateDivAttrs, $loadingImageDiv );
@@ -175,7 +175,7 @@ class PFMultiPageEdit extends QueryPage {
 			[],
 			[]
 		);
-		while ( $row = $dbr->fetchRow( $res ) ) {
+		while ( $row = $res->fetchRow() ) {
 			$this->findTemplatesForForm( $row['page_title'] );
 		}
 	}
@@ -213,8 +213,7 @@ class PFMultiPageEdit extends QueryPage {
 
 	function findTemplatesForForm( $formName ) {
 		$formTitle = Title::makeTitle( PF_NS_FORM, $formName );
-		$formWikiPage = WikiPage::factory( $formTitle );
-		$formContent = $formWikiPage->getContent( Revision::RAW )->getNativeData();
+		$formContent = PFUtils::getPageText( $formTitle, RevisionRecord::RAW );
 		$start_position = 0;
 		while ( $brackets_loc = strpos( $formContent, '{{{', $start_position ) ) {
 			$brackets_end_loc = strpos( $formContent, "}}}", $brackets_loc );

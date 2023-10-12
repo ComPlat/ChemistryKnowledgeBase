@@ -10,6 +10,10 @@
 class PFTextWithAutocompleteInput extends PFTextInput {
 	private static $alias;
 
+	public static function getName(): string {
+		return 'text with autocomplete';
+	}
+
 	public function __construct( $input_number, $cur_value, $input_name, $disabled, array $other_args ) {
 		parent::__construct( $input_number, $cur_value, $input_name, $disabled, $other_args );
 		$isList = ( array_key_exists( 'is_list', $other_args ) && $other_args['is_list'] == true );
@@ -18,10 +22,6 @@ class PFTextWithAutocompleteInput extends PFTextInput {
 		} else {
 			self::$alias = 'PFComboBoxInput';
 		}
-	}
-
-	public static function getName() {
-		return 'text with autocomplete';
 	}
 
 	public static function getDefaultPropTypes() {
@@ -98,7 +98,7 @@ class PFTextWithAutocompleteInput extends PFTextInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,
@@ -107,4 +107,17 @@ class PFTextWithAutocompleteInput extends PFTextInput {
 			$this->mOtherArgs
 		);
 	}
+
+	public function getResourceModuleNames() {
+		// It would have been better to call the getResourceModuleNames()
+		// methods for these two classes directly, but that's a little
+		// tricky to do because (for no good reason) this is not a
+		// static method.
+		if ( self::$alias == 'PFTokensInput' ) {
+			return [];
+		} else {
+			return [ 'ext.pageforms.ooui.combobox' ];
+		}
+	}
+
 }

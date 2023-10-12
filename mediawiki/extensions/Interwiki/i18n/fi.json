@@ -11,13 +11,15 @@
 			"Pyscowicz",
 			"Stryn",
 			"Valtlait",
-			"VezonThunder"
+			"Veikk0.ma",
+			"VezonThunder",
+			"Valtlai"
 		]
 	},
 	"interwiki": "Wikienväliset linkit",
 	"interwiki-title-norights": "Katso interwiki-tietoja",
 	"interwiki-desc": "Lisää [[Special:Interwiki|toimintosivun]], jonka avulla voi katsoa ja muokata interwiki-taulua.",
-	"interwiki_intro": "Tämä on yleiskatsaus interwiki-taulusta, joka määrittää etuliitteet, joiden avulla voi nopeasti linkittää muihin wikeihin ja ulkoisiin sivustoihin. [//www.mediawiki.org/wiki/Extension:Interwiki MediaWiki.org:issa sijaitsevassa oppaassa] on lisätietoa suositellusta käytöstä.",
+	"interwiki_intro": "Tämä on yleiskatsaus interwiki-taulukosta, jossa määriteltyjen etuliitteiden avulla voi nopeasti linkittää muihin wikeihin ja ulkoisiin sivustoihin. [https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:Interwiki MediaWiki.org:issa sijaitsevassa oppaassa] on lisätietoa suositelluista käyttötavoista.",
 	"interwiki-legend-label": "Selite",
 	"interwiki_prefix": "Etuliite",
 	"interwiki-prefix-label": "Etuliite:",
@@ -29,7 +31,7 @@
 	"interwiki_local_1_intro": "Ulkoiset HTTP-pyynnöt paikalliseen wikiin käyttäen tätä interwiki-etuliitettä ohjataan interwiki-kohteen osoitteeseen (eli kohdellaan kuin linkkejä paikallisiin sivuihin)",
 	"interwiki_trans": "Sisällytä",
 	"interwiki-trans-label": "Sisällytä",
-	"interwiki_trans_1_intro": "Jos wikitekstin syntaksia <code>{<nowiki />{etuliite:<em>sivun nimi</em>}}</code> käytetään, salli mallineiden/sivujen sisällytys ulkoisesta wikistä, jos interwiki-sisällytykset on sallittu yleisesti ([//www.mediawiki.org/wiki/Manual:$wgEnableScaryTranscluding ”scary transclusion”]).",
+	"interwiki_trans_1_intro": "Jos wikitekstin syntaksia <code>{<nowiki />{etuliite:<em>sivun nimi</em>}}</code> käytetään, salli mallineiden/sivujen sisällytys ulkoisesta wikistä, jos interwiki-sisällytykset on sallittu yleisesti ([https://www.mediawiki.org/wiki/Special:MyLanguage/Manual:$wgEnableScaryTranscluding ”scary transclusion”]).",
 	"interwiki_trans_0_intro": "Älä salli mallineiden/sivujen sisällyttämistä ulkoisesta wikistä <code>{<nowiki />{etuliite:<em>sivunnimi</em>}}</code>-syntaksilla; etsi sen sijaan paikallista sivua malline-nimiavaruudesta.",
 	"interwiki_1": "kyllä",
 	"interwiki_0": "ei",

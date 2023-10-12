@@ -2,11 +2,10 @@
 namespace DIQA\FacetedSearch;
 
 use Exception;
-use JobQueueGroup;
+use IDatabase;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
-use ParserOptions;
 use Sanitizer;
 use SMW\DataTypeRegistry;
 use SMW\DIProperty as SMWDIProperty;
@@ -99,136 +98,152 @@ class FSSolrSMWDB extends FSSolrIndexer {
      *
      * @param WikiPage $wikiPage
      *         The article that changed.
-     * @param User $user
-     *         Optional user object
-     * @param string $text
-     *        Optional content of the article. If NULL, the content of $wikiPage is
+     * @param string $rawText
+     *        Optional content of the article. If it is null, the content of $wikiPage is
      *        retrieved in this method.
      * @param array $messages
      *      User readible messages (out)
-     * @param bool force
-     *      Force update from command-line
+     * @param bool $debugMode
+     *      Prints verbose output
      */
-    public function updateIndexForArticle(WikiPage $wikiPage, $user = NULL, $rawText = NULL,
-                                          & $messages = [], $force = false, bool $debugMode = false ) {
+    public function updateIndexForArticle(WikiPage $wikiPage, $rawText = null,
+                                          &$messages = [], bool $debugMode = false) : bool {
 
-//         if (PHP_SAPI == 'cli' && !$force) {
-//             // do not update from job, unless it's forced
-//             $pageTitle = $wikiPage->getTitle()->getPrefixedText();
-//             echo "skipping SOLR.updateIndexForArticle( $pageTitle ) cli=TRUE, force=FALSE\n";
-//             return;
-//         }
-
-        $doc = array();
+        $doc = [];
         $this->dependant = [];
 
-        // Get the page ID of the article
-        $t = $wikiPage->getTitle();
-        $pid = $wikiPage->getId();
-        if($pid == 0) {
-            throw new Exception("invalid page ID for " . $t->getPrefixedText());
+        $pageTitle = $wikiPage->getTitle();
+        $pagePrefixedTitle = $pageTitle->getPrefixedText();
+        $pageID = $wikiPage->getId();
+        if( $pageID == 0 ) {
+            throw new Exception("invalid page ID for $pagePrefixedTitle");
         }
 
         global $fsgBlacklistPages;
-        if (in_array($t->getPrefixedText(), $fsgBlacklistPages)) {
-            throw new Exception("blacklisted page: " . $t->getPrefixedText());
+        if (in_array($pagePrefixedTitle, $fsgBlacklistPages)) {
+            throw new Exception("blacklisted page: $pagePrefixedTitle");
         }
 
-        $pns = $t->getNamespace();
-        $pt  = $t->getDBkey();
+        $pageNamespace = $pageTitle->getNamespace();
+        $pageDbKey  = $pageTitle->getDBkey();
+        $text = $rawText ?? $this->getText( $wikiPage, $doc, $messages );
 
-        $parserOptions = new ParserOptions();
-        $parserOptions->setOption('stubthreshold', 1);
-        global $egApprovedRevsBlankIfUnapproved, $egApprovedRevsNamespaces;
-        if (defined('APPROVED_REVS_VERSION')
-            && $egApprovedRevsBlankIfUnapproved
-            && in_array($wikiPage->getTitle()->getNamespace(), $egApprovedRevsNamespaces)) {
-
-            // indexed approved revision
-            $revision = $this->getApprovedRevision($wikiPage);
-            if ($revision === false) {
-                throw new Exception("unapproved " . $t->getPrefixedText());
-            }
-            $content = $revision->getContent(SlotRecord::MAIN, RevisionRecord::RAW);
-            
-            $text = $content->getParserOutput($wikiPage->getTitle(), $revision->getId(), $parserOptions)->getText();
-            $text = Sanitizer::stripAllTags($text);
-
-        } else {
-            // index latest revision
-            $parserOut = $wikiPage->getParserOutput($parserOptions);
-            if(!$parserOut) {
-                $text = '';
-            } else {
-                $text = Sanitizer::stripAllTags($parserOut->getText());
-            }
-        }
-
-        $doc['id'] = $pid;
-        $doc['smwh_namespace_id'] = $pns;
-        $doc['smwh_title'] = $pt; 
+        $doc['id'] = $pageID;
+        $doc['smwh_namespace_id'] = $pageNamespace;
+        $doc['smwh_title'] = $pageDbKey; 
         $doc['smwh_full_text'] = $text;
-        $doc['smwh_displaytitle'] = FacetedSearchUtil::findDisplayTitle($t, $wikiPage);
+        $doc['smwh_displaytitle'] = FacetedSearchUtil::findDisplayTitle( $pageTitle, $wikiPage );
 
-        $options = array();
-
-        $db = wfGetDB( DB_REPLICA  );
-
-        if ($this->retrieveSMWID($db, $pns, $pt, $doc)) {
-            $this->retrievePropertyValues($t, $doc, $options);
-            $this->indexCategories($t, $doc);
+        if ($this->retrieveSMWID($pageNamespace, $pageDbKey, $doc)) {
+            $this->retrievePropertyValues($pageTitle, $doc);
+            $this->indexCategories($pageTitle, $doc);
         }
 
-        // extract document if a file was uploaded
-        global $fsgIndexImageURL;
-        if ($pns == NS_FILE) {
-            try {
-                if (isset($fsgIndexImageURL) && $fsgIndexImageURL === true) {
-                    $this->retrieveFileSystemPath($db, $pns, $pt, $doc);
-                }
-                $docData = $this->extractDocument($t);
-                if($docData) {
-                    $doc['smwh_full_text'] = $docData['text'];
-                }
-            } catch( Exception $e ) {
-                $messages[] = $e->getMessage();
-                $doc['smwh_full_text'] .= " " . $e->getMessage();
-            }
-        }
-
-        $this->calculateBoosting($wikiPage, $options, $doc);
+        $options = [];
+        $this->calculateBoosting( $wikiPage, $options, $doc );
 
         // call fs_saveArticle hook
         $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-        $hookContainer->run( 'fs_saveArticle', [ &$rawText, &$doc ] );
+        $hookContainer->run( 'fs_saveArticle', [ $text, &$doc ] );
 
         // Let the super class update the index
-        $this->updateIndex($doc, $options, $debugMode);
+        $this->updateIndex( $doc, $options, $debugMode );
 
-        if($this->updateOnlyCurrentArticle()) {
-            return true;
+        $this->updateDependentPages( $this->dependant, $messages, $debugMode);
+
+        return true;
+    }
+
+    private function getText(WikiPage $wikiPage, array &$doc, array &$messages ) : string {
+        $pageTitle = $wikiPage->getTitle();
+        $pageNamespace = $pageTitle->getNamespace();
+
+        if ($pageNamespace == NS_FILE) {
+            $text = $this->getTextFromFile( $wikiPage, $doc, $messages );
+            if( $text ) {
+                return $text;
+            }
         }
 
-        // update dependant articles
-        if (count($this->dependant) > self::MAX_SYNC_UPDATES) {
-            // if more than MAX_SYNC_UPDATES updates are required, create jobs for it
-            foreach($this->dependant as $ttu) {
+        global $egApprovedRevsBlankIfUnapproved, $egApprovedRevsNamespaces;
+        if (defined('APPROVED_REVS_VERSION')
+                && $egApprovedRevsBlankIfUnapproved 
+                && in_array( $pageNamespace, $egApprovedRevsNamespaces )) {
+
+            // index the approved revision
+            $revision = $this->getApprovedRevision( $wikiPage );
+            if ($revision === false) {
+                throw new Exception( "unapproved $pageTitle" );
+            }
+            $content = $revision->getContent( SlotRecord::MAIN, RevisionRecord::RAW );
+            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wikiPage, $revision->getId() );
+        } else {
+            // index latest revision
+            $content = $wikiPage->getContent();
+            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wikiPage );
+        }
+
+        if ( !$parserOut ) {
+            return '';
+        } else {
+            return Sanitizer::stripAllTags($parserOut->getText());
+        }
+    }
+
+    /**
+     * extract document if a file was uploaded
+     */
+    private function getTextFromFile( WikiPage $wikiPage, array &$doc, array &$messages ) : string {
+        $pageTitle = $wikiPage->getTitle();
+        $pageNamespace = $pageTitle->getNamespace();
+        if ($pageNamespace !== NS_FILE) {
+            return '';
+        }
+
+        $text = '';
+        $pageDbKey  = $pageTitle->getDBkey();
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+
+        global $fsgIndexImageURL;
+
+        try {
+            if (isset($fsgIndexImageURL) && $fsgIndexImageURL === true) {
+                $this->retrieveFileSystemPath($db, $pageNamespace, $pageDbKey, $doc);
+            }
+            $docData = $this->extractDocument( $pageTitle );
+            if( $docData ) {
+                $text = $docData['text'] ?? '';
+            }
+        } catch( Exception $e ) {
+            $messages[] = $e->getMessage();
+            $text = $e->getMessage();
+        }
+
+        return $text;
+    }
+
+    private function updateDependentPages( array $wikiPages, &$messages = [], bool $debugMode = false ) : void {
+        if($this->updateOnlyCurrentArticle()) {
+            return;
+        }
+
+        if (count( $wikiPages ) > self::MAX_SYNC_UPDATES) {
+            // if more than MAX_SYNC_UPDATES updates are required, create jobs for them
+            foreach($wikiPages as $ttu) {
                 $params = [];
                 $params['title'] = $ttu->getPrefixedText();
                 $title = Title::makeTitle(NS_SPECIAL, 'Search');
                 $job = new UpdateSolrJob($title, $params);
-                JobQueueGroup::singleton()->push( $job );
+                MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup()->push( $job );
             }
         } else {
             // if less than MAX_SYNC_UPDATES, do it synchronously
             global $fsUpdateOnlyCurrentArticle;
             $fsUpdateOnlyCurrentArticle = true;
-            foreach($this->dependant as $ttu) {
-                $this->updateIndexForArticle(new WikiPage($ttu), $user, $rawText, $messages, $force, $debugMode);
+            foreach($wikiPages as $ttu) {
+                $this->updateIndexForArticle(new WikiPage($ttu), null, $messages, $debugMode);
             }
         }
-
-        return true;
     }
 
     /**
@@ -258,7 +273,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
             $this->updateBoostFactor($options, $fsgNamespaceBoosts[$namespace]);
         }
 
-        $db = wfGetDB( DB_REPLICA  );
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 
         // add boost according to templates
         global $fsgTemplateBoosts;
@@ -283,22 +298,21 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
     /**
      * @param WikiPage
-     * @return RevisionRecord
+     * @return RevisionRecord|bool
      */
     private function getApprovedRevision(WikiPage $wikiPage) {
         // get approved rev_id
-        $db = wfGetDB( DB_PRIMARY );
-        $approved_revs_table = $db->tableName("approved_revs");
-        $queryString = sprintf(
-                "SELECT rev_id" .
-                " FROM $approved_revs_table" .
-                " WHERE page_id = %s",
-                $wikiPage->getTitle()->getArticleID());
-        $res = $db->query($queryString);
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+    
+        $res = $db->newSelectQueryBuilder()
+                ->select( 'rev_id' )
+                ->from( 'approved_revs' )
+                ->where( 'page_id = ' . $wikiPage->getTitle()->getArticleID() )
+                ->fetchResultSet();
+    
         $rev_id = null;
-
-        if ($db->numRows( $res ) > 0) {
-            if($row = $db->fetchRow( $res )) {
+        if ( $res->numRows() > 0 ) {
+            if( $row = $res->fetchRow() ) {
                 $rev_id = $row['rev_id'];
             }
         }
@@ -324,21 +338,21 @@ class FSSolrSMWDB extends FSSolrIndexer {
      *         <false> otherwise
      */
     public function updateIndexForMovedArticle($oldid, $newid) {
-        if ($this->deleteDocument($oldid)) {
-            global $wgUser;
+        if( $this->deleteDocument($oldid) ) {
             // The article with the new name has the same page id as before
-            $wp = WikiPage::newFromID( $oldid );
+            $wp = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $oldid );
             
             $content = $wp->getContent(RevisionRecord::RAW);
             if($content == null) {
                 $text = '';
             } else  {
-                $text = $content->getParserOutput( $wp->getTitle() );
+                $text = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wp );
+                $text = $text->getText() ?? '';
                 $text = Sanitizer::stripAllTags( $text );
             }
 
             try {
-                $this->updateIndexForArticle($wp, $wgUser, $text);
+                $this->updateIndexForArticle($wp, $text);
             } catch( Exception $e) {
                 // TODO error logging
              }
@@ -362,7 +376,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
      * Retrieves the templates of the article with the page ID $pid and calculate
      * boosting factors for it
      *
-     * @param Database $db
+     * @param IDatabase $db
      *         The database object
      * @param int $pid
      *         The page ID.
@@ -371,22 +385,33 @@ class FSSolrSMWDB extends FSSolrIndexer {
      * @param $options
      */
     private function retrieveTemplates($db, $pid, array &$doc, array &$options) {
-        $templatelinks = $db->tableName('templatelinks');
+        // MW >= 1.38
+        $res = $db->newSelectQueryBuilder()
+                ->select( 'CAST(lt_title AS CHAR) AS template' )
+                ->from( 'templatelinks' )
+                ->join( 'page', null, [ 'page_id = tl_from' ] )
+                ->join( 'linktarget', null, [ 'lt_id = tl_target_id' ] )
+                ->where( "tl_from = $pid" )
+                ->caller( __METHOD__ )
+                ->fetchResultSet();
+    
+        // // MW < 1.38
+        // $templateLinksTable = $db->tableName('templatelinks');
+        // $sql = <<<SQL
+        //     SELECT CAST(t.tl_title AS CHAR) template
+        //     FROM $templateLinksTable t
+        //     WHERE t.tl_from=$pid
+        //     SQL;
+        // $res = $db->query($sql);
 
-        $sql = <<<SQL
-            SELECT CAST(t.tl_title AS CHAR) template
-            FROM $templatelinks t
-            WHERE tl_from=$pid
-SQL;
-        $smwhTemplates = array();
-        $res = $db->query($sql);
-        if ($db->numRows($res) > 0) {
-            while ($row = $db->fetchObject($res)) {
+        $smwhTemplates = [];
+        if ( $res->numRows() > 0 ) {
+            while( $row = $res->fetchObject() ) {
                 $template = $row->template;
                 $smwhTemplates[] = str_replace("_", " ", $template);
             }
         }
-        $db->freeResult($res);
+        $res->free();
 
         return $smwhTemplates;
     }
@@ -397,7 +422,7 @@ SQL;
      * @param string  $propertyName
      * @return string
      */
-    private static function encodeTitle($propertyName) {
+    public static function encodeTitle($propertyName) {
         // turns non-acii and some special characters into percent encoding, e.g. %3A
         $tmp = rawurlencode($propertyName);
 
@@ -441,11 +466,42 @@ SQL;
     }
 
     /**
+     * Returns the SOLR field name for a property value constraint
+     * @param SMWDIProperty $property
+     *
+     * @return string
+     */
+    public static function encodeSOLRFieldNameForValue($property) {
+        $prop = str_replace(' ', '_', $property->getLabel());
+
+        $prop = self::encodeTitle($prop);
+
+        $typeId = $property->findPropertyValueType();
+        $type = DataTypeRegistry::getInstance()->getDataItemByType($typeId);
+
+        // The property names of all attributes are built based on their type.
+        switch($type) {
+            case SMWDataItem::TYPE_BOOLEAN:
+                return "smwh_{$prop}_xsdvalue_b";
+            case SMWDataItem::TYPE_NUMBER:
+                return "smwh_{$prop}_numvalue_d";
+            case SMWDataItem::TYPE_BLOB:
+                return "smwh_{$prop}_xsdvalue_s";
+            case SMWDataItem::TYPE_WIKIPAGE:
+                return "smwh_{$prop}_s";
+            case SMWDataItem::TYPE_TIME:
+                return "smwh_{$prop}_xsdvalue_dt";
+        }
+
+        // all others are regarded as wikipage
+        return "smwh_{$prop}_s";
+    }
+
+
+    /**
      * Retrieves the SMW-ID of the article with the $namespaceID and the $title
      * and adds them to the document description $doc.
      *
-     * @param Database $db
-     *         The database object
      * @param int $namespaceID
      *         Namespace ID of the article
      * @param string $title
@@ -457,36 +513,32 @@ SQL;
      *         <true> if an SMW-ID was found
      *         <false> otherwise
      */
-    private function retrieveSMWID($db, $namespaceID, $title, array &$doc) {
-        // Get the SMW ID for the page
-        //        $title = str_replace("'", "\'", $title);
-        $db = wfGetDB( DB_REPLICA  );
-        $title = $db->strencode($title);
-        $smw_ids = $db->tableName('smw_object_ids');
-        $sql = <<<SQL
-            SELECT s.smw_id as smwID
-            FROM $smw_ids s
-            WHERE s.smw_namespace=$namespaceID AND
-                  s.smw_title='$title'
-SQL;
+    private function retrieveSMWID( $namespaceID, $title, array &$doc ) {
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+        $title = $db->addQuotes($title);
+        $res = $db->newSelectQueryBuilder()
+                ->select( 'smw_id' )
+                ->from( 'smw_object_ids' )
+                ->where( ["smw_namespace = $namespaceID", "smw_title=$title"] )
+                ->caller( __METHOD__ )
+                ->fetchResultSet();
+    
         $found = false;
-        $res = $db->query($sql);
-        if ($db->numRows($res) > 0) {
-            $row = $db->fetchObject($res);
-            $smwID = $row->smwID;
+        if ( $res->numRows() > 0 ) {
+            $row = $res->fetchObject();
+            $smwID = $row->smw_id;
             $doc['smwh_smw_id'] = $smwID;
             $found = true;
         }
-        $db->freeResult($res);
+        $res->free();
 
         return $found;
-
     }
 
     /**
      * Retrieves full URL of the file resource attached to this title.
      *
-     * @param Database $db
+     * @param IDatabase $db
      * @param int $namespace namespace-id
      * @param string $title dbkey
      * @param array $doc (out)
@@ -511,9 +563,8 @@ SQL;
      *         and their values are added to $doc. The key 'smwh_properties' will
      *         be an array of relation names and a key will be added for each
      *         relation with the value of the relation.
-     * @param array $options
      */
-    private function retrievePropertyValues($title, array &$doc, array &$options) {
+    private function retrievePropertyValues( $title, array &$doc ) {
         global $fsgIndexPredefinedProperties;
 
         $store = smwfGetStore();
@@ -687,7 +738,7 @@ SQL;
      * @param SMWDataItem $dataItem
      * @param array $doc
      *
-     * @return encoded property name
+     * @return string representing the encoded property name
      */
     private function serializeWikiPageDataItem($subject, $property, $dataItem, array &$doc) {
         $obj = $this->createPropertyValueWithLabel( $dataItem );
@@ -740,7 +791,7 @@ SQL;
      * @param SMWDataItem $dataItem
      * @param array $doc
      *
-     * @return encoded property name or null
+     * @return string|null representing the encoded property name
      */
     private function serializeDataItem($property, $dataItem, array &$doc) {
 

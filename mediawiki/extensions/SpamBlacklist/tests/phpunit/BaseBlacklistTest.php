@@ -19,10 +19,12 @@
  * @file
  */
 
+use MediaWiki\Extension\SpamBlacklist\BaseBlacklist;
+
 /**
- * @covers BaseBlacklist
+ * @covers \MediaWiki\Extension\SpamBlacklist\BaseBlacklist
  */
-class BaseBlacklistTest extends MediaWikiTestCase {
+class BaseBlacklistTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @return array

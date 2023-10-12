@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Crazymadlover"
+			"Crazymadlover",
+			"PastelKos"
 		]
 	},
 	"wikieditor-toolbar": "Ἐργαλειοθήκη μεταγραφῆς",
-	"wikieditor-toolbar-loading": "Φορτίζειν…",
 	"wikieditor-toolbar-tool-bold": "ἔντονον",
 	"wikieditor-toolbar-tool-bold-example": "Γράμματα παχέα",
 	"wikieditor-toolbar-tool-italic": "πλάγιον",
@@ -34,7 +34,7 @@
 	"wikieditor-toolbar-tool-small-example": "Σμικρόν κείμενον",
 	"wikieditor-toolbar-group-insert": "Εἰσάγειν",
 	"wikieditor-toolbar-tool-gallery": "Πινακοθήκη",
-	"wikieditor-toolbar-tool-newline": "Νέα γραμμή",
+	"wikieditor-toolbar-tool-newline": "Καινὴ γραμμή",
 	"wikieditor-toolbar-tool-table": "Πίναξ",
 	"wikieditor-toolbar-tool-table-cancel": "Ἀκυροῦν",
 	"wikieditor-toolbar-tool-replace": "Ζητεῖν καὶ ὑποκαθιστάναι",

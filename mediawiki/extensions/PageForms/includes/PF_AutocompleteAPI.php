@@ -24,9 +24,12 @@ class PFAutocompleteAPI extends ApiBase {
 		$namespace = $params['namespace'];
 		$property = $params['property'];
 		$category = $params['category'];
+		$wikidata = $params['wikidata'];
 		$concept = $params['concept'];
+		$query = $params['semantic_query'];
 		$cargo_table = $params['cargo_table'];
 		$cargo_field = $params['cargo_field'];
+		$cargo_where = $params['cargo_where'];
 		$external_url = $params['external_url'];
 		$baseprop = $params['baseprop'];
 		$base_cargo_table = $params['base_cargo_table'];
@@ -46,6 +49,8 @@ class PFAutocompleteAPI extends ApiBase {
 			}
 		} elseif ( $property !== null ) {
 			$data = $this->getAllValuesForProperty( $property, $substr );
+		} elseif ( $wikidata !== null ) {
+			$data = PFValuesUtils::getAllValuesFromWikidata( urlencode( $wikidata ), $substr );
 		} elseif ( $category !== null ) {
 			$data = PFValuesUtils::getAllPagesForCategory( $category, 3, $substr );
 			$map = $wgPageFormsUseDisplayTitle;
@@ -58,8 +63,15 @@ class PFAutocompleteAPI extends ApiBase {
 			if ( $map ) {
 				$data = PFValuesUtils::disambiguateLabels( $data );
 			}
+		} elseif ( $query !== null ) {
+			$query = $this->processSemanticQuery( $query, $substr );
+			$data = PFValuesUtils::getAllPagesForQuery( $query );
+			$map = $wgPageFormsUseDisplayTitle;
+			if ( $map ) {
+				$data = PFValuesUtils::disambiguateLabels( $data );
+			}
 		} elseif ( $cargo_table !== null && $cargo_field !== null ) {
-			$data = self::getAllValuesForCargoField( $cargo_table, $cargo_field, $substr, $base_cargo_table, $base_cargo_field, $basevalue );
+			$data = self::getAllValuesForCargoField( $cargo_table, $cargo_field, $cargo_where, $substr, $base_cargo_table, $base_cargo_field, $basevalue );
 		} elseif ( $namespace !== null ) {
 			$data = PFValuesUtils::getAllPagesForNamespace( $namespace, $substr );
 			$map = $wgPageFormsUseDisplayTitle;
@@ -129,8 +141,11 @@ class PFAutocompleteAPI extends ApiBase {
 			'property' => null,
 			'category' => null,
 			'concept' => null,
+			'wikidata' => null,
+			'semantic_query' => null,
 			'cargo_table' => null,
 			'cargo_field' => null,
+			'cargo_where' => null,
 			'namespace' => null,
 			'external_url' => null,
 			'baseprop' => null,
@@ -146,6 +161,8 @@ class PFAutocompleteAPI extends ApiBase {
 			'property' => 'Semantic property for which to search values',
 			'category' => 'Category for which to search values',
 			'concept' => 'Concept for which to search values',
+			'wikidata' => 'Search string for getting values from wikidata',
+			'semantic_query' => 'Query for which to search values',
 			'namespace' => 'Namespace for which to search values',
 			'external_url' => 'Alias for external URL from which to get values',
 			'baseprop' => 'A previous property in the form to check against',
@@ -163,7 +180,17 @@ class PFAutocompleteAPI extends ApiBase {
 			'api.php?action=pfautocomplete&substr=te',
 			'api.php?action=pfautocomplete&substr=te&property=Has_author',
 			'api.php?action=pfautocomplete&substr=te&category=Authors',
+			'api.php?action=pfautocomplete&semantic_query=((Category:Test)) ((MyProperty::Something))',
 		];
+	}
+
+	private function processSemanticQuery( $query, $substr = '' ) {
+		$query = str_replace(
+			[ "&lt;", "&gt;", "(", ")", '%', '@' ],
+			[ "<", ">", "[", "]", '|', $substr ],
+			$query
+		);
+		return $query;
 	}
 
 	private function getAllValuesForProperty(
@@ -172,18 +199,55 @@ class PFAutocompleteAPI extends ApiBase {
 		$basePropertyName = null,
 		$baseValue = null
 	) {
-		global $wgPageFormsMaxAutocompleteValues, $wgPageFormsCacheAutocompleteValues,
-		$wgPageFormsAutocompleteCacheTimeout;
+		global $wgPageFormsCacheAutocompleteValues, $wgPageFormsAutocompleteCacheTimeout;
 		global $smwgDefaultStore;
 
 		if ( $smwgDefaultStore == null ) {
 			$this->dieWithError( 'Semantic MediaWiki must be installed to query on "property"', 'param_property' );
 		}
 
-		$values = [];
+		$property_name = str_replace( ' ', '_', $property_name );
+
+		// Use cache if allowed
+		if ( !$wgPageFormsCacheAutocompleteValues ) {
+			return $this->computeAllValuesForProperty( $property_name, $substring, $basePropertyName, $baseValue );
+		}
+
+		$cache = PFFormUtils::getFormCache();
+		// Remove trailing whitespace to avoid unnecessary database selects
+		$cacheKeyString = $property_name . '::' . rtrim( $substring );
+		if ( $basePropertyName !== null ) {
+			$cacheKeyString .= ',' . $basePropertyName . ',' . $baseValue;
+		}
+		$cacheKey = $cache->makeKey( 'pf-autocomplete', md5( $cacheKeyString ) );
+		return $cache->getWithSetCallback(
+			$cacheKey,
+			$wgPageFormsAutocompleteCacheTimeout,
+			function () use ( $property_name, $substring, $basePropertyName, $baseValue ) {
+				return $this->computeAllValuesForProperty( $property_name, $substring, $basePropertyName, $baseValue );
+			}
+		);
+	}
+
+	/**
+	 * @param string $property_name
+	 * @param string $substring
+	 * @param string|null $basePropertyName
+	 * @param mixed $baseValue
+	 * @return array
+	 */
+	private function computeAllValuesForProperty(
+		$property_name,
+		$substring,
+		$basePropertyName = null,
+		$baseValue = null
+	) {
+		global $smwgDefaultStore;
+
 		$db = wfGetDB( DB_REPLICA );
-		$sqlOptions = [];
-		$sqlOptions['LIMIT'] = $wgPageFormsMaxAutocompleteValues;
+		$sqlOptions = [
+			'LIMIT' => PFValuesUtils::getMaxValuesToRetrieve( $substring )
+		];
 
 		if ( method_exists( 'SMW\DataValueFactory', 'newPropertyValueByLabel' ) ) {
 			// SMW 3.0+
@@ -191,33 +255,16 @@ class PFAutocompleteAPI extends ApiBase {
 		} else {
 			$property = SMWPropertyValue::makeUserProperty( $property_name );
 		}
+
 		$propertyHasTypePage = ( $property->getPropertyTypeID() == '_wpg' );
-		$property_name = str_replace( ' ', '_', $property_name );
 		$conditions = [ 'p_ids.smw_title' => $property_name ];
-
-		// Use cache if allowed
-		if ( $wgPageFormsCacheAutocompleteValues ) {
-			$cache = PFFormUtils::getFormCache();
-			// Remove trailing whitespace to avoid unnecessary database selects
-			$cacheKeyString = $property_name . '::' . rtrim( $substring );
-			if ( $basePropertyName !== null ) {
-				$cacheKeyString .= ',' . $basePropertyName . ',' . $baseValue;
-			}
-			$cacheKey = $cache->makeKey( 'pf-autocomplete', md5( $cacheKeyString ) );
-			$values = $cache->get( $cacheKey );
-
-			if ( !empty( $values ) ) {
-				// Return with results immediately
-				return $values;
-			}
-		}
-
 		if ( $propertyHasTypePage ) {
 			$valueField = 'o_ids.smw_title';
 			if ( $smwgDefaultStore === 'SMWSQLStore2' ) {
 				$idsTable = $db->tableName( 'smw_ids' );
 				$propsTable = $db->tableName( 'smw_rels2' );
-			} else { // SMWSQLStore3 - also the backup for SMWSPARQLStore
+			} else {
+				// SMWSQLStore3 - also the backup for SMWSPARQLStore
 				$idsTable = $db->tableName( 'smw_object_ids' );
 				$propsTable = $db->tableName( 'smw_di_wikipage' );
 			}
@@ -227,7 +274,8 @@ class PFAutocompleteAPI extends ApiBase {
 				$valueField = 'p.value_xsd';
 				$idsTable = $db->tableName( 'smw_ids' );
 				$propsTable = $db->tableName( 'smw_atts2' );
-			} else { // SMWSQLStore3 - also the backup for SMWSPARQLStore
+			} else {
+				// SMWSQLStore3 - also the backup for SMWSPARQLStore
 				$valueField = 'p.o_hash';
 				$idsTable = $db->tableName( 'smw_object_ids' );
 				$propsTable = $db->tableName( 'smw_di_blob' );
@@ -284,61 +332,81 @@ class PFAutocompleteAPI extends ApiBase {
 		$res = $db->select( $fromClause, "DISTINCT $valueField",
 			$conditions, __METHOD__, $sqlOptions );
 
-		while ( $row = $db->fetchRow( $res ) ) {
+		$values = [];
+		while ( $row = $res->fetchRow() ) {
 			$values[] = str_replace( '_', ' ', $row[0] );
 		}
-		$db->freeResult( $res );
-
-		if ( $wgPageFormsCacheAutocompleteValues ) {
-			// Save to cache.
-			$cache->set( $cacheKey, $values, $wgPageFormsAutocompleteCacheTimeout );
-		}
-
+		$res->free();
+		$values = self::shiftExactMatch( $substring, $values );
 		return $values;
 	}
 
-	private static function getAllValuesForCargoField( $cargoTable, $cargoField, $substring, $baseCargoTable = null, $baseCargoField = null, $baseValue = null ) {
-		global $wgPageFormsMaxAutocompleteValues, $wgPageFormsCacheAutocompleteValues, $wgPageFormsAutocompleteCacheTimeout;
+	private static function getAllValuesForCargoField( $cargoTable, $cargoField, $cargoWhere, $substring, $baseCargoTable = null, $baseCargoField = null, $baseValue = null ) {
+		global $wgPageFormsCacheAutocompleteValues, $wgPageFormsAutocompleteCacheTimeout;
+
+		if ( !$wgPageFormsCacheAutocompleteValues ) {
+			return self::computeAllValuesForCargoField(
+				$cargoTable, $cargoField, $cargoWhere, $substring, $baseCargoTable, $baseCargoField, $baseValue );
+		}
+
+		$cache = PFFormUtils::getFormCache();
+		// Remove trailing whitespace to avoid unnecessary database selects
+		$cacheKeyString = $cargoTable . '|' . $cargoField . '|' . rtrim( $substring );
+		if ( $baseCargoTable !== null ) {
+			$cacheKeyString .= '|' . $baseCargoTable . '|' . $baseCargoField . '|' . $baseValue;
+		}
+		$cacheKey = $cache->makeKey( 'pf-autocomplete', md5( $cacheKeyString ) );
+		return $cache->getWithSetCallback(
+			$cacheKey,
+			$wgPageFormsAutocompleteCacheTimeout,
+			function () use ( $cargoTable, $cargoField, $cargoWhere, $substring, $baseCargoTable, $baseCargoField, $baseValue ) {
+				return self::computeAllValuesForCargoField(
+					$cargoTable, $cargoField, $cargoWhere, $substring, $baseCargoTable, $baseCargoField, $baseValue );
+			}
+		);
+	}
+
+	private static function computeAllValuesForCargoField(
+		$cargoTable,
+		$cargoField,
+		$cargoWhere,
+		$substring,
+		$baseCargoTable,
+		$baseCargoField,
+		$baseValue
+	) {
 		global $wgPageFormsAutocompleteOnAllChars;
 
-		$values = [];
 		$tablesStr = $cargoTable;
 		$fieldsStr = $cargoField;
 		$joinOnStr = '';
 		$whereStr = '';
 
-		// Use cache if allowed
-		if ( $wgPageFormsCacheAutocompleteValues ) {
-			$cache = PFFormUtils::getFormCache();
-			// Remove trailing whitespace to avoid unnecessary database selects
-			$cacheKeyString = $cargoTable . '|' . $cargoField . '|' . rtrim( $substring );
-			if ( $baseCargoTable !== null ) {
-				$cacheKeyString .= '|' . $baseCargoTable . '|' . $baseCargoField . '|' . $baseValue;
-			}
-			$cacheKey = $cache->makeKey( 'pf-autocomplete', md5( $cacheKeyString ) );
-			$values = $cache->get( $cacheKey );
-
-			if ( !empty( $values ) ) {
-				// Return with results immediately
-				return $values;
-			}
+		if ( $cargoWhere !== null ) {
+			$whereStr = '(' . stripslashes( $cargoWhere ) . ')';
 		}
 
 		if ( $baseCargoTable !== null && $baseCargoField !== null ) {
+			if ( $whereStr != '' ) {
+				$whereStr .= " AND ";
+			}
 			if ( $baseCargoTable != $cargoTable ) {
 				$tablesStr .= ", $baseCargoTable";
 				$joinOnStr = "$cargoTable._pageName = $baseCargoTable._pageName";
 			}
-			$whereStr = "$baseCargoTable.$baseCargoField = \"$baseValue\"";
+			$whereStr .= "$baseCargoTable.$baseCargoField = \"$baseValue\"";
 		}
 
 		if ( $substring !== null ) {
 			if ( $whereStr != '' ) {
 				$whereStr .= " AND ";
 			}
-			$fieldIsList = self::cargoFieldIsList( $cargoTable, $cargoField );
+			// @TODO - this is duplicate work; the schema is retrieved
+			// again when the CargoSQLQuery object is created. There should
+			// be some way of avoiding that duplicate retrieval.
+			$fieldDesc = PFUtils::getCargoFieldDescription( $cargoTable, $cargoField );
 
-			if ( $fieldIsList ) {
+			if ( $fieldDesc !== null && $fieldDesc->mIsList ) {
 				// If it's a list field, we query directly on
 				// the "helper table" for that field. We could
 				// instead use "HOLDS LIKE", but this would
@@ -359,10 +427,35 @@ class PFAutocompleteAPI extends ApiBase {
 				$fieldsStr = $cargoField = '_value';
 			}
 
+			$cdb = CargoUtils::getDB();
+			$quotedCargoField = $cdb->addIdentifierQuotes( $cargoField );
+
+			// LIKE is almost always case-insensitive for MySQL,
+			// usually (?) case-sensitive for PostgreSQL, and
+			// case-insensitive (though only for ASCII characters)
+			// in SQLite. In order to make this check consistenly
+			// case-sensitive everywhere, we call LOWER() on all
+			// the fields. There are other ways to accomplish this,
+			// but this one works consistently across the different
+			// DB systems.
 			if ( $wgPageFormsAutocompleteOnAllChars ) {
-				$whereStr .= "($cargoField LIKE \"%$substring%\")";
+				$whereStr .= "(LOWER($quotedCargoField) LIKE LOWER('%$substring%'))";
 			} else {
-				$whereStr .= "($cargoField LIKE \"$substring%\" OR $cargoField LIKE \"% $substring%\")";
+				$whereStr .= "(LOWER($quotedCargoField) LIKE LOWER('$substring%')";
+				// Also look for the substring after any word
+				// separator (most commonly, a space). In theory,
+				// any punctuation can be a word separator,
+				// but we will just look for the most common
+				// ones.
+				// This would be much easier to do with the
+				// REGEXP operator, but its presence is
+				// inconsistent between MySQL, PostgreSQL and
+				// SQLite.
+				$wordSeparators = [ ' ', '/', '(', ')', '-', '|', "\'", '"' ];
+				foreach ( $wordSeparators as $wordSeparator ) {
+					$whereStr .= " OR LOWER($quotedCargoField) LIKE LOWER('%$wordSeparator$substring%')";
+				}
+				$whereStr .= ')';
 			}
 		}
 
@@ -374,8 +467,9 @@ class PFAutocompleteAPI extends ApiBase {
 			$cargoField,
 			$havingStr = null,
 			$cargoField,
-			$wgPageFormsMaxAutocompleteValues,
-			$offsetStr = 0
+			PFValuesUtils::getMaxValuesToRetrieve( $substring ),
+			$offsetStr = 0,
+			true
 		);
 		$queryResults = $sqlQuery->run();
 
@@ -385,38 +479,34 @@ class PFAutocompleteAPI extends ApiBase {
 			$cargoFieldAlias = $cargoField;
 		}
 
+		$values = [];
 		foreach ( $queryResults as $row ) {
+			$value = $row[$cargoFieldAlias];
 			// @TODO - this check should not be necessary.
-			if ( ( $value = $row[$cargoFieldAlias] ) == '' ) {
+			if ( $value == '' ) {
 				continue;
 			}
 			// Cargo HTML-encodes everything - let's decode double
 			// quotes, at least.
 			$values[] = str_replace( '&quot;', '"', $value );
 		}
-
-		if ( $wgPageFormsCacheAutocompleteValues ) {
-			// Save to cache.
-			$cache->set( $cacheKey, $values, $wgPageFormsAutocompleteCacheTimeout );
-		}
-
+		$values = self::shiftExactMatch( $substring, $values );
 		return $values;
 	}
 
-	static function cargoFieldIsList( $cargoTable, $cargoField ) {
-		// @TODO - this is duplicate work; the schema is retrieved
-		// again when the CargoSQLQuery object is created. There should
-		// be some way of avoiding that duplicate retrieval.
-		$tableSchemas = CargoUtils::getTableSchemas( [ $cargoTable ] );
-		if ( !array_key_exists( $cargoTable, $tableSchemas ) ) {
-			return false;
+	/**
+	 * Move the exact match to the top for better autocompletion
+	 * @param string $substring
+	 * @param array $values
+	 * @return array $values
+	 */
+	static function shiftExactMatch( $substring, $values ) {
+		$firstMatchIdx = array_search( $substring, $values );
+		if ( $firstMatchIdx ) {
+			unset( $values[ $firstMatchIdx ] );
+			array_unshift( $values, $substring );
 		}
-		$tableSchema = $tableSchemas[$cargoTable];
-		if ( !array_key_exists( $cargoField, $tableSchema->mFieldDescriptions ) ) {
-			return false;
-		}
-		$fieldDesc = $tableSchema->mFieldDescriptions[$cargoField];
-		return $fieldDesc->mIsList;
+		return $values;
 	}
 
 }

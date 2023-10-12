@@ -19,16 +19,15 @@
 namespace MediaWiki\Extension\OATHAuth;
 
 use BagOStuff;
-use CentralIdLookup;
 use ConfigException;
 use FormatJson;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MediaWikiServices;
 use MWException;
 use Psr\Log\LoggerInterface;
 use RequestContext;
-use stdClass;
 use User;
-use Wikimedia\Rdbms\DBConnRef;
+use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\ILoadBalancer;
 
 class OATHUserRepository {
@@ -78,34 +77,25 @@ class OATHUserRepository {
 		if ( !$oathUser ) {
 			$oathUser = new OATHUser( $user, [] );
 
-			$uid = CentralIdLookup::factory()->centralIdFromLocalUser( $user );
+			$uid = MediaWikiServices::getInstance()
+				->getCentralIdLookupFactory()
+				->getLookup()
+				->centralIdFromLocalUser( $user );
 			$res = $this->getDB( DB_REPLICA )->selectRow(
 				'oathauth_users',
-				'*',
+				[ 'module', 'data' ],
 				[ 'id' => $uid ],
 				__METHOD__
 			);
 			if ( $res ) {
-				$data = $res->data;
-				$moduleKey = $res->module;
-				if ( $this->isLegacy( $res ) ) {
-					$module = $this->auth->getModuleByKey( 'totp' );
-					$data = $this->checkAndResolveLegacy( $data, $res );
-				} else {
-					$module = $this->auth->getModuleByKey( $moduleKey );
-				}
+				$module = $this->auth->getModuleByKey( $res->module );
 				if ( $module === null ) {
-					// For sanity
 					throw new MWException( 'oathauth-module-invalid' );
 				}
 
 				$oathUser->setModule( $module );
 				$decodedData = FormatJson::decode( $res->data, true );
-				if ( !isset( $decodedData['keys'] ) && $module->getName() === 'totp' ) {
-					// Legacy single-key setup
-					$key = $module->newKey( $decodedData );
-					$oathUser->addKey( $key );
-				} elseif ( is_array( $decodedData['keys'] ) ) {
+				if ( is_array( $decodedData['keys'] ) ) {
 					foreach ( $decodedData['keys'] as $keyData ) {
 						$key = $module->newKey( $keyData );
 						$oathUser->addKey( $key );
@@ -131,11 +121,14 @@ class OATHUserRepository {
 		$prevUser = $this->findByUser( $user->getUser() );
 		$data = $user->getModule()->getDataFromUser( $user );
 
-		$this->getDB( DB_MASTER )->replace(
+		$this->getDB( DB_PRIMARY )->replace(
 			'oathauth_users',
 			'id',
 			[
-				'id' => CentralIdLookup::factory()->centralIdFromLocalUser( $user->getUser() ),
+				'id' => MediaWikiServices::getInstance()
+					->getCentralIdLookupFactory()
+					->getLookup()
+					->centralIdFromLocalUser( $user->getUser() ),
 				'module' => $user->getModule()->getName(),
 				'data' => FormatJson::encode( $data )
 			],
@@ -149,24 +142,32 @@ class OATHUserRepository {
 			$this->logger->info( 'OATHAuth updated for {user} from {clientip}', [
 				'user' => $userName,
 				'clientip' => $clientInfo,
+				'oldoathtype' => $prevUser->getModule()->getName(),
+				'newoathtype' => $user->getModule()->getName(),
 			] );
 		} else {
 			// If findByUser() has returned false, there was no user row or cache entry
 			$this->logger->info( 'OATHAuth enabled for {user} from {clientip}', [
 				'user' => $userName,
 				'clientip' => $clientInfo,
+				'oathtype' => $user->getModule()->getName(),
 			] );
+			Notifications\Manager::notifyEnabled( $user );
 		}
 	}
 
 	/**
 	 * @param OATHUser $user
 	 * @param string $clientInfo
+	 * @param bool $self Whether they disabled it themselves
 	 */
-	public function remove( OATHUser $user, $clientInfo ) {
-		$this->getDB( DB_MASTER )->delete(
+	public function remove( OATHUser $user, $clientInfo, bool $self ) {
+		$this->getDB( DB_PRIMARY )->delete(
 			'oathauth_users',
-			[ 'id' => CentralIdLookup::factory()->centralIdFromLocalUser( $user->getUser() ) ],
+			[ 'id' => MediaWikiServices::getInstance()
+				->getCentralIdLookupFactory()
+				->getLookup()
+				->centralIdFromLocalUser( $user->getUser() ) ],
 			__METHOD__
 		);
 
@@ -176,52 +177,18 @@ class OATHUserRepository {
 		$this->logger->info( 'OATHAuth disabled for {user} from {clientip}', [
 			'user' => $userName,
 			'clientip' => $clientInfo,
+			'oathtype' => $user->getModule()->getName(),
 		] );
+		Notifications\Manager::notifyDisabled( $user, $self );
 	}
 
 	/**
-	 * @param int $index DB_MASTER/DB_REPLICA
-	 * @return DBConnRef
+	 * @param int $index DB_PRIMARY/DB_REPLICA
+	 * @return IDatabase
 	 */
 	private function getDB( $index ) {
 		global $wgOATHAuthDatabase;
 
 		return $this->lb->getConnectionRef( $index, [], $wgOATHAuthDatabase );
-	}
-
-	/**
-	 * @param stdClass $row
-	 * @return bool
-	 */
-	private function isLegacy( $row ) {
-		if ( $row->module !== '' ) {
-			return false;
-		}
-		if ( property_exists( $row, 'secret' ) && $row->secret !== null ) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if the DB data is in the new format,
-	 * if not converts old data to new
-	 *
-	 * @param string $data
-	 * @param stdClass $row
-	 * @return string
-	 */
-	private function checkAndResolveLegacy( $data, $row ) {
-		if ( $data ) {
-			// New data exists - no action required
-			return $data;
-		}
-		if ( property_exists( $row, 'secret' ) && property_exists( $row, 'scratch_tokens' ) ) {
-			return FormatJson::encode( [
-				'secret' => $row->secret,
-				'scratch_tokens' => $row->scratch_tokens
-			] );
-		}
-		return '';
 	}
 }

@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"urlgetparameters-desc": "Gjør det mulig å bruke og/eller vise «GET»-parameterne til URL-en på en wikiside"
+}

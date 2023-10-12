@@ -1,17 +1,18 @@
 <?php
 
-class Scribunto_LuaStandaloneTest extends Scribunto_LuaEngineUnitTestBase {
+class LuaStandaloneTest extends Scribunto_LuaEngineUnitTestBase {
+	/** @inheritDoc */
 	protected static $moduleName = 'StandaloneTests';
 
 	public static function suite( $className ) {
 		return self::makeSuite( $className, 'LuaStandalone' );
 	}
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
 		$interpreter = $this->getEngine()->getInterpreter();
-		$func = $interpreter->wrapPhpFunction( function ( $v ) {
+		$func = $interpreter->wrapPhpFunction( static function ( $v ) {
 			return [ preg_replace( '/\s+/', ' ', trim( var_export( $v, 1 ) ) ) ];
 		} );
 		$interpreter->callFunction(

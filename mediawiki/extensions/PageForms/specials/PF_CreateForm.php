@@ -20,6 +20,7 @@ class PFCreateForm extends SpecialPage {
 	function execute( $query ) {
 		$out = $this->getOutput();
 		$req = $this->getRequest();
+		$out->enableOOUI();
 
 		$this->setHeaders();
 		if ( $req->getCheck( 'showinputtypeoptions' ) ) {
@@ -63,12 +64,8 @@ class PFCreateForm extends SpecialPage {
 			__METHOD__,
 			[ 'ORDER BY' => 'page_title' ]
 		);
-
-		if ( $db->numRows( $res ) > 0 ) {
-			while ( $row = $db->fetchRow( $res ) ) {
-				$template_name = str_replace( '_', ' ', $row[0] );
-				$all_templates[] = $template_name;
-			}
+		while ( $row = $res->fetchRow() ) {
+			$all_templates[] = str_replace( '_', ' ', $row['page_title'] );
 		}
 
 		$deleted_template_loc = null;
@@ -173,7 +170,8 @@ class PFCreateForm extends SpecialPage {
 				foreach ( $fi['item']->getFields() as $j => $field ) {
 					$old_i = PFFormUtils::getChangedIndex( $templates, $new_template_loc, $deleted_template_loc );
 					foreach ( $req->getValues() as $key => $value ) {
-						if ( ( $pos = strpos( $key, '_' . $old_i . '_' . $j ) ) != false ) {
+						$pos = strpos( $key, '_' . $old_i . '_' . $j );
+						if ( $pos !== false ) {
 							$paramName = substr( $key, 0, $pos );
 							// Spaces got replaced by
 							// underlines in the query.
@@ -211,7 +209,8 @@ class PFCreateForm extends SpecialPage {
 				$section = $fi['item'];
 				$old_i = PFFormUtils::getChangedIndex( $sections, $new_section_loc, $deleted_section_loc );
 				foreach ( $req->getValues() as $key => $value ) {
-					if ( ( $pos = strpos( $key, '_section_' . $old_i ) ) != false ) {
+					$pos = strpos( $key, '_section_' . $old_i );
+					if ( $pos !== false ) {
 						$paramName = substr( $key, 0, $pos );
 						$paramName = str_replace( '_', ' ', $paramName );
 					} else {
@@ -262,7 +261,7 @@ class PFCreateForm extends SpecialPage {
 				$out->setArticleBodyOnly( true );
 				$title = Title::makeTitleSafe( PF_NS_FORM, $form->getFormName() );
 				$full_text = $form->createMarkup();
-				$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $preview_page, false, false, false, null, null );
+				$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $this->getUser() );
 				$out->addHTML( $text );
 				return;
 			}
@@ -272,29 +271,55 @@ class PFCreateForm extends SpecialPage {
 		if ( $presetFormName === null ) {
 			// Set 'title' field, in case there's no URL niceness
 			$text .= Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() );
-			$text .= "\n\t<p><label>" . $this->msg( 'pf_createform_nameinput' )->escaped() .
-				' ' . $this->msg( 'pf_createform_nameinputdesc' )->escaped() .
-				Html::input( 'form_name', $form_name, 'text', [ 'size' => 25 ] );
+			$formNameItems = [];
+			$formNameText = new OOUI\LabelWidget( [
+				'label' => $this->msg( 'pf_createform_nameinput' )->escaped() . ' ' . $this->msg( 'pf_createform_nameinputdesc' )->escaped(),
+			] );
+			$formNameTextInput = new OOUI\TextInputWidget( [
+				'name' => 'form_name',
+				'id' => 'pfFormName',
+				'value' => $form_name
+			] );
+			array_push( $formNameItems, $formNameText, $formNameTextInput );
+			$text .= "\n\t<p><label>";
 			if ( !empty( $form_name_error_str ) ) {
-				$text .= "\t" . Html::element( 'span', [ 'class' => 'error' ], $form_name_error_str );
+				$blankError = new OOUI\MessageWidget( [
+					"type" => 'error',
+					"inline" => true,
+					"label" => $form_name_error_str
+				] );
+				array_push( $formNameItems, $blankError );
 			}
-			$text .= "</label></p>\n";
+			$formNameHtml = new OOUI\HorizontalLayout( [
+				'items' => $formNameItems,
+			] );
+			$text .= $formNameHtml . "</label></p>\n";
 		}
 
 		$text .= $this->formCreationHTML( $form );
 
 		$text .= "<h2> " . $this->msg( 'pf_createform_addelements' )->escaped() . " </h2>";
-		$text .= "\t<p><label>" . $this->msg( 'pf_createform_addtemplate' )->escaped() . "\n";
-
-		$select_body = "";
+		$options = [];
 		foreach ( $all_templates as $template ) {
-			$select_body .= "	" . Html::element( 'option', [ 'value' => $template ], $template ) . "\n";
+			$new_option = [ 'data' => $template, 'label' => $template ];
+			array_push( $options, $new_option );
 		}
-		$text .= "\t" . Html::rawElement( 'select', [ 'name' => 'new_template' ], $select_body ) . "\n</label>\n";
+		$items = [];
+
+		// "Add Template" implemented using Label Widget
+		$addTemplateText = new OOUI\LabelWidget( [
+			'label' => $this->msg( 'pf_createform_addtemplate' )->escaped()
+		] );
+
+		$addTemplateDropdown = new OOUI\DropdownInputWidget( [
+			'options' => $options,
+			'id' => 'pfAddTemplateDropdown',
+			'name' => 'new_template',
+		] );
 
 		// If a template has already been added, show a dropdown letting
 		// the user choose where in the list to add a new dropdown.
-		$select_body = "";
+		$options = [];
 		foreach ( $form_items as $i => $fi ) {
 			if ( $fi['type'] == 'template' ) {
 				$option_str = $this->msg( 'pf_createform_template' )->escaped();
@@ -302,36 +327,106 @@ class PFCreateForm extends SpecialPage {
 				$option_str = $this->msg( 'pf_createform_pagesection' )->escaped();
 			}
 			$option_str .= $fi['name'];
-			$select_body .= "\t" . Html::element( 'option', [ 'value' => $i ], $option_str ) . "\n";
+			$new_option = [ 'data' => $i, 'label' => $option_str ];
+			array_push( $options, $new_option );
 		}
 		$final_index = count( $form_items );
 		$at_end_msg = $this->msg( 'pf_createform_atend' )->escaped();
-		$select_body .= "\t" . Html::element( 'option', [ 'value' => $final_index, 'selected' => 'selected' ], $at_end_msg );
+		$new_option = [ 'label' => $at_end_msg, 'data' => $final_index ];
+		array_push( $options, $new_option );
 
-		// Selection for before which item this template should be placed
-		if ( count( $form_items ) > 0 ) {
-			$text .= '<label>' . $this->msg( 'pf_createform_before' )->escaped() .
-				Html::rawElement( 'select', [ 'name' => 'before_template' ], $select_body ) .
-				"\n</label>\n";
+		// "Before" dropdown
+		$addTemplateBeforeDropdown = new OOUI\DropdownInputWidget( [
+			'options' => $options,
+			'name' => 'before_template',
+			'id' => 'pfAddTemplateBeforeDropdown',
+			'value' => $final_index,
+		] );
+
+		$addButton = new OOUI\ButtonInputWidget( [
+			'label' => $this->msg( 'pf_createform_add' )->text(),
+			'type' => 'submit',
+			'icon' => 'add',
+			'id' => 'pfAddTemplateButton',
+			'name' => 'add_field',
+			'flags' => [ 'progressive' ],
+		] );
+
+		if ( count( $all_templates ) == 0 ) {
+			$addTemplateHtml = '';
+		} elseif ( count( $form_items ) > 0 ) {
+			$addTemplateHtml = new OOUI\HorizontalLayout( [
+				'items' => [
+					$addTemplateText,
+					$addTemplateDropdown,
+					// Selection for before which item this template should be placed
+					new OOUI\LabelWidget( [
+						'label' => $this->msg( 'pf_createform_before' )->escaped(),
+					] ),
+					$addTemplateBeforeDropdown,
+					$addButton,
+				],
+			] );
+		} else {
+			$addTemplateHtml = new OOUI\HorizontalLayout( [
+				'items' => [
+					$addTemplateText,
+					$addTemplateDropdown,
+					$addButton,
+				],
+			] );
 		}
 
 		// Disable 'save' and 'preview' buttons if user has not yet
 		// added any templates.
-		$add_button_text = $this->msg( 'pf_createform_add' )->text();
-		$text .= "\t" . Html::input( 'add_field', $add_button_text, 'submit' ) . "\n";
+		$text .= "\t" . $addTemplateHtml;
 
 		// The form HTML for page sections
-		$text .= "<br/></br/>" . Html::element( 'span', null, $this->msg( 'pf_createform_addsection' )->text() . ":" ) . "\n";
-		$text .= Html::input( 'sectionname', '', 'text', [ 'size' => '30', 'placeholder' => $this->msg( 'pf_createform_sectionname' )->text(), 'id' => 'sectionname' ] ) . "\n";
+		// "Add Section" implemented with LabelWidget
+		$addSectionItems = [];
+		$addSectionText = new OOUI\LabelWidget( [
+			'label' => $this->msg( 'pf_createform_addsection' )->text() . ":",
+		] );
+
+		$addSectionTextInput = new OOUI\TextInputWidget( [
+			'name' => 'sectionname',
+			'id' => 'pfAddSectionTextInput',
+		] );
+
+		array_push( $addSectionItems, $addSectionText, $addSectionTextInput );
 
 		// Selection for before which item this section should be placed
 		if ( count( $form_items ) > 0 ) {
-			$text .= $this->msg( 'pf_createform_before' )->escaped();
-			$text .= Html::rawElement( 'select', [ 'name' => 'before_section' ], $select_body ) . "\n";
+
+			$addSectionBeforeText = new OOUI\LabelWidget( [
+				'label' => $this->msg( 'pf_createform_before' )->escaped(),
+			] );
+
+			$addSectionBefore = new OOUI\DropdownInputWidget( [
+				'options' => $options,
+				'name' => 'before_section',
+				'id' => 'pfAddSectionBefore',
+				'value' => $final_index,
+			] );
+			array_push( $addSectionItems, $addSectionBeforeText, $addSectionBefore );
 		}
 
-		$add_section_text = $this->msg( 'pf_createform_addsection' )->text();
-		$text .= "\t" . Html::input( 'add_section', $add_section_text, 'submit', [ 'id' => 'addsection' ] );
+		$addSectionButton = new OOUI\ButtonInputWidget( [
+			'label' => $this->msg( 'pf_createform_addsection' )->text(),
+			'type' => 'submit',
+			'icon' => 'add',
+			'id' => 'pfAddSectionButton',
+			'name' => 'add_section',
+			'flags' => [ 'progressive' ],
+		] );
+
+		array_push( $addSectionItems, $addSectionButton );
+
+		$addSectionHtml = new OOUI\HorizontalLayout( [
+			'items' => $addSectionItems,
+		] );
+
+		$text .= "<br/>" . $addSectionHtml;
 		$text .= "\n\t" . Html::rawElement( 'div', [ 'id' => 'sectionerror' ] );
 		$text .= <<<END
 </p>
@@ -341,16 +436,35 @@ END;
 
 		$text .= "\t" . Html::hidden( 'csrf', $this->getUser()->getEditToken( 'CreateForm' ) ) . "\n";
 
-		$saveAttrs = [ 'id' => 'wpSave' ];
+		$saveAttrs = [
+			'id' => 'wpSave',
+			'name' => 'wpSave',
+			'type' => 'submit',
+			'label' => $this->msg( 'savearticle' )->text(),
+			'useInputTag' => true,
+			'flags' => [ 'primary', 'progressive' ]
+		];
 		if ( count( $form_items ) == 0 ) {
 			$saveAttrs['disabled'] = true;
 		}
-		$editButtonsText = "\t" . Html::input( 'wpSave', $this->msg( 'savearticle' )->text(), 'submit', $saveAttrs ) . "\n";
-		$previewAttrs = [ 'id' => 'wpPreview' ];
+		$saveButton = new OOUI\ButtonInputWidget( $saveAttrs );
+
+		$editButtonsText = "\t" . $saveButton . "\n";
+
+		$previewAttrs = [
+			'id' => 'wpPreview',
+			'name' => 'wpPreview',
+			'type' => 'submit',
+			'label' => $this->msg( 'preview' )->text(),
+			'useInputTag' => true,
+			'flags' => [ 'progressive' ]
+		];
 		if ( count( $form_items ) == 0 ) {
 			$previewAttrs['disabled'] = true;
 		}
-		$editButtonsText .= "\t" . Html::input( 'wpPreview', $this->msg( 'preview' )->text(), 'submit', $previewAttrs ) . "\n";
+		$previewButton = new OOUI\ButtonInputWidget( $previewAttrs );
+
+		$editButtonsText .= "\t" . $previewButton . "\n";
 		$text .= "\t" . Html::rawElement( 'div', [ 'class' => 'editButtons' ],
 			Html::rawElement( 'p', [], $editButtonsText ) . "\n" ) . "\n";
 		// Explanatory message if buttons are disabled because no
@@ -396,7 +510,8 @@ END;
 		$text .= Html::element( 'h2', [], $section_str );
 
 		foreach ( $this->getRequest()->getValues() as $key => $value ) {
-			if ( ( $pos = strpos( $key, '_section_' . $section_count ) ) != false ) {
+			$pos = strpos( $key, '_section_' . $section_count );
+			if ( $pos !== false ) {
 				$paramName = substr( $key, 0, $pos );
 				$paramName = str_replace( '_', ' ', $paramName );
 				$paramValues[$paramName] = $value;
@@ -418,15 +533,21 @@ END;
 		$text .= Html::rawElement( 'div', [],
 			$this->showSectionParameters( $section_count, $paramValues ) ) . "\n";
 		$text .= "</fieldset>\n";
-		$removeSectionButton = Html::input( 'delsection_' . $section_count, $this->msg( 'pf_createform_removesection' )->text(), 'submit' ) . "\n";
-		$text .= "<br />" . Html::rawElement( 'p', null, $removeSectionButton ) . "\n";
+		$removeSectionButton = new OOUI\ButtonInputWidget( [
+			'label' => $this->msg( 'pf_createform_removesection' )->text(),
+			'type' => 'submit',
+			'icon' => 'subtract',
+			'id' => 'pfRemoveSectionButton',
+			'name' => 'delsection_' . $section_count,
+			'flags' => [ 'destructive' ],
+		] ) . "\n";
+		$text .= "<br />" . $removeSectionButton . "\n";
 		$text .= "	</div>\n";
 
 		return $text;
 	}
 
 	function templateCreationHTML( $tif, $template_num ) {
-		$checked_attribs = ( $tif->allowsMultiple() ) ? [ 'checked' => 'checked' ] : [];
 		$template_str = $this->msg( 'pf_createform_template' )->escaped();
 		$template_label_input = $this->msg( 'pf_createform_templatelabelinput' )->escaped();
 		$allow_multiple_text = $this->msg( 'pf_createform_allowmultiple' )->escaped();
@@ -434,22 +555,43 @@ END;
 		$text = Html::hidden( "template_$template_num", $tif->getTemplateName() );
 		$text .= '<div class="templateForm">';
 		$text .= Html::element( 'h2', [], "$template_str '{$tif->getTemplateName()}'" );
-		$text .= '<p><label>' . $template_label_input .
-			Html::input( "label_$template_num", $tif->getLabel(), 'text', [ 'size' => 25 ] ) .
-			"</label></p>\n";
-		$text .= '<p><label>' .
-			Html::input( "allow_multiple_$template_num", '', 'checkbox', $checked_attribs ) .
-			$allow_multiple_text . "</label></p>\n";
+		$text .= new OOUI\HorizontalLayout( [
+			'items' => [
+				new OOUI\LabelWidget( [
+					'label' => $template_label_input
+				] ),
+				new OOUI\TextInputWidget( [
+					'name' => "label_$template_num",
+					'value' => $tif->getLabel(),
+					'classes' => [ 'pfTemplateLabel' ]
+				] )
+			]
+		] );
+		$text .= new OOUI\HorizontalLayout( [
+			'items' => [
+				new OOUI\CheckboxInputWidget( [
+					'name' => "allow_multiple_$template_num",
+					'selected' => ( $tif->allowsMultiple() ) ? true : false,
+					'value' => ( $tif->allowsMultiple() ) ? 'on' : ''
+				] ),
+				new OOUI\LabelWidget( [
+					'label' => $allow_multiple_text
+				] )
+			]
+		] );
 		$text .= '<hr />';
 
 		foreach ( $tif->getFields() as $field_num => $field ) {
 			$text .= $this->fieldCreationHTML( $field, $field_num, $template_num );
 		}
-		$removeTemplateButton = Html::input(
-			'del_' . $template_num,
-			$this->msg( 'pf_createform_removetemplate' )->text(),
-			'submit'
-		);
+		$removeTemplateButton = new OOUI\ButtonInputWidget( [
+			'label' => $this->msg( 'pf_createform_removetemplate' )->text(),
+			'type' => 'submit',
+			'icon' => 'subtract',
+			'id' => 'pfRemoveTemplateButton',
+			'name' => 'del_' . $template_num,
+			'flags' => [ 'destructive' ],
+		] );
 		$text .= "\t" . Html::rawElement( 'p', null, $removeTemplateButton ) . "\n";
 		$text .= "	</div>\n";
 		return $text;
@@ -472,7 +614,6 @@ END;
 				$propDisplayMsg = 'pf_createform_fieldprop';
 			}
 			$prop_link_text = PFUtils::linkText( SMW_NS_PROPERTY, $template_field->getSemanticProperty() );
-
 			// Get the display label for this property type.
 			$propertyTypeStr = '';
 			$smwContLang = PFUtils::getSMWContLang();
@@ -492,19 +633,8 @@ END;
 		}
 		// If it's not a semantic field - don't add any text.
 		$form_label_text = $this->msg( 'pf_createform_formlabel' )->escaped();
-		$form_label_input = Html::input(
-			'label_' . $field_form_text,
-			$template_field->getLabel(),
-			'text',
-			[ 'size' => 20 ]
-		);
 		$input_type_text = $this->msg( 'pf_createform_inputtype' )->escaped();
-		$text .= <<<END
-	<div class="formField">
-	<p><label>$form_label_text $form_label_input</label>
-	&#160; <label>$input_type_text
 
-END;
 		global $wgPageFormsFormPrinter;
 		if ( $template_field->getPropertyType() !== null ) {
 			$default_input_type = $wgPageFormsFormPrinter->getDefaultInputTypeSMW( $template_field->isList(), $template_field->getPropertyType() );
@@ -522,7 +652,6 @@ END;
 			$default_input_type = null;
 			$possible_input_types = $wgPageFormsFormPrinter->getAllInputTypes();
 		}
-		$text .= $this->inputTypeDropdownHTML( $field_form_text, $default_input_type, $possible_input_types, $field->getInputType() ) . "</label>\n";
 
 		if ( $field->getInputType() !== null ) {
 			$cur_input_type = $field->getInputType();
@@ -532,9 +661,32 @@ END;
 			$cur_input_type = $possible_input_types[0];
 		}
 
+		$formFieldRow = new OOUI\HorizontalLayout( [
+			'items' => [
+				new OOUI\LabelWidget( [
+					'label' => $form_label_text
+				] ),
+				new OOUI\TextInputWidget( [
+					'name' => "label_$field_form_text",
+					'value' => $template_field->getLabel(),
+					'classes' => [ 'pfFormLabel' ]
+				] ),
+				new OOUI\LabelWidget( [
+					'label' => $input_type_text
+				] ),
+				$this->inputTypeDropdownHTML( $field_form_text, $default_input_type, $possible_input_types, $field->getInputType() )
+			]
+		] );
+
+		$text .= <<<END
+	<div class="formField">
+	$formFieldRow
+
+END;
 		$paramValues = [];
 		foreach ( $this->getRequest()->getValues() as $key => $value ) {
-			if ( ( $pos = strpos( $key, '_' . $field_form_text ) ) != false ) {
+			$pos = strpos( $key, '_' . $field_form_text );
+			if ( $pos !== false ) {
 				$paramName = substr( $key, 0, $pos );
 				// Spaces got replaced by underlines in the
 				// query.
@@ -562,26 +714,21 @@ END;
 			array_unshift( $possible_input_types, $default_input_type );
 		}
 		// create the dropdown HTML for a list of possible input types
-		$dropdownHTML = "";
+		$dropdownAttrs = [];
 		foreach ( $possible_input_types as $i => $input_type ) {
 			if ( $i == 0 ) {
-				$dropdownHTML .= "	<option value=\".$input_type\">$input_type " .
-					$this->msg( 'pf_createform_inputtypedefault' )->escaped() . "</option>\n";
+				array_push( $dropdownAttrs, [ 'data' => '', 'label' => $input_type . ' ' . $this->msg( 'pf_createform_inputtypedefault' )->escaped() ] );
 			} else {
-				$selected_str = ( $cur_input_type == $input_type ) ? "selected" : "";
-				$dropdownHTML .= "	<option value=\"$input_type\" $selected_str>$input_type</option>\n";
+				array_push( $dropdownAttrs, [ 'data' => $input_type, 'label' => $input_type ] );
 			}
 		}
-		$hidden_text = $this->msg( 'pf_createform_hidden' )->escaped();
-		$selected_str = ( $cur_input_type == 'hidden' ) ? "selected" : "";
-		// @todo FIXME: Contains hard coded parentheses.
-		$dropdownHTML .= "	<option value=\"hidden\" $selected_str>($hidden_text)</option>\n";
-		$text = "\t" . Html::rawElement( 'select',
-			[
-				'class' => 'inputTypeSelector',
-				'name' => 'input_type_' . $field_form_text,
-				'formfieldid' => $field_form_text
-			], $dropdownHTML ) . "\n";
+		array_push( $dropdownAttrs, [ 'data' => 'hidden', 'label' => $this->msg( 'pf_createform_hidden' )->escaped() ] );
+		$text = new OOUI\DropdownInputWidget( [
+			'classes' => [ 'inputTypeSelector' ],
+			'name' => 'input_type_' . $field_form_text,
+			'id' => $field_form_text,
+			'options' => $dropdownAttrs
+		] );
 		return $text;
 	}
 
@@ -599,55 +746,56 @@ END;
 	 */
 	public static function inputTypeParamInput( $type, $paramName, $cur_value, array $param, array $paramValues, $fieldFormText ) {
 		if ( $type == 'int' ) {
-			return Html::input(
-				$paramName . '_' . $fieldFormText,
-				$cur_value,
-				'text',
-				[ 'size' => 6 ]
-			);
-		} elseif ( $type == 'string' ) {
-			return Html::input(
-				$paramName . '_' . $fieldFormText,
-				$cur_value,
-				'text',
-				[ 'size' => 32 ]
-			);
-		} elseif ( $type == 'text' ) {
-			return Html::element( 'textarea', [
+			return new OOUI\TextInputWidget( [
 				'name' => $paramName . '_' . $fieldFormText,
-				'rows' => 4
-			], $cur_value );
+				'value' => $cur_value,
+				'classes' => [ 'pfTextFieldForInt' ]
+			] );
+		} elseif ( $type == 'string' ) {
+			return new OOUI\TextInputWidget( [
+				'name' => $paramName . '_' . $fieldFormText,
+				'value' => $cur_value,
+				'classes' => [ 'pfTextFieldForString' ]
+			] );
+		} elseif ( $type == 'text' ) {
+			return new OOUI\MultilineTextInputWidget( [
+				'name' => $paramName . '_' . $fieldFormText,
+				'rows' => 4,
+				'value' => $cur_value
+			] );
 		} elseif ( $type == 'enumeration' ) {
-			$selectBody = Html::element( 'option' ) . "\n";
+			$val = '';
 			foreach ( $param['values'] as $value ) {
 				$optionAttrs = [ 'value' => $value ];
 				if ( $cur_value == $value ) {
-					$optionAttrs['selected'] = true;
+					$val = $value;
 				}
-				$selectBody .= Html::element( 'option', $optionAttrs, $value ) . "\n";
 			}
-
-			return Html::rawElement( 'select', [ 'name' => 'p[' . $paramName . ']' ], $selectBody );
+			return new OOUI\DropdownInputWidget( [
+				'name' => 'p[' . $paramName . ']',
+				'options' => $optionAttrs,
+				'value' => $val
+			] );
 		} elseif ( $type == 'enum-list' ) {
 			$cur_values = explode( ',', $cur_value );
+			$text = '';
 			foreach ( $param['values'] as $val ) {
-				$checkboxName = 'p[' . $paramName . '][' . $val . ']';
-				$checkboxAttrs = [];
-				if ( in_array( $val, $cur_values ) ) {
-					$checkboxAttrs['checked'] = true;
-				}
-				$checkboxHTML = Html::input( $checkboxName, 'true', 'checkbox', $checkboxAttrs );
+				$checkboxHTML = new OOUI\CheckboxInputWidget( [
+					'name' => 'p[' . $paramName . '][' . $val . ']',
+					'selected' => in_array( $val, $cur_values ) ? true : false,
+					'value' => in_array( $val, $cur_values ) ? 'on' : ''
+				] );
 				$text .= Html::rawElement( 'span', [
 						'style' => 'white-space: nowrap; padding-right: 5px; font-family: monospace;'
 					], $checkboxHTML );
 			}
 			return $text;
 		} elseif ( $type == 'boolean' ) {
-			$checkboxAttrs = [];
-			if ( $cur_value ) {
-				$checkboxAttrs['checked'] = true;
-			}
-			return Html::input( $paramName . '_' . $fieldFormText, null, 'checkbox', $checkboxAttrs );
+			return new OOUI\CheckboxInputWidget( [
+				'name' => $paramName . '_' . $fieldFormText,
+				'selected' => $cur_value ? true : false,
+				'value' => $cur_value ? 'on' : ''
+			] );
 		}
 	}
 
@@ -671,7 +819,6 @@ END;
 		if ( substr( $inputType, 0, 1 ) == '.' ) {
 			$inputType = substr( $inputType, 1 );
 		}
-
 		$inputTypeClass = $wgPageFormsFormPrinter->getInputType( $inputType );
 
 		$params = method_exists( $inputTypeClass, 'getParameters' ) ? call_user_func( [ $inputTypeClass, 'getParameters' ] ) : [];
@@ -697,7 +844,6 @@ END;
 			}
 
 			$text .= "<div style=\"width: 30%; padding: 5px; float: left;\">\n<label>$paramName:\n";
-
 			$text .= self::inputTypeParamInput( $type, $paramName, $cur_value, $param, [], $fieldFormText );
 			$text .= "\n</label>\n<br />" . Html::rawElement( 'em', null, $desc ) . "\n</div>\n";
 

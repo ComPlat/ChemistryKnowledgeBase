@@ -1,6 +1,20 @@
 <?php
 
-class Scribunto_LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
+namespace MediaWiki\Extension\Scribunto\Engines\LuaSandbox;
+
+use LuaSandbox;
+use LuaSandboxError;
+use LuaSandboxFunction;
+use LuaSandboxTimeoutError;
+use MWException;
+use Scribunto_LuaEngine;
+use Scribunto_LuaError;
+use Scribunto_LuaInterpreter;
+use Scribunto_LuaInterpreterBadVersionError;
+use Scribunto_LuaInterpreterNotFoundError;
+use UtfNormal\Validator;
+
+class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 	/**
 	 * @var Scribunto_LuaEngine
 	 */
@@ -67,9 +81,18 @@ class Scribunto_LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 	protected function convertSandboxError( LuaSandboxError $e ) {
 		$opts = [];
 		if ( isset( $e->luaTrace ) ) {
-			$opts['trace'] = $e->luaTrace;
+			$trace = $e->luaTrace;
+			foreach ( $trace as &$val ) {
+				$val = array_map( static function ( $val ) {
+					if ( is_string( $val ) ) {
+						$val = Validator::cleanUp( $val );
+					}
+					return $val;
+				}, $val );
+			}
+			$opts['trace'] = $trace;
 		}
-		$message = $e->getMessage();
+		$message = Validator::cleanUp( $e->getMessage() );
 		if ( preg_match( '/^(.*?):(\d+): (.*)$/', $message, $m ) ) {
 			$opts['module'] = $m[1];
 			$opts['line'] = $m[2];
@@ -97,7 +120,7 @@ class Scribunto_LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 		$realLibrary = [];
 		foreach ( $functions as $funcName => $callback ) {
 			$realLibrary[$funcName] = [
-				new Scribunto_LuaSandboxCallback( $callback ),
+				new LuaSandboxCallback( $callback ),
 				$funcName ];
 		}
 		$this->sandbox->registerLibrary( $name, $realLibrary );

@@ -1,6 +1,6 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\MainConfigNames;
 
 /**
  * @covers ChangeTags
@@ -8,7 +8,7 @@ use MediaWiki\MediaWikiServices;
  */
 class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
 		$this->tablesUsed[] = 'change_tag';
@@ -23,9 +23,15 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 		$this->tablesUsed[] = 'archive';
 	}
 
-	public function tearDown() : void {
+	protected function tearDown(): void {
 		ChangeTags::$avoidReopeningTablesForTesting = false;
 		parent::tearDown();
+	}
+
+	private function emptyChangeTagsTables() {
+		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw->delete( 'change_tag', '*' );
+		$dbw->delete( 'change_tag_def', '*' );
 	}
 
 	// TODO most methods are not tested
@@ -36,9 +42,10 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 		$filter_tag,
 		$useTags,
 		$avoidReopeningTables,
-		$modifiedQuery
+		$modifiedQuery,
+		$exclude = false
 	) {
-		$this->setMwGlobals( 'wgUseTagFilter', $useTags );
+		$this->overrideConfigValue( MainConfigNames::UseTagFilter, $useTags );
 
 		if ( $avoidReopeningTables && $this->db->getType() !== 'mysql' ) {
 			$this->markTestSkipped( 'MySQL only' );
@@ -47,7 +54,7 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 		ChangeTags::$avoidReopeningTablesForTesting = $avoidReopeningTables;
 
 		$rcId = 123;
-		ChangeTags::updateTags( [ 'foo', 'bar' ], [], $rcId );
+		ChangeTags::updateTags( [ 'foo', 'bar', '0' ], [], $rcId );
 		// HACK resolve deferred group concats (see comment in provideModifyDisplayQuery)
 		if ( isset( $modifiedQuery['fields']['ts_tags'] ) ) {
 			$modifiedQuery['fields']['ts_tags'] = wfGetDB( DB_REPLICA )
@@ -62,7 +69,8 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 			$origQuery['conds'],
 			$origQuery['join_conds'],
 			$origQuery['options'],
-			$filter_tag
+			$filter_tag,
+			$exclude
 		);
 		if ( !isset( $modifiedQuery['exception'] ) ) {
 			$this->assertArrayEquals(
@@ -106,7 +114,7 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
 				]
 			],
-			'simple query with strings' => [
+			"simple query with strings, tagfilter=''" => [
 				[
 					'tables' => 'recentchanges',
 					'fields' => 'rc_id',
@@ -115,6 +123,44 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 					'options' => 'ORDER BY rc_timestamp DESC',
 				],
 				'', // no tag filter
+				true, // tag filtering enabled
+				false, // not avoiding reopening tables
+				[
+					'tables' => [ 'recentchanges' ],
+					'fields' => [ 'rc_id', 'ts_tags' => $groupConcats['recentchanges'] ],
+					'conds' => [ "rc_timestamp > '20170714183203'" ],
+					'join_conds' => [],
+					'options' => [ 'ORDER BY rc_timestamp DESC' ],
+				]
+			],
+			'simple query with strings, tagfilter=false' => [
+				[
+					'tables' => 'recentchanges',
+					'fields' => 'rc_id',
+					'conds' => "rc_timestamp > '20170714183203'",
+					'join_conds' => [],
+					'options' => 'ORDER BY rc_timestamp DESC',
+				],
+				false, // no tag filter
+				true, // tag filtering enabled
+				false, // not avoiding reopening tables
+				[
+					'tables' => [ 'recentchanges' ],
+					'fields' => [ 'rc_id', 'ts_tags' => $groupConcats['recentchanges'] ],
+					'conds' => [ "rc_timestamp > '20170714183203'" ],
+					'join_conds' => [],
+					'options' => [ 'ORDER BY rc_timestamp DESC' ],
+				]
+			],
+			'simple query with strings, tagfilter=null' => [
+				[
+					'tables' => 'recentchanges',
+					'fields' => 'rc_id',
+					'conds' => "rc_timestamp > '20170714183203'",
+					'join_conds' => [],
+					'options' => 'ORDER BY rc_timestamp DESC',
+				],
+				null, // no tag filter
 				true, // tag filtering enabled
 				false, // not avoiding reopening tables
 				[
@@ -140,6 +186,25 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 					'tables' => [ 'recentchanges', 'change_tag' ],
 					'fields' => [ 'rc_id', 'rc_timestamp', 'ts_tags' => $groupConcats['recentchanges'] ],
 					'conds' => [ "rc_timestamp > '20170714183203'", 'ct_tag_id' => [ 1 ] ],
+					'join_conds' => [ 'change_tag' => [ 'JOIN', 'ct_rc_id=rc_id' ] ],
+					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
+				]
+			],
+			'recentchanges query with "0" tag filter' => [
+				[
+					'tables' => [ 'recentchanges' ],
+					'fields' => [ 'rc_id', 'rc_timestamp' ],
+					'conds' => [ "rc_timestamp > '20170714183203'" ],
+					'join_conds' => [],
+					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
+				],
+				'0',
+				true, // tag filtering enabled
+				false, // not avoiding reopening tables
+				[
+					'tables' => [ 'recentchanges', 'change_tag' ],
+					'fields' => [ 'rc_id', 'rc_timestamp', 'ts_tags' => $groupConcats['recentchanges'] ],
+					'conds' => [ "rc_timestamp > '20170714183203'", 'ct_tag_id' => [ 3 ] ],
 					'join_conds' => [ 'change_tag' => [ 'JOIN', 'ct_rc_id=rc_id' ] ],
 					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
 				]
@@ -271,6 +336,26 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 					'options' => [ 'ORDER BY' => 'rc_timestamp DESC', 'DISTINCT' ],
 				]
 			],
+			'recentchanges query with exclusive multiple tag filter' => [
+				[
+					'tables' => [ 'recentchanges' ],
+					'fields' => [ 'rc_id', 'rc_timestamp' ],
+					'conds' => [ "rc_timestamp > '20170714183203'" ],
+					'join_conds' => [],
+					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
+				],
+				[ 'foo', 'bar' ],
+				true, // tag filtering enabled
+				false, // not avoiding reopening tables
+				[
+					'tables' => [ 'recentchanges', 'change_tag' ],
+					'fields' => [ 'rc_id', 'rc_timestamp', 'ts_tags' => $groupConcats['recentchanges'] ],
+					'conds' => [ "rc_timestamp > '20170714183203'", 'ct_tag_id IS NULL' ],
+					'join_conds' => [ 'change_tag' => [ 'LEFT JOIN', [ 'ct_rc_id=rc_id', 'ct_tag_id' => [ 1, 2 ] ] ] ],
+					'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
+				],
+				true // exclude
+			],
 			'recentchanges query with multiple tag filter that already has DISTINCT' => [
 				[
 					'tables' => [ 'recentchanges' ],
@@ -339,12 +424,12 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 					'mw-redirect' => true,
 					'mw-rollback' => true,
 					'mw-blank' => true,
-					'mw-replace' => true
+					'mw-replace' => true,
 				],
 				[
 					'mw-rollback',
 					'mw-replace',
-					'mw-blank'
+					'mw-blank',
 				]
 			],
 
@@ -385,7 +470,7 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 	 * @covers ChangeTags::getSoftwareTags
 	 */
 	public function testGetSoftwareTags( $softwareTags, $expected ) {
-		$this->setMwGlobals( 'wgSoftwareTags', $softwareTags );
+		$this->overrideConfigValue( MainConfigNames::SoftwareTags, $softwareTags );
 
 		$actual = ChangeTags::getSoftwareTags();
 		// Order of tags in arrays is not important
@@ -395,229 +480,150 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testUpdateTags() {
-		// FIXME: fails under postgres
-		$this->markTestSkippedIfDbType( 'postgres' );
-
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
+		$this->emptyChangeTagsTables();
 
 		$rcId = 123;
 		$revId = 341;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId, $revId );
 
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_id' => 1,
-				'ctd_count' => 1
-			],
-			(object)[
-				'ctd_name' => 'tag2',
-				'ctd_id' => 2,
-				'ctd_count' => 1
-			],
-		];
-		$res = $dbr->select( 'change_tag_def', [ 'ctd_name', 'ctd_id', 'ctd_count' ], '' );
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
-
-		$expected2 = [
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 123,
-				'ct_rev_id' => 341
-			],
-			(object)[
-				'ct_tag_id' => 2,
-				'ct_rc_id' => 123,
-				'ct_rev_id' => 341
-			],
-		];
-		$res2 = $dbr->select( 'change_tag', [ 'ct_tag_id', 'ct_rc_id', 'ct_rev_id' ], '' );
-		$this->assertEquals( $expected2, iterator_to_array( $res2, false ) );
+		$this->assertSelect(
+			'change_tag_def',
+			[ 'ctd_name', 'ctd_id', 'ctd_count' ],
+			'',
+			[
+				// values of fields 'ctd_name', 'ctd_id', 'ctd_count'
+				[ 'tag1', 1, 1 ],
+				[ 'tag2', 2, 1 ],
+			]
+		);
+		$this->assertSelect(
+			'change_tag',
+			[ 'ct_tag_id', 'ct_rc_id', 'ct_rev_id' ],
+			'',
+			[
+				// values of fields 'ct_tag_id', 'ct_rc_id', 'ct_rev_id'
+				[ 1, 123, 341 ],
+				[ 2, 123, 341 ],
+			]
+		);
 
 		$rcId = 124;
 		$revId = 342;
 		ChangeTags::updateTags( [ 'tag1' ], [], $rcId, $revId );
 		ChangeTags::updateTags( [ 'tag3' ], [], $rcId, $revId );
 
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_id' => 1,
-				'ctd_count' => 2
-			],
-			(object)[
-				'ctd_name' => 'tag2',
-				'ctd_id' => 2,
-				'ctd_count' => 1
-			],
-			(object)[
-				'ctd_name' => 'tag3',
-				'ctd_id' => 3,
-				'ctd_count' => 1
-			],
-		];
-		$res = $dbr->select( 'change_tag_def', [ 'ctd_name', 'ctd_id', 'ctd_count' ], '' );
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
-
-		$expected2 = [
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 123,
-				'ct_rev_id' => 341
-			],
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 124,
-				'ct_rev_id' => 342
-			],
-			(object)[
-				'ct_tag_id' => 2,
-				'ct_rc_id' => 123,
-				'ct_rev_id' => 341
-			],
-			(object)[
-				'ct_tag_id' => 3,
-				'ct_rc_id' => 124,
-				'ct_rev_id' => 342
-			],
-		];
-		$res2 = $dbr->select( 'change_tag', [ 'ct_tag_id', 'ct_rc_id', 'ct_rev_id' ], '' );
-		$this->assertEquals( $expected2, iterator_to_array( $res2, false ) );
+		$this->assertSelect(
+			'change_tag_def',
+			[ 'ctd_name', 'ctd_id', 'ctd_count' ],
+			'',
+			[
+				// values of fields 'ctd_name', 'ctd_id', 'ctd_count'
+				[ 'tag1', 1, 2 ],
+				[ 'tag2', 2, 1 ],
+				[ 'tag3', 3, 1 ],
+			]
+		);
+		$this->assertSelect(
+			'change_tag',
+			[ 'ct_tag_id', 'ct_rc_id', 'ct_rev_id' ],
+			'',
+			[
+				// values of fields 'ct_tag_id', 'ct_rc_id', 'ct_rev_id'
+				[ 1, 123, 341 ],
+				[ 1, 124, 342 ],
+				[ 2, 123, 341 ],
+				[ 3, 124, 342 ],
+			]
+		);
 	}
 
 	public function testUpdateTagsSkipDuplicates() {
-		// FIXME: fails under postgres
-		$this->markTestSkippedIfDbType( 'postgres' );
-
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
+		$this->emptyChangeTagsTables();
 
 		$rcId = 123;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId );
 		ChangeTags::updateTags( [ 'tag2', 'tag3' ], [], $rcId );
 
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_id' => 1,
-				'ctd_count' => 1
-			],
-			(object)[
-				'ctd_name' => 'tag2',
-				'ctd_id' => 2,
-				'ctd_count' => 1
-			],
-			(object)[
-				'ctd_name' => 'tag3',
-				'ctd_id' => 3,
-				'ctd_count' => 1
-			],
-		];
-		$res = $dbr->select( 'change_tag_def', [ 'ctd_name', 'ctd_id', 'ctd_count' ], '' );
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
-
-		$expected2 = [
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 123
-			],
-			(object)[
-				'ct_tag_id' => 2,
-				'ct_rc_id' => 123
-			],
-			(object)[
-				'ct_tag_id' => 3,
-				'ct_rc_id' => 123
-			],
-		];
-		$res2 = $dbr->select( 'change_tag', [ 'ct_tag_id', 'ct_rc_id' ], '' );
-		$this->assertEquals( $expected2, iterator_to_array( $res2, false ) );
+		$this->assertSelect(
+			'change_tag_def',
+			[ 'ctd_name', 'ctd_id', 'ctd_count' ],
+			'',
+			[
+				// values of fields 'ctd_name', 'ctd_id', 'ctd_count'
+				[ 'tag1', 1, 1 ],
+				[ 'tag2', 2, 1 ],
+				[ 'tag3', 3, 1 ],
+			]
+		);
+		$this->assertSelect(
+			'change_tag',
+			[ 'ct_tag_id', 'ct_rc_id' ],
+			'',
+			[
+				// values of fields 'ct_tag_id', 'ct_rc_id',
+				[ 1, 123 ],
+				[ 2, 123 ],
+				[ 3, 123 ],
+			]
+		);
 	}
 
 	public function testUpdateTagsDoNothingOnRepeatedCall() {
-		// FIXME: fails under postgres
-		$this->markTestSkippedIfDbType( 'postgres' );
-
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
+		$this->emptyChangeTagsTables();
 
 		$rcId = 123;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId );
 		$res = ChangeTags::updateTags( [ 'tag2', 'tag1' ], [], $rcId );
 		$this->assertEquals( [ [], [], [ 'tag1', 'tag2' ] ], $res );
 
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_id' => 1,
-				'ctd_count' => 1
-			],
-			(object)[
-				'ctd_name' => 'tag2',
-				'ctd_id' => 2,
-				'ctd_count' => 1
-			],
-		];
-		$res = $dbr->select( 'change_tag_def', [ 'ctd_name', 'ctd_id', 'ctd_count' ], '' );
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
-
-		$expected2 = [
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 123
-			],
-			(object)[
-				'ct_tag_id' => 2,
-				'ct_rc_id' => 123
-			],
-		];
-		$res2 = $dbr->select( 'change_tag', [ 'ct_tag_id', 'ct_rc_id' ], '' );
-		$this->assertEquals( $expected2, iterator_to_array( $res2, false ) );
+		$this->assertSelect(
+			'change_tag_def',
+			[ 'ctd_name', 'ctd_id', 'ctd_count' ],
+			'',
+			[
+				// values of fields 'ctd_name', 'ctd_id', 'ctd_count'
+				[ 'tag1', 1, 1 ],
+				[ 'tag2', 2, 1 ],
+			]
+		);
+		$this->assertSelect(
+			'change_tag',
+			[ 'ct_tag_id', 'ct_rc_id' ],
+			'',
+			[
+				// values of fields 'ct_tag_id', 'ct_rc_id',
+				[ 1, 123 ],
+				[ 2, 123 ],
+			]
+		);
 	}
 
 	public function testDeleteTags() {
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
-		MediaWikiServices::getInstance()->resetServiceForTesting( 'NameTableStoreFactory' );
+		$this->emptyChangeTagsTables();
+		$this->getServiceContainer()->resetServiceForTesting( 'NameTableStoreFactory' );
 
 		$rcId = 123;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId );
-
 		ChangeTags::updateTags( [], [ 'tag2' ], $rcId );
 
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_id' => 1,
-				'ctd_count' => 1
-			],
-		];
-		$res = $dbr->select( 'change_tag_def', [ 'ctd_name', 'ctd_id', 'ctd_count' ], '' );
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
-
-		$expected2 = [
-			(object)[
-				'ct_tag_id' => 1,
-				'ct_rc_id' => 123
+		$this->assertSelect(
+			'change_tag_def',
+			[ 'ctd_name', 'ctd_id', 'ctd_count' ],
+			'',
+			[
+				// values of fields 'ctd_name', 'ctd_id', 'ctd_count'
+				[ 'tag1', 1, 1 ],
 			]
-		];
-		$res2 = $dbr->select( 'change_tag', [ 'ct_tag_id', 'ct_rc_id' ], '' );
-		$this->assertEquals( $expected2, iterator_to_array( $res2, false ) );
+		);
+		$this->assertSelect(
+			'change_tag',
+			[ 'ct_tag_id', 'ct_rc_id' ],
+			'',
+			[
+				// values of fields 'ct_tag_id', 'ct_rc_id',
+				[ 1, 123 ],
+			]
+		);
 	}
 
 	public function provideTags() {
@@ -662,11 +668,27 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayEquals( $tags1, ChangeTags::getTags( $this->db, $rcId ) );
 	}
 
+	public function testGetTagsWithData() {
+		$rcId1 = 123;
+		$rcId2 = 456;
+		$rcId3 = 789;
+		ChangeTags::addTags( [ 'tag 1' ], $rcId1, null, null, 'data1' );
+		ChangeTags::addTags( [ 'tag 3_1' ], $rcId3, null, null );
+		ChangeTags::addTags( [ 'tag 3_2' ], $rcId3, null, null, 'data3_2' );
+
+		$data = ChangeTags::getTagsWithData( $this->db, $rcId1 );
+		$this->assertSame( [ 'tag 1' => 'data1' ], $data );
+
+		$data = ChangeTags::getTagsWithData( $this->db, $rcId2 );
+		$this->assertSame( [], $data );
+
+		$data = ChangeTags::getTagsWithData( $this->db, $rcId3 );
+		$this->assertArrayEquals( [ 'tag 3_1' => null, 'tag 3_2' => 'data3_2' ], $data, false, true );
+	}
+
 	public function testTagUsageStatistics() {
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
-		MediaWikiServices::getInstance()->resetServiceForTesting( 'NameTableStoreFactory' );
+		$this->emptyChangeTagsTables();
+		$this->getServiceContainer()->resetServiceForTesting( 'NameTableStoreFactory' );
 
 		$rcId = 123;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId );
@@ -678,34 +700,82 @@ class ChangeTagsTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testListExplicitlyDefinedTags() {
-		$dbw = wfGetDB( DB_MASTER );
-		$dbw->delete( 'change_tag', '*' );
-		$dbw->delete( 'change_tag_def', '*' );
+		$this->emptyChangeTagsTables();
 
 		$rcId = 123;
 		ChangeTags::updateTags( [ 'tag1', 'tag2' ], [], $rcId );
 		ChangeTags::defineTag( 'tag2' );
 
 		$this->assertEquals( [ 'tag2' ], ChangeTags::listExplicitlyDefinedTags() );
-		$dbr = wfGetDB( DB_REPLICA );
 
-		$expected = [
-			(object)[
-				'ctd_name' => 'tag1',
-				'ctd_user_defined' => 0
-			],
-			(object)[
-				'ctd_name' => 'tag2',
-				'ctd_user_defined' => 1
-			],
-		];
-		$res = $dbr->select(
+		$this->assertSelect(
 			'change_tag_def',
 			[ 'ctd_name', 'ctd_user_defined' ],
 			'',
-			__METHOD__,
+			[
+				// values of fields 'ctd_name', 'ctd_user_defined'
+				[ 'tag1', 0 ],
+				[ 'tag2', 1 ],
+			],
 			[ 'ORDER BY' => 'ctd_name' ]
 		);
-		$this->assertEquals( $expected, iterator_to_array( $res, false ) );
 	}
+
+	public function provideFormatSummaryRow() {
+		yield 'nothing' => [ '', [ '', [] ] ];
+		yield 'valid tag' => [
+			'tag1',
+			[
+				'<span class="mw-tag-markers">(tag-list-wrapper: 1, '
+				. '<span class="mw-tag-marker mw-tag-marker-tag1">(tag-tag1)</span>'
+				. ')</span>',
+				[ 'mw-tag-tag1' ]
+			]
+		];
+		yield '0 tag' => [
+			'0',
+			[
+				'<span class="mw-tag-markers">(tag-list-wrapper: 1, '
+				. '<span class="mw-tag-marker mw-tag-marker-0">(tag-0)</span>'
+				. ')</span>',
+				[ 'mw-tag-0' ]
+			]
+		];
+		yield 'hidden tag' => [
+			'hidden-tag',
+			[
+				'',
+				[ 'mw-tag-hidden-tag' ]
+			]
+		];
+		yield 'mutliple tags' => [
+			'tag1,0,,hidden-tag',
+			[
+				'<span class="mw-tag-markers">(tag-list-wrapper: 2, '
+				. '<span class="mw-tag-marker mw-tag-marker-tag1">(tag-tag1)</span>'
+				. ' <span class="mw-tag-marker mw-tag-marker-0">(tag-0)</span>'
+				. ')</span>',
+				[ 'mw-tag-tag1', 'mw-tag-0', 'mw-tag-hidden-tag' ]
+			]
+		];
+	}
+
+	/**
+	 * @dataProvider provideFormatSummaryRow
+	 */
+	public function testFormatSummaryRow( $tags, $expected ) {
+		$qqx = new MockMessageLocalizer();
+		$localizer = $this->createMock( MessageLocalizer::class );
+		$localizer->method( 'msg' )
+			->willReturnCallback( static function ( $key, ...$params ) use ( $qqx ) {
+				if ( $key === 'tag-hidden-tag' ) {
+					return new RawMessage( '-' );
+				}
+				return $qqx->msg( $key, ...$params );
+			} );
+
+		$out = ChangeTags::formatSummaryRow( $tags, 'dummy', $localizer );
+		$this->assertSame( $expected, $out );
+	}
+
 }

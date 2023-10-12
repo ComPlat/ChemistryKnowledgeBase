@@ -6,19 +6,20 @@
  */
 
 /**
- * MediaWiki transclusion dialog template page.
+ * Container for editing the value of a parameter in the template dialog
+ * content pane.  Includes a dynamic value input depending on the parameter's
+ * type documented in TemplateData.
  *
  * @class
  * @extends OO.ui.PageLayout
  *
  * @constructor
  * @param {ve.dm.MWParameterModel} parameter Template parameter
- * @param {string} name Unique symbolic name of page
  * @param {Object} [config] Configuration options
  * @cfg {jQuery} [$overlay] Overlay to render dropdowns in
  * @cfg {boolean} [readOnly] Parameter is read-only
  */
-ve.ui.MWParameterPage = function VeUiMWParameterPage( parameter, name, config ) {
+ve.ui.MWParameterPage = function VeUiMWParameterPage( parameter, config ) {
 	var paramName = parameter.getName();
 
 	// Configuration initialization
@@ -27,181 +28,131 @@ ve.ui.MWParameterPage = function VeUiMWParameterPage( parameter, name, config ) 
 	}, config );
 
 	// Parent constructor
-	ve.ui.MWParameterPage.super.call( this, name, config );
+	ve.ui.MWParameterPage.super.call( this, parameter.getId(), config );
 
 	// Properties
 	this.edited = false;
 	this.parameter = parameter;
-	this.originalValue = parameter.getValue();
 	this.spec = parameter.getTemplate().getSpec();
 	this.defaultValue = parameter.getDefaultValue();
 	this.exampleValue = parameter.getExampleValue();
+	this.hasValue = null;
 
 	this.$info = $( '<div>' );
-	this.$actions = $( '<div>' );
-	this.$labelElement = $( '<div>' );
 	this.$field = $( '<div>' );
-	this.$more = $( '<div>' );
-	this.$description = $( '<div>' );
+
+	// Construct the field docs for the template description
+	var $doc = $( '<div>' )
+		.attr( 'id', OO.ui.generateElementId() )
+		.addClass( 've-ui-mwParameterPage-doc' );
+	var description = this.spec.getParameterDescription( paramName );
+	if ( description ) {
+		$( '<p>' ).text( description ).appendTo( $doc );
+	}
 
 	// Note: Calling createValueInput() sets some properties we rely on later in this function
 	this.valueInput = this.createValueInput()
 		.setValue( this.parameter.getValue() )
 		.connect( this, { change: 'onValueInputChange' } );
 
+	this.valueInput.$input.attr( 'aria-describedby', $doc.attr( 'id' ) );
+
 	if ( config.readOnly && this.valueInput.setReadOnly ) {
 		this.valueInput.setReadOnly( true );
 	}
 
-	this.statusIndicator = new OO.ui.IndicatorWidget( {
-		classes: [ 've-ui-mwParameterPage-statusIndicator' ]
+	var labelElement = new OO.ui.LabelWidget( {
+		input: this.valueInput,
+		label: this.spec.getParameterLabel( paramName ),
+		classes: [ 've-ui-mwParameterPage-label' ]
 	} );
 
-	// Construct the description popup
-
-	this.$description
-		.addClass( 've-ui-mwParameterPage-description' )
-		.append( $( '<p>' ).text( this.spec.getParameterDescription( paramName ) || '' ) );
-
+	var statusIndicator;
 	if ( this.parameter.isRequired() ) {
-		this.statusIndicator
-			.setIndicator( 'required' )
-			.setTitle(
-				ve.msg( 'visualeditor-dialog-transclusion-required-parameter' )
-			);
-		this.$description.append(
-			$( '<p>' )
-				.addClass( 've-ui-mwParameterPage-description-required' )
-				.text(
-					ve.msg( 'visualeditor-dialog-transclusion-required-parameter-description' )
-				)
-		);
+		$( '<p>' )
+			.addClass( 've-ui-mwParameterPage-doc-required' )
+			.text( ve.msg( 'visualeditor-dialog-transclusion-required-parameter-description' ) )
+			.appendTo( $doc );
 	} else if ( this.parameter.isDeprecated() ) {
-		this.statusIndicator
-			.setIndicator( 'alert' )
-			.setTitle(
-				ve.msg( 'visualeditor-dialog-transclusion-deprecated-parameter' )
-			);
-		this.$description.append(
-			$( '<p>' )
-				.addClass( 've-ui-mwParameterPage-description-deprecated' )
-				.text(
-					ve.msg(
-						'visualeditor-dialog-transclusion-deprecated-parameter-description',
-						this.spec.getParameterDeprecationDescription( paramName )
-					)
-				)
-		);
+		statusIndicator = new OO.ui.IndicatorWidget( {
+			classes: [ 've-ui-mwParameterPage-statusIndicator' ],
+			indicator: 'alert',
+			title: ve.msg( 'visualeditor-dialog-transclusion-deprecated-parameter' )
+		} );
+		$( '<p>' )
+			.addClass( 've-ui-mwParameterPage-doc-deprecated' )
+			.text( ve.msg(
+				'visualeditor-dialog-transclusion-deprecated-parameter-description',
+				this.spec.getParameterDeprecationDescription( paramName )
+			) )
+			.appendTo( $doc );
 	}
 
 	if ( this.defaultValue ) {
-		this.$description.append(
-			$( '<p>' )
-				.addClass( 've-ui-mwParameterPage-description-default' )
-				.text(
-					ve.msg( 'visualeditor-dialog-transclusion-param-default', this.defaultValue )
-				)
-		);
+		$( '<p>' )
+			.addClass( 've-ui-mwParameterPage-doc-default' )
+			.text( ve.msg( 'visualeditor-dialog-transclusion-param-default', this.defaultValue ) )
+			.appendTo( $doc );
 	}
 
 	if ( this.exampleValue ) {
-		this.$description.append(
-			$( '<p>' )
-				.addClass( 've-ui-mwParameterPage-description-example' )
-				.text(
-					ve.msg( 'visualeditor-dialog-transclusion-param-example', this.exampleValue )
-				)
-		);
+		$( '<p>' )
+			.addClass( 've-ui-mwParameterPage-doc-example' )
+			.text( ve.msg(
+				'visualeditor-dialog-transclusion-param-example-long',
+				this.exampleValue
+			) )
+			.appendTo( $doc );
 	}
-
-	// Construct the action buttons
-
-	if ( !this.rawValueInput ) {
-		this.rawFallbackButton = new OO.ui.ButtonWidget( {
-			framed: false,
-			icon: 'wikiText',
-			title: ve.msg( 'visualeditor-dialog-transclusion-raw-fallback' )
-		} )
-			.connect( this, { click: 'onRawFallbackButtonClick' } );
-
-		this.$actions.append( this.rawFallbackButton.$element );
-	}
-
-	if ( this.$description.text().trim() === '' ) {
-		this.infoButton = new OO.ui.ButtonWidget( {
-			disabled: true,
-			title: ve.msg( 'visualeditor-dialog-transclusion-param-info-missing' ),
-			framed: false,
-			icon: 'info',
-			classes: [ 've-ui-mwParameterPage-infoButton' ]
-		} );
-	} else {
-		this.infoButton = new OO.ui.PopupButtonWidget( {
-			$overlay: config.$overlay,
-			popup: {
-				$content: this.$description
-			},
-			title: ve.msg( 'visualeditor-dialog-transclusion-param-info' ),
-			framed: false,
-			icon: 'info',
-			classes: [ 've-ui-mwParameterPage-infoButton' ]
-		} );
-	}
-
-	this.$actions.append( this.infoButton.$element );
-
-	if ( !this.parameter.isRequired() && !config.readOnly ) {
-		this.removeButton = new OO.ui.ButtonWidget( {
-			framed: false,
-			icon: 'trash',
-			title: ve.msg( 'visualeditor-dialog-transclusion-remove-param' ),
-			flags: [ 'destructive' ],
-			classes: [ 've-ui-mwParameterPage-removeButton' ]
-		} )
-			.connect( this, { click: 'onRemoveButtonClick' } );
-
-		this.$actions.append( this.removeButton.$element );
-	}
-
-	this.addButton = new OO.ui.ButtonWidget( {
-		framed: false,
-		icon: 'parameter',
-		label: ve.msg( 'visualeditor-dialog-transclusion-add-param' ),
-		tabIndex: -1
-	} )
-		.connect( this, { click: 'onAddButtonFocus' } );
-
-	// Events
-	this.$labelElement.on( 'click', this.onLabelClick.bind( this ) );
 
 	// Initialization
 	this.$info
 		.addClass( 've-ui-mwParameterPage-info' )
-		.append( this.$labelElement, this.statusIndicator.$element );
-	this.$actions
-		.addClass( 've-ui-mwParameterPage-actions' );
-	this.$labelElement
-		.addClass( 've-ui-mwParameterPage-label' )
-		.text( this.spec.getParameterLabel( paramName ) );
+		.append( labelElement.$element );
+	if ( statusIndicator ) {
+		this.$info.append( ' ', statusIndicator.$element );
+	}
 	this.$field
 		.addClass( 've-ui-mwParameterPage-field' )
 		.append(
 			this.valueInput.$element
 		);
-	this.$more
-		.addClass( 've-ui-mwParameterPage-more' )
-		.append( this.addButton.$element );
+
+	if ( !this.parameter.isDocumented() ) {
+		$( '<span>' )
+			.addClass( 've-ui-mwParameterPage-undocumentedLabel' )
+			.text( ve.msg( 'visualeditor-dialog-transclusion-param-undocumented' ) )
+			.insertAfter( labelElement.$element );
+	}
+
 	this.$element
 		.addClass( 've-ui-mwParameterPage' )
-		.append( this.$info, this.$field, this.$actions );
-	if ( !config.readOnly ) {
-		this.$element.append( this.$more );
+		.append( this.$info, this.$field );
+
+	if ( $doc.children().length ) {
+		this.$field.addClass( 've-ui-mwParameterPage-inlineDescription' );
+		this.collapsibleDoc = new ve.ui.MWExpandableContentElement( {
+			classes: [ 've-ui-mwParameterPage-inlineDescription' ],
+			$content: $doc
+		} );
+		this.$info.after( this.collapsibleDoc.$element );
 	}
 };
 
 /* Inheritance */
 
 OO.inheritClass( ve.ui.MWParameterPage, OO.ui.PageLayout );
+
+/* Events */
+
+/**
+ * Triggered when the parameter value changes between empty and not empty.
+ *
+ * @event hasValueChange
+ * @param string parameterId Keyed by unique id of the parameter, e.g. something
+ *  like "part_1/param1".
+ * @param boolean hasValue
+ */
 
 /* Methods */
 
@@ -212,22 +163,15 @@ OO.inheritClass( ve.ui.MWParameterPage, OO.ui.PageLayout );
  * @return {Object}
  */
 ve.ui.MWParameterPage.prototype.getDefaultInputConfig = function () {
-	var required = this.parameter.isRequired(),
-		valueInputConfig = {
-			autosize: true,
-			required: required,
-			validate: required ? 'non-empty' : null
-		};
+	var valueInputConfig = {
+		autosize: true,
+		required: this.parameter.isRequired()
+	};
 
 	if ( this.defaultValue ) {
 		valueInputConfig.placeholder = ve.msg(
 			'visualeditor-dialog-transclusion-param-default',
 			this.defaultValue
-		);
-	} else if ( this.exampleValue ) {
-		valueInputConfig.placeholder = ve.msg(
-			'visualeditor-dialog-transclusion-param-example',
-			this.exampleValue
 		);
 	}
 
@@ -238,6 +182,7 @@ ve.ui.MWParameterPage.prototype.getDefaultInputConfig = function () {
  * Create a value input widget based on the parameter type and whether it is
  * required or not.
  *
+ * @private
  * @return {OO.ui.InputWidget}
  */
 ve.ui.MWParameterPage.prototype.createValueInput = function () {
@@ -245,11 +190,7 @@ ve.ui.MWParameterPage.prototype.createValueInput = function () {
 		value = this.parameter.getValue(),
 		valueInputConfig = this.getDefaultInputConfig();
 
-	this.rawValueInput = false;
-	delete valueInputConfig.validate;
-
 	// TODO:
-	// * wiki-file-name
 	// * date - T100206
 	// * number - T124850
 	// * unbalanced-wikitext/content - T106242
@@ -258,24 +199,38 @@ ve.ui.MWParameterPage.prototype.createValueInput = function () {
 		type === 'wiki-page-name' &&
 		( value === '' || mw.Title.newFromText( value ) )
 	) {
-		return new mw.widgets.TitleInputWidget( valueInputConfig, { api: ve.init.target.getContentApi() } );
+		return new mw.widgets.TitleInputWidget( ve.extendObject( {
+			api: ve.init.target.getContentApi()
+		}, valueInputConfig ) );
+	} else if (
+		type === 'wiki-file-name' &&
+		( value === '' || mw.Title.newFromText( value ) )
+	) {
+		return new mw.widgets.TitleInputWidget( ve.extendObject( {}, valueInputConfig, {
+			api: ve.init.target.getContentApi(),
+			namespace: 6,
+			showImages: true
+		} ) );
 	} else if (
 		type === 'wiki-user-name' &&
 		( value === '' || mw.Title.newFromText( value ) )
 	) {
-		valueInputConfig.validate = function ( value ) {
+		valueInputConfig.validate = function ( val ) {
 			// TODO: Check against wgMaxNameChars
 			// TODO: Check against unicode validation regex from MW core's User::isValidUserName
-			return !!mw.Title.newFromText( value );
+			return !!mw.Title.newFromText( val );
 		};
-		return new mw.widgets.UserInputWidget( valueInputConfig, { api: ve.init.target.getContentApi() } );
+		return new mw.widgets.UserInputWidget( ve.extendObject( {
+			api: ve.init.target.getContentApi()
+		}, valueInputConfig ) );
 	} else if (
 		type === 'wiki-template-name' &&
 		( value === '' || mw.Title.newFromText( value ) )
 	) {
-		return new mw.widgets.TitleInputWidget( $.extend( {}, valueInputConfig, {
-			namespace: mw.config.get( 'wgNamespaceIds' ).template,
+		return new mw.widgets.TitleInputWidget( ve.extendObject( {
 			api: ve.init.target.getContentApi()
+		}, valueInputConfig, {
+			namespace: mw.config.get( 'wgNamespaceIds' ).template
 		} ) );
 	} else if ( type === 'boolean' && ( value === '1' || value === '0' ) ) {
 		return new ve.ui.MWParameterCheckboxInputWidget( valueInputConfig );
@@ -287,12 +242,24 @@ ve.ui.MWParameterPage.prototype.createValueInput = function () {
 		)
 	) {
 		return ve.ui.MWExternalLinkAnnotationWidget.static.createExternalLinkInputWidget( valueInputConfig );
+	} else if (
+		this.parameter.getSuggestedValues().length &&
+		this.isSuggestedValueType( type )
+	) {
+		valueInputConfig.menu = { filterFromInput: true, highlightOnFilter: true };
+		valueInputConfig.options =
+			this.parameter.getSuggestedValues().filter( function ( suggestedValue ) {
+				// This wasn't validated for a while, existing templates can do anything here
+				return typeof suggestedValue === 'string';
+			} ).map( function ( suggestedValue ) {
+				return { data: suggestedValue, label: suggestedValue || '\xA0' };
+			} );
+		return new OO.ui.ComboBoxInputWidget( valueInputConfig );
 	} else if ( type !== 'line' || value.indexOf( '\n' ) !== -1 ) {
 		// If the type is line, but there are already newlines in the provided
 		// value, don't break the existing content by only providing a single-
 		// line field. (This implies that the TemplateData for the field isn't
 		// complying with its use in practice...)
-		this.rawValueInput = true;
 		return new ve.ui.MWLazyMultilineTextInputWidget( valueInputConfig );
 	}
 
@@ -300,102 +267,44 @@ ve.ui.MWParameterPage.prototype.createValueInput = function () {
 };
 
 /**
- * Check if the parameter is empty
+ * Whether or not to show suggested values for a given parameter type
  *
- * @return {boolean} The parameter is empty
+ * @private
+ * @param {string} type Parameter type
+ * @return {boolean} True if suggested values should be shown
  */
-ve.ui.MWParameterPage.prototype.isEmpty = function () {
-	return this.valueInput.getValue() === '' && this.defaultValue === '';
+ve.ui.MWParameterPage.prototype.isSuggestedValueType = function ( type ) {
+	return [ 'unknown', 'content', 'line', 'string', 'number', 'unbalanced-wikitext' ].indexOf( type ) > -1;
+};
+
+/**
+ * @private
+ * @return {boolean} True if there is either user-provided input or a default value
+ */
+ve.ui.MWParameterPage.prototype.containsSomeValue = function () {
+	// Note: For templates that allow overriding a default value with nothing, the empty string is
+	// meaningful user input. For templates that don't, the parameter can never be truly empty.
+	return !!( this.valueInput.getValue() || this.defaultValue );
 };
 
 /**
  * Handle change events from the value input
  *
- * @param {string} value Value
+ * @private
+ * @param {string} value
  */
 ve.ui.MWParameterPage.prototype.onValueInputChange = function () {
 	var value = this.valueInput.getValue();
 
+	if ( !this.edited ) {
+		ve.track( 'activity.transclusion', { action: 'edit-parameter-value' } );
+	}
 	this.edited = true;
 	this.parameter.setValue( value );
 
-	if ( this.outlineItem ) {
-		this.outlineItem.setFlags( { empty: this.isEmpty() } );
-	}
-};
-
-/**
- * Handle click events from the remove button
- */
-ve.ui.MWParameterPage.prototype.onRemoveButtonClick = function () {
-	this.parameter.remove();
-};
-
-/**
- * Handle click events from the raw fallback button
- */
-ve.ui.MWParameterPage.prototype.onRawFallbackButtonClick = function () {
-	this.valueInput.$element.detach();
-	if ( this.rawValueInput ) {
-		this.valueInput = this.createValueInput()
-			.setValue( this.valueInput.getValue() );
-	} else {
-		this.valueInput = new OO.ui.TextInputWidget( this.getDefaultInputConfig() )
-			.setValue( this.edited ? this.valueInput.getValue() : this.originalValue );
-		this.valueInput.$input.addClass( 've-ui-mwParameter-wikitextFallbackInput' );
-		this.rawValueInput = true;
-	}
-	this.valueInput.connect( this, { change: 'onValueInputChange' } );
-	this.$field.append( this.valueInput.$element );
-};
-
-/**
- * Handle click events from the add button
- */
-ve.ui.MWParameterPage.prototype.onAddButtonFocus = function () {
-	var template = this.parameter.getTemplate();
-	template.addParameter( new ve.dm.MWParameterModel( template ) );
-};
-
-/**
- * Handle click events from the label element
- *
- * @param {jQuery.Event} e Click event
- */
-ve.ui.MWParameterPage.prototype.onLabelClick = function () {
-	this.valueInput.simulateLabelClick();
-};
-
-/**
- * @inheritdoc
- */
-ve.ui.MWParameterPage.prototype.setOutlineItem = function () {
-	// Parent method
-	ve.ui.MWParameterPage.super.prototype.setOutlineItem.apply( this, arguments );
-
-	if ( this.outlineItem ) {
-		this.outlineItem
-			.setIcon( 'parameter' )
-			.setMovable( false )
-			.setRemovable( true )
-			.setLevel( 1 )
-			.setFlags( { empty: this.isEmpty() } )
-			.setLabel( this.spec.getParameterLabel( this.parameter.getName() ) );
-
-		if ( this.parameter.isRequired() ) {
-			this.outlineItem
-				.setIndicator( 'required' )
-				.setTitle(
-					ve.msg( 'visualeditor-dialog-transclusion-required-parameter' )
-				);
-		}
-		if ( this.parameter.isDeprecated() ) {
-			this.outlineItem
-				.setIndicator( 'alert' )
-				.setTitle(
-					ve.msg( 'visualeditor-dialog-transclusion-deprecated-parameter' )
-				);
-		}
+	if ( !!value !== this.hasValue ) {
+		this.hasValue = !!value;
+		this.emit( 'hasValueChange', this.parameter.getId(), this.hasValue );
 	}
 };
 
@@ -404,4 +313,13 @@ ve.ui.MWParameterPage.prototype.setOutlineItem = function () {
  */
 ve.ui.MWParameterPage.prototype.focus = function () {
 	this.valueInput.focus();
+};
+
+/**
+ * Refresh collapsible children.
+ */
+ve.ui.MWParameterPage.prototype.updateSize = function () {
+	if ( this.collapsibleDoc ) {
+		this.collapsibleDoc.updateSize();
+	}
 };

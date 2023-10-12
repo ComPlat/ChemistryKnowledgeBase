@@ -7,12 +7,11 @@
 QUnit.module( 've.dm.TransportServer' );
 
 QUnit.test( 'Create', function ( assert ) {
-	var protocolServer, transportServer, socket,
-		done = assert.async(),
+	var done = assert.async(),
 		log = [],
 		io = ve.dm.FakeSocket.static.makeServer();
 
-	protocolServer = {
+	var protocolServer = {
 		context: null,
 		ensureLoaded: Promise.resolve.bind( Promise ),
 		authenticate: function ( docName, authorId, token ) {
@@ -26,7 +25,6 @@ QUnit.test( 'Create', function ( assert ) {
 		},
 		onLogEvent: function ( context, event ) {
 			log.push( [ 'logEvent', event ] );
-
 		},
 		onChangeAuthor: function ( context, newData ) {
 			log.push( [ 'changeAuthor', newData ] );
@@ -44,8 +42,8 @@ QUnit.test( 'Create', function ( assert ) {
 		}
 	};
 
-	transportServer = new ve.dm.TransportServer( protocolServer, protocolServer );
-	socket = new ve.dm.FakeSocket( io, { docName: 'Foo', authorId: 1, token: 'xxx' } );
+	var transportServer = new ve.dm.TransportServer( protocolServer, protocolServer );
+	var socket = new ve.dm.FakeSocket( io, { docName: 'Foo', authorId: 1, token: 'xxx' } );
 	socket.on( 'registered', function ( data ) {
 		log.push( [ 'registered', data ] );
 	} );
@@ -83,8 +81,6 @@ QUnit.test( 'Create', function ( assert ) {
 			[ 'broadcast', 'authorDisconnect', 1 ]
 		], 'Correct events received in correct order' );
 	} ).catch( function ( err ) {
-		assert.ok( false, 'Exception: ' + err );
-	} ).finally( function () {
-		done();
-	} );
+		assert.true( false, 'Exception: ' + err );
+	} ).finally( () => done() );
 } );

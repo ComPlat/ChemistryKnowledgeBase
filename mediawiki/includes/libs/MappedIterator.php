@@ -28,7 +28,7 @@
 class MappedIterator extends FilterIterator {
 	/** @var callable */
 	protected $vCallback;
-	/** @var callable */
+	/** @var callable|null */
 	protected $aCallback;
 	/** @var array */
 	protected $cache = [];
@@ -64,19 +64,21 @@ class MappedIterator extends FilterIterator {
 		$this->aCallback = $options['accept'] ?? null;
 	}
 
-	public function next() {
+	public function next(): void {
 		$this->cache = [];
 		parent::next();
 	}
 
-	public function rewind() {
+	public function rewind(): void {
 		$this->rewound = true;
 		$this->cache = [];
 		parent::rewind();
 	}
 
-	public function accept() {
-		$value = call_user_func( $this->vCallback, $this->getInnerIterator()->current() );
+	public function accept(): bool {
+		$inner = $this->getInnerIterator();
+		'@phan-var Iterator $inner';
+		$value = call_user_func( $this->vCallback, $inner->current() );
 		$ok = ( $this->aCallback ) ? call_user_func( $this->aCallback, $value ) : true;
 		if ( $ok ) {
 			$this->cache['current'] = $value;
@@ -85,18 +87,20 @@ class MappedIterator extends FilterIterator {
 		return $ok;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function key() {
 		$this->init();
 
 		return parent::key();
 	}
 
-	public function valid() {
+	public function valid(): bool {
 		$this->init();
 
 		return parent::valid();
 	}
 
+	#[\ReturnTypeWillChange]
 	public function current() {
 		$this->init();
 		if ( parent::valid() ) {

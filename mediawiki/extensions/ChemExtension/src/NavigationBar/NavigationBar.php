@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\NavigationBar;
 
 use DIQA\ChemExtension\Utils\WikiTools;
+use MediaWiki\MediaWikiServices;
 use OutputPage;
 use Parser;
 use ParserOptions;
@@ -35,17 +36,17 @@ class NavigationBar
 
     public function getNavigationBar()
     {
-        global $wgScriptPath;
+        global $wgScriptPath, $wgUser;
         if (is_null($this->title)) {
             return '';
         }
         OutputPage::setupOOUI();
         $rootCategories = $this->getRootCategoriesToDisplayAsTree();
-        $parser = new Parser();
+        $parser = clone MediaWikiServices::getInstance()->getParser();
         $treeHTML = "";
         foreach ($rootCategories as $category) {
             $parserOutput = $parser->parse('<categorytree mode="categories" depth="3" hideprefix="categories" hideRoot="true">' . $category . '</categorytree>'
-                , $this->title, new ParserOptions());
+                , $this->title, new ParserOptions($wgUser->_newObject()));
             $treeHTML .= $parserOutput->getText(['enableSectionEditLinks' => false]);
         }
 

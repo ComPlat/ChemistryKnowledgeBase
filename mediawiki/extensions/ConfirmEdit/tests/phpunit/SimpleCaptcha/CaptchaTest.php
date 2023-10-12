@@ -1,17 +1,18 @@
 <?php
 
+use MediaWiki\Extension\ConfirmEdit\CaptchaTriggers;
+use MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha;
 use Wikimedia\ScopedCallback;
-use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers SimpleCaptcha
+ * @covers \MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha
  */
-class CaptchaTest extends MediaWikiTestCase {
+class CaptchaTest extends MediaWikiIntegrationTestCase {
 
 	/** @var ScopedCallback[] */
 	private $hold = [];
 
-	public function tearDown() : void {
+	public function tearDown(): void {
 		// Destroy any ScopedCallbacks being held
 		$this->hold = [];
 		parent::tearDown();
@@ -68,30 +69,9 @@ class CaptchaTest extends MediaWikiTestCase {
 	}
 
 	private function setCaptchaTriggersAttribute( $trigger, $value ) {
-		// XXX This is really hacky, but is needed to stop extensions from
-		// being clobbered in subsequent tests. This should be fixed properly
-		// by making extension registration happen in services instead of
-		// globals.
-		$keys =
-			TestingAccessWrapper::newFromClass( ExtensionProcessor::class )->globalSettings;
-		$globalsToStash = [];
-		foreach ( $keys as $key ) {
-			$globalsToStash["wg$key"] = $GLOBALS["wg$key"];
-		}
-		$this->setMwGlobals( $globalsToStash );
+		// Avoid clobbering captcha triggers registered by other extensions
+		$this->setMwGlobals( 'wgCaptchaTriggers', $GLOBALS['wgCaptchaTriggers'] );
 
-		$info = [
-			'globals' => [],
-			'callbacks' => [],
-			'defines' => [],
-			'credits' => [],
-			'attributes' => [
-				'CaptchaTriggers' => [
-					$trigger => $value
-				]
-			],
-			'autoloaderPaths' => []
-		];
 		$this->hold[] = ExtensionRegistry::getInstance()->setAttributeForTest(
 			'CaptchaTriggers', [ $trigger => $value ]
 		);
@@ -117,11 +97,7 @@ class CaptchaTest extends MediaWikiTestCase {
 	 * @dataProvider provideAttributeOverwritten
 	 */
 	public function testCaptchaTriggersAttributeGetsOverwritten( $trigger, $expected ) {
-		$this->setMwGlobals( [
-			'wgCaptchaTriggers' => [
-				$trigger => $expected
-			]
-		] );
+		$this->setMwGlobals( 'wgCaptchaTriggers', [ $trigger => $expected ] );
 		$this->setCaptchaTriggersAttribute( $trigger, !$expected );
 		$captcha = new SimpleCaptcha();
 		$this->assertEquals( $expected, $captcha->triggersCaptcha( $trigger ) );
@@ -155,10 +131,6 @@ class CaptchaTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @param $allowUserConfirmEmail
-	 * @param $userIsMailConfirmed
-	 * @param $expected
-	 * @throws ConfigException
 	 * @dataProvider provideCanSkipCaptchaMailconfirmed
 	 */
 	public function testCanSkipCaptchaMailconfirmed( $allowUserConfirmEmail,
@@ -184,10 +156,6 @@ class CaptchaTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @param $requestIP
-	 * @param $IPWhitelist
-	 * @param $expected
-	 * @throws ConfigException
 	 * @dataProvider provideCanSkipCaptchaIPWhitelisted
 	 */
 	public function testCanSkipCaptchaIPWhitelisted( $requestIP, $IPWhitelist, $expected ) {

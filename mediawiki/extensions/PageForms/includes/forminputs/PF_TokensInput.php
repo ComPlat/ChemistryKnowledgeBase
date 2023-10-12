@@ -10,7 +10,8 @@ use MediaWiki\MediaWikiServices;
  * @ingroup PFFormInput
  */
 class PFTokensInput extends PFFormInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'tokens';
 	}
 
@@ -80,12 +81,7 @@ class PFTokensInput extends PFFormInput {
 				$wgPageFormsEDSettings[$name]['title'] = $other_args['values from external data'];
 			}
 			if ( array_key_exists( 'image', $other_args ) ) {
-				if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
-					// MediaWiki 1.34+
-					$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
-				} else {
-					$repoGroup = RepoGroup::singleton();
-				}
+				$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
 				$image_param = $other_args['image'];
 				$wgPageFormsEDSettings[$name]['image'] = $image_param;
 				global $edgValues;
@@ -126,9 +122,12 @@ class PFTokensInput extends PFFormInput {
 		$input_id = 'input_' . $wgPageFormsFieldNum;
 
 		if ( array_key_exists( 'size', $other_args ) ) {
-			$size = $other_args['size'];
+			$size = intval( $other_args['size'] );
+			if ( $size == 0 ) {
+				$size = 100;
+			}
 		} else {
-			$size = '100';
+			$size = 100;
 		}
 
 		$inputAttrs = [
@@ -170,7 +169,8 @@ class PFTokensInput extends PFFormInput {
 		$cur_values = PFValuesUtils::getValuesArray( $cur_value, $delimiter );
 		$optionsText = '';
 
-		if ( ( $possible_values = $other_args['possible_values'] ) == null ) {
+		$possible_values = $other_args['possible_values'];
+		if ( $possible_values == null ) {
 			// If it's a Boolean property, display 'Yes' and 'No'
 			// as the values.
 			if ( array_key_exists( 'property_type', $other_args ) && $other_args['property_type'] == '_boo' ) {
@@ -221,11 +221,23 @@ class PFTokensInput extends PFFormInput {
 			$text .= PFTextInput::uploadableHTML( $input_id, $delimiter, $default_filename, $cur_value, $other_args );
 		}
 
+		$spanID = 'span_' . $wgPageFormsFieldNum;
 		$spanClass = 'inputSpan';
 		if ( $is_mandatory ) {
 			$spanClass .= ' mandatoryFieldSpan';
 		}
-		$text = "\n" . Html::rawElement( 'span', [ 'class' => $spanClass ], $text );
+
+		if ( array_key_exists( 'show on select', $other_args ) ) {
+			$spanClass .= ' pfShowIfSelected';
+			PFFormUtils::setShowOnSelect( $other_args['show on select'], $spanID );
+		}
+
+		$spanAttrs = [
+			'id' => $spanID,
+			'class' => $spanClass,
+			'data-input-type' => 'tokens'
+		];
+		$text = "\n" . Html::rawElement( 'span', $spanAttrs, $text );
 
 		return $text;
 	}
@@ -271,7 +283,7 @@ class PFTokensInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,

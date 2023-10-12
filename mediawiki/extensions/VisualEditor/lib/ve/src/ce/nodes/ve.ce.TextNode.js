@@ -41,12 +41,11 @@ ve.ce.TextNode.static.whitespaceHtmlCharacters = ve.visibleWhitespaceCharacters;
  * @return {Array} Array of rendered HTML fragments with annotations
  */
 ve.ce.TextNode.prototype.getAnnotatedHtml = function () {
-	var i, chr,
-		data = this.model.getDocument().getDataFromNode( this.model ),
+	var data = this.model.getDocument().getDataFromNode( this.model ),
 		whitespaceHtmlChars = ve.visibleWhitespaceCharacters,
 		significantWhitespace = this.getModel().getParent().hasSignificantWhitespace();
 
-	function setChar( chr, index, data ) {
+	function setChar( chr, index ) {
 		if ( Array.isArray( data[ index ] ) ) {
 			// Don't modify the original array, clone it first
 			data[ index ] = data[ index ].slice( 0 );
@@ -56,7 +55,7 @@ ve.ce.TextNode.prototype.getAnnotatedHtml = function () {
 		}
 	}
 
-	function getChar( index, data ) {
+	function getChar( index ) {
 		if ( Array.isArray( data[ index ] ) ) {
 			return data[ index ][ 0 ];
 		} else {
@@ -65,11 +64,11 @@ ve.ce.TextNode.prototype.getAnnotatedHtml = function () {
 	}
 
 	if ( !significantWhitespace ) {
-		for ( i = 0; i < data.length; i++ ) {
-			chr = getChar( i, data );
+		for ( var i = 0; i < data.length; i++ ) {
+			var char = getChar( i );
 			// Show meaningful whitespace characters
-			if ( Object.prototype.hasOwnProperty.call( whitespaceHtmlChars, chr ) ) {
-				setChar( whitespaceHtmlChars[ chr ], i, data );
+			if ( Object.prototype.hasOwnProperty.call( whitespaceHtmlChars, char ) ) {
+				setChar( whitespaceHtmlChars[ char ], i );
 			}
 		}
 	}

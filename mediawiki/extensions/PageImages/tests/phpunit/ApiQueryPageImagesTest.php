@@ -4,12 +4,15 @@ namespace PageImages\Tests;
 
 use PageImages\ApiQueryPageImages;
 use PageImages\PageImages;
+use PHPUnit\Framework\TestCase;
 use Title;
+use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers ApiQueryPageImages
+ * @covers \PageImages\ApiQueryPageImages
  *
  * @group PageImages
  *
@@ -17,34 +20,31 @@ use Wikimedia\TestingAccessWrapper;
  * @author Sam Smith
  * @author Thiemo Kreuz
  */
-class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
+class ApiQueryPageImagesTest extends TestCase {
 
 	private function newInstance() {
 		$config = new \HashConfig( [
 			'PageImagesAPIDefaultLicense' => 'free'
 		] );
 
-		$context = $this->getMockBuilder( 'IContextSource' )
-			->disableOriginalConstructor()
-			->getMock();
+		$context = $this->createMock( \IContextSource::class );
 
-		$context->expects( $this->any() )
-			->method( 'getConfig' )
+		$context->method( 'getConfig' )
 			->willReturn( $config );
 
-		$main = $this->getMockBuilder( 'ApiMain' )
+		$main = $this->getMockBuilder( \ApiMain::class )
 			->disableOriginalConstructor()
 			->getMock();
 		$main->expects( $this->once() )
 			->method( 'getContext' )
-			->will( $this->returnValue( $context ) );
+			->willReturn( $context );
 
-		$query = $this->getMockBuilder( 'ApiQuery' )
+		$query = $this->getMockBuilder( \ApiQuery::class )
 			->disableOriginalConstructor()
 			->getMock();
 		$query->expects( $this->once() )
 			->method( 'getMain' )
-			->will( $this->returnValue( $main ) );
+			->willReturn( $main );
 
 		return new ApiQueryPageImages( $query, '' );
 	}
@@ -62,34 +62,33 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 	public function testGetAllowedParams() {
 		$instance = $this->newInstance();
 		$params = $instance->getAllowedParams();
+
 		$this->assertIsArray( $params );
 		$this->assertNotEmpty( $params );
 		$this->assertContainsOnly( 'array', $params );
 		$this->assertArrayHasKey( 'limit', $params );
-		$this->assertEquals( $params['limit'][\ApiBase::PARAM_DFLT], 50 );
-		$this->assertEquals( $params['limit'][\ApiBase::PARAM_TYPE], 'limit' );
-		$this->assertEquals( $params['limit'][\ApiBase::PARAM_MIN], 1 );
-		$this->assertEquals( $params['limit'][\ApiBase::PARAM_MAX], 50 );
-		$this->assertEquals( $params['limit'][\ApiBase::PARAM_MAX2], 100 );
+		$this->assertSame( 50, $params['limit'][ParamValidator::PARAM_DEFAULT] );
+		$this->assertSame( 'limit', $params['limit'][ParamValidator::PARAM_TYPE] );
+		$this->assertSame( 1, $params['limit'][IntegerDef::PARAM_MIN] );
+		$this->assertSame( 50, $params['limit'][IntegerDef::PARAM_MAX] );
+		$this->assertSame( 100, $params['limit'][IntegerDef::PARAM_MAX2] );
 		$this->assertArrayHasKey( 'license', $params );
-		$this->assertEquals( $params['license'][\ApiBase::PARAM_TYPE], [ 'free', 'any' ] );
-		$this->assertEquals( $params['license'][\ApiBase::PARAM_DFLT], 'free' );
-		$this->assertEquals( $params['license'][\ApiBase::PARAM_ISMULTI], false );
+		$this->assertSame( [ 'free', 'any' ], $params['license'][ParamValidator::PARAM_TYPE] );
+		$this->assertSame( 'free', $params['license'][ParamValidator::PARAM_DEFAULT] );
+		$this->assertFalse( $params['license'][ParamValidator::PARAM_ISMULTI] );
 	}
 
 	/**
 	 * @dataProvider provideGetTitles
 	 */
 	public function testGetTitles( $titles, $missingTitlesByNamespace, $expected ) {
-		$pageSet = $this->getMockBuilder( 'ApiPageSet' )
+		$pageSet = $this->getMockBuilder( \ApiPageSet::class )
 			->disableOriginalConstructor()
 			->getMock();
-		$pageSet->expects( $this->any() )
-			->method( 'getGoodTitles' )
-			->will( $this->returnValue( $titles ) );
-		$pageSet->expects( $this->any() )
-			->method( 'getMissingTitlesByNamespace' )
-			->will( $this->returnValue( $missingTitlesByNamespace ) );
+		$pageSet->method( 'getGoodTitles' )
+			->willReturn( $titles );
+		$pageSet->method( 'getMissingTitlesByNamespace' )
+			->willReturn( $missingTitlesByNamespace );
 		$queryPageImages = new ApiQueryPageImagesProxyMock( $pageSet );
 
 		$this->assertEquals( $expected, $queryPageImages->getTitles() );
@@ -140,32 +139,29 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 		$mock = TestingAccessWrapper::newFromObject(
 			$this->getMockBuilder( ApiQueryPageImages::class )
 				->disableOriginalConstructor()
-				->setMethods( [ 'extractRequestParams', 'getTitles', 'setContinueParameter', 'dieUsage',
+				->onlyMethods( [ 'extractRequestParams', 'getTitles', 'dieWithError',
 					'addTables', 'addFields', 'addWhere', 'select', 'setResultValues' ] )
 				->getMock()
 		);
-		$mock->expects( $this->any() )
-			->method( 'extractRequestParams' )
+		$mock->method( 'extractRequestParams' )
 			->willReturn( $requestParams );
-		$mock->expects( $this->any() )
-			->method( 'getTitles' )
+		$mock->method( 'getTitles' )
 			->willReturn( $titles );
-		$mock->expects( $this->any() )
-			->method( 'select' )
+		$mock->method( 'select' )
 			->willReturn( new FakeResultWrapper( $queryResults ) );
 
 		// continue page ID is not found
 		if ( isset( $requestParams['continue'] )
 			&& $requestParams['continue'] > count( $titles )
 		) {
-			$mock->expects( $this->exactly( 1 ) )
-				->method( 'dieUsage' );
+			$mock->expects( $this->once() )
+				->method( 'dieWithError' );
 		}
 
 		$originalRequested = in_array( 'original', $requestParams['prop'] );
 		$this->assertTrue( $this->hasExpectedProperties( $queryResults, $originalRequested ) );
 
-		$license = isset( $requestParams['license'] ) ? $requestParams['license'] : 'free';
+		$license = $requestParams['license'] ?? 'free';
 		if ( $license == PageImages::LICENSE_ANY ) {
 			$propName = [ PageImages::getPropName( true ), PageImages::getPropName( false ) ];
 		} else {
@@ -184,7 +180,8 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 	public function provideExecute() {
 		return [
 			[
-				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 100, 'limit' => 10, 'license' => 'any' ],
+				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 100, 'limit' => 10,
+				  'license' => 'any', 'langcode' => null ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 0, 1 ],
 				[
@@ -198,7 +195,7 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 				2
 			],
 			[
-				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 200, 'limit' => 10 ],
+				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 200, 'limit' => 10, 'langcode' => null ],
 				[],
 				[],
 				[],
@@ -206,7 +203,7 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 			],
 			[
 				[ 'prop' => [ 'thumbnail' ], 'continue' => 1, 'thumbsize' => 400,
-					'limit' => 10, 'license' => 'any' ],
+				  'limit' => 10, 'license' => 'any', 'langcode' => null ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 1 ],
 				[
@@ -218,7 +215,8 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 				1
 			],
 			[
-				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 500, 'limit' => 10, 'license' => 'any' ],
+				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 500, 'limit' => 10,
+				  'license' => 'any', 'langcode' => 'en' ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 0, 1 ],
 				[
@@ -229,7 +227,7 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 			],
 			[
 				[ 'prop' => [ 'thumbnail' ], 'continue' => 1, 'thumbsize' => 500,
-					'limit' => 10, 'license' => 'any' ],
+				  'limit' => 10, 'license' => 'any', 'langcode' => 'de' ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 1 ],
 				[
@@ -239,14 +237,16 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 				1
 			],
 			[
-				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 510, 'limit' => 10, 'license' => 'free' ],
+				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 510, 'limit' => 10,
+				  'license' => 'free', 'langcode' => 'de' ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 0, 1 ],
 				[],
 				0
 			],
 			[
-				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 510, 'limit' => 10, 'license' => 'free' ],
+				[ 'prop' => [ 'thumbnail' ], 'thumbsize' => 510, 'limit' => 10,
+				  'license' => 'free', 'langcode' => 'en' ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 0, 1 ],
 				[
@@ -259,7 +259,7 @@ class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 			],
 			[
 				[ 'prop' => [ 'thumbnail', 'original' ], 'thumbsize' => 510,
-					'limit' => 10, 'license' => 'free' ],
+				  'limit' => 10, 'license' => 'free', 'langcode' => 'en' ],
 				[ Title::newFromText( 'Page 1' ), Title::newFromText( 'Page 2' ) ],
 				[ 0, 1 ],
 				[

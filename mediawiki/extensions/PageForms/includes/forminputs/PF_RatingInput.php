@@ -8,7 +8,8 @@
  * @ingroup PFFormInput
  */
 class PFRatingInput extends PFFormInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'rating';
 	}
 
@@ -48,7 +49,7 @@ class PFRatingInput extends PFFormInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		global $wgPageFormsFieldNum;
 
 		$className = 'pfRating';

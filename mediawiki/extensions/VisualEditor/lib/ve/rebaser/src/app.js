@@ -49,9 +49,7 @@ function initApp( options ) {
 
 	const logger = new Logger( app.logger );
 	const mongoClient = new mongodb.MongoClient(
-		new mongodb.Server( app.conf.mongodb.host, app.conf.mongodb.port ),
-		// eslint-disable-next-line camelcase
-		{ native_parser: true }
+		'mongodb://' + app.conf.mongodb.host + ':' + app.conf.mongodb.port
 	);
 	const documentStore = new ve.dm.DocumentStore( mongoClient, 'test', logger );
 	const protocolServer = new ve.dm.ProtocolServer( documentStore, logger );
@@ -59,7 +57,7 @@ function initApp( options ) {
 	app.logger.log( 'info', 'Connecting to document store' );
 
 	return documentStore.connect().then( function () {
-		const dropDatabase = ( process.argv.indexOf( '--drop' ) !== -1 );
+		const dropDatabase = ( process.argv.includes( '--drop' ) );
 		if ( dropDatabase ) {
 			app.logger.log( 'info', 'Dropping database' );
 		}

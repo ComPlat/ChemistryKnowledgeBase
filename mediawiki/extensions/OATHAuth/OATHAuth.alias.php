@@ -29,6 +29,8 @@ $specialPageAliases['arz'] = [
 /** Czech (čeština) */
 $specialPageAliases['cs'] = [
 	'OATHManage' => [ 'Spravovat_dvoufaktorové_ověření', 'Dvoufaktorové_ověření' ],
+	'DisableOATHForUser' => [ 'Deaktivovat_uživateli_dvoufaktorové_ověření' ],
+	'VerifyOATHForUser' => [ 'Ověřit_dvoufaktorové_ověření' ],
 ];
 
 /** Spanish (Español) */
@@ -54,6 +56,15 @@ $specialPageAliases['gl'] = [
 		'Autenticación_de_dous_factores',
 		'Xestionar_a_autenticación_de_dous_factores',
 		'Xestionar_OATH'
+	]
+];
+
+/** Korean (한국어) */
+$specialPageAliases['ko'] = [
+	'OATHManage' => [
+		'2요소_인증_관리', '2요소인증관리', '2요소인증',
+		'2단계인증관리', '2단계인증',
+		'OATH_관리', 'OATH관리'
 	]
 ];
 

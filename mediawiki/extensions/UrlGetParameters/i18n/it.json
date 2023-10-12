@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Beta16"
+		]
+	},
+	"urlgetparameters-desc": "Permette di utilizzare e/o visualizzare i parametri \"GET\" dell'URL in una pagina wiki"
+}

@@ -18,7 +18,7 @@
 			"role": "Creator"
 		},
 		{
-			"name": "Professional.Wiki",
+			"name": "Professional Wiki",
 			"email": "info@professional.wiki",
 			"homepage": "https://professional.wiki",
 			"role": "Maintainer"
@@ -31,16 +31,16 @@
 		"irc": "irc://libera.chat:6667/mediawiki"
 	},
 	"require": {
-		"php": ">=7.1",
+		"php": ">=7.4.3",
 		"ext-dom": "*",
 		"ext-filter": "*",
-		"composer/installers": "^1.0.12",
-		"mediawiki/bootstrap": "^4.2"
+		"composer/installers": "^2|^1.0.12",
+		"mediawiki/bootstrap": "^4.5",
+		"jeroen/file-fetcher": "^6|^5|^4.4"
 	},
 	"require-dev": {
-		"php": ">=7.2",
-		"mediawiki/mediawiki-codesniffer": "36.0.0",
-		"mediawiki/mediawiki-phan-config": "0.10.6"
+		"mediawiki/mediawiki-codesniffer": "40.0.1",
+		"mediawiki/mediawiki-phan-config": "0.12.0"
 	},
 	"extra": {
 		"branch-alias": {

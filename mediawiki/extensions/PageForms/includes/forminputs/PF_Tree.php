@@ -13,15 +13,18 @@ class PFTree {
 	public $children;
 	public $depth;
 	public $top_category;
+	/**
+	 * @var array[]
+	 * @phan-var list<array>
+	 */
 	public $tree_array;
-	public $current_values; // Array
+	public $current_values;
 
 	public function __construct( $depth, $cur_values ) {
 		$this->depth = $depth;
 		$this->current_values = $cur_values;
 		$this->title = "";
 		$this->children = [];
-		$this->cur_value = "";
 	}
 
 	public function addChild( $child ) {
@@ -54,7 +57,8 @@ class PFTree {
 		$this->configArray();
 		$this->setParentsId();
 		$this->setChildren();
-		// Get rid of array keys, to fit the format that jsTree requires.
+		// Get rid of array keys, to make this a regular array again, as jsTree requires.
+		// @phan-suppress-next-line PhanRedundantArrayValuesCall False positive: array_values() renumbers here to 0, 1, 2,…
 		$this->tree_array = array_values( $this->tree_array );
 	}
 
@@ -64,6 +68,7 @@ class PFTree {
 	 * This function also determine whether or not the node will be opened, depending on
 	 * the attribute $depth.
 	 * This function also determine whether or not the node is selected.
+	 * @suppress PhanTypeInvalidDimOffset TODO Document tree_array
 	 */
 	private function configArray() {
 		for ( $i = 0; $i < count( $this->tree_array ); $i++ ) {

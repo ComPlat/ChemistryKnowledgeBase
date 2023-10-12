@@ -22,7 +22,13 @@
  * @author Daniel Kinzler, brightbyte.de
  */
 
-use MediaWiki\MediaWikiServices;
+namespace MediaWiki\Extension\CategoryTree;
+
+use Html;
+use HTMLForm;
+use SearchEngineFactory;
+use SpecialPage;
+use Title;
 
 /**
  * Special page for the CategoryTree extension, an AJAX based gadget
@@ -31,13 +37,22 @@ use MediaWiki\MediaWikiServices;
 class CategoryTreePage extends SpecialPage {
 	public $target = '';
 
+	/** @var SearchEngineFactory */
+	private $searchEngineFactory;
+
 	/**
 	 * @var CategoryTree
 	 */
 	public $tree = null;
 
-	public function __construct() {
+	/**
+	 * @param SearchEngineFactory $searchEngineFactory
+	 */
+	public function __construct(
+		SearchEngineFactory $searchEngineFactory
+	) {
 		parent::__construct( 'CategoryTree' );
+		$this->searchEngineFactory = $searchEngineFactory;
 	}
 
 	/**
@@ -45,12 +60,10 @@ class CategoryTreePage extends SpecialPage {
 	 * @return mixed
 	 */
 	private function getOption( $name ) {
-		global $wgCategoryTreeDefaultOptions;
-
 		if ( $this->tree ) {
 			return $this->tree->getOption( $name );
 		} else {
-			return $wgCategoryTreeDefaultOptions[$name];
+			return $this->getConfig()->get( 'CategoryTreeDefaultOptions' )[$name];
 		}
 	}
 
@@ -59,16 +72,14 @@ class CategoryTreePage extends SpecialPage {
 	 * @param string|null $par Parameters passed to the page
 	 */
 	public function execute( $par ) {
-		global $wgCategoryTreeDefaultOptions, $wgCategoryTreeSpecialPageOptions;
-
 		$this->setHeaders();
 		$this->addHelpLink( 'Extension:CategoryTree' );
 		$request = $this->getRequest();
 		if ( $par ) {
-			$this->target = $par;
+			$this->target = trim( $par );
 		} else {
-			$this->target = $request->getVal( 'target' );
-			if ( $this->target === null ) {
+			$this->target = trim( $request->getText( 'target' ) );
+			if ( $this->target === '' ) {
 				$rootcategory = $this->msg( 'rootcategory' );
 				if ( $rootcategory->exists() ) {
 					$this->target = $rootcategory->text();
@@ -76,14 +87,15 @@ class CategoryTreePage extends SpecialPage {
 			}
 		}
 
-		$this->target = trim( $this->target );
-
 		$options = [];
+		$config = $this->getConfig();
 
 		# grab all known options from the request. Normalization is done by the CategoryTree class
-		foreach ( $wgCategoryTreeDefaultOptions as $option => $default ) {
-			if ( isset( $wgCategoryTreeSpecialPageOptions[$option] ) ) {
-				$default = $wgCategoryTreeSpecialPageOptions[$option];
+		$categoryTreeDefaultOptions = $config->get( 'CategoryTreeDefaultOptions' );
+		$categoryTreeSpecialPageOptions = $config->get( 'CategoryTreeSpecialPageOptions' );
+		foreach ( $categoryTreeDefaultOptions as $option => $default ) {
+			if ( isset( $categoryTreeSpecialPageOptions[$option] ) ) {
+				$default = $categoryTreeSpecialPageOptions[$option];
 			}
 
 			$options[$option] = $request->getVal( $option, $default );
@@ -91,41 +103,12 @@ class CategoryTreePage extends SpecialPage {
 
 		$this->tree = new CategoryTree( $options );
 
-		$output = $this->getOutput();
-		$output->addWikiMsg( 'categorytree-header' );
+		$this->getOutput()->addWikiMsg( 'categorytree-header' );
 
 		$this->executeInputForm();
 
-		if ( $this->target !== '' && $this->target !== null ) {
-			if ( !CategoryTreeHooks::shouldForceHeaders() ) {
-				CategoryTree::setHeaders( $output );
-			}
-
-			$title = CategoryTree::makeTitle( $this->target );
-
-			if ( $title && $title->getArticleID() ) {
-				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeParents' ] ) );
-				$output->addHTML( $this->msg( 'categorytree-parents' )->parse() );
-				$output->addHTML( $this->msg( 'colon-separator' )->escaped() );
-
-				$parents = $this->tree->renderParents( $title );
-
-				if ( $parents == '' ) {
-					$output->addHTML( $this->msg( 'categorytree-no-parent-categories' )->parse() );
-				} else {
-					$output->addHTML( $parents );
-				}
-
-				$output->addHTML( Xml::closeElement( 'div' ) );
-
-				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeResult' ] ) );
-				$output->addHTML( $this->tree->renderNode( $title, 1 ) );
-				$output->addHTML( Xml::closeElement( 'div' ) );
-			} else {
-				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeNotice' ] ) );
-				$output->addHTML( $this->msg( 'categorytree-not-found', $this->target )->parse() );
-				$output->addHTML( Xml::closeElement( 'div' ) );
-			}
+		if ( $this->target !== '' ) {
+			$this->executeCategoryTree();
 		}
 	}
 
@@ -133,12 +116,12 @@ class CategoryTreePage extends SpecialPage {
 	 * Input form for entering a category
 	 */
 	private function executeInputForm() {
-		$namespaces = $this->getRequest()->getVal( 'namespaces', '' );
+		$namespaces = $this->getRequest()->getRawVal( 'namespaces' );
 		// mode may be overriden by namespaces option
-		$mode = ( $namespaces == '' ? $this->getOption( 'mode' ) : CategoryTreeMode::ALL );
-		if ( $mode == CategoryTreeMode::CATEGORIES ) {
+		$mode = ( $namespaces === null ? $this->getOption( 'mode' ) : CategoryTreeMode::ALL );
+		if ( $mode === CategoryTreeMode::CATEGORIES ) {
 			$modeDefault = 'categories';
-		} elseif ( $mode == CategoryTreeMode::PAGES ) {
+		} elseif ( $mode === CategoryTreeMode::PAGES ) {
 			$modeDefault = 'pages';
 		} else {
 			$modeDefault = 'all';
@@ -174,12 +157,51 @@ class CategoryTreePage extends SpecialPage {
 		];
 
 		HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() )
-			->addHiddenFields( [ 'title' => $this->getPageTitle()->getPrefixedDbKey() ] )
 			->setWrapperLegendMsg( 'categorytree-legend' )
 			->setSubmitTextMsg( 'categorytree-go' )
 			->setMethod( 'get' )
+			// Strip subpage
+			->setTitle( $this->getPageTitle() )
 			->prepareForm()
 			->displayForm( false );
+	}
+
+	/**
+	 * Show the category tree
+	 */
+	private function executeCategoryTree() {
+		$output = $this->getOutput();
+		CategoryTree::setHeaders( $output );
+
+		$title = CategoryTree::makeTitle( $this->target );
+		if ( !$title || !$title->getArticleID() ) {
+			$output->addHTML( Html::rawElement( 'div', [ 'class' => 'CategoryTreeNotice' ],
+				$this->msg( 'categorytree-not-found' )
+					->plaintextParams( $this->target )
+					->parse()
+			) );
+			return;
+		}
+
+		$parents = $this->tree->renderParents( $title );
+		if ( $parents === '' ) {
+			$parents = $this->msg( 'categorytree-no-parent-categories' )->parse();
+		}
+
+		$output->addHTML( Html::rawElement( 'div', [ 'class' => 'CategoryTreeParents' ],
+			$this->msg( 'categorytree-parents' )->parse() .
+			$this->msg( 'colon-separator' )->escaped() .
+			$parents
+		) );
+
+		$output->addHTML( Html::rawElement( 'div',
+			[
+				'class' => 'CategoryTreeResult CategoryTreeTag',
+				'data-ct-mode' => $this->tree->getOption( 'mode' ),
+				'data-ct-options' => $this->tree->getOptionsAsJsStructure(),
+			],
+			$this->tree->renderNode( $title, 1 )
+		) );
 	}
 
 	/**
@@ -200,13 +222,13 @@ class CategoryTreePage extends SpecialPage {
 			// No prefix suggestion outside of category namespace
 			return [];
 		}
-		$searchEngine = MediaWikiServices::getInstance()->newSearchEngine();
+		$searchEngine = $this->searchEngineFactory->create();
 		$searchEngine->setLimitOffset( $limit, $offset );
 		// Autocomplete subpage the same as a normal search, but just for categories
 		$searchEngine->setNamespaces( [ NS_CATEGORY ] );
 		$result = $searchEngine->defaultPrefixSearch( $search );
 
-		return array_map( function ( Title $t ) {
+		return array_map( static function ( Title $t ) {
 			// Remove namespace in search suggestion
 			return $t->getText();
 		}, $result );

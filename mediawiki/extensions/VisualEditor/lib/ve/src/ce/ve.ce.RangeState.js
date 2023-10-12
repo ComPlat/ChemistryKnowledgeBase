@@ -63,6 +63,15 @@ ve.ce.RangeState = function VeCeRangeState( old, root, selectionOnly ) {
 	 */
 	this.focusIsAfterAnnotationBoundary = null;
 
+	/**
+	 * Saved selection for future comparisons. (But it is not properly frozen, because the
+	 * nodes are live and mutable, and therefore the offsets may come to point to places that
+	 * are misleadingly different from when the selection was saved).
+	 *
+	 * @property {ve.SelectionState} misleadingSelection Saved selection (but with live nodes)
+	 */
+	this.misleadingSelection = null;
+
 	this.saveState( old, root, selectionOnly );
 };
 
@@ -80,10 +89,10 @@ OO.initClass( ve.ce.RangeState );
  * @param {boolean} selectionOnly The caller promises the content has not changed from old
  */
 ve.ce.RangeState.prototype.saveState = function ( old, root, selectionOnly ) {
-	var $node, selection, focusNodeChanged,
-		oldSelection = old ? old.misleadingSelection : ve.SelectionState.static.newNullSelection(),
+	var oldSelection = old ? old.misleadingSelection : ve.SelectionState.static.newNullSelection(),
 		nativeSelection = root.getElementDocument().getSelection();
 
+	var selection;
 	if (
 		nativeSelection.rangeCount &&
 		OO.ui.contains( root.$element[ 0 ], nativeSelection.focusNode, true )
@@ -105,12 +114,12 @@ ve.ce.RangeState.prototype.saveState = function ( old, root, selectionOnly ) {
 		this.veRange = ve.ce.veRangeFromSelection( selection );
 	}
 
-	focusNodeChanged = oldSelection.focusNode !== selection.focusNode;
+	var focusNodeChanged = oldSelection.focusNode !== selection.focusNode;
 
 	if ( !focusNodeChanged ) {
 		this.node = old && old.node;
 	} else {
-		$node = $( selection.focusNode ).closest( '.ve-ce-branchNode' );
+		var $node = $( selection.focusNode ).closest( '.ve-ce-branchNode' );
 		if ( $node.length === 0 ) {
 			this.node = null;
 		} else {

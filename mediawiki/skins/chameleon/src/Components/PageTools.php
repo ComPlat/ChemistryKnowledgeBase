@@ -28,7 +28,6 @@ namespace Skins\Chameleon\Components;
 
 use Action;
 use MediaWiki\MediaWikiServices;
-use MWNamespace;
 use Skins\Chameleon\ChameleonTemplate;
 use Skins\Chameleon\IdRegistry;
 
@@ -193,25 +192,20 @@ class PageTools extends Component {
 	 * @throws \ConfigException
 	 */
 	public function getNamespaceKey() {
-		global $wgVersion;
-
 		// Gets the subject namespace of this title
 		$title = $this->getSkinTemplate()->getSkin()->getTitle();
 
-		$namespaceKey = MWNamespace::getCanonicalName( $title->getNamespace() );
+		$namespaceKey = MediaWikiServices::getInstance()->getNamespaceInfo()->getCanonicalName(
+			$title->getNamespace()
+		);
 
 		if ( $namespaceKey === false ) {
 			$namespaceKey = $title->getNsText();
 		}
 
 		// Makes namespace key lowercase
-		if ( version_compare( $wgVersion, '1.36', '<' ) ) {
-			$namespaceKey =
-				MediaWikiServices::getInstance()->getMainConfig()->get( 'ContLang' )->lc( $namespaceKey );
-		} else {
-			$namespaceKey =
-				MediaWikiServices::getInstance()->getContentLanguage()->lc( $namespaceKey );
-		}
+		$namespaceKey =
+			MediaWikiServices::getInstance()->getContentLanguage()->lc( $namespaceKey );
 
 		if ( $namespaceKey === '' ) {
 			return 'main';

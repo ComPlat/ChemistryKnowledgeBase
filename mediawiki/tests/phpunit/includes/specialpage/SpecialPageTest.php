@@ -1,7 +1,6 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
-use PHPUnit\Framework\Error\Notice;
+use MediaWiki\MainConfigNames;
 
 /**
  * @covers SpecialPage
@@ -12,12 +11,12 @@ use PHPUnit\Framework\Error\Notice;
  */
 class SpecialPageTest extends MediaWikiIntegrationTestCase {
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 
-		$this->setContentLang( 'en' );
-		$this->setMwGlobals( [
-			'wgScript' => '/index.php',
+		$this->overrideConfigValues( [
+			MainConfigNames::Script => '/index.php',
+			MainConfigNames::LanguageCode => 'en',
 		] );
 	}
 
@@ -37,7 +36,7 @@ class SpecialPageTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testInvalidGetTitleFor() {
-		$this->expectException( Notice::class );
+		$this->expectNotice();
 		$title = SpecialPage::getTitleFor( 'cat' );
 		$expected = Title::makeTitle( NS_SPECIAL, 'Cat' );
 		$this->assertEquals( $expected, $title );
@@ -47,7 +46,7 @@ class SpecialPageTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider getTitleForWithWarningProvider
 	 */
 	public function testGetTitleForWithWarning( $expected, $name ) {
-		$this->expectException( Notice::class );
+		$this->expectNotice();
 		$title = SpecialPage::getTitleFor( $name );
 		$this->assertEquals( $expected, $title );
 	}
@@ -67,7 +66,7 @@ class SpecialPageTest extends MediaWikiIntegrationTestCase {
 		$user = User::newFromId( 0 );
 		$specialPage->getContext()->setUser( $user );
 		$specialPage->getContext()->setLanguage(
-			MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' ) );
+			$this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' ) );
 
 		$this->expectException( UserNotLoggedIn::class );
 		$this->expectExceptionMessage( $expected );

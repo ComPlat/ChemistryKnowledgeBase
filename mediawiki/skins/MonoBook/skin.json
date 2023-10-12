@@ -11,20 +11,54 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "skin",
 	"requires": {
-		"MediaWiki": ">= 1.29.0"
+		"MediaWiki": ">= 1.39.0"
 	},
 	"ValidSkinNames": {
-		"monobook": "MonoBook"
+		"monobook": {
+			"class": "SkinMustache",
+			"args": [
+				{
+					"name": "monobook",
+					"responsive": true,
+					"templateDirectory": "templates/",
+					"scripts": [
+						"skins.monobook.scripts"
+					],
+					"styles": [
+						"skins.monobook.styles"
+					],
+					"messages": [
+						"tagline",
+						"nstab-main",
+						"nstab-talk",
+						"monobook-more-actions",
+						"otherlanguages",
+						"toolbox",
+						"navigation-heading",
+						"monobook-jumptotop",
+						"monobook-jumptopersonal",
+						"monobook-jumptosearch",
+						"monobook-cactions-label",
+						"monobook-jumptonavigation"
+					]
+				}
+			]
+		}
 	},
 	"SkinOOUIThemes": {
 		"monobook": "Apex"
 	},
-	"DefaultUserOptions": {
-		"monobook-responsive": true
+	"SkinLessImportPaths": {
+		"monobook": "resources/mediawiki.less"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MonoBook\\Hooks"
+		}
 	},
 	"Hooks": {
-		"GetPreferences": "SkinMonoBook::onGetPreferences",
-		"ResourceLoaderRegisterModules": "SkinMonoBook::registerMobileExtensionStyles"
+		"OutputPageBodyAttributes": "main",
+		"SkinTemplateNavigation::Universal": "main"
 	},
 	"MessagesDirs": {
 		"MonoBook": [
@@ -34,70 +68,44 @@
 	"ResourceModules": {
 		"skins.monobook.styles": {
 			"class": "ResourceLoaderSkinModule",
-			"features": [
-				"normalize",
-				"elements",
-				"content",
-				"interface",
-				"logo",
-				"legacy"
-			],
-			"styles": {
-				"resources/screen-common.less": {
-					"media": "screen"
-				},
-				"resources/screen-desktop.css": {
-					"media": "screen"
-				}
-			}
+			"features": {
+				"normalize": true,
+				"elements": true,
+				"logo": true,
+				"content-media": true,
+				"content-links": true,
+				"content-tables": true,
+				"interface": true,
+				"interface-message-box": true,
+				"interface-category": true,
+				"i18n-ordered-lists": true,
+				"i18n-all-lists-margins": true,
+				"i18n-headings": true
+			},
+			"styles": [
+				"resources/skin.less",
+				"resources/skin-responsive.less"
+			]
 		},
-		"skins.monobook.responsive": {
-			"class": "ResourceLoaderSkinModule",
-			"features": [
-				"normalize",
-				"elements",
-				"content",
-				"interface",
-				"legacy",
-				"logo"
-			],
+		"skins.monobook.scripts": {
 			"targets": [
 				"desktop",
 				"mobile"
 			],
-			"styles": {
-				"resources/screen-common.less": {
-					"media": "screen"
-				},
-				"resources/screen-desktop.css": {
-					"media": "screen and (min-width: 551px)"
-				},
-				"resources/screen-mobile.less": {
-					"media": "screen and (max-width: 550px)"
-				}
-			}
-		},
-		"skins.monobook.mobile": {
-			"class": "ResourceLoaderSkinModule",
-			"features": [
-				"normalize",
-				"elements",
-				"content",
-				"interface",
-				"logo",
-				"legacy"
+			"packageFiles": [
+				"resources/skin.js",
+				"resources/mobile-uls.js",
+				"resources/mobile-echo.js"
 			],
-			"targets": [ "desktop", "mobile" ],
-			"scripts": [
-				"resources/mobile.js"
-			],
-			"styles": {
-				"resources/mobile.js.less": {
-					"media": "screen and (max-width: 550px)"
-				}
-			},
+			"styles": "resources/skin.js.less",
 			"dependencies": [
-				"mediawiki.util"
+				"oojs-ui.styles.icons-alerts",
+				"mediawiki.util",
+				"mediawiki.user"
+			],
+			"messages": [
+				"monobook-notifications-link",
+				"monobook-notifications-link-none"
 			]
 		}
 	},
@@ -114,9 +122,8 @@
 			"+ext.relatedArticles.readMore": "resources/skinStyles/ext.relatedArticles.readMore.less"
 		}
 	},
-	"AutoloadClasses": {
-		"SkinMonoBook": "includes/SkinMonoBook.php",
-		"MonoBookTemplate": "includes/MonoBookTemplate.php"
+	"AutoloadNamespaces": {
+		"MonoBook\\": "includes/"
 	},
 	"manifest_version": 2
 }

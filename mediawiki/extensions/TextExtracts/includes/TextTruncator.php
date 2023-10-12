@@ -2,7 +2,7 @@
 
 namespace TextExtracts;
 
-use MWTidy;
+use MediaWiki\MediaWikiServices;
 
 /**
  * This class needs to understand HTML as well as plain text. It tries to not break HTML tags, but
@@ -88,9 +88,12 @@ class TextTruncator {
 		// This ungreedy pattern always matches, just might return an empty string
 		$pattern = '/^[\w\/]*>?/su';
 		preg_match( $pattern, mb_substr( $text, $requestedLength ), $m );
-		$text = mb_substr( $text, 0, $requestedLength ) . $m[0];
+		$truncatedText = mb_substr( $text, 0, $requestedLength ) . $m[0];
+		if ( $truncatedText === $text ) {
+			return $text;
+		}
 
-		return $this->tidy( $text );
+		return $this->tidy( $truncatedText );
 	}
 
 	/**
@@ -99,7 +102,7 @@ class TextTruncator {
 	 */
 	private function tidy( $text ) {
 		if ( $this->useTidy ) {
-			$text = MWTidy::tidy( $text );
+			$text = MediaWikiServices::getInstance()->getTidy()->tidy( $text );
 		}
 
 		return trim( $text );

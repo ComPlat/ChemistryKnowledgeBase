@@ -1,0 +1,35 @@
+{
+	"name": "UrlGetParameters",
+	"version": "1.6.0",
+	"author": [
+		"S.O.E. Ansems",
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:UrlGetParameters",
+	"descriptionmsg": "urlgetparameters-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"MessagesDirs": {
+		"UrlGetParameters": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"UrlGetParametersMagic": "UrlGetParameters.i18n.magic.php"
+	},
+	"AutoloadClasses": {
+		"UrlGetParametersHooks": "UrlGetParametersHooks.php"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "UrlGetParametersHooks::onParserFirstCallInit"
+	},
+	"config": {
+		"UrlGetParametersSeparator": {
+			"value": ","
+		}
+	},
+	"manifest_version": 2
+}

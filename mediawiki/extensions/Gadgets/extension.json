@@ -8,7 +8,7 @@
 	"descriptionmsg": "gadgets-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.32.0"
+		"MediaWiki": ">= 1.39.0"
 	},
 	"type": "other",
 	"namespaces": [
@@ -16,6 +16,7 @@
 			"id": 2300,
 			"constant": "NS_GADGET",
 			"name": "Gadget",
+			"capitallinkoverride": false,
 			"protection": "gadgets-edit"
 		},
 		{
@@ -38,19 +39,19 @@
 		}
 	],
 	"ContentHandlers": {
-		"GadgetDefinition": "GadgetDefinitionContentHandler"
+		"GadgetDefinition": "MediaWiki\\Extension\\Gadgets\\Content\\GadgetDefinitionContentHandler"
 	},
 	"AvailableRights": [
 		"gadgets-edit",
 		"gadgets-definition-edit"
 	],
 	"SpecialPages": {
-		"Gadgets": "SpecialGadgets",
-		"GadgetUsage": "SpecialGadgetUsage"
+		"Gadgets": "MediaWiki\\Extension\\Gadgets\\SpecialGadgets",
+		"GadgetUsage": "MediaWiki\\Extension\\Gadgets\\SpecialGadgetUsage"
 	},
 	"APIListModules": {
-		"gadgetcategories": "ApiQueryGadgetCategories",
-		"gadgets": "ApiQueryGadgets"
+		"gadgetcategories": "MediaWiki\\Extension\\Gadgets\\Api\\ApiQueryGadgetCategories",
+		"gadgets": "MediaWiki\\Extension\\Gadgets\\Api\\ApiQueryGadgets"
 	},
 	"MessagesDirs": {
 		"Gadgets": [
@@ -65,38 +66,34 @@
 	"RawHtmlMessages": [
 		"gadgets-definition"
 	],
-	"AutoloadClasses": {
-		"ApiQueryGadgetCategories": "includes/api/ApiQueryGadgetCategories.php",
-		"ApiQueryGadgets": "includes/api/ApiQueryGadgets.php",
-		"Gadget": "includes/Gadget.php",
-		"GadgetHooks": "includes/GadgetHooks.php",
-		"GadgetResourceLoaderModule": "includes/GadgetResourceLoaderModule.php",
-		"SpecialGadgets": "includes/SpecialGadgets.php",
-		"SpecialGadgetUsage": "includes/SpecialGadgetUsage.php",
-		"GadgetRepo": "includes/GadgetRepo.php",
-		"GadgetDefinitionNamespaceRepo": "includes/GadgetDefinitionNamespaceRepo.php",
-		"MediaWikiGadgetsDefinitionRepo": "includes/MediaWikiGadgetsDefinitionRepo.php",
-		"GadgetDefinitionContent": "includes/content/GadgetDefinitionContent.php",
-		"GadgetDefinitionContentHandler": "includes/content/GadgetDefinitionContentHandler.php",
-		"GadgetDefinitionValidator": "includes/content/GadgetDefinitionValidator.php",
-		"GadgetDefinitionSecondaryDataUpdate": "includes/content/GadgetDefinitionSecondaryDataUpdate.php",
-		"GadgetDefinitionDeletionUpdate": "includes/content/GadgetDefinitionDeletionUpdate.php"
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\Gadgets\\": "includes/"
+	},
+	"TestAutoloadClasses": {
+		"GadgetTestUtils": "tests/phpunit/GadgetTestUtils.php"
+	},
+	"HookHandlers": {
+		"GadgetHooks": {
+			"class": "MediaWiki\\Extension\\Gadgets\\Hooks"
+		}
 	},
 	"Hooks": {
-		"BeforePageDisplay": "GadgetHooks::beforePageDisplay",
-		"CodeEditorGetPageLanguage": "GadgetHooks::onCodeEditorGetPageLanguage",
-		"ContentHandlerDefaultModelFor": "GadgetHooks::onContentHandlerDefaultModelFor",
-		"EditFilterMergedContent": "GadgetHooks::onEditFilterMergedContent",
-		"UserGetDefaultOptions": "GadgetHooks::userGetDefaultOptions",
-		"GetPreferences": "GadgetHooks::getPreferences",
-		"ResourceLoaderRegisterModules": "GadgetHooks::registerModules",
-		"wgQueryPages": "GadgetHooks::onwgQueryPages",
-		"DeleteUnknownPreferences": "GadgetHooks::onDeleteUnknownPreferences"
+		"PageDeleteComplete": "GadgetHooks",
+		"PageSaveComplete": "GadgetHooks",
+		"BeforePageDisplay": "GadgetHooks",
+		"CodeEditorGetPageLanguage": "MediaWiki\\Extension\\Gadgets\\Hooks::onCodeEditorGetPageLanguage",
+		"ContentHandlerDefaultModelFor": "GadgetHooks",
+		"EditFilterMergedContent": "GadgetHooks",
+		"UserGetDefaultOptions": "GadgetHooks",
+		"GetPreferences": "GadgetHooks",
+		"PreferencesGetLegend": "GadgetHooks",
+		"ResourceLoaderRegisterModules": "GadgetHooks",
+		"wgQueryPages": "GadgetHooks",
+		"DeleteUnknownPreferences": "GadgetHooks"
 	},
-	"callback": "GadgetHooks::onRegistration",
 	"config": {
 		"GadgetsRepoClass": {
-			"value": "MediaWikiGadgetsDefinitionRepo"
+			"value": "MediaWiki\\Extension\\Gadgets\\MediaWikiGadgetsDefinitionRepo"
 		},
 		"SpecialGadgetUsageActiveUsers": {
 			"value": true

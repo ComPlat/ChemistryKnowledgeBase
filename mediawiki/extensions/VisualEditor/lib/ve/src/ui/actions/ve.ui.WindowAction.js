@@ -38,15 +38,13 @@ ve.ui.WindowAction.static.methods = [ 'open', 'close', 'toggle' ];
  * @return {boolean|jQuery.Promise} Action was executed; if a Promise, it'll resolve once the action is finished executing
  */
 ve.ui.WindowAction.prototype.open = function ( name, data, action ) {
-	var currentInspector, inspectorWindowManager, fragmentPromise,
-		originalFragment, text,
-		windowAction = this,
+	var windowAction = this,
 		windowType = this.getWindowType( name ),
 		windowManager = windowType && this.getWindowManager( windowType ),
 		currentWindow = windowManager.getCurrentWindow(),
 		autoClosePromises = [],
 		surface = this.surface,
-		fragment = surface.getModel().getFragment( undefined, true ),
+		surfaceFragment = surface.getModel().getFragment( undefined, true ),
 		dir = surface.getView().getSelectionDirectionality(),
 		windowClass = ve.ui.windowFactory.lookup( name ),
 		isFragmentWindow = !!windowClass.prototype.getFragment,
@@ -58,17 +56,24 @@ ve.ui.WindowAction.prototype.open = function ( name, data, action ) {
 		openDeferred = ve.createDeferred(),
 		openPromise = openDeferred.promise();
 
+	ve.track(
+		'activity.' + name,
+		{ action: 'window-open-from-' + ( this.source || 'command' ) }
+	);
+
 	if ( !windowManager ) {
 		return false;
 	}
 
+	var fragmentPromise;
+	var originalFragment;
 	if ( !mayRequireFragment ) {
 		fragmentPromise = ve.createDeferred().resolve().promise();
 	} else if ( sourceMode ) {
-		text = fragment.getText( true );
-		originalFragment = fragment;
+		var text = surfaceFragment.getText( true );
+		originalFragment = surfaceFragment;
 
-		fragmentPromise = fragment.convertFromSource( text ).then( function ( selectionDocument ) {
+		fragmentPromise = surfaceFragment.convertFromSource( text ).then( function ( selectionDocument ) {
 			var tempSurfaceModel = new ve.dm.Surface( selectionDocument ),
 				tempFragment = tempSurfaceModel.getLinearFragment(
 					// TODO: Select all content using content offset methods
@@ -81,7 +86,7 @@ ve.ui.WindowAction.prototype.open = function ( name, data, action ) {
 			return tempFragment;
 		} );
 	} else {
-		fragmentPromise = ve.createDeferred().resolve( fragment ).promise();
+		fragmentPromise = ve.createDeferred().resolve( surfaceFragment ).promise();
 	}
 
 	data = ve.extendObject( { dir: dir }, data, { $returnFocusTo: null } );
@@ -98,8 +103,8 @@ ve.ui.WindowAction.prototype.open = function ( name, data, action ) {
 
 	// If we're opening a dialog, close all inspectors first
 	if ( windowType === 'dialog' ) {
-		inspectorWindowManager = windowAction.getWindowManager( 'inspector' );
-		currentInspector = inspectorWindowManager.getCurrentWindow();
+		var inspectorWindowManager = windowAction.getWindowManager( 'inspector' );
+		var currentInspector = inspectorWindowManager.getCurrentWindow();
 		if ( currentInspector ) {
 			autoClosePromises.push( inspectorWindowManager.closeWindow( currentInspector ).closed );
 		}
@@ -206,15 +211,14 @@ ve.ui.WindowAction.prototype.close = function ( name, data ) {
  * @return {boolean} Action was executed
  */
 ve.ui.WindowAction.prototype.toggle = function ( name, data ) {
-	var win,
-		windowType = this.getWindowType( name ),
+	var windowType = this.getWindowType( name ),
 		windowManager = windowType && this.getWindowManager( windowType );
 
 	if ( !windowManager ) {
 		return false;
 	}
 
-	win = windowManager.getCurrentWindow();
+	var win = windowManager.getCurrentWindow();
 	if ( !win || win.constructor.static.name !== name ) {
 		this.open( name, data );
 	} else {

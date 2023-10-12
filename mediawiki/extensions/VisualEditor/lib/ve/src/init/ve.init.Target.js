@@ -14,17 +14,14 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {Object} [toolbarConfig] Configuration options for the toolbar
+ * @cfg {Object} [toolbarConfig={}] Configuration options for the toolbar
  * @cfg {Object} [toolbarGroups] Toolbar groups, defaults to this.constructor.static.toolbarGroups
  * @cfg {Object} [actionGroups] Toolbar groups, defaults to this.constructor.static.actionGroups
- * @cfg {Object} [modes] Available editing modes. Defaults to static.modes
- * @cfg {Object} [defaultMode] Default mode for new surfaces. Must be in this.modes and defaults to first item.
- * @cfg {Object} [register=true] Register the target at ve.init.target
+ * @cfg {string[]} [modes] Available editing modes. Defaults to static.modes
+ * @cfg {string} [defaultMode] Default mode for new surfaces. Must be in this.modes and defaults to first item.
+ * @cfg {boolean} [register=true] Register the target at ve.init.target
  */
 ve.init.Target = function VeInitTarget( config ) {
-	var isIe = ve.init.platform.constructor.static.isInternetExplorer(),
-		isEdge = ve.init.platform.constructor.static.isEdge();
-
 	config = config || {};
 
 	// Parent constructor
@@ -63,6 +60,9 @@ ve.init.Target = function VeInitTarget( config ) {
 
 	// Initialization
 	this.$element.addClass( 've-init-target' );
+
+	var isIe = ve.init.platform.constructor.static.isInternetExplorer(),
+		isEdge = ve.init.platform.constructor.static.isEdge();
 
 	if ( isIe ) {
 		this.$element.addClass( 've-init-target-ie' );
@@ -162,6 +162,17 @@ ve.init.Target.static.toolbarGroups = [
 	{
 		name: 'specialCharacter',
 		include: [ 'specialCharacter' ]
+	},
+	{
+		name: 'pageMenu',
+		type: 'list',
+		align: 'after',
+		icon: 'menu',
+		indicator: null,
+		title: OO.ui.deferMsg( 'visualeditor-pagemenu-tooltip' ),
+		label: OO.ui.deferMsg( 'visualeditor-pagemenu-tooltip' ),
+		invisibleLabel: true,
+		include: [ 'findAndReplace', 'changeDirectionality', 'commandHelp' ]
 	}
 ];
 
@@ -172,14 +183,14 @@ ve.init.Target.static.actionGroups = [];
  *
  * @type {string[]} List of command names
  */
-ve.init.Target.static.documentCommands = [ 'commandHelp' ];
+ve.init.Target.static.documentCommands = [];
 
 /**
  * List of commands which can be triggered from within the target element
  *
  * @type {string[]} List of command names
  */
-ve.init.Target.static.targetCommands = [ 'findAndReplace', 'findNext', 'findPrevious' ];
+ve.init.Target.static.targetCommands = [ 'commandHelp', 'findAndReplace', 'findNext', 'findPrevious' ];
 
 /**
  * List of commands to include in the target
@@ -404,12 +415,12 @@ ve.init.Target.prototype.getScrollContainer = function () {
  * Handle scroll container scroll events
  */
 ve.init.Target.prototype.onContainerScroll = function () {
-	var scrollTop, wasFloating,
-		toolbar = this.getToolbar();
+	// Don't use getter as it creates the toolbar
+	var toolbar = this.toolbar;
 
-	if ( toolbar.isFloatable() ) {
-		wasFloating = toolbar.isFloating();
-		scrollTop = this.$scrollContainer.scrollTop();
+	if ( toolbar && toolbar.isFloatable() ) {
+		var wasFloating = toolbar.isFloating();
+		var scrollTop = this.$scrollContainer.scrollTop();
 
 		if ( scrollTop + this.toolbarScrollOffset > toolbar.getElementOffset().top ) {
 			toolbar.float();
@@ -435,10 +446,10 @@ ve.init.Target.prototype.onContainerScroll = function () {
  * @param {jQuery.Event} e Key down event
  */
 ve.init.Target.prototype.onDocumentKeyDown = function ( e ) {
-	var command, surface, trigger = new ve.ui.Trigger( e );
+	var trigger = new ve.ui.Trigger( e );
 	if ( trigger.isComplete() ) {
-		command = this.documentTriggerListener.getCommandByTrigger( trigger.toString() );
-		surface = this.getSurface();
+		var command = this.documentTriggerListener.getCommandByTrigger( trigger.toString() );
+		var surface = this.getSurface();
 		if ( surface && command && command.execute( surface, undefined, 'trigger' ) ) {
 			e.preventDefault();
 		}
@@ -472,10 +483,10 @@ ve.init.Target.prototype.onDocumentVisibilityChange = function () {
  * @param {jQuery.Event} e Key down event
  */
 ve.init.Target.prototype.onTargetKeyDown = function ( e ) {
-	var command, surface, trigger = new ve.ui.Trigger( e );
+	var trigger = new ve.ui.Trigger( e );
 	if ( trigger.isComplete() ) {
-		command = this.targetTriggerListener.getCommandByTrigger( trigger.toString() );
-		surface = this.getSurface();
+		var command = this.targetTriggerListener.getCommandByTrigger( trigger.toString() );
+		var surface = this.getSurface();
 		if ( surface && command && command.execute( surface, undefined, 'trigger' ) ) {
 			e.preventDefault();
 		}
@@ -523,6 +534,7 @@ ve.init.Target.prototype.createSurface = function ( dmDocOrSurface, config ) {
 ve.init.Target.prototype.getSurfaceConfig = function ( config ) {
 	return ve.extendObject( {
 		$scrollContainer: this.$scrollContainer,
+		$scrollListener: this.$scrollListener,
 		commandRegistry: ve.ui.commandRegistry,
 		sequenceRegistry: ve.ui.sequenceRegistry,
 		dataTransferHandlerFactory: ve.ui.dataTransferHandlerFactory,
@@ -577,9 +589,21 @@ ve.init.Target.prototype.onSurfaceViewFocus = function ( surface ) {
 /**
  * Set the target's active surface
  *
- * @param {ve.ui.Surface} surface Surface
+ * @param {ve.ui.Surface} surface
  */
 ve.init.Target.prototype.setSurface = function ( surface ) {
+	if ( OO.ui.isMobile() ) {
+		// Allow popup tool groups's menus to display on top of the mobile context, which is attached
+		// to the global overlay (T307849)
+		this.toolbarConfig.$overlay = surface.getGlobalOverlay().$element;
+		// There is already a toolbar (e.g. when switching), swap out the overlay:
+		// TODO: Add a setOverlay method to Toolbar, or create a new toolbar
+		if ( this.toolbar ) {
+			this.toolbar.$overlay = this.toolbarConfig.$overlay;
+			this.toolbar.$overlay.append( this.toolbar.$popups );
+		}
+	}
+
 	if ( this.surfaces.indexOf( surface ) === -1 ) {
 		throw new Error( 'Active surface must have been added first' );
 	}
@@ -592,7 +616,7 @@ ve.init.Target.prototype.setSurface = function ( surface ) {
 /**
  * Get the target's active surface, if it exists
  *
- * @return {ve.ui.Surface|null} Surface
+ * @return {ve.ui.Surface|null}
  */
 ve.init.Target.prototype.getSurface = function () {
 	return this.surface;
@@ -628,23 +652,58 @@ ve.init.Target.prototype.getActions = function () {
 /**
  * Set up the toolbar, attaching it to a surface.
  *
- * @param {ve.ui.Surface} surface Surface
+ * @param {ve.ui.Surface} surface
  */
 ve.init.Target.prototype.setupToolbar = function ( surface ) {
-	var toolbar = this.getToolbar(),
-		actions = this.getActions(),
-		rAF = window.requestAnimationFrame || setTimeout;
+	var toolbar = this.getToolbar();
 
 	toolbar.connect( this, {
 		resize: 'onToolbarResize',
 		active: 'onToolbarActive'
 	} );
-	actions.connect( this, { active: 'onToolbarActive' } );
+
+	var actions;
+	if ( this.actionGroups.length ) {
+		actions = this.getActions();
+		actions.connect( this, { active: 'onToolbarActive' } );
+	}
+
+	if ( surface.nullSelectionOnBlur ) {
+		toolbar.$element
+			.on( 'focusin', function () {
+				// When the focus moves to the toolbar, deactivate the surface but keep the selection (even if
+				// nullSelectionOnBlur is true), to allow tools to act on that selection.
+				surface.getView().deactivate( /* showAsActivated= */ true );
+			} )
+			.on( 'focusout', function ( e ) {
+				var newFocusedElement = e.relatedTarget;
+				if ( !OO.ui.contains( [ toolbar.$element[ 0 ], toolbar.$overlay[ 0 ] ], newFocusedElement, true ) ) {
+					// When the focus moves out of the toolbar:
+					if ( OO.ui.contains( surface.getView().$element[ 0 ], newFocusedElement, true ) ) {
+						// When the focus moves out of the toolbar, and it moves back into the surface,
+						// make sure the previous selection is restored.
+						var previousSelection = surface.getModel().getSelection();
+						surface.getView().activate();
+						if ( !previousSelection.isNull() ) {
+							surface.getModel().setSelection( previousSelection );
+						}
+					} else {
+						// When the focus moves out of the toolbar, and it doesn't move back into the surface,
+						// blur the surface explicitly to restore the expected nullSelectionOnBlur behavior.
+						// The surface was deactivated, so it doesn't react to the focus change itself.
+						surface.getView().blur();
+					}
+				}
+			} );
+	}
 
 	toolbar.setup( this.toolbarGroups, surface );
-	actions.setup( this.actionGroups, surface );
+	if ( actions ) {
+		actions.setup( this.actionGroups, surface );
+		toolbar.$actions.append( actions.$element );
+	}
 	this.attachToolbar();
-	toolbar.$actions.append( actions.$element );
+	var rAF = window.requestAnimationFrame || setTimeout;
 	rAF( this.onContainerScrollHandler );
 };
 
@@ -719,5 +778,7 @@ ve.init.Target.prototype.attachToolbar = function () {
 	var toolbar = this.getToolbar();
 	toolbar.$element.insertBefore( toolbar.getSurface().$element );
 	toolbar.initialize();
-	this.getActions().initialize();
+	if ( this.actionsToolbar ) {
+		this.actionsToolbar.initialize();
+	}
 };

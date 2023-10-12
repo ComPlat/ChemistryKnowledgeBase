@@ -29,6 +29,8 @@ if ( getenv( 'MW_INSTALL_PATH' ) ) {
 
 require_once "$IP/maintenance/Maintenance.php";
 
+use MediaWiki\Extension\ConfirmEdit\Hooks;
+
 /**
  * Maintenance script to generate fancy captchas using a python script and copy them into storage.
  *
@@ -42,7 +44,8 @@ class GenerateFancyCaptchas extends Maintenance {
 		$this->addOption( "wordlist", 'A list of words', true, true );
 		$this->addOption( "font", "The font to use", true, true );
 		$this->addOption( "font-size", "The font size ", false, true );
-		$this->addOption( "blacklist", "A blacklist of words that should not be used", false, true );
+		$this->addOption( "badwordlist", "A list of words that should not be used", false, true );
+		$this->addOption( "blacklist", "DEPRECATED: A list of words that should not be used", false, true );
 		$this->addOption( "fill", "Fill the captcha container to N files", true, true );
 		$this->addOption(
 			"verbose",
@@ -65,7 +68,7 @@ class GenerateFancyCaptchas extends Maintenance {
 
 		$totalTime = -microtime( true );
 
-		$instance = ConfirmEditHooks::getInstance();
+		$instance = Hooks::getInstance();
 		if ( !( $instance instanceof FancyCaptcha ) ) {
 			$this->fatalError( "\$wgCaptchaClass is not FancyCaptcha.\n", 1 );
 		}
@@ -96,7 +99,7 @@ class GenerateFancyCaptchas extends Maintenance {
 			$captchaScript = 'captcha-old.py';
 		}
 
-		$cmd = sprintf( "python %s --key %s --output %s --count %s --dirs %s",
+		$cmd = sprintf( "python3 %s --key %s --output %s --count %s --dirs %s",
 			wfEscapeShellArg( dirname( __DIR__ ) . '/' . $captchaScript ),
 			wfEscapeShellArg( $wgCaptchaSecret ),
 			wfEscapeShellArg( $tmpDir ),
@@ -104,7 +107,7 @@ class GenerateFancyCaptchas extends Maintenance {
 			wfEscapeShellArg( $wgCaptchaDirectoryLevels )
 		);
 		foreach (
-			[ 'wordlist', 'font', 'font-size', 'blacklist', 'verbose', 'threads' ] as $par
+			[ 'wordlist', 'font', 'font-size', 'blacklist', 'badwordlist', 'verbose', 'threads' ] as $par
 		) {
 			if ( $this->hasOption( $par ) ) {
 				$cmd .= " --$par " . wfEscapeShellArg( $this->getOption( $par ) );

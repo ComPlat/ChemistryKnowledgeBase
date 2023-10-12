@@ -9,18 +9,41 @@ on:
 jobs:
   test:
     name: "PHPUnit: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
       matrix:
         include:
-          - mw: 'REL1_31'
-            php: 7.1
-          - mw: 'REL1_34'
-            php: 7.4
           - mw: 'REL1_35'
             php: 7.4
-          - mw: 'REL1_36'
+            experimental: false
+          - mw: 'REL1_37'
             php: 7.4
+            experimental: false
+          - mw: 'REL1_37'
+            php: 8.0
+            experimental: false
+          - mw: 'REL1_37'
+            php: 8.1
+            experimental: false
+          - mw: 'REL1_38'
+            php: 7.4
+            experimental: false
+          - mw: 'REL1_38'
+            php: 8.0
+            experimental: false
+          - mw: 'REL1_38'
+            php: 8.1
+            experimental: false
+          - mw: 'REL1_39'
+            php: 8.1
+            experimental: false
+          - mw: 'master'
+            php: 8.0
+            experimental: true
+          - mw: 'master'
+            php: 8.1
+            experimental: true
 
     runs-on: ubuntu-latest
 
@@ -34,11 +57,11 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, intl
-          tools: composer:1
+          tools: composer
 
       - name: Cache MediaWiki
         id: cache-mediawiki
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             mediawiki
@@ -47,12 +70,12 @@ jobs:
           key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v20
 
       - name: Cache Composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: EarlyCopy
 
@@ -61,9 +84,12 @@ jobs:
         working-directory: ~
         run: bash EarlyCopy/.github/workflows/installWiki.sh ${{ matrix.mw }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: mediawiki/skins/chameleon
+      
+      - name: Composer allow-plugins
+        run: composer config --no-plugins allow-plugins.composer/installers true
 
       - name: Composer update
         run: composer update

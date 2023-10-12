@@ -22,6 +22,12 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
+namespace MediaWiki\Extension\SpamBlacklist;
+
+use ApiBase;
+use ApiResult;
+use Wikimedia\ParamValidator\ParamValidator;
+
 /**
  * Query module check a URL against the blacklist
  *
@@ -31,13 +37,18 @@
 class ApiSpamBlacklist extends ApiBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$matches = BaseBlacklist::getInstance( 'spam' )->filter( $params['url'], null, true );
+		$matches = BaseBlacklist::getSpamBlacklist()->filter(
+			$params['url'],
+			null,
+			$this->getUser(),
+			true
+		);
 		$res = $this->getResult();
 
 		if ( $matches !== false ) {
 			// this url is blacklisted.
 			$res->addValue( 'spamblacklist', 'result', 'blacklisted' );
-			$res->setIndexedTagName( $matches, 'match' );
+			ApiResult::setIndexedTagName( $matches, 'match' );
 			$res->addValue( 'spamblacklist', 'matches', $matches );
 		} else {
 			// not blacklisted
@@ -48,8 +59,8 @@ class ApiSpamBlacklist extends ApiBase {
 	public function getAllowedParams() {
 		return [
 			'url' => [
-				ApiBase::PARAM_REQUIRED => true,
-				ApiBase::PARAM_ISMULTI => true,
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_ISMULTI => true,
 			]
 		];
 	}

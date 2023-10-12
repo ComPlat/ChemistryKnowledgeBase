@@ -3,7 +3,7 @@
 namespace MediaWiki\Tests\Maintenance;
 
 use BaseDump;
-use MediaWiki\Storage\SlotRecord;
+use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -19,7 +19,7 @@ class BaseDumpTest extends MediaWikiIntegrationTestCase {
 	 */
 	private $dump = null;
 
-	protected function tearDown() : void {
+	protected function tearDown(): void {
 		if ( $this->dump !== null ) {
 			$this->dump->close();
 		}
@@ -166,7 +166,6 @@ class BaseDumpTest extends MediaWikiIntegrationTestCase {
 		$fname = $this->getNewTempFile();
 
 		// The header of every prefetch file
-		// phpcs:ignore Generic.Files.LineLength
 		$header = '<mediawiki>
   <siteinfo>
     <sitename>wikisvn</sitename>
@@ -284,7 +283,7 @@ class BaseDumpTest extends MediaWikiIntegrationTestCase {
 		// Putting together the content of the prefetch files
 		$content = $header;
 		foreach ( $requested_pages as $i ) {
-			$this->assertTrue( array_key_exists( $i, $available_pages ),
+			$this->assertArrayHasKey( $i, $available_pages,
 				"Check for availability of requested page " . $i );
 			$content .= $available_pages[$i];
 		}

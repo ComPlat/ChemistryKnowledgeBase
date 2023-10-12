@@ -8,12 +8,13 @@
  * @ingroup PFFormInput
  */
 class PFRadioButtonInput extends PFEnumInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'radiobutton';
 	}
 
 	public static function getHTML( $cur_value, $input_name, $is_mandatory, $is_disabled, array $other_args ) {
-		global $wgPageFormsTabIndex, $wgPageFormsFieldNum, $wgPageFormsShowOnSelect;
+		global $wgPageFormsTabIndex, $wgPageFormsFieldNum;
 
 		if ( array_key_exists( 'possible_values', $other_args ) ) {
 			$possible_values = $other_args['possible_values'];
@@ -69,7 +70,8 @@ class PFRadioButtonInput extends PFEnumInput {
 			if ( $is_disabled ) {
 				$radiobutton_attrs['disabled'] = true;
 			}
-			if ( $possible_value === '' ) { // blank/"None" value
+			if ( $possible_value === '' ) {
+				// blank/"None" value
 				$label = wfMessage( 'pf_formedit_none' )->text();
 			} elseif (
 				array_key_exists( 'value_labels', $other_args ) &&
@@ -100,13 +102,7 @@ class PFRadioButtonInput extends PFEnumInput {
 		// Do the 'show on select' handling.
 		if ( array_key_exists( 'show on select', $other_args ) ) {
 			$spanClass .= ' pfShowIfChecked';
-			foreach ( $other_args['show on select'] as $div_id => $options ) {
-				if ( array_key_exists( $spanID, $wgPageFormsShowOnSelect ) ) {
-					$wgPageFormsShowOnSelect[$spanID][] = [ $options, $div_id ];
-				} else {
-					$wgPageFormsShowOnSelect[$spanID] = [ [ $options, $div_id ] ];
-				}
-			}
+			PFFormUtils::setShowOnSelect( $other_args['show on select'], $spanID );
 		}
 		$spanAttrs = [
 			'id' => $spanID,
@@ -121,7 +117,7 @@ class PFRadioButtonInput extends PFEnumInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
+	public function getHtmlText(): string {
 		return self::getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,

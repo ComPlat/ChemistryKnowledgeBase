@@ -9,6 +9,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\MediaWikiServices;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -29,7 +31,6 @@ class PFCreateClass extends SpecialPage {
 		// Check permissions.
 		if ( !$this->getUser()->isAllowed( 'createclass' ) ) {
 			$this->displayRestrictionError();
-			return;
 		}
 		$this->printCreateClassForm( $query );
 	}
@@ -43,6 +44,7 @@ class PFCreateClass extends SpecialPage {
 		$template_multiple = $req->getBool( "template_multiple" );
 		$use_cargo = trim( $req->getBool( "use_cargo" ) );
 		$cargo_table = trim( $req->getVal( "cargo_table" ) );
+		$use_fullwikitext = trim( $req->getBool( "use_fullwikitext" ) );
 		// If this is a multiple-instance template, there
 		// shouldn't be a corresponding form or category.
 		if ( $template_multiple ) {
@@ -51,11 +53,6 @@ class PFCreateClass extends SpecialPage {
 		} else {
 			$form_name = trim( $req->getVal( "form_name" ) );
 			$category_name = trim( $req->getVal( "category_name" ) );
-		}
-		if ( $template_name === '' || ( !$template_multiple && $form_name === '' ) ||
-			( $use_cargo && ( $cargo_table === '' ) ) ) {
-			$out->addWikiMsg( 'pf_createclass_missingvalues' );
-			return;
 		}
 		$fields = [];
 		$jobs = [];
@@ -66,30 +63,37 @@ class PFCreateClass extends SpecialPage {
 			// local variables.
 			$field_name = trim( $req->getVal( "name_$i" ) );
 			$display_label = trim( $req->getVal( "label_$i" ) );
-			$display_label = $display_label ? $display_label : $field_name;
+			$display_label = $display_label ?: $field_name;
 			$property_name = trim( $req->getVal( "property_name_$i" ) );
 			$property_type = $req->getVal( "field_type_$i" );
 			$allowed_values = $req->getVal( "allowed_values_$i" );
 			$is_list = $req->getCheck( "is_list_$i" );
+			$delimiter = $req->getVal( "delimiter_$i" );
 			$is_hierarchy = $req->getCheck( "is_hierarchy_$i" );
 			// Create an PFTemplateField object based on these
 			// values, and add it to the $fields array.
-			$field = PFTemplateField::create( $field_name, $display_label, $property_name, $is_list );
+			$field = PFTemplateField::create( $field_name, $display_label, $property_name, $is_list, $delimiter );
+
+			if ( $is_hierarchy ) {
+				$field->setHierarchyStructure( $req->getVal( 'hierarchy_structure_' . $i ) );
+			} elseif ( trim( $allowed_values ) == '' ) {
+				// Do nothing.
+			} else {
+				// To ignore escaped commas during the split, we replace them with an
+				// obscure character (a "beep"), then replace them back afterwards.
+				$allowed_values_mod = str_replace( '\,', "\a", $allowed_values );
+				$possibleValues = explode( ',', $allowed_values_mod );
+				foreach ( $possibleValues as &$possibleValue ) {
+					$possibleValue = str_replace( "\a", '\,', trim( $possibleValue ) );
+				}
+				$field->setPossibleValues( $possibleValues );
+			}
 
 			if ( defined( 'CARGO_VERSION' ) ) {
-				// Hopefully it's safe to use a Cargo
-				// utility method here.
-				$possibleValues = CargoUtils::smartSplit( ',', $allowed_values );
-				if ( $is_hierarchy ) {
-					$field->setHierarchyStructure( $req->getVal( 'hierarchy_structure_' . $i ) );
-				} else {
-					$field->setPossibleValues( $possibleValues );
-				}
 				if ( $use_cargo ) {
 					$cargo_field = str_replace( ' ', '_', $field_name );
 					$field->setCargoFieldData( $cargo_table, $cargo_field );
 					$field->setFieldType( $property_type );
-					$field->setPossibleValues( $possibleValues );
 				} else {
 					if ( $allowed_values != '' ) {
 						$allowedValuesForFields[$field_name] = $allowed_values;
@@ -140,11 +144,17 @@ class PFCreateClass extends SpecialPage {
 		} else {
 			$pfTemplate->setCategoryName( $category_name );
 		}
+		$pfTemplate->setFullWikiTextStatus( $use_fullwikitext );
 		$pfTemplate->setFormat( $template_format );
 		$full_text = $pfTemplate->createText();
 
 		$template_title = Title::makeTitleSafe( NS_TEMPLATE, $template_name );
-		$template_page = WikiPage::factory( $template_title );
+		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
+			// MW 1.36+
+			$template_page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $template_title );
+		} else {
+			$template_page = WikiPage::factory( $template_title );
+		}
 		$edit_summary = '';
 		PFCreatePageJob::createOrModifyPage( $template_page, $full_text, $edit_summary, $user );
 
@@ -192,17 +202,23 @@ class PFCreateClass extends SpecialPage {
 			$jobs[] = new PFCreatePageJob( $category_title, $params );
 		}
 
-		JobQueueGroup::singleton()->push( $jobs );
+		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
+			// MW 1.37+
+			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
+		} else {
+			JobQueueGroup::singleton()->push( $jobs );
+		}
 
 		$out->addWikiMsg( 'pf_createclass_success' );
 	}
 
 	private function printCreateClassForm( $query ) {
-		global $wgLang;
+		$lang = $this->getLanguage();
 		$out = $this->getOutput();
 		$req = $this->getRequest();
 
 		$out->addModules( [ 'ext.pageforms.PF_CreateClass', 'ext.pageforms.main', 'ext.pageforms.PF_CreateTemplate' ] );
+		$out->addModuleStyles( [ 'ext.pageforms.main.styles' ] );
 		$createAll = $req->getCheck( 'createAll' );
 		if ( $createAll ) {
 			// Guard against cross-site request forgeries (CSRF).
@@ -214,16 +230,6 @@ class PFCreateClass extends SpecialPage {
 			}
 			$this->createAllPages();
 			return;
-		}
-
-		if ( defined( 'SMW_VERSION' ) ) {
-			$possibleTypes = PFUtils::getSMWContLang()->getDatatypeLabels();
-		} elseif ( defined( 'CARGO_VERSION' ) ) {
-			global $wgCargoFieldTypes;
-			$possibleTypes = $wgCargoFieldTypes;
-			$specialBGColor = '';
-		} else {
-			$possibleTypes = [];
 		}
 
 		// Make links to all the other 'Create...' pages, in order to
@@ -240,7 +246,7 @@ class PFCreateClass extends SpecialPage {
 		$text = '<form id="createClassForm" action="" method="post">' . "\n";
 		$text .= "\t" . Html::rawElement( 'p', null,
 				$this->msg( 'pf_createclass_docu' )
-					->rawParams( $wgLang->listToText( $creation_links ) )
+					->rawParams( $lang->listToText( $creation_links ) )
 					->escaped() ) . "\n";
 		$templateNameLabel = $this->msg( 'pf_createtemplate_namelabel' )->escaped();
 		$templateNameInput = Html::input( 'template_name', null, 'text', [ 'size' => 30 ] );
@@ -248,9 +254,9 @@ class PFCreateClass extends SpecialPage {
 
 		$templateInfo = '';
 		if ( defined( 'CARGO_VERSION' ) && !defined( 'SMW_VERSION' ) ) {
-			$templateInfo .= "\t<p><label>" .
-				Html::check( 'use_cargo', true, [ 'id' => 'use_cargo' ] ) .
-				' ' . $this->msg( 'pf_createtemplate_usecargo' )->escaped() .
+			$templateInfo .= "\t<p><label id='cargo_toggle'>" .
+				Html::hidden( 'use_cargo', true ) .
+				$this->msg( 'pf_createtemplate_usecargo' )->escaped() .
 				"</label></p>\n";
 			$cargo_table_label = $this->msg( 'pf_createtemplate_cargotablelabel' )->escaped();
 			$templateInfo .= "\t" . Html::rawElement( 'p', [ 'id' => 'cargo_table_input' ],
@@ -258,15 +264,14 @@ class PFCreateClass extends SpecialPage {
 				Html::element( 'input', [ 'size' => '30', 'name' => 'cargo_table', 'id' => 'cargo_table' ], null )
 			) . "\n";
 		}
-		$createTemplatePage = new PFCreateTemplate();
+		$createTemplatePage = new PFCreateTemplate( true );
 		$templateInfo .= $createTemplatePage->printTemplateStyleInput( 'template_format' );
-		$templateInfo .= Html::rawElement( 'p', null,
-			Html::element( 'input', [
-				'type' => 'checkbox',
-				'name' => 'template_multiple',
-				'id' => 'template_multiple',
-				'class' => "disableFormAndCategoryInputs",
-			] ) . ' ' . $this->msg( 'pf_createtemplate_multipleinstance' )->escaped() ) . "\n";
+		$templateInfo .= Html::rawElement( 'p', [ 'id' => 'template_multiple_p' ],
+			Html::hidden( 'multiple_template', false ) . $this->msg( 'pf_createtemplate_multipleinstance' )->escaped() ) . "\n";
+		$templateInfo .= "\t<p><label id='fullwikitext_toggle'>" .
+			Html::hidden( 'use_fullwikitext', false ) .
+			$this->msg( 'pf_createtemplate_fullwikitext', '#template_display' )->escaped() .
+			"</label></p>\n";
 		// Either #set_internal or #subobject will be added to the
 		// template, depending on whether Semantic Internal Objects is
 		// installed.

@@ -7,7 +7,14 @@
  * @file
  */
 
+namespace MediaWiki\Extension\TitleBlacklist;
+
+use CoreParserFunctions;
+use Exception;
+use ExtensionRegistry;
+use MediaWiki\Extension\AntiSpoof\AntiSpoof;
 use MediaWiki\MediaWikiServices;
+use Wikimedia\AtEase\AtEase;
 
 /**
  * @ingroup Extensions
@@ -110,7 +117,7 @@ class TitleBlacklistEntry {
 				$status = $cache->getWithSetCallback(
 					$cache->makeKey( 'titleblacklist', 'normalized-unicode-status', md5( $title ) ),
 					$cache::TTL_MONTH,
-					function () use ( $title ) {
+					static function () use ( $title ) {
 						return AntiSpoof::checkUnicodeStringStatus( $title );
 					},
 					[ 'pcTTL' => $cache::TTL_PROC_LONG ]
@@ -129,12 +136,13 @@ class TitleBlacklistEntry {
 			}
 		}
 
-		Wikimedia\suppressWarnings();
+		AtEase::suppressWarnings();
+		// @phan-suppress-next-line SecurityCheck-ReDoS
 		$match = preg_match(
 			"/^(?:{$this->mRegex})$/us" . ( isset( $this->mParams['casesensitive'] ) ? '' : 'i' ),
 			$title
 		);
-		Wikimedia\restoreWarnings();
+		AtEase::restoreWarnings();
 
 		if ( $match ) {
 			if ( isset( $this->mParams['moveonly'] ) && $action != 'move' ) {
@@ -164,7 +172,8 @@ class TitleBlacklistEntry {
 	 * @return TitleBlacklistEntry|null
 	 */
 	public static function newFromString( $line, $source ) {
-		$raw = $line; // Keep line for raw data
+		// Keep line for raw data
+		$raw = $line;
 		$options = [];
 		// Strip comments
 		$line = preg_replace( "/^\\s*([^#]*)\\s*((.*)?)$/", "\\1", $line );
@@ -179,7 +188,8 @@ class TitleBlacklistEntry {
 			return null;
 		}
 		$regex = trim( $pockets[1] );
-		$regex = str_replace( '_', ' ', $regex ); // We'll be matching against text form
+		// We'll be matching against text form
+		$regex = str_replace( '_', ' ', $regex );
 		$opts_str = isset( $pockets[3] ) ? trim( $pockets[3] ) : '';
 		// Parse opts
 		$opts = preg_split( '/\s*\|\s*/', $opts_str );
@@ -220,7 +230,7 @@ class TitleBlacklistEntry {
 						$mword[2]
 					);
 					if ( is_string( $cpf_result ) ) {
-						// All result will have the same value, so we can just use str_seplace()
+						// All result will have the same value, so we can just use str_replace()
 						$regex = str_replace( $mword[0], $cpf_result, $regex );
 					}
 					break;
@@ -233,6 +243,7 @@ class TitleBlacklistEntry {
 		}
 		// Return result
 		if ( $regex ) {
+			// @phan-suppress-next-line SecurityCheck-ReDoS
 			return new TitleBlacklistEntry( $regex, $options, $raw, $source );
 		} else {
 			return null;
@@ -298,3 +309,5 @@ class TitleBlacklistEntry {
 		return $message ?: "titleblacklist-forbidden-{$operation}";
 	}
 }
+
+class_alias( TitleBlacklistEntry::class, 'TitleBlacklistEntry' );

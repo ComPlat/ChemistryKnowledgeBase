@@ -10,16 +10,13 @@ use Parser;
 use ParserOptions;
 
 /**
- * @coversDefaultClass \Cite\ErrorReporter
+ * @covers \Cite\ErrorReporter
  *
  * @license GPL-2.0-or-later
  */
 class ErrorReporterTest extends \MediaWikiUnitTestCase {
 
 	/**
-	 * @covers ::__construct
-	 * @covers ::getInterfaceLanguageAndSplitCache
-	 * @covers ::plain
 	 * @dataProvider provideErrors
 	 */
 	public function testPlain(
@@ -35,9 +32,6 @@ class ErrorReporterTest extends \MediaWikiUnitTestCase {
 			$reporter->plain( $mockParser, $key, 'first param' ) );
 	}
 
-	/**
-	 * @covers ::halfParsed
-	 */
 	public function testHalfParsed() {
 		$language = $this->createLanguage();
 		$reporter = $this->createReporter( $language );
@@ -65,14 +59,14 @@ class ErrorReporterTest extends \MediaWikiUnitTestCase {
 		];
 	}
 
-	private function createLanguage() : Language {
+	private function createLanguage(): Language {
 		$language = $this->createMock( Language::class );
 		$language->method( 'getDir' )->willReturn( 'rtl' );
 		$language->method( 'getHtmlCode' )->willReturn( 'qqx' );
 		return $language;
 	}
 
-	private function createReporter( Language $language ) : ErrorReporter {
+	private function createReporter( Language $language ): ErrorReporter {
 		$mockMessageLocalizer = $this->createMock( ReferenceMessageLocalizer::class );
 		$mockMessageLocalizer->method( 'msg' )->willReturnCallback(
 			function ( ...$args ) use ( $language ) {
@@ -89,7 +83,7 @@ class ErrorReporterTest extends \MediaWikiUnitTestCase {
 		return new ErrorReporter( $mockMessageLocalizer );
 	}
 
-	public function createParser( Language $language, array $expectedCategories ) {
+	private function createParser( Language $language, array $expectedCategories ): Parser {
 		$parserOptions = $this->createMock( ParserOptions::class );
 		$parserOptions->method( 'getUserLangObj' )->willReturn( $language );
 
@@ -99,7 +93,7 @@ class ErrorReporterTest extends \MediaWikiUnitTestCase {
 			->withConsecutive( $expectedCategories );
 		$parser->method( 'getOptions' )->willReturn( $parserOptions );
 		$parser->method( 'recursiveTagParse' )->willReturnCallback(
-			function ( $content ) {
+			static function ( $content ) {
 				return '[' . $content . ']';
 			}
 		);

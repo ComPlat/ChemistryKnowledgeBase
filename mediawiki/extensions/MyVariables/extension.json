@@ -1,0 +1,48 @@
+{
+	"name": "MyVariables",
+	"version": "4.5",
+	"author": [
+		"[https://www.mediawiki.org/wiki/User:Nad Aran Dunkley]",
+		"[https://www.mediawiki.org/wiki/User:Pastakhov Pavel Astakhov]",
+		"[https://www.mediawiki.org/wiki/User:Vedmaka]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MyVariables",
+	"descriptionmsg": "myvariables-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"MessagesDirs": {
+		"MyVariables": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"MyVariablesMagic": "MyVariables.i18n.magic.php"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\MyVariables\\": "src/"
+	},
+	"Hooks": {
+		"GetMagicVariableIDs": "declareVarIds",
+		"ParserGetVariableValueSwitch": "assignAValue",
+		"ParserFirstCallInit": "registerFunctions",
+		"ArticleViewHeader": "disableCache"
+	},
+	"HookHandlers": {
+		"declareVarIds": {
+			"class": "MediaWiki\\Extension\\MyVariables\\Hooks\\DeclareVarIds"
+		},
+		"assignAValue": {
+			"class": "MediaWiki\\Extension\\MyVariables\\Hooks\\AssignAValue"
+		},
+		"registerFunctions": {
+			"class": "MediaWiki\\Extension\\MyVariables\\Hooks\\RegisterFunctions"
+		},
+		"disableCache": {
+			"class": "MediaWiki\\Extension\\MyVariables\\Hooks\\DisableCache"
+		}
+	},
+	"manifest_version": 2
+}

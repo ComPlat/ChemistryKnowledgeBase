@@ -8,13 +8,16 @@
  * @license MIT
  */
 
+namespace MediaWiki\Extension\VisualEditor;
+
+use MediaWiki\ResourceLoader\Context as ResourceLoaderContext;
+use MediaWiki\ResourceLoader\Module as ResourceLoaderModule;
+use Title;
+
 class VisualEditorDataModule extends ResourceLoaderModule {
 
-	/* Protected Members */
-
+	/** @inheritDoc */
 	protected $targets = [ 'desktop', 'mobile' ];
-
-	/* Methods */
 
 	/**
 	 * @param ResourceLoaderContext $context Object containing information about the state of this
@@ -23,7 +26,7 @@ class VisualEditorDataModule extends ResourceLoaderModule {
 	 */
 	public function getScript( ResourceLoaderContext $context ) {
 		$msgInfo = $this->getMessageInfo( $context );
-		$parsedMessages = $msgInfo['parsed'];
+		$parsedMessages = [];
 		$plainMessages = [];
 		foreach ( $msgInfo['parse'] as $msgKey => $msgObj ) {
 			$parsedMessages[ $msgKey ] = $msgObj->parse();
@@ -32,14 +35,36 @@ class VisualEditorDataModule extends ResourceLoaderModule {
 			$plainMessages[ $msgKey ] = $msgObj->plain();
 		}
 
-		return 've.init.platform.addParsedMessages(' . FormatJson::encode(
-				$parsedMessages,
-				ResourceLoader::inDebugMode()
+		return 've.init.platform.addParsedMessages(' . $context->encodeJson(
+				$parsedMessages
 			) . ');' .
-			've.init.platform.addMessages(' . FormatJson::encode(
-				$plainMessages,
-				ResourceLoader::inDebugMode()
+			've.init.platform.addMessages(' . $context->encodeJson(
+				$plainMessages
 			) . ');';
+	}
+
+	/**
+	 * Get the definition summary for this module.
+	 *
+	 * @param ResourceLoaderContext $context
+	 * @return array
+	 */
+	public function getDefinitionSummary( ResourceLoaderContext $context ) {
+		$summary = parent::getDefinitionSummary( $context );
+
+		$msgVersion = [];
+		$msgInfo = $this->getMessageInfo( $context );
+		$msgInfo = array_merge( $msgInfo['parse'], $msgInfo['plain'] );
+		foreach ( $msgInfo as $msgKey => $msgObj ) {
+			$msgVersion[ $msgKey ] = [
+				// Include the text of the message, in case the canonical translation changes
+				$msgObj->plain(),
+				// Include the page touched time, in case the on-wiki override is invalidated
+				Title::makeTitle( NS_MEDIAWIKI, ucfirst( $msgObj->getKey() ) )->getTouched(),
+			];
+		}
+		$summary[] = [ 've-messages' => $msgVersion ];
+		return $summary;
 	}
 
 	/**
@@ -50,7 +75,7 @@ class VisualEditorDataModule extends ResourceLoaderModule {
 	protected function getMessageInfo( ResourceLoaderContext $context ) {
 		$editSubmitButtonLabelPublish = $this->getConfig()
 			->get( 'EditSubmitButtonLabelPublish' );
-		$saveButtonLabelKey = $editSubmitButtonLabelPublish ? 'publishpage' : 'savearticle';
+		$saveButtonLabelKey = $editSubmitButtonLabelPublish ? 'publishchanges' : 'savechanges';
 		$saveButtonLabel = $context->msg( $saveButtonLabelKey )->text();
 
 		// Messages to be exported as parsed html
@@ -59,16 +84,6 @@ class VisualEditorDataModule extends ResourceLoaderModule {
 			'summary' => $context->msg( 'summary' ),
 			'visualeditor-browserwarning' => $context->msg( 'visualeditor-browserwarning' ),
 			'visualeditor-wikitext-warning' => $context->msg( 'visualeditor-wikitext-warning' ),
-		];
-
-		// Copyright warning (already parsed)
-		$parsedMsgs = [
-			'copyrightwarning' => EditPage::getCopyrightWarning(
-				// Use a dummy title
-				Title::newFromText( 'Dwimmerlaik' ),
-				'parse',
-				$context->getLanguage()
-			),
 		];
 
 		// Messages to be exported as plain text
@@ -89,8 +104,6 @@ class VisualEditorDataModule extends ResourceLoaderModule {
 
 		return [
 			'parse' => $parseMsgs,
-			// Already parsed
-			'parsed' => $parsedMsgs,
 			'plain' => $plainMsgs,
 		];
 	}

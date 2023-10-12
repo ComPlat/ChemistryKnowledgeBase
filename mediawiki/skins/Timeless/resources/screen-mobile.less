@@ -10,6 +10,11 @@
 	padding: 0 @content-padding;
 }
 
+#mw-footer .footer-icons {
+	clear: both;
+	margin-bottom: 0.5em;
+}
+
 .color-middle {
 	margin: auto;
 	width: 34%;
@@ -115,13 +120,13 @@
 
 #user-tools h2 {
 	right: @content-padding + 0.75em;
-	.background-image-svg( 'images/user-large-grey.svg', 'images/user-large-grey.png' );
+	background-image: url( images/user-large-grey.svg );
 }
 
 #site-navigation {
 	h2 {
 		left: @content-padding;
-		.background-image-svg( 'images/menu-large-grey.svg', 'images/menu-large-grey.png' );
+		background-image: url( images/menu-large-grey.svg );
 	}
 
 	.sidebar-inner {
@@ -132,7 +137,7 @@
 
 #site-tools h2 {
 	right: @content-padding + 4.5em;
-	.background-image-svg( 'images/gear-large-grey.svg', 'images/gear-large-grey.png' );
+	background-image: url( images/gear-large-grey.svg );
 }
 
 /* Logo */
@@ -146,13 +151,6 @@
 	a {
 		padding-left: 0;
 	}
-}
-
-/* Page header */
-
-h1.firstHeading {
-	/* Prevent indicators from interfering with title and causing overflow */
-	clear: right;
 }
 
 /* Page actions */
@@ -179,12 +177,12 @@ h1.firstHeading {
 }
 
 #ca-more span {
-	.background-image-svg( 'images/gear-grey.svg', 'images/gear-grey.png' );
+	background-image: url( images/gear-grey.svg );
 	background-repeat: no-repeat;
 }
 
 #ca-languages span {
-	.background-image-svg( 'images/languages-grey.svg', 'images/languages-grey.png' );
+	background-image: url( images/languages-grey.svg );
 	background-repeat: no-repeat;
 }
 
@@ -221,13 +219,62 @@ div.thumb {
 	margin: 0 auto 0.5em;
 }
 
+figure[ typeof~='mw:File/Thumb' ],
+figure[ typeof~='mw:File/Frame' ],
+/* TODO: Remove "Image|Video|Audio" when version 2.4.0 of the content is no
+ * longer supported
+ */
+figure[ typeof~='mw:Image/Thumb' ],
+figure[ typeof~='mw:Video/Thumb' ],
+figure[ typeof~='mw:Audio/Thumb' ],
+figure[ typeof~='mw:Image/Frame' ],
+figure[ typeof~='mw:Video/Frame' ],
+figure[ typeof~='mw:Audio/Frame' ] {
+	width: 100% !important;
+
+	> a:first-child,
+	> span:first-child {
+		> *:first-child {
+			margin: 1em 1.5em;
+		}
+	}
+
+	> figcaption {
+		padding: 0 1.5em 1em 1.5em;
+	}
+}
+
+// FIXME: Clear the magnify clip for now
+figure[ typeof~='mw:File/Thumb' ]:not( [ typeof~='mw:Error' ] ),
+/* TODO: Remove "Image|Video|Audio" when version 2.4.0 of the content is no
+ * longer supported
+ */
+figure[ typeof~='mw:Image/Thumb' ]:not( [ typeof~='mw:Error' ] ),
+figure[ typeof~='mw:Video/Thumb' ]:not( [ typeof~='mw:Error' ] ),
+figure[ typeof~='mw:Audio/Thumb' ]:not( [ typeof~='mw:Error' ] ) {
+	> figcaption:before {
+		content: none;
+	}
+
+	> a:after {
+		content: none;
+	}
+}
+
 .mw-body {
 	border: 0;
 
-	/* Keep images from overflowing */
-	a > img {
-		height: auto !important;
-		max-width: 100% !important;
+	table {
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+
+		table {
+			// HOLD ON WHAT ABORT ABORT
+			width: unset;
+			margin-left: unset;
+			margin-right: unset;
+		}
 	}
 }
 

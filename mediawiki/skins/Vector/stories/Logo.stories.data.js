@@ -1,15 +1,13 @@
-/**
- * @external LogoOptions
- * @external LogoTemplateData
- */
-
 import logoTemplate from '!!raw-loader!../includes/templates/Logo.mustache';
+import wordmarkSrc from '../.storybook/resolve-imports/assets/wordmark.svg';
+import tagelineScr from '../.storybook/resolve-imports/assets/tagline.svg';
+import iconSrc from '../.storybook/resolve-imports/assets/icon.png';
 
 /**
  * @type {LogoOptions}
  */
 const wordmark = {
-	src: '/assets/wordmark.svg',
+	src: wordmarkSrc,
 	width: 116,
 	height: 18
 };
@@ -18,7 +16,7 @@ const wordmark = {
  * @type {LogoOptions}
  */
 const tagline = {
-	src: '/assets/tagline.svg',
+	src: tagelineScr,
 	width: 117,
 	height: 13
 };
@@ -26,7 +24,7 @@ const tagline = {
 /**
  * @type {string}
  */
-const icon = '/assets/icon.png';
+const icon = iconSrc;
 
 /**
  * @type {LogoTemplateData}

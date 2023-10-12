@@ -6,7 +6,6 @@
 		]
 	},
 	"visualeditor": "Amaẓrag aẓrayan",
-	"visualeditor-aliencontextitem-title": "Aferdis",
 	"visualeditor-aliennode-tooltip": "Suref-aɣ, aferdis-agi yezmer ad yettwaẓreg deg uskar aɣbalu akka tura.",
 	"visualeditor-align-widget-center": "Alemmas",
 	"visualeditor-align-widget-default": "Amezwer",
@@ -115,8 +114,8 @@
 	"visualeditor-mediasizewidget-sizeoptions-default": "Amezwer",
 	"visualeditor-mediasizewidget-sizeoptions-scale": "Sellum",
 	"visualeditor-rebase-client-author-name": "Isem",
-	"visualeditor-rebase-client-document-name": "Isem n isemli",
 	"visualeditor-rebase-client-document-create-edit": "Rnu/ẓreg",
+	"visualeditor-rebase-client-document-name": "Isem n isemli",
 	"visualeditor-shortcuts-clipboard": "ɣef afus",
 	"visualeditor-shortcuts-dialog": "Isfayla n udiwenni",
 	"visualeditor-shortcuts-formatting": "Amsal n tseddaṛt",

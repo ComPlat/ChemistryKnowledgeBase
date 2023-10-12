@@ -1,29 +1,27 @@
 ( function () {
 	QUnit.module( 'mmv.ThumbnailWidthCalculator', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'ThumbnailWidthCalculator constructor sanity check', function ( assert ) {
+	QUnit.test( 'ThumbnailWidthCalculator constructor sense check', function ( assert ) {
 		var badWidthBuckets = [],
 			goodWidthBuckets = [ 1 ],
 			thumbnailWidthCalculator;
 
 		thumbnailWidthCalculator = new mw.mmv.ThumbnailWidthCalculator();
-		assert.ok( thumbnailWidthCalculator, 'constructor with no argument works' );
+		assert.true( thumbnailWidthCalculator instanceof mw.mmv.ThumbnailWidthCalculator, 'constructor with no argument works' );
 
 		thumbnailWidthCalculator = new mw.mmv.ThumbnailWidthCalculator( {} );
-		assert.ok( thumbnailWidthCalculator, 'constructor with empty option argument works' );
+		assert.true( thumbnailWidthCalculator instanceof mw.mmv.ThumbnailWidthCalculator, 'constructor with empty option argument works' );
 
 		thumbnailWidthCalculator = new mw.mmv.ThumbnailWidthCalculator( {
 			widthBuckets: goodWidthBuckets
 		} );
-		assert.ok( thumbnailWidthCalculator, 'constructor with non-default buckets works' );
+		assert.true( thumbnailWidthCalculator instanceof mw.mmv.ThumbnailWidthCalculator, 'constructor with non-default buckets works' );
 
-		try {
+		assert.throws( function () {
 			thumbnailWidthCalculator = new mw.mmv.ThumbnailWidthCalculator( {
 				widthBuckets: badWidthBuckets
 			} );
-		} catch ( e ) {
-			assert.ok( e, 'constructor with empty bucket list throws exception' );
-		}
+		}, 'constructor with empty bucket list throws exception' );
 	} );
 
 	QUnit.test( 'findNextBucket() test', function ( assert ) {
@@ -45,7 +43,7 @@
 	} );
 
 	// Old tests for the default bucket sizes. Preserved because why not.
-	QUnit.test( 'We get sane image sizes when we ask for them', function ( assert ) {
+	QUnit.test( 'We get sensible image sizes when we ask for them', function ( assert ) {
 		var twc = new mw.mmv.ThumbnailWidthCalculator();
 
 		assert.strictEqual( twc.findNextBucket( 200 ), 320, 'Low target size gives us lowest possible size bucket' );

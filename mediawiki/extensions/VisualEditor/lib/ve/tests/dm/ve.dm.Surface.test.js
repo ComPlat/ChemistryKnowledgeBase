@@ -31,16 +31,15 @@ QUnit.test( 'getSelection', function ( assert ) {
 } );
 
 QUnit.test( 'setSelection out of range', function ( assert ) {
-	var range,
-		surface = new ve.dm.SurfaceStub( [
-			{ type: 'paragraph' },
-			'F', 'o', 'o',
-			{ type: '/paragraph' },
-			{ type: 'internalList' }, { type: '/internalList' }
-		] );
+	var surface = new ve.dm.SurfaceStub( [
+		{ type: 'paragraph' },
+		'F', 'o', 'o',
+		{ type: '/paragraph' },
+		{ type: 'internalList' }, { type: '/internalList' }
+	] );
 
 	surface.setSelection( new ve.dm.LinearSelection( new ve.Range( 2, 100 ) ) );
-	range = surface.getSelection().getRange();
+	var range = surface.getSelection().getRange();
 	assert.deepEqual( [ range.start, range.end ], [ 2, 5 ] );
 	surface.setSelection( new ve.dm.LinearSelection( new ve.Range( 99, 100 ) ) );
 	range = surface.getSelection().getRange();
@@ -49,28 +48,39 @@ QUnit.test( 'setSelection out of range', function ( assert ) {
 
 QUnit.test( 'contextChange events', function ( assert ) {
 	var surface = new ve.dm.SurfaceStub( ve.dm.example.preprocessAnnotations( [
-			{ type: 'paragraph' },
-			'F', 'o', 'o',
-			// Bold "bar"
-			[ 'b', [ ve.dm.example.bold ] ],
-			[ 'a', [ ve.dm.example.bold ] ],
-			[ 'r', [ ve.dm.example.bold ] ],
-			// Italic "baz"
-			[ 'b', [ ve.dm.example.italic ] ],
-			[ 'a', [ ve.dm.example.italic ] ],
-			[ 'z', [ ve.dm.example.italic ] ],
-			'F', 'o', 'o',
-			{ type: '/paragraph' },
-			{ type: 'internalList' }, { type: '/internalList' }
-		] ) ),
-		contextChanges = 0,
-		tests, i, iLen;
+		{ type: 'paragraph' },
+		'F', 'o', 'o',
+		// Bold "bar"
+		[ 'b', [ ve.dm.example.bold ] ],
+		[ 'a', [ ve.dm.example.bold ] ],
+		[ 'r', [ ve.dm.example.bold ] ],
+		// Italic "baz"
+		[ 'b', [ ve.dm.example.italic ] ],
+		[ 'a', [ ve.dm.example.italic ] ],
+		[ 'z', [ ve.dm.example.italic ] ],
+		'F', 'o', 'o',
+		{ type: '/paragraph' },
+		{ type: 'list', attributes: { style: 'bullet' } },
+		{ type: 'listItem' },
+		{ type: 'paragraph' },
+		'O', 'n', 'e',
+		{ type: '/paragraph' },
+		{ type: '/listItem' },
+		{ type: 'listItem' },
+		{ type: 'paragraph' },
+		'T', 'w', 'o',
+		{ type: '/paragraph' },
+		{ type: '/listItem' },
+		{ type: '/list' },
+		{ type: 'internalList' }, { type: '/internalList' }
+	] ) );
 
+	var contextChanges = 0;
 	surface.on( 'contextChange', function () {
 		contextChanges++;
 	} );
 
-	tests = [
+	var cases = [
 		{
 			title: 'setSelection, to equivalent selection',
 			initialSelection: new ve.Range( 1 ),
@@ -131,14 +141,21 @@ QUnit.test( 'contextChange events', function ( assert ) {
 			initialSelection: new ve.Range( 2 ),
 			selection: new ve.Range( 5 ),
 			expected: 2 // Move + insertion annotations change
+		},
+		{
+			title: 'setSelection, selection collapsed in end node (but overally non-collapsed) becomes non-collapsed in end node',
+			initialSelection: new ve.Range( 18, 24 ),
+			selection: new ve.Range( 18, 26 ),
+			expected: 1 // Move + insertion annotations change
 		}
 	];
-	for ( i = 0, iLen = tests.length; i < iLen; i++ ) {
-		surface.setLinearSelection( tests[ i ].initialSelection || new ve.Range( 1 ) );
+
+	cases.forEach( function ( caseItem ) {
+		surface.setLinearSelection( caseItem.initialSelection || new ve.Range( 1 ) );
 		contextChanges = 0;
-		surface.setLinearSelection( tests[ i ].selection );
-		assert.strictEqual( contextChanges, tests[ i ].expected, tests[ i ].title );
-	}
+		surface.setLinearSelection( caseItem.selection );
+		assert.strictEqual( contextChanges, caseItem.expected, caseItem.title );
+	} );
 } );
 
 QUnit.test( 'documentUpdate/select events', function ( assert ) {
@@ -208,15 +225,13 @@ QUnit.test( 'breakpoint/undo/redo', function ( assert ) {
 } );
 
 QUnit.test( 'multi-user undo', function ( assert ) {
-	var i, tx,
-		range, surface, doc,
-		surfaces = [];
+	var surfaces = [];
 
 	// Create two surfaces owned by authors 1 & 2, consisting of interleaved
 	// transactions by both users, each adding to their own paragraph
-	for ( i = 1; i <= 2; i++ ) {
-		range = new ve.Range( 1 );
-		surface = new ve.dm.SurfaceStub( [
+	for ( var i = 1; i <= 2; i++ ) {
+		var range = new ve.Range( 1 );
+		var surface = new ve.dm.SurfaceStub( [
 			{ type: 'paragraph' }, { type: '/paragraph' },
 			{ type: 'paragraph' }, { type: '/paragraph' },
 			{ type: 'internalList' }, { type: '/internalList' }
@@ -224,9 +239,9 @@ QUnit.test( 'multi-user undo', function ( assert ) {
 		surface.setAuthorId( i );
 		surface.setMultiUser( true );
 
-		doc = surface.getDocument();
+		var doc = surface.getDocument();
 
-		tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 1, 'foo'.split( '' ) );
+		var tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 1, 'foo'.split( '' ) );
 		tx.authorId = 1;
 		surface.change( tx );
 		surface.breakpoint();
@@ -283,12 +298,11 @@ QUnit.test( 'multi-user undo', function ( assert ) {
 } );
 
 QUnit.test( 'change rollback', function ( assert ) {
-	var tx,
-		range = new ve.Range( 1, 3 ),
+	var range = new ve.Range( 1, 3 ),
 		surface = new ve.dm.SurfaceStub( null, range ),
 		doc = surface.getDocument();
 
-	tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 1, [ { type: '/heading' } ] );
+	var tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 1, [ { type: '/heading' } ] );
 	assert.throws(
 		function () { surface.change( tx ); },
 		new Error( 'Expected closing for paragraph but got closing for heading' ),
@@ -299,19 +313,17 @@ QUnit.test( 'change rollback', function ( assert ) {
 } );
 
 QUnit.test( 'range translation', function ( assert ) {
-	var selection,
-		surface = new ve.dm.SurfaceStub( null, new ve.Range( 3 ) ),
+	var surface = new ve.dm.SurfaceStub( null, new ve.Range( 3 ) ),
 		doc = surface.getDocument(),
 		tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 3, [ 'x' ] );
 	surface.change( tx );
-	selection = surface.getSelection();
-	assert.ok( selection instanceof ve.dm.LinearSelection, 'Selection is linear' );
+	var selection = surface.getSelection();
+	assert.true( selection instanceof ve.dm.LinearSelection, 'Selection is linear' );
 	assert.equalRange( selection.getRange(), new ve.Range( 3 ), 'Cursor is unmoved' );
 } );
 
 QUnit.test( 'staging', function ( assert ) {
-	var tx1, tx2,
-		surface = new ve.dm.SurfaceStub( null, new ve.Range( 1, 3 ) ),
+	var surface = new ve.dm.SurfaceStub( null, new ve.Range( 1, 3 ) ),
 		fragment = surface.getFragment(),
 		doc = surface.getDocument();
 
@@ -327,7 +339,7 @@ QUnit.test( 'staging', function ( assert ) {
 	assert.deepEqual( surface.getStagingTransactions(), [], 'getStagingTransactions empty array after pushStaging' );
 	assert.strictEqual( surface.doesStagingAllowUndo(), false, 'doesStagingAllowUndo false when staging without undo' );
 
-	tx1 = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 2, [ 'b' ] );
+	var tx1 = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 2, [ 'b' ] );
 	surface.change( tx1 );
 
 	assert.strictEqual( fragment.getText(), 'abhi', 'document contents match after first transaction' );
@@ -340,7 +352,7 @@ QUnit.test( 'staging', function ( assert ) {
 	assert.strictEqual( surface.doesStagingAllowUndo(), true, 'doesStagingAllowUndo true when staging with undo' );
 	assert.equalHash( surface.getSelection(), fragment.getSelection(), 'Surface selection matches fragment range' );
 
-	tx2 = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 3, [ 'c' ] );
+	var tx2 = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 3, [ 'c' ] );
 	surface.change( tx2 );
 
 	assert.strictEqual( fragment.getText(), 'abchi', 'document contents match after second transaction' );
@@ -555,10 +567,10 @@ QUnit.test( 'autosave', function ( assert ) {
 	assert.strictEqual( surface.restoreChanges(), true, 'restoreChanges returns true on success' );
 	assert.strictEqual( surface.getHtml(), '<h1>hi bar baz</h1>', 'Document HTML restored' );
 	assert.strictEqual( surface.getDocument().getCompleteHistoryLength(), 3, 'Document history restored' );
-	setTimeout( function ( surface ) {
-		assert.equalHash( surface.getSelection(), { type: 'linear', range: { type: 'range', from: 5, to: 5 } }, 'Document selection restored (async)' );
-		surface.undo();
-		assert.equalHash( surface.getSelection(), { type: 'linear', range: { type: 'range', from: 7, to: 7 } }, 'Document selection guessed after undo' );
+	setTimeout( function ( s ) {
+		assert.equalHash( s.getSelection(), { type: 'linear', range: { type: 'range', from: 5, to: 5 } }, 'Document selection restored (async)' );
+		s.undo();
+		assert.equalHash( s.getSelection(), { type: 'linear', range: { type: 'range', from: 7, to: 7 } }, 'Document selection guessed after undo' );
 		done();
 	}.bind( this, surface ) );
 

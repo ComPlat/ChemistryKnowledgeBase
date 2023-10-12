@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"By erdo can"
+		]
+	},
+	"urlgetparameters-desc": "Bir viki sayfasındaki URL'nin \"GET\" parametrelerini kullanmanıza ve/veya görüntülemenize izin verir"
+}

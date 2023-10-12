@@ -18,9 +18,9 @@
 ( function () {
 	QUnit.module( 'mmv.Config', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Constructor sanity test', function ( assert ) {
+	QUnit.test( 'Constructor sense test', function ( assert ) {
 		var config = new mw.mmv.Config( {}, {}, {}, {}, null );
-		assert.ok( config );
+		assert.true( config instanceof mw.mmv.Config );
 	} );
 
 	QUnit.test( 'Localstorage get', function ( assert ) {
@@ -129,7 +129,7 @@
 		assert.strictEqual( config.isMediaViewerEnabledOnClick(), false, 'Returns true for anon opted out via localSettings' );
 	} );
 
-	QUnit.test( 'setMediaViewerEnabledOnClick sanity check', function ( assert ) {
+	QUnit.test( 'setMediaViewerEnabledOnClick sense check', function ( assert ) {
 		var localStorage = mw.mmv.testHelpers.createLocalStorage( {
 				getItem: this.sandbox.stub(),
 				setItem: this.sandbox.stub(),
@@ -144,15 +144,15 @@
 		mwUser.isAnon.returns( false );
 		api.saveOption.returns( $.Deferred().resolve() );
 		config.setMediaViewerEnabledOnClick( false );
-		assert.ok( api.saveOption.called, 'For logged-in users, pref change is via API' );
+		assert.true( api.saveOption.called, 'For logged-in users, pref change is via API' );
 
 		mwUser.isAnon.returns( true );
 		config.setMediaViewerEnabledOnClick( false );
-		assert.ok( localStorage.store.setItem.called, 'For anons, opt-out is set in localStorage' );
+		assert.true( localStorage.store.setItem.called, 'For anons, opt-out is set in localStorage' );
 
 		mwUser.isAnon.returns( true );
 		config.setMediaViewerEnabledOnClick( true );
-		assert.ok( localStorage.store.removeItem.called, 'For anons, opt-in means clearing localStorage' );
+		assert.true( localStorage.store.removeItem.called, 'For anons, opt-in means clearing localStorage' );
 	} );
 
 	QUnit.test( 'shouldShowStatusInfo', function ( assert ) {

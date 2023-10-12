@@ -16,7 +16,7 @@
 			}
 		</style>
 		<script src="../../lib/jquery/jquery.js"></script>
-		<script src="../../lib/oojs/oojs.jquery.js"></script>
+		<script src="../../lib/oojs/oojs.js"></script>
 		<script src="../../lib/oojs-ui/oojs-ui-core.js"></script>
 		<script src="../../lib/unicodejs/unicodejs.js"></script>
 		<script src="../../src/ve.js"></script>
@@ -32,8 +32,7 @@
 		<script>
 			/* eslint-disable no-console */
 			( function () {
-				var i, len, eventName,
-					onEvents = {},
+				var onEvents = {},
 					afterEvents = {},
 					eventNames = [
 						'compositionstart', 'compositionend',
@@ -70,13 +69,12 @@
 					} );
 				}
 
-				for ( i = 0, len = eventNames.length; i < len; i++ ) {
-					eventName = eventNames[ i ];
+				eventNames.forEach( function ( eventName ) {
 					onEvents[ eventName ] = makeListener( 'on ' + eventName );
 					afterEvents[ eventName ] = makeListener(
 						'after ' + eventName );
 					addSetTimeoutListeners( $bad[ 0 ], eventName );
-				}
+				} );
 
 				new ve.EventSequencer( eventNames )
 					.on( onEvents )

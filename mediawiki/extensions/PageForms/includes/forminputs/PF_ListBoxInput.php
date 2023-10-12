@@ -9,7 +9,7 @@
  */
 class PFListBoxInput extends PFMultiEnumInput {
 
-	public static function getName() {
+	public static function getName(): string {
 		return 'listbox';
 	}
 
@@ -27,8 +27,8 @@ class PFListBoxInput extends PFMultiEnumInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
-		global $wgPageFormsTabIndex, $wgPageFormsFieldNum, $wgPageFormsShowOnSelect;
+	public function getHtmlText(): string {
+		global $wgPageFormsTabIndex, $wgPageFormsFieldNum;
 
 		$className = ( $this->mIsMandatory ) ? 'mandatoryField' : 'createboxInput';
 		if ( array_key_exists( 'class', $this->mOtherArgs ) ) {
@@ -42,9 +42,9 @@ class PFListBoxInput extends PFMultiEnumInput {
 			$delimiter = ',';
 		}
 		$cur_values = PFValuesUtils::getValuesArray( $this->mCurrentValue, $delimiter );
-		$className .= ' pfShowIfSelected';
 
-		if ( ( $possible_values = $this->mOtherArgs['possible_values'] ) == null ) {
+		$possible_values = $this->mOtherArgs['possible_values'];
+		if ( $possible_values == null ) {
 			$possible_values = [];
 		}
 		$optionsText = '';
@@ -64,6 +64,12 @@ class PFListBoxInput extends PFMultiEnumInput {
 			}
 			$optionsText .= Html::element( 'option', $optionAttrs, $optionLabel );
 		}
+
+		if ( array_key_exists( 'show on select', $this->mOtherArgs ) ) {
+			$className .= ' pfShowIfSelected';
+			PFFormUtils::setShowOnSelect( $this->mOtherArgs['show on select'], $input_id );
+		}
+
 		$selectAttrs = [
 			'id' => $input_id,
 			'tabindex' => $wgPageFormsTabIndex,
@@ -81,16 +87,6 @@ class PFListBoxInput extends PFMultiEnumInput {
 		$text .= Html::hidden( $this->mInputName . '[is_list]', 1 );
 		if ( $this->mIsMandatory ) {
 			$text = Html::rawElement( 'span', [ 'class' => 'inputSpan mandatoryFieldSpan' ], $text );
-		}
-
-		if ( array_key_exists( 'show on select', $this->mOtherArgs ) ) {
-			foreach ( $this->mOtherArgs['show on select'] as $div_id => $options ) {
-				if ( array_key_exists( $input_id, $wgPageFormsShowOnSelect ) ) {
-					$wgPageFormsShowOnSelect[$input_id][] = [ $options, $div_id ];
-				} else {
-					$wgPageFormsShowOnSelect[$input_id] = [ [ $options, $div_id ] ];
-				}
-			}
 		}
 
 		return $text;

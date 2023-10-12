@@ -19,19 +19,19 @@ You should have received a copy of the GNU General Public License along
 with this program. If not, see <http://www.gnu.org/licenses/>.
 
 @author Stephan Gambke
-@since 3.2
+@since 1.5
 @ingroup Skins
 -->
 <grammar
 		xmlns="http://relaxng.org/ns/structure/1.0"
 		xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
-		ns="https://ProfessionalWiki.github.io/chameleon/schema/3.2/layout.rng"
+		ns="https://ProfessionalWiki.github.io/chameleon/schema/3.5/layout.rng"
 		datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
 >
 
 	<a:documentation>
 		Schema for Chameleon layout files
-		Version 3.2
+		Version 3.5
 		Copyright 2013 - 2021, Stephan Gambke
 		GNU General Public License, version 3 (or any later version)
 	</a:documentation>
@@ -80,6 +80,11 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 				<attribute name="mode" a:defaultValue="fixedwidth">
 					<choice>
 						<value>fixedwidth</value>
+						<value>sm</value>
+						<value>md</value>
+						<value>lg</value>
+						<value>xl</value>
+						<value>xxl</value>
 						<value>fluid</value>
 					</choice>
 				</attribute>
@@ -200,6 +205,54 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 		</element>
 	</define>
 
+	<!-- CategoryLinks -->
+	<define name="Component" combine="choice">
+		<element name="component">
+			<a:documentation></a:documentation>
+			<ref name="Component.CommonContent"/>
+
+			<attribute name="type">
+				<value>CategoryLinks</value>
+			</attribute>
+		</element>
+	</define>
+
+	<!-- ContentBody -->
+	<define name="Component" combine="choice">
+		<element name="component">
+			<a:documentation></a:documentation>
+			<ref name="Component.CommonContent"/>
+
+			<attribute name="type">
+				<value>ContentBody</value>
+			</attribute>
+		</element>
+	</define>
+
+	<!-- ContentHeader -->
+	<define name="Component" combine="choice">
+		<element name="component">
+			<a:documentation></a:documentation>
+			<ref name="Component.CommonContent"/>
+
+			<attribute name="type">
+				<value>ContentHeader</value>
+			</attribute>
+		</element>
+	</define>
+
+	<!-- Indicators -->
+	<define name="Component" combine="choice">
+		<element name="component">
+			<a:documentation></a:documentation>
+			<ref name="Component.CommonContent"/>
+
+			<attribute name="type">
+				<value>Indicators</value>
+			</attribute>
+		</element>
+	</define>
+
 	<!-- NavbarHorizontal -->
 	<define name="Component" combine="choice">
 		<element name="component">
@@ -261,6 +314,17 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 			</attribute>
 		</optional>
 
+		<optional>
+			<attribute name="include">
+				<data type="string"/>
+			</attribute>
+		</optional>
+
+		<optional>
+			<attribute name="exclude">
+				<data type="string"/>
+			</attribute>
+		</optional>
 	</define>
 
 	<define name="Component" combine="choice">
@@ -332,8 +396,20 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 		</optional>
 
 		<optional>
-			<attribute name="showUserName" a:defaultValue="no">
-				<ref name="BoolValues"/>
+			<attribute name="showUserName" a:defaultValue="none">
+				<choice>
+					<value>none</value>
+					<value>try-realname</value>
+					<value>username-only</value>
+					<value>no</value>
+					<value>yes</value>
+				</choice>
+			</attribute>
+		</optional>
+
+		<optional>
+			<attribute name="promoteLoneItems">
+				<data type="string"/>
 			</attribute>
 		</optional>
 	</define>
@@ -536,6 +612,21 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 			<attribute name="type">
 				<value>MainContent</value>
 			</attribute>
+
+			<optional>
+				<attribute name="hideIndicators" a:defaultValue="no">
+					<ref name="BoolValues"/>
+				</attribute>
+				<attribute name="hideContentHeader" a:defaultValue="no">
+					<ref name="BoolValues"/>
+				</attribute>
+				<attribute name="hideContentBody" a:defaultValue="no">
+					<ref name="BoolValues"/>
+				</attribute>
+				<attribute name="hideCatLinks" a:defaultValue="no">
+					<ref name="BoolValues"/>
+				</attribute>
+			</optional>
 
 		</element>
 	</define>

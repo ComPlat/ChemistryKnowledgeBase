@@ -8,6 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace Carbon\Traits;
 
 use Carbon\CarbonInterface;
@@ -21,7 +22,7 @@ use Throwable;
  *
  * Depends on the following methods:
  *
- * @method \Carbon\Carbon|\Carbon\CarbonImmutable shiftTimezone($timezone) Set the timezone
+ * @method static shiftTimezone($timezone) Set the timezone
  */
 trait Options
 {
@@ -385,6 +386,10 @@ trait Options
             $this->locale(...$locales);
         }
 
+        if (isset($settings['innerTimezone'])) {
+            return $this->setTimezone($settings['innerTimezone']);
+        }
+
         if (isset($settings['timezone'])) {
             return $this->shiftTimezone($settings['timezone']);
         }
@@ -417,7 +422,7 @@ trait Options
         foreach ($map as $property => $key) {
             $value = $this->$property ?? null;
 
-            if ($value !== null) {
+            if ($value !== null && ($key !== 'locale' || $value !== 'en' || $this->localTranslator)) {
                 $settings[$key] = $value;
             }
         }
@@ -432,11 +437,11 @@ trait Options
      */
     public function __debugInfo()
     {
-        $infos = array_filter(get_object_vars($this), function ($var) {
+        $infos = array_filter(get_object_vars($this), static function ($var) {
             return $var;
         });
 
-        foreach (['dumpProperties', 'constructedObjectId'] as $property) {
+        foreach (['dumpProperties', 'constructedObjectId', 'constructed'] as $property) {
             if (isset($infos[$property])) {
                 unset($infos[$property]);
             }

@@ -26,7 +26,7 @@
 		<script src="../lib/jquery/jquery.js"></script>
 
 		<!-- oojs -->
-		<script src="../lib/oojs/oojs.jquery.js"></script>
+		<script src="../lib/oojs/oojs.js"></script>
 
 		<!-- oojs-ui -->
 		<script src="../lib/oojs-ui/oojs-ui-core.js"></script>
@@ -96,6 +96,9 @@
 		<!-- visualEditor.supportCheck -->
 		<script src="../src/init/ve.init.SupportCheck.js"></script>
 
+		<!-- visualEditor.core.utils.client -->
+		<script src="../src/ve.utils.client.js"></script>
+
 		<!-- visualEditor.core.init -->
 		<script src="../src/init/ve.init.js"></script>
 		<script src="../src/init/ve.init.SafeStorage.js"></script>
@@ -108,9 +111,6 @@
 
 		<!-- visualEditor.sanitize -->
 		<script src="../src/ve.sanitize.js"></script>
-
-		<!-- visualEditor.core.utils.client -->
-		<script src="../src/ve.utils.client.js"></script>
 
 		<!-- visualEditor.core.root -->
 		<script src="../src/ve.Range.js"></script>
@@ -202,9 +202,9 @@
 		<script src="../src/dm/nodes/ve.dm.BlockImageNode.js"></script>
 		<script src="../src/dm/nodes/ve.dm.BlockImageCaptionNode.js"></script>
 		<script src="../src/dm/nodes/ve.dm.InlineImageNode.js"></script>
+		<script src="../src/dm/annotations/ve.dm.TextStyleAnnotation.js"></script>
 		<script src="../src/dm/annotations/ve.dm.LanguageAnnotation.js"></script>
 		<script src="../src/dm/annotations/ve.dm.LinkAnnotation.js"></script>
-		<script src="../src/dm/annotations/ve.dm.TextStyleAnnotation.js"></script>
 		<script src="../src/dm/annotations/ve.dm.AbbreviationAnnotation.js"></script>
 		<script src="../src/dm/annotations/ve.dm.BidiAnnotation.js"></script>
 		<script src="../src/dm/annotations/ve.dm.BigAnnotation.js"></script>
@@ -306,9 +306,9 @@
 		<script src="../src/ce/nodes/ve.ce.BlockImageCaptionNode.js"></script>
 		<script src="../src/ce/nodes/ve.ce.InlineImageNode.js"></script>
 		<script src="../src/ce/annotations/ve.ce.NailedAnnotation.js"></script>
+		<script src="../src/ce/annotations/ve.ce.TextStyleAnnotation.js"></script>
 		<script src="../src/ce/annotations/ve.ce.LanguageAnnotation.js"></script>
 		<script src="../src/ce/annotations/ve.ce.LinkAnnotation.js"></script>
-		<script src="../src/ce/annotations/ve.ce.TextStyleAnnotation.js"></script>
 		<script src="../src/ce/annotations/ve.ce.AbbreviationAnnotation.js"></script>
 		<script src="../src/ce/annotations/ve.ce.BidiAnnotation.js"></script>
 		<script src="../src/ce/annotations/ve.ce.BigAnnotation.js"></script>
@@ -345,7 +345,7 @@
 		<script src="../src/ui/contextitems/ve.ui.LinearContextItem.js"></script>
 		<script src="../src/ui/contextitems/ve.ui.AnnotationContextItem.js"></script>
 		<script src="../src/ui/contextitems/ve.ui.TableLineContextItem.js"></script>
-		<script src="../src/ui/contextitems/ve.ui.AlienContextItem.js"></script>
+		<script src="../src/ui/contextitems/ve.ui.MobileActionsContextItem.js"></script>
 		<script src="../src/ui/contextitems/ve.ui.AlignableContextItem.js"></script>
 		<script src="../src/ui/contextitems/ve.ui.CommentContextItem.js"></script>
 		<script src="../src/ui/contextitems/ve.ui.LanguageContextItem.js"></script>
@@ -511,6 +511,7 @@
 		<script src="../tests/ve.qunit.local.js"></script>
 		<script src="../tests/ve.test.utils.js"></script>
 		<script src="../tests/ve.test.js"></script>
+		<script src="../tests/ve.DiffMatchPatch.test.js"></script>
 		<script src="../tests/ve.EventSequencer.test.js"></script>
 		<script src="../tests/ve.Scheduler.test.js"></script>
 		<script src="../tests/ve.Range.test.js"></script>
@@ -519,6 +520,7 @@
 		<script src="../tests/ve.BranchNode.test.js"></script>
 		<script src="../tests/ve.LeafNode.test.js"></script>
 		<script src="../tests/dm/ve.dm.example.js"></script>
+		<script src="../tests/dm/ve.dm.example.StubReferenceNode.js"></script>
 		<script src="../tests/dm/ve.dm.Annotation.test.js"></script>
 		<script src="../tests/dm/ve.dm.AnnotationSet.test.js"></script>
 		<script src="../tests/dm/ve.dm.LinkAnnotation.test.js"></script>
@@ -580,7 +582,9 @@
 		<script src="../tests/ce/nodes/ve.ce.ResizableNode.test.js"></script>
 		<script src="../tests/ce/nodes/ve.ce.TextNode.test.js"></script>
 		<script src="../tests/ce/nodes/ve.ce.TableNode.test.js"></script>
+		<script src="../tests/init/ve.init.Target.test.js"></script>
 		<script src="../tests/init/ve.init.sa.Platform.test.js"></script>
+		<script src="../tests/init/ve.init.ListStorage.test.js"></script>
 		<script src="../tests/ui/ve.ui.DataTransferHandlerFactory.test.js"></script>
 		<script src="../tests/ui/ve.ui.Trigger.test.js"></script>
 		<script src="../tests/ui/ve.ui.Sequence.test.js"></script>

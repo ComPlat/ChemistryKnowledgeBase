@@ -22,6 +22,7 @@ use OutputPage;
 use Parser;
 use Skin;
 use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory;
 use Title;
 
 class Setup {
@@ -156,7 +157,7 @@ class Setup {
     private static function createModifyLink() {
         global $wgUser, $wgTitle;
         $link = '';
-        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser);
+        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser->_newObject());
         if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
@@ -244,7 +245,7 @@ class Setup {
      */
     private static function registerShowCachedHandler(Parser $parser): void
     {
-        $applicationFactory = ApplicationFactory::getInstance();
+        $applicationFactory = ServicesFactory::getInstance();
         $parserFunctionFactory = $applicationFactory->newParserFunctionFactory();
         list($name, $definition, $flag) = $parserFunctionFactory->getShowParserFunctionDefinition();
         $showCacheHandler = function (Parser $parser) use ($definition) {

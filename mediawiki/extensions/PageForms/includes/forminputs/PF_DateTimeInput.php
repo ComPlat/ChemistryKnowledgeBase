@@ -8,7 +8,8 @@
  * @ingroup PFFormInput
  */
 class PFDateTimeInput extends PFDateInput {
-	public static function getName() {
+
+	public static function getName(): string {
 		return 'datetime';
 	}
 
@@ -22,13 +23,15 @@ class PFDateTimeInput extends PFDateInput {
 
 	public static function getDefaultCargoTypes() {
 		return [
-			'Datetime' => [],
-			'Start datetime' => [],
-			'End datetime' => []
+			'Datetime' => []
 		];
 	}
 
-	public static function getHTML( $datetime, $input_name, $is_mandatory, $is_disabled, array $other_args ) {
+	public function getInputClass() {
+		return 'dateTimeInput';
+	}
+
+	public function getHTML( $datetime, $input_name, $is_mandatory, $is_disabled, array $other_args ) {
 		global $wgPageFormsTabIndex, $wgPageForms24HourTime;
 
 		$include_timezone = array_key_exists( 'include timezone', $other_args );
@@ -87,7 +90,8 @@ class PFDateTimeInput extends PFDateInput {
 		} else {
 			$hour = null;
 			$minute = null;
-			$second = '00'; // default at least this value
+			// Default at least the "seconds" field.
+			$second = '00';
 			$ampm24h = '';
 			$timezone = '';
 		}
@@ -119,6 +123,12 @@ class PFDateTimeInput extends PFDateInput {
 			$text .= '	<input tabindex="' . $wgPageFormsTabIndex . '" name="' . $input_name . '[timezone]" type="text" value="' . $timezone . '" size="3"/ ' . $disabled_text . '>' . "\n";
 		}
 
+		$spanClass = $this->getInputClass();
+		if ( $is_mandatory ) {
+			$spanClass .= ' mandatoryFieldSpan';
+		}
+		$text = Html::rawElement( 'span', [ 'class' => $spanClass ], $text );
+
 		return $text;
 	}
 
@@ -136,8 +146,8 @@ class PFDateTimeInput extends PFDateInput {
 	 * Returns the HTML code to be included in the output page for this input.
 	 * @return string
 	 */
-	public function getHtmlText() {
-		return self::getHTML(
+	public function getHtmlText(): string {
+		return $this->getHTML(
 			$this->mCurrentValue,
 			$this->mInputName,
 			$this->mIsMandatory,

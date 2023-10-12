@@ -40,8 +40,7 @@ ve.dm.ImageNode.static.isDiffComparable = function ( element, other ) {
  * @inheritdoc ve.dm.Model
  */
 ve.dm.ImageNode.static.describeChanges = function ( attributeChanges, attributes ) {
-	var key, sizeFrom, sizeTo, change,
-		customKeys = [ 'width', 'height' ],
+	var customKeys = [ 'width', 'height' ],
 		descriptions = [];
 
 	function describeSize( width, height ) {
@@ -49,21 +48,23 @@ ve.dm.ImageNode.static.describeChanges = function ( attributeChanges, attributes
 	}
 
 	if ( 'width' in attributeChanges || 'height' in attributeChanges ) {
-		sizeFrom = describeSize(
+		var sizeFrom = describeSize(
 			'width' in attributeChanges ? attributeChanges.width.from : attributes.width,
 			'height' in attributeChanges ? attributeChanges.height.from : attributes.height
 		);
-		sizeTo = describeSize(
+		var sizeTo = describeSize(
 			'width' in attributeChanges ? attributeChanges.width.to : attributes.width,
 			'height' in attributeChanges ? attributeChanges.height.to : attributes.height
 		);
 
 		descriptions.push( ve.htmlMsg( 'visualeditor-changedesc-image-size', this.wrapText( 'del', sizeFrom ), this.wrapText( 'ins', sizeTo ) ) );
 	}
-	for ( key in attributeChanges ) {
+	for ( var key in attributeChanges ) {
 		if ( customKeys.indexOf( key ) === -1 ) {
-			change = this.describeChange( key, attributeChanges[ key ] );
-			descriptions.push( change );
+			var change = this.describeChange( key, attributeChanges[ key ] );
+			if ( change ) {
+				descriptions.push( change );
+			}
 		}
 	}
 	return descriptions;
@@ -73,16 +74,22 @@ ve.dm.ImageNode.static.describeChanges = function ( attributeChanges, attributes
  * @inheritdoc ve.dm.Node
  */
 ve.dm.ImageNode.static.describeChange = function ( key, change ) {
-	if ( key === 'align' ) {
-		// The following messages are used here:
-		// * visualeditor-align-desc-left
-		// * visualeditor-align-desc-right
-		// * visualeditor-align-desc-center
-		return ve.htmlMsg( 'visualeditor-changedesc-align',
-			this.wrapText( 'del', ve.msg( 'visualeditor-align-desc-' + change.from ) ),
-			this.wrapText( 'ins', ve.msg( 'visualeditor-align-desc-' + change.to ) )
-		);
+	switch ( key ) {
+		case 'align':
+			// The following messages are used here:
+			// * visualeditor-align-desc-left
+			// * visualeditor-align-desc-right
+			// * visualeditor-align-desc-center
+			return ve.htmlMsg( 'visualeditor-changedesc-align',
+				this.wrapText( 'del', ve.msg( 'visualeditor-align-desc-' + change.from ) ),
+				this.wrapText( 'ins', ve.msg( 'visualeditor-align-desc-' + change.to ) )
+			);
+		// ClassAttributeNode attributes
+		case 'originalClasses':
+		case 'unrecognizedClasses':
+			return;
 	}
+
 	// Parent method
 	return ve.dm.Node.static.describeChange.apply( this, arguments );
 };

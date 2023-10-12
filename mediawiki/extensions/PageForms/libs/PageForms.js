@@ -95,11 +95,11 @@ $.fn.PageForms_registerInputInit = function( initFunction, param, noexecute ) {
 	// execute initialization if input is not part of multipleTemplateStarter
 	// and if not forbidden
 	if ( this.closest(".multipleTemplateStarter").length === 0 && !noexecute) {
-		var input = this;
+		var $input = this;
 		// ensure initFunction is only executed after doc structure is complete
 		$(function() {
 			if ( initFunction !== undefined ) {
-				initFunction ( input.attr("id"), param );
+				initFunction ( $input.attr("id"), param );
 			}
 		});
 	}
@@ -135,21 +135,28 @@ $.fn.PageForms_unregisterInputInit = function() {
 	return this;
 };
 
+// Called from within PF_ComboBoxInput.php.
+mw.hook('pf.comboboxChange').add( function( $parentSpan ) {
+	var initPage = $parentSpan.find('select').length > 0;
+	var partOfMultiple = $parentSpan.attr('data-origid') !== undefined;
+	$parentSpan.showIfSelected( partOfMultiple, initPage );
+});
+
 /*
  * Functions for handling 'show on select'
  */
 
 // Display a div that would otherwise be hidden by "show on select".
-function showDiv( div_id, instanceWrapperDiv, initPage ) {
+function showDiv( div_id, $instanceWrapperDiv, initPage ) {
 	var speed = initPage ? 0 : 'fast';
-	var elem;
-	if ( instanceWrapperDiv !== null ) {
-		elem = $('[data-origID="' + div_id + '"]', instanceWrapperDiv);
+	var $elem;
+	if ( $instanceWrapperDiv !== null ) {
+		$elem = $('[data-origID="' + div_id + '"]', $instanceWrapperDiv);
 	} else {
-		elem = $('#' + div_id);
+		$elem = $('#' + div_id);
 	}
 
-	elem
+	$elem
 	.addClass('shownByPF')
 
 	.find(".hiddenByPF")
@@ -160,7 +167,7 @@ function showDiv( div_id, instanceWrapperDiv, initPage ) {
 	.prop('disabled', false)
 	.removeClass('disabledByPF');
 
-	elem.each( function() {
+	$elem.each( function() {
 		if ( $(this).css('display') === 'none' ) {
 
 			$(this).slideDown(speed, function() {
@@ -174,25 +181,25 @@ function showDiv( div_id, instanceWrapperDiv, initPage ) {
 	// to the current value of form inputs in this div that are now
 	// being uncovered.
 	var wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' );
-	elem.find(".pfShowIfSelected, .pfShowIfChecked").each( function() {
-		var uncoveredInput = $(this);
+	$elem.find(".pfShowIfSelected, .pfShowIfChecked").each( function() {
+		var $uncoveredInput = $(this);
 		var uncoveredInputID = null;
-		if ( instanceWrapperDiv === null ) {
-			uncoveredInputID = uncoveredInput.attr("id");
+		if ( $instanceWrapperDiv === null ) {
+			uncoveredInputID = $uncoveredInput.attr("id");
 		} else {
-			uncoveredInputID = uncoveredInput.attr("data-origID");
+			uncoveredInputID = $uncoveredInput.attr("data-origID");
 		}
 		var showOnSelectVals = wgPageFormsShowOnSelect[uncoveredInputID];
 
 		if ( showOnSelectVals !== undefined ) {
-			var inputVal = uncoveredInput.val();
+			var inputVal = $uncoveredInput.val();
 			for ( var i = 0; i < showOnSelectVals.length; i++ ) {
 				var options = showOnSelectVals[i][0];
 				var div_id2 = showOnSelectVals[i][1];
-				if ( uncoveredInput.hasClass( 'pfShowIfSelected' ) ) {
-					showDivIfSelected( options, div_id2, inputVal, instanceWrapperDiv, initPage );
+				if ( $uncoveredInput.hasClass( 'pfShowIfSelected' ) ) {
+					showDivIfSelected( options, div_id2, inputVal, $instanceWrapperDiv, initPage );
 				} else {
-					uncoveredInput.showDivIfChecked( options, div_id2, instanceWrapperDiv, initPage );
+					$uncoveredInput.showDivIfChecked( options, div_id2, $instanceWrapperDiv, initPage );
 				}
 			}
 		}
@@ -201,9 +208,9 @@ function showDiv( div_id, instanceWrapperDiv, initPage ) {
 
 // Hide a div due to "show on select". The CSS class is there so that PF can
 // ignore the div's contents when the form is submitted.
-function hideDiv( div_id, instanceWrapperDiv, initPage ) {
+function hideDiv( div_id, $instanceWrapperDiv, initPage ) {
 	var speed = initPage ? 0 : 'fast';
-	var elem;
+	var $elem;
 	// IDs can't contain spaces, and jQuery won't work with such IDs - if
 	// this one has a space, display an alert.
 	if ( div_id.indexOf( ' ' ) > -1 ) {
@@ -212,21 +219,21 @@ function hideDiv( div_id, instanceWrapperDiv, initPage ) {
 		alert( "Warning: this form has \"show on select\" pointing to an invalid element ID (\"" + div_id + "\") - IDs in HTML cannot contain spaces." );
 	}
 
-	if ( instanceWrapperDiv !== null ) {
-		elem = instanceWrapperDiv.find('[data-origID=' + div_id + ']');
+	if ( $instanceWrapperDiv !== null ) {
+		$elem = $instanceWrapperDiv.find('[data-origID=' + div_id + ']');
 	} else {
-		elem = $('#' + div_id);
+		$elem = $('#' + div_id);
 	}
 
 	// If we're just setting up the page, and this element has already
 	// been marked to be shown by some other input, don't hide it.
-	if ( initPage && elem.hasClass('shownByPF') ) {
+	if ( initPage && $elem.hasClass('shownByPF') ) {
 		return;
 	}
 
-	elem.find("span, div").addClass('hiddenByPF');
+	$elem.find("span, div").addClass('hiddenByPF');
 
-	elem.each( function() {
+	$elem.each( function() {
 		if ( $(this).css('display') !== 'none' ) {
 
 			// if 'display' is not 'hidden', but the element is hidden otherwise
@@ -244,9 +251,9 @@ function hideDiv( div_id, instanceWrapperDiv, initPage ) {
 	// Also, recursively hide further elements that are only shown because
 	// inputs within this now-hidden div were checked/selected.
 	var wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' );
-	elem.find(".pfShowIfSelected, .pfShowIfChecked").each( function() {
+	$elem.find(".pfShowIfSelected, .pfShowIfChecked").each( function() {
 		var showOnSelectVals;
-		if ( instanceWrapperDiv === null ) {
+		if ( $instanceWrapperDiv === null ) {
 			showOnSelectVals = wgPageFormsShowOnSelect[$(this).attr("id")];
 		} else {
 			showOnSelectVals = wgPageFormsShowOnSelect[$(this).attr("data-origID")];
@@ -256,7 +263,7 @@ function hideDiv( div_id, instanceWrapperDiv, initPage ) {
 			for ( var i = 0; i < showOnSelectVals.length; i++ ) {
 				//var options = showOnSelectVals[i][0];
 				var div_id2 = showOnSelectVals[i][1];
-				hideDiv( div_id2, instanceWrapperDiv, initPage );
+				hideDiv( div_id2, $instanceWrapperDiv, initPage );
 			}
 		}
 	});
@@ -264,39 +271,59 @@ function hideDiv( div_id, instanceWrapperDiv, initPage ) {
 
 // Show this div if the current value is any of the relevant options -
 // otherwise, hide it.
-function showDivIfSelected(options, div_id, inputVal, instanceWrapperDiv, initPage) {
+function showDivIfSelected(options, div_id, inputVal, $instanceWrapperDiv, initPage) {
 	for ( var i = 0; i < options.length; i++ ) {
 		// If it's a listbox and the user has selected more than one
 		// value, it'll be an array - handle either case.
 		if (($.isArray(inputVal) && $.inArray(options[i], inputVal) >= 0) ||
 			(!$.isArray(inputVal) && (inputVal === options[i]))) {
-			showDiv( div_id, instanceWrapperDiv, initPage );
+			showDiv( div_id, $instanceWrapperDiv, initPage );
 			return;
 		}
 	}
-	hideDiv( div_id, instanceWrapperDiv, initPage );
+	hideDiv( div_id, $instanceWrapperDiv, initPage );
 }
 
-// Used for handling 'show on select' for the 'dropdown' and 'listbox' inputs.
+// Used for handling 'show on select' for the 'dropdown', 'listbox',
+// 'combobox' and 'tokens' input types.
 $.fn.showIfSelected = function(partOfMultiple, initPage) {
-	var inputVal = this.val(),
+	var inputVal,
 		wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' ),
 		showOnSelectVals,
-		instanceWrapperDiv;
+		$instanceWrapperDiv;
+
+	if ( this.attr( 'data-input-type' ) == 'combobox' ) {
+		if ( initPage ) {
+			inputVal = $(this).find('select').val();
+		} else {
+			inputVal = $(this).find('input').val();
+		}
+	} else if ( this.attr( 'data-input-type' ) == 'tokens' ) {
+		if ( initPage ) {
+			inputVal = $(this).find('select').val();
+		} else {
+			inputVal = [];
+			$(this).find('li.select2-selection__choice').each( function() {
+				inputVal.push( $(this).attr('title') );
+			});
+		}
+	} else {
+		inputVal = this.val();
+	}
 
 	if ( partOfMultiple ) {
 		showOnSelectVals = wgPageFormsShowOnSelect[this.attr("data-origID")];
-		instanceWrapperDiv = this.closest('.multipleTemplateInstance');
+		$instanceWrapperDiv = this.closest('.multipleTemplateInstance');
 	} else {
 		showOnSelectVals = wgPageFormsShowOnSelect[this.attr("id")];
-		instanceWrapperDiv = null;
+		$instanceWrapperDiv = null;
 	}
 
 	if ( showOnSelectVals !== undefined ) {
 		for ( var i = 0; i < showOnSelectVals.length; i++ ) {
 			var options = showOnSelectVals[i][0];
 			var div_id = showOnSelectVals[i][1];
-			showDivIfSelected( options, div_id, inputVal, instanceWrapperDiv, initPage );
+			showDivIfSelected( options, div_id, inputVal, $instanceWrapperDiv, initPage );
 		}
 	}
 
@@ -305,14 +332,14 @@ $.fn.showIfSelected = function(partOfMultiple, initPage) {
 
 // Show this div if any of the relevant selections are checked -
 // otherwise, hide it.
-$.fn.showDivIfChecked = function(options, div_id, instanceWrapperDiv, initPage ) {
+$.fn.showDivIfChecked = function(options, div_id, $instanceWrapperDiv, initPage ) {
 	for ( var i = 0; i < options.length; i++ ) {
 		if ($(this).find('[value="' + options[i] + '"]').is(":checked")) {
-			showDiv( div_id, instanceWrapperDiv, initPage );
+			showDiv( div_id, $instanceWrapperDiv, initPage );
 			return this;
 		}
 	}
-	hideDiv( div_id, instanceWrapperDiv, initPage );
+	hideDiv( div_id, $instanceWrapperDiv, initPage );
 
 	return this;
 };
@@ -322,22 +349,22 @@ $.fn.showDivIfChecked = function(options, div_id, instanceWrapperDiv, initPage )
 $.fn.showIfChecked = function(partOfMultiple, initPage) {
 	var wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' ),
 		showOnSelectVals,
-		instanceWrapperDiv,
+		$instanceWrapperDiv,
 		i;
 
 	if ( partOfMultiple ) {
 		showOnSelectVals = wgPageFormsShowOnSelect[this.attr("data-origID")];
-		instanceWrapperDiv = this.closest('.multipleTemplateInstance');
+		$instanceWrapperDiv = this.closest('.multipleTemplateInstance');
 	} else {
 		showOnSelectVals = wgPageFormsShowOnSelect[this.attr("id")];
-		instanceWrapperDiv = null;
+		$instanceWrapperDiv = null;
 	}
 
 	if ( showOnSelectVals !== undefined ) {
 		for ( i = 0; i < showOnSelectVals.length; i++ ) {
 			var options = showOnSelectVals[i][0];
 			var div_id = showOnSelectVals[i][1];
-			this.showDivIfChecked( options, div_id, instanceWrapperDiv, initPage );
+			this.showDivIfChecked( options, div_id, $instanceWrapperDiv, initPage );
 		}
 	}
 
@@ -348,23 +375,21 @@ $.fn.showIfChecked = function(partOfMultiple, initPage) {
 $.fn.showIfCheckedCheckbox = function( partOfMultiple, initPage ) {
 	var wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' ),
 		divIDs,
-		instanceWrapperDiv,
+		$instanceWrapperDiv = null,
 		i;
-
-	if (partOfMultiple) {
-		divIDs = wgPageFormsShowOnSelect[this.attr("data-origID")];
-		instanceWrapperDiv = this.closest(".multipleTemplateInstance");
-	} else {
-		divIDs = wgPageFormsShowOnSelect[this.attr("id")];
-		instanceWrapperDiv = null;
+	if ( partOfMultiple ) {
+		divIDs = wgPageFormsShowOnSelect[this.attr( "data-origID" )];
+		$instanceWrapperDiv = this.closest( ".multipleTemplateInstance" );
 	}
-
+	if ( divIDs === undefined ) {
+		divIDs = wgPageFormsShowOnSelect[this.attr( "id" )];
+	}
 	for ( i = 0; i < divIDs.length; i++ ) {
 		var divID = divIDs[i];
-		if ($(this).is(":checked")) {
-			showDiv( divID, instanceWrapperDiv, initPage );
+		if ( $( this ).find( '[value]' ).is( ":checked" ) ) {
+			showDiv( divID, $instanceWrapperDiv, initPage );
 		} else {
-			hideDiv( divID, instanceWrapperDiv, initPage );
+			hideDiv( divID, $instanceWrapperDiv, initPage );
 		}
 	}
 
@@ -451,12 +476,12 @@ $.fn.validateUniqueField = function() {
 	}
 
 	var categoryFieldName = field.prop("id") + "_unique_for_category";
-	var categoryField = $("[name=" + categoryFieldName + "]");
-	var category = categoryField.val();
+	var $categoryField = $("[name=" + categoryFieldName + "]");
+	var category = $categoryField.val();
 
 	var namespaceFieldName = field.prop("id") + "_unique_for_namespace";
-	var namespaceField = $("[name=" + namespaceFieldName + "]");
-	var namespace = namespaceField.val();
+	var $namespaceField = $("[name=" + namespaceFieldName + "]");
+	var namespace = $namespaceField.val();
 
 	var url = mw.config.get( 'wgScriptPath' ) + "/api.php?format=json&action=";
 
@@ -465,8 +490,8 @@ $.fn.validateUniqueField = function() {
 
 	// SMW
 	var propertyFieldName = field.prop("id") + "_unique_property",
-		propertyField = $("[name=" + propertyFieldName + "]"),
-		property = propertyField.val();
+		$propertyField = $("[name=" + propertyFieldName + "]"),
+		property = $propertyField.val();
 	if (typeof property !== UNDEFINED && property.replace(/\s+/, '') !== '') {
 
 		query = "[[" + property + "::" + fieldVal + "]]";
@@ -485,8 +510,8 @@ $.fn.validateUniqueField = function() {
 		}
 
 		var conceptFieldName = field.prop("id") + "_unique_for_concept";
-		var conceptField = $("[name=" + conceptFieldName + "]");
-		var concept = conceptField.val();
+		var $conceptField = $("[name=" + conceptFieldName + "]");
+		var concept = $conceptField.val();
 		if (typeof concept !== UNDEFINED &&
 			concept.replace(/\s+/, '') !== '') {
 			query += "[[Concept:" + concept + "]]";
@@ -517,11 +542,11 @@ $.fn.validateUniqueField = function() {
 
 	// Cargo
 	var cargoTableFieldName = field.prop("id") + "_unique_cargo_table";
-	var cargoTableField = $("[name=" + cargoTableFieldName + "]");
-	var cargoTable = cargoTableField.val();
+	var $cargoTableField = $("[name=" + cargoTableFieldName + "]");
+	var cargoTable = $cargoTableField.val();
 	var cargoFieldFieldName = field.prop("id") + "_unique_cargo_field";
-	var cargoFieldField = $("[name=" + cargoFieldFieldName + "]");
-	var cargoField = cargoFieldField.val();
+	var $cargoFieldField = $("[name=" + cargoFieldFieldName + "]");
+	var cargoField = $cargoFieldField.val();
 	if (typeof cargoTable !== UNDEFINED && cargoTable.replace(/\s+/, '') !== ''
 		&& typeof cargoField !== UNDEFINED
 		&& cargoField.replace(/\s+/, '') !== '') {
@@ -575,8 +600,8 @@ $.fn.validateUniqueField = function() {
 };
 
 $.fn.validateMandatoryComboBox = function() {
-	var combobox = this.find('.mandatoryField');
-	if (combobox.val() === null || combobox.val() === '') {
+	var $combobox = this.find(':input');
+	if ($combobox.val() === null || $combobox.val() === '') {
 		this.addErrorMessage( 'pf_blank_error' );
 		return false;
 	} else {
@@ -608,7 +633,7 @@ $.fn.validateMandatoryRadioButton = function() {
 $.fn.validateMandatoryCheckboxes = function() {
 	// Get the number of checked checkboxes within this span - must
 	// be at least one.
-	var numChecked = this.find("input:checked").size();
+	var numChecked = this.find("input:checked").length;
 	if (numChecked === 0) {
 		this.addErrorMessage('pf_blank_error');
 		return false;
@@ -724,6 +749,12 @@ $.fn.checkForPipes = function() {
 		return true;
 	}
 
+	// Patch by DIQA to allow pipe character in odbrichtext forms-input-fields
+	if( this.find("input, textarea")[0].hasAttribute("odbrichtext") ) { 
+		console.log( "odbrichtext allows pipe character!" );
+		return true; 
+	}
+	
 	// Also allow pipes within special tags, like <pre> or <syntaxhighlight>.
 	// Code copied, more or less, from PFTemplateInForm::escapeNonTemplatePipes().
 	var startAndEndTags = [
@@ -805,6 +836,89 @@ $.fn.checkForPipes = function() {
 	// We'll never get here, but let's have this line anyway.
 	return true;
 };
+
+function leftPad( number, targetLength ) {
+	var negative = false;
+	if ( number < 0 ) {
+		number = number * -1;
+		var negative = true;
+	}
+	var output = number + '';
+	while ( output.length < targetLength ) {
+		output = '0' + output;
+	}
+	if ( negative ) {
+		output = '-' + output
+	}
+	return output;
+}
+
+function validateStartEndDateField( startInput, endInput ) {
+	if ( !startInput.length || !endInput.length ) {
+		return true;
+	}
+	var startYearVal = leftPad( startInput.find(".yearInput").val(),4 );
+	var startMonthVal = leftPad( startInput.find(".monthInput").val(),2 );
+	var startDayVal = leftPad( startInput.find(".dayInput").val(),2 );
+
+	var endYearVal = leftPad( endInput.find(".yearInput").val(),4 );
+	var endMonthVal = leftPad( endInput.find(".monthInput").val(),2 );
+	var endDayVal = leftPad( endInput.find(".dayInput").val(),2 );
+
+	var startDate = startYearVal + "/" + startMonthVal + "/" + startDayVal;
+
+	var endDate = endYearVal + "/" + endMonthVal + "/" + endDayVal;
+
+	if ( startDate <= endDate || endDate == "0000/00/00") {
+		return true;
+	} else {
+		if ( endInput ) {
+			endInput.addErrorMessage( 'pf_start_end_date_error' )
+		} else if ( startInput ) {
+			startInput.addErrorMessage( 'pf_start_end_date_error' )
+		}
+		return false;
+	}
+}
+
+function validateStartEndDateTimeField( startInput, endInput ) {
+	if ( !startInput.length || !endInput.length ) {
+		return true;
+	}
+	var startYearVal = leftPad( startInput.find(".yearInput").val(),4 );
+	var startMonthVal = leftPad( startInput.find(".monthInput").val(),2 );
+	var startDayVal = leftPad( startInput.find(".dayInput").val(),2 );
+	var startHoursVal = leftPad( startInput.find(".hoursInput").val(),2 );
+	var startMinutesVal = leftPad( startInput.find(".minutesInput").val(),2 );
+	var startSecondsVal = leftPad( startInput.find(".secondsInput").val(),2 );
+	var startAmPmVal = startInput.find(".ampmInput").val();
+
+	var endYearVal = leftPad( endInput.find(".yearInput").val(),4 );
+	var endMonthVal = leftPad( endInput.find(".monthInput").val(),2 );
+	var endDayVal = leftPad( endInput.find(".dayInput").val(),2 );
+	var endHoursVal = leftPad( endInput.find(".hoursInput").val(),2 );
+	var endMinutesVal = leftPad( endInput.find(".minutesInput").val(),2 );
+	var endSecondsVal = leftPad( endInput.find(".secondsInput").val(),2 );
+	var endAmPmVal = endInput.find(".ampmInput").val();
+
+	var startDateTime = startYearVal + "/" + startMonthVal + "/" + startDayVal + " " +
+	startHoursVal + ":" + startMinutesVal + ":" + startSecondsVal + " " + startAmPmVal;
+
+	var endDateTime = endYearVal + "/" + endMonthVal + "/" + endDayVal + " " +
+		endHoursVal + ":" + endMinutesVal + ":" + endSecondsVal + " " + endAmPmVal;
+
+	if ( startDateTime <= endDateTime || endDateTime == "0000/00/00 00:00:00 " ) {
+		return true;
+	} else {
+		if ( endInput ) {
+			endInput.addErrorMessage( 'pf_start_end_datetime_error' )
+		} else if ( startInput ) {
+			startInput.addErrorMessage( 'pf_start_end_datetime_error' )
+		}
+		return false;
+	}
+
+}
 
 window.validateAll = function () {
 
@@ -904,6 +1018,19 @@ window.validateAll = function () {
 		num_errors += 1;
 	});
 
+	var startDateInput = $("span.startDateInput").not(".hiddenByPF")
+	var endDateInput = $("span.endDateInput").not(".hiddenByPF")
+
+	if ( !validateStartEndDateField( startDateInput, endDateInput ) ) {
+		num_errors += 1;
+	}
+
+	var startDateTimeInput = $("span.startDateTimeInput").not(".hiddenByPF")
+	var endDateTimeInput = $("span.endDateTimeInput").not(".hiddenByPF")
+
+	if ( !validateStartEndDateTimeField( startDateTimeInput, endDateTimeInput ) ) {
+		num_errors += 1;
+	}
 	// call registered validation functions
 	var pfdata = $("#pfForm").data('PageForms');
 
@@ -929,9 +1056,16 @@ window.validateAll = function () {
 
 	if (num_errors > 0) {
 		// add error header, if it's not there already
-		if ($("#form_error_header").size() === 0) {
+		if ($("#form_error_header").length === 0) {
 			$("#contentSub").append('<div id="form_error_header" class="errorbox" style="font-size: medium"><img src="' + mw.config.get( 'wgPageFormsScriptPath' ) + '/skins/MW-Icon-AlertMark.png" />&nbsp;' + mw.message( 'pf_formerrors_header' ).escaped() + '</div><br clear="both" />');
 		}
+		// The "Save page", etc. buttons were disabled to prevent
+		// double-clicking; since there has been an error, re-enable
+		// them so that the form can be submitted again after the
+		// user tries to fix these errors.
+		$( '.editButtons > .oo-ui-buttonElement' ).removeClass( 'oo-ui-widget-disabled' ).addClass( 'oo-ui-widget-enabled' );
+		// Also undo the indicator that the form was submitted.
+		$( '#pfForm' ).data('submitted', false);
 		scroll(0, 0);
 	} else {
 		// Disable inputs hidden due to either "show on select" or
@@ -969,10 +1103,10 @@ $.fn.possiblyMinimizeAllOpenInstances = function() {
 	}
 
 	this.find('.multipleTemplateInstance').not('.minimized').each( function() {
-		var instance = $(this);
-		instance.addClass('minimized');
+		var $instance = $(this);
+		$instance.addClass('minimized');
 		var valuesStr = '';
-		instance.find( "input[type != 'hidden'][type != 'button'], select, textarea, div.ve-ce-surface" ).each( function() {
+		$instance.find( "input[type != 'hidden'][type != 'button'], select, textarea, div.ve-ce-surface" ).each( function() {
 			// If the set of fields to be displayed was specified in
 			// the form definition, check against that list.
 			if ( allDisplayedFields !== null ) {
@@ -1002,7 +1136,7 @@ $.fn.possiblyMinimizeAllOpenInstances = function() {
 				}
 			}
 			if ( curVal.length > 70 ) {
-				curVal = curVal.substring(0, 70) + "...";
+				curVal = curVal.slice(0, 70) + "...";
 			}
 			if ( valuesStr !== '' ) {
 				valuesStr += ' &middot; ';
@@ -1012,10 +1146,99 @@ $.fn.possiblyMinimizeAllOpenInstances = function() {
 		if ( valuesStr === '' ) {
 			valuesStr = '<em>No data</em>';
 		}
-		instance.find('.instanceMain').fadeOut( "medium", function() {
-			instance.find('.instanceRearranger').after('<td class="fieldValuesDisplay">' + valuesStr + '</td>');
+		$instance.find('.instanceMain').fadeOut( "medium", function() {
+			$instance.find('.instanceRearranger').after('<td class="fieldValuesDisplay">' + valuesStr + '</td>');
 		});
 	});
+};
+
+$.fn.displayWizardScreen = function( screenNum, $wizardNav ) {
+	var $wizardScreens = $(this);
+	var $curScreen;
+
+	$wizardScreens.each( function(i) {
+		// screenNum starts at 1, not 0.
+		if ( i + 1 == screenNum ) {
+			$curScreen = $(this);
+			$(this).show();
+		} else {
+			$(this).hide();
+		}
+	});
+
+	// The rest of this function is taken up with displaying the
+	// navigation to the next and previous wizard screens.
+	var numScreens = $wizardScreens.length;
+
+	$wizardNav.empty();
+
+	var $navButtons = $('<div class="pf-wizard-buttons"></div>');
+
+	if ( screenNum > 1 ) {
+		var backText = $curScreen.attr('data-back-text');
+		if ( backText == undefined ) {
+			backText = mw.msg('pf-wizard-back');
+		}
+		var prevButton = new OO.ui.ButtonWidget( {
+			label: backText,
+			icon: 'previous',
+			classes: [ 'pf-wizard-back-button' ]
+		} );
+		prevButton.$element.click( function() {
+			$wizardScreens.displayWizardScreen( screenNum - 1, $wizardNav );
+		});
+		$navButtons.append( prevButton.$element );
+	}
+
+	if ( screenNum < numScreens ) {
+		var continueText = $curScreen.attr('data-continue-text');
+		if ( continueText == undefined ) {
+			continueText = mw.msg('pf-wizard-continue');
+		}
+		var continueButton = new OO.ui.ButtonWidget( {
+			label: continueText,
+			flags: [
+				'primary',
+				'progressive'
+			],
+			icon: 'next',
+			classes: [ 'pf-wizard-continue-button' ]
+		} );
+		continueButton.$element.click( function() {
+			$wizardScreens.displayWizardScreen( screenNum + 1, $wizardNav );
+		});
+		$navButtons.append( continueButton.$element );
+	}
+	$wizardNav.append( $navButtons );
+
+	// We need this in order to clear the float from the "previous" button.
+	$wizardNav.append('<br style="clear: both;" />');
+
+	// Use progress bar if the number of screens is greater than 10 and circles in the other case
+	if ( numScreens > 10 ) {
+		var progressBar = new OO.ui.ProgressBarWidget( {
+			progress: 100 * screenNum / numScreens
+		} );
+		var progressBarLayout = new OO.ui.FieldLayout(
+			progressBar,
+			{
+				label: 'Step ' + screenNum + ' of ' + numScreens,
+				align: 'inline'
+			}
+		);
+		$wizardNav.append( progressBarLayout.$element );
+	} else {
+		$( '.pf-wizard-buttons' ).addClass( 'pf-wizard-buttons-circle' );
+		var progressCiclesUL = $( '<ul class="pfWizardCircles"></ul>' );
+		for( let i = 1; i <= numScreens; i++ ) {
+			var circle = '<li>' + i + '</li>';
+			if ( i == screenNum ) {
+				circle = '<li class="active">' + i + '</li>';
+			}
+			progressCiclesUL.append( $( circle ) );
+		}
+		$wizardNav.append( progressCiclesUL );
+	}
 };
 
 var num_elements = 0;
@@ -1023,27 +1246,28 @@ var num_elements = 0;
 /**
  * Functions for multiple-instance templates.
  *
- * @param addAboveCurInstance
+ * @param {Mixed} addAboveCurInstance
+ * @return {Mixed}
  */
 $.fn.addInstance = function( addAboveCurInstance ) {
 	var wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' );
 	var wgPageFormsHeightForMinimizingInstances = mw.config.get( 'wgPageFormsHeightForMinimizingInstances' );
-	var wrapper = this.closest(".multipleTemplateWrapper");
-	var multipleTemplateList = wrapper.find('.multipleTemplateList');
+	var $wrapper = this.closest(".multipleTemplateWrapper");
+	var $multipleTemplateList = $wrapper.find('.multipleTemplateList');
 
 	// If the nubmer of instances is already at the maximum allowed,
 	// exit here.
-	if ( multipleTemplateList.isAtMaxInstances() ) {
+	if ( $multipleTemplateList.isAtMaxInstances() ) {
 		return false;
 	}
 
 	if ( wgPageFormsHeightForMinimizingInstances >= 0 ) {
-		if ( ! multipleTemplateList.hasClass('minimizeAll') &&
-			multipleTemplateList.height() >= wgPageFormsHeightForMinimizingInstances ) {
-			multipleTemplateList.addClass('minimizeAll');
+		if ( ! $multipleTemplateList.hasClass('minimizeAll') &&
+			$multipleTemplateList.height() >= wgPageFormsHeightForMinimizingInstances ) {
+			$multipleTemplateList.addClass('minimizeAll');
 		}
-		if ( multipleTemplateList.hasClass('minimizeAll') ) {
-			multipleTemplateList
+		if ( $multipleTemplateList.hasClass('minimizeAll') ) {
+			$multipleTemplateList
 				.addClass('currentFocus')
 				.possiblyMinimizeAllOpenInstances();
 		}
@@ -1053,7 +1277,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	num_elements++;
 
 	// Create the new instance
-	var new_div = wrapper
+	var $new_div = $wrapper
 		.find(".multipleTemplateStarter")
 		.clone()
 		.removeClass('multipleTemplateStarter')
@@ -1070,10 +1294,10 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	// of any divs and spans (presumably, these exist only for the
 	// sake of "show on select"). We do the deletions because no two
 	// elements on the page are allowed to have the same ID.
-	new_div.find('[id!=""]').attr('data-origID', function() { return this.id; });
-	new_div.find('div[id!=""], span[id!=""]').removeAttr('id');
+	$new_div.find('[id!=""]').attr('data-origID', function() { return this.id; });
+	$new_div.find('div[id!=""], span[id!=""]').removeAttr('id');
 
-	new_div.find('.hiddenByPF')
+	$new_div.find('.hiddenByPF')
 	.removeClass('hiddenByPF')
 
 	.find('.disabledByPF')
@@ -1082,7 +1306,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 
 	// Make internal ID unique for the relevant form elements, and replace
 	// the [num] index in the element names with an actual unique index
-	new_div.find("input, select, textarea").each(
+	$new_div.find("input, select, textarea").each(
 		function() {
 			// Add in a 'b' at the end of the name to reduce the
 			// chance of name collision with another field
@@ -1090,6 +1314,13 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 				var old_name = this.name.replace(/\[num\]/g, '');
 				$(this).attr('origName', old_name);
 				this.name = this.name.replace(/\[num\]/g, '[' + num_elements + 'b]');
+			}
+
+			// Do the same thing with "feeds to map", which also
+			// needs to be modified for each instance.
+			var feedsToMap = $(this).attr('data-feeds-to-map');
+			if ( feedsToMap !== undefined && feedsToMap !== false ) {
+				$(this).attr('data-feeds-to-map', feedsToMap.replace(/\[num\]/g, '[' + num_elements + 'b]') );
 			}
 
 			if (this.id) {
@@ -1144,32 +1375,36 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	);
 
 	// datepicker and datetimepicker inputs require special handling.
-	new_div.find("div.pfPicker").attr('data-ooui', function() {
+	$new_div.find("div.pfPicker").attr('data-ooui', function() {
 		return $(this).attr('data-ooui').replace(/\[num\]/g, '[' + num_elements + 'b]');
 	});
 
-	new_div.find('a').attr('href', function() {
+	$new_div.find('a').attr('href', function() {
+		// Make sure not to add a valid "href" attribute to <a> tags that don't have it.
+		if ( this.href == undefined || this.href == false ) {
+			return null;
+		}
 		return this.href.replace(/input_/g, 'input_' + num_elements + '_');
 	});
 
-	new_div.find('span').attr('id', function() {
+	$new_div.find('span').attr('id', function() {
 		return this.id.replace(/span_/g, 'span_' + num_elements + '_');
 	});
 
 	// Add the new instance.
 	if ( addAboveCurInstance ) {
-		new_div.insertBefore(this.closest(".multipleTemplateInstance"))
+		$new_div.insertBefore(this.closest(".multipleTemplateInstance"))
 			.hide().fadeIn();
 	} else {
 		this.closest(".multipleTemplateWrapper")
 			.find(".multipleTemplateList")
-			.append(new_div.hide().fadeIn());
+			.append($new_div.hide().fadeIn());
 	}
 
-	new_div.initializeJSElements(true);
+	$new_div.initializeJSElements(true);
 
 	// Initialize new inputs.
-	new_div.find("input, select, textarea").each( function() {
+	$new_div.find("input, select, textarea").each( function() {
 		if ( ! this.id ) {
 			return;
 		}
@@ -1210,7 +1445,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 
 	// Hook that fires each time a new template instance is added.
 	// The first parameter is a jQuery selection of the newly created instance div.
-	mw.hook('pf.addTemplateInstance').fire(new_div);
+	mw.hook('pf.addTemplateInstance').fire($new_div);
 	return new_div;
 };
 
@@ -1240,7 +1475,7 @@ $.fn.setDependentAutocompletion = function( dependentField, baseField, baseValue
 		myServer += "&property=" + propName + "&baseprop=" + baseProp + "&basevalue=" + baseValue;
 	}
 	var dependentValues = [];
-	var thisInput = $(this);
+	var $thisInput = $(this);
 	// We use $.ajax() here instead of $.getJSON() so that the
 	// 'async' parameter can be set. That, in turn, is set because
 	// if the 2nd, "dependent" field is a combo box, it can have weird
@@ -1263,7 +1498,7 @@ $.fn.setDependentAutocompletion = function( dependentField, baseField, baseValue
 			$.each(realData, function(key, val) {
 				dependentValues.push(val.title);
 			});
-			thisInput.data('autocompletevalues', dependentValues);
+			$thisInput.data('autocompletevalues', dependentValues);
 		}
 	});
 };
@@ -1272,7 +1507,8 @@ $.fn.setDependentAutocompletion = function( dependentField, baseField, baseValue
  * Called on a 'base' field (e.g., for a country) - sets the autocompletion
  * for its 'dependent' field (e.g., for a city).
  *
- * @param partOfMultiple
+ * @param {Mixed} partOfMultiple
+ * @return {Mixed}
  */
 $.fn.setAutocompleteForDependentField = function( partOfMultiple ) {
 	var curValue = $(this).val();
@@ -1292,24 +1528,21 @@ $.fn.setAutocompleteForDependentField = function( partOfMultiple ) {
 
 	var self = this;
 	$.each( dependent_on_me, function() {
-		var element, cmbox, tokens,
+		var $element, cmbox, tokens,
 			dependentField = this;
 
 		if ( partOfMultiple ) {
-			element = $( self ).closest( '.multipleTemplateInstance' )
+			$element = $( self ).closest( '.multipleTemplateInstance' )
 				.find('[origName="' + dependentField + '"]');
 		} else {
-			element = $('[name="' + dependentField + '"]');
+			$element = $('[name="' + dependentField + '"]');
 		}
 
-		if ( element.hasClass( 'pfComboBox' ) ) {
-			cmbox = new pf.select2.combobox();
-			cmbox.refresh(element);
-		} else if ( element.hasClass( 'pfTokens' ) ) {
+		if ( $element.hasClass( 'pfTokens' ) ) {
 			tokens = new pf.select2.tokens();
-			tokens.refresh(element);
+			tokens.refresh($element);
 		} else {
-			element.setDependentAutocompletion(dependentField, name, curValue);
+			$element.setDependentAutocompletion(dependentField, name, curValue);
 		}
 	});
 
@@ -1322,7 +1555,7 @@ $.fn.setAutocompleteForDependentField = function( partOfMultiple ) {
  * called for either the entire HTML body, or for a div representing an
  * instance of a multiple-instance template.
  *
- * @param partOfMultiple
+ * @param {Mixed} partOfMultiple
  */
 $.fn.initializeJSElements = function( partOfMultiple ) {
 	var fancyBoxSettings;
@@ -1332,6 +1565,17 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 		if ( !partOfMultiple && $(this).parents('.multipleTemplateWrapper').length > 0 ) {
 			return;
 		}
+
+		// Don't call this for combobox inputs, except when a new
+		// multiple-instance template instance is created - in all
+		// other cases, their "show on select" is triggered separately.
+		if ( $(this).attr( 'data-input-type' ) == 'combobox' ) {
+			if ( partOfMultiple ) {
+				$(this).showIfSelected(true, true)
+			}
+			return;
+		}
+
 		$(this)
 		.showIfSelected(partOfMultiple, true)
 		.change( function() {
@@ -1390,15 +1634,42 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 		});
 	}
 
-	var combobox = new pf.select2.combobox();
-	this.find('.pfComboBox').not('#semantic_property_starter, .multipleTemplateStarter .pfComboBox, .select2-container').each( function() {
-		combobox.apply($(this));
+	this.find('.pfComboBox').not('.multipleTemplateStarter .pfComboBox').each(function(){
+		var min_width = $(this).data('size');
+		var input_width = $(this).val().length*11;
+		var inputType = new pf.ComboBoxInput({});
+		inputType.apply($(this));
+		inputType.$element.css("width", input_width > min_width ? input_width : min_width);
+		inputType.$element.css("min-width", min_width);
+		inputType.$element.find("a").css("margin-left", "-1px");
+		$(this).after(inputType.$element);
+		$(this).remove()
 	});
 
 	var tokens = new pf.select2.tokens();
 	this.find('.pfTokens').not('.multipleTemplateStarter .pfTokens, .select2-container').each( function() {
 		tokens.apply($(this));
 	});
+
+	// Set the end date input to the value selected in start date
+	this.find("span.startDateInput").not(".hiddenByPF").find("input").last().blur( function() {
+		var endInput = $(this).find("span.endDateInput").not(".hiddenByPF");
+		var endYearInput = endInput.find(".yearInput");
+		var endMonthInput = endInput.find(".monthInput");
+		var endDayInput = endInput.find(".dayInput");
+
+		// Update end date value only if it is not set
+		if (endYearInput.val() == '' && endMonthInput.val() == '' && endDayInput.val() == ''){
+			var startInput = $(this);
+			var startYearVal = startInput.find(".yearInput").val();
+			var startMonthVal = startInput.find(".monthInput").val();
+			var startDayVal = startInput.find(".dayInput").val();
+
+			endYearInput.val(startYearVal);
+			endMonthInput.val(startMonthVal);
+			endDayInput.val(startDayVal);
+		}
+	}.bind(this));
 
 	fancyBoxSettings = {
 		toolbar : false,
@@ -1477,19 +1748,33 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 		$(this).val(window.pfGenerateUUID());
 	});
 
-	var myThis = this;
+	this.find('[data-tooltip]').not('.multipleTemplateStarter [data-tooltip]').each( function() {
+		// Even if it's within a <th>, display the text unbolded.
+		var tooltipText = '<p style="font-weight: normal;">' + $(this).attr('data-tooltip') + '</p>';
+		var tooltip = new OO.ui.PopupButtonWidget( {
+			icon: 'info',
+			framed: false,
+			popup: {
+				padded: true,
+				$content: $(tooltipText)
+			}
+		} );
+		$(this).append( tooltip.$element )
+	});
+
+	var $myThis = this;
 	if ( $.fn.applyVisualEditor ) {
 		if ( partOfMultiple ) {
-			myThis.find(".visualeditor").applyVisualEditor();
+			$myThis.find(".visualeditor").applyVisualEditor();
 		} else {
-			myThis.find(".visualeditor").not(".multipleTemplateWrapper .visualeditor").applyVisualEditor();
+			$myThis.find(".visualeditor").not(".multipleTemplateWrapper .visualeditor").applyVisualEditor();
 		}
 	} else {
 		$(document).on('VEForAllLoaded', function(e) {
 			if ( partOfMultiple ) {
-				myThis.find(".visualeditor").applyVisualEditor();
+				$myThis.find(".visualeditor").applyVisualEditor();
 			} else {
-				myThis.find(".visualeditor").not(".multipleTemplateWrapper .visualeditor").applyVisualEditor();
+				$myThis.find(".visualeditor").not(".multipleTemplateWrapper .visualeditor").applyVisualEditor();
 			}
 		});
 	}
@@ -1497,22 +1782,22 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 	// @TODO - this should be in the TinyMCE extension, and use a hook.
 	if ( typeof( mwTinyMCEInit ) === 'function' ) {
 		if ( partOfMultiple ) {
-			myThis.find(".tinymce").each( function() {
+			$myThis.find(".tinymce").each( function() {
 				mwTinyMCEInit( '#' + $(this).attr('id') );
 			});
 		} else {
-			myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
+			$myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
 				mwTinyMCEInit( '#' + $(this).attr('id') );
 			});
 		}
 	} else {
 		$(document).on('TinyMCELoaded', function(e) {
 			if ( partOfMultiple ) {
-				myThis.find(".tinymce").each( function() {
+				$myThis.find(".tinymce").each( function() {
 					mwTinyMCEInit( '#' + $(this).attr('id') );
 				});
 			} else {
-				myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
+				$myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
 					mwTinyMCEInit( '#' + $(this).attr('id') );
 				});
 			}
@@ -1524,7 +1809,7 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 // Copied from https://stackoverflow.com/a/8809472
 // License: public domain/MIT
 window.pfGenerateUUID = function() {
-	var d = new Date().getTime();
+	var d = Date.now();
 	var d2 = (performance && performance.now && (performance.now() * 1000)) || 0; // Time in microseconds since page-load or 0 if unsupported
 	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 		var r = Math.random() * 16; // random number between 0 and 16
@@ -1548,8 +1833,8 @@ $(document).ready( function() {
 	function getFunctionFromName( functionName ) {
 		var func = window;
 		var namespaces = functionName.split( "." );
-		for ( var i = 0; i < namespaces.length; i++ ) {
-			func = func[ namespaces[ i ] ];
+		for ( var nsNum = 0; nsNum < namespaces.length; nsNum++ ) {
+			func = func[ namespaces[ nsNum ] ];
 		}
 		// If this gets called before the function is defined, just
 		// store the function name instead, for later lookup.
@@ -1608,14 +1893,24 @@ $(document).ready( function() {
 			});
 		}
 		$('.multipleTemplateList').each( function() {
-			var list = $(this);
-			var sortable = Sortable.create(list[0], {
+			var $list = $(this);
+			var sortable = Sortable.create($list[0], {
 				handle: '.instanceRearranger',
 				onStart: function (/**Event*/evt) {
-					list.possiblyMinimizeAllOpenInstances();
+					$list.possiblyMinimizeAllOpenInstances();
 				}
 			});
 		});
+
+		// If there are any "wizard screen" elements defined in the
+		// form, turn the whole form into a wizard, with successive
+		// screens for each element.
+		var $wizardScreens = $('form#pfForm').find('div.pf-wizard-screen');
+		if ( $wizardScreens.length > 0 ) {
+			var $wizardNav = $('<div class="pf-wizard-navigation"></div>');
+			$('form#pfForm').append( $wizardNav );
+			$wizardScreens.displayWizardScreen( 1, $wizardNav );
+		}
 
 		// If the form is submitted, validate everything!
 		$('#pfForm').submit( function() {
@@ -1656,40 +1951,40 @@ function preSelectByIndex() {
 // try to avoid a click on a popup, like the "Upload file" window, minimizing
 // the current open instance.
 $('form#pfForm').click( function(e) {
-	var target = $(e.target);
+	var $target = $(e.target);
 	// Ignore the "add instance" buttons - those get handling of their own.
-	var clickedOnAddAnother = target.parents('.multipleTemplateAdder').length > 0;
-	if ( clickedOnAddAnother || target.hasClass('addAboveButton') ) {
+	var clickedOnAddAnother = $target.parents('.multipleTemplateAdder').length > 0;
+	if ( clickedOnAddAnother || $target.hasClass('addAboveButton') ) {
 		return;
 	}
 
-	var instance = target.closest('.multipleTemplateInstance');
-	if ( instance === null ) {
+	var $instance = $target.closest('.multipleTemplateInstance');
+	if ( $instance === null ) {
 		$('.multipleTemplateList.currentFocus')
 			.removeClass('currentFocus')
 			.possiblyMinimizeAllOpenInstances();
 		return;
 	}
 
-	var instancesList = instance.closest('.multipleTemplateList');
-	if ( !instancesList.hasClass('currentFocus') ) {
+	var $instancesList = $instance.closest('.multipleTemplateList');
+	if ( !$instancesList.hasClass('currentFocus') ) {
 		$('.multipleTemplateList.currentFocus')
 			.removeClass('currentFocus')
 			.possiblyMinimizeAllOpenInstances();
-		if ( instancesList.hasClass('minimizeAll') ) {
-			instancesList.addClass('currentFocus');
+		if ( $instancesList.hasClass('minimizeAll') ) {
+			$instancesList.addClass('currentFocus');
 		}
 	}
 
-	if ( instance.hasClass('minimized') ) {
-		instancesList.possiblyMinimizeAllOpenInstances();
-		instance.removeClass('minimized');
-		instance.find('.fieldValuesDisplay').html('');
-		instance.find('.instanceMain').fadeIn();
-		instance.find('.fieldValuesDisplay').remove();
+	if ( $instance.hasClass('minimized') ) {
+		$instancesList.possiblyMinimizeAllOpenInstances();
+		$instance.removeClass('minimized');
+		$instance.find('.fieldValuesDisplay').html('');
+		$instance.find('.instanceMain').fadeIn();
+		$instance.find('.fieldValuesDisplay').remove();
 		// Remove unhelpful styling added by VisualEditor.
-		instance.find('div.oo-ui-toolbar-bar').css('left', null);
-		instance.find('div.oo-ui-toolbar-bar').css('right', null);
+		$instance.find('div.oo-ui-toolbar-bar').css('left', null);
+		$instance.find('div.oo-ui-toolbar-bar').css('right', null);
 	}
 });
 

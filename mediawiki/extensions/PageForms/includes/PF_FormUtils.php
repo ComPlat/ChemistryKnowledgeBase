@@ -1,6 +1,8 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\RenderedRevision;
+use OOUI\ButtonInputWidget;
 
 /**
  * Utilities for the display and retrieval of forms.
@@ -54,13 +56,17 @@ class PFFormUtils {
 			'value' => $value,
 			'name' => 'wpSummary',
 			'id' => 'wpSummary',
-			'maxlength' => 255,
+			'maxlength' => CommentStore::COMMENT_CHARACTER_LIMIT,
 			'title' => wfMessage( 'tooltip-summary' )->text(),
 			'accessKey' => wfMessage( 'accesskey-summary' )->text()
 		];
 		if ( $is_disabled ) {
 			$attr['disabled'] = true;
 		}
+		if ( array_key_exists( 'class', $attr ) ) {
+			$attr['classes'] = [ $attr['class'] ];
+		}
+
 		$text = new OOUI\FieldLayout(
 			new OOUI\TextInputWidget( $attr ),
 			[
@@ -78,7 +84,8 @@ class PFFormUtils {
 		$wgPageFormsTabIndex++;
 		if ( !$form_submitted ) {
 			$user = RequestContext::getMain()->getUser();
-			$is_checked = $user->getOption( 'minordefault' );
+			$is_checked = MediaWikiServices::getInstance()->getUserOptionsLookup()
+				->getOption( $user, 'minordefault' );
 		}
 
 		if ( $label == null ) {
@@ -87,6 +94,7 @@ class PFFormUtils {
 
 		$attrs += [
 			'id' => 'wpMinoredit',
+			'name' => 'wpMinoredit',
 			'accessKey' => wfMessage( 'accesskey-minoredit' )->text(),
 			'tabIndex' => $wgPageFormsTabIndex,
 		];
@@ -96,13 +104,19 @@ class PFFormUtils {
 		if ( $is_disabled ) {
 			$attrs['disabled'] = true;
 		}
+		// @phan-suppress-next-line PhanImpossibleTypeComparison
+		if ( array_key_exists( 'class', $attrs ) ) {
+			$attrs['classes'] = [ $attrs['class'] ];
+		}
 
 		// We can't use OOUI\FieldLayout here, because it will make the display too wide.
-		$labelSpan = Html::element( 'span', [ 'class' => 'oo-ui-fieldLayout-header' ], $label );
+		$labelWidget = new OOUI\LabelWidget( [
+			'label' => new OOUI\HtmlSnippet( $label )
+		] );
 		$text = Html::rawElement(
 			'label',
 			[ 'title' => wfMessage( 'tooltip-minoredit' )->parse() ],
-			new OOUI\CheckboxInputWidget( $attrs ) . $labelSpan
+			new OOUI\CheckboxInputWidget( $attrs ) . $labelWidget
 		);
 		$text = Html::rawElement( 'div', [ 'style' => 'display: inline-block; padding: 12px 16px 12px 0;' ], $text );
 
@@ -117,15 +131,34 @@ class PFFormUtils {
 		// this code borrowed from /includes/EditPage.php
 		if ( !$form_submitted ) {
 			$user = RequestContext::getMain()->getUser();
-			if ( $user->getOption( 'watchdefault' ) ) {
-				# Watch all edits
-				$is_checked = true;
-			} elseif ( $user->getOption( 'watchcreations' ) && !$wgTitle->exists() ) {
-				# Watch creations
-				$is_checked = true;
-			} elseif ( $user->isWatched( $wgTitle ) ) {
-				# Already watched
-				$is_checked = true;
+			$services = MediaWikiServices::getInstance();
+			$userOptionsLookup = $services->getUserOptionsLookup();
+			if ( method_exists( \MediaWiki\Watchlist\WatchlistManager::class, 'isWatched' ) ) {
+				// MediaWiki 1.37+
+				$watchlistManager = $services->getWatchlistManager();
+				if ( $userOptionsLookup->getOption( $user, 'watchdefault' ) ) {
+					# Watch all edits
+					$is_checked = true;
+				} elseif ( $userOptionsLookup->getOption( $user, 'watchcreations' ) &&
+					!$wgTitle->exists() ) {
+					# Watch creations
+					$is_checked = true;
+				} elseif ( $watchlistManager->isWatched( $user, $wgTitle ) ) {
+					# Already watched
+					$is_checked = true;
+				}
+			} else {
+				if ( $userOptionsLookup->getOption( $user, 'watchdefault' ) ) {
+					# Watch all edits
+					$is_checked = true;
+				} elseif ( $userOptionsLookup->getOption( $user, 'watchcreations' ) &&
+					!$wgTitle->exists() ) {
+					# Watch creations
+					$is_checked = true;
+				} elseif ( $user->isWatched( $wgTitle ) ) {
+					# Already watched
+					$is_checked = true;
+				}
 			}
 		}
 		if ( $label == null ) {
@@ -133,6 +166,7 @@ class PFFormUtils {
 		}
 		$attrs += [
 			'id' => 'wpWatchthis',
+			'name' => 'wpWatchthis',
 			'accessKey' => wfMessage( 'accesskey-watch' )->text(),
 			'tabIndex' => $wgPageFormsTabIndex,
 		];
@@ -142,13 +176,19 @@ class PFFormUtils {
 		if ( $is_disabled ) {
 			$attrs['disabled'] = true;
 		}
+		// @phan-suppress-next-line PhanImpossibleTypeComparison
+		if ( array_key_exists( 'class', $attrs ) ) {
+			$attrs['classes'] = [ $attrs['class'] ];
+		}
 
 		// We can't use OOUI\FieldLayout here, because it will make the display too wide.
-		$labelSpan = Html::element( 'span', [ 'class' => 'oo-ui-fieldLayout-header' ], $label );
+		$labelWidget = new OOUI\LabelWidget( [
+			'label' => new OOUI\HtmlSnippet( $label )
+		] );
 		$text = Html::rawElement(
 			'label',
 			[ 'title' => wfMessage( 'tooltip-watch' )->parse() ],
-			new OOUI\CheckboxInputWidget( $attrs ) . $labelSpan
+			new OOUI\CheckboxInputWidget( $attrs ) . $labelWidget
 		);
 		$text = Html::rawElement( 'div', [ 'style' => 'display: inline-block; padding: 12px 16px 12px 0;' ], $text );
 
@@ -161,15 +201,24 @@ class PFFormUtils {
 	 * @param string $value
 	 * @param string $type
 	 * @param array $attrs
-	 * @return string
+	 * @return ButtonInputWidget
 	 */
-	static function buttonHTML( $name, $value, $type, $attrs ) {
+	private static function buttonHTML( $name, $value, $type, $attrs ) {
 		$attrs += [
 			'type' => $type,
 			'name' => $name,
 			'label' => $value
 		];
-		return new OOUI\ButtonInputWidget( $attrs );
+		$button = new ButtonInputWidget( $attrs );
+		// Special handling for 'class'.
+		if ( isset( $attrs['class'] ) ) {
+			// Make sure it's an array.
+			if ( is_string( $attrs['class'] ) ) {
+				$attrs['class'] = [ $attrs['class'] ];
+			}
+			$button->addClasses( $attrs['class'] );
+		}
+		return $button;
 	}
 
 	static function saveButtonHTML( $is_disabled, $label = null, $attr = [] ) {
@@ -262,14 +311,19 @@ class PFFormUtils {
 		if ( $label == null ) {
 			$label = wfMessage( 'cancel' )->parse();
 		}
+		$attr['classes'] = [];
 		if ( $wgTitle == null || $wgTitle->isSpecial( 'FormEdit' ) ) {
-			$attr['classes'] = [ 'pfSendBack' ];
+			$attr['classes'][] = 'pfSendBack';
 		} else {
 			$attr['href'] = $wgTitle->getFullURL();
 		}
 		$attr['framed'] = false;
 		$attr['label'] = $label;
 		$attr['flags'] = [ 'destructive' ];
+		if ( array_key_exists( 'class', $attr ) ) {
+			$attr['classes'][] = $attr['class'];
+		}
+
 		return "\t\t" . new OOUI\ButtonWidget( $attr ) . "\n";
 	}
 
@@ -292,20 +346,28 @@ class PFFormUtils {
 		return new OOUI\FieldLayout( $buttonHTML );
 	}
 
-	// Much of this function is based on MediaWiki's EditPage::showEditForm()
+	/**
+	 * Much of this function is based on MediaWiki's EditPage::showEditForm().
+	 * @param bool $form_submitted
+	 * @param bool $is_disabled
+	 * @return string
+	 */
 	static function formBottom( $form_submitted, $is_disabled ) {
 		$text = <<<END
 	<br />
 	<div class='editOptions'>
 
 END;
-		$text .= self::summaryInputHTML( $is_disabled );
+		$req = RequestContext::getMain()->getRequest();
+		$summary = $req->getVal( 'wpSummary' );
+		$text .= self::summaryInputHTML( $is_disabled, null, [], $summary );
 		$user = RequestContext::getMain()->getUser();
 		if ( $user->isAllowed( 'minoredit' ) ) {
 			$text .= self::minorEditInputHTML( $form_submitted, $is_disabled, false );
 		}
 
-		if ( $user->isLoggedIn() ) {
+		$userIsRegistered = $user->isRegistered();
+		if ( $userIsRegistered ) {
 			$text .= self::watchInputHTML( $form_submitted, $is_disabled );
 		}
 
@@ -326,7 +388,12 @@ END;
 		return $text;
 	}
 
-	// Loosely based on MediaWiki's EditPage::getPreloadedContent().
+	/**
+	 * Loosely based on MediaWiki's EditPage::getPreloadedContent().
+	 *
+	 * @param string $preload
+	 * @return string
+	 */
 	static function getPreloadedText( $preload ) {
 		if ( $preload === '' ) {
 			return '';
@@ -337,26 +404,13 @@ END;
 			return '';
 		}
 
-		if ( method_exists( 'MediaWiki\Permissions\PermissionManager', 'userCan' ) ) {
-			// MW 1.33+
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-			$user = RequestContext::getMain()->getUser();
-			if ( !$permissionManager->userCan( 'read', $user, $preloadTitle ) ) {
-				return '';
-			}
-		} else {
-			if ( !$preloadTitle->userCan( 'read' ) ) {
-				return '';
-			}
-		}
-
-		$rev = Revision::newFromTitle( $preloadTitle );
-		if ( !is_object( $rev ) ) {
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$user = RequestContext::getMain()->getUser();
+		if ( !$permissionManager->userCan( 'read', $user, $preloadTitle ) ) {
 			return '';
 		}
 
-		$content = $rev->getContent();
-		$text = ContentHandler::getContentText( $content );
+		$text = PFUtils::getPageText( $preloadTitle );
 		// Remove <noinclude> sections and <includeonly> tags from text
 		$text = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $text );
 		$text = strtr( $text, [ '<includeonly>' => '', '</includeonly>' => '' ] );
@@ -455,8 +509,7 @@ END;
 			$regexp,
 
 			// This is essentially a copy of Parser::insertStripItem().
-			// The 'use' keyword will bump the minimum PHP version to 5.3
-			function ( array $matches ) use ( &$items, $rnd ) {
+			static function ( array $matches ) use ( &$items, $rnd ) {
 				$markerIndex = count( $items );
 				$items[] = $matches[0];
 				return "$rnd-item-$markerIndex-$rnd";
@@ -466,19 +519,15 @@ END;
 		);
 
 		// Parse wiki-text.
-		if ( isset( $parser->mInParse ) && $parser->mInParse === true ) {
-			$form_def = $parser->recursiveTagParse( $form_def );
-			$output = $parser->getOutput();
-		} else {
-			$title = is_object( $parser->getTitle() ) ? $parser->getTitle() : $form_title;
-			// We need to pass "false" in to the parse() $clearState param so that
-			// embedding Special:RunQuery will work.
-			$output = $parser->parse( $form_def, $title, $parser->getOptions(), true, false );
-			$form_def = $output->getText();
-		}
+		// @phan-suppress-next-line PhanRedundantCondition for BC with old MW
+		$title = is_object( $parser->getTitle() ) ? $parser->getTitle() : $form_title;
+		// We need to pass "false" in to the parse() $clearState param so that
+		// embedding Special:RunQuery will work.
+		$output = $parser->parse( $form_def, $title, $parser->getOptions(), true, false );
+		$form_def = $output->getText();
 		$form_def = preg_replace_callback(
 			"/{$rnd}-item-(\d+)-{$rnd}/",
-			function ( array $matches ) use ( $items ) {
+			static function ( array $matches ) use ( $items ) {
 				$markerIndex = (int)$matches[1];
 				return $items[$markerIndex];
 			},
@@ -571,7 +620,7 @@ END;
 	 * Deletes the form definition associated with the given wiki page
 	 * from the main cache.
 	 *
-	 * Hooks: ArticlePurge, PageContentSave
+	 * Hooks: ArticlePurge
 	 *
 	 * @param WikiPage $wikipage
 	 * @return bool
@@ -606,16 +655,16 @@ END;
 
 	/**
 	 * Deletes the form definition associated with the given wiki page
-	 * from the main cache, for MW 1.35+.
+	 * from the main cache.
 	 *
 	 * Hook: MultiContentSave
 	 *
 	 * @param RenderedRevision $renderedRevision
 	 * @return bool
 	 */
-	public static function purgeCache2( MediaWiki\Revision\RenderedRevision $renderedRevision ) {
+	public static function purgeCacheOnSave( RenderedRevision $renderedRevision ) {
 		$articleID = $renderedRevision->getRevision()->getPageId();
-		if ( method_exists( 'MediaWikiServices', 'getWikiPageFactory' ) ) {
+		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
 			// MW 1.36+
 			$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $articleID );
 		} else {
@@ -635,7 +684,7 @@ END;
 	 */
 	public static function getFormCache() {
 		global $wgPageFormsFormCacheType, $wgParserCacheType;
-		$ret = wfGetCache( ( $wgPageFormsFormCacheType !== null ) ? $wgPageFormsFormCacheType : $wgParserCacheType );
+		$ret = ObjectCache::getInstance( ( $wgPageFormsFormCacheType !== null ) ? $wgPageFormsFormCacheType : $wgParserCacheType );
 		return $ret;
 	}
 
@@ -705,5 +754,19 @@ END;
 			}
 		}
 		return $old_i;
+	}
+
+	static function setShowOnSelect( $showOnSelectVals, $inputID, $isCheckbox = false ) {
+		global $wgPageFormsShowOnSelect;
+
+		foreach ( $showOnSelectVals as $divID => $options ) {
+			// A checkbox will just have div ID(s).
+			$data = $isCheckbox ? $divID : [ $options, $divID ];
+			if ( array_key_exists( $inputID, $wgPageFormsShowOnSelect ) ) {
+				$wgPageFormsShowOnSelect[$inputID][] = $data;
+			} else {
+				$wgPageFormsShowOnSelect[$inputID] = [ $data ];
+			}
+		}
 	}
 }

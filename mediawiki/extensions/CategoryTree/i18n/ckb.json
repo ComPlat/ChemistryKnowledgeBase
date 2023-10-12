@@ -1,10 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aram",
 			"Asoxor",
 			"Calak",
 			"Muhammed taha",
-			"Épine"
+			"Épine",
+			"ئارام بکر"
 		]
 	},
 	"categorytree": "درەختی پۆل",
@@ -19,8 +21,6 @@
 	"categorytree-mode-all": "ھەموو پەڕەکان",
 	"categorytree-collapse": "کۆیبکەوە",
 	"categorytree-expand": "بڵاویبکەوە",
-	"categorytree-expand-bullet": "◄",
-	"categorytree-empty-bullet": "◄",
 	"categorytree-member-counts": "{{PLURAL:$1|یەک ژێرپۆل|$1 ژێرپۆل}}، {{PLURAL:$2|یەک پەڕە|$2 پەڕە}}، and {{PLURAL:$3|یەک پەڕگە|$3 پەڕگە}} لەبەردەگرێتەوە",
 	"categorytree-num-categories": "$1 پۆل",
 	"categorytree-num-pages": "$1 پەڕە",
@@ -33,6 +33,6 @@
 	"categorytree-no-parent-categories": "پۆلی باوان نییە",
 	"categorytree-no-pages": "پەڕە و ژێر پۆل نییە",
 	"categorytree-not-found": "پۆلی <i>$1</i> نەدۆزرایەوە",
-	"categorytree-error": "کێشە لە بارکردنی داتا.",
+	"categorytree-error": "کێشە لە بارکردنی دراوە.",
 	"categorytree-retry": "تکایە دەمێک ڕاوەستە و دیسان تاقیبکەوە."
 }

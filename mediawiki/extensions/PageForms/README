@@ -42,15 +42,19 @@ Use of the jExcel and jsTree libraries, and greater use of the
 OOUI library, were added by Amr El-Absy as part of the 2020 Google
 Summer of Code.
 
-Important code contributions were also made by Addshore, Christoph
-Burgmer, Cindy Cicalese, Clément Flipo, Daniel Friesen, Daniel
-Hansch, Eugene Mednikov, Harold Solbrig, Ilmārs Poikāns, Jayson
-Harshbarger, Jeffrey Stuckman, Jeroen De Dauw, Joel Natividad, Louis
-Gerbarg, LY Meng, Mark Hershberger, Mathias Lidal, Matt Williamson,
-MWJames, Niklas Laxstrom, Nils Opperman, Paladox, Pastakhov, Patrick
-Nagel, Peter Grassberger, Pierre Boutet, Reedy, Remco de Boer, Sahaj
-Khandelwal, Sam Wilson, Sebastian Richter, Sergey Chernyshev,
-Siebrand Mazeland, Simon Heimler, Solitarius, Tombolano, Tom Fellows,
+Autocompletion within the spreadsheet interface was added by Yash
+Varshney as part of the 2021 Google Summer of Code.
+
+Important code contributions were also made by Addshore, Anjali
+Kumari, Christoph Burgmer, Cindy Cicalese, Clément Flipo, Daniel
+Friesen, Daniel Hansch, Eugene Mednikov, Harold Solbrig, Ilmārs
+Poikāns, Jayson Harshbarger, Jeffrey Stuckman, Jeroen De Dauw,
+Joel Natividad, Louis Gerbarg, LY Meng, Mark Hershberger, Mathias
+Lidal, Matt Williamson, MWJames, Niklas Laxstrom, Nils Opperman,
+Paladox, Pastakhov, Patrick Nagel, Peter Grassberger, Pierre Boutet,
+Reedy, Remco de Boer, Sahaj Khandelwal, Sam Wilson, Sanjay
+Thiyagarajan, Sebastian Richter, Sergey Chernyshev, Siebrand
+Mazeland, Simon Heimler, Solitarius, Tombolano, Tom Fellows,
 Vedmaka, wheresmytab and others.
 
 Language translations were provided by many people; see the files in
@@ -80,7 +84,7 @@ distributed under the GPLv3 license.
 * FullCalendar (https://fullcalendar.io/), distributed under the MIT
 license.
 
-* jExcel (https://bossanova.uk/jexcel/v3/) by Paul Hodel, distributed
+* Jspreadsheet (https://bossanova.uk/jspreadsheet/), distributed
 under the MIT license.
 
 * jsTree (https://www.jstree.com/) by Ivan Bozhanov, distributed under
@@ -92,12 +96,8 @@ distributed under the MIT license.
 * Select2 (https://select2.org/) by Igor Vaynberg, Kevin Brown and
 others, distributed under the MIT license.
 
-* SortableJS (https://sortablejs.github.io/sortablejs/) by RubaXa and
+* SortableJS (https://sortablejs.github.io/Sortable/) by RubaXa and
 owenm, distributed under the MIT license.
-
-It also includes the Balloon.css CSS library
-(https://kazzkiq.github.io/balloon.css/) by Claudio Holanda,
-distributed under the MIT license.
 
 Page Forms also makes extensive use of the jQuery and OOUI
 JavaScript libraries, both of which are included within MediaWiki.

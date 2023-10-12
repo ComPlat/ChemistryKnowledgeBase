@@ -20,9 +20,9 @@
  * @since 1.35
  */
 
-namespace Vector\FeatureManagement\Requirements;
+namespace MediaWiki\Skins\Vector\FeatureManagement\Requirements;
 
-use Vector\FeatureManagement\Requirement;
+use MediaWiki\Skins\Vector\FeatureManagement\Requirement;
 
 /**
  * NOTE: This API hasn't settled. It may change at any time without warning. Please don't bind to
@@ -30,7 +30,7 @@ use Vector\FeatureManagement\Requirement;
  *
  * @unstable
  *
- * @package FeatureManagement
+ * @package MediaWiki\Skins\Vector\FeatureManagement\Requirements
  * @internal
  */
 class SimpleRequirement implements Requirement {
@@ -57,14 +57,14 @@ class SimpleRequirement implements Requirement {
 	/**
 	 * @inheritDoc
 	 */
-	public function getName() : string {
+	public function getName(): string {
 		return $this->name;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function isMet() : bool {
+	public function isMet(): bool {
 		return $this->isMet;
 	}
 }

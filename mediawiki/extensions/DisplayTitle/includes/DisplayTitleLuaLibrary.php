@@ -1,5 +1,12 @@
 <?php
 
+namespace MediaWiki\Extension\DisplayTitle;
+
+use CoreParserFunctions;
+use MediaWiki\MediaWikiServices;
+use Scribunto_LuaLibraryBase;
+use Title;
+
 /**
  * Class DisplayTitleLuaLibrary
  *
@@ -18,44 +25,45 @@ class DisplayTitleLuaLibrary extends Scribunto_LuaLibraryBase {
 	 *
 	 * @return array Lua package
 	 */
-	public function register() {
+	public function register(): array {
 		$lib = [
 			'get'   => [ $this, 'getDisplayTitle' ],
 			'set'   => [ $this, 'setDisplayTitle' ],
 		];
 
-		return $this->getEngine()->registerInterface( __DIR__ . '/',	$lib, [] );
+		return $this->getEngine()->registerInterface( __DIR__ . '/' . 'displaytitle.lua',	$lib, [] );
 	}
 
 	/**
 	 * Returns the display title for a given page.
 	 *
-	 * Mirrors the functionality of parser function #getdisplaytitle, using the same code base.
-	 * @uses \DisplayTitleHooks::getdisplaytitleParserFunction, \DisplayTitleLuaLibrary::toLua
+	 * Mirrors the functionality of parser function #getdisplaytitle.
+	 * @uses DisplayTitleHooks::getDisplayTitle, DisplayTitleLuaLibrary::toLua
 	 * @param string $pageName the name of the page, the display title should be received for
 	 * @return string[]
 	 */
-	public function getDisplayTitle( $pageName ) {
-		if ( is_string( $pageName ) && strlen( $pageName ) ) {
-			return $this->toLua( DisplayTitleHooks::getdisplaytitleParserFunction(
-				$this->getParser(),
-				$pageName
-			) );
-		} else {
-			return [ '' ];
+	public function getDisplayTitle( string $pageName ): array {
+		if ( strlen( $pageName ) ) {
+			$title = Title::newFromText( $pageName );
+			if ( $title !== null ) {
+				$displayTitleService = MediaWikiServices::getInstance()->get( 'DisplayTitleService' );
+				$displayTitleService->getDisplayTitle( $title, $pageName );
+			}
+			return $this->toLua( $pageName );
 		}
+		return [ '' ];
 	}
 
 	/**
 	 * Sets the display title for the current page.
 	 *
 	 * Mirrors the functionality of the magic word DISPLAYTITLE.
-	 * @uses \CoreParserFunctions::displaytitle, \DisplayTitleLuaLibrary::toLua
+	 * @uses CoreParserFunctions::displaytitle, DisplayTitleLuaLibrary::toLua
 	 * @param string $newDisplayTitle the new display title for the current page
 	 * @return string[]
 	 */
-	public function setDisplayTitle( $newDisplayTitle ) {
-		if ( is_string( $newDisplayTitle ) && strlen( $newDisplayTitle ) ) {
+	public function setDisplayTitle( string $newDisplayTitle ): array {
+		if ( strlen( $newDisplayTitle ) ) {
 			return $this->toLua( CoreParserFunctions::displaytitle(
 				$this->getParser(),
 				$newDisplayTitle
@@ -69,7 +77,7 @@ class DisplayTitleLuaLibrary extends Scribunto_LuaLibraryBase {
 	 * This takes any value and makes sure, that it can be used inside lua.
 	 * I.e. converts php arrays to lua tables, dumps objects and functions, etc.
 	 * E.g. A resulting table has its numerical indices start with 1
-	 * @uses \Scribunto_LuaLibraryBase::getLuaType
+	 * @uses Scribunto_LuaLibraryBase::getLuaType
 	 * @param mixed $valueToConvert
 	 * @return mixed
 	 */
@@ -97,7 +105,7 @@ class DisplayTitleLuaLibrary extends Scribunto_LuaLibraryBase {
 	 * @param mixed $val
 	 * @return array
 	 */
-	private function toLua( $val ) {
+	private function toLua( $val ): array {
 		return [ $this->convertToLuaValue( $val ) ];
 	}
 }

@@ -1,5 +1,76 @@
 ## Release Notes
 
+### Chameleon 4.2.1
+
+Released on January 30, 2023.
+
+* Fixed deprecated external link icons for MediaWiki 1.39 (thanks @malberts)
+* Fixed deprecated ResourceLoaderSkinModule features for MediaWiki 1.39 (thanks @malberts)
+
+### Chameleon 4.2.0
+
+Released on January 26, 2023.
+
+Note: This release improves compatibility with MediaWiki 1.39, however some deprecated MediaWiki CSS resources are missing and will be addressed in a future release.
+
+* Extracted `Indicators`, `ContentHeader`, `ContentBody` and `CategoryLinks` sub-components from `MainContent` component (thanks @gesinn-it-wam)
+* Fixed navbar whitespace issue (thanks @mdoggydog)
+* For `PersonalTools` component used within `NavbarHorizontal`, changed the set of allowed values to `none`, `try-realname`, and `username-only` (new).  `no` and `yes` are deprecated but still accepted for backwards compatibility. (thanks @mdoggydog)
+* Added `NavMenu` component dropdown classes and title attribute (thanks @mdoggydog)
+* Fixed navbar link alignment (thanks @mdoggydog)
+* Added `ChameleonNavbarHorizontalPersonalToolsLinkInnerHtml` hook, which allows customizing the inner HTML of the dropdown link of the `PersonalTools` component (thanks @mdoggydog)
+* Added `promoteLoneItems` parameter for showing a single link instead of a dropdown in the `PersonalTools` component (thanks @mdoggydog)
+* Added `include` and `exclude` parameters for displaying only specific menu sections in the `NavMenu` component (thanks @mdoggydog)
+* Added `xxl` breakpoint (thanks @gesinn-it-gea)
+* Fixed a MediaWiki 1.39 deprecation (thanks @jdlrobson)
+
+### Chameleon 4.1.0
+
+Released on March 30, 2022.
+
+* Added support for responsive containers on the `Grid` component (thanks @chrisrishel)
+* Fixed Mediawiki 1.38 hard deprecations (thanks @malberts)
+* Fixed Bootstrap 4.6.1 compatibility (thanks @malberts)
+* Updated FontAwesome to 5.15.4 (thanks @malberts)
+
+### Chameleon 4.0.1
+
+Released on March 18, 2022.
+
+* Added PHP 8.1 compatibility (thanks @JeroenDeDauw)
+* Fixed WikiEditor sizing (thanks Laurent Mischler)
+* Translation updates for system messages (thanks @translatewiki and its translator community)
+
+### Chameleon 4.0.0
+
+Released on January 18, 2022.
+
+* Raised minimum Bootstrap extension version from 4.2 to 4.5
+* Raised minimum MediaWiki version from 1.31 to 1.35
+* Raised minimum PHP version from 7.1 to 7.4.3
+* Fixed MediaWiki 1.37 compatibility issues (thanks @malberts)
+* Added `ChameleonGetLayoutXml` hook, which allows altering the layout XML (thanks @JeroenDeDauw)
+* Added `CategoryLinks` component to display category links separate from the `MainContent` component (thanks @malberts)
+
+### Chameleon 3.4.3
+
+Released on March 30, 2022.
+
+* Fixed Bootstrap 4.6.1 compatibility (thanks @malberts)
+
+### Chameleon 3.4.2
+
+Released on March 18, 2022.
+
+* Fixed WikiEditor sizing (thanks Laurent Mischler)
+* Translation updates for system messages (thanks @translatewiki and its translator community)
+
+### Chameleon 3.4.1
+
+Released on September 16, 2021.
+
+* Fixed scssphp 1.7.0 compatibility (@thanks malberts)
+
 ### Chameleon 3.4.0
 
 Released on August 7, 2021.
@@ -34,7 +105,7 @@ Warning: This release contains a regression that causes incompatibility with Med
 * Improved Echo support in the `PersonalTools` components (thanks @malberts)
 * Added theme support via the new `ChameleonThemeFile` setting (thanks @malberts)
 * Added grid breakpoint override support via the new `$cmln-grid-breakpoints` SCSS variable (thanks @malberts)
-* Improved MultimediaViewer extension support (requires [cache update](https://github.com/malberts/chameleon/blob/issue-178/docs/customization.md#triggering-a-cache-update)) (thanks @malberts) 
+* Improved MultimediaViewer extension support (requires [cache update](https://github.com/malberts/chameleon/blob/issue-178/docs/customization.md#triggering-a-cache-update)) (thanks @malberts)
 * Added external link icons support via the new `ChameleonEnableExternalLinkIcons` setting (thanks @malberts)
 * Fixed layout and scroll issues when using the sticky menu and clicking anchor links (thanks @vedmaka)
 * Fixed display of some icons (thanks @malberts and @WouterRademaker)
@@ -104,7 +175,7 @@ Changes:
 * Use [Bootstrap 4](https://getbootstrap.com/docs/4.3)
 * Use [SCSS](https://sass-lang.com/) for styling
 * Use [Font-Awesome](https://fontawesome.com/) instead of Glyphicons
-* Use MediaWiki's new skin registration mechanism (i.e. `wfLoadSkin`) 
+* Use MediaWiki's new skin registration mechanism (i.e. `wfLoadSkin`)
 * Add [Toolbox] component, which allows to add the toolbox links (e.g. What
   links here, Related changes, ...) to a [NavbarHorizontal].
 * Add [LangLinks] component, which allows to add language links to a
@@ -117,7 +188,7 @@ Changes:
 * Remove attributes _showTools_ and _showLanguages_ from the [NavMenu]
   component. You can use the new components [Toolbox] and [LangLinks] instead.
 * Improve the [Menu] component to allow setting a class string on the menu item
-  link. This can be used to show an icon in front of a menu item.   
+  link. This can be used to show an icon in front of a menu item.
 * Remove button for fulltext search from [Searchbar].
 * Rename `$egChameleonExternalLessVariables` to `$egChameleonExternalStyleVariables`
 * New variable `$egScssCacheType`
@@ -277,17 +348,17 @@ Bump minimum Bootstrap extension version to 1.1
 
 Fixes:
 * Set @navbar-default-link-active-bg to @navbar-default-bg color
-* Bullets for ULs respond to list-style:none again 
+* Bullets for ULs respond to list-style:none again
 * Align personal tools drop-down with lower edge of navbar
-* Let .tleft float left 
-* Let jumped-to section heads appear below fixed/sticky header 
+* Let .tleft float left
+* Let jumped-to section heads appear below fixed/sticky header
 * Add mediawiki.sectionAnchor module (for compatibility with MW 1.25)
-* Fix i18n for page tools link 
+* Fix i18n for page tools link
 
 Other changes:
 * Minor doc fixes
 * Add integration test StylesCompileTest
-* Restructure test file layout 
+* Restructure test file layout
 
 ### Chameleon 1.1.2
 

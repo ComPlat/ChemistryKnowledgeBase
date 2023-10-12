@@ -207,20 +207,15 @@
 				canvas.$container.closest( '.metadata-panel-is-open' ).length === 0
 			) {
 				e.stopPropagation(); // don't let $imageWrapper handle this
-				mw.mmv.actionLogger.log( 'view-original-file' ).always( function () {
-					$( document ).trigger( 'mmv-viewfile' );
-				} );
+				$( document ).trigger( 'mmv-viewfile' );
 			}
 		} );
 
 		// open the download panel on right clicking the image
 		this.$image.on( 'mousedown.mmv-canvas', function ( e ) {
-			if ( e.which === 3 ) {
-				mw.mmv.actionLogger.log( 'right-click-image' );
-				if ( !canvas.downloadOpen ) {
-					$( document ).trigger( 'mmv-download-open', e );
-					e.stopPropagation();
-				}
+			if ( e.which === 3 && !canvas.downloadOpen ) {
+				$( document ).trigger( 'mmv-download-open', e );
+				e.stopPropagation();
 			}
 		} );
 	};
@@ -231,9 +226,9 @@
 	C.attach = function () {
 		var canvas = this;
 
-		$( window ).on( 'resize.mmv-canvas', $.debounce( 100, function () {
+		$( window ).on( 'resize.mmv-canvas', mw.util.debounce( function () {
 			canvas.$mainWrapper.trigger( $.Event( 'mmv-resize-end' ) );
-		} ) );
+		}, 100 ) );
 
 		this.$imageWrapper.on( 'click.mmv-canvas', function () {
 			if ( canvas.$container.closest( '.metadata-panel-is-open' ).length > 0 ) {

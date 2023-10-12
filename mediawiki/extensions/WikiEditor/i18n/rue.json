@@ -2,17 +2,16 @@
 	"@metadata": {
 		"authors": [
 			"Gazeb",
-			"Macofe"
+			"Macofe",
+			"Tkalyn"
 		]
 	},
-	"wikieditor": "Росшыреный інтерфейс едітованя вікітексту",
+	"wikieditor": "Розшыреный інтерфейс едітованя вікітексту",
 	"wikieditor-desc": "Забезпечує росшырительный інтерфейс едітованя вікітексту з богато функціоналныма модулами",
 	"wikieditor-wikitext-tab": "Вікітекст",
-	"wikieditor-loading": "Награває ся",
 	"wikieditor-toolbar": "Едітачный панел інштрументів",
 	"wikieditor-toolbar-desc": "Едітачный панел інштрументів з вылїпшенов хосновательностёв",
 	"wikieditor-toolbar-preference": "Запнути вылїпшеный панел інштрументів",
-	"wikieditor-toolbar-loading": "Награваня...",
 	"wikieditor-toolbar-tool-bold": "Тучне",
 	"wikieditor-toolbar-tool-bold-example": "Тучный текст",
 	"wikieditor-toolbar-tool-italic": "Курзіва",
@@ -37,12 +36,10 @@
 	"wikieditor-toolbar-tool-link-int-target-status-notexists": "Сторінка не екзістує",
 	"wikieditor-toolbar-tool-link-int-target-status-invalid": "Неприпустна назва",
 	"wikieditor-toolbar-tool-link-int-target-status-external": "Екстерный одказ",
-	"wikieditor-toolbar-tool-link-int-target-status-loading": "Перевірка екзістенції сторінкы...",
 	"wikieditor-toolbar-tool-link-int-invalid": "Вами задана назва є неприпустна.",
 	"wikieditor-toolbar-tool-link-lookslikeinternal": "URL котре сьте задали вызерать як одказ на іншу сторінку той вікі. Хочете з нєй зробити інтерный одказ?",
 	"wikieditor-toolbar-tool-link-lookslikeinternal-int": "Інтерный одказ",
 	"wikieditor-toolbar-tool-link-lookslikeinternal-ext": "Екстерный одказ",
-	"wikieditor-toolbar-tool-link-empty": "Мусите увести ціль одказу.",
 	"wikieditor-toolbar-tool-file": "Вложеный файл",
 	"wikieditor-toolbar-tool-file-example": "Приклад.jpg",
 	"wikieditor-toolbar-file-target": "Назва файлу:",

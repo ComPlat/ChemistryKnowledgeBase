@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chrumps"
+		]
+	},
+	"urlgetparameters-desc": "Pozwala na używanie i/lub wyświetlanie parametrów „GET” w adresie URL na stronie wiki"
+}

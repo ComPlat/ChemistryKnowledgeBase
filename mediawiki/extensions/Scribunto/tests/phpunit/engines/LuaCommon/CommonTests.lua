@@ -166,6 +166,22 @@ function test.noLeaksViaPackageLoaded()
 	return 'ok'
 end
 
+function test.strictGood()
+	require( 'strict' )
+	local foo = "bar"
+	return foo
+end
+
+function test.strictBad1()
+	require( 'strict' )
+	return bar
+end
+
+function test.strictBad2()
+	require( 'strict' )
+	bar = "foo"
+end
+
 test.loadData = {}
 
 function test.loadData.get( ... )
@@ -218,179 +234,308 @@ function test.loadData.rawset()
 	return d1.str, d2.str, d3.str
 end
 
+test.loadJsonData = {}
+
+function test.loadJsonData.get( ... )
+	local d = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	for i = 1, select( '#', ... ) do
+		local k = select( i, ... )
+		d = d[k]
+	end
+	return d
+end
+
+function test.loadJsonData.set( v, ... )
+	local d = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	local n = select( '#', ... )
+	for i = 1, n - 1 do
+		local k = select( i, ... )
+		d = d[k]
+	end
+	d[select( n, ... )] = v
+	return d[select( n, ... )]
+end
+
+function test.loadJsonData.iterate( func )
+	local d = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	local ret = {}
+	for k, v in func( d.table ) do
+		ret[k] = v
+	end
+	return ret
+end
+
+function test.loadJsonData.setmetatable()
+	local d = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	setmetatable( d, {} )
+	return 'setmetatable succeeded'
+end
+
+function test.loadJsonData.rawset()
+	-- We can't easily prevent rawset (and it's not worth trying to redefine
+	-- it), but we can make sure it doesn't affect other instances of the data
+	local d1 = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	local d2 = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	rawset( d1, 'str', 'ugh' )
+	local d3 = mw.loadJsonData( 'Module:CommonTests-data.json' )
+	return d1.str, d2.str, d3.str
+end
+
+function test.loadJsonData.error( name )
+	mw.loadJsonData( name )
+end
+
 return testframework.getTestProvider( {
 	{ name = 'clone', func = test.clone1,
-	  expect = { true },
+		expect = { true },
 	},
 	{ name = 'clone table', func = test.clone2,
-	  expect = { true },
+		expect = { true },
 	},
 	{ name = 'clone table then modify', func = test.clone2b,
-	  expect = { false, { 2 }, nil, 'b' },
+		expect = { false, { 2 }, nil, 'b' },
 	},
 	{ name = 'clone table with metatable', func = test.clone3,
-	  expect = { true },
+		expect = { true },
 	},
 	{ name = 'clone recursive table', func = test.clone4,
-	  expect = { true },
+		expect = { true },
 	},
 
 	{ name = 'setfenv global', func = test.setfenv1,
-	  expect = "'setfenv' cannot set the global environment, it is protected",
+		expect = "'setfenv' cannot set the global environment, it is protected",
 	},
 	{ name = 'setfenv invalid level', func = test.setfenv2,
-	  expect = "'setfenv' cannot set an environment at a level greater than 10",
+		expect = "'setfenv' cannot set an environment at a level greater than 10",
 	},
 	{ name = 'setfenv invalid environment', func = test.setfenv3,
-	  expect = "'setfenv' cannot set the requested environment, it is protected",
+		expect = "'setfenv' cannot set the requested environment, it is protected",
 	},
 	{ name = 'setfenv on unprotected past protected', func = test.setfenv4,
-	  expect = { 'ok' },
+		expect = { 'ok' },
 	},
 	{ name = 'setfenv from inside protected', func = test.setfenv5,
-	  expect = { 'ok' },
+		expect = { 'ok' },
 	},
 	{ name = 'setfenv protected function', func = test.setfenv6,
-	  expect = "'setfenv' cannot be called on a protected function",
+		expect = "'setfenv' cannot be called on a protected function",
 	},
 	{ name = 'setfenv on a non-function', func = test.setfenv7,
-	  expect = "'setfenv' can only be called with a function or integer as the first argument",
+		expect = "'setfenv' can only be called with a function or integer as the first argument",
 	},
 
 	{ name = 'getfenv(1)', func = test.getfenv1,
-	  expect = { 'ok' },
+		expect = { 'ok' },
 	},
 	{ name = 'getfenv(0)', func = test.getfenv2,
-	  expect = "'getfenv' cannot get the global environment",
+		expect = "'getfenv' cannot get the global environment",
 	},
 	{ name = 'getfenv with tail call', func = test.getfenv3,
-	  expect = "no function environment for tail call",
+		expect = "no function environment for tail call",
 	},
 
 	{ name = 'Not quite too many expensive function calls',
-	  func = test.executeExpensiveCalls, args = { 10 },
-	  expect = { 'Did not error out' }
+		func = test.executeExpensiveCalls, args = { 10 },
+		expect = { 'Did not error out' }
 	},
 
 	{ name = 'Too many expensive function calls',
-	  func = test.executeExpensiveCalls, args = { 11 },
-	  expect = 'too many expensive function calls'
+		func = test.executeExpensiveCalls, args = { 11 },
+		expect = 'too many expensive function calls'
 	},
 
 	{ name = 'string metatable is hidden', func = test.stringMetatableHidden1,
-	  expect = { nil }
+		expect = { nil }
 	},
 
 	{ name = 'string is not string metatable', func = test.stringMetatableHidden2,
-	  expect = { nil }
+		expect = { nil }
 	},
 
 	{ name = 'pairs with __pairs',
-	  func = pairs, args = { pairs_test_table },
-	  expect = { 1, 2, 3 },
+		func = pairs, args = { pairs_test_table },
+		expect = { 1, 2, 3 },
 	},
 
 	{ name = 'ipairs with __ipairs',
-	  func = ipairs, args = { pairs_test_table },
-	  expect = { 4, 5, 6 },
+		func = ipairs, args = { pairs_test_table },
+		expect = { 4, 5, 6 },
 	},
 
 	{ name = 'package.loaded does not leak references to out-of-environment objects',
-	  func = test.noLeaksViaPackageLoaded,
-	  expect = { 'ok' },
+		func = test.noLeaksViaPackageLoaded,
+		expect = { 'ok' },
+	},
+
+	{ name = 'strict on good code raises no errors',
+		func = test.strictGood,
+		expect = { 'bar' },
+	},
+	{ name = 'strict on code reading from a global errors',
+		func = test.strictBad1,
+		expect = "variable 'bar' is not declared",
+	},
+	{ name = 'strict on code setting from a global errors',
+		func = test.strictBad2,
+		expect = "assign to undeclared variable 'bar'",
 	},
 
 	{ name = 'mw.loadData, returning non-table',
-	  func = mw.loadData, args = { 'Module:CommonTests-data-fail1' },
-	  expect = "Module:CommonTests-data-fail1 returned string, table expected",
+		func = mw.loadData, args = { 'Module:CommonTests-data-fail1' },
+		expect = "Module:CommonTests-data-fail1 returned string, table expected",
 	},
 	{ name = 'mw.loadData, containing function',
-	  func = mw.loadData, args = { 'Module:CommonTests-data-fail2' },
-	  expect = "data for mw.loadData contains unsupported data type 'function'",
+		func = mw.loadData, args = { 'Module:CommonTests-data-fail2' },
+		expect = "data for mw.loadData contains unsupported data type 'function'",
 	},
 	{ name = 'mw.loadData, containing table-with-metatable',
-	  func = mw.loadData, args = { 'Module:CommonTests-data-fail3' },
-	  expect = "data for mw.loadData contains a table with a metatable",
+		func = mw.loadData, args = { 'Module:CommonTests-data-fail3' },
+		expect = "data for mw.loadData contains a table with a metatable",
 	},
 	{ name = 'mw.loadData, containing function as key',
-	  func = mw.loadData, args = { 'Module:CommonTests-data-fail4' },
-	  expect = "data for mw.loadData contains unsupported data type 'function'",
+		func = mw.loadData, args = { 'Module:CommonTests-data-fail4' },
+		expect = "data for mw.loadData contains unsupported data type 'function'",
 	},
 	{ name = 'mw.loadData, containing table-with-metatable as key',
-	  func = mw.loadData, args = { 'Module:CommonTests-data-fail5' },
-	  expect = "data for mw.loadData contains a table as a key",
+		func = mw.loadData, args = { 'Module:CommonTests-data-fail5' },
+		expect = "data for mw.loadData contains a table as a key",
 	},
 	{ name = 'mw.loadData, getter (true)',
-	  func = test.loadData.get, args = { 'true' },
-	  expect = { true }
+		func = test.loadData.get, args = { 'true' },
+		expect = { true }
 	},
 	{ name = 'mw.loadData, getter (false)',
-	  func = test.loadData.get, args = { 'false' },
-	  expect = { false }
+		func = test.loadData.get, args = { 'false' },
+		expect = { false }
 	},
 	{ name = 'mw.loadData, getter (NaN)',
-	  func = test.loadData.get, args = { 'NaN' },
-	  expect = { 0/0 }
+		func = test.loadData.get, args = { 'NaN' },
+		expect = { 0/0 }
 	},
 	{ name = 'mw.loadData, getter (inf)',
-	  func = test.loadData.get, args = { 'inf' },
-	  expect = { 1/0 }
+		func = test.loadData.get, args = { 'inf' },
+		expect = { 1/0 }
 	},
 	{ name = 'mw.loadData, getter (num)',
-	  func = test.loadData.get, args = { 'num' },
-	  expect = { 12.5 }
+		func = test.loadData.get, args = { 'num' },
+		expect = { 12.5 }
 	},
 	{ name = 'mw.loadData, getter (str)',
-	  func = test.loadData.get, args = { 'str' },
-	  expect = { 'foo bar' }
+		func = test.loadData.get, args = { 'str' },
+		expect = { 'foo bar' }
 	},
 	{ name = 'mw.loadData, getter (table.2)',
-	  func = test.loadData.get, args = { 'table', 2 },
-	  expect = { 'two' }
+		func = test.loadData.get, args = { 'table', 2 },
+		expect = { 'two' }
 	},
 	{ name = 'mw.loadData, getter (t.t.t.t.str)',
-	  func = test.loadData.get, args = { 't', 't', 't', 't', 'str' },
-	  expect = { 'foo bar' }
+		func = test.loadData.get, args = { 't', 't', 't', 't', 'str' },
+		expect = { 'foo bar' }
 	},
 	{ name = 'mw.loadData, getter recursion',
-	  func = test.loadData.recursion,
-	  expect = { true, true, true },
+		func = test.loadData.recursion,
+		expect = { true, true, true },
 	},
 	{ name = 'mw.loadData, pairs',
-	  func = test.loadData.iterate, args = { pairs },
-	  expect = { { 'one', 'two', 'three', foo = 'bar' } },
+		func = test.loadData.iterate, args = { pairs },
+		expect = { { 'one', 'two', 'three', foo = 'bar' } },
 	},
 	{ name = 'mw.loadData, ipairs',
-	  func = test.loadData.iterate, args = { ipairs },
-	  expect = { { 'one', 'two', 'three' } },
+		func = test.loadData.iterate, args = { ipairs },
+		expect = { { 'one', 'two', 'three' } },
 	},
 	{ name = 'mw.loadData, setmetatable',
-	  func = test.loadData.setmetatable,
-	  expect = "cannot change a protected metatable"
+		func = test.loadData.setmetatable,
+		expect = "cannot change a protected metatable"
 	},
 	{ name = 'mw.loadData, setter (1)',
-	  func = test.loadData.set, args = { 'ugh', 'str' },
-	  expect = "table from mw.loadData is read-only",
+		func = test.loadData.set, args = { 'ugh', 'str' },
+		expect = "table from mw.loadData is read-only",
 	},
 	{ name = 'mw.loadData, setter (2)',
-	  func = test.loadData.set, args = { 'ugh', 'table', 2 },
-	  expect = "table from mw.loadData is read-only",
+		func = test.loadData.set, args = { 'ugh', 'table', 2 },
+		expect = "table from mw.loadData is read-only",
 	},
 	{ name = 'mw.loadData, setter (3)',
-	  func = test.loadData.set, args = { 'ugh', 't' },
-	  expect = "table from mw.loadData is read-only",
+		func = test.loadData.set, args = { 'ugh', 't' },
+		expect = "table from mw.loadData is read-only",
 	},
 	{ name = 'mw.loadData, rawset',
-	  func = test.loadData.rawset,
-	  expect = { 'ugh', 'foo bar', 'foo bar' },
+		func = test.loadData.rawset,
+		expect = { 'ugh', 'foo bar', 'foo bar' },
+	},
+
+	{ name = 'mw.loadJsonData, getter (true)',
+		func = test.loadJsonData.get, args = { 'true' },
+		expect = { true }
+	},
+	{ name = 'mw.loadJsonData, getter (false)',
+		func = test.loadJsonData.get, args = { 'false' },
+		expect = { false }
+	},
+	{ name = 'mw.loadJsonData, getter (num)',
+		func = test.loadJsonData.get, args = { 'num' },
+		expect = { 12.5 }
+	},
+	{ name = 'mw.loadJsonData, getter (str)',
+		func = test.loadJsonData.get, args = { 'str' },
+		expect = { 'foo bar' }
+	},
+	{ name = 'mw.loadJsonData, getter (table.2)',
+		func = test.loadJsonData.get, args = { 'table', 2 },
+		expect = { 'two' }
+	},
+	{ name = 'mw.loadJsonData, pairs',
+		func = test.loadJsonData.iterate, args = { pairs },
+		expect = { { 'one', 'two', 'three' } },
+	},
+	{ name = 'mw.loadJsonData, ipairs',
+		func = test.loadJsonData.iterate, args = { ipairs },
+		expect = { { 'one', 'two', 'three' } },
+	},
+	{ name = 'mw.loadJsonData, setmetatable',
+		func = test.loadJsonData.setmetatable,
+		expect = "cannot change a protected metatable"
+	},
+	{ name = 'mw.loadJsonData, setter (1)',
+		func = test.loadJsonData.set, args = { 'ugh', 'str' },
+		expect = "table from mw.loadJsonData is read-only",
+	},
+	{ name = 'mw.loadJsonData, setter (2)',
+		func = test.loadJsonData.set, args = { 'ugh', 'table', 2 },
+		expect = "table from mw.loadJsonData is read-only",
+	},
+	{ name = 'mw.loadJsonData, setter (3)',
+		func = test.loadJsonData.set, args = { 'ugh', 't' },
+		expect = "table from mw.loadJsonData is read-only",
+	},
+	{ name = 'mw.loadJsonData, rawset',
+		func = test.loadJsonData.rawset,
+		expect = { 'ugh', 'foo bar', 'foo bar' },
+	},
+	{ name = 'mw.loadJsonData, bad title (1)',
+		func = test.loadJsonData.error, args = { 0 },
+		expect = "bad argument #1 to 'mw.loadJsonData' (string expected, got nil)",
+	},
+	{ name = 'mw.loadJsonData, bad title (2)',
+		func = test.loadJsonData.error, args = { "<invalid title>" },
+		expect = "bad argument #1 to 'mw.loadJsonData' ('<invalid title>' is not a valid JSON page)",
+	},
+	{ name = 'mw.loadJsonData, bad title (3)',
+		func = test.loadJsonData.error, args = { "Help:Foo" },
+		expect = "bad argument #1 to 'mw.loadJsonData' ('Help:Foo' is not a valid JSON page)",
+	},
+	{ name = 'mw.loadJsonData, bad title (4)',
+		func = test.loadJsonData.error, args = { "Help:Does not exist" },
+		expect = "bad argument #1 to 'mw.loadJsonData' ('Help:Does not exist' is not a valid JSON page)",
 	},
 
 	{ name = 'mw.addWarning',
-	  func = mw.addWarning, args = { 'warn' },
-	  expect = {},
+		func = mw.addWarning, args = { 'warn' },
+		expect = {},
 	},
 	{ name = 'mw.addWarning, bad type',
-	  func = mw.addWarning, args = { true },
-	  expect = "bad argument #1 to 'addWarning' (string expected)",
+		func = mw.addWarning, args = { true },
+		expect = "bad argument #1 to 'addWarning' (string expected)",
 	},
 } )

@@ -14,15 +14,16 @@ use SMW\ContentParser;
 use SMW\DataItemFactory;
 use SMW\DataUpdater;
 use SMW\DataValueFactory;
-use SMW\DeferredCallableUpdate;
 use SMW\DeferredTransactionalCallableUpdate;
 use SMW\EntityCache;
+use SMW\Factbox\FactboxText;
 use SMW\Listener\EventListener\EventHandler;
 use SMW\HierarchyLookup;
 use SMW\InMemoryPoolCache;
 use SMW\InTextAnnotationParser;
 use SMW\IteratorFactory;
 use SMW\Maintenance\MaintenanceFactory;
+use SMW\MediaWiki\Deferred\CallableUpdate;
 use SMW\MediaWiki\JobFactory;
 use SMW\MediaWiki\JobQueue;
 use SMW\MediaWiki\MediaWikiNsContentReader;
@@ -542,7 +543,7 @@ class ServicesFactory {
 	 *
 	 * @param callable $callback
 	 */
-	public function newDeferredCallableUpdate( callable $callback = null ) : DeferredCallableUpdate {
+	public function newDeferredCallableUpdate( callable $callback = null ) : CallableUpdate {
 
 		$deferredCallableUpdate = $this->containerBuilder->create(
 			'DeferredCallableUpdate',
@@ -652,6 +653,13 @@ class ServicesFactory {
 
 	public function newPostProcHandler( ParserOutput $parserOutput ) : PostProcHandler {
 		return $this->create( 'PostProcHandler', $parserOutput );
+	}
+
+	/**
+	 * @since 4.1.1
+	 */
+	public function getFactboxText() : FactboxText {
+		return $this->containerBuilder->singleton( 'FactboxText' );
 	}
 
 }

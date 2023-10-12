@@ -13,7 +13,6 @@
  *
  * @class
  * @extends ve.ui.LinkInspectorTool
- * @mixins ve.ui.MWEducationPopupTool
  *
  * @constructor
  * @param {OO.ui.ToolGroup} toolGroup
@@ -23,18 +22,19 @@ ve.ui.MWLinkInspectorTool = function VeUiMwLinkInspectorTool() {
 	// Parent constructor
 	ve.ui.MWLinkInspectorTool.super.apply( this, arguments );
 
-	// Mixin constructor
-	ve.ui.MWEducationPopupTool.call( this, {
-		title: ve.msg( 'visualeditor-linkinspector-educationpopup-title' ),
-		text: ve.msg( 'visualeditor-linkinspector-educationpopup-text' )
+	var educationPopup = new ve.ui.MWEducationPopupWidget( this.$link, {
+		popupTitle: ve.msg( 'visualeditor-linkinspector-educationpopup-title' ),
+		popupText: mw.message( 'visualeditor-linkinspector-educationpopup-text' ).parseDom(),
+		popupImage: 'link',
+		trackingName: 'link'
 	} );
+
+	this.$link.after( educationPopup.$element );
 };
 
 /* Inheritance */
 
 OO.inheritClass( ve.ui.MWLinkInspectorTool, ve.ui.LinkInspectorTool );
-
-OO.mixinClass( ve.ui.MWLinkInspectorTool, ve.ui.MWEducationPopupTool );
 
 /* Static Properties */
 

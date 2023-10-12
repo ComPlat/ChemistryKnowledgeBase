@@ -205,8 +205,8 @@ class refreshChemFormIndex extends Maintenance
             if ($this->hasOption("onlyexplink") && strpos($text, '#experimentlink:') === false) {
                 return;
             }
-            $parser = new Parser();
-            $parser->parse($text, $title, new ParserOptions());
+            $parser = clone MediaWikiServices::getInstance()->getParser();
+            $parser->parse($text, $title, new ParserOptions(User::newSystemUser()));
             $mcs = new \DIQA\ChemExtension\MultiContentSave();
             $mcs->parseContentAndUpdateIndex($text, $title, false);
             print "\nrefresh:\t" . $title->getPrefixedText();

@@ -68,6 +68,18 @@ ve.ce.Node.static.removeEmptyLastChildOnEnter = false;
 ve.ce.Node.static.isMultiline = null;
 
 /**
+ * Whether a node can take the cursor when its surface is focused
+ *
+ * When set to false, this will prevent the selection from being placed in
+ * any of the node's descendant ContentBranchNodes.
+ *
+ * @static
+ * @property {boolean}
+ * @inheritable
+ */
+ve.ce.Node.static.autoFocus = true;
+
+/**
  * Whether a node traps the cursor when active, e.g. in table cells
  *
  * @static
@@ -75,15 +87,6 @@ ve.ce.Node.static.isMultiline = null;
  * @inheritable
  */
 ve.ce.Node.static.trapsCursor = false;
-
-/**
- * Command to execute when Enter is pressed while this node is selected, or when the node is double-clicked.
- *
- * @static
- * @property {string|null}
- * @inheritable
- */
-ve.ce.Node.static.primaryCommandName = null;
 
 /* Static Methods */
 
@@ -288,6 +291,15 @@ ve.ce.Node.prototype.isMultiline = function () {
 	} else {
 		return !this.root || this.getRoot().getSurface().getSurface().isMultiline();
 	}
+};
+
+/**
+ * Check if the node can take the cursor when its surface is focused
+ *
+ * @return {boolean} Node can be take the cursor
+ */
+ve.ce.Node.prototype.autoFocus = function () {
+	return this.constructor.static.autoFocus;
 };
 
 /**

@@ -1,374 +1,903 @@
 <?php
 
-/**
- * @covers DisplayTitleHooks::onHtmlPageLinkRendererBegin
- * @covers DisplayTitleHooks::onSelfLinkBegin
- * @group Database
- */
-class DisplayTitleTest extends MediaWikiTestCase {
+namespace MediaWiki\Extension\DisplayTitle\Tests;
 
-	public function setUp() : void {
+use CommentStoreComment;
+use MediaWikiIntegrationTestCase;
+use ParserOptions;
+use RequestContext;
+use Title;
+use WikitextContent;
+
+/**
+ * @covers \MediaWiki\Extension\DisplayTitle\DisplayTitleHooks::onHtmlPageLinkRendererBegin
+ * @covers \MediaWiki\Extension\DisplayTitle\DisplayTitleHooks::onSelfLinkBegin
+ * @group Database
+ *
+ * Elephant Page = regular content page (no display title)
+ * Redirect To Elephant Page = redirect to Elephant Page
+ * User:Elephant Page = user page (no display title)
+ * Snake Page = self link page (no display title)
+ * Dingo Page = regular content page (display title)
+ * Redirect To Dingo Page = redirect to Dingo Page
+ * User:Dingo Page = user page (display title)
+ * Sable Page = self link page (display title)
+ */
+class DisplayTitleTest extends MediaWikiIntegrationTestCase {
+
+	public function setUp(): void {
 		parent::setUp();
 		$this->setMwGlobals( 'wgAllowDisplayTitle', true );
 		$this->setMwGlobals( 'wgRestrictDisplayTitle', false );
+		RequestContext::getMain()->setTitle( Title::newFromText( 'Main Page' ) );
 	}
 
 	/**
-	 * @dataProvider provideTestData
+	 * @dataProvider provideTestLinks
 	 */
-	public function testParse( $testName, $pageName, $linkText, $testPages ) {
-		$testPage = $testPages[0];
+	public function testLinks( $testName, $titleText, $wikitext, $extraPages, $expectedLinkText ) {
+		Title::clearCaches();
+		$wikiPageFactory = $this->getServiceContainer()->getWikiPageFactory();
 
-		for ( end( $testPages ); key( $testPages ) !== null; prev( $testPages ) ) {
-			$page = current( $testPages );
-			if ( !$page['selfLink'] ) {
-				$name = $page['name'];
-				$redirectName = $page['redirectName'];
-				$displaytitle = $page['displaytitle'];
-				$this->createTestPage( $name, $redirectName, $displaytitle );
-			}
+		$user = $this->getTestSysop()->getUser();
+		foreach ( $extraPages as $extraTitle => $extraWikitext ) {
+			$page = $wikiPageFactory->newFromTitle( Title::newFromText( $extraTitle ) );
+			$updater = $page->newPageUpdater( $user );
+			$updater->setContent( 'main', new WikitextContent( $extraWikitext ) );
+			$updater->saveRevision(
+				CommentStoreComment::newUnsavedComment( 'new test page' ),
+				EDIT_AUTOSUMMARY
+			);
 		}
 
-		$expectedHtml = $this->getExpectedHtml( $pageName, $linkText, $testPages );
+		$title = Title::newFromText( $titleText );
+		$content = new WikitextContent( $wikitext );
+		$parserOptions = new ParserOptions( $user );
+		$parserOptions->setRemoveComments( true );
+		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
+		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
+		$actual = $parserOutput->getText();
 
-		$actualHtml = $this->getActualHtml(
-			$testPage['selfLink'] ? $testPage['name'] : 'Test Page', $pageName,
-			$linkText );
+		$this->assertStringContainsString( '>' . $expectedLinkText . '</a>', $actual, $testName );
+	}
 
-		$this->assertStringContainsString( $expectedHtml, $actualHtml, $testName );
+	public function provideTestLinks() {
+		// link to content page without display title
+		$extraPages = [
+			'Elephant Page' => 'Content'
+		];
+
+		yield [
+			'Link to page without display title, no link text',
+			'Test Page',
+			'[[Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, lower case page title, no link text',
+			'Test Page',
+			'[[elephant Page]]',
+			$extraPages,
+			'elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, fragment, no link text',
+			'Test Page',
+			'[[Elephant Page#Fragment]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, page name link text',
+			'Test Page',
+			'[[Elephant Page|Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, page name with underscores link text',
+			'Test Page',
+			'[[Elephant Page|Elephant_Page]]',
+			$extraPages,
+			'Elephant_Page'
+		];
+
+		yield [
+			'Link to page without display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[elephant Page|Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[elephant Page|elephant Page]]',
+			$extraPages,
+			'elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, lowercase page name link text',
+			'Test Page',
+			'[[Elephant Page|elephant Page]]',
+			$extraPages,
+			'elephant Page'
+		];
+
+		yield [
+			'Link to page without display title, other link text',
+			'Test Page',
+			'[[Elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Link to page without display title, lowercase page name, other link text',
+			'Test Page',
+			'[[elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		// link to redirect to content page without display title
+		$extraPages = [
+			'Elephant Page' => 'Content',
+			'Redirect To Elephant Page' => '#REDIRECT [[Elephant Page]]'
+		];
+
+		yield [
+			'Redirect to page without display title, no link text',
+			'Test Page',
+			'[[Redirect To Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, lower case page title, no link text',
+			'Test Page',
+			'[[redirect To Elephant Page]]',
+			$extraPages,
+			'redirect To Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, fragment, no link text',
+			'Test Page',
+			'[[Redirect To Elephant Page#Fragment]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, page name link text',
+			'Test Page',
+			'[[Redirect To Elephant Page|Redirect To Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, page name with underscores link text',
+			'Test Page',
+			'[[Redirect To Elephant Page|Redirect_To_Elephant_Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[redirect To Elephant Page|Redirect To Elephant Page]]',
+			$extraPages,
+			'Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[redirect To Elephant Page|redirect To Elephant Page]]',
+			$extraPages,
+			'redirect To Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, lowercase page name link text',
+			'Test Page',
+			'[[Redirect To Elephant Page|redirect To Elephant Page]]',
+			$extraPages,
+			'redirect To Elephant Page'
+		];
+
+		yield [
+			'Redirect to page without display title, other link text',
+			'Test Page',
+			'[[Redirect To Elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Redirect to page without display title, lowercase page name, other link text',
+			'Test Page',
+			'[[redirect To Elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		// link to user page without display title
+		$extraPages = [
+			'User:Elephant Page' => 'Content'
+		];
+
+		yield [
+			'Link to user page without display title, no link text',
+			'Test Page',
+			'[[User:Elephant Page]]',
+			$extraPages,
+			'User:Elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, lower case page title, no link text',
+			'Test Page',
+			'[[User:elephant Page]]',
+			$extraPages,
+			'User:elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, fragment, no link text',
+			'Test Page',
+			'[[User:Elephant Page#Fragment]]',
+			$extraPages,
+			'User:Elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, page name link text',
+			'Test Page',
+			'[[User:Elephant Page|User:Elephant Page]]',
+			$extraPages,
+			'User:Elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, page name with underscores link text',
+			'Test Page',
+			'[[User:Elephant Page|User:Elephant_Page]]',
+			$extraPages,
+			'User:Elephant_Page'
+		];
+
+		yield [
+			'Link to user page without display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[User:elephant Page|User:Elephant Page]]',
+			$extraPages,
+			'User:Elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[User:elephant Page|User:elephant Page]]',
+			$extraPages,
+			'User:elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, lowercase page name link text',
+			'Test Page',
+			'[[User:Elephant Page|User:elephant Page]]',
+			$extraPages,
+			'User:elephant Page'
+		];
+
+		yield [
+			'Link to user page without display title, other link text',
+			'Test Page',
+			'[[User:Elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Link to user page without display title, lowercase page name, other link text',
+			'Test Page',
+			'[[User:elephant Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		// link to content page with display title
+		$extraPages = [
+			'Dingo Page' => '{{DISPLAYTITLE:Zebra}}'
+		];
+
+		yield [
+			'Link to page with display title, no link text',
+			'Test Page',
+			'[[Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to page with display title, lower case page title, no link text',
+			'Test Page',
+			'[[dingo Page]]',
+			$extraPages,
+			'dingo Page'
+		];
+
+		yield [
+			'Link to page with display title, fragment, no link text',
+			'Test Page',
+			'[[Dingo Page#Fragment]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to page with display title, page name link text',
+			'Test Page',
+			'[[Dingo Page|Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to page with display title, page name with underscores link text',
+			'Test Page',
+			'[[Dingo Page|Dingo_Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to page with display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[dingo Page|Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to page with display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[dingo Page|dingo Page]]',
+			$extraPages,
+			'dingo Page'
+		];
+
+		yield [
+			'Link to page with display title, lowercase page name link text',
+			'Test Page',
+			'[[Dingo Page|dingo Page]]',
+			$extraPages,
+			'dingo Page'
+		];
+
+		yield [
+			'Link to page with display title, other link text',
+			'Test Page',
+			'[[Dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Link to page with display title, lowercase page name, other link text',
+			'Test Page',
+			'[[dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		// link to redirect to content page with display title
+		$extraPages = [
+			'Dingo Page' => '{{DISPLAYTITLE:Zebra}}',
+			'Redirect To Dingo Page' => '#REDIRECT [[Dingo Page]]'
+		];
+
+		yield [
+			'Redirect to page with display title, no link text',
+			'Test Page',
+			'[[Redirect To Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Redirect to page with display title, lower case page title, no link text',
+			'Test Page',
+			'[[redirect To Dingo Page]]',
+			$extraPages,
+			'redirect To Dingo Page'
+		];
+
+		yield [
+			'Redirect to page with display title, fragment, no link text',
+			'Test Page',
+			'[[Redirect To Dingo Page#Fragment]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Redirect to page with display title, page name link text',
+			'Test Page',
+			'[[Redirect To Dingo Page|Redirect To Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Redirect to page with display title, page name with underscores link text',
+			'Test Page',
+			'[[Redirect To Dingo Page|Redirect_To_Dingo_Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Redirect to page with display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[redirect To Dingo Page|Redirect To Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Redirect to page with display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[redirect To Dingo Page|redirect To Dingo Page]]',
+			$extraPages,
+			'redirect To Dingo Page'
+		];
+
+		yield [
+			'Redirect to page with display title, lowercase page name link text',
+			'Test Page',
+			'[[Redirect To Dingo Page|redirect To Dingo Page]]',
+			$extraPages,
+			'redirect To Dingo Page'
+		];
+
+		yield [
+			'Redirect to page with display title, other link text',
+			'Test Page',
+			'[[Redirect To Dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Redirect to page with display title, lowercase page name, other link text',
+			'Test Page',
+			'[[redirect To Dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		// link to user page with display title
+		$extraPages = [
+			'User:Dingo Page' => '{{DISPLAYTITLE:Zebra}}'
+		];
+
+		yield [
+			'Link to user page with display title, no link text',
+			'Test Page',
+			'[[User:Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to user page with display title, lower case page title, no link text',
+			'Test Page',
+			'[[User:dingo Page]]',
+			$extraPages,
+			'User:dingo Page'
+		];
+
+		yield [
+			'Link to user page with display title, fragment, no link text',
+			'Test Page',
+			'[[User:Dingo Page#Fragment]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to user page with display title, page name link text',
+			'Test Page',
+			'[[User:Dingo Page|User:Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to user page with display title, page name with underscores link text',
+			'Test Page',
+			'[[User:Dingo Page|User:Dingo_Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to user page with display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[User:dingo Page|User:Dingo Page]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to user page with display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[User:dingo Page|User:dingo Page]]',
+			$extraPages,
+			'User:dingo Page'
+		];
+
+		yield [
+			'Link to user page with display title, lowercase page name link text',
+			'Test Page',
+			'[[User:Dingo Page|User:dingo Page]]',
+			$extraPages,
+			'User:dingo Page'
+		];
+
+		yield [
+			'Link to user page with display title, other link text',
+			'Test Page',
+			'[[User:Dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
+
+		yield [
+			'Link to user page with display title, lowercase page name, other link text',
+			'Test Page',
+			'[[User:dingo Page|Coyote]]',
+			$extraPages,
+			'Coyote'
+		];
 	}
 
 	/**
-	 * Create a test page.
-	 * @param string $name The page name
-	 * @param string|null $redirectName The page name of the page this page is
-	 *	redirecting to
-	 * @param string|null $displaytitle The page displaytitle (ignored if page
-	 *	is a redirect)
+	 * @dataProvider provideTestSelfLinks
 	 */
-	private function createTestPage( $name, $redirectName, $displaytitle ) {
-		$title = Title::newFromText( $name );
-		$page = new WikiPage( $title );
-		if ( $redirectName !== null ) {
-			$wikitext = '#REDIRECT [[' . $redirectName . ']]';
-		} else {
-			$wikitext = 'This is a test';
-			if ( $displaytitle !== null ) {
-				$wikitext .= "{{DISPLAYTITLE:$displaytitle}}";
-			}
-		}
-		$page->doEditContent( new WikitextContent( $wikitext ), '' );
+	public function testSelfLinks( $testName, $titleText, $wikitext, $expectedLinkText ) {
+		Title::clearCaches();
+		$wikiPageFactory = $this->getServiceContainer()->getWikiPageFactory();
+
+		$user = $this->getTestSysop()->getUser();
+		$title = Title::newFromText( $titleText );
+		$content = new WikitextContent( $wikitext );
+
+		$page = $wikiPageFactory->newFromTitle( $title );
+		$updater = $page->newPageUpdater( $user );
+		$updater->setContent( 'main', $content );
+		$updater->saveRevision(
+			CommentStoreComment::newUnsavedComment( 'new test page' ),
+			EDIT_AUTOSUMMARY
+		);
+
+		$parserOptions = new ParserOptions( $user );
+		$parserOptions->setRemoveComments( true );
+		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
+		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
+		$actual = $parserOutput->getText();
+
+		$this->assertStringContainsString( '>' . $expectedLinkText . '</a>', $actual, $testName );
+	}
+
+	public function provideTestSelfLinks() {
+		// self link to content page without display title
+
+		yield [
+			'Self link to page without display title, no link text',
+			'Snake Page',
+			'[[Snake Page]]',
+			'Snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, lower case page title, no link text',
+			'Snake Page',
+			'[[snake Page]]',
+			'snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, fragment, no link text',
+			'Snake Page',
+			'[[Snake Page#Fragment]]',
+			'Snake Page#Fragment'
+		];
+
+		yield [
+			'Self link to page without display title, fragment only, no link text',
+			'Snake Page',
+			'[[#Fragment]]',
+			'#Fragment'
+		];
+
+		yield [
+			'Self link to page without display title, page name link text',
+			'Snake Page',
+			'[[Snake Page|Snake Page]]',
+			'Snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, page name with underscores link text',
+			'Snake Page',
+			'[[Snake Page|Snake_Page]]',
+			'Snake_Page'
+		];
+
+		yield [
+			'Self link to page without display title, lowercase page name, page name link text',
+			'Test Page',
+			'[[snake Page|Snake Page]]',
+			'Snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'[[snake Page|snake Page]]',
+			'snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, lowercase page name link text',
+			'Snake Page',
+			'[[Snake Page|snake Page]]',
+			'snake Page'
+		];
+
+		yield [
+			'Self link to page without display title, other link text',
+			'Snake Page',
+			'[[Snake Page|Coyote]]',
+			'Coyote'
+		];
+
+		yield [
+			'Self link to page without display title, lowercase page name, other link text',
+			'Test Page',
+			'[[snake Page|Coyote]]',
+			'Coyote'
+		];
+
+		// self link to content page with display title
+
+		yield [
+			'Self link to page with display title, no link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page]]',
+			'Zebra'
+		];
+
+		yield [
+			'Self link to page with display title, lower case page title, no link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[sable Page]]',
+			'sable Page'
+		];
+
+		yield [
+			'Self link to page with display title, fragment, no link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page#Fragment]]',
+			'Zebra'
+		];
+
+		yield [
+			'Self link to page with display title, fragment only, no link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[#Fragment]]',
+			'#Fragment'
+		];
+
+		yield [
+			'Self link to page with display title, page name link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page|Sable Page]]',
+			'Zebra'
+		];
+
+		yield [
+			'Self link to page with display title, page name with underscores link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page|Sable_Page]]',
+			'Zebra'
+		];
+
+		yield [
+			'Self link to page with display title, lowercase page name, page name link text',
+			'Test Page',
+			'{{DISPLAYTITLE:Zebra}}[[sable Page|Sable Page]]',
+			'Zebra'
+		];
+
+		yield [
+			'Self link to page with display title, lowercase page name, lowercase page name link text',
+			'Test Page',
+			'{{DISPLAYTITLE:Zebra}}[[sable Page|sable Page]]',
+			'sable Page'
+		];
+
+		yield [
+			'Self link to page with display title, lowercase page name link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page|sable Page]]',
+			'sable Page'
+		];
+
+		yield [
+			'Self link to page with display title, other link text',
+			'Sable Page',
+			'{{DISPLAYTITLE:Zebra}}[[Sable Page|Coyote]]',
+			'Coyote'
+		];
+
+		yield [
+			'Self link to page with display title, lowercase page name, other link text',
+			'Test Page',
+			'{{DISPLAYTITLE:Zebra}}[[sable Page|Coyote]]',
+			'Coyote'
+		];
 	}
 
 	/**
-	 * Get expected HTML for test.
-	 * @param string $pageName The name of the page in the test
-	 * @param string|null $linkText The link text
-	 * @param array $testPages The array of information about the test pages
-	 * @return string
+	 * @dataProvider provideTestCategoryLinks
 	 */
-	private function getExpectedHtml( $pageName, $linkText, $testPages ) {
-		$name = $testPages[0]['name'];
-		if ( $testPages[0]['selfLink'] ) {
-			$displaytitle = $testPages[0]['displaytitle'];
-			if ( $linkText === null || $linkText === $name ||
-				( $displaytitle !== null && str_replace( '_', ' ', $linkText ) === $name ) ) {
-				if ( $pageName === $this->lcfirstPageName( $name ) &&
-					$linkText === null ) {
-					$linkText = $pageName;
-				} elseif ( $displaytitle !== null ) {
-					$linkText = $displaytitle;
-				} elseif ( $linkText === null ) {
-					$linkText = $name;
-				}
-			}
-			$html = <<<EOT
-<a class="mw-selflink selflink">$linkText</a>
-EOT;
-		} else {
-			$isRedirect = $testPages[0]['redirectName'] !== null;
-			$title = Title::newFromText( $name );
-			$url = $title->getLocalURL();
-			if ( $linkText === null || $linkText === $name ||
-				str_replace( '_', ' ', $linkText ) === $name ) {
-				if ( $pageName === $this->lcfirstPageName( $name ) &&
-					$linkText === null && !$this->isCategory( $pageName ) ) {
-						// Override display title if first letter is lowercase
-						// unless its a category, because categories correct
-						// their cases before they make a linkrender request.
-						$linkText = $pageName;
-				} else {
-					if ( $isRedirect ) {
-						$displaytitle = $testPages[1]['displaytitle'];
-					} else {
-						$displaytitle = $testPages[0]['displaytitle'];
-					}
-					if ( $displaytitle === null ) {
-						if ( $isRedirect ) {
-							$linkText = $testPages[1]['name'];
-						} elseif ( $linkText === null ) {
-							$linkText = $name;
-						}
-						if ( $this->isCategory( $pageName ) ) {
-							// Category links are not namespace prefixed
-							$linkText = substr( $name, strlen( 'Category:' ) );
-						}
-					} else {
-						$linkText = $displaytitle;
-					}
-				}
-			}
-			if ( $isRedirect ) {
-				$redirectClass = ' class="mw-redirect"';
-			} else {
-				$redirectClass = '';
-			}
-			$html = <<<EOT
-<a href="$url"$redirectClass title="$name">$linkText</a>
-EOT;
+	public function testCategoryLinks( $testName, $titleText, $wikitext, $extraPages, $expectedLinkText ) {
+		Title::clearCaches();
+		$wikiPageFactory = $this->getServiceContainer()->getWikiPageFactory();
+
+		$user = $this->getTestSysop()->getUser();
+		foreach ( $extraPages as $extraTitle => $extraWikitext ) {
+			$page = $wikiPageFactory->newFromTitle( Title::newFromText( $extraTitle ) );
+			$updater = $page->newPageUpdater( $user );
+			$updater->setContent( 'main', new WikitextContent( $extraWikitext ) );
+			$updater->saveRevision(
+				CommentStoreComment::newUnsavedComment( 'new test page' ),
+				EDIT_AUTOSUMMARY
+			);
 		}
-		return $html;
+
+		$title = Title::newFromText( $titleText );
+		$context = new RequestContext();
+		$context->setTitle( $title );
+		$context->setUser( $user );
+		$output = $context->getOutput();
+		$output->addWikiTextAsContent( $wikitext );
+		$links = $output->getCategoryLinks();
+		// there is only one link in these cases, but it's wrapped up in a 2d array
+		$actual = array_values( array_values( $links )[0] )[0];
+
+		$this->assertStringContainsString( '>' . $expectedLinkText . '</a>', $actual, $testName );
+	}
+
+	public function provideTestCategoryLinks() {
+		// link to category page without display title
+		$extraPages = [
+			'Category:Elephant Category' => 'Content'
+		];
+
+		yield [
+			'Link to category page without display title, no link text',
+			'Test Page',
+			'[[Category:Elephant Category]]',
+			$extraPages,
+			'Elephant Category'
+		];
+
+		yield [
+			'Link to category page without display title, lower case page title, no link text',
+			'Test Page',
+			'[[Category:elephant Category]]',
+			$extraPages,
+			'Elephant Category'
+		];
+
+		// link to category page with display title
+		$extraPages = [
+			'Category:Dingo Category' => '{{DISPLAYTITLE:Zebra}}'
+		];
+
+		yield [
+			'Link to category page with display title, no link text',
+			'Test Page',
+			'[[Category:Dingo Category]]',
+			$extraPages,
+			'Zebra'
+		];
+
+		yield [
+			'Link to category page with display title, lower case page title, no link text',
+			'Test Page',
+			'[[Category:dingo Category]]',
+			$extraPages,
+			'Zebra'
+		];
 	}
 
 	/**
-	 * Get actual HTML for test.
-	 * @param string $testPageName The name of the test page
-	 * @param string $pageName The name of the page in the test
-	 * @param string|null $linkText The link text
-	 * @return string
+	 * @dataProvider provideTestNoFollowRedirect
 	 */
-	private function getActualHtml( $testPageName, $pageName, $linkText ) {
-		$wikitext = '[[';
-		if ( $pageName === null ) {
-			$wikitext .= $testPageName;
-		} else {
-			$wikitext .= $pageName;
-		}
-		if ( $linkText !== null && !$this->isCategory( $pageName ) ) {
-			$wikitext .= '|' . $linkText;
-		}
-		$wikitext .= ']]';
-		$title = Title::newFromText( $testPageName );
-		if ( !$this->isCategory( $pageName ) ) {
-			// get html for rendered link
-			$content = new WikitextContent( $wikitext );
-			$parserOptions = new ParserOptions( $this->getTestUser()->getUser() );
-			$parserOptions->setRemoveComments( true );
-			$parserOutput = $content->getParserOutput( $title, null, $parserOptions );
-			$html = $parserOutput->getText();
-		} else {
-			// get html for category link
-			$page = WikiPage::factory( $title );
-			$context = new RequestContext();
-			$context->setTitle( $title );
-			$context->setUser( $this->getTestUser()->getUser() );
-			$output = $context->getOutput();
-			$output->addWikiTextAsContent( $wikitext );
-			$links = $output->getCategoryLinks();
-			// there is only one link in these cases, but it's wrapped up in a 2d array
-			$html = array_values( array_values( $links )[0] )[0];
+	public function testNoFollowRedirect( $testName, $wikitext ) {
+		$this->setMwGlobals( 'wgDisplayTitleFollowRedirects', false );
+		Title::clearCaches();
+		$wikiPageFactory = $this->getServiceContainer()->getWikiPageFactory();
+
+		$extraPages = [
+			'Dingo Page' => '{{DISPLAYTITLE:Zebra}}',
+			'Redirect To Dingo Page' => '#REDIRECT [[Dingo Page]]'
+		];
+
+		$user = $this->getTestSysop()->getUser();
+		foreach ( $extraPages as $extraTitle => $extraWikitext ) {
+			$page = $wikiPageFactory->newFromTitle( Title::newFromText( $extraTitle ) );
+			$updater = $page->newPageUpdater( $user );
+			$updater->setContent( 'main', new WikitextContent( $extraWikitext ) );
+			$updater->saveRevision(
+				CommentStoreComment::newUnsavedComment( 'new test page' ),
+				EDIT_AUTOSUMMARY
+			);
 		}
 
-		return $html;
+		$title = Title::newFromText( 'Test Page' );
+		$content = new WikitextContent( $wikitext );
+		$parserOptions = new ParserOptions( $user );
+		$parserOptions->setRemoveComments( true );
+		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
+		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
+		$actual = $parserOutput->getText();
+
+		$this->assertStringNotContainsString( '>Zebra</a>', $actual, $testName );
 	}
 
-	/** @var array[] */
-	public $tests = [];
-
-	public function provideTestData() {
-		$pageWithoutDisplaytitle = [
-			'name' => 'Page without displaytitle',
-			'redirectName' => null,
-			'displaytitle' => null,
-			'selfLink' => false
+	public function provideTestNoFollowRedirect() {
+		// link to redirect to content page with display title
+		yield [
+			'Redirect to page with display title, no link text',
+			'[[Redirect To Dingo Page]]'
 		];
 
-		$pageWithDisplaytitle = [
-			'name' => 'Page with displaytitle',
-			'redirectName' => null,
-			'displaytitle' => 'My displaytitle',
-			'selfLink' => false
+		yield [
+			'Redirect to page with display title, fragment, no link text',
+			'[[Redirect To Dingo Page#Fragment]]'
 		];
 
-		$redirectToPageWithoutDisplaytitle = [
-			'name' => 'Redirect to page without displaytitle',
-			'redirectName' => 'Page without displaytitle',
-			'displaytitle' => null,
-			'selfLink' => false
+		yield [
+			'Redirect to page with display title, page name link text',
+			'[[Redirect To Dingo Page|Redirect To Dingo Page]]'
 		];
 
-		$redirectToPageWithDisplaytitle = [
-			'name' => 'Redirect to page with displaytitle',
-			'redirectName' => 'Page with displaytitle',
-			'displaytitle' => null,
-			'selfLink' => false
+		yield [
+			'Redirect to page with display title, page name with underscores link text',
+			'[[Redirect To Dingo Page|Redirect_To_Dingo_Page]]'
 		];
 
-		$pageWithoutDisplaytitleWithSelfLink = [
-			'name' => 'Page without displaytitle',
-			'redirectName' => null,
-			'displaytitle' => null,
-			'selfLink' => true
+		yield [
+			'Redirect to page with display title, lowercase page name, page name link text',
+			'[[redirect To Dingo Page|Redirect To Dingo Page]]'
 		];
-
-		$pageWithDisplaytitleWithSelfLink = [
-			'name' => 'Page with displaytitle',
-			'redirectName' => null,
-			'displaytitle' => 'My displaytitle',
-			'selfLink' => true
-		];
-
-		$userPageWithoutDisplaytitle = [
-			'name' => 'User:Page without displaytitle',
-			'redirectName' => null,
-			'displaytitle' => null,
-			'selfLink' => false
-		];
-
-		$userPageWithDisplaytitle = [
-			'name' => 'User:Page with displaytitle',
-			'redirectName' => null,
-			'displaytitle' => 'My displaytitle',
-			'selfLink' => false
-		];
-
-		$categoryPageWithoutDisplaytitle = [
-			'name' => 'Category:Category without displaytitle',
-			'redirectName' => null,
-			'displaytitle' => null,
-			'selfLink' => false
-		];
-
-		$categoryPageWithDisplaytitle = [
-			'name' => 'Category:Category with displaytitle',
-			'redirectName' => null,
-			'displaytitle' => 'My displaytitle',
-			'selfLink' => false
-		];
-
-		$this->addTests( [
-			$pageWithoutDisplaytitle
-			] );
-		$this->addTests( [
-			$pageWithDisplaytitle
-			] );
-		$this->addTests( [
-			$redirectToPageWithoutDisplaytitle,
-			$pageWithoutDisplaytitle
-			] );
-		$this->addTests( [
-			$redirectToPageWithDisplaytitle,
-			$pageWithDisplaytitle
-			] );
-		$this->addTests( [
-			$pageWithoutDisplaytitleWithSelfLink
-			] );
-		$this->addTests( [
-			$pageWithDisplaytitleWithSelfLink
-			] );
-		$this->addTests( [
-			$userPageWithoutDisplaytitle
-			] );
-		$this->addTests( [
-			$userPageWithDisplaytitle
-			] );
-		$this->addTests( [
-			$categoryPageWithoutDisplaytitle
-			] );
-		$this->addTests( [
-			$categoryPageWithDisplaytitle
-			] );
-
-		return $this->tests;
-	}
-
-	private function isCategory( $pageName ) {
-		return substr( $pageName, 0, strlen( 'Category:' ) ) === 'Category:';
-	}
-
-	private function lcfirstPageName( $name ) {
-		$pieces = explode( ':', $name );
-		if ( count( $pieces ) > 1 ) {
-			return $pieces[0] . ':' . lcfirst( $pieces[1] );
-		} else {
-			return lcfirst( $name );
-		}
-	}
-
-	/**
-	 * Add tests for a given test page to the array of tests.
-	 * @param array $testPages The array of test pages
-	 */
-	private function addTests( $testPages ) {
-		$name = $testPages[0]['name'];
-		$lcname = $this->lcfirstPageName( $name );
-		$uname = str_replace( ' ', '_', $name );
-
-		$test = [];
-		$test['testName'] = "Link to $name, no link text";
-		$test['pageName'] = $name;
-		$test['linkText'] = null;
-		$test['testPages'] = $testPages;
-		$this->tests[] = $test;
-
-		$test = [];
-		$test['testName'] = "Link to $name, lcfirst page name, no link text";
-		$test['pageName'] = $lcname;
-		$test['linkText'] = null;
-		$test['testPages'] = $testPages;
-		$this->tests[] = $test;
-
-		// Categories use sorting keys instead of link text
-		if ( !$this->isCategory( $name ) ) {
-			$test = [];
-			$test['testName'] = "Link to $name, page name link text";
-			$test['pageName'] = $name;
-			$test['linkText'] = $name;
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] = "Link to $name, page name with underscores link text";
-			$test['pageName'] = $name;
-			$test['linkText'] = $uname;
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] = "Link to $name, lcfirst page name, page name link text";
-			$test['pageName'] = $lcname;
-			$test['linkText'] = $name;
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] = "Link to $name, lcfirst page name link text";
-			$test['pageName'] = $name;
-			$test['linkText'] = $lcname;
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] =
-				"Link to $name, lcfirst page name, lcfirst page name link text";
-			$test['pageName'] = $lcname;
-			$test['linkText'] = $lcname;
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] = "Link to $name, link text";
-			$test['pageName'] = $name;
-			$test['linkText'] = 'abc';
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-
-			$test = [];
-			$test['testName'] = "Link to $name, lcfirst page name, link text";
-			$test['pageName'] = $lcname;
-			$test['linkText'] = 'abc';
-			$test['testPages'] = $testPages;
-			$this->tests[] = $test;
-		}
 	}
 }

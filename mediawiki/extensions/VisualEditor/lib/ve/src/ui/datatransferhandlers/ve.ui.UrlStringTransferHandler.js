@@ -80,14 +80,13 @@ ve.ui.UrlStringTransferHandler.static.matchFunction = function ( item ) {
  * @inheritdoc
  */
 ve.ui.UrlStringTransferHandler.prototype.process = function () {
-	var links, html, doc, result,
-		surface = this.surface,
+	var surface = this.surface,
 		store = surface.getModel().getDocument().getStore(),
 		linkAction = ve.ui.actionFactory.create( 'link', surface ),
 		data = this.item.getAsString();
 
+	var links;
 	switch ( this.item.type ) {
-
 		case 'text/uri-list':
 			// text/uri-list has embedded comments; remove them before
 			// autolinking.  In theory the embedded comments can be
@@ -104,8 +103,8 @@ ve.ui.UrlStringTransferHandler.prototype.process = function () {
 			// be extracted from the 'text/html' version of the item.
 			// Let's try that.
 			if ( this.item.data.htmlStringData ) {
-				html = this.item.data.htmlStringData;
-				doc = ve.createDocumentFromHtml( html );
+				var html = this.item.data.htmlStringData;
+				var doc = ve.createDocumentFromHtml( html );
 				links = $.makeArray( doc.querySelectorAll( 'a[href]' ) )
 					.map( function ( a ) {
 						return { href: a.href, title: a.textContent };
@@ -128,10 +127,9 @@ ve.ui.UrlStringTransferHandler.prototype.process = function () {
 	}
 
 	// Create linked text.
-	result = [];
+	var result = [];
 	links.forEach( function ( link ) {
-		var i,
-			annotation = linkAction.getLinkAnnotation( link.href ),
+		var annotation = linkAction.getLinkAnnotation( link.href ),
 			annotationSet = new ve.dm.AnnotationSet( store, store.hashAll( [
 				annotation
 			] ) ),
@@ -144,7 +142,7 @@ ve.ui.UrlStringTransferHandler.prototype.process = function () {
 		}
 
 		ve.dm.Document.static.addAnnotationsToData( content, annotationSet );
-		for ( i = 0; i < content.length; i++ ) {
+		for ( var i = 0; i < content.length; i++ ) {
 			result.push( content[ i ] );
 		}
 	} );

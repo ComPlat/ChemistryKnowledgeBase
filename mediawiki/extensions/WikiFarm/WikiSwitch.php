@@ -13,7 +13,7 @@
  *  - einen neuen leeren SOLR core erzeugen
  *  - und ein Eintrag in die interwiki-Tabelle schreiben ?? (nur wenn sich Wikis gegenseitig referenzieren)
  */
-$wgSharedDB = "chemmain";
+$wgSharedDB = "chemmain_139";
 $wgSharedTables[] = 'wiki_farm';
 $wgSharedTables[] = 'wiki_farm_user';
 if (!isset($_SERVER['REQUEST_URI'])) {
@@ -31,7 +31,7 @@ if (is_null($wiki)) {
 
 global $SOLRcore;
 if ($wiki == 'main') {
-    $wgDBname = "chemmain";
+    $wgDBname = "chemmain_139";
     $wgScriptPath = "/main/mediawiki";
     $wgArticlePath = '/main/mediawiki/$1';
     $wgUploadDirectory = "/var/www/html/main/images";

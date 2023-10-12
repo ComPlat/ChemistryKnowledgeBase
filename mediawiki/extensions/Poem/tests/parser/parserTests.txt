@@ -201,7 +201,7 @@ L3
 </p>
 </div>
 !! html/parsoid
-<div class="poem" typeof="mw:Extension/poem" about="#mwt4" data-parsoid='{"dsr":[0,92,2,2]}' data-mw='{"name":"poem","attrs":{},"body":{"extsrc":"\nL1\nL2\n&lt;nowiki>\n&lt;ref>Not a ref&lt;/ref>\nfoo &amp;amp; bar\n[[Not a link]]\n&lt;/nowiki>\nL3\n"}}'><p>L1<br/>
+<div class="poem" typeof="mw:Extension/poem" about="#mwt4" data-mw='{"name":"poem","attrs":{},"body":{"extsrc":"\nL1\nL2\n&lt;nowiki>\n&lt;ref>Not a ref&lt;/ref>\nfoo &amp;amp; bar\n[[Not a link]]\n&lt;/nowiki>\nL3\n"}}'><p>L1<br/>
 L2<br/>
 <br/>
 &lt;ref>Not a ref&lt;/ref><br/>
@@ -223,7 +223,7 @@ UTF-8 sequences in extension tags (T231945)
 </p>
 </div>
 !! html/parsoid
-<div class="poem" typeof="mw:Extension/poem" about="#mwt4" data-mw='{"name":"poem","attrs":{},"body":{"extsrc":"\n{{1x|ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ}}\n"}}'><p about="#mwt2" typeof="mw:Transclusion" data-parsoid='{"pi":[[{"k":"1"}]]}' data-mw='{"parts":[{"template":{"target":{"wt":"1x","href":"./Template:1x"},"params":{"1":{"wt":"ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ"}},"i":0}}]}'>ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ</p></div>
+<div class="poem" typeof="mw:Extension/poem" about="#mwt4" data-mw='{"name":"poem","attrs":{},"body":{"extsrc":"\n{{1x|ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ}}\n"}}'><p><span about="#mwt2" typeof="mw:Transclusion" data-parsoid='{"pi":[[{"k":"1"}]]}' data-mw='{"parts":[{"template":{"target":{"wt":"1x","href":"./Template:1x"},"params":{"1":{"wt":"ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ"}},"i":0}}]}'>ၶိူဝ်းႁဝ်ၶိူဝ်းရႃႇၸႃႇ</span></p></div>
 !! end
 
 !! test
@@ -237,14 +237,28 @@ Multi-line poems with indentation use spans and breaks correctly (T235709)
 !! html/php
 <div class="poem">
 <p><i>CONGREGATI</i><br />
-<span class="mw-poem-indented" style="display: inline-block; margin-left: 1em;"><b>EX TOTO ORBE</b></span><br />
-<span class="mw-poem-indented" style="display: inline-block; margin-left: 2em;"><i><b>MATHEMATICI</b></i></span>
+<span class="mw-poem-indented" style="display: inline-block; margin-inline-start: 1em;"><b>EX TOTO ORBE</b></span><br />
+<span class="mw-poem-indented" style="display: inline-block; margin-inline-start: 2em;"><i><b>MATHEMATICI</b></i></span>
 </p>
 </div>
 !! html/parsoid
 <div class="poem" typeof="mw:Extension/poem" about="#mwt3" data-mw="{&quot;name&quot;:&quot;poem&quot;,&quot;attrs&quot;:{},&quot;body&quot;:{&quot;extsrc&quot;:&quot;\n''CONGREGATI''\n:'''EX TOTO ORBE'''\n::'''''MATHEMATICI'''''\n&quot;}}"><p data-parsoid="{}"><i data-parsoid="{}">CONGREGATI</i><br data-parsoid='{"stx":"html","selfClose":true}'/>
-<span class="mw-poem-indented" style="display: inline-block; margin-left: 1em;" data-parsoid='{"stx":"html"}'><b data-parsoid="{}">EX TOTO ORBE</b></span><br data-parsoid='{"stx":"html","selfClose":true}'/>
-<span class="mw-poem-indented" style="display: inline-block; margin-left: 2em;" data-parsoid='{"stx":"html"}'><i data-parsoid="{}"><b data-parsoid="{}">MATHEMATICI</b></i></span></p></div>
+<span class="mw-poem-indented" style="display: inline-block; margin-inline-start: 1em;" data-parsoid='{"stx":"html"}'><b data-parsoid="{}">EX TOTO ORBE</b></span><br data-parsoid='{"stx":"html","selfClose":true}'/>
+<span class="mw-poem-indented" style="display: inline-block; margin-inline-start: 2em;" data-parsoid='{"stx":"html"}'><i data-parsoid="{}"><b data-parsoid="{}">MATHEMATICI</b></i></span></p></div>
+!! end
+
+!! test
+Indention syntax with no content
+!! wikitext
+<poem>
+::
+</poem>
+!! html/php
+<div class="poem">
+<dl><dd><dl><dd></dd></dl></dd></dl>
+</div>
+!! html/parsoid
+<div class="poem" typeof="mw:Extension/poem" about="#mwt3" data-mw='{"name":"poem","attrs":{},"body":{"extsrc":"\n::\n"}}'><dl><dd><dl><dd></dd></dl></dd></dl></div>
 !! end
 
 !! test

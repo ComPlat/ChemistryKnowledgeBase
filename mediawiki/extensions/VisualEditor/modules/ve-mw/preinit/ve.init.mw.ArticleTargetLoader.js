@@ -18,17 +18,22 @@
  * @singleton
  */
 ( function () {
-	var prefName, prefValue,
-		uri = new mw.Uri(),
-		namespaces = mw.config.get( 'wgNamespaceIds' ),
-		conf = mw.config.get( 'wgVisualEditorConfig' ),
+	var conf = mw.config.get( 'wgVisualEditorConfig' ),
 		pluginCallbacks = [],
 		modules = [ 'ext.visualEditor.articleTarget' ]
 			// Add modules from $wgVisualEditorPluginModules
 			.concat( conf.pluginModules.filter( mw.loader.getState ) );
 
+	var uri;
+	try {
+		uri = new mw.Uri();
+	} catch ( e ) {
+		// URI may not be parseable (T106244)
+		uri = false;
+	}
 	// Provide the new wikitext editor
 	if (
+		uri &&
 		conf.enableWikitext &&
 		(
 			mw.user.options.get( 'visualeditor-newwikitext' ) ||
@@ -39,6 +44,7 @@
 		modules.push( 'ext.visualEditor.mwwikitext' );
 	}
 
+	var namespaces = mw.config.get( 'wgNamespaceIds' );
 	// Load signature tool if *any* namespace supports it.
 	// It will be shown disabled on namespaces that don't support it.
 	if (
@@ -50,8 +56,8 @@
 	}
 
 	// Add preference modules
-	for ( prefName in conf.preferenceModules ) {
-		prefValue = mw.user.options.get( prefName );
+	for ( var prefName in conf.preferenceModules ) {
+		var prefValue = mw.user.options.get( prefName );
 		// Check "0" (T89513)
 		if ( prefValue && prefValue !== '0' ) {
 			modules.push( conf.preferenceModules[ prefName ] );
@@ -91,6 +97,7 @@
 		 * @return {jQuery.Promise} Promise resolved when the loading process is complete
 		 */
 		loadModules: function ( mode ) {
+			mw.hook( 've.loadModules' ).fire( this.addPlugin.bind( this ) );
 			ve.track( 'trace.moduleLoad.enter', { mode: mode } );
 			return mw.loader.using( modules )
 				.then( function () {
@@ -107,26 +114,19 @@
 		 * Creates an OOUI checkbox inside an inline field layout
 		 *
 		 * @param {Object[]} checkboxesDef Checkbox definitions from the API
+		 * @param {Object} [widgetConfig] Additional widget config
 		 * @return {Object} Result object with checkboxFields (OO.ui.FieldLayout[]) and
 		 *  checkboxesByName (keyed object of OO.ui.CheckboxInputWidget).
 		 */
-		createCheckboxFields: function ( checkboxesDef ) {
+		createCheckboxFields: function ( checkboxesDef, widgetConfig ) {
 			var checkboxFields = [],
 				checkboxesByName = {};
 
 			if ( checkboxesDef ) {
 				Object.keys( checkboxesDef ).forEach( function ( name ) {
-					var $label, checkbox,
-						options = checkboxesDef[ name ],
+					var options = checkboxesDef[ name ],
 						accesskey = null,
 						title = null;
-
-					// Non-checkbox fields are permitted in the 'checkboxes' definitions (since MW
-					// core 4fa7d4d7), but VE doesn't yet support them.
-					// @TODO Remove this and properly support watchlist expiry and other widgets.
-					if ( options.class !== undefined && options.class !== 'OOUI\\CheckboxInputWidget' ) {
-						return;
-					}
 
 					// The messages documented below are just the ones defined in core.
 					// Extensions may add other checkboxes.
@@ -148,22 +148,43 @@
 					// The following messages are used here:
 					// * minoredit
 					// * watchthis
-					$label = $( '<span>' ).append( mw.message( options[ 'label-message' ] ).parseDom() );
+					var $label = mw.message( options[ 'label-message' ] ).parseDom();
 
-					checkbox = new OO.ui.CheckboxInputWidget( {
+					var config = $.extend( {
 						accessKey: accesskey,
-						selected: options.default,
 						// The following classes are used here:
 						// * ve-ui-mwSaveDialog-checkbox-wpMinoredit
 						// * ve-ui-mwSaveDialog-checkbox-wpWatchthis
+						// * ve-ui-mwSaveDialog-checkbox-wpWatchlistExpiry
 						classes: [ 've-ui-mwSaveDialog-checkbox-' + name ]
-					} );
+					}, widgetConfig );
+
+					var checkbox;
+					switch ( options.class ) {
+						case 'OOUI\\DropdownInputWidget':
+							checkbox = new OO.ui.DropdownInputWidget( $.extend( config, {
+								value: options.default,
+								options: options.options
+							} ) );
+							break;
+
+						default:
+							checkbox = new OO.ui.CheckboxInputWidget( $.extend( config, {
+								selected: options.default
+							} ) );
+							break;
+					}
 
 					checkboxFields.push(
 						new OO.ui.FieldLayout( checkbox, {
 							align: 'inline',
-							label: $label.contents(),
-							title: title
+							label: $label,
+							title: title,
+							invisibleLabel: !!options.invisibleLabel,
+							// * ve-ui-mwSaveDialog-field-wpMinoredit
+							// * ve-ui-mwSaveDialog-field-wpWatchthis
+							// * ve-ui-mwSaveDialog-field-wpWatchlistExpiry
+							classes: [ 've-ui-mwSaveDialog-field-' + name ]
 						} )
 					);
 					checkboxesByName[ name ] = checkbox;
@@ -181,36 +202,36 @@
 		 *
 		 * @param {string} mode Target mode: 'visual' or 'source'
 		 * @param {string} pageName Page name to request, in prefixed DB key form (underscores instead of spaces)
-		 * @param {Object} [options] Options
+		 * @param {Object} [options]
 		 * @param {boolean} [options.sessionStore] Store result in session storage (by page+mode+section) for auto-save
 		 * @param {null|string} [options.section] Section to edit; number, 'T-'-prefixed, null or 'new' (currently just source mode)
 		 * @param {number} [options.oldId] Old revision ID. Current if omitted.
 		 * @param {string} [options.targetName] Optional target name for tracking
 		 * @param {boolean} [options.modified] The page was been modified before loading (e.g. in source mode)
 		 * @param {string} [options.wikitext] Wikitext to convert to HTML. The original document is fetched if undefined.
+		 * @param {string} [options.editintro] Name of a page to use as edit intro message
 		 * @param {string} [options.preload] Name of a page to use as preloaded content if pageName is empty
 		 * @param {Array} [options.preloadparams] Parameters to substitute into preload if it's used
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
 		requestPageData: function ( mode, pageName, options ) {
-			var sessionState, request, section, dataPromise, apiRequest, enableVisualSectionEditing;
-
 			options = options || {};
-			apiRequest = mode === 'source' ?
+			var apiRequest = mode === 'source' ?
 				this.requestWikitext.bind( this, pageName, options ) :
 				this.requestParsoidData.bind( this, pageName, options );
 
 			if ( options.sessionStore ) {
+				var sessionState;
 				try {
 					// ve.init.platform.getSessionObject is not available yet
 					sessionState = JSON.parse( mw.storage.session.get( 've-docstate' ) );
 				} catch ( e ) {}
 
 				if ( sessionState ) {
-					request = sessionState.request || {};
+					var request = sessionState.request || {};
 					// Check true section editing is in use
-					enableVisualSectionEditing = conf.enableVisualSectionEditing;
-					section = request.mode === 'source' || enableVisualSectionEditing === true || enableVisualSectionEditing === options.targetName ?
+					var enableVisualSectionEditing = conf.enableVisualSectionEditing;
+					var section = request.mode === 'source' || enableVisualSectionEditing === true || enableVisualSectionEditing === options.targetName ?
 						options.section : null;
 					// Check the requested page, mode and section match the stored one
 					if (
@@ -220,7 +241,7 @@
 						// NB we don't cache by oldid so that cached results can be recovered
 						// even if the page has been since edited
 					) {
-						dataPromise = $.Deferred().resolve( {
+						var dataPromise = $.Deferred().resolve( {
 							visualeditor: $.extend(
 								{ content: mw.storage.session.get( 've-dochtml' ) },
 								sessionState.response,
@@ -274,20 +295,19 @@
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
 		requestParsoidData: function ( pageName, options, noRestbase, noMetadata ) {
-			var start, apiXhr, restbaseXhr, apiPromise, restbasePromise, dataPromise, pageHtmlUrl, headers, data, abort,
-				section = options.section !== undefined ? options.section : null,
+			var section = options.section !== undefined ? options.section : null,
 				useRestbase = !noRestbase && ( conf.fullRestbaseUrl || conf.restbaseUrl ) && section === null,
 				switched = false,
 				fromEditedState = false;
 
 			options = options || {};
-			data = {
+			var data = {
 				action: 'visualeditor',
 				paction: useRestbase ? 'metadata' : 'parse',
 				page: pageName,
 				badetag: options.badetag,
 				uselang: mw.config.get( 'wgUserLanguage' ),
-				editintro: uri.query.editintro,
+				editintro: options.editintro,
 				preload: options.preload,
 				preloadparams: options.preloadparams,
 				formatversion: 2
@@ -301,9 +321,10 @@
 				data.oldid = options.oldId;
 			}
 			// Load DOM
-			start = ve.now();
+			var start = ve.now();
 			ve.track( 'trace.apiLoad.enter', { mode: 'visual' } );
 
+			var apiXhr, apiPromise;
 			if ( !useRestbase && options.wikitext !== undefined ) {
 				// Non-RESTBase custom wikitext parse
 				data.paction = 'parse';
@@ -322,7 +343,7 @@
 				}
 			}
 			if ( !apiPromise ) {
-				apiPromise = apiXhr.then( function ( data, jqxhr ) {
+				apiPromise = apiXhr.then( function ( response, jqxhr ) {
 					ve.track( 'trace.apiLoad.exit', { mode: 'visual' } );
 					ve.track( 'mwtiming.performance.system.apiLoad', {
 						bytes: require( 'mediawiki.String' ).byteLength( jqxhr.responseText ),
@@ -331,24 +352,26 @@
 						targetName: options.targetName,
 						mode: 'visual'
 					} );
-					if ( data.visualeditor ) {
-						data.visualeditor.switched = switched;
-						data.visualeditor.fromEditedState = fromEditedState;
+					if ( response.visualeditor ) {
+						response.visualeditor.switched = switched;
+						response.visualeditor.fromEditedState = fromEditedState;
 					}
-					return data;
+					return response;
 				} );
 			}
 
+			var dataPromise, abort;
 			if ( useRestbase ) {
 				ve.track( 'trace.restbaseLoad.enter', { mode: 'visual' } );
 
-				headers = {
-					// Should be synchronised with ApiVisualEditor.php
-					Accept: 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/2.0.0"',
+				var headers = {
+					// Should be synchronised with VisualEditorParsoidClient.php
+					Accept: 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/2.4.0"',
 					'Accept-Language': mw.config.get( 'wgVisualEditor' ).pageLanguageCode,
 					'Api-User-Agent': 'VisualEditor-MediaWiki/' + mw.config.get( 'wgVersion' )
 				};
 
+				var restbaseXhr, pageHtmlUrl;
 				// Convert specified Wikitext to HTML
 				if (
 					// wikitext can be an empty string
@@ -393,8 +416,8 @@
 						dataType: 'text'
 					} );
 				}
-				restbasePromise = restbaseXhr.then(
-					function ( data, status, jqxhr ) {
+				var restbasePromise = restbaseXhr.then(
+					function ( response, status, jqxhr ) {
 						ve.track( 'trace.restbaseLoad.exit', { mode: 'visual' } );
 						ve.track( 'mwtiming.performance.system.restbaseLoad', {
 							bytes: require( 'mediawiki.String' ).byteLength( jqxhr.responseText ),
@@ -402,7 +425,7 @@
 							targetName: options.targetName,
 							mode: 'visual'
 						} );
-						return [ data, jqxhr.getResponseHeader( 'etag' ) ];
+						return [ response, jqxhr.getResponseHeader( 'etag' ) ];
 					},
 					function ( xhr, code, _ ) {
 						if ( xhr.status === 404 ) {
@@ -452,7 +475,7 @@
 				// We can detect that case by `content` being empty, and not retry.
 				if ( useRestbase && resp.visualeditor.content && (
 					!resp.visualeditor.etag ||
-					!resp.visualeditor.etag.match( etagRegexp )
+					!etagRegexp.test( resp.visualeditor.etag )
 				) ) {
 					// Direct request to RESTBase returned a mangled or missing etag.
 					// Retry via the MediaWiki API.
@@ -476,15 +499,13 @@
 		 * @return {jQuery.Promise} Abortable promise resolved with a JSON object
 		 */
 		requestWikitext: function ( pageName, options ) {
-			var data, dataPromise;
-
 			options = options || {};
-			data = {
+			var data = {
 				action: 'visualeditor',
 				paction: 'wikitext',
 				page: pageName,
 				uselang: mw.config.get( 'wgUserLanguage' ),
-				editintro: uri.query.editintro,
+				editintro: options.editintro,
 				preload: options.preload,
 				preloadparams: options.preloadparams,
 				formatversion: 2
@@ -499,7 +520,7 @@
 				data.oldid = options.oldId;
 			}
 
-			dataPromise = new mw.Api().get( data );
+			var dataPromise = new mw.Api().get( data );
 			return dataPromise.then( function ( resp ) {
 				resp.veMode = 'source';
 				return resp;

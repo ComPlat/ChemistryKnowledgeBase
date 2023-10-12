@@ -6,9 +6,10 @@ use DBError;
 use Exception;
 use ResultWrapper;
 use RuntimeException;
-use SMW\ApplicationFactory;
 use SMW\Connection\ConnRef;
 use UnexpectedValueException;
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\ScopedCallback;
 
 /**
  * This adapter class covers MW DB specific operations. Changes to the
@@ -211,43 +212,6 @@ class Database {
 	}
 
 	/**
-	 * @see DatabaseBase::fetchObject
-	 *
-	 * @since 1.9
-	 *
-	 * @param ResultWrapper $res
-	 *
-	 * @return string
-	 */
-	public function fetchObject( $res ) {
-		return $this->connRef->getConnection( 'read' )->fetchObject( $res );
-	}
-
-	/**
-	 * @see DatabaseBase::numRows
-	 *
-	 * @since 1.9
-	 *
-	 * @param mixed $results
-	 *
-	 * @return integer
-	 */
-	public function numRows( $results ) {
-		return $this->connRef->getConnection( 'read' )->numRows( $results );
-	}
-
-	/**
-	 * @see DatabaseBase::freeResult
-	 *
-	 * @since 1.9
-	 *
-	 * @param ResultWrapper $res
-	 */
-	public function freeResult( $res ) {
-		$this->connRef->getConnection( 'read' )->freeResult( $res );
-	}
-
-	/**
 	 * @see DatabaseBase::select
 	 *
 	 * @since 1.9
@@ -308,6 +272,8 @@ class Database {
 	}
 
 	/**
+	 * Execute a given SQL query on the primary DB.
+	 *
 	 * @see DatabaseBase::query
 	 *
 	 * @since 1.9
@@ -320,10 +286,52 @@ class Database {
 	 * @throws RuntimeException
 	 */
 	public function query( $sql, $fname = __METHOD__, $ignoreException = false ) {
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
-		$connection = $this->connRef->getConnection( 'write' );
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$results = $this->executeQuery(
+			$this->connRef->getConnection( 'write' ),
+			$sql,
+			$fname,
+			$ignoreException
+		);
 
+		ScopedCallback::consume( $scope );
+
+		return $results;
+	}
+
+	/**
+	 * Execute a given SQL query on a read-only replica DB.
+	 *
+	 * @see IDatabase::query()
+	 * @since 4.0.0
+	 *
+	 * @param Query|string $sql
+	 * @param string $fname
+	 * @param false $ignoreException
+	 * @return bool|\Wikimedia\Rdbms\IResultWrapper
+	 * @throws Exception
+	 */
+	public function readQuery( $sql, $fname = __METHOD__, $ignoreException = false ) {
+		return $this->executeQuery(
+			$this->connRef->getConnection( 'read' ),
+			$sql,
+			$fname,
+			$ignoreException
+		);
+	}
+
+	/**
+	 * Execute a SQL query using the given DB connection handle.
+	 *
+	 * @param IDatabase $connection
+	 * @param Query|string $sql
+	 * @param $fname
+	 * @param $ignoreException
+	 * @return bool|\Wikimedia\Rdbms\IResultWrapper
+	 * @throws Exception
+	 */
+	private function executeQuery( IDatabase $connection, $sql, $fname, $ignoreException ) {
 		if ( $sql instanceof Query ) {
 			$sql = $sql->build();
 		}
@@ -382,7 +390,6 @@ class Database {
 
 		// State is only valid for a single transaction
 		$this->flags = false;
-		$this->transactionHandler->muteTransactionProfiler( false );
 
 		if ( $exception ) {
 			throw $exception;
@@ -455,7 +462,7 @@ class Database {
 		// https://github.com/wikimedia/mediawiki/commit/0a9c55bfd39e22828f2d152ab71789cef3b0897c#diff-278465351b7c14bbcadac82036080e9f
 		$safeseq = str_replace( "'", "''", $seqName );
 		$res = $this->connRef->getConnection( 'write' )->query( "SELECT nextval('$safeseq')" );
-		$row = $this->connRef->getConnection( 'read' )->fetchRow( $res );
+		$row = $res->fetchRow();
 
 		return $this->insertId = is_null( $row[0] ) ? null : (int)$row[0];
 	}
@@ -515,11 +522,11 @@ class Database {
 	 */
 	public function insert( $table, $rows, $fname = __METHOD__, $options = [] ) {
 
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
 		$res = $this->connRef->getConnection( 'write' )->insert( $table, $rows, $fname, $options );
 
-		$this->transactionHandler->muteTransactionProfiler( false );
+		ScopedCallback::consume( $scope );
 
 		return $res;
 	}
@@ -531,11 +538,11 @@ class Database {
 	 */
 	function update( $table, $values, $conds, $fname = __METHOD__, $options = [] ) {
 
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
 		$res = $this->connRef->getConnection( 'write' )->update( $table, $values, $conds, $fname, $options );
 
-		$this->transactionHandler->muteTransactionProfiler( false );
+		ScopedCallback::consume( $scope );
 
 		return $res;
 	}
@@ -547,11 +554,11 @@ class Database {
 	 */
 	public function upsert( $table, array $rows, $uniqueIndexes, array $set, $fname = __METHOD__ ) {
 
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
 		$res = $this->connRef->getConnection( 'write' )->upsert( $table, $rows, $uniqueIndexes, $set, $fname );
 
-		$this->transactionHandler->muteTransactionProfiler( false );
+		ScopedCallback::consume( $scope );
 
 		return $res;
 	}
@@ -563,11 +570,11 @@ class Database {
 	 */
 	public function delete( $table, $conds, $fname = __METHOD__ ) {
 
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
 		$res = $this->connRef->getConnection( 'write' )->delete( $table, $conds, $fname );
 
-		$this->transactionHandler->muteTransactionProfiler( false );
+		ScopedCallback::consume( $scope );
 
 		return $res;
 	}
@@ -579,11 +586,11 @@ class Database {
 	 */
 	public function replace( $table, $uniqueIndexes, $rows, $fname = __METHOD__ ) {
 
-		$this->transactionHandler->muteTransactionProfiler( true );
+		$scope = $this->transactionHandler->muteTransactionProfiler();
 
 		$res = $this->connRef->getConnection( 'write' )->replace( $table, $uniqueIndexes, $rows, $fname );
 
-		$this->transactionHandler->muteTransactionProfiler( false );
+		ScopedCallback::consume( $scope );
 
 		return $res;
 	}

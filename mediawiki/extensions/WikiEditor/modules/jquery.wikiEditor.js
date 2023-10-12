@@ -73,9 +73,8 @@
 		 * @return {boolean}
 		 */
 		isRequired: function ( module, requirement ) {
-			var req;
 			if ( typeof module.req !== 'undefined' ) {
-				for ( req in module.req ) {
+				for ( var req in module.req ) {
 					if ( module.req[ req ] === requirement ) {
 						return true;
 					}
@@ -99,10 +98,9 @@
 		 * @return {string}
 		 */
 		autoMsg: function ( object, property ) {
-			var i, p;
 			// Accept array of possible properties, of which the first one found will be used
 			if ( typeof property === 'object' ) {
-				for ( i in property ) {
+				for ( var i in property ) {
 					if ( property[ i ] in object || property[ i ] + 'Msg' in object ) {
 						property = property[ i ];
 						break;
@@ -112,7 +110,7 @@
 			if ( property in object ) {
 				return object[ property ];
 			} else if ( property + 'Msg' in object ) {
-				p = object[ property + 'Msg' ];
+				var p = object[ property + 'Msg' ];
 				if ( Array.isArray( p ) && p.length >= 2 ) {
 					return mw.message.apply( mw.message, p ).text();
 				} else {
@@ -137,10 +135,9 @@
 		 * @return {string}
 		 */
 		autoSafeMsg: function ( object, property ) {
-			var i, p;
 			// Accept array of possible properties, of which the first one found will be used
 			if ( typeof property === 'object' ) {
-				for ( i in property ) {
+				for ( var i in property ) {
 					if ( property[ i ] in object || property[ i ] + 'Msg' in object ) {
 						property = property[ i ];
 						break;
@@ -150,7 +147,7 @@
 			if ( property in object ) {
 				return object[ property ];
 			} else if ( property + 'Msg' in object ) {
-				p = object[ property + 'Msg' ];
+				var p = object[ property + 'Msg' ];
 				if ( Array.isArray( p ) && p.length >= 2 ) {
 					return mw.message.apply( mw.message, p ).escaped();
 				} else {
@@ -172,10 +169,8 @@
 		 * @return {Object}
 		 */
 		autoLang: function ( object ) {
-			var i, key;
-
-			for ( i = 0; i < fallbackChain.length; i++ ) {
-				key = fallbackChain[ i ];
+			for ( var i = 0; i < fallbackChain.length; i++ ) {
+				var key = fallbackChain[ i ];
 				if ( hasOwn.call( object, key ) ) {
 					return object[ key ];
 				}
@@ -192,22 +187,20 @@
 		 * @return {Object}
 		 */
 		autoIcon: function ( icon, path ) {
-			var i, key, src;
-
 			path = path || $.wikiEditor.imgPath;
 
-			for ( i = 0; i < fallbackChain.length; i++ ) {
-				key = fallbackChain[ i ];
+			for ( var i = 0; i < fallbackChain.length; i++ ) {
+				var key = fallbackChain[ i ];
 				if ( icon && hasOwn.call( icon, key ) ) {
-					src = icon[ key ];
+					var src = icon[ key ];
 
 					// Return a data URL immediately
-					if ( src.substr( 0, 5 ) === 'data:' ) {
+					if ( src.slice( 0, 5 ) === 'data:' ) {
 						return src;
 					}
 
 					// Prepend path if src is not absolute
-					if ( src.substr( 0, 7 ) !== 'http://' && src.substr( 0, 8 ) !== 'https://' && src[ 0 ] !== '/' ) {
+					if ( src.slice( 0, 7 ) !== 'http://' && src.slice( 0, 8 ) !== 'https://' && src[ 0 ] !== '/' ) {
 						src = path + src;
 					}
 					return src;
@@ -223,16 +216,13 @@
 	 * @return {jQuery}
 	 */
 	$.fn.wikiEditor = function () {
-		var context, hasFocus, cursorPos,
-			args, modules, module, extension, call;
-
 		/* Initialization */
 
 		// The wikiEditor context is stored in the element's data, so when this function gets called again we can pick up right
 		// where we left off
-		context = $( this ).data( 'wikiEditor-context' );
+		var context = $( this ).data( 'wikiEditor-context' );
 		// On first call, we need to set things up, but on all following calls we can skip right to the API handling
-		if ( !context || typeof context === 'undefined' ) {
+		if ( !context ) {
 
 			// Star filling the context with useful data - any jQuery selections, as usual should be named with a preceding $
 			context = {
@@ -268,35 +258,34 @@
 				 * @param data Either a string of the name of a module to add without any additional configuration parameters,
 				 * or an object with members keyed with module names and valued with configuration objects.
 				 */
-				addModule: function ( context, data ) {
-					var module, call,
-						modules = {};
+				addModule: function ( ctx, data ) {
+					var modules = {};
 					if ( typeof data === 'string' ) {
 						modules[ data ] = {};
 					} else if ( typeof data === 'object' ) {
 						modules = data;
 					}
-					for ( module in modules ) {
+					for ( var module in modules ) {
 						// Check for the existence of an available module with a matching name and a create function
 						if ( typeof module === 'string' && typeof $.wikiEditor.modules[ module ] !== 'undefined' ) {
 							// Extend the context's core API with this module's own API calls
 							if ( 'api' in $.wikiEditor.modules[ module ] ) {
-								for ( call in $.wikiEditor.modules[ module ].api ) {
+								for ( var call in $.wikiEditor.modules[ module ].api ) {
 									// Modules may not overwrite existing API functions - first come, first serve
-									if ( !( call in context.api ) ) {
-										context.api[ call ] = $.wikiEditor.modules[ module ].api[ call ];
+									if ( !( call in ctx.api ) ) {
+										ctx.api[ call ] = $.wikiEditor.modules[ module ].api[ call ];
 									}
 								}
 							}
 							// Activate the module on this context
 							if ( 'fn' in $.wikiEditor.modules[ module ] &&
 								'create' in $.wikiEditor.modules[ module ].fn &&
-								typeof context.modules[ module ] === 'undefined'
+								typeof ctx.modules[ module ] === 'undefined'
 							) {
 								// Add a place for the module to put it's own stuff
-								context.modules[ module ] = {};
+								ctx.modules[ module ] = {};
 								// Tell the module to create itself on the context
-								$.wikiEditor.modules[ module ].fn.create( context, modules[ module ] );
+								$.wikiEditor.modules[ module ].fn.create( ctx, modules[ module ] );
 							}
 						}
 					}
@@ -325,16 +314,10 @@
 				 * @return {boolean}
 				 */
 				trigger: function ( name, event ) {
-					var returnFromModules, module, ret;
-
 					// Event is an optional argument, but from here on out, at least the type field should be dependable
-					if ( typeof event === 'undefined' ) {
-						event = { type: 'custom' };
-					}
+					event = event || { type: 'custom' };
 					// Ensure there's a place for extra information to live
-					if ( typeof event.data === 'undefined' ) {
-						event.data = {};
-					}
+					event.data = event.data || {};
 
 					// Allow filtering to occur
 					if ( name in context.evt ) {
@@ -342,31 +325,23 @@
 							return false;
 						}
 					}
-					returnFromModules = null; // they return null by default
+					var returnFromModules = true;
 					// Pass the event around to all modules activated on this context
 
-					for ( module in context.modules ) {
+					for ( var module in context.modules ) {
 						if (
 							module in $.wikiEditor.modules &&
 							'evt' in $.wikiEditor.modules[ module ] &&
 							name in $.wikiEditor.modules[ module ].evt
 						) {
-							ret = $.wikiEditor.modules[ module ].evt[ name ]( context, event );
+							var ret = $.wikiEditor.modules[ module ].evt[ name ]( context, event );
 							if ( ret !== null ) {
 								// if 1 returns false, the end result is false
-								if ( returnFromModules === null ) {
-									returnFromModules = ret;
-								} else {
-									returnFromModules = returnFromModules && ret;
-								}
+								returnFromModules = returnFromModules && ret;
 							}
 						}
 					}
-					if ( returnFromModules !== null ) {
-						return returnFromModules;
-					} else {
-						return true;
-					}
+					return returnFromModules;
 				},
 
 				/**
@@ -394,14 +369,14 @@
 				 */
 				addView: function ( options ) {
 					// Adds a tab
-					function addTab( options ) {
+					function addTab( opts ) {
 						// Ensure that buttons and tabs are visible
 						context.$controls.show();
 						context.$tabs.show();
 						// Return the newly appended tab
 						return $( '<div>' )
-							.attr( 'rel', 'wikiEditor-ui-view-' + options.name )
-							.addClass( context.view === options.name ? 'current' : null )
+							.attr( 'rel', 'wikiEditor-ui-view-' + opts.name )
+							.addClass( context.view === opts.name ? 'current' : null )
 							.append( $( '<a>' )
 								.attr( 'tabindex', 0 )
 								.on( 'mousedown', function () {
@@ -418,14 +393,14 @@
 										context.$tabs.find( 'div' ).removeClass( 'current' );
 										$( this ).parent().addClass( 'current' );
 										$( this ).trigger( 'blur' );
-										if ( 'init' in options && typeof options.init === 'function' ) {
-											options.init( context );
+										if ( 'init' in opts && typeof opts.init === 'function' ) {
+											opts.init( context );
 										}
 										event.preventDefault();
 										return false;
 									}
 								} )
-								.text( $.wikiEditor.autoMsg( options, 'title' ) )
+								.text( $.wikiEditor.autoMsg( opts, 'title' ) )
 							)
 							.appendTo( context.$tabs );
 					}
@@ -436,6 +411,7 @@
 					// Add the tab for the view we were actually asked to add
 					addTab( options );
 					// Return newly appended view
+					// eslint-disable-next-line mediawiki/class-doc
 					return $( '<div>' )
 						.addClass( 'wikiEditor-ui-view wikiEditor-ui-view-' + options.name )
 						.hide()
@@ -467,29 +443,18 @@
 			};
 
 			/**
-			* Base UI Construction
-			*
-			* The UI is built from several containers, the outer-most being a div classed as "wikiEditor-ui". These containers
-			* provide a certain amount of "free" layout, but in some situations procedural layout is needed, which is performed
-			* as a response to the "resize" event.
-			*/
+			 * Base UI Construction
+			 *
+			 * The UI is built from several containers, the outer-most being a div classed as "wikiEditor-ui". These containers
+			 * provide a certain amount of "free" layout, but in some situations procedural layout is needed, which is performed
+			 * as a response to the "resize" event.
+			 */
 
-			// Assemble a temporary div to place over the wikiEditor while it's being constructed
-			/* Disabling our loading div for now
-			var $loader = $( '<div>' )
-				.addClass( 'wikiEditor-ui-loading' )
-				.append( $( '<span>' + mw.msg( 'wikieditor-loading' ) + '</span>' )
-					.css( 'marginTop', context.$textarea.height() / 2 ) );
-			*/
 			/* Preserving cursor and focus state, which will get lost due to wrapAll */
-			hasFocus = context.$textarea.is( ':focus' );
-			cursorPos = context.$textarea.textSelection( 'getCaretPosition', { startAndEnd: true } );
+			var hasFocus = context.$textarea.is( ':focus' );
+			var cursorPos = context.$textarea.textSelection( 'getCaretPosition', { startAndEnd: true } );
 			// Encapsulate the textarea with some containers for layout
 			context.$textarea
-			/* Disabling our loading div for now
-				.after( $loader )
-				.add( $loader )
-			*/
 				.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui' ) )
 				.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-view wikiEditor-ui-view-wikitext' ) )
 				.wrapAll( $( '<div>' ).addClass( 'wikiEditor-ui-left' ) )
@@ -507,13 +472,13 @@
 			context.$ui = context.$textarea.parent().parent().parent().parent().parent();
 			context.$wikitext = context.$textarea.parent().parent().parent().parent();
 			// Add in tab and button containers
-			context.$wikitext
-				.before(
-					$( '<div>' ).addClass( 'wikiEditor-ui-controls' )
-						.append( $( '<div>' ).addClass( 'wikiEditor-ui-tabs' ).hide() )
-						.append( $( '<div>' ).addClass( 'wikiEditor-ui-buttons' ) )
-				)
-				.before( $( '<div>' ).addClass( 'wikiEditor-ui-clear' ) );
+			context.$wikitext.before(
+				$( '<div>' ).addClass( 'wikiEditor-ui-controls' ).append(
+					$( '<div>' ).addClass( 'wikiEditor-ui-tabs' ).hide(),
+					$( '<div>' ).addClass( 'wikiEditor-ui-buttons' )
+				),
+				$( '<div>' ).addClass( 'wikiEditor-ui-clear' )
+			);
 			// Get references to some of the newly created containers
 			context.$controls = context.$ui.find( '.wikiEditor-ui-buttons' ).hide();
 			context.$buttons = context.$ui.find( '.wikiEditor-ui-buttons' );
@@ -521,8 +486,10 @@
 			// Clear all floating after the UI
 			context.$ui.after( $( '<div>' ).addClass( 'wikiEditor-ui-clear' ) );
 			// Attach a right container
-			context.$wikitext.append( $( '<div>' ).addClass( 'wikiEditor-ui-right' ) );
-			context.$wikitext.append( $( '<div>' ).addClass( 'wikiEditor-ui-clear' ) );
+			context.$wikitext.append(
+				$( '<div>' ).addClass( 'wikiEditor-ui-right' ),
+				$( '<div>' ).addClass( 'wikiEditor-ui-clear' )
+			);
 			// Attach a top container to the left pane
 			context.$wikitext.find( '.wikiEditor-ui-left' ).prepend( $( '<div>' ).addClass( 'wikiEditor-ui-top' ) );
 			// Setup the initial view
@@ -536,21 +503,21 @@
 		/* API Execution */
 
 		// Since javascript gives arguments as an object, we need to convert them so they can be used more easily
-		args = $.makeArray( arguments );
+		var args = $.makeArray( arguments );
 
 		// Dynamically setup core extensions for modules that are required
 		if ( args[ 0 ] === 'addModule' && typeof args[ 1 ] !== 'undefined' ) {
-			modules = args[ 1 ];
-			if ( typeof modules !== 'object' ) {
-				modules = {};
-				modules[ args[ 1 ] ] = '';
+			var modulesArg = args[ 1 ];
+			if ( typeof modulesArg !== 'object' ) {
+				modulesArg = {};
+				modulesArg[ args[ 1 ] ] = '';
 			}
-			for ( module in modules ) {
-				if ( module in $.wikiEditor.modules ) {
+			for ( var m in modulesArg ) {
+				if ( m in $.wikiEditor.modules ) {
 					// Activate all required core extensions on context
-					for ( extension in $.wikiEditor.extensions ) {
+					for ( var extension in $.wikiEditor.extensions ) {
 						if (
-							$.wikiEditor.isRequired( $.wikiEditor.modules[ module ], extension ) &&
+							$.wikiEditor.isRequired( $.wikiEditor.modules[ m ], extension ) &&
 							context.extensions.indexOf( extension ) === -1
 						) {
 							context.extensions[ context.extensions.length ] = extension;
@@ -565,9 +532,9 @@
 		// There would need to be some arguments if the API is being called
 		if ( args.length > 0 ) {
 			// Handle API calls
-			call = args.shift();
-			if ( call in context.api ) {
-				context.api[ call ]( context, typeof args[ 0 ] === 'undefined' ? {} : args[ 0 ] );
+			var callArg = args.shift();
+			if ( callArg in context.api ) {
+				context.api[ callArg ]( context, args[ 0 ] || {} );
 			}
 		}
 

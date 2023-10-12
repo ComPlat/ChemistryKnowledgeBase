@@ -5,11 +5,24 @@
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
-QUnit.module( 've.init.mw.DesktopArticleTarget', ve.test.utils.mwEnvironment );
+QUnit.module( 've.init.mw.DesktopArticleTarget', ve.test.utils.newMwEnvironment( {
+	config: {
+		wgVisualEditor: ve.extendObject( {}, mw.config.get( 'wgVisualEditor' ), {
+			pageLanguageCode: 'he',
+			pageLanguageDir: 'rtl'
+		} ),
+		wgVisualEditorConfig: ve.extendObject( {}, mw.config.get( 'wgVisualEditorConfig' ), {
+			// Disable welcome dialog
+			showBetaWelcome: false
+		} ),
+		wgAction: 'view',
+		wgNamespaceNumber: 0,
+		wgCanonicalNamespace: ''
+	}
+} ) );
 
-QUnit.test( 'init', function ( assert ) {
-	var
-		response = {
+QUnit.test( 'init', ( assert ) => {
+	const response = {
 			visualeditor: {
 				result: 'success',
 				notices: [
@@ -19,6 +32,7 @@ QUnit.test( 'init', function ( assert ) {
 						message: '<b>object notice</b> message'
 					}
 				],
+				copyrightWarning: '<div id="editpage-copywarn">Blah blah</div>',
 				checkboxesDef: {
 					wpMinoredit: {
 						id: 'wpMinoredit',
@@ -45,11 +59,6 @@ QUnit.test( 'init', function ( assert ) {
 					'tooltip-watch': 'Add this page to your watchlist',
 					watchthis: 'Watch this page'
 				},
-				templates: '<div class="templatesUsed"></div>',
-				links: {
-					missing: [],
-					known: 1
-				},
 				protectedClasses: '',
 				basetimestamp: '20161119005107',
 				starttimestamp: '20180831122319',
@@ -69,27 +78,23 @@ QUnit.test( 'init', function ( assert ) {
 							'<link rel="dc:isVersionOf" href="http://localhost/MediaWiki/core/index.php/Empty"/>' +
 							'<title>Empty</title>' +
 							'<base href="http://localhost/MediaWiki/core/index.php/"/>' +
-							'<link rel="stylesheet" href="//localhost/MediaWiki/core/load.php?modules=mediawiki.legacy.commonPrint%2Cshared%7Cmediawiki.skinning.content.parsoid%7Cmediawiki.skinning.interface%7Cskins.vector.styles%7Csite.styles%7Cext.cite.style%7Cext.cite.styles%7Cmediawiki.page.gallery.styles&amp;only=styles&amp;skin=vector"/><!--[if lt IE 9]><script src="//localhost/MediaWiki/core/load.php?modules=html5shiv&amp;only=scripts&amp;skin=vector&amp;sync=1"></script><script>html5.addElements(\'figure-inline\');</script><![endif]-->' +
+							'<link rel="stylesheet" href="//localhost/MediaWiki/core/load.php?modules=mediawiki.legacy.commonPrint%2Cshared%7Cmediawiki.skinning.content.parsoid%7Cmediawiki.skinning.interface%7Cskins.vector.styles%7Csite.styles%7Cext.cite.style%7Cext.cite.styles%7Cmediawiki.page.gallery.styles&amp;only=styles&amp;skin=vector"/>' +
 						'</head>' +
 						'<body id="mwAA" lang="he" class="mw-content-rtl sitedir-rtl rtl mw-body-content parsoid-body mediawiki mw-parser-output" dir="rtl">' +
 							'<section data-mw-section-id="0" id="mwAQ"></section>' +
 						'</body>' +
 					'</html>',
-				etag: '"1804/a4fc0409-ad18-11e8-9b45-dd8cefbedb6d"',
-				switched: false,
-				fromEditedState: false
+				etag: '"1804/a4fc0409-ad18-11e8-9b45-dd8cefbedb6d"'
 			}
 		},
 		target = new ve.init.mw.DesktopArticleTarget(),
 		dataPromise = ve.createDeferred().resolve( response ).promise(),
 		done = assert.async();
 
-	target.on( 'surfaceReady', function () {
+	target.on( 'surfaceReady', () => {
 		assert.strictEqual( target.getSurface().getModel().getDocument().getLang(), 'he', 'Page language is passed through from config' );
 		assert.strictEqual( target.getSurface().getModel().getDocument().getDir(), 'rtl', 'Page direction is passed through from config' );
-		mw.config.get( 'wgVisualEditor' ).pageLanguageCode = 'en';
-		mw.config.get( 'wgVisualEditor' ).pageLanguageDir = 'ltr';
-		target.activatingDeferred.then( function () {
+		target.activatingDeferred.then( async () => {
 			assert.equalDomElement(
 				target.actionsToolbar.tools.notices.noticeItems[ 0 ].$element[ 0 ],
 				$( '<div class="ve-ui-mwNoticesPopupTool-item"><b>HTML string notice</b> message</div>' )[ 0 ],
@@ -102,20 +107,52 @@ QUnit.test( 'init', function ( assert ) {
 				'Object notice message is passed through from API'
 			);
 			assert.strictEqual( target.actionsToolbar.tools.notices.noticeItems[ 1 ].type, 'object notice', 'Object notice type is passed through from API' );
-			target.destroy().then( function () {
-				done();
+
+			// Open the save dialog and examine it (this bypasses a bunch of stuff, and may fail in funny
+			// ways, but #showSaveDialog has many dependencies that I don't want to simulate here).
+			const dialogs = target.getSurface().getDialogs();
+			const instance = dialogs.openWindow( 'mwSave', target.getSaveDialogOpeningData() );
+			await instance.opened;
+			const dialog = dialogs.getCurrentWindow();
+			assert.equalDomElement(
+				dialog.$element.find( '#editpage-copywarn' )[ 0 ],
+				$( '<div id="editpage-copywarn">Blah blah</div>' )[ 0 ],
+				'Copyright warning message is passed through from API'
+			);
+			dialogs.closeWindow( 'mwSave' );
+			await instance.closed;
+
+			// Store doc state and examine it
+			target.storeDocState();
+			const storedData = JSON.parse( sessionStorage.getItem( 've-docstate' ) );
+			const ignoredKeys = {
+				// Not stored because it's always 'success'
+				result: true,
+				// Not stored because it's stored elsewhere
+				content: true,
+				// Not stored because if you're blocked, the editor opens in read-only mode (or doesn't open
+				// at all, on mobile), so we'll never have to restore from auto-save
+				blockinfo: true
+			};
+			Object.keys( response.visualeditor ).forEach( ( key ) => {
+				if ( !ignoredKeys[ key ] ) {
+					assert.deepEqual(
+						storedData.response[ key ],
+						response.visualeditor[ key ],
+						key + ' can be restored from auto-save data'
+					);
+				}
 			} );
+
+			await target.destroy();
+			done();
 		} );
 	} );
-	mw.config.get( 'wgVisualEditor' ).pageLanguageCode = 'he';
-	mw.config.get( 'wgVisualEditor' ).pageLanguageDir = 'rtl';
-	mw.config.get( 'wgVisualEditorConfig' ).showBetaWelcome = false;
 	target.activate( dataPromise );
 } );
 
-QUnit.test( 'compatibility', function ( assert ) {
-	var profile, matches, compatibility,
-		cases = [
+QUnit.test( 'compatibility', ( assert ) => {
+	const cases = [
 			{
 				msg: 'Unidentified browser',
 				userAgent: 'FooBar Browser Company Version 3.141',
@@ -164,21 +201,6 @@ QUnit.test( 'compatibility', function ( assert ) {
 			{
 				msg: 'Firefox 24',
 				userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
-				matches: [ 'supportedList' ]
-			},
-			{
-				msg: 'Iceweasel 9',
-				userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:9.0.1) Gecko/20100101 Firefox/9.0.1 Iceweasel/9.0.1',
-				matches: []
-			},
-			{
-				msg: 'Iceweasel 10',
-				userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0 Iceweasel/10.0',
-				matches: [ 'supportedList' ]
-			},
-			{
-				msg: 'Iceweasel 15',
-				userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1 Iceweasel/15.0.1',
 				matches: [ 'supportedList' ]
 			},
 			{
@@ -252,11 +274,6 @@ QUnit.test( 'compatibility', function ( assert ) {
 				matches: [ 'supportedList' ]
 			},
 			{
-				msg: 'BlackBerry',
-				userAgent: 'Mozilla/5.0 (BlackBerry; U; BlackBerry 9900; en) AppleWebKit/534.11+ (KHTML, like Gecko) Version/7.1.0.346 Mobile Safari/534.11+',
-				matches: []
-			},
-			{
 				msg: 'Amazon Silk desktop',
 				userAgent: 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_3; en-us; Silk/1.0.13.81_10003810) AppleWebKit/533.16 (KHTML, like Gecko) Version/5.0 Safari/533.16 Silk-Accelerated=true',
 				matches: []
@@ -268,16 +285,16 @@ QUnit.test( 'compatibility', function ( assert ) {
 			}
 		];
 
-	compatibility = {
+	const compatibility = {
 		supportedList: ve.init.mw.DesktopArticleTarget.static.compatibility.supportedList,
 		// TODO: Fix this mess when we split ve.init from ve.platform
 		unsupportedList: mw.libs.ve.unsupportedList
 	};
 
-	cases.forEach( function ( caseItem ) {
-		profile = $.client.profile( { userAgent: caseItem.userAgent, platform: '' } );
-		matches = [];
-		[ 'unsupportedList', 'supportedList' ].every( function ( list ) {
+	cases.forEach( ( caseItem ) => {
+		const profile = $.client.profile( { userAgent: caseItem.userAgent, platform: '' } ),
+			matches = [];
+		[ 'unsupportedList', 'supportedList' ].every( ( list ) => {
 			if ( $.client.test( compatibility[ list ], profile, true ) ) {
 				matches.push( list );
 				// Don't check supportedList if on unsupportedList

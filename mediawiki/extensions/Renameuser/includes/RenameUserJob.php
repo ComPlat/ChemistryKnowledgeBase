@@ -1,6 +1,12 @@
 <?php
 
+namespace MediaWiki\Extension\Renameuser;
+
+use InvalidArgumentException;
+use Job;
+use LogicException;
 use MediaWiki\MediaWikiServices;
+use Title;
 
 /**
  * Custom job to perform updates on tables in busier environments
@@ -14,12 +20,12 @@ use MediaWiki\MediaWikiServices;
  *   - logId     : The ID of the logging table row expected to exist if the rename was committed
  *
  * Additionally, one of the following groups of parameters must be set:
- * a) The timestamp based rename paramaters:
+ * a) The timestamp based rename parameters:
  *   - timestampColumn : The *_timestamp column
  *   - minTimestamp    : The minimum bound of the timestamp column range for this batch
  *   - maxTimestamp    : The maximum bound of the timestamp column range for this batch
  *   - uniqueKey       : A column that is unique (preferrably the PRIMARY KEY) [optional]
- * b) The unique key based rename paramaters:
+ * b) The unique key based rename parameters:
  *   - uniqueKey : A column that is unique (preferrably the PRIMARY KEY)
  *   - keyId     : A list of values for this column to determine rows to update for this batch
  *
@@ -47,20 +53,18 @@ class RenameUserJob extends Job {
 	public function run() {
 		global $wgUpdateRowsPerQuery;
 
-		$dbw = wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_PRIMARY );
 		$table = $this->params['table'];
 		$column = $this->params['column'];
 
 		// Skip core tables that were migrated to the actor table, even if the
 		// field still exists in the database.
 		if ( in_array( "$table.$column", self::$actorMigratedColumns, true ) ) {
-			if ( !RenameuserSQL::actorMigrationWriteOld() ) {
-				wfDebugLog( 'Renameuser',
-					"Ignoring job {$this->toString()}, column $table.$column "
-						. "actor migration stage lacks WRITE_OLD\n"
-				);
-				return true;
-			}
+			wfDebugLog( 'Renameuser',
+				"Ignoring job {$this->toString()}, column $table.$column "
+					. "actor migration stage lacks WRITE_OLD\n"
+			);
+			return true;
 		}
 
 		// It's not worth a hook to let extensions add themselves to that list.

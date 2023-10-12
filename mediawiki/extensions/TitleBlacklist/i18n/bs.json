@@ -4,13 +4,12 @@
 			"CERminator",
 			"KWiki",
 			"Obsuser",
-			"Semso98",
-			"Srdjan m"
+			"Srđan"
 		]
 	},
-	"action-titleblacklistlog": "pregledate zapisnik crne liste naslova",
-	"log-name-titleblacklist": "Zapisnik crne liste naslova",
-	"log-description-titleblacklist": "Ovaj zapisnik prikazuje pogotke u crnoj listi naslova.",
+	"action-titleblacklistlog": "pregledate zapisnik spiska nedozvoljenih naslova",
+	"log-name-titleblacklist": "Zapisnik spiska nedozvoljenih naslova",
+	"log-description-titleblacklist": "Ovaj zapisnik prikazuje pogotke u spisku nedozvoljenih naslova.",
 	"titleblacklist-desc": "Omogućuje administratorima da zabrane pravljenje stranica i korisničkih računa putem spiskova [[MediaWiki:Titleblacklist|zabranjenih]] i [[MediaWiki:Titlewhitelist|dopuštenih]] naslova",
 	"titleblacklist": "# Ovo je spisak zabranjenih naslova. Naslovi i korisnici koji se nalaze na ovom spisku neće moći biti napravljeni.\n# Koristite \"#\" za komentare.\n# Ovo ne razlikuje velika i mala slova po pretpostavljenom",
 	"titlewhitelist": "# Ovo je spisak dopuštenih naslova. Koristite \"#\" za komentare.\n# Ovo ne razlikuje velika i mala slova po pretpostavljenom",
@@ -21,6 +20,5 @@
 	"titleblacklist-invalid": "{{PLURAL:$1|Sljedeći red|Sljedeća $1 reda|Sljedećih $1 redova}} na spisku nepoželjnih naslova {{PLURAL:$1|je nevalidan|su nevalidna|je nevalidno}};\nmolimo da {{PLURAL:$1|ga|ih}} ispravite prije spašavanja:",
 	"titleblacklist-override": "Zanemari crnu listu ako se podudara",
 	"right-tboverride": "Zaobilaženje spiska zabranjenih naslova ili korisničkih imena",
-	"right-tboverride-account": "Zaobilaženje spiska zabranjenih korisničkih imena",
-	"right-titleblacklistlog": "Pregledanje zapisnika crne liste naslova"
+	"right-tboverride-account": "Zaobilaženje spiska zabranjenih korisničkih imena"
 }

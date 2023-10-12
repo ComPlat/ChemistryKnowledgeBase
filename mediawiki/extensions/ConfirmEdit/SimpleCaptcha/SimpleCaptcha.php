@@ -1,11 +1,46 @@
 <?php
 
+namespace MediaWiki\Extension\ConfirmEdit\SimpleCaptcha;
+
+use ApiBase;
+use ApiEditPage;
+use BagOStuff;
+use Config;
+use ConfigException;
+use Content;
+use ContentSecurityPolicy;
+use EditPage;
+use ExtensionRegistry;
+use HTMLForm;
+use IContextSource;
+use MailAddress;
 use MediaWiki\Auth\AuthenticationRequest;
+use MediaWiki\Cache\CacheKeyHelper;
+use MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\CaptchaTriggers;
+use MediaWiki\Extension\ConfirmEdit\Hooks\HookRunner;
+use MediaWiki\Extension\ConfirmEdit\Store\CaptchaStore;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\User\UserNameUtils;
+use Message;
+use ObjectCache;
+use OOUI\FieldLayout;
+use OOUI\HiddenInputWidget;
+use OOUI\NumberInputWidget;
+use OutputPage;
+use ParserOptions;
+use RequestContext;
+use Status;
+use TextContent;
+use Title;
+use UnexpectedValueException;
+use User;
+use WebRequest;
 use Wikimedia\IPUtils;
+use WikiPage;
 
 /**
  * Demo CAPTCHA (not for production usage) and base class for real CAPTCHAs
@@ -13,8 +48,11 @@ use Wikimedia\IPUtils;
 class SimpleCaptcha {
 	protected static $messagePrefix = 'captcha-';
 
-	/** @var boolean|null Was the CAPTCHA already passed and if yes, with which result? */
+	/** @var bool|null Was the CAPTCHA already passed and if yes, with which result? */
 	private $captchaSolved = null;
+
+	/** @var bool[] Activate captchas status list for a pages by key */
+	private $activatedCaptchas = [];
 
 	/**
 	 * Used to select the right message.
@@ -68,6 +106,14 @@ class SimpleCaptcha {
 		$test = "$a$op$b";
 		$answer = ( $op == '+' ) ? ( $a + $b ) : ( $a - $b );
 		return [ 'question' => $test, 'answer' => $answer ];
+	}
+
+	/**
+	 * Returns a list of activate captchas for a page by key.
+	 * @return bool[]
+	 */
+	public function getActivatedCaptchas() {
+		return $this->activatedCaptchas;
 	}
 
 	/**
@@ -128,8 +174,8 @@ class SimpleCaptcha {
 
 		return [
 			'html' =>
-				new OOUI\FieldLayout(
-					new OOUI\NumberInputWidget( [
+				new FieldLayout(
+					new NumberInputWidget( [
 						'name' => 'wpCaptchaWord',
 						'classes' => [ 'simplecaptcha-answer' ],
 						'id' => 'wpCaptchaWord',
@@ -143,7 +189,7 @@ class SimpleCaptcha {
 						'classes' => [ 'simplecaptcha-field' ],
 					]
 				) .
-				new OOUI\HiddenInputWidget( [
+				new HiddenInputWidget( [
 					'name' => 'wpCaptchaId',
 					'id' => 'wpCaptchaId',
 					'value' => $index
@@ -230,12 +276,13 @@ class SimpleCaptcha {
 	public function showEditFormFields( EditPage $editPage, OutputPage $out ) {
 		$out->enableOOUI();
 		$page = $editPage->getArticle()->getPage();
-		if ( !isset( $page->ConfirmEdit_ActivateCaptcha ) ) {
+		$key = $key = CacheKeyHelper::getKeyForPage( $page );
+		if ( !isset( $this->activatedCaptchas[$key] ) ) {
 			return;
 		}
 
 		if ( $this->action !== 'edit' ) {
-			unset( $page->ConfirmEdit_ActivateCaptcha );
+			unset( $this->activatedCaptchas[$key] );
 			$out->addHTML( $this->getMessage( $this->action )->parseAsBlock() );
 			$this->addFormToOutput( $out );
 		}
@@ -249,13 +296,14 @@ class SimpleCaptcha {
 		$context = $editPage->getArticle()->getContext();
 		$page = $editPage->getArticle()->getPage();
 		$out = $context->getOutput();
-		if ( isset( $page->ConfirmEdit_ActivateCaptcha ) ||
+		$key = CacheKeyHelper::getKeyForPage( $page );
+		if ( isset( $this->activatedCaptchas[$key] ) ||
 			$this->shouldCheck( $page, '', '', $context )
 		) {
 			$out->addHTML( $this->getMessage( $this->action )->parseAsBlock() );
 			$this->addFormToOutput( $out );
 		}
-		unset( $page->ConfirmEdit_ActivateCaptcha );
+		unset( $this->activatedCaptchas[$key] );
 	}
 
 	/**
@@ -417,7 +465,7 @@ class SimpleCaptcha {
 			);
 			// And then store it in cache for one day. This cache is cleared on
 			// modifications to the whitelist page.
-			// @see ConfirmEditHooks::onPageSaveComplete()
+			// @see MediaWiki\Extension\ConfirmEdit\Hooks::onPageSaveComplete()
 			$cache->set( $cacheKey, $whitelist, 86400 );
 		} else {
 			// Whitelist from the cache
@@ -472,7 +520,8 @@ class SimpleCaptcha {
 	 * @return string
 	 */
 	private function badLoginPerUserKey( $username, BagOStuff $cache ) {
-		$username = User::getCanonicalName( $username, 'usable' ) ?: $username;
+		$userNameUtils = MediaWikiServices::getInstance()->getUserNameUtils();
+		$username = $userNameUtils->getCanonical( $username, UserNameUtils::RIGOR_USABLE ) ?: $username;
 
 		return $cache->makeGlobalKey(
 			'captcha', 'badlogin', 'user', md5( $username )
@@ -536,6 +585,11 @@ class SimpleCaptcha {
 		) {
 			$result = $wgCaptchaTriggersOnNamespace[$title->getNamespace()][$action];
 		}
+
+		$hookRunner = new HookRunner(
+			MediaWikiServices::getInstance()->getHookContainer()
+		);
+		$hookRunner->onConfirmEditTriggersCaptcha( $action, $title, $result );
 
 		return $result;
 	}
@@ -611,7 +665,7 @@ class SimpleCaptcha {
 				// Get links from the database
 				$oldLinks = $this->getLinksFromTracker( $title );
 				// Share a parse operation with Article::doEdit()
-				$editInfo = $page->prepareContentForEdit( $content );
+				$editInfo = $page->prepareContentForEdit( $content, null, $user );
 				if ( $editInfo->output ) {
 					$newLinks = array_keys( $editInfo->output->getExternalLinks() );
 				} else {
@@ -849,7 +903,8 @@ class SimpleCaptcha {
 	 * @return bool
 	 */
 	public function confirmEditMerged( $context, $content, $status, $summary, $user, $minorEdit ) {
-		if ( !$context->canUseWikiPage() ) {
+		$title = $context->getTitle();
+		if ( !( $title->canExist() ) ) {
 			// we check WikiPage only
 			// try to get an appropriate title for this page
 			$title = $context->getTitle();
@@ -865,7 +920,7 @@ class SimpleCaptcha {
 			wfDebug( __METHOD__ . ': Skipped ConfirmEdit check: No WikiPage for title ' . $title );
 			return true;
 		}
-		$page = $context->getWikiPage();
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 		if ( !$this->doConfirmEdit( $page, $content, '', $context, $user ) ) {
 			$status->value = EditPage::AS_HOOK_ERROR_EXPECTED;
 			$status->apiHookResult = [];
@@ -873,18 +928,11 @@ class SimpleCaptcha {
 			// this can't be done for addurl trigger, because this requires one "free" save
 			// for the user, which we don't know, when he did it.
 			if ( $this->action === 'edit' ) {
-				$status->fatal(
-					new RawMessage(
-						Html::element(
-							'div',
-							[ 'class' => 'errorbox' ],
-							$context->msg( 'captcha-edit-fail' )->text()
-						)
-					)
-				);
+				$status->fatal( 'captcha-edit-fail' );
 			}
 			$this->addCaptchaAPI( $status->apiHookResult );
-			$page->ConfirmEdit_ActivateCaptcha = true;
+			$key = CacheKeyHelper::getKeyForPage( $page );
+			$this->activatedCaptchas[$key] = true;
 			return false;
 		}
 		return true;
@@ -1133,7 +1181,7 @@ class SimpleCaptcha {
 			return '';
 		}
 
-		$text = ContentHandler::getContentText( $content );
+		$text = ( $content instanceof TextContent ) ? $content->getText() : null;
 		if ( $section !== '' ) {
 			return MediaWikiServices::getInstance()->getParser()
 				->getSection( $text, $section );
@@ -1150,7 +1198,7 @@ class SimpleCaptcha {
 	 */
 	private function findLinks( $title, $text ) {
 		$parser = MediaWikiServices::getInstance()->getParser();
-		$user = $parser->getUser();
+		$user = $parser->getUserIdentity();
 		$options = new ParserOptions( $user );
 		$text = $parser->preSaveTransform( $text, $title, $user, $options );
 		$out = $parser->parse( $text, $title, $options );

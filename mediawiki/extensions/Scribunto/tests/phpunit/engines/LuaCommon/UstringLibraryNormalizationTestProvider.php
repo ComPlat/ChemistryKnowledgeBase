@@ -1,8 +1,11 @@
 <?php
 
 class UstringLibraryNormalizationTestProvider extends Scribunto_LuaDataProvider {
+	/** @var resource|null */
 	protected $file = null;
+	/** @var string[]|null */
 	protected $current = null;
+	/** @var array */
 	protected static $static = [
 		'1E0A 0323;1E0C 0307;0044 0323 0307;1E0C 0307;0044 0323 0307;',
 		false
@@ -34,15 +37,15 @@ class UstringLibraryNormalizationTestProvider extends Scribunto_LuaDataProvider 
 		$this->rewind();
 	}
 
-	public function destory() {
+	public function destroy() {
 		if ( $this->file ) {
 			fclose( $this->file );
 			$this->file = null;
 		}
-		parent::destory();
+		parent::destroy();
 	}
 
-	public function rewind() {
+	public function rewind(): void {
 		if ( $this->file ) {
 			rewind( $this->file );
 		}
@@ -50,7 +53,7 @@ class UstringLibraryNormalizationTestProvider extends Scribunto_LuaDataProvider 
 		$this->next();
 	}
 
-	public function valid() {
+	public function valid(): bool {
 		if ( $this->file ) {
 			$v = !feof( $this->file );
 		} else {
@@ -59,11 +62,12 @@ class UstringLibraryNormalizationTestProvider extends Scribunto_LuaDataProvider 
 		return $v;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function current() {
 		return $this->current;
 	}
 
-	public function next() {
+	public function next(): void {
 		$this->current = [ null, null, null, null, null, null ];
 		while ( $this->valid() ) {
 			if ( $this->file ) {

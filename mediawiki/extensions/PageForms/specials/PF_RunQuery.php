@@ -85,7 +85,10 @@ class PFRunQuery extends IncludableSpecialPage {
 		}
 
 		list( $form_text, $data_text, $form_page_title ) =
-			$wgPageFormsFormPrinter->formHTML( $form_definition, $form_submitted, false, $form_title->getArticleID(), $content, null, null, true, $embedded );
+			$wgPageFormsFormPrinter->formHTML(
+				$form_definition, $form_submitted, false, $form_title->getArticleID(),
+				$content, null, null, true, $embedded, false, [], $user
+			);
 		$text = "";
 
 		// Get the text of the results.
@@ -202,6 +205,16 @@ END;
 				$out->setPageTitle( $s );
 			}
 		}
+	}
+
+	/**
+	 * Overrides base maxIncludeCacheTime to make it configurable
+	 * for Special:RunQuery embed pages, see base method for details
+	 * @return int
+	 */
+	public function maxIncludeCacheTime() {
+		global $wgPageFormsEmbedQueryCacheTTL;
+		return $wgPageFormsEmbedQueryCacheTTL;
 	}
 
 	protected function getGroupName() {

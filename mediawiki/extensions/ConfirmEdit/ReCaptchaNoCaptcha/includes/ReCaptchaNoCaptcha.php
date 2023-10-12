@@ -1,6 +1,9 @@
 <?php
 
 use MediaWiki\Auth\AuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\Hooks;
+use MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha;
 use MediaWiki\MediaWikiServices;
 
 class ReCaptchaNoCaptcha extends SimpleCaptcha {
@@ -33,7 +36,7 @@ class ReCaptchaNoCaptcha extends SimpleCaptcha {
     <div style="width: 302px; height: 422px; position: relative;">
       <div style="width: 302px; height: 422px; position: absolute;">
         <iframe
-        	src="https://www.recaptcha.net/recaptcha/api/fallback?k={$htmlUrlencoded}&hl={$lang}"
+            src="https://www.recaptcha.net/recaptcha/api/fallback?k={$htmlUrlencoded}&hl={$lang}"
             frameborder="0" scrolling="no"
             style="width: 302px; height:422px; border-style: none;">
         </iframe>
@@ -162,7 +165,7 @@ HTML;
 		global $wgReCaptchaSiteKey;
 		return [
 			'type' => 'recaptchanocaptcha',
-			'mime' => 'image/png',
+			'mime' => 'application/javascript',
 			'key' => $wgReCaptchaSiteKey,
 		];
 	}
@@ -255,7 +258,7 @@ HTML;
 		}
 
 		// ugly way to retrieve error information
-		$captcha = ConfirmEditHooks::getInstance();
+		$captcha = Hooks::getInstance();
 
 		$formDescriptor['captchaWord'] = [
 			'class' => HTMLReCaptchaNoCaptchaField::class,

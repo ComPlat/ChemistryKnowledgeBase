@@ -2,7 +2,9 @@
 
 namespace Wikimedia\Rdbms;
 
-use Iterator;
+use Countable;
+use OutOfBoundsException;
+use SeekableIterator;
 use stdClass;
 
 /**
@@ -21,13 +23,20 @@ use stdClass;
  *
  * @ingroup Database
  */
-interface IResultWrapper extends Iterator {
+interface IResultWrapper extends Countable, SeekableIterator {
 	/**
 	 * Get the number of rows in a result object
 	 *
 	 * @return int
 	 */
 	public function numRows();
+
+	/**
+	 * Get the number of rows in a result object
+	 *
+	 * @return int
+	 */
+	public function count(): int;
 
 	/**
 	 * Fetch the next row from the given result object, in object form. Fields can be retrieved with
@@ -52,9 +61,10 @@ interface IResultWrapper extends Iterator {
 	 * Change the position of the cursor in a result object.
 	 * See mysql_data_seek()
 	 *
+	 * @throws OutOfBoundsException
 	 * @param int $pos
 	 */
-	public function seek( $pos );
+	public function seek( $pos ): void;
 
 	/**
 	 * Free a result object
@@ -67,16 +77,24 @@ interface IResultWrapper extends Iterator {
 	/**
 	 * @return stdClass|array|bool
 	 */
+	#[\ReturnTypeWillChange]
 	public function current();
 
 	/**
 	 * @return int
 	 */
-	public function key();
+	public function key(): int;
 
 	/**
-	 * @return stdClass
-	 * @suppress PhanParamSignatureMismatchInternal
+	 * @return void
 	 */
-	public function next();
+	public function next(): void;
+
+	/**
+	 * Get the names of the fields in the result
+	 *
+	 * @since 1.37
+	 * @return string[]
+	 */
+	public function getFieldNames();
 }

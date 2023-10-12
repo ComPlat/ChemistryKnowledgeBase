@@ -1,6 +1,10 @@
 {
 	"@metadata": {
-		"authors": []
+		"authors": [
+			"WikiiiTranslator"
+		]
 	},
-	"smw-livepreview-loading": "Cargando..."
+	"browse": "Eksplorar viki",
+	"smw-livepreview-loading": "Cargando...",
+	"smw-listingcontinuesabbrev": "cont."
 }

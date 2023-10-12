@@ -2,8 +2,8 @@
  * Collapsible tabs for Vector
  */
 function init() {
-	// eslint-disable-next-line no-jquery/no-global-selector
-	var $cactions = $( '#p-cactions' ),
+	var cactionsId = 'p-cactions',
+		$cactions = $( '#' + cactionsId ),
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$tabContainer = $( '#p-views ul' ),
 		initialCactionsWidth = function () {
@@ -27,16 +27,15 @@ function init() {
 		.on( 'beforeTabCollapse', function () {
 			var expandedWidth;
 			// If the dropdown was hidden, show it
-			// eslint-disable-next-line no-jquery/no-class-state
-			if ( $cactions.hasClass( 'emptyPortlet' ) ) {
-				$cactions.removeClass( 'emptyPortlet vector-menu-empty' );
+			if ( !mw.util.isPortletVisible( cactionsId ) ) {
+				mw.util.showPortlet( cactionsId );
 				// Now that it is visible, force-render it virtually
 				// to get its expanded width, then shrink it 1px before we
 				// yield from JS (which means the expansion won't be visible).
 				// Then animate from the 1px to the expanded width.
 				expandedWidth = $cactions.width();
 				// eslint-disable-next-line no-jquery/no-animate
-				$cactions.find( 'h3' )
+				$cactions
 					.css( 'width', '1px' )
 					.animate( { width: expandedWidth }, 'normal' );
 			}
@@ -45,9 +44,9 @@ function init() {
 			// If we're removing the last child node right now, hide the dropdown
 			if ( $cactions.find( 'li' ).length === 1 ) {
 				// eslint-disable-next-line no-jquery/no-animate
-				$cactions.find( 'h3' ).animate( { width: '1px' }, 'normal', function () {
-					$( this ).attr( 'style', '' )
-						.parent().addClass( 'emptyPortlet vector-menu-empty' );
+				$cactions.animate( { width: '1px' }, 'normal', function () {
+					$( this ).attr( 'style', '' );
+					mw.util.hidePortlet( cactionsId );
 				} );
 			}
 		} )
@@ -85,8 +84,7 @@ function init() {
 				}
 
 				// Always collapse if the "More" button is already shown.
-				// eslint-disable-next-line no-jquery/no-class-state
-				if ( !$cactions.hasClass( 'emptyPortlet' ) ) {
+				if ( mw.util.isPortletVisible( cactionsId ) ) {
 					return true;
 				}
 

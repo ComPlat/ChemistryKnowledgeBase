@@ -18,10 +18,10 @@
 ( function () {
 	QUnit.module( 'mw.mmv.ui.reuse.utils', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Sanity test, object creation and UI construction', function ( assert ) {
+	QUnit.test( 'Sense test, object creation and UI construction', function ( assert ) {
 		var utils = new mw.mmv.ui.Utils();
 
-		assert.ok( utils, 'ReuseUtils object is created.' );
+		assert.true( utils instanceof mw.mmv.ui.Utils, 'ReuseUtils object is created.' );
 	} );
 
 	QUnit.test( 'createPulldownMenu():', function ( assert ) {
@@ -63,7 +63,7 @@
 			oldMessage = mw.message;
 
 		mw.message = function ( messageKey ) {
-			assert.ok( messageKey.match( /^multimediaviewer-(small|medium|original|embed-dimensions)/ ), 'messageKey passed correctly.' );
+			assert.true( /^multimediaviewer-(small|medium|original|embed-dimensions)/.test( messageKey ), 'messageKey passed correctly.' );
 
 			return { text: function () {} };
 		};

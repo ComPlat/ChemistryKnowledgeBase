@@ -34,12 +34,9 @@ ve.dm.CommentNode.static.isContent = true;
 ve.dm.CommentNode.static.preserveHtmlAttributes = false;
 
 ve.dm.CommentNode.static.toDataElement = function ( domElements, converter ) {
-	var textarea, text;
+	var text;
 	if ( domElements[ 0 ].nodeType === Node.COMMENT_NODE ) {
-		// Decode HTML entities, safely (no elements permitted inside textarea)
-		textarea = document.createElement( 'textarea' );
-		textarea.innerHTML = domElements[ 0 ].data;
-		text = textarea.textContent;
+		text = ve.safeDecodeEntities( domElements[ 0 ].data );
 	} else {
 		text = domElements[ 0 ].getAttribute( 'data-ve-comment' );
 	}
@@ -53,28 +50,27 @@ ve.dm.CommentNode.static.toDataElement = function ( domElements, converter ) {
 };
 
 ve.dm.CommentNode.static.toDomElements = function ( dataElement, doc, converter ) {
-	var span, data, modelNode, viewNode, els;
 	if ( converter.isForClipboard() ) {
 		// Fake comment node
-		span = doc.createElement( 'span' );
+		var span = doc.createElement( 'span' );
 		span.setAttribute( 'rel', 've:Comment' );
 		span.setAttribute( 'data-ve-comment', dataElement.attributes.text );
 		span.appendChild( doc.createTextNode( '\u00a0' ) );
 		return [ span ];
 	} else if ( converter.isForPreview() ) {
 		// isForPreview(), use CE rendering
-		modelNode = ve.dm.nodeFactory.createFromElement( dataElement );
+		var modelNode = ve.dm.nodeFactory.createFromElement( dataElement );
 		modelNode.setDocument( converter.internalList.getDocument() );
-		viewNode = ve.ce.nodeFactory.createFromModel( modelNode );
+		var viewNode = ve.ce.nodeFactory.createFromModel( modelNode );
 		viewNode.updateInvisibleIconSync( true );
 		viewNode.$element.attr( 'title', dataElement.attributes.text );
-		els = viewNode.$element.toArray();
+		var els = viewNode.$element.toArray();
 		viewNode.destroy();
 		return els;
 	} else {
 		// Real comment node
 		// Encode & - > (see T95040, T144708)
-		data = dataElement.attributes.text.replace( /[-&>]/g, function ( c ) {
+		var data = dataElement.attributes.text.replace( /[-&>]/g, function ( c ) {
 			return '&#x' + c.charCodeAt( 0 ).toString( 16 ).toUpperCase() + ';';
 		} );
 		return [ doc.createComment( data ) ];
@@ -83,7 +79,12 @@ ve.dm.CommentNode.static.toDomElements = function ( dataElement, doc, converter 
 
 ve.dm.CommentNode.static.describeChange = function ( key, change ) {
 	if ( key === 'text' ) {
-		// TODO: Run comment changes through a linear differ.
-		return ve.htmlMsg( 'visualeditor-changedesc-comment', this.wrapText( 'del', change.from ), this.wrapText( 'ins', change.to ) );
+		var diff = this.getAttributeDiff( change.from, change.to );
+		if ( diff ) {
+			// TODO: Use a word-break based diff for comment text
+			return ve.htmlMsg( 'visualeditor-changedesc-comment-diff', diff );
+		} else {
+			return ve.htmlMsg( 'visualeditor-changedesc-comment', this.wrapText( 'del', change.from ), this.wrapText( 'ins', change.to ) );
+		}
 	}
 };

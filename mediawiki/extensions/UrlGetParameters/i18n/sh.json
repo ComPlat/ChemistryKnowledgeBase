@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Vlad5250"
+		]
+	},
+	"urlgetparameters-desc": "Omogućuje korištenje i/ili prikaz parametara \"GET\" URL-adrese na wiki-stranici"
+}

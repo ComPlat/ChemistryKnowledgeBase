@@ -54,6 +54,7 @@
 		this.thumbsReadyDeferred = $.Deferred();
 		this.thumbs = [];
 		this.$thumbs = null; // will be set by processThumbs
+		this.$parsoidThumbs = null; // will be set in processThumbs
 
 		// find and setup all thumbs on this page
 		// this will run initially and then every time the content changes,
@@ -78,6 +79,10 @@
 		// Don't load if someone has specifically stopped us from doing so
 		if ( mw.config.get( 'wgMediaViewer' ) !== true ) {
 			return deferred.reject();
+		}
+
+		if ( history.scrollRestoration ) {
+			history.scrollRestoration = 'manual';
 		}
 
 		// FIXME setupOverlay is a quick hack to avoid setting up and immediately
@@ -107,22 +112,22 @@
 
 		return deferred.promise()
 			.then(
-				function ( viewer ) {
+				function ( viewer2 ) {
 					if ( !bs.viewerInitialized ) {
 						if ( bs.thumbs.length ) {
-							viewer.initWithThumbs( bs.thumbs );
+							viewer2.initWithThumbs( bs.thumbs );
 						}
 
 						bs.viewerInitialized = true;
 					}
-					return viewer;
+					return viewer2;
 				},
-				function ( message ) {
-					mw.log.warn( message );
+				function ( message2 ) {
+					mw.log.warn( message2 );
 					bs.cleanupOverlay();
 					bs.viewerIsBroken = true;
-					mw.notify( 'Error loading MediaViewer: ' + message );
-					return $.Deferred().reject( message );
+					mw.notify( 'Error loading MediaViewer: ' + message2 );
+					return $.Deferred().reject( message2 );
 				}
 			);
 	};
@@ -135,17 +140,34 @@
 	MMVB.processThumbs = function ( $content ) {
 		var bs = this;
 
+		// MMVB.processThumbs() is a callback for `wikipage.content` hook (see constructor)
+		// which as state in the documentation can be fired when content is added to the DOM
+		// https://doc.wikimedia.org/mediawiki-core/master/js/#!/api/mw.hook
+		// The content being added can contain thumbnails that the MultimediaViewer may need to
+		// process correctly and add the thumbs array, so it's necessary to invalidate the
+		// viewer initialization state if this happens to let the MMVB.loadViewer() to process
+		// new images correctly
+		bs.viewerInitialized = false;
+
 		this.$thumbs = $content.find(
 			'.gallery .image img, ' +
 			'a.image img, ' +
-			'#file a img, ' +
-			'figure[typeof*="mw:Image"] > *:first-child > img, ' +
-			'span[typeof*="mw:Image"] img'
+			'#file a img'
+		);
+
+		this.$parsoidThumbs = $content.find(
+			'[typeof*="mw:File"] a.mw-file-description img, ' +
+			// TODO: Remove mw:Image when version 2.4.0 of the content is no
+			// longer supported
+			'[typeof*="mw:Image"] a.mw-file-description img'
 		);
 
 		try {
 			this.$thumbs.each( function ( i, thumb ) {
 				bs.processThumb( thumb );
+			} );
+			this.$parsoidThumbs.each( function ( i, thumb ) {
+				bs.processParsoidThumb( thumb );
 			} );
 		} finally {
 			this.thumbsReadyDeferred.resolve();
@@ -174,6 +196,40 @@
 	};
 
 	/**
+	 * @param {mw.Title|null} title
+	 * @return {boolean}
+	 */
+	MMVB.isValidExtension = function ( title ) {
+		return title && title.getExtension() && ( title.getExtension().toLowerCase() in this.validExtensions );
+	};
+
+	/**
+	 * Preload JS/CSS when the mouse cursor hovers the thumb container
+	 * (thumb image + caption + border)
+	 *
+	 * @param {jQuery} $thumbContainer
+	 */
+	MMVB.preloadAssets = function ( $thumbContainer ) {
+		var bs = this;
+		$thumbContainer.on( {
+			mouseenter: function () {
+				// There is no point preloading if clicking the thumb won't open Media Viewer
+				if ( !bs.config.isMediaViewerEnabledOnClick() ) {
+					return;
+				}
+				bs.preloadOnHoverTimer = setTimeout( function () {
+					mw.loader.load( 'mmv' );
+				}, bs.hoverWaitDuration );
+			},
+			mouseleave: function () {
+				if ( bs.preloadOnHoverTimer ) {
+					clearTimeout( bs.preloadOnHoverTimer );
+				}
+			}
+		} );
+	};
+
+	/**
 	 * Processes a thumb
 	 *
 	 * @param {Object} thumb
@@ -182,9 +238,9 @@
 		var title,
 			bs = this,
 			$thumb = $( thumb ),
-			$link = $thumb.closest( 'a.image, [typeof*="mw:Image"] > a' ),
-			$thumbContain = $link.closest( '.thumb, [typeof*="mw:Image"]' ),
-			$enlarge = $thumbContain.find( '.magnify a' ),
+			$link = $thumb.closest( 'a.image' ),
+			$thumbContainer = $link.closest( '.thumb' ),
+			$enlarge = $thumbContainer.find( '.magnify a' ),
 			link = $link.prop( 'href' ),
 			alt = $thumb.attr( 'alt' ),
 			isFilePageMainThumb = $thumb.closest( '#file' ).length > 0;
@@ -199,7 +255,7 @@
 			title = mw.Title.newFromImg( $thumb );
 		}
 
-		if ( !title || !title.getExtension() || !( title.getExtension().toLowerCase() in bs.validExtensions ) ) {
+		if ( !bs.isValidExtension( title ) ) {
 			// Short-circuit event handler and interface setup, because
 			// we can't do anything for this filetype
 			return;
@@ -209,24 +265,8 @@
 			return;
 		}
 
-		if ( $thumbContain.length ) {
-			// If this is a thumb, we preload JS/CSS when the mouse cursor hovers the thumb container (thumb image + caption + border)
-			$thumbContain.on( {
-				mouseenter: function () {
-					// There is no point preloading if clicking the thumb won't open Media Viewer
-					if ( !bs.config.isMediaViewerEnabledOnClick() ) {
-						return;
-					}
-					bs.preloadOnHoverTimer = setTimeout( function () {
-						mw.loader.load( 'mmv' );
-					}, bs.hoverWaitDuration );
-				},
-				mouseleave: function () {
-					if ( bs.preloadOnHoverTimer ) {
-						clearTimeout( bs.preloadOnHoverTimer );
-					}
-				}
-			} );
+		if ( $thumbContainer.length ) {
+			bs.preloadAssets( $thumbContainer );
 		}
 
 		if ( isFilePageMainThumb ) {
@@ -241,9 +281,62 @@
 			title: title,
 			link: link,
 			alt: alt,
-			caption: this.findCaption( $thumbContain, $link ) } );
+			caption: this.findCaption( $thumbContainer, $link ) } );
 
 		$link.add( $enlarge ).on( 'click', function ( e ) {
+			return bs.click( this, e, title );
+		} );
+	};
+
+	/**
+	 * Processes a Parsoid thumb, making use of the specified structure,
+	 *   https://www.mediawiki.org/wiki/Specs/HTML#Media
+	 *
+	 * Active formatting elements are sometimes re-opened inside
+	 * the structure and accounted for using .closest()
+	 *
+	 * @param {Object} thumb
+	 */
+	MMVB.processParsoidThumb = function ( thumb ) {
+		var bs = this,
+			$thumb = $( thumb ),
+			$link = $thumb.closest( 'a.mw-file-description' ),
+			$thumbContainer = $link.closest(
+				'[typeof*="mw:File"], ' +
+				// TODO: Remove mw:Image when version 2.4.0 of the content is
+				// no longer supported
+				'[typeof*="mw:Image"]'
+			),
+			link = $link.prop( 'href' ),
+			alt = $thumb.attr( 'alt' ),
+			title = mw.Title.newFromImg( $thumb );
+
+		if ( !bs.isValidExtension( title ) ) {
+			// Short-circuit event handler and interface setup, because
+			// we can't do anything for this filetype
+			return;
+		}
+
+		if ( !bs.isAllowedThumb( $thumb ) ) {
+			return;
+		}
+
+		if ( $thumbContainer.length ) {
+			bs.preloadAssets( $thumbContainer );
+		}
+
+		// This is the data that will be passed onto the mmv
+		this.thumbs.push( {
+			thumb: thumb,
+			$thumb: $thumb,
+			title: title,
+			link: link,
+			alt: alt,
+			// FIXME: findCaption can further make use of Parsoid's regularity
+			caption: this.findCaption( $thumbContainer, $link )
+		} );
+
+		$link.on( 'click', function ( e ) {
 			return bs.click( this, e, title );
 		} );
 	};
@@ -257,7 +350,11 @@
 	 */
 	MMVB.processFilePageThumb = function ( $thumb, title ) {
 		var $link,
+			$icon,
+			$label,
 			$configLink,
+			$configIcon,
+			$configLabel,
 			$filepageButtons,
 			bs = this,
 			link = $thumb.closest( 'a' ).prop( 'href' );
@@ -267,17 +364,32 @@
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( '.mw-mmv-filepage-buttons' ).next().addBack().remove();
 
+		$icon = $( '<span>' ).addClass( 'mw-ui-icon mw-ui-icon-before' );
+
 		$link = $( '<a>' )
 			// It won't matter because we catch the click event anyway, but
 			// give the user some URL to see.
 			.prop( 'href', link )
-			.addClass( 'mw-mmv-view-expanded mw-ui-button mw-ui-icon mw-ui-icon-before' )
+			.addClass( 'mw-mmv-view-expanded mw-ui-button' );
+
+		$label = $( '<span>' )
 			.text( mw.message( 'multimediaviewer-view-expanded' ).text() );
+
+		$icon.append( $label ).appendTo( $link );
 
 		$configLink = $( '<a>' )
 			.prop( 'href', $thumb.closest( 'a' ).prop( 'href' ) )
-			.addClass( 'mw-mmv-view-config mw-ui-button mw-ui-icon mw-ui-icon-element' )
+			.addClass( 'mw-mmv-view-config mw-ui-button' );
+
+		$configLabel = $( '<span>' )
 			.text( mw.message( 'multimediaviewer-view-config' ).text() );
+
+		$configIcon = $( '<span>' )
+			.addClass( 'mw-ui-icon mw-ui-icon-before' )
+			.append( $configLabel )
+			.appendTo( $configLink );
+
+		$configIcon.append( $configLabel ).appendTo( $configLink );
 
 		$filepageButtons = $( '<div>' )
 			.addClass( 'mw-ui-button-group mw-mmv-filepage-buttons' )
@@ -346,33 +458,33 @@
 	/**
 	 * Finds the caption for an image.
 	 *
-	 * @param {jQuery} $thumbContain The container for the thumbnail.
+	 * @param {jQuery} $thumbContainer The container for the thumbnail.
 	 * @param {jQuery} $link The link that encompasses the thumbnail.
 	 * @return {string|undefined} Unsafe HTML may be present - caution
 	 */
-	MMVB.findCaption = function ( $thumbContain, $link ) {
+	MMVB.findCaption = function ( $thumbContainer, $link ) {
 		var $thumbCaption, $potentialCaptions;
 
-		if ( !$thumbContain.length ) {
+		if ( !$thumbContainer.length ) {
 			return $link.prop( 'title' ) || undefined;
 		}
 
-		$potentialCaptions = $thumbContain.find( '.thumbcaption, figcaption' );
+		$potentialCaptions = $thumbContainer.find( '.thumbcaption, figcaption' );
 		if ( $potentialCaptions.length < 2 ) {
 			$thumbCaption = $potentialCaptions.eq( 0 );
 		} else {
 			// Template:Multiple_image or some such; try to find closest caption to the image
 			// eslint-disable-next-line no-jquery/no-sizzle
-			$thumbCaption = $link.closest( ':has(> .thumbcaption)', $thumbContain )
+			$thumbCaption = $link.closest( ':has(> .thumbcaption)', $thumbContainer )
 				.find( '> .thumbcaption' );
 		}
 
 		if ( !$thumbCaption.length ) { // gallery, maybe
-			$thumbCaption = $thumbContain
+			$thumbCaption = $thumbContainer
 				.closest( '.gallerybox' )
 				.not( function () {
 					// do not treat categories as galleries - the autogenerated caption they have is not helpful
-					return $thumbContain.closest( '#mw-category-media' ).length;
+					return $thumbContainer.closest( '#mw-category-media' ).length;
 				} )
 				.not( function () {
 					// do not treat special file related pages as galleries
@@ -383,7 +495,7 @@
 						'.page-Special_UncategorizedFiles, ' +
 						'.page-Special_UnusedFiles'
 					);
-					return $thumbContain.closest( $specialFileRelatedPages ).length;
+					return $thumbContainer.closest( $specialFileRelatedPages ).length;
 				} )
 				.find( '.gallerytext' );
 		}
@@ -404,16 +516,6 @@
 	 * @return {jQuery.Promise}
 	 */
 	MMVB.openImage = function ( element, title ) {
-		var $element = $( element );
-
-		mw.mmv.durationLogger.start( [ 'click-to-first-image', 'click-to-first-metadata' ] );
-
-		if ( $element.is( 'a.image, [typeof*="mw:Image"] > a' ) ) {
-			mw.mmv.actionLogger.log( 'thumbnail' );
-		} else if ( $element.is( '.magnify a' ) ) {
-			mw.mmv.actionLogger.log( 'enlarge' );
-		}
-
 		this.ensureEventHandlersAreSetUp();
 
 		return this.loadViewer( true ).then( function ( viewer ) {
@@ -467,10 +569,8 @@
 
 	/**
 	 * Handles the browser location hash on pageload or hash change
-	 *
-	 * @param {boolean} initialHash Whether this is called for the hash that came with the pageload
 	 */
-	MMVB.hash = function ( initialHash ) {
+	MMVB.hash = function () {
 		var bootstrap = this;
 
 		// There is no point loading the mmv if it isn't loaded yet for hash changes unrelated to the mmv
@@ -485,10 +585,6 @@
 			// the page is loaded with an invalid MMV url
 			if ( !viewer.isOpen ) {
 				bootstrap.cleanupOverlay();
-			} else if ( initialHash ) {
-				mw.mmv.actionLogger.log( 'hash-load' );
-			} else {
-				mw.mmv.actionLogger.log( 'history-navigation' );
 			}
 		} );
 	};

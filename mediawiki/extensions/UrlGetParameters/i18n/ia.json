@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"urlgetparameters-desc": "Permitte usar e/o monstrar le parametros \"GET\" del URL sur un pagina wiki"
+}

@@ -27,6 +27,7 @@
 namespace Skins\Chameleon\Components\NavbarHorizontal;
 
 use Hooks;
+use Linker;
 use Skins\Chameleon\Components\Component;
 use Skins\Chameleon\IdRegistry;
 
@@ -70,21 +71,13 @@ class Toolbox extends Component {
 	 * @throws \MWException
 	 */
 	private function getLinkListItems( $indent = 0 ) {
-		global $wgVersion;
-
 		$this->indent( $indent );
 
 		$skinTemplate = $this->getSkinTemplate();
 
 		$listItems = [];
+		$toolbox = $skinTemplate->get( 'sidebar' )[ 'TOOLBOX' ] ?? array();
 
-		if ( version_compare( $wgVersion, '1.35', '<' ) ) {
-			$toolbox = $skinTemplate->getToolbox();
-		} else if ( isset( $skinTemplate->get( 'sidebar' )[ 'TOOLBOX' ] ) ) {
-			$toolbox = $skinTemplate->get( 'sidebar' )[ 'TOOLBOX' ];
-		} else {
-			$toolbox = array();
-		}
 		// FIXME: Do we need to care of dropdown menus here? E.g. RSS feeds?
 		foreach ( $toolbox as $key => $linkItem ) {
 			if ( isset( $linkItem[ 'class' ] ) ) {
@@ -98,20 +91,6 @@ class Toolbox extends Component {
 			}
 			$listItems[] = $this->indent() . $skinTemplate->makeListItem( $key, $linkItem,
 				[ 'link-class' => 'nav-link ' . $linkItem[ 'id' ], 'tag' => 'div' ] );
-		}
-
-		ob_start();
-		// We pass an extra 'true' at the end so extensions using BaseTemplateToolbox
-		// can abort and avoid outputting double toolbox links
-		// See BaseTemplate::getSideBar()
-		if ( version_compare( $wgVersion, '1.35', '<' ) ) {
-			Hooks::run( 'SkinTemplateToolboxEnd', [ &$skinTemplate, true ] );
-		}
-		$contents = ob_get_contents();
-		ob_end_clean();
-
-		if ( trim( $contents ) ) {
-			$listItems[] = $this->indent() . $contents;
 		}
 
 		$this->indent( -$indent );
@@ -130,7 +109,8 @@ class Toolbox extends Component {
 		$trigger = $this->indent( 1 ) . IdRegistry::getRegistry()->element(
 				'a',
 				[ 'href' => '#', 'class' => 'nav-link dropdown-toggle p-tb-toggle',
-					'data-toggle' => 'dropdown', 'data-boundary' => 'viewport' ],
+                  'data-toggle' => 'dropdown', 'data-boundary' => 'viewport',
+                  'title' => Linker::titleAttrib( 'p-tb' ), ],
 				$this->getSkinTemplate()->getMsg( $labelMsg )->escaped()
 			);
 

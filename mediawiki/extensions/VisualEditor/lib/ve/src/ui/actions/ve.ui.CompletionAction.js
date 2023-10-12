@@ -81,6 +81,22 @@ ve.ui.CompletionAction.prototype.open = function () {
 ve.ui.CompletionAction.prototype.getSuggestions = null;
 
 /**
+ * Get a label to show as the menu header
+ *
+ * This is called twice per input, once with the new user input
+ * immediately after it is entered, and again later with the
+ * same input and its resolved suggestions
+ *
+ * @param {string} input User input
+ * @param {string[]} [suggestions] Returned suggestions
+ * @return {jQuery|string|OO.ui.HtmlSnippet|Function|null|undefined} Label. Use undefined
+ *  to avoid updating the label, and null to clear it.
+ */
+ve.ui.CompletionAction.prototype.getHeaderLabel = function () {
+	return null;
+};
+
+/**
  * Perform the insetion for the chosen suggestion
  *
  * @param {Object} data Whatever data was attached to the menu option widget
@@ -102,7 +118,7 @@ ve.ui.CompletionAction.prototype.insertCompletion = function ( data, range ) {
 ve.ui.CompletionAction.prototype.shouldAbandon = function ( input, matches ) {
 	// abandon after adding whitespace if there are no active potential matches
 	return matches === ( this.constructor.static.alwaysIncludeInput ? 1 : 0 ) &&
-		!!( input && input.match( /\s$/ ) );
+		!!( input && /\s$/.test( input ) );
 };
 
 // helpers

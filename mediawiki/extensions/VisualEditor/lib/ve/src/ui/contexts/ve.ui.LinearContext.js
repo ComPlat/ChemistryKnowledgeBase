@@ -43,26 +43,6 @@ OO.inheritClass( ve.ui.LinearContext, ve.ui.Context );
 /* Static Properties */
 
 /**
- * Context items should show a delete button
- *
- * @static
- * @inheritable
- * @property {Object}
- */
-ve.ui.LinearContext.static.showDeleteButton = false;
-
-/* Methods */
-
-/**
- * Check if context items should show a delete button
- *
- * @return {boolean} Context items should show a delete button
- */
-ve.ui.LinearContext.prototype.showDeleteButton = function () {
-	return this.constructor.static.showDeleteButton;
-};
-
-/**
  * Handle context change event.
  *
  * While an inspector is opening or closing, all changes are ignored so as to prevent inspectors
@@ -254,11 +234,11 @@ ve.ui.LinearContext.prototype.getRelatedSources = function () {
  * @return {Object[]} See #getRelatedSources
  */
 ve.ui.LinearContext.prototype.getRelatedSourcesFromModels = function ( selectedModels ) {
-	var i, len, toolClass, tools, selectedNode,
-		models = [],
+	var models = [],
 		relatedSources = [],
 		items = ve.ui.contextItemFactory.getRelatedItems( selectedModels );
 
+	var i, len;
 	for ( i = 0, len = items.length; i < len; i++ ) {
 		if ( !items[ i ].model.isInspectable() ) {
 			continue;
@@ -273,30 +253,18 @@ ve.ui.LinearContext.prototype.getRelatedSourcesFromModels = function ( selectedM
 			model: items[ i ].model
 		} );
 	}
-	tools = ve.ui.toolFactory.getRelatedItems( selectedModels );
+	var tools = ve.ui.toolFactory.getRelatedItems( selectedModels );
 	for ( i = 0, len = tools.length; i < len; i++ ) {
 		if ( !tools[ i ].model.isInspectable() ) {
 			continue;
 		}
 		if ( models.indexOf( tools[ i ].model ) === -1 ) {
-			toolClass = ve.ui.toolFactory.lookup( tools[ i ].name );
+			var toolClass = ve.ui.toolFactory.lookup( tools[ i ].name );
 			relatedSources.push( {
 				type: 'tool',
 				embeddable: !toolClass || toolClass.static.makesEmbeddableContextItem,
 				name: tools[ i ].name,
 				model: tools[ i ].model
-			} );
-		}
-	}
-	if ( !relatedSources.length ) {
-		selectedNode = this.surface.getModel().getSelectedNode();
-		// For now we only need alien contexts to show the delete button
-		if ( selectedNode && selectedNode.isFocusable() && this.showDeleteButton() ) {
-			relatedSources.push( {
-				type: 'item',
-				embeddable: ve.ui.contextItemFactory.isEmbeddable( 'alien' ),
-				name: 'alien',
-				model: selectedNode
 			} );
 		}
 	}

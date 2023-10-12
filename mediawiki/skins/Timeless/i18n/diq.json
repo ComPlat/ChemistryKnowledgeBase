@@ -13,7 +13,7 @@
 	"timeless-anonymous": "Anonim",
 	"timeless-loggedinas": "Be nameyê '''$1''' ra kewt cı",
 	"timeless-notloggedin": "Nêkewt cı",
-	"timeless-userpage": "Pella {{GENDER:$1|karberi}}",
+	"timeless-userpage": "Pela {{GENDER:$1|karberi}}",
 	"timeless-talkpage": "Vatena {{GENDER:$1|Karberi}}",
 	"timeless-pagelog": "Qeydê pele",
 	"timeless-more": "Zêde",
@@ -27,5 +27,7 @@
 	"timeless-pagetools": "Hereketê pele",
 	"timeless-languages": "Zıwani",
 	"timeless-projects": "Proceyê bini",
-	"timeless.js": "/* Her JavaScript karber Timeless skin gurenayış de tiya de bar bo*/"
+	"timeless.js": "/* Her JavaScript karber Timeless skin gurenayış de tiya de bar bo*/",
+	"timeless-view-history": "Tarix",
+	"timeless-action-undelete": "{{PLURAL:$1|nê vırnayışi|$1 vırnayışa}} peyser bıyarê"
 }

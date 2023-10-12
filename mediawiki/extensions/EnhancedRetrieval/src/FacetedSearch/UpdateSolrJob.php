@@ -40,9 +40,9 @@ class UpdateSolrJob extends Job {
 		$fsUpdateOnlyCurrentArticle = true;
 
 		try {
-            $indexer = FSIndexerFactory::create();
+			$indexer = FSIndexerFactory::create();
 			$messages = [];
-			$indexer->updateIndexForArticle($wp, null, null, $messages );
+			$indexer->updateIndexForArticle( $wp, null, $messages );
 			if ($consoleMode && count($messages) > 0) {
 				print implode("\t\n", $messages);
 			}

@@ -2,6 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Ahdan",
+			"Daud I.F. Argana",
+			"Ezagren",
 			"William Surya Permana"
 		]
 	},
@@ -41,9 +43,7 @@
 	"multimediaviewer-restriction-trademarked": "Gambar ini mengandung konten yang mungkin menjadi subjek hukum merek dagang.",
 	"multimediaviewer-restriction-default": "Gambar ini mungkin dibatasi oleh ketentuan hukum di luar hukum hak cipta. Lihat halaman keterangan berkas untuk rinciannya.",
 	"multimediaviewer-restriction-default-and-others": "Gambar ini mungkin secara lanjut dibatasi oleh ketentuan hukum lain di luar hukum hak cipta. Lihat halaman keterangan berkas untuk rinciannya.",
-	"multimediaviewer-about-mmv": "Perihal antar muka ini",
-	"multimediaviewer-discuss-mmv": "Pembicaraan",
-	"multimediaviewer-help-mmv": "Bantuan",
+	"multimediaviewer-about-mmv": "Perihal Media Viewer",
 	"multimediaviewer-optout-mmv": "Nonaktifkan Penampil Media",
 	"multimediaviewer-optin-mmv": "Aktifkan Penampil Media",
 	"multimediaviewer-optout-pending-mmv": "Menonaktifkan Penampil Media",
@@ -67,6 +67,7 @@
 	"multimediaviewer-download-small-button-name": "Unduh ukuran kecil",
 	"multimediaviewer-download-medium-button-name": "Unduh ukuran sedang",
 	"multimediaviewer-download-large-button-name": "Unduh ukuran besar",
+	"multimediaviewer-download-xl-button-name": "Unduh ukuran ekstra besar",
 	"multimediaviewer-link-to-page": "Pranala ke halaman keterangan berkas",
 	"multimediaviewer-link-to-file": "Pranala ke berkas asli",
 	"multimediaviewer-share-explanation": "Salin dan bagikan dengan bebas pranala",
@@ -85,6 +86,7 @@
 	"multimediaviewer-embed-via": "Lewat $1.",
 	"multimediaviewer-default-embed-dimensions": "Ukuran gambar mini baku",
 	"multimediaviewer-original-embed-dimensions": "Berkas asli $1",
+	"multimediaviewer-xl-embed-dimensions": "Ekstra besar $1",
 	"multimediaviewer-large-embed-dimensions": "Besar $1",
 	"multimediaviewer-medium-embed-dimensions": "Sedang $1",
 	"multimediaviewer-small-embed-dimensions": "Kecil $1",

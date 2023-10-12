@@ -1,14 +1,21 @@
 <?php
 
-use MediaWiki\Logger\LoggerFactory;
+namespace MediaWiki\Extension\Scribunto\Engines\LuaStandalone;
 
-class Scribunto_LuaStandaloneEngine extends Scribunto_LuaEngine {
+use Exception;
+use MediaWiki\Logger\LoggerFactory;
+use ParserOutput;
+use Scribunto_LuaEngine;
+use Wikimedia\AtEase\AtEase;
+
+class LuaStandaloneEngine extends Scribunto_LuaEngine {
+	/** @var int|null */
 	protected static $clockTick;
-	/** @var array|bool */
+	/** @var array|false */
 	public $initialStatus;
 
 	/**
-	 * @var Scribunto_LuaStandaloneInterpreter
+	 * @var LuaStandaloneInterpreter
 	 */
 	protected $interpreter;
 
@@ -29,7 +36,7 @@ class Scribunto_LuaStandaloneEngine extends Scribunto_LuaEngine {
 	}
 
 	/** @inheritDoc */
-	public function reportLimitData( ParserOutput $output ) {
+	public function reportLimitData( ParserOutput $parserOutput ) {
 		try {
 			$this->load();
 		} catch ( Exception $e ) {
@@ -37,58 +44,50 @@ class Scribunto_LuaStandaloneEngine extends Scribunto_LuaEngine {
 		}
 		if ( $this->initialStatus ) {
 			$status = $this->interpreter->getStatus();
-			$output->setLimitReportData( 'scribunto-limitreport-timeusage',
+			$parserOutput->setLimitReportData( 'scribunto-limitreport-timeusage',
 				[
 					sprintf( "%.3f", $status['time'] / $this->getClockTick() ),
 					// Strip trailing .0s
 					rtrim( rtrim( sprintf( "%.3f", $this->options['cpuLimit'] ), '0' ), '.' )
 				]
 			);
-			$output->setLimitReportData( 'scribunto-limitreport-virtmemusage',
+			$parserOutput->setLimitReportData( 'scribunto-limitreport-virtmemusage',
 				[
 					$status['vsize'],
 					$this->options['memoryLimit']
 				]
 			);
-			$output->setLimitReportData( 'scribunto-limitreport-estmemusage',
+			$parserOutput->setLimitReportData( 'scribunto-limitreport-estmemusage',
 				$status['vsize'] - $this->initialStatus['vsize']
 			);
 		}
 		$logs = $this->getLogBuffer();
 		if ( $logs !== '' ) {
-			$output->addModules( 'ext.scribunto.logs' );
-			$output->setLimitReportData( 'scribunto-limitreport-logs', $logs );
+			$parserOutput->addModules( [ 'ext.scribunto.logs' ] );
+			$parserOutput->setLimitReportData( 'scribunto-limitreport-logs', $logs );
 		}
 	}
 
 	/** @inheritDoc */
 	public function formatLimitData( $key, &$value, &$report, $isHTML, $localize ) {
-		global $wgLang;
-		$lang = $localize ? $wgLang : Language::factory( 'en' );
 		switch ( $key ) {
 			case 'scribunto-limitreport-logs':
 				if ( $isHTML ) {
 					$report .= $this->formatHtmlLogs( $value, $localize );
 				}
 				return false;
-			case 'scribunto-limitreport-virtmemusage':
-				$value = array_map( [ $lang, 'formatSize' ], $value );
-				break;
-			case 'scribunto-limitreport-estmemusage':
-				$value = $lang->formatSize( $value );
-				break;
 		}
 		return true;
 	}
 
 	/**
-	 * @return mixed
+	 * @return int
 	 */
 	protected function getClockTick() {
 		if ( self::$clockTick === null ) {
-			Wikimedia\suppressWarnings();
+			AtEase::suppressWarnings();
 			self::$clockTick = intval( shell_exec( 'getconf CLK_TCK' ) );
-			Wikimedia\restoreWarnings();
+			AtEase::restoreWarnings();
 			if ( !self::$clockTick ) {
 				self::$clockTick = 100;
 			}
@@ -97,17 +96,17 @@ class Scribunto_LuaStandaloneEngine extends Scribunto_LuaEngine {
 	}
 
 	/**
-	 * @return Scribunto_LuaStandaloneInterpreter
+	 * @return LuaStandaloneInterpreter
 	 */
 	protected function newInterpreter() {
-		return new Scribunto_LuaStandaloneInterpreter( $this, $this->options + [
+		return new LuaStandaloneInterpreter( $this, $this->options + [
 			'logger' => LoggerFactory::getInstance( 'Scribunto' )
 		] );
 	}
 
 	/** @inheritDoc */
 	public function getSoftwareInfo( array &$software ) {
-		$ver = Scribunto_LuaStandaloneInterpreter::getLuaVersion( $this->options );
+		$ver = LuaStandaloneInterpreter::getLuaVersion( $this->options );
 		if ( $ver !== null ) {
 			if ( substr( $ver, 0, 6 ) === 'LuaJIT' ) {
 				$software['[http://luajit.org/ LuaJIT]'] = str_replace( 'LuaJIT ', '', $ver );

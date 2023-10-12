@@ -54,8 +54,9 @@ class ExperimentListRenderer extends ExperimentRenderer {
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
         $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($text)), $cache::TTL_DAY,
             function() use($text, $pageTitle){
-                $parser = new Parser();
-                $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions());
+                global $wgUser;
+                $parser = clone MediaWikiServices::getInstance()->getParser();
+                $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions($wgUser->_newObject()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 

@@ -100,7 +100,7 @@ class ByPageSemanticDataFinder {
 	}
 
 	protected function getPage() {
-		return WikiPage::factory( $this->getTitle() );
+		return ServicesFactory::getInstance()->newPageCreator()->createPage( $this->getTitle() );
 	}
 
 	protected function makeOutputFromPageRevision() {
@@ -110,11 +110,11 @@ class ByPageSemanticDataFinder {
 		$revision = $revisionGuard->newRevisionFromPage( $wikiPage );
 
 		if ( $revision === null ) {
-			throw new UnexpectedValueException( 'Expected a valid Revision' );
+			throw new UnexpectedValueException( 'Expected a valid MediaWiki\Revision\RevisionRecord' );
 		}
 
 		$parserOutput = $wikiPage->getParserOutput(
-			$wikiPage->makeParserOptions( User::newFromId( $revision->getUser() ) ),
+			$wikiPage->makeParserOptions( $revision->getUser() ),
 			$revision->getId()
 		);
 

@@ -1,12 +1,16 @@
 <?php
 
 use MediaWiki\Auth\AuthenticationRequestTestCase;
+use MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest;
+use MediaWiki\Extension\ConfirmEdit\SimpleCaptcha\SimpleCaptcha;
+use MediaWiki\Extension\ConfirmEdit\Store\CaptchaHashStore;
+use MediaWiki\Extension\ConfirmEdit\Store\CaptchaStore;
 
 /**
- * @covers CaptchaAuthenticationRequest
+ * @covers \MediaWiki\Extension\ConfirmEdit\Auth\CaptchaAuthenticationRequest
  */
 class CaptchaAuthenticationRequestTest extends AuthenticationRequestTestCase {
-	public function setUp() : void {
+	public function setUp(): void {
 		parent::setUp();
 		$this->setMwGlobals( [
 			'wgCaptchaClass' => SimpleCaptcha::class,

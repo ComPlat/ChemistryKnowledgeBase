@@ -4,5 +4,8 @@
 			"Kareyac"
 		]
 	},
-	"timeless-projects": "Այլ նախագիծեր"
+	"timeless-namespaces": "Անուանատարածքներ",
+	"timeless-projects": "Այլ նախագիծեր",
+	"timeless-view-history": "Պատմութիւն",
+	"timeless-action-undelete": "Ստորագծել {{PLURAL:$1|մէկ խմբագրութիւն|$1 խմբագրութիւններ}}"
 }

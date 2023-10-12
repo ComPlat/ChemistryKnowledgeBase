@@ -44,8 +44,9 @@ class DOIInfoBox
             $doiRenderer = new DOIRenderer();
             $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
 
-            $parserNew = new Parser();
-            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions());
+            global $wgUser;
+            $parserNew = clone MediaWikiServices::getInstance()->getParser();
+            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions($wgUser->_newObject()));
             $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
 
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);

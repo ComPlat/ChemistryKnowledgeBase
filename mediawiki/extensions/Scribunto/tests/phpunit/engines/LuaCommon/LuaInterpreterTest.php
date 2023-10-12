@@ -1,14 +1,17 @@
 <?php
 
+use MediaWiki\Extension\Scribunto\ScribuntoException;
+
 abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 	use MediaWikiCoversValidator;
 
 	/**
+	 * @param array $opts
 	 * @return Scribunto_LuaInterpreter
 	 */
 	abstract protected function newInterpreter( $opts = [] );
 
-	protected function setUp() : void {
+	protected function setUp(): void {
 		parent::setUp();
 		try {
 			$this->newInterpreter();
@@ -18,7 +21,7 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 	}
 
 	protected function getBusyLoop( $interpreter ) {
-		$chunk = $interpreter->loadString( '
+		return $interpreter->loadString( '
 			local args = {...}
 			local x, i
 			local s = string.rep("x", 1000000)
@@ -29,7 +32,6 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 				if e and os.clock() >= e then break end
 			end',
 			'busy' );
-		return $chunk;
 	}
 
 	/** @dataProvider provideRoundtrip */
@@ -68,14 +70,14 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 
 		$passthru = $interpreter->loadString( 'return ...', 'passthru' );
 		$ret = $interpreter->callFunction( $passthru, NAN );
-		$this->assertTrue( is_nan( $ret[0] ), 'NaN was not passed through' );
+		$this->assertNan( $ret[0], 'NaN was not passed through' );
 
 		$interpreter->registerLibrary( 'test',
 			[ 'passthru' => [ $this, 'passthru' ] ] );
 		$doublePassthru = $interpreter->loadString(
 			'return test.passthru(...)', 'doublePassthru' );
 		$ret = $interpreter->callFunction( $doublePassthru, NAN );
-		$this->assertTrue( is_nan( $ret[0] ), 'NaN was not double passed through' );
+		$this->assertNan( $ret[0], 'NaN was not double passed through' );
 	}
 
 	private function normalizeOrder( $a ) {
@@ -123,8 +125,10 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 		try {
 			$interpreter->callFunction(
 				$chunk,
-				1e9, // Arbitrary large quantity of work for the loop
-				2 // Early termination condition: 1 second CPU limit plus 1 second "fudge factor"
+				// Arbitrary large quantity of work for the loop
+				1e9,
+				// Early termination condition: 1 second CPU limit plus 1 second "fudge factor"
+				2
 			);
 			$this->fail( "Expected ScribuntoException was not thrown" );
 		} catch ( ScribuntoException $ex ) {
@@ -152,7 +156,7 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 
 	public function testWrapPHPFunction() {
 		$interpreter = $this->newInterpreter();
-		$func = $interpreter->wrapPhpFunction( function ( $n ) {
+		$func = $interpreter->wrapPhpFunction( static function ( $n ) {
 			return [ 42, $n ];
 		} );
 		$res = $interpreter->callFunction( $func, 'From PHP' );
@@ -174,7 +178,7 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 
 		// Like a first call to Scribunto_LuaEngine::registerInterface()
 		$interpreter->registerLibrary( 'mw_interface', [
-			'foo' => function ( $v ) use ( &$test1Called ) {
+			'foo' => static function ( $v ) use ( &$test1Called ) {
 				$test1Called = $v;
 			},
 		] );
@@ -183,7 +187,7 @@ abstract class Scribunto_LuaInterpreterTest extends PHPUnit\Framework\TestCase {
 		);
 		// Like a second call to Scribunto_LuaEngine::registerInterface()
 		$interpreter->registerLibrary( 'mw_interface', [
-			'foo' => function ( $v ) use ( &$test2Called ) {
+			'foo' => static function ( $v ) use ( &$test2Called ) {
 				$test2Called = $v;
 			},
 		] );

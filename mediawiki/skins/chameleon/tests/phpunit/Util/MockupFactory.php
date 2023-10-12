@@ -51,7 +51,7 @@ class MockupFactory {
 
 	private $testCase;
 	private $configuration = [
-		'UserIsLoggedIn'      => false,
+		'UserIsRegistered'    => false,
 		'UserEffectiveGroups' => [ '*' ],
 		'UserRights' => [],
 	];
@@ -224,6 +224,7 @@ class MockupFactory {
 			'subtitle'           => 'SomeSubtitle',
 			'undelete'           => 'SomeUndeleteMessage',
 			'dataAfterContent'   => 'SomeDataAfterContent',
+			'catlinks'           => 'SomeCategory',
 		];
 	}
 
@@ -326,25 +327,37 @@ class MockupFactory {
 	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
 	 */
 	protected function getUserStub() {
+		$request = new FauxRequest();
+
 		$user = $this->testCase->getMockBuilder( User::class )
 			->disableOriginalConstructor()
 			->getMock();
 
 		$user->expects( $this->testCase->any() )
-			->method( 'isLoggedIn' )
-			->will( $this->testCase->returnValue( $this->get( 'UserIsLoggedIn', true ) ) );
+			->method( 'isRegistered' )
+			->will( $this->testCase->returnValue( $this->get( 'UserIsRegistered', true ) ) );
 
-		$user->expects( $this->testCase->any() )
-			->method( 'getEffectiveGroups' )
-			->will( $this->testCase->returnValue( $this->get( 'UserEffectiveGroups', 0 ) ) );
+		if ( version_compare( MW_VERSION, '1.38', '<' ) ) {
+			$user->expects( $this->testCase->any() )
+				->method( 'getEffectiveGroups' )
+				->will( $this->testCase->returnValue( $this->get( 'UserEffectiveGroups', 0 ) ) );
+		}
 
 		$user->expects( $this->testCase->any() )
 			->method( 'getTalkPage' )
 			->will( $this->testCase->returnValue( $this->getTitleStub() ) );
 
 		$user->expects( $this->testCase->any() )
-			->method( 'getRights' )
-			->will( $this->testCase->returnValue( $this->get( 'UserRights', [] ) ) );
+			->method( 'getRequest' )
+			->will( $this->testCase->returnValue( $request ) );
+
+		$user->expects( $this->testCase->any() )
+			->method( 'getName' )
+			->will( $this->testCase->returnValue( $this->get( 'UserName', 'FooUser' ) ) );
+
+		$user->expects( $this->testCase->any() )
+			->method( 'getRealName' )
+			->will( $this->testCase->returnValue( $this->get( 'UserRealName', '' ) ) );
 
 		return $user;
 	}
