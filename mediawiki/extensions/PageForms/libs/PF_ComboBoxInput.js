@@ -161,7 +161,7 @@
                                     self.itemFound = true;
                                 }
                                 values.push({
-                                    data: Data[i].title, label: self.highlightText(Data[i].title)
+                                    data: Data[i].title, label: self.highlightText(Data[i].label ? Data[i].label : Data[i].title)
                                 })
                             }
                         }

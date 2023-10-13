@@ -55,6 +55,7 @@ if ($wiki == 'main') {
         'hashLevels' => 2,
     ];
 }
+$wgResourceBasePath = $wgScriptPath;
 
 global $wgSitename;
 $metadata = parseWikiMetadata($wiki);

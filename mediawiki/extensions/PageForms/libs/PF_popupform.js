@@ -684,7 +684,7 @@ window.ext.popupform = ( function () {
 				if (!innerwdw.jQuery) {
 					setTimeout(f, 100);
 				} else {
-					innerwdw.jQuery(form[0])
+					innerwdw.jQuery($form[0])
 						.bind("submit", function (event) {
 							submitok =  innerwdw.validateAll();
 							innersubmitprocessed = true;

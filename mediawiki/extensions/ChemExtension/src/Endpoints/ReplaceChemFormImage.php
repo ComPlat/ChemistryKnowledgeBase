@@ -27,9 +27,7 @@ class ReplaceChemFormImage extends SimpleHandler {
 
         $params = $this->getValidatedParams();
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
-        );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $chemFormId = $chemFormRepo->getChemFormId($params['moleculeKey']);

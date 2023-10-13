@@ -27,7 +27,7 @@ class DOITools {
             $year = $doiData->{'published-online'}->{'date-parts'}[0] ?? '';
         }
 
-        preg_match_all('/([A-zöäüÖÄÜ])\w*/', strip_tags(ArrayTools::getFirstIfArray($doiData->title)), $matches);
+        preg_match_all('/([A-Za-z])[A-Za-z]+/', strip_tags(ArrayTools::getFirstIfArray($doiData->title)), $matches);
         $capitals = implode('', $matches[1]);
         $titleAbbrev = substr($capitals, 0, 3);
 

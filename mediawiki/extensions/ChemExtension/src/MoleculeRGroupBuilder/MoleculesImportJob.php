@@ -33,7 +33,7 @@ class MoleculesImportJob extends Job
         $this->pageCreator = new MoleculePageCreator();
         $this->moleculeRendererClient = new MoleculeRendererClientImpl();
         $this->logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->chemFormRepo = new ChemFormRepository($dbr);
     }
 

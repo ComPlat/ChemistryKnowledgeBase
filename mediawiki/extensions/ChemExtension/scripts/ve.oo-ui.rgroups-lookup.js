@@ -90,7 +90,7 @@
         ajax.getAvailableRGroups().done((response) => {
             setWithExpiry('ChemExtension.AvailableRGroups', response.rgroups, 3600 * 1000);
             availableRGroups = response.rgroups;
-        }).error(() => {
+        }).fail(() => {
             console.log('Error requesting available RGroups. Use default set');
         });
     }

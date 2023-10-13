@@ -14,7 +14,7 @@ diff --git a/mediawiki/extensions/PageForms/libs/PF_popupform.js b/mediawiki/ext
 +				if (!innerwdw.jQuery) {
 +					setTimeout(f, 100);
 +				} else {
-+					innerwdw.jQuery(form[0])
++					innerwdw.jQuery($form[0])
 +						.bind("submit", function (event) {
 +							submitok =  innerwdw.validateAll();
 +							innersubmitprocessed = true;
@@ -26,7 +26,7 @@ diff --git a/mediawiki/extensions/PageForms/libs/PF_popupform.js b/mediawiki/ext
  			// catch inner form submit event
 -			if ( innerJ ) {
 +			/*if ( innerJ ) {
- 				innerwdw.jQuery(form[0])
+ 				innerwdw.jQuery($form[0])
  				.bind( "submit", function( event ) {
  						submitok = ( event.result === undefined ) ? true : event.result;
 @@ -694,7 +707,7 @@

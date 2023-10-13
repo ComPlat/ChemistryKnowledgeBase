@@ -9,8 +9,8 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Hooks;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
-use Parser;
 use ParserOptions;
+use RequestContext;
 use Title;
 
 class ExperimentLinkRenderer extends ExperimentRenderer
@@ -54,9 +54,8 @@ TEMPLATE;
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
         $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($templateCall)), $cache::TTL_DAY,
             function() use($templateCall){
-                global $wgUser;
                 $parser = clone MediaWikiServices::getInstance()->getParser();
-                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions($wgUser->_newObject()));
+                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions(RequestContext::getMain()->getUser()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 

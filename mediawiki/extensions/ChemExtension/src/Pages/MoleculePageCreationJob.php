@@ -229,7 +229,7 @@ class MoleculePageCreationJob extends Job
 
     private function renderMoleculeIfNecessary()
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY );
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $img = $chemFormRepo->getChemFormImageByKey($this->chemForm->getMoleculeKey());

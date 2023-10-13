@@ -142,7 +142,7 @@ wfLoadSkin( 'Vector' );
 # Logos
 #################################################################
 $wgLogos = ['1x' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png"];
-$wgFavicon = "/extensions/ChemExtension/resources/favicon.ico";
+$wgFavicon = "$wgScriptPath/extensions/ChemExtension/resources/favicon.ico";
 
 #################################################################
 # General settings
@@ -193,9 +193,6 @@ $wgHashedUploadDirectory = true;
 
 # deactivate MW autocomplete
 $wgEnableOpenSearchSuggest = false;
-
-# Erlaube das "<img>"-tag
-$wgAllowImageTag=true;
 
 
 #################################################################

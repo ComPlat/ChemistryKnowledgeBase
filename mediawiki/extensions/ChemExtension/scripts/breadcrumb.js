@@ -74,17 +74,21 @@
     }
 
     function initializePublicationFilter() {
-        let input = OO.ui.infuse($('#ce-publication-filter-input'));
-        input.on('enter', () => {
-            searchForPublication(input);
+        let filterInput = $('#ce-publication-filter-input');
+        if (filterInput.length == 0) {
+            return;
+        }
+        let oouiInput = OO.ui.infuse(filterInput);
+        oouiInput.on('enter', () => {
+            searchForPublication(oouiInput);
         });
         let handle = null;
-        input.on('change', () => {
+        oouiInput.on('change', () => {
             if (handle) {
                 clearTimeout(handle);
             }
             handle = setTimeout(function() {
-                searchForPublication(input);
+                searchForPublication(oouiInput);
             }, 300);
         });
     }
@@ -98,7 +102,7 @@
             let list = $('#ce-publication-list');
             list.empty();
             list.append(result.html);
-        }).error(()=> {
+        }).fail(()=> {
             input.popPending();
         });
     }
@@ -128,7 +132,7 @@
             let list = $('#ce-investigation-list');
             list.empty();
             list.append(result.html);
-        }).error(()=> {
+        }).fail(()=> {
             input.popPending();
         });
     }
@@ -183,7 +187,7 @@
                 .append('open "'+input.getValue()+'" in fulltext search');
             searchHint.empty();
             searchHint.append(a);
-        }).error(()=> {
+        }).fail(()=> {
             input.popPending();
         });
     }

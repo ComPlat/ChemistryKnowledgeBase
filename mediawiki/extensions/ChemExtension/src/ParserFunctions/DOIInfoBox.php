@@ -11,6 +11,7 @@ use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
 use ParserOptions;
+use RequestContext;
 
 class DOIInfoBox
 {
@@ -44,9 +45,8 @@ class DOIInfoBox
             $doiRenderer = new DOIRenderer();
             $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
 
-            global $wgUser;
             $parserNew = clone MediaWikiServices::getInstance()->getParser();
-            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions($wgUser->_newObject()));
+            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions(RequestContext::getMain()->getUser()));
             $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
 
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);

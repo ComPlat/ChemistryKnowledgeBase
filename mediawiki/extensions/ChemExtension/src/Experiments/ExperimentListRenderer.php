@@ -8,12 +8,12 @@ use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
-use MediaWiki\MediaWikiServices;
-use Title;
 use Exception;
-use Parser;
-use ParserOptions;
 use Hooks;
+use MediaWiki\MediaWikiServices;
+use ParserOptions;
+use RequestContext;
+use Title;
 
 class ExperimentListRenderer extends ExperimentRenderer {
 
@@ -54,9 +54,8 @@ class ExperimentListRenderer extends ExperimentRenderer {
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
         $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($text)), $cache::TTL_DAY,
             function() use($text, $pageTitle){
-                global $wgUser;
                 $parser = clone MediaWikiServices::getInstance()->getParser();
-                $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions($wgUser->_newObject()));
+                $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions(RequestContext::getMain()->getUser()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
         });
 

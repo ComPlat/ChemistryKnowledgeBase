@@ -26,7 +26,6 @@ class WikiTools {
     public static function isInVisualEditor(): bool
     {
         global $wgRequest;
-        //return $wgRequest->getVal('veaction') === 'edit';
         return (strpos($wgRequest->getText('title'), '/v3/page/html/') !== false
             || strpos($wgRequest->getText('title'), '/v3/transform/wikitext/to/html/') !== false)
             || $wgRequest->getText('action') == 'visualeditor'
@@ -54,8 +53,7 @@ class WikiTools {
 
 
         if( $user==null ) {
-            global $wgUser;
-            $user = $wgUser;
+            $user = \RequestContext::getMain()->getUser();
         }
 
         if( ! $title instanceof Title ) {

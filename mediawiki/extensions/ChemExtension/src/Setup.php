@@ -155,9 +155,9 @@ class Setup {
     }
 
     private static function createModifyLink() {
-        global $wgUser, $wgTitle;
+        global $wgTitle;
         $link = '';
-        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($wgUser->_newObject());
+        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups(RequestContext::getMain()->getUser());
         if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_MOLECULE) {
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA );
             $chemFormRepo = new ChemFormRepository($dbr);
