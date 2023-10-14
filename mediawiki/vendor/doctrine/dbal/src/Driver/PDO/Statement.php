@@ -7,12 +7,14 @@ use Doctrine\DBAL\Driver\Exception\UnknownParameterType;
 use Doctrine\DBAL\Driver\Result as ResultInterface;
 use Doctrine\DBAL\Driver\Statement as StatementInterface;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\Deprecations\Deprecation;
 use PDO;
 use PDOException;
 use PDOStatement;
 
 use function array_slice;
 use function func_get_args;
+use function func_num_args;
 
 final class Statement implements StatementInterface
 {
@@ -26,8 +28,7 @@ final class Statement implements StatementInterface
         ParameterType::BOOLEAN => PDO::PARAM_BOOL,
     ];
 
-    /** @var PDOStatement */
-    private $stmt;
+    private PDOStatement $stmt;
 
     /**
      * @internal The statement can be only instantiated by its driver connection.
@@ -42,6 +43,15 @@ final class Statement implements StatementInterface
      */
     public function bindValue($param, $value, $type = ParameterType::STRING)
     {
+        if (func_num_args() < 3) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5558',
+                'Not passing $type to Statement::bindValue() is deprecated.'
+                    . ' Pass the type corresponding to the parameter being bound.'
+            );
+        }
+
         $type = $this->convertParamType($type);
 
         try {
@@ -54,20 +64,55 @@ final class Statement implements StatementInterface
     /**
      * {@inheritDoc}
      *
+     * @deprecated Use {@see bindValue()} instead.
+     *
      * @param mixed    $param
      * @param mixed    $variable
      * @param int      $type
      * @param int|null $length
-     * @param mixed    $driverOptions
-     *
-     * @return bool
+     * @param mixed    $driverOptions The usage of the argument is deprecated.
      */
-    public function bindParam($param, &$variable, $type = ParameterType::STRING, $length = null, $driverOptions = null)
-    {
+    public function bindParam(
+        $param,
+        &$variable,
+        $type = ParameterType::STRING,
+        $length = null,
+        $driverOptions = null
+    ): bool {
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/5563',
+            '%s is deprecated. Use bindValue() instead.',
+            __METHOD__
+        );
+
+        if (func_num_args() < 3) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5558',
+                'Not passing $type to Statement::bindParam() is deprecated.'
+                    . ' Pass the type corresponding to the parameter being bound.'
+            );
+        }
+
+        if (func_num_args() > 4) {
+            Deprecation::triggerIfCalledFromOutside(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/4533',
+                'The $driverOptions argument of Statement::bindParam() is deprecated.'
+            );
+        }
+
         $type = $this->convertParamType($type);
 
         try {
-            return $this->stmt->bindParam($param, $variable, $type, ...array_slice(func_get_args(), 3));
+            return $this->stmt->bindParam(
+                $param,
+                $variable,
+                $type,
+                $length ?? 0,
+                ...array_slice(func_get_args(), 4)
+            );
         } catch (PDOException $exception) {
             throw Exception::new($exception);
         }
@@ -78,6 +123,15 @@ final class Statement implements StatementInterface
      */
     public function execute($params = null): ResultInterface
     {
+        if ($params !== null) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5556',
+                'Passing $params to Statement::execute() is deprecated. Bind parameters using'
+                    . ' Statement::bindParam() or Statement::bindValue() instead.'
+            );
+        }
+
         try {
             $this->stmt->execute($params);
         } catch (PDOException $exception) {

@@ -125,11 +125,11 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ArrayType) {
             if ($type instanceof GenericArrayType) {
-                if (!$this->element_type->canCastToType($type->element_type)) {
+                if (!$this->element_type->canCastToType($type->element_type, $code_base)) {
                     return false;
                 }
                 if ((($this->key_type ?: self::KEY_MIXED) & ($type->key_type ?: self::KEY_MIXED)) === 0) {
@@ -144,7 +144,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
                     // However, the scalar_array_key_cast config would make any cast of array keys a valid cast.
                     return false;
                 }
-                return $this->genericArrayElementUnionType()->canCastToUnionType($type->genericArrayElementUnionType());
+                return $this->genericArrayElementUnionType()->canCastToUnionType($type->genericArrayElementUnionType(), $code_base);
             }
             return true;
         }
@@ -154,7 +154,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return true;
         }
         if ($type instanceof GenericIterableType) {
-            return $this->canCastToGenericIterableType($type);
+            return $this->canCastToGenericIterableType($type, $code_base);
         }
 
         $d = \strtolower($type->__toString());
@@ -165,14 +165,14 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return $this->key_type !== self::KEY_STRING;
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
-    protected function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    protected function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ArrayType) {
             if ($type instanceof GenericArrayType) {
-                if (!$this->element_type->canCastToTypeWithoutConfig($type->element_type)) {
+                if (!$this->element_type->canCastToTypeWithoutConfig($type->element_type, $code_base)) {
                     return false;
                 }
                 if ((($this->key_type ?: self::KEY_MIXED) & ($type->key_type ?: self::KEY_MIXED)) === 0) {
@@ -185,7 +185,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
                     // Attempting to cast an int key to a string key (or vice versa) is normally invalid.
                     return false;
                 }
-                return $this->genericArrayElementUnionType()->canCastToUnionTypeWithoutConfig($type->genericArrayElementUnionType());
+                return $this->genericArrayElementUnionType()->canCastToUnionTypeWithoutConfig($type->genericArrayElementUnionType(), $code_base);
             }
             return true;
         }
@@ -195,7 +195,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return true;
         }
         if ($type instanceof GenericIterableType) {
-            return $this->canCastToGenericIterableType($type);
+            return $this->canCastToGenericIterableType($type, $code_base);
         }
 
         $d = \strtolower($type->__toString());
@@ -206,18 +206,19 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return $this->key_type !== self::KEY_STRING;
         }
 
-        return parent::canCastToNonNullableTypeWithoutConfig($type);
+        return parent::canCastToNonNullableTypeWithoutConfig($type, $code_base);
     }
 
     private function canCastToGenericIterableType(
-        GenericIterableType $iterable_type
+        GenericIterableType $iterable_type,
+        CodeBase $code_base
     ): bool {
-        if (!$this->element_type->asPHPDocUnionType()->canCastToUnionType($iterable_type->getElementUnionType())) {
+        if (!$this->element_type->asPHPDocUnionType()->canCastToUnionType($iterable_type->getElementUnionType(), $code_base)) {
             return false;
         }
         // TODO: Account for scalar key casting config
         $key_union_type = self::unionTypeForKeyType($this->key_type);
-        if (!$key_union_type->canCastToUnionType($iterable_type->getKeyUnionType())) {
+        if (!$key_union_type->canCastToUnionType($iterable_type->getKeyUnionType(), $code_base)) {
             return false;
         }
         return true;
@@ -286,7 +287,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
      * @return UnionType returns the array value's union type
      * @phan-override
      */
-    public function iterableValueUnionType(CodeBase $code_base): UnionType
+    public function iterableValueUnionType(CodeBase $code_base = null): UnionType
     {
         return $this->element_type->asPHPDocUnionType();
     }
@@ -316,7 +317,10 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
         $string = $this->element_type->__toString();
         if ($this->key_type === self::KEY_MIXED) {
             // Disambiguation is needed for ?T[] and (?T)[] but not array<int,?T>
-            if ($string[0] === '?' || $this->element_type instanceof FunctionLikeDeclarationType) {
+            $element_type = $this->element_type;
+            if ($string[0] === '?' ||
+                $element_type instanceof FunctionLikeDeclarationType ||
+                $element_type instanceof IntersectionType) {
                 $string = '(' . $string . ')';
             }
             $string = "{$string}[]";
@@ -542,6 +546,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
         $key_types = self::KEY_EMPTY;
         foreach ($union_type->getTypeSet() as $type) {
             if ($type instanceof GenericArrayType) {
+                // e.g. ListType, GenericArrayType
                 $key_types |= $type->key_type;
             } elseif ($type instanceof ArrayShapeType) {
                 if ($type->isNotEmptyArrayShape()) {
@@ -549,6 +554,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
                 }
             }
             // Treating ArrayType as mixed or excluding ArrayType would both cause false positives. Ignore ArrayType.
+            // TODO: Support IterableType for non-arrays?
         }
         // int|string corresponds to KEY_MIXED (KEY_INT|KEY_STRING)
         // And if we're unable to find any types, return KEY_MIXED.
@@ -637,7 +643,13 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             }
             if ($child->kind === \ast\AST_UNPACK) {
                 // PHP 7.4's array spread operator adds integer keys, e.g. `[...$array, 'other' => 'value']`
-                $key_type_enum |= GenericArrayType::KEY_INT;
+                // In php 8.1, this will also add string keys.
+                $key_type_enum |= self::keyTypeFromUnionTypeKeys(UnionTypeVisitor::unionTypeFromNode(
+                    $code_base,
+                    $context,
+                    $child->children['expr'],
+                    $should_catch_issue_exception
+                ));
                 continue;
             }
             // Don't bother recursing more than one level to iterate over possible types.
@@ -716,9 +728,11 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
      * Returns true if this contains a type that is definitely nullable or a non-object.
      * e.g. returns true false, array, int
      *      returns false for callable, object, iterable, T, etc.
+     * @unused-param $code_base
      */
-    public function isDefiniteNonCallableType(): bool
+    public function isDefiniteNonCallableType(CodeBase $code_base): bool
     {
+        // TODO: Check value_type can cast to object|string?
         return $this->key_type === self::KEY_STRING;
     }
 
@@ -749,7 +763,7 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return $this->asPHPDocUnionType();
         }
         // TODO: Override in array shape subclass
-        return $new_element_type->asGenericArrayTypes($this->getKeyType());
+        return $new_element_type->asGenericArrayTypes($this->key_type);
     }
 
     /**
@@ -774,8 +788,8 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
             return null;
         }
         // If a function expects T[], then T is the generic array element type of the passed in union type
-        return static function (UnionType $array_type, Context $context) use ($closure): UnionType {
-            return $closure($array_type->genericArrayElementTypes(), $context);
+        return static function (UnionType $array_type, Context $context) use ($closure, $code_base): UnionType {
+            return $closure($array_type->genericArrayElementTypes(false, $code_base), $context);
         };
     }
 
@@ -832,9 +846,12 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
         });
     }
 
-    public function asCallableType(): ?Type
+    /**
+     * @unused-param $code_base
+     */
+    public function asCallableType(CodeBase $code_base): ?Type
     {
-        if ($this->key_type === self::KEY_INT) {
+        if ($this->key_type === self::KEY_STRING) {
             return null;
         }
         return CallableArrayType::instance(false);
@@ -895,19 +912,30 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
         return ListType::fromElementType($this->element_type, $this->is_nullable, $this->key_type);
     }
 
-    public function isSubtypeOf(Type $type): bool
+    public function isSubtypeOf(Type $type, CodeBase $code_base): bool
     {
+        if ($type instanceof ArrayShapeType || $type instanceof CallableArrayType) {
+            return false;
+        }
         // TODO more specific
-        if (!$this->canCastToType($type)) {
+        if (!$this->canCastToType($type, $code_base)) {
             return false;
         }
         // TODO: Also account for iterables
+        // TODO: Check if key types are compatible?
         if ($type instanceof GenericArrayType) {
-            if (!$this->element_type->isSubtypeOf($type->element_type)) {
+            // Allow non-empty-array to cast to array.
+            // Allow non-empty-list or non-empty-associative-array to cast to non-empty-array. and so on.
+            if (!$this instanceof $type) {
+                if (!($type instanceof NonEmptyGenericArrayType && $this->isDefinitelyNonEmptyArray())) {
+                    return false;
+                }
+            }
+            if (!$this->element_type->isSubtypeOf($type->element_type, $code_base)) {
                 return false;
             }
         } elseif ($type instanceof GenericIterableType) {
-            if (!$this->element_type->asPHPDocUnionType()->hasSubtypeOf($type->getElementUnionType())) {
+            if (!$this->element_type->asPHPDocUnionType()->hasSubtypeOf($type->getElementUnionType(), $code_base)) {
                 return false;
             }
         }
@@ -918,5 +946,13 @@ class GenericArrayType extends ArrayType implements GenericArrayInterface
     {
         yield $this;
         yield from $this->element_type->getTypesRecursively();
+    }
+
+    /**
+     * Returns the equivalent (possibly nullable) list type (or array shape type) for this type.
+     */
+    public function castToListTypes(): UnionType
+    {
+        return ListType::fromElementType($this->element_type, $this->is_nullable)->asPHPDocUnionType();
     }
 }

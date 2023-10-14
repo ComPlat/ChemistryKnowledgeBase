@@ -337,7 +337,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     restore_error_handler();
                 }
 
-                if (!\is_resource($conn)) {
+                if (!$conn) {
                     // If we didn't get a connection, and it wasn't due to a signal from a child process, then stop the daemon.
                     break;
                 }
@@ -806,7 +806,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $most_recent_node_info_request = $this->most_recent_node_info_request;
         if ($most_recent_node_info_request) {
             if ($most_recent_node_info_request instanceof GoToDefinitionRequest) {
-                // @phan-suppress-next-line PhanPartialTypeMismatchArgument, PhanTypeMismatchArgumentNullable
+                // @phan-suppress-next-line PhanTypeMismatchArgumentNullable
                 $most_recent_node_info_request->recordDefinitionLocationList($response_data['definitions'] ?? null);
                 if ($most_recent_node_info_request->isHoverRequest()) {
                     $normalized_hover = $most_recent_node_info_request->setHoverResponse($response_data['hover_response'] ?? null);
@@ -860,39 +860,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         if (count($diagnostics) === 0) {
             return;
         }
-        self::delayBeforePublishDiagnostics();
         foreach ($diagnostics as $diagnostics_uri => $diagnostics_list) {
             $this->client->textDocument->publishDiagnostics($diagnostics_uri, $diagnostics_list);
-        }
-        self::delayAfterPublishDiagnostics();
-    }
-
-    /**
-     * @var float the timestamp when the last group of calls to publishDiagnostics occurred.
-     * This is used for working around issues with language clients that have race conditions processing diagnostics.
-     */
-    private static $last_publish_timestamp = 0;
-
-    private static function delayBeforePublishDiagnostics(): void
-    {
-        $delay = Config::getMinDiagnosticsDelayMs();
-        if ($delay > 0) {
-            $elapsed_ms = 1000 * (\microtime(true) - self::$last_publish_timestamp);
-            $remaining_ms = ($delay - $elapsed_ms);
-            if ($remaining_ms > 0) {
-                \usleep((int)($remaining_ms * 1000));
-            }
-            self::$last_publish_timestamp = \microtime(true);
-        }
-    }
-
-    private static function delayAfterPublishDiagnostics(): void
-    {
-        $delay = Config::getMinDiagnosticsDelayMs();
-        if ($delay > 0) {
-            // Sleep for half of the interval so that when analysis starts,
-            // it's acting on a newer version of the file's contents.
-            \usleep((int)($delay * 1000 / 2));
         }
     }
 
@@ -1097,6 +1066,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
     /**
      * A notification to ask the server to exit its process.
+     * @return never
      */
     public function exit(): void
     {

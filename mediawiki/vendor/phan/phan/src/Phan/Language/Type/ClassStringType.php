@@ -18,6 +18,8 @@ use Phan\Language\UnionType;
  */
 final class ClassStringType extends StringType
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'class-string';
 
@@ -58,6 +60,7 @@ final class ClassStringType extends StringType
         if (!$template_union_type) {
             return UnionType::empty();
         }
+        // TODO: Update uses to support intersection types?
         return $template_union_type->makeFromFilter(static function (Type $type): bool {
             return $type instanceof TemplateType || $type->isObjectWithKnownFQSEN();
         });
@@ -128,5 +131,17 @@ final class ClassStringType extends StringType
             $is_nullable,
             Type::FROM_TYPE
         );
+    }
+
+    /** @override */
+    public function isPossiblyFalsey(): bool
+    {
+        return $this->is_nullable;
+    }
+
+    /** @override */
+    public function isAlwaysTruthy(): bool
+    {
+        return !$this->is_nullable;
     }
 }

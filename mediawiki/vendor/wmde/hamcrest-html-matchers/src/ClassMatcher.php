@@ -2,49 +2,55 @@
 
 namespace WMDE\HamcrestHtml;
 
+use DOMElement;
 use Hamcrest\Description;
 use Hamcrest\Matcher;
 use Hamcrest\Util;
 
-class ClassMatcher extends TagMatcher
-{
-    /**
-     * @var Matcher
-     */
-    private $classMatcher;
+class ClassMatcher extends TagMatcher {
 
-    public static function withClass($class) {
-        return new static(Util::wrapValueWithIsEqual($class));
-    }
+	/**
+	 * @var Matcher
+	 */
+	private $classMatcher;
 
-    public function __construct(Matcher $class)
-    {
-        parent::__construct();
-        $this->classMatcher = $class;
-    }
+	/**
+	 * @param Matcher|string $class
+	 *
+	 * @return self
+	 */
+	public static function withClass( $class ) {
+		return new static( Util::wrapValueWithIsEqual( $class ) );
+	}
 
-    public function describeTo(Description $description)
-    {
-        $description->appendText('with class ')->appendDescriptionOf($this->classMatcher);
-    }
+	public function __construct( Matcher $class ) {
+		parent::__construct();
+		$this->classMatcher = $class;
+	}
 
-    /**
-     * @param \DOMElement $item
-     * @param Description $mismatchDescription
-     *
-     * @return bool
-     */
-    protected function matchesSafelyWithDiagnosticDescription($item, Description $mismatchDescription)
-    {
-        $classAttribute = $item->getAttribute('class');
+	public function describeTo( Description $description ) {
+		$description->appendText( 'with class ' )->appendDescriptionOf( $this->classMatcher );
+	}
 
-        $classes = preg_split('/\s+/u', $classAttribute);
-        foreach ($classes as $class) {
-            if ($this->classMatcher->matches($class)) {
-                return true;
-            }
-        }
+	/**
+	 * @param DOMElement $item
+	 * @param Description $mismatchDescription
+	 *
+	 * @return bool
+	 */
+	protected function matchesSafelyWithDiagnosticDescription(
+		$item, Description $mismatchDescription
+	) {
+		$classAttribute = $item->getAttribute( 'class' );
 
-        return false;
-    }
+		$classes = preg_split( '/\s+/u', $classAttribute );
+		foreach ( $classes as $class ) {
+			if ( $this->classMatcher->matches( $class ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 }

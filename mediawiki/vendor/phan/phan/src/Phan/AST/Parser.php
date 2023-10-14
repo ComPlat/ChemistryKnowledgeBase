@@ -42,7 +42,7 @@ use function error_reporting;
  */
 class Parser
 {
-    /** @var ?Cache<ParseResult> */
+    /** @var ?DiskCache<ParseResult> */
     private static $cache = null;
 
     /**
@@ -62,10 +62,9 @@ class Parser
     }
 
     /**
-     * @return Cache<ParseResult>
-     * @suppress PhanPartialTypeMismatchReturn
+     * @return DiskCache<ParseResult>
      */
-    private static function getCache(): Cache
+    private static function getCache(): DiskCache
     {
         return self::$cache ?? self::$cache = self::makeNewCache();
     }
@@ -374,7 +373,7 @@ class Parser
         if ($last_file_contents !== $file_contents) {
             // Create a brand new reference group
             $new_errors = [];
-            $errors =& $new_errors;
+            $errors = & $new_errors;
             try {
                 self::parseCodePolyfill($code_base, $context, $file_path, $file_contents, true, $request, $errors);
             } catch (Throwable $_) {
@@ -600,7 +599,9 @@ class Parser
     // TODO: Refactor and make more code use this check
     private static function shouldUseNativeAST(): bool
     {
-        if (\PHP_VERSION_ID >= 80000) {
+        if (\PHP_VERSION_ID >= 80100) {
+            $min_version = '1.0.14';
+        } elseif (\PHP_VERSION_ID >= 80000) {
             $min_version = '1.0.10';
         } elseif (\PHP_VERSION_ID >= 70400) {
             $min_version = '1.0.2';

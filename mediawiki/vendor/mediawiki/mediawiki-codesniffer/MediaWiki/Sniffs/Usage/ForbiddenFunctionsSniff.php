@@ -45,6 +45,7 @@ class ForbiddenFunctionsSniff implements Sniff {
 		'strchr' => 'strstr',
 		'assert' => false,
 		'extract' => false,
+		'compact' => false,
 		// Deprecated in PHP 7.2
 		'create_function' => false,
 		'each' => false,
@@ -63,6 +64,8 @@ class ForbiddenFunctionsSniff implements Sniff {
 		'isset' => false,
 		// resource type is going away in PHP 8.0+ (T260735)
 		'is_resource' => false,
+		// define third parameter is deprecated in 7.3
+		'define' => false,
 	];
 
 	/**
@@ -72,12 +75,13 @@ class ForbiddenFunctionsSniff implements Sniff {
 		'parse_str' => [ '=', 1 ],
 		'mb_parse_str' => [ '=', 1 ],
 		'isset' => [ '!=', 1 ],
+		'define' => [ '=', 3 ],
 	];
 
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_STRING, T_ISSET ];
 	}
 
@@ -153,7 +157,7 @@ class ForbiddenFunctionsSniff implements Sniff {
 	 * @param int $parenthesis The parenthesis token index.
 	 * @return int
 	 */
-	private function argCount( File $phpcsFile, $parenthesis ) {
+	private function argCount( File $phpcsFile, int $parenthesis ): int {
 		$tokens = $phpcsFile->getTokens();
 		if ( !isset( $tokens[$parenthesis]['parenthesis_closer'] ) ) {
 			return 0;
@@ -200,7 +204,7 @@ class ForbiddenFunctionsSniff implements Sniff {
 	 * @param int $argCount
 	 * @return bool
 	 */
-	private function evaluateCondition( $funcName, $argCount ) {
+	private function evaluateCondition( string $funcName, int $argCount ): bool {
 		[ $condition, $compareCount ] = self::FORBIDDEN_FUNCTIONS_ARG_COUNT[$funcName];
 
 		switch ( $condition ) {
@@ -218,7 +222,7 @@ class ForbiddenFunctionsSniff implements Sniff {
 	 * @param File $phpcsFile
 	 * @param int $stackPtr
 	 */
-	private function addWarningForCondition( $funcName, $phpcsFile, $stackPtr ) {
+	private function addWarningForCondition( string $funcName, File $phpcsFile, int $stackPtr ): void {
 		[ $condition, $compareCount ] = self::FORBIDDEN_FUNCTIONS_ARG_COUNT[$funcName];
 
 		switch ( $condition ) {

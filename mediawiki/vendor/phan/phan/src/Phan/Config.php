@@ -22,6 +22,10 @@ use const PHP_EOL;
 use const PHP_VERSION;
 use const STDERR;
 
+/** @internal hack to use dynamic configuration in class constant */
+
+\define('Phan\AST_VERSION', \version_compare(\phpversion('ast') ?: '1.0.14', '1.0.11') >= 0 || \PHP_VERSION_ID >= 80100 ? 85 : 80);
+
 /**
  * Program configuration.
  *
@@ -41,12 +45,12 @@ class Config
      * The version of the AST (defined in php-ast) that we're using.
      * @see https://github.com/nikic/php-ast#ast-versioning
      */
-    public const AST_VERSION = 70;
+    public const AST_VERSION = namespace\AST_VERSION;
 
     /**
      * The minimum AST extension version in the oldest php version supported by Phan.
      */
-    public const MINIMUM_AST_EXTENSION_VERSION = '1.0.1';
+    public const MINIMUM_AST_EXTENSION_VERSION = namespace\AST_VERSION === 85 ? '1.0.11' : '1.0.7';
 
     /**
      * The version of the Phan plugin system.
@@ -57,7 +61,7 @@ class Config
      * New features increment minor versions, and bug fixes increment patch versions.
      * @suppress PhanUnreferencedPublicClassConstant
      */
-    public const PHAN_PLUGIN_VERSION = '3.3.0';
+    public const PHAN_PLUGIN_VERSION = '3.5.0';
 
     /**
      * @var string|null
@@ -130,7 +134,8 @@ class Config
         // (Phan relies on Reflection for some types, param counts,
         // and checks for undefined classes/methods/functions)
         //
-        // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`, `null`.
+        // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`,
+        // `'8.0'`, `'8.1'`, `null`.
         // If this is set to `null`,
         // then Phan assumes the PHP version which is closest to the minor version
         // of the php executable used to execute Phan.
@@ -141,7 +146,8 @@ class Config
 
         // The PHP version that will be used for feature/syntax compatibility warnings.
         //
-        // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`, `null`.
+        // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`,
+        // `'8.0'`, `'8.1'`, `null`.
         // If this is set to `null`, Phan will first attempt to infer the value from
         // the project's composer.json's `{"require": {"php": "version range"}}` if possible.
         // If that could not be determined, then Phan assumes `target_php_version`.
@@ -418,6 +424,9 @@ class Config
         // As a result, enabling this setting with target_php_version 8.0 may result in false positives for `--redundant-condition-detection` when codebases also support php 7.x.
         'assume_real_types_for_internal_functions' => false,
 
+        // If enabled, Phan will use the php 8.1+ tentative return types available for PHP and extensions.
+        'use_tentative_return_type' => true,
+
         // If enabled, scalars (int, float, bool, string, null)
         // are treated as if they can cast to each other.
         // This does not affect checks of array keys. See `scalar_array_key_cast`.
@@ -542,6 +551,12 @@ class Config
         // too many edges rather than too few edges when guesses
         // have to be made about what references what.
         'dead_code_detection_prefer_false_negative' => true,
+
+        // When this is true, treat a phpdoc or real type
+        // of 'never' as unreachable.
+        //
+        // Disabling this may avoid some false positives.
+        'dead_code_detection_treat_never_type_as_unreachable' => true,
 
         // If true, then before analysis, try to simplify AST into a form
         // which improves Phan's type inference in edge cases.
@@ -919,11 +934,6 @@ class Config
         // Use `--language-server-hide-category` if you want to enable this.
         'language_server_hide_category_of_issues' => false,
 
-        // Should be configured by --language-server-min-diagnostic-delay-ms.
-        // Use this for language clients that have race conditions processing diagnostics.
-        // Max value is 1000 ms.
-        'language_server_min_diagnostics_delay_ms' => 0,
-
         // Set this to false to disable the plugins that Phan uses to infer more accurate return types of `array_map`, `array_filter`, and many other functions.
         //
         // Phan is slightly faster when these are disabled.
@@ -936,6 +946,8 @@ class Config
 
         // Set this to true to make Phan store a full Context inside variables, instead of a FileRef. This could provide more useful info to plugins,
         // but will increase the memory usage by roughly 2.5%.
+        //
+        // TODO: This can be cleaned up in a new major version if nothing is using it (#4386)
         'record_variable_context_and_scope' => false,
 
         // If a literal string type exceeds this length,
@@ -966,7 +978,7 @@ class Config
         //
         // Plugins which are bundled with Phan can be added here by providing their name (e.g. `'AlwaysReturnPlugin'`)
         //
-        // Documentation about available bundled plugins can be found [here](https://github.com/phan/phan/tree/master/.phan/plugins).
+        // Documentation about available bundled plugins can be found [here](https://github.com/phan/phan/tree/v5/.phan/plugins).
         //
         // Alternately, you can pass in the full path to a PHP file with the plugin's implementation (e.g. `'vendor/phan/phan/.phan/plugins/AlwaysReturnPlugin.php'`)
         'plugins' => [
@@ -1225,6 +1237,7 @@ class Config
                 break;
             case 'allow_method_param_type_widening':
                 self::$configuration['allow_method_param_type_widening_original'] = $value;
+                self::$configuration['original_allow_method_param_type_widening_original'] = $value;
                 if ($value === null) {
                     // If this setting is set to null, infer it based on the closest php version id.
                     self::$configuration[$name] = self::$closest_minimum_target_php_version_id >= 70200;
@@ -1267,10 +1280,8 @@ class Config
         self::$closest_target_php_version_id = self::computeClosestTargetPHPVersionId($value);
 
         $min_value = self::$configuration['minimum_target_php_version'];
-        // @phan-suppress-next-line PhanPartialTypeMismatchArgument
         $min_value_id = StringUtil::isNonZeroLengthString($min_value) ? self::computeClosestTargetPHPVersionId($min_value) : null;
 
-        // @phan-suppress-next-line PhanSuspiciousTruthyString, PhanSuspiciousTruthyCondition
         if (!$min_value_id) {
             $min_value_id = self::determineMinimumPHPVersionFromComposer() ?? $min_value_id;
         }
@@ -1278,7 +1289,7 @@ class Config
             $min_value_id = self::computeClosestTargetPHPVersionId(PHP_VERSION);
         }
         self::$closest_minimum_target_php_version_id = (int) \min(self::$closest_target_php_version_id, $min_value_id);
-        if (!isset(self::$configuration['allow_method_param_type_widening_original'])) {
+        if (!isset(self::$configuration['original_allow_method_param_type_widening_original'])) {
             self::$configuration['allow_method_param_type_widening'] = self::$closest_minimum_target_php_version_id >= 70200;
         }
     }
@@ -1312,7 +1323,6 @@ class Config
         if (!\file_exists($path_to_composer_json)) {
             return $contents = [];
         }
-        // @phan-suppress-next-line PhanPossiblyFalseTypeArgumentInternal
         $composer_json_contents = @\file_get_contents($path_to_composer_json);
         if (!is_string($composer_json_contents)) {
             return $contents = [];
@@ -1379,23 +1389,26 @@ class Config
         return '@^(\./)*(' . \implode('|', $parts) . ')([/\\\\]|$)@';
     }
 
+    private const CLOSEST_TARGET_PHP_VERSION_ID_RANGES = [
+        '6.0' => 50600,
+        '7.1' => 70000,
+        '7.2' => 70100,
+        '7.3' => 70200,
+        '7.4' => 70300,
+        '8.0' => 70400,
+        '8.1' => 80000,
+        '8.2' => 80100,
+    ];
+
     private static function computeClosestTargetPHPVersionId(string $version): int
     {
-        if (\version_compare($version, '6.0') < 0) {
-            return 50600;
-        } elseif (\version_compare($version, '7.1') < 0) {
-            return 70000;
-        } elseif (\version_compare($version, '7.2') < 0) {
-            return 70100;
-        } elseif (\version_compare($version, '7.3') < 0) {
-            return 70200;
-        } elseif (\version_compare($version, '7.4') < 0) {
-            return 70300;
-        } elseif (\version_compare($version, '8.0') < 0) {
-            return 70400;
-        } else {
-            return 80000;
+        // for 7.4.11 or 7.4.0 or 7.4 return 7.4, etc.
+        foreach (self::CLOSEST_TARGET_PHP_VERSION_ID_RANGES as $compared_version_string => $resulting_version_id) {
+            if (\version_compare($version, $compared_version_string) < 0) {
+                return $resulting_version_id;
+            }
         }
+        return 80200;
     }
 
     /**
@@ -1557,6 +1570,7 @@ class Config
             'daemonize_tcp_port' => $is_int_strict,
             'dead_code_detection' => $is_bool,
             'dead_code_detection_prefer_false_negative' => $is_bool,
+            'dead_code_detection_treat_never_type_as_unreachable' => $is_bool,
             'directory_list' => $is_string_list,
             'disable_line_based_suppression' => $is_bool,
             'disable_suggestions' => $is_bool,
@@ -1676,18 +1690,6 @@ class Config
     public static function isIssueFixingPluginEnabled(): bool
     {
         return \in_array(__DIR__ . '/Plugin/Internal/IssueFixingPlugin.php', Config::getValue('plugins'), true);
-    }
-
-    /**
-     * Fetches the value of language_server_min_diagnostics_delay_ms, constrained to 0..1000ms
-     */
-    public static function getMinDiagnosticsDelayMs(): float
-    {
-        $delay = Config::getValue('language_server_min_diagnostics_delay_ms');
-        if (\is_numeric($delay) && $delay > 0) {
-            return \min((float)$delay, 1000);
-        }
-        return 0;
     }
 }
 

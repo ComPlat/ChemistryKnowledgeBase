@@ -42,11 +42,11 @@ class Restarter extends XdebugHandler
     }
 
     /**
-     * @param bool $loaded
-     * @return bool
+     * No type hint to allow xdebug-handler v2 usage
+     * @param bool $default
      * @override
      */
-    protected function requiresRestart($loaded)
+    protected function requiresRestart($default): bool
     {
         $excluded_extensions = array_filter(
             $this->disabledExtensions,
@@ -65,14 +65,15 @@ class Restarter extends XdebugHandler
             );
         }
 
-        return $loaded || $this->required;
+        return $default || $this->required;
     }
 
     /**
-     * @return void
+     * No type hint to allow xdebug-handler v2 usage
+     * @param list<string> $command
      * @override
      */
-    protected function restart($command)
+    protected function restart($command): void
     {
         // @phan-suppress-next-line PhanSuspiciousTruthyString
         if ($this->required && $this->tmpIni) {
@@ -87,7 +88,6 @@ class Restarter extends XdebugHandler
             file_put_contents($this->tmpIni, $content);
         }
 
-        /** @psalm-suppress MixedArgument */
         parent::restart($command);
     }
 }

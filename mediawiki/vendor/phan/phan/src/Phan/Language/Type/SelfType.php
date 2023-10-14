@@ -109,9 +109,9 @@ final class SelfType extends StaticOrSelfType
     /**
      * @return Type
      * Either this or 'self' resolved in the given context.
-     * @suppress PhanAccessReadOnlyProperty
      */
-    public function withStaticResolvedInContext(Context $context): Type {
+    public function withStaticResolvedInContext(Context $context): Type
+    {
         // TODO: Special handling of self<static>, if needed?
         return $this->withSelfResolvedInContext($context);
     }
@@ -119,11 +119,11 @@ final class SelfType extends StaticOrSelfType
     /**
      * @return Type
      * 'self' resolved in the given context.
-     * @suppress PhanAccessReadOnlyProperty
      *
      * TODO: Handle `(at)return OtherType<self>`
      */
-    public function withSelfResolvedInContext(Context $context): Type {
+    public function withSelfResolvedInContext(Context $context): Type
+    {
         // If the context isn't in a class scope, there's nothing
         // we can do
         if (!$context->isInClassScope()) {

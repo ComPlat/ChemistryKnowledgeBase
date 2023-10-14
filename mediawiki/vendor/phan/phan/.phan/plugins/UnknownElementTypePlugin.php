@@ -132,7 +132,8 @@ class UnknownElementTypePlugin extends PluginV3 implements
                         $inferred_types[$i] = $combined_type;
                     }
                 }
-            }
+            },
+            $this
         );
     }
 
@@ -284,10 +285,10 @@ class UnknownElementTypePlugin extends PluginV3 implements
             if ($parameter->getUnionType()->isEmpty()) {
                 if ($function->getFQSEN()->isClosure()) {
                     $issue = 'PhanPluginUnknownClosureParamType';
-                    $message = 'Closure {FUNCTION} has no declared or inferred return type for ${PARAMETER}';
+                    $message = 'Closure {FUNCTION} has no declared or inferred parameter type for ${PARAMETER}';
                 } else {
                     $issue = 'PhanPluginUnknownFunctionParamType';
-                    $message = 'Function {FUNCTION} has no declared or inferred return type for ${PARAMETER}';
+                    $message = 'Function {FUNCTION} has no declared or inferred parameter type for ${PARAMETER}';
                 }
                 $warning_closures[$i] = static function () use ($code_base, $issue, $message, $parameter, $function, $i, &$inferred_types): void {
                     $suggestion = self::suggestionFromUnionType($inferred_types[$i] ?? null);
@@ -350,7 +351,8 @@ class UnknownElementTypePlugin extends PluginV3 implements
                         $inferred_types[$i] = $combined_type;
                     }
                 }
-            }
+            },
+            $this
         );
     }
 
@@ -380,8 +382,13 @@ class UnknownElementTypePlugin extends PluginV3 implements
 
     public function finalizeProcess(CodeBase $code_base): void
     {
-        foreach ($this->deferred_checks as $check) {
-            $check($code_base);
+        try {
+            foreach ($this->deferred_checks as $check) {
+                $check($code_base);
+            }
+        } finally {
+            // There were errors in unit tests if this wasn't cleared.
+            $this->deferred_checks = [];
         }
     }
 }

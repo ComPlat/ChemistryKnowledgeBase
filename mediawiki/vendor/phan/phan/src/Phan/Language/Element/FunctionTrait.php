@@ -40,6 +40,7 @@ use Phan\Language\Type\TrueType;
 use Phan\Language\Type\VoidType;
 use Phan\Language\UnionType;
 use Phan\Plugin\ConfigPluginSet;
+use Phan\PluginV3;
 
 use function count;
 use function end;
@@ -54,6 +55,8 @@ use function spl_object_id;
  */
 trait FunctionTrait
 {
+    use HasAttributesTrait;
+
     /**
      * @var Comment|null This is reused when quick mode is off.
      */
@@ -323,8 +326,7 @@ trait FunctionTrait
     }
 
     /**
-     *
-     * The number of required parameters
+     * Set the number of required parameters
      */
     public function setNumberOfRequiredParameters(int $number): void
     {
@@ -412,6 +414,15 @@ trait FunctionTrait
     }
 
     /**
+     * @return bool
+     * True if this method has static variables
+     */
+    public function hasStaticVariable(): bool
+    {
+        return $this->getPhanFlagsHasState(Flags::HAS_STATIC_VARIABLE);
+    }
+
+    /**
      * @param bool $has_return
      * Set to true to mark this method as having a
      * return value
@@ -438,6 +449,22 @@ trait FunctionTrait
             $this->getPhanFlags(),
             Flags::HAS_YIELD,
             $has_yield
+        ));
+    }
+
+    /**
+     * @param bool $has_static_variable
+     * Set to true to mark this method as having a
+     * static variable
+     */
+    public function setHasStaticVariable(bool $has_static_variable): void
+    {
+        // TODO: In a future release of php-ast, this information will be part of the function node's flags.
+        // (PHP 7.1+ only, not supported in PHP 7.0)
+        $this->setPhanFlags(Flags::bitVectorWithState(
+            $this->getPhanFlags(),
+            Flags::HAS_STATIC_VARIABLE,
+            $has_static_variable
         ));
     }
 
@@ -738,6 +765,11 @@ trait FunctionTrait
         $parameter_offset = 0;
         $function_parameter_list = $function->getParameterList();
         $real_parameter_name_map = [];
+        if ($function->getPhanFlags() & Flags::NO_NAMED_ARGUMENTS) {
+            foreach ($function_parameter_list as $parameter) {
+                $parameter->setHasNoNamedArguments();
+            }
+        }
         foreach ($function_parameter_list as $parameter) {
             $real_parameter_name_map[$parameter->getName()] = $parameter;
             self::addParamToScopeOfFunctionOrMethod(
@@ -860,7 +892,8 @@ trait FunctionTrait
             // issue.
             if (!$default_is_null) {
                 if (!$default_type->canCastToUnionType(
-                    $parameter->getUnionType()
+                    $parameter->getUnionType(),
+                    $code_base
                 )) {
                     Issue::maybeEmit(
                         $code_base,
@@ -885,7 +918,7 @@ trait FunctionTrait
             // to null
             if ($default_is_null) {
                 if ($was_empty) {
-                    $parameter->addUnionType(MixedType::instance(false)->asPHPDocUnionType());
+                    $parameter->addUnionType(MixedType::instance(true)->asPHPDocUnionType());
                 }
                 // The parameter constructor or above check for wasEmpty already took care of null default case
             } else {
@@ -1123,6 +1156,7 @@ trait FunctionTrait
     /**
      * Make additional analysis logic of this function/method use $closure
      * If callers need to invoke multiple closures, they should pass in a closure to invoke multiple closures or use addFunctionCallAnalyzer.
+     * @suppress PhanUnreferencedPublicMethod
      */
     public function setFunctionCallAnalyzer(Closure $closure): void
     {
@@ -1135,10 +1169,11 @@ trait FunctionTrait
 
     /**
      * Make additional analysis logic of this function/method use $closure in addition to any other closures.
+     * @param ?PluginV3 $plugin @phan-mandatory-param
      */
-    public function addFunctionCallAnalyzer(Closure $closure): void
+    public function addFunctionCallAnalyzer(Closure $closure, PluginV3 $plugin = null): void
     {
-        $closure_id = spl_object_id($closure);
+        $closure_id = spl_object_id($plugin ?? $closure);
         if (isset($this->function_call_analyzer_callback_set[$closure_id])) {
             return;
         }
@@ -1186,7 +1221,7 @@ trait FunctionTrait
             if (!($this instanceof FunctionInterface)) {
                 throw new AssertionError('Expected any class using FunctionTrait to implement FunctionInterface');
             }
-            FunctionTrait::addParamsToScopeOfFunctionOrMethod($this->getContext(), $code_base, $this, $comment);
+            self::addParamsToScopeOfFunctionOrMethod($this->getContext(), $code_base, $this, $comment);
         }
     }
 
@@ -1443,7 +1478,7 @@ trait FunctionTrait
                         $real_return_type->__toString()
                     );
                 }
-                if ($is_exclusively_narrowed && Config::getValue('prefer_narrowed_phpdoc_return_type')) {
+                if ($is_exclusively_narrowed && Config::getValue('prefer_narrowed_phpdoc_return_type') && !$phpdoc_return_type->isNeverType()) {
                     $normalized_phpdoc_return_type = ParameterTypesAnalyzer::normalizeNarrowedParamType($phpdoc_return_type, $real_return_type);
                     if ($normalized_phpdoc_return_type) {
                         // TODO: How does this currently work when there are multiple types in the union type that are compatible?
@@ -1484,7 +1519,7 @@ trait FunctionTrait
                 }
             }
         }
-        foreach ($real_return_type->getTypeSet() as $type) {
+        foreach ($real_return_type->getUniqueFlattenedTypeSet() as $type) {
             if (!$type->isObjectWithKnownFQSEN()) {
                 continue;
             }
@@ -1522,7 +1557,7 @@ trait FunctionTrait
     {
         if ($this->comment) {
             // Template types are identical if they have the same name. See TemplateType::instanceForId.
-            return \in_array($template_type, $this->comment->getTemplateTypeList(), true);
+            return \in_array($template_type->withIsNullable(false), $this->comment->getTemplateTypeList(), true);
         }
         return false;
     }
@@ -1634,18 +1669,18 @@ trait FunctionTrait
             $closure = TemplateType::combineParameterClosures(
                 $closure,
                 /**
-                 * @param list<Node|UnionType|mixed> $parameters
+                 * @param list<Node|UnionType|mixed> $arguments
                  */
-                static function (array $parameters, Context $context) use ($code_base, $i, $closure_for_type): UnionType {
-                    $param_value = $parameters[$i] ?? null;
-                    if ($param_value !== null) {
-                        if ($param_value instanceof UnionType) {
+                static function (array $arguments, Context $context) use ($code_base, $i, $closure_for_type, $parameter): UnionType {
+                    $arg_value = $arguments[$i] ?? ($parameter->hasDefaultValue() ? $parameter->getDefaultValueLiteralType() : null);
+                    if ($arg_value !== null) {
+                        if ($arg_value instanceof UnionType) {
                             // This helper method has two callers - one passes in an array of union types, another passes in the raw nodes.
-                            $param_type = $param_value;
+                            $arg_type = $arg_value;
                         } else {
-                            $param_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $param_value);
+                            $arg_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $arg_value);
                         }
-                        return $closure_for_type($param_type, $context);
+                        return $closure_for_type($arg_type, $context);
                     }
                     return UnionType::empty();
                 }
@@ -1917,6 +1952,22 @@ trait FunctionTrait
     }
 
     /**
+     * Mark this function or method as having a tentative return type
+     */
+    public function setHasTentativeReturnType(): void
+    {
+        $this->setPhanFlags($this->getPhanFlags() | Flags::HAS_TENTATIVE_RETURN_TYPE);
+    }
+
+    /**
+     * Check if this function has a tentative return type
+     */
+    public function hasTentativeReturnType(): bool
+    {
+        return $this->getPhanFlagsHasState(Flags::HAS_TENTATIVE_RETURN_TYPE);
+    }
+
+    /**
      * @return array<mixed, UnionType> very conservatively maps variable names to union types they can have.
      * Entries are omitted if there are possible assignments that aren't known.
      *
@@ -1961,5 +2012,24 @@ trait FunctionTrait
             return;
         }
         $this->last_mandatory_phpdoc_param_offset = $parameter_offset;
+    }
+
+    /**
+     * Returns whether this function is marked with no-named-arguments
+     */
+    public function hasNoNamedArguments(): bool
+    {
+        return $this->getPhanFlagsHasState(Flags::NO_NAMED_ARGUMENTS);
+    }
+
+    /**
+     * Marks this function as having (at)no-named-arguments
+     */
+    public function setHasNoNamedArguments(): void
+    {
+        $this->setPhanFlags($this->getPhanFlags() | Flags::NO_NAMED_ARGUMENTS);
+        foreach ($this->parameter_list as $parameter) {
+            $parameter->setHasNoNamedArguments();
+        }
     }
 }

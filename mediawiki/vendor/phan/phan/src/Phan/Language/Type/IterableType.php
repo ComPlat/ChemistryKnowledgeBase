@@ -16,10 +16,15 @@ use Phan\Language\UnionType;
  */
 class IterableType extends NativeType
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'iterable';
 
-    public function isIterable(): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isIterable(CodeBase $code_base): bool
     {
         return true;
     }
@@ -33,7 +38,15 @@ class IterableType extends NativeType
         // TODO: Check if $other is final and non-iterable
         return $other instanceof IterableType ||
             $other instanceof CallableDeclarationType ||
-            $other->isPossiblyObject();
+            $other->isPossiblyIterable($code_base);
+    }
+
+    /**
+     * @unused-param $code_base
+     */
+    public function isSubtypeOf(Type $type, CodeBase $code_base): bool
+    {
+        return \get_class($type) === IterableType::class || $type instanceof MixedType;
     }
 
     /**
@@ -65,7 +78,7 @@ class IterableType extends NativeType
         return Type::traversableInstance();
     }
 
-    public function asArrayType(): ?Type
+    public function asArrayType(): Type
     {
         return ArrayType::instance(false);
     }

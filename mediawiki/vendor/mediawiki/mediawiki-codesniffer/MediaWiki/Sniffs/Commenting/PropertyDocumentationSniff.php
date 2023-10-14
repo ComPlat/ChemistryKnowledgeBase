@@ -27,47 +27,12 @@ use PHP_CodeSniffer\Util\Tokens;
 
 class PropertyDocumentationSniff implements Sniff {
 
-	/**
-	 * Mapping for swap short types
-	 */
-	private const SHORT_TYPE_MAPPING = [
-		'boolean' => 'bool',
-		'boolean[]' => 'bool[]',
-		'integer' => 'int',
-		'integer[]' => 'int[]',
-	];
-
-	/**
-	 * Mapping for primitive types to case correct
-	 * Cannot just detect case due to classes being uppercase
-	 *
-	 * @var string[]
-	 */
-	private const PRIMITIVE_TYPE_MAPPING = [
-		'Array' => 'array',
-		'Array[]' => 'array[]',
-		'Bool' => 'bool',
-		'Bool[]' => 'bool[]',
-		'Float' => 'float',
-		'Float[]' => 'float[]',
-		'Int' => 'int',
-		'Int[]' => 'int[]',
-		'Mixed' => 'mixed',
-		'Mixed[]' => 'mixed[]',
-		'Null' => 'null',
-		'Null[]' => 'null[]',
-		'Object' => 'object',
-		'Object[]' => 'object[]',
-		'String' => 'string',
-		'String[]' => 'string[]',
-		'Callable' => 'callable',
-		'Callable[]' => 'callable[]',
-	];
+	use DocumentationTypeTrait;
 
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_VARIABLE ];
 	}
 
@@ -80,10 +45,6 @@ class PropertyDocumentationSniff implements Sniff {
 	 * @return void
 	 */
 	public function process( File $phpcsFile, $stackPtr ) {
-		if ( substr( $phpcsFile->getFilename(), -8 ) === 'Test.php' ) {
-			// Don't check documentation for test cases
-			return;
-		}
 		$tokens = $phpcsFile->getTokens();
 
 		// Only for class properties
@@ -154,7 +115,7 @@ class PropertyDocumentationSniff implements Sniff {
 	 * @param File $phpcsFile The file being scanned.
 	 * @param int $commentStart The position in the stack where the comment started.
 	 */
-	private function processVar( File $phpcsFile, $commentStart ) {
+	private function processVar( File $phpcsFile, int $commentStart ): void {
 		$tokens = $phpcsFile->getTokens();
 		$var = null;
 		foreach ( $tokens[$commentStart]['comment_tags'] as $ptr ) {
@@ -171,6 +132,7 @@ class PropertyDocumentationSniff implements Sniff {
 		}
 		if ( $var !== null ) {
 			$varTypeSpacing = $var + 1;
+			// Check spaces before var
 			if ( $tokens[$varTypeSpacing]['code'] === T_DOC_COMMENT_WHITESPACE ) {
 				$expectedSpaces = 1;
 				$currentSpaces = strlen( $tokens[$varTypeSpacing]['content'] );
@@ -193,13 +155,10 @@ class PropertyDocumentationSniff implements Sniff {
 			}
 			if ( $content === '' ) {
 				$error = 'Var type missing for @var tag in class property comment';
-				$phpcsFile->addError( $error, $var, 'MissingvarType' );
+				$phpcsFile->addError( $error, $var, 'MissingVarType' );
 				return;
 			}
-			// The first word of the var type is the actual type
-			$exploded = explode( ' ', $content, 2 );
-			$type = $exploded[0];
-			$comment = $exploded[1] ?? null;
+			[ $type, $separatorLength, $comment ] = $this->splitTypeAndComment( $content );
 			$fixType = false;
 			// Check for unneeded punctation
 			$type = $this->fixTrailingPunctation(
@@ -218,111 +177,44 @@ class PropertyDocumentationSniff implements Sniff {
 			);
 			// Check the type for short types
 			$type = $this->fixShortTypes( $phpcsFile, $varType, $type, $fixType, 'var' );
+			$this->maybeAddObjectTypehintError(
+				$phpcsFile,
+				$varType,
+				$type,
+				'var'
+			);
+			$this->maybeAddTypeTypehintError(
+				$phpcsFile,
+				$varType,
+				$type,
+				'var'
+			);
 			// Check spacing after type
-			if ( $comment !== null ) {
+			if ( $comment !== '' ) {
 				$expectedSpaces = 1;
-				$currentSpaces = strspn( $comment, ' ' ) + 1;
-				if ( $currentSpaces !== $expectedSpaces ) {
+				if ( $separatorLength !== $expectedSpaces ) {
 					$fix = $phpcsFile->addFixableWarning(
 						'Expected %s spaces after var type; %s found',
 						$varType,
 						'SpacingAfterVarType',
-						[ $expectedSpaces, $currentSpaces ]
+						[ $expectedSpaces, $separatorLength ]
 					);
 					if ( $fix ) {
 						$fixType = true;
-						$comment = substr( $comment, $currentSpaces - 1 );
+						$separatorLength = $expectedSpaces;
 					}
 				}
 			}
 			if ( $fixType ) {
 				$phpcsFile->fixer->replaceToken(
 					$varType,
-					$type . ( $comment !== null ? ' ' . $comment : '' )
+					$type . ( $comment !== '' ? str_repeat( ' ', $separatorLength ) . $comment : '' )
 				);
 			}
 		} else {
 			$error = 'Missing @var tag in class property comment';
 			$phpcsFile->addError( $error, $tokens[$commentStart]['comment_closer'], 'MissingVar' );
 		}
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return"
-	 * @return string Updated $typesString
-	 */
-	private function fixShortTypes( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		$typeList = explode( '|', $typesString );
-		foreach ( $typeList as &$type ) {
-			// Corrects long types from both upper and lowercase to lowercase shorttype
-			$key = lcfirst( $type );
-			if ( isset( self::SHORT_TYPE_MAPPING[$key] ) ) {
-				$type = self::SHORT_TYPE_MAPPING[$key];
-				$code = 'NotShort' . str_replace( '[]', 'Array', ucfirst( $type ) ) . ucfirst( $annotation );
-				$fix = $phpcsFile->addFixableError(
-					'Short type of "%s" should be used for @%s tag',
-					$stackPtr,
-					$code,
-					[ $type, $annotation ]
-				) || $fix;
-			} elseif ( isset( self::PRIMITIVE_TYPE_MAPPING[$type] ) ) {
-				$type = self::PRIMITIVE_TYPE_MAPPING[$type];
-				$code = 'UppercasePrimitive' . str_replace( '[]', 'Array', ucfirst( $type ) ) . ucfirst( $annotation );
-				$fix = $phpcsFile->addFixableError(
-					'Lowercase type of "%s" should be used for @%s tag',
-					$stackPtr,
-					$code,
-					[ $type, $annotation ]
-				) || $fix;
-			}
-		}
-		return implode( '|', $typeList );
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return" + "name" or "type"
-	 * @return string Updated $typesString
-	 */
-	private function fixTrailingPunctation( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		if ( preg_match( '/^(.*)((?:(?![\[\]_{}])\p{P})+)$/', $typesString, $matches ) ) {
-			$typesString = $matches[1];
-			$fix = $phpcsFile->addFixableError(
-				'%s should not end with punctuation "%s"',
-				$stackPtr,
-				'NotPunctuation' . str_replace( ' ', '', ucwords( $annotation ) ),
-				[ ucfirst( $annotation ), $matches[2] ]
-			) || $fix;
-		}
-		return $typesString;
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return" + "name" or "type"
-	 * @return string Updated $typesString
-	 */
-	private function fixWrappedParenthesis( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		if ( preg_match( '/^([{\[]+)(.*)([\]}]+)$/', $typesString, $matches ) ) {
-			$typesString = $matches[2];
-			$fix = $phpcsFile->addFixableError(
-				'%s should not be wrapped in parenthesis; %s and %s found',
-				$stackPtr,
-				'NotParenthesis' . str_replace( ' ', '', ucwords( $annotation ) ),
-				[ ucfirst( $annotation ), $matches[1], $matches[3] ]
-			) || $fix;
-		}
-		return $typesString;
 	}
 
 }

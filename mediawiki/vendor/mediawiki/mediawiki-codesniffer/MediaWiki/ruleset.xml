@@ -89,6 +89,7 @@
 	<rule ref="Generic.WhiteSpace.DisallowSpaceIndent" />
 	<rule ref="Generic.WhiteSpace.IncrementDecrementSpacing" />
 	<rule ref="Generic.WhiteSpace.SpreadOperatorSpacingAfter" />
+	<rule ref="Generic.WhiteSpace.LanguageConstructSpacing" />
 
 	<rule ref="PSR2.Classes.ClassDeclaration">
 		<exclude name="PSR2.Classes.ClassDeclaration.SpaceBeforeBrace" />
@@ -100,13 +101,10 @@
 		<exclude name="PSR2.Classes.ClassDeclaration.ExtendsLine" />
 	</rule>
 	<rule ref="PSR2.Classes.PropertyDeclaration" />
-	<rule ref="PSR2.Classes.PropertyDeclaration.Multiple">
-		<!-- We tend to declare multiple properties with one statement -->
-		<severity>0</severity>
-	</rule>
 	<rule ref="Generic.ControlStructures.InlineControlStructure" />
 	<rule ref="PSR2.Files.EndFileNewline" />
 	<rule ref="PSR2.ControlStructures.ElseIfDeclaration" />
+	<rule ref="PSR2.ControlStructures.SwitchDeclaration" />
 	<rule ref="PSR2.Methods.MethodDeclaration" />
 	<rule ref="PSR2.Namespaces.NamespaceDeclaration" />
 	<rule ref="PSR2.Namespaces.UseDeclaration" />
@@ -114,6 +112,7 @@
 
 	<rule ref="PSR12.Files.ImportStatement" />
 	<rule ref="PSR12.Functions.NullableTypeDeclaration" />
+	<rule ref="PSR12.Functions.ReturnTypeDeclaration" />
 	<rule ref="PSR12.Keywords.ShortFormTypeKeywords" />
 	<rule ref="PSR12.Properties.ConstantVisibility" />
 	<rule ref="PSR12.Traits.UseDeclaration" />
@@ -146,7 +145,6 @@
 			<property name="ignoreNewlines" value="true" />
 		</properties>
 	</rule>
-	<rule ref="Squiz.WhiteSpace.LanguageConstructSpacing" />
 	<rule ref="Squiz.WhiteSpace.LogicalOperatorSpacing" />
 	<rule ref="Squiz.WhiteSpace.FunctionSpacing">
 		<properties>
@@ -190,7 +188,5 @@
 	</rule>
 
 	<!-- Exclude common folders from version control or build tools -->
-	<exclude-pattern type="relative">^\.git</exclude-pattern>
-	<exclude-pattern type="relative">^vendor</exclude-pattern>
-	<exclude-pattern type="relative">^node_modules</exclude-pattern>
+	<exclude-pattern type="relative">^(\.git|coverage|node_modules|vendor)/*</exclude-pattern>
 </ruleset>

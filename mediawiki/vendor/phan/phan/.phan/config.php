@@ -33,7 +33,8 @@ return [
     // (Phan relies on Reflection for some types, param counts,
     // and checks for undefined classes/methods/functions)
     //
-    // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`, `null`.
+    // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`,
+    // `'8.0'`, `'8.1'`, `null`.
     // If this is set to `null`,
     // then Phan assumes the PHP version which is closest to the minor version
     // of the php executable used to execute Phan.
@@ -43,13 +44,14 @@ return [
     'target_php_version' => null,
 
     // The PHP version that will be used for feature/syntax compatibility warnings.
-    // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`, `null`.
+    // Supported values: `'5.6'`, `'7.0'`, `'7.1'`, `'7.2'`, `'7.3'`, `'7.4'`,
+    // `'8.0'`, `'8.1'`, `null`.
     // If this is set to `null`, Phan will first attempt to infer the value from
     // the project's composer.json's `{"require": {"php": "version range"}}` if possible.
     // If that could not be determined, then Phan assumes `target_php_version`.
     //
     // For analyzing Phan 3.x, this is determined to be `'7.2'` from `"version": "^7.2.0"`.
-    'minimum_target_php_version' => null,
+    'minimum_target_php_version' => '7.2',
 
     // Default: true. If this is set to true,
     // and target_php_version is newer than the version used to run Phan,
@@ -177,12 +179,6 @@ return [
     // can add quite a bit of time to the analysis.
     // This will also check if final methods are overridden, etc.
     'analyze_signature_compatibility' => true,
-
-    // Set this to true to allow contravariance in real parameter types of method overrides (Introduced in php 7.2)
-    // See https://secure.php.net/manual/en/migration72.new-features.php#migration72.new-features.param-type-widening
-    // (Users may enable this if analyzing projects that support only php 7.2+)
-    // This is false by default. (Will warn if real parameter types are omitted in an override)
-    'allow_method_param_type_widening' => false,
 
     // Set this to true to make Phan guess that undocumented parameter types
     // (for optional parameters) have the same type as default values
@@ -390,6 +386,7 @@ return [
         'phan',
         'phan_client',
         'plugins/codeclimate/engine',
+        'tool/analyze_phpt',
         'tool/make_stubs',
         'tool/pdep',
         'tool/phantasm',
@@ -397,12 +394,15 @@ return [
         'tool/phan_repl_helpers.php',
         'internal/dump_fallback_ast.php',
         'internal/dump_html_styles.php',
+        'internal/emit_signature_map_for_php_version.php',
         'internal/extract_arg_info.php',
+        'internal/flatten_signature_map.php',
         'internal/internalsignatures.php',
         'internal/line_deleter.php',
         'internal/package.php',
         'internal/reflection_completeness_check.php',
         'internal/sanitycheck.php',
+        'internal/sort_signature_map.php',
         'vendor/phpdocumentor/type-resolver/src/Types/ContextFactory.php',
         'vendor/phpdocumentor/reflection-docblock/src/DocBlockFactory.php',
         'vendor/phpdocumentor/reflection-docblock/src/DocBlock.php',
@@ -463,10 +463,11 @@ return [
         'vendor/microsoft/tolerant-php-parser/src',
         'vendor/netresearch/jsonmapper/src',
         'vendor/phpunit/phpunit/src',
-        'vendor/psr/log/Psr',
+        'vendor/psr/log',  // subdirectory depends on dependency version
         'vendor/sabre/event/lib',
         'vendor/symfony/console',
         'vendor/symfony/polyfill-php80',
+        'vendor/tysonandre/var_representation_polyfill/src',
         '.phan/plugins',
         '.phan/stubs',
     ],
@@ -602,11 +603,11 @@ return [
     // NOTE: values can be the base name without the extension for plugins bundled with Phan (E.g. 'AlwaysReturnPlugin')
     // or relative/absolute paths to the plugin (Relative to the project root).
     'plugins' => [
-        'AlwaysReturnPlugin',
+        'AlwaysReturnPlugin',  // i.e. '.phan/plugin/AlwaysReturnPlugin.php' in phan itself
         'DollarDollarPlugin',
         'UnreachableCodePlugin',
         'DuplicateArrayKeyPlugin',
-        '.phan/plugins/PregRegexCheckerPlugin.php',
+        'PregRegexCheckerPlugin',
         'PrintfCheckerPlugin',
         'PHPUnitAssertionPlugin',  // analyze assertSame/assertInstanceof/assertTrue/assertFalse
         'UseReturnValuePlugin',
@@ -652,8 +653,12 @@ return [
 
         // This checks that there are no accidental echos/printfs left inside Phan's code.
         'RemoveDebugStatementPlugin',
-        '.phan/plugins/UnsafeCodePlugin.php',
-        '.phan/plugins/DeprecateAliasPlugin.php',
+        'UnsafeCodePlugin',
+        'DeprecateAliasPlugin',
+        // Suggest '@return never'
+        '.phan/plugins/AddNeverReturnTypePlugin.php',
+        // Still have false positives to suppress
+        // '.phan/plugins/StaticVariableMisusePlugin.php',
 
         ////////////////////////////////////////////////////////////////////////
         // End plugins for Phan's self-analysis

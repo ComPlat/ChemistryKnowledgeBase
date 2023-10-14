@@ -69,7 +69,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
         $get_element_type_of_first_arg = static function (CodeBase $code_base, Context $context, Func $function, array $args) use ($mixed_type, $false_type): UnionType {
             if (\count($args) >= 1) {
                 $array_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[0]);
-                $element_types = $array_type->genericArrayElementTypes();
+                $element_types = $array_type->genericArrayElementTypes(true, $code_base);
                 if (!$element_types->isEmpty()) {
                     return $element_types->withType($false_type);
                 }
@@ -79,7 +79,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
         /**
          * @return Closure(CodeBase, Context, Func, list<Node|int|float|string>): UnionType
          */
-        $get_element_type_of_first_arg_check_nonempty_builder = static function (Type $default_type) use ($mixed_type) : Closure {
+        $get_element_type_of_first_arg_check_nonempty_builder = static function (Type $default_type) use ($mixed_type): Closure {
             /**
              * @param list<Node|int|float|string> $args
              */
@@ -87,7 +87,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                 if (\count($args) >= 1) {
                     $arg_node = $args[0];
                     $array_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[0]);
-                    $element_types = $array_type->genericArrayElementTypes();
+                    $element_types = $array_type->genericArrayElementTypes(true, $code_base);
                     if (!$element_types->isEmpty()) {
                         // We set __phan_is_nonempty because the return type is computed after the original variable type is changed.
                         // @phan-suppress-next-line PhanUndeclaredProperty
@@ -251,7 +251,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                             foreach ($filter_function_list as $filter_function) {
                                 // Analyze that the individual elements passed to array_filter()'s callback make sense.
                                 // TODO: analyze ARRAY_FILTER_USE_KEY, ARRAY_FILTER_USE_BOTH
-                                $passed_array_element_types = $passed_array_type->genericArrayElementTypes();
+                                $passed_array_element_types = $passed_array_type->genericArrayElementTypes(true, $code_base);
                                 $line = $args[0]->lineno ?? $context->getLineNumberStart();
                                 ArgumentType::analyzeParameter(
                                     $code_base,
@@ -330,12 +330,8 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                 $types = $types instanceof UnionType ? $types->withUnionType($new_types) : $new_types;
                 $has_non_array = $has_non_array || (!$passed_array_type->hasRealTypeSet() || !$passed_array_type->asRealUnionType()->nonArrayTypes()->isEmpty());
             }
-            if ($types instanceof UnionType) {
-                $types = $types->withFlattenedTopLevelArrayShapeTypeInstances()
-                               ->withIntegerKeyArraysAsLists();
-            } else {
-                $types = UnionType::empty();
-            }
+            $types = $types->withFlattenedTopLevelArrayShapeTypeInstances()
+                           ->withIntegerKeyArraysAsLists();
             if ($types->isEmpty()) {
                 $types = $types->withType($array_type);
             }
@@ -356,7 +352,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
         ) use (
             $nullable_array_type_set,
             $real_nullable_array
-): UnionType {
+        ): UnionType {
             // TODO: Handle non-empty-array in these methods and convert to non-empty-array.
             if (\count($args) < 2) {
                 return $real_nullable_array;
@@ -388,12 +384,12 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
             /**
              * @param Node|int|string|float|null $argument
              */
-            $get_argument_type_for_array_map = static function ($argument, int $i) use ($get_argument_type, &$cache): UnionType {
+            $get_argument_type_for_array_map = static function ($argument, int $i) use ($get_argument_type, $code_base, &$cache): UnionType {
                 if (isset($cache[$i])) {
                     return $cache[$i];
                 }
                 // Convert T[] to T
-                $argument_type = $get_argument_type($argument, $i)->genericArrayElementTypes();
+                $argument_type = $get_argument_type($argument, $i)->genericArrayElementTypes(true, $code_base);
                 $cache[$i] = $argument_type;
                 return $argument_type;
             };
@@ -449,7 +445,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                     $possible_return_types = $new_element_types;
                 }
             }
-            if (!$possible_return_types || $possible_return_types->isEmpty()) {
+            if ($possible_return_types->isEmpty()) {
                 // This will always be a real array in php 8.0+
                 return $array_map_function->getUnionType();
             }
@@ -471,7 +467,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
             $is_list = false;
 
             foreach ($input_array_type->getTypeSet() as $type) {
-                if ($type->isArrayLike()) {
+                if ($type->isArrayLike($code_base)) {
                     if ($type instanceof ListType) {
                         $is_list = true;
                     } elseif ($type instanceof AssociativeArrayType) {
@@ -537,7 +533,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                 return $real_nullable_array;
             }
             $union_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[0]);
-            $element_type = $union_type->genericArrayElementTypes(true);
+            $element_type = $union_type->genericArrayElementTypes(true, $code_base);
             $result = $element_type->asListTypes();
             if ($result->isEmpty()) {
                 return UnionType::fromFullyQualifiedPHPDocAndRealString('list<mixed>', '?list<mixed>');
@@ -554,8 +550,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                 RedundantCondition::emitInstance(
                     $args[0],
                     $code_base,
-                    // @phan-suppress-next-line PhanPossiblyUndeclaredProperty
-                    (clone($context))->withLineNumberStart($args[0]->lineno),
+                    (clone $context)->withLineNumberStart($args[0]->lineno ?? $context->getLineNumberStart()),
                     Issue::RedundantArrayValuesCall,
                     [
                         $union_type->asRealUnionType(),
@@ -579,7 +574,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
         $each_callback = static function (CodeBase $code_base, Context $context, Func $function, array $args) use ($mixed_type, $false_type, $int_or_string): UnionType {
             if (\count($args) >= 1) {
                 $array_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[0]);
-                $element_types = $array_type->genericArrayElementTypes();
+                $element_types = $array_type->genericArrayElementTypes(true, $code_base);
                 $key_type_enum = GenericArrayType::keyTypeFromUnionTypeKeys($array_type);
                 if ($key_type_enum !== GenericArrayType::KEY_MIXED) {
                     $key_type = GenericArrayType::unionTypeForKeyType($key_type_enum)->withRealTypeSet($int_or_string->getRealTypeSet());
@@ -607,7 +602,7 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
                     ]
                 );
             }
-            return $mixed_type->asPHPDocUnionType();
+            return $false_type->asPHPDocUnionType();
         };
         /**
          * @param list<Node|int|float|string> $args
@@ -618,8 +613,8 @@ final class ArrayReturnTypeOverridePlugin extends PluginV3 implements
             }
             $keys_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[0]);
             $values_type = UnionTypeVisitor::unionTypeFromNode($code_base, $context, $args[1]);
-            $keys_element_type = $keys_type->genericArrayElementTypes();
-            $values_element_type = $values_type->genericArrayElementTypes();
+            $keys_element_type = $keys_type->genericArrayElementTypes(false, $code_base);
+            $values_element_type = $values_type->genericArrayElementTypes(false, $code_base);
             $key_enum_type = GenericArrayType::keyTypeFromUnionTypeValues($keys_element_type);
             $result = $values_element_type->asGenericArrayTypes($key_enum_type);
             return $result->withRealTypeSet($probably_real_assoc_array_falsey->getRealTypeSet());

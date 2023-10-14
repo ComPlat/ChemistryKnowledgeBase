@@ -38,11 +38,11 @@ class Element
     }
 
     // TODO: Revert this change back to the switch statement
-    // when php 7.2 is released and Phan supports php 7.2.
+    // in commonly used places if performance is better - php 7.2 optimizes this when opcache is enabled.
     // TODO: Also look into initializing mappings of ast\Node->kind to ReflectionMethod->getClosure for those methods,
     // it may be more efficient.
     // See https://github.com/php/php-src/pull/2427/files
-    // This decreased the duration of running phan by about 4%
+    // This decreased the duration of running phan by about 4% prior to 7.2
     public const VISIT_LOOKUP_TABLE = [
         ast\AST_ARG_LIST           => 'visitArgList',
         ast\AST_ARRAY              => 'visitArray',
@@ -57,6 +57,7 @@ class Element
         ast\AST_BINARY_OP          => 'visitBinaryOp',
         ast\AST_BREAK              => 'visitBreak',
         ast\AST_CALL               => 'visitCall',
+        ast\AST_CALLABLE_CONVERT   => 'visitCallableConvert',
         ast\AST_CAST               => 'visitCast',
         ast\AST_CATCH              => 'visitCatch',
         ast\AST_CLASS              => 'visitClass',
@@ -76,6 +77,7 @@ class Element
         ast\AST_ECHO               => 'visitEcho',
         ast\AST_EMPTY              => 'visitEmpty',
         ast\AST_ENCAPS_LIST        => 'visitEncapsList',
+        ast\AST_ENUM_CASE          => 'visitEnumCase',
         ast\AST_EXIT               => 'visitExit',
         ast\AST_EXPR_LIST          => 'visitExprList',
         ast\AST_FOREACH            => 'visitForeach',
@@ -115,6 +117,7 @@ class Element
         ast\AST_SWITCH_CASE        => 'visitSwitchCase',
         ast\AST_SWITCH_LIST        => 'visitSwitchList',
         ast\AST_TYPE               => 'visitType',
+        ast\AST_TYPE_INTERSECTION  => 'visitTypeIntersection',
         ast\AST_TYPE_UNION         => 'visitTypeUnion',
         ast\AST_NULLABLE_TYPE      => 'visitNullableType',
         ast\AST_UNARY_OP           => 'visitUnaryOp',
@@ -225,7 +228,12 @@ class Element
      */
     public function acceptClassFlagVisitor(FlagVisitor $visitor)
     {
-        switch ($this->node->flags) {
+        $flags = $this->node->flags;
+        if ($flags & flags\CLASS_ENUM) {
+            // ENUM is combined with abstract
+            return $visitor->visitClassEnum($this->node);
+        }
+        switch ($flags) {
             case flags\CLASS_ABSTRACT:
                 return $visitor->visitClassAbstract($this->node);
             case flags\CLASS_FINAL:

@@ -30,6 +30,7 @@ use Phan\Language\Element\Variable;
 use Phan\Language\FQSEN\FullyQualifiedClassName;
 use Phan\Language\Type;
 use Phan\Language\Type\ArrayShapeType;
+use Phan\Language\Type\ArrayType;
 use Phan\Language\Type\FalseType;
 use Phan\Language\Type\IntType;
 use Phan\Language\Type\IterableType;
@@ -167,6 +168,9 @@ trait ConditionVisitorUtil
         if ($new_fallback->isEmpty()) {
             return $default_empty;
         }
+        if (!$new_fallback->hasRealTypeSet()) {
+            return $new_fallback->withRealTypeSet($default_empty->getRealTypeSet());
+        }
         return $new_fallback;
     }
 
@@ -182,9 +186,8 @@ trait ConditionVisitorUtil
         if (!$context->getScope()->isInFunctionLikeScope()) {
             return null;
         }
-        if (!$context->isInLoop()) {
-            return null;
-        }
+        // Whether or not this is in a loop, try to find fallback types to narrow down reasonable types to expect.
+        // E.g. https://github.com/phan/phan/issues/4550
         $function = $context->getFunctionLikeInScope($this->code_base);
         $result = $function->getVariableTypeFallbackMap($this->code_base)[$var_name] ?? null;
         if ($result && !$result->isEmpty()) {
@@ -392,6 +395,24 @@ trait ConditionVisitorUtil
         );
     }
 
+    final protected function removeEmptyArrayFromVariable(Node $var_node, Context $context): Context
+    {
+        return $this->updateVariableWithConditionalFilter(
+            $var_node,
+            $context,
+            static function (UnionType $type): bool {
+                return $type->hasArray();
+            },
+            static function (UnionType $type): UnionType {
+                return $type->asMappedUnionType(static function (Type $type): Type {
+                    return $type instanceof ArrayType ? $type->asNonFalseyType() : $type;
+                });
+            },
+            true,
+            false
+        );
+    }
+
     /**
      * Returns the type after removing all types that are empty or don't support property or array access
      * @param 1|2|3|4 $access_type ConditionVisitor::ACCESS_IS_*
@@ -496,6 +517,8 @@ trait ConditionVisitorUtil
                 };
             }
         } else {
+            // Remove loosely equal types.
+            // TODO: Does this properly remove null for `$var != 0`?
             $cb = static function (Type $type) use ($value): bool {
                 return $type instanceof LiteralTypeInterface && $type->getValue() == $value;
             };
@@ -820,7 +843,9 @@ trait ConditionVisitorUtil
         $new_real_union_type = $new_union_type->getRealUnionType();
         $combined_real_types = [];
         foreach ($old_union_type->getRealTypeSet() as $type) {
-            // @phan-suppress-next-line PhanAccessMethodInternal
+            if (!$type->asPHPDocUnionType()->hasAnyWeakTypeOverlap($new_real_union_type, $this->code_base)) {
+                continue;
+            }
             // TODO: Implement Type->canWeakCastToUnionType?
             if ($type->isPossiblyFalsey() && !$new_real_union_type->containsFalsey()) {
                 if ($type->isAlwaysFalsey()) {
@@ -836,17 +861,18 @@ trait ConditionVisitorUtil
                 $type = $type->asNonTruthyType();
             }
             if ($type instanceof LiteralTypeInterface) {
+                // If this is a literal type, we only want types that could possibly be loosely equal to this
                 foreach ($new_real_union_type->getTypeSet() as $other_type) {
                     if (!$other_type instanceof LiteralTypeInterface || $type->getValue() == $other_type->getValue()) {
                         $combined_real_types[] = $type;
                         continue 2;
                     }
                 }
+                continue;
             }
             $combined_real_types[] = $type;
         }
         if ($combined_real_types) {
-            // @phan-suppress-next-line PhanPartialTypeMismatchArgument TODO: Remove when intersection types are supported.
             return $new_union_type->withRealTypeSet($combined_real_types);
         }
         return $new_union_type;
@@ -861,8 +887,6 @@ trait ConditionVisitorUtil
         $new_real_union_type = $new_union_type->getRealUnionType();
         $combined_real_types = [];
         foreach ($old_union_type->getRealTypeSet() as $type) {
-            // @phan-suppress-next-line PhanAccessMethodInternal
-            // TODO: Implement Type->canWeakCastToUnionType?
             if ($type->isPossiblyFalsey() && !$new_real_union_type->containsFalsey()) {
                 if ($type->isAlwaysFalsey()) {
                     continue;
@@ -1031,6 +1055,8 @@ trait ConditionVisitorUtil
                     return $this->removeTrueFromVariable($var_node, $context);
                 } elseif ($value === null) {
                     return $this->removeNullFromVariable($var_node, $context, false);
+                } elseif ($value === []) {
+                    return $this->removeEmptyArrayFromVariable($var_node, $context);
                 }
             } else {
                 return $this->removeLiteralScalarFromVariable($var_node, $context, $expr, true);
@@ -1067,6 +1093,8 @@ trait ConditionVisitorUtil
                         return $this->removeFalseyFromVariable($var_node, $context, false);
                     } elseif ($expr === true) {
                         return $this->removeTrueFromVariable($var_node, $context);
+                    } elseif ($expr === []) {
+                        return $this->removeEmptyArrayFromVariable($var_node, $context);
                     }
                 }
                 // Remove all of the types which are loosely equal
@@ -1146,7 +1174,7 @@ trait ConditionVisitorUtil
             }
         }
         if ($right instanceof Node) {
-            $result = $this->analyzeBinaryConditionSide($right, $left, $condition);
+            $result = $this->analyzeBinaryConditionSide($right, $left, $condition->withFlippedOperands());
             if ($result !== null) {
                 return $result;
             }
@@ -1194,7 +1222,7 @@ trait ConditionVisitorUtil
             }
             $kind = $var->kind;
             if ($kind === ast\AST_VAR) {
-                // @phan-suppress-next-line PhanPossiblyUndeclaredProperty
+                // @phan-suppress-next-line PhanPossiblyUndeclaredPropertyOfClass
                 $this->context = (new BlockAnalysisVisitor($this->code_base, $this->context))->__invoke($tmp);
                 return $condition->analyzeVar($this, $var, $expr_node);
             }
@@ -1203,7 +1231,7 @@ trait ConditionVisitorUtil
         // analyze `if (($a = $b) == true)` (etc.) but not `if ((list($x) = expr) == true)`
         // The latter is really a check on expr, not on an array.
         if (($tmp === $var_node || $tmp->kind !== ast\AST_ARRAY) &&
-                ParseVisitor::isConstExpr($expr_node)) {
+                ParseVisitor::isConstExpr($expr_node, ParseVisitor::CONSTANT_EXPRESSION_FORBID_NEW_EXPRESSION)) {
             return $condition->analyzeComplexCondition($this, $tmp, $expr_node);
         }
         return null;
@@ -1227,7 +1255,7 @@ trait ConditionVisitorUtil
         }
         if (!is_string($expr_value)) {
             $expr_type = UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $expr_node);
-            if (!$expr_type->canCastToUnionType(UnionType::fromFullyQualifiedPHPDocString('string|false'))) {
+            if (!$expr_type->canCastToUnionType(UnionType::fromFullyQualifiedPHPDocString('string|false'), $this->code_base)) {
                 Issue::maybeEmit(
                     $this->code_base,
                     $this->context,
@@ -1333,7 +1361,7 @@ trait ConditionVisitorUtil
             if ($int_or_string_type === null) {
                 $int_or_string_type = UnionType::fromFullyQualifiedPHPDocString('?int|?string');
             }
-            if (!$name_node_type->canCastToUnionType($int_or_string_type)) {
+            if (!$name_node_type->canCastToUnionType($int_or_string_type, $this->code_base)) {
                 Issue::maybeEmit($this->code_base, $context, Issue::TypeSuspiciousIndirectVariable, $var_name_node->lineno ?? 0, (string)$name_node_type);
             }
 
@@ -1395,6 +1423,8 @@ trait ConditionVisitorUtil
 
     /**
      * Fetches the function name. Does not check for function uses or namespaces.
+     *
+     * TODO: Check for function uses
      * @param Node $node a node of kind ast\AST_CALL
      * @return ?string (null if function name could not be found)
      */
@@ -1437,7 +1467,7 @@ trait ConditionVisitorUtil
             return $affected_type;
         }
         return $affected_type->makeFromFilter(static function (Type $type) use ($code_base, $excluded_type): bool {
-            return $type instanceof MixedType || !$type->asExpandedTypes($code_base)->canCastToUnionType($excluded_type);
+            return $type instanceof MixedType || !$type->asPHPDocUnionType()->canCastToUnionType($excluded_type, $code_base);
         });
     }
 

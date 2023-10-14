@@ -41,7 +41,7 @@ class MediaWikiHooksHelper {
 	/**
 	 * @return self
 	 */
-	public static function getInstance() : self {
+	public static function getInstance(): self {
 		if ( !self::$instance ) {
 			self::$instance = new self;
 		}
@@ -53,7 +53,7 @@ class MediaWikiHooksHelper {
 	 *
 	 * @suppress PhanUnreferencedPublicMethod
 	 */
-	public function clearCache() : void {
+	public function clearCache(): void {
 		$this->extensionJsonLoaded = false;
 	}
 
@@ -67,12 +67,12 @@ class MediaWikiHooksHelper {
 	 * @param FullyQualifiedFunctionLikeName $fqsen The implementing method
 	 * @return bool true if already registered, false otherwise
 	 */
-	public function registerHook( string $hookName, FullyQualifiedFunctionLikeName $fqsen ) : bool {
+	public function registerHook( string $hookName, FullyQualifiedFunctionLikeName $fqsen ): bool {
 		if ( !isset( $this->hookSubscribers[$hookName] ) ) {
 			$this->hookSubscribers[$hookName] = [];
 		}
 		foreach ( $this->hookSubscribers[$hookName] as $subscribe ) {
-			if ( (string)$subscribe === (string)$fqsen ) {
+			if ( $subscribe === $fqsen ) {
 				// dupe
 				return true;
 			}
@@ -87,11 +87,10 @@ class MediaWikiHooksHelper {
 	 * Assumes extension.json/skin.json is in project root directory
 	 * unless SECURITY_CHECK_EXT_PATH is set
 	 */
-	protected function loadExtensionJson() : void {
+	protected function loadExtensionJson(): void {
 		if ( $this->extensionJsonLoaded ) {
 			return;
 		}
-		$this->extensionJsonLoaded = true;
 		foreach ( [ 'extension.json', 'skin.json' ] as $filename ) {
 			$envPath = getenv( 'SECURITY_CHECK_EXT_PATH' );
 			if ( $envPath ) {
@@ -100,28 +99,56 @@ class MediaWikiHooksHelper {
 				$jsonPath = Config::projectPath( $filename );
 			}
 			if ( file_exists( $jsonPath ) ) {
-				$json = json_decode( file_get_contents( $jsonPath ), true );
-				if ( !is_array( $json ) ) {
-					continue;
-				}
-				if ( isset( $json['Hooks'] ) && is_array( $json['Hooks'] ) ) {
-					foreach ( $json['Hooks'] as $hookName => $cbList ) {
-						foreach ( (array)$cbList as $cb ) {
-							// All callbacks here are simple
-							// "someFunction" or "Class::SomeMethod"
-							if ( strpos( $cb, '::' ) === false ) {
-								$callback = FullyQualifiedFunctionName::fromFullyQualifiedString(
-									$cb
-								);
-							} else {
-								$callback = FullyQualifiedMethodName::fromFullyQualifiedString(
-									$cb
-								);
-							}
-							$this->registerHook( $hookName, $callback );
-						}
+				$this->readJsonFile( $jsonPath );
+			}
+		}
+		$this->extensionJsonLoaded = true;
+	}
+
+	/**
+	 * @param string $jsonPath
+	 */
+	private function readJsonFile( string $jsonPath ): void {
+		$json = json_decode( file_get_contents( $jsonPath ), true );
+		if ( !is_array( $json ) || !isset( $json['Hooks'] ) || !is_array( $json['Hooks'] ) ) {
+			return;
+		}
+		$namedHandlers = [];
+		foreach ( $json['HookHandlers'] ?? [] as $name => $handler ) {
+			// TODO: This key is not unique if more than one extension is being analyzed. Is that wanted, though?
+			$namedHandlers[$name] = $handler;
+		}
+
+		foreach ( $json['Hooks'] as $hookName => $cbList ) {
+			if ( isset( $cbList["handler"] ) ) {
+				$cbList = $cbList["handler"];
+			}
+			if ( is_string( $cbList ) ) {
+				$cbList = [ $cbList ];
+			}
+
+			foreach ( $cbList as $cb ) {
+				if ( isset( $namedHandlers[$cb] ) ) {
+					// TODO ObjectFactory not fully handled here. Would deserve some code in a general-purpose
+					// MediaWiki plugin, see T275742.
+					if ( isset( $namedHandlers[$cb]['class'] ) ) {
+						// Like core's HookContainer::run
+						$normalizedHookName = ucfirst( strtr( $hookName, ':-', '__' ) );
+						$callbackString = $namedHandlers[$cb]['class'] . "::on$normalizedHookName";
+					} elseif ( isset( $namedHandlers[$cb]['factory'] ) ) {
+						// TODO: We'd need a CodeBase to retrieve the factory method and check its return value
+						continue;
+					} else {
+						// @phan-suppress-previous-line PhanPluginDuplicateIfStatements
+						continue;
 					}
+					$callback = FullyQualifiedMethodName::fromFullyQualifiedString( $callbackString );
+				} elseif ( strpos( $cb, '::' ) === false ) {
+					$callback = FullyQualifiedFunctionName::fromFullyQualifiedString( $cb );
+				} else {
+					$callback = FullyQualifiedMethodName::fromFullyQualifiedString( $cb );
 				}
+				$this->registerHook( $hookName, $callback );
 			}
 		}
 	}
@@ -132,7 +159,7 @@ class MediaWikiHooksHelper {
 	 * @param string $hookName Hook in question. Hooks starting with ! are special.
 	 * @return FullyQualifiedFunctionLikeName[]
 	 */
-	public function getHookSubscribers( string $hookName ) : array {
+	public function getHookSubscribers( string $hookName ): array {
 		$this->loadExtensionJson();
 		return $this->hookSubscribers[$hookName] ?? [];
 	}
@@ -145,7 +172,7 @@ class MediaWikiHooksHelper {
 	 * @param FullyQualifiedFunctionLikeName $fqsen The function to check
 	 * @return string|null The hook it is implementing or null if no hook
 	 */
-	public function isSpecialHookSubscriber( FullyQualifiedFunctionLikeName $fqsen ) : ?string {
+	public function isSpecialHookSubscriber( FullyQualifiedFunctionLikeName $fqsen ): ?string {
 		$this->loadExtensionJson();
 		$specialHooks = [
 			'!ParserFunctionHook',
@@ -158,7 +185,7 @@ class MediaWikiHooksHelper {
 				continue;
 			}
 			foreach ( $this->hookSubscribers[$hook] as $implFQSEN ) {
-				if ( (string)$implFQSEN === (string)$fqsen ) {
+				if ( $implFQSEN === $fqsen ) {
 					return $hook;
 				}
 			}

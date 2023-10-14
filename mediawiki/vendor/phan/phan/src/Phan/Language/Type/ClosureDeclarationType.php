@@ -15,6 +15,8 @@ use Phan\Language\Type;
  */
 final class ClosureDeclarationType extends FunctionLikeDeclarationType
 {
+    use NativeTypeTrait;
+
     /** @override */
     public const NAME = 'Closure';
 
@@ -23,28 +25,34 @@ final class ClosureDeclarationType extends FunctionLikeDeclarationType
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    public function canCastToNonNullableType(Type $type): bool
+    public function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
-        if ($type->isCallable()) {
+        if (!$type->isPossiblyObject() || $type->isDefiniteNonCallableType($code_base)) {
+            return false;
+        }
+        if ($type->isCallable($code_base)) {
             if ($type instanceof FunctionLikeDeclarationType) {
-                return $this->canCastToNonNullableFunctionLikeDeclarationType($type);
+                return $this->canCastToNonNullableFunctionLikeDeclarationType($type, $code_base);
             }
             return true;
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
-    public function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    public function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
-        if ($type->isCallable()) {
+        if (!$type->isPossiblyObject()) {
+            return false;
+        }
+        if ($type->isCallable($code_base)) {
             if ($type instanceof FunctionLikeDeclarationType) {
-                return $this->canCastToNonNullableFunctionLikeDeclarationType($type);
+                return $this->canCastToNonNullableFunctionLikeDeclarationType($type, $code_base);
             }
             return true;
         }
 
-        return parent::canCastToNonNullableTypeWithoutConfig($type);
+        return parent::canCastToNonNullableTypeWithoutConfig($type, $code_base);
     }
 
     /**
@@ -66,9 +74,26 @@ final class ClosureDeclarationType extends FunctionLikeDeclarationType
         if (!$other->isPossiblyObject()) {
             return false;
         }
-        if ($other->isObjectWithKnownFQSEN()) {
-            return $other instanceof FunctionLikeDeclarationType || $other instanceof ClosureType || $other->asFQSEN()->__toString() === '\Closure';
+        if ($other->isDefiniteNonCallableType($code_base)) {
+            return false;
+        }
+        if ($other instanceof IterableType) {
+            return false;
+        }
+        if ($other->hasObjectWithKnownFQSEN()) {
+            // Probably overkill to check for intersection types for closure
+            return $other->anyTypePartsMatchCallback(static function (Type $part): bool {
+                return $part instanceof FunctionLikeDeclarationType || $part instanceof ClosureType || $part->asFQSEN()->__toString() === '\Closure';
+            });
         }
         return true;
+    }
+
+    public function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
+    {
+        if (!$type->isPossiblyObject()) {
+            return false;
+        }
+        return parent::isSubtypeOfNonNullableType($type, $code_base);
     }
 }

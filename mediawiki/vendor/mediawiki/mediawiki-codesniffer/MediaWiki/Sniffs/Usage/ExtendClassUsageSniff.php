@@ -1,6 +1,8 @@
 <?php
 /**
- * Report warnings when unexpected function or variable used like.
+ * Report warnings when a global variable or function is used where there's a better
+ * context-aware alternative.
+ *
  * Should use $this->msg() rather than wfMessage() on ContextSource extend.
  * Should use $this->getUser() rather than $wgUser on ContextSource extend.
  * Should use $this->getRequest() rather than $wgRequest on ContextSource extend.
@@ -19,8 +21,8 @@ class ExtendClassUsageSniff implements Sniff {
 	];
 
 	/**
-	 * Blacklist of globals, which cannot be used together with getConfig because there are objects,
-	 * not strings. There are excluded from reporting of this sniff.
+	 * List of globals which cannot be used together with getConfig() because most
+	 * of these are objects. They are excluded from reporting of this sniff.
 	 */
 	private const NON_CONFIG_GLOBALS_MEDIAWIKI_CORE = [
 		'$wgAuth',
@@ -43,7 +45,7 @@ class ExtendClassUsageSniff implements Sniff {
 	];
 
 	/**
-	 * Allow expand of the core blacklist for each extensions over .phpcs.xml by expand this setting.
+	 * Allow extensions add to the above list of non-config globals via .phpcs.xml
 	 * @var string[]
 	 */
 	public $nonConfigGlobals = [];
@@ -76,6 +78,12 @@ class ExtendClassUsageSniff implements Sniff {
 			'QueryPage' => 'ContextSource',
 			'UnlistedSpecialPage' => 'ContextSource',
 			'WantedQueryPage' => 'ContextSource',
+
+			// Subclasses of IndexPager
+			'AlphabeticPager' => 'ContextSource',
+			'RangeChronologicalPager' => 'ContextSource',
+			'ReverseChronologicalPager' => 'ContextSource',
+			'TablePager' => 'ContextSource',
 		],
 		// All details of usage need to be check.
 		'checkList' => [
@@ -128,7 +136,7 @@ class ExtendClassUsageSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [
 			T_CLASS
 		];
@@ -146,10 +154,10 @@ class ExtendClassUsageSniff implements Sniff {
 			return;
 		}
 
-		// Ignore namespace separator at the begin
+		// Ignore namespace separator at the beginning
 		$extClsContent = ltrim( $extClsContent, '\\' );
 
-		// Here should be replaced with a mechanism that check if
+		// This should be replaced with a mechanism that check if
 		// the base class is in the list of restricted classes
 		if ( !isset( self::CHECK_CONFIG['extendsCls'][$extClsContent] ) ) {
 			return;
@@ -166,12 +174,12 @@ class ExtendClassUsageSniff implements Sniff {
 		// Loop over all tokens of the class to check each function
 		$i = $currToken['scope_opener'];
 		$end = $currToken['scope_closer'];
-		$eligableFunc = null;
+		$eligibleFunc = null;
 		$endOfGlobal = null;
 		while ( $i !== false && $i < $end ) {
 			$iToken = $tokens[$i];
 			if ( $iToken['code'] === T_FUNCTION ) {
-				$eligableFunc = null;
+				$eligibleFunc = null;
 				// If this is a function, make sure it's eligible
 				// (i.e. not static or abstract, and has a body).
 				$methodProps = $phpcsFile->getMethodProperties( $i );
@@ -180,7 +188,7 @@ class ExtendClassUsageSniff implements Sniff {
 					&& isset( $iToken['scope_closer'] );
 				if ( !$isStaticOrAbstract && $hasBody ) {
 					$funcNamePtr = $phpcsFile->findNext( T_STRING, $i );
-					$eligableFunc = [
+					$eligibleFunc = [
 						'name' => $tokens[$funcNamePtr]['content'],
 						'scope_start' => $iToken['scope_opener'],
 						'scope_end' => $iToken['scope_closer']
@@ -188,12 +196,12 @@ class ExtendClassUsageSniff implements Sniff {
 				}
 			}
 
-			if ( $eligableFunc !== null
-				&& $i > $eligableFunc['scope_start']
-				&& $i < $eligableFunc['scope_end']
+			if ( $eligibleFunc !== null
+				&& $i > $eligibleFunc['scope_start']
+				&& $i < $eligibleFunc['scope_end']
 			) {
-				// Inside a eligable function,
-				// check the current token against the checklist
+				// Inside eligible function, check the
+				// current token against the checklist
 				foreach ( $extClsCheckList as $value ) {
 					$condition = false;
 					if ( $value['code'] === T_FUNCTION
@@ -240,10 +248,10 @@ class ExtendClassUsageSniff implements Sniff {
 				}
 			}
 			// Jump to the next function
-			if ( $eligableFunc === null
-				|| $i >= $eligableFunc['scope_end']
+			if ( $eligibleFunc === null
+				|| $i >= $eligibleFunc['scope_end']
 			) {
-				$start = $eligableFunc === null ? $i : $eligableFunc['scope_end'];
+				$start = $eligibleFunc === null ? $i : $eligibleFunc['scope_end'];
 				$i = $phpcsFile->findNext( T_FUNCTION, $start + 1, $end );
 				continue;
 			}

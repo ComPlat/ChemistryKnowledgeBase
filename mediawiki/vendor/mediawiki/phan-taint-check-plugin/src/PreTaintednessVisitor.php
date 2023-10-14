@@ -3,7 +3,7 @@
 namespace SecurityCheckPlugin;
 
 use ast\Node;
-use Phan\Language\Element\PassByReferenceVariable;
+use Phan\Language\Element\Parameter;
 use Phan\PluginV3\PluginAwarePreAnalysisVisitor;
 
 /**
@@ -36,7 +36,7 @@ class PreTaintednessVisitor extends PluginAwarePreAnalysisVisitor {
 	 * @see visitMethod
 	 * @param Node $node
 	 */
-	public function visitFuncDecl( Node $node ) : void {
+	public function visitFuncDecl( Node $node ): void {
 		$this->visitMethod( $node );
 	}
 
@@ -44,7 +44,14 @@ class PreTaintednessVisitor extends PluginAwarePreAnalysisVisitor {
 	 * @see visitMethod
 	 * @param Node $node
 	 */
-	public function visitClosure( Node $node ) : void {
+	public function visitClosure( Node $node ): void {
+		$this->visitMethod( $node );
+	}
+
+	/**
+	 * @param Node $node
+	 */
+	public function visitArrowFunc( Node $node ): void {
 		$this->visitMethod( $node );
 	}
 
@@ -61,36 +68,53 @@ class PreTaintednessVisitor extends PluginAwarePreAnalysisVisitor {
 	 * Also handles FuncDecl and Closure
 	 * @param Node $node
 	 */
-	public function visitMethod( Node $node ) : void {
+	public function visitMethod( Node $node ): void {
 		// var_dump( __METHOD__ ); Debug::printNode( $node );
 		$method = $this->context->getFunctionLikeInScope( $this->code_base );
+		// Initialize retObjs to avoid recursing on methods that don't return anything.
+		self::initRetObjs( $method );
+		$promotedProps = [];
+		if ( $node->kind === \ast\AST_METHOD && $node->children['name'] === '__construct' ) {
+			foreach ( $method->getParameterList() as $i => $param ) {
+				if ( $param->getFlags() & Parameter::PARAM_MODIFIER_FLAGS ) {
+					$promotedProps[$i] = $this->getPropInCurrentScopeByName( $param->getName() );
+				}
+			}
+		}
 
 		$params = $node->children['params']->children;
 		foreach ( $params as $i => $param ) {
+			$paramName = $param->children['name'];
 			$scope = $this->context->getScope();
-			if ( !$scope->hasVariableWithName( $param->children['name'] ) ) {
+			if ( !$scope->hasVariableWithName( $paramName ) ) {
 				// Well uh-oh.
-				$this->debug( __METHOD__, "Missing variable for param \$" . $param->children['name'] );
+				$this->debug( __METHOD__, "Missing variable for param \$" . $paramName );
 				continue;
 			}
-			$varObj = $scope->getVariableByName( $param->children['name'] );
-
-			if ( $varObj instanceof PassByReferenceVariable ) {
-				$this->addTaintError(
-					Taintedness::newSafe(),
-					$this->extractReferenceArgument( $varObj )
-				);
-				continue;
-			}
+			$varObj = $scope->getVariableByName( $paramName );
 
 			$paramTypeTaint = $this->getTaintByType( $varObj->getUnionType() );
 			// Initially, the variable starts off with no taint.
-			$this->setTaintednessOld( $varObj, Taintedness::newSafe() );
+			$startTaint = new Taintedness( SecurityCheckPlugin::NO_TAINT );
+			// No point in adding a caused-by line here.
+			self::setTaintednessRaw( $varObj, $startTaint );
 
 			if ( !$paramTypeTaint->isSafe() ) {
 				// If the param is not an integer or something, link it to the func
 				$this->linkParamAndFunc( $varObj, $method, $i );
 			}
+			if ( isset( $promotedProps[$i] ) ) {
+				$this->ensureTaintednessIsSet( $promotedProps[$i] );
+				$paramLinks = self::getMethodLinks( $varObj );
+				if ( $paramLinks ) {
+					$this->mergeTaintDependencies( $promotedProps[$i], $paramLinks, false );
+				}
+				$this->addTaintError( $promotedProps[$i], $startTaint, $paramLinks );
+			}
+		}
+
+		if ( !self::getFuncTaint( $method ) ) {
+			$this->getSetKnownTaintOfFunctionWithoutAnalysis( $method );
 		}
 	}
 
@@ -102,9 +126,19 @@ class PreTaintednessVisitor extends PluginAwarePreAnalysisVisitor {
 	 *
 	 * @param Node $node
 	 */
-	public function visitAssignOp( Node $node ) : void {
+	public function visitAssignOp( Node $node ): void {
 		$lhs = $node->children['var'];
 		$rhs = $node->children['expr'];
+		// @phan-suppress-next-line PhanUndeclaredProperty
 		$node->assignTaintMask = $this->getBinOpTaintMask( $node, $lhs, $rhs );
+	}
+
+	/**
+	 * When a class property is declared
+	 * @param Node $node
+	 */
+	public function visitPropElem( Node $node ): void {
+		$prop = $this->getPropInCurrentScopeByName( $node->children['name'] );
+		$this->ensureTaintednessIsSet( $prop );
 	}
 }

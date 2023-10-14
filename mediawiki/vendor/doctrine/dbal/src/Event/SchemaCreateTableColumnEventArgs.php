@@ -11,21 +11,16 @@ use function func_get_args;
 use function is_array;
 
 /**
- * Event Arguments used when SQL queries for creating table columns are generated inside {@link AbstractPlatform}.
+ * Event Arguments used when SQL queries for creating table columns are generated inside {@see AbstractPlatform}.
  */
 class SchemaCreateTableColumnEventArgs extends SchemaEventArgs
 {
-    /** @var Column */
-    private $column;
-
-    /** @var Table */
-    private $table;
-
-    /** @var AbstractPlatform */
-    private $platform;
+    private Column $column;
+    private Table $table;
+    private AbstractPlatform $platform;
 
     /** @var string[] */
-    private $sql = [];
+    private array $sql = [];
 
     public function __construct(Column $column, Table $table, AbstractPlatform $platform)
     {

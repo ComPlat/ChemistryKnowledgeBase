@@ -15,6 +15,7 @@ use Phan\Language\Element\Flags;
 use Phan\Language\FQSEN;
 use Phan\Language\Scope\TemplateScope;
 use Phan\Language\Type;
+use Phan\Language\Type\GenericMultiType;
 use Phan\Language\Type\StaticType;
 use Phan\Language\Type\TemplateType;
 use Phan\Language\Type\VoidType;
@@ -325,7 +326,15 @@ final class Builder
             if (\strpos($line, '@') === false) {
                 continue;
             }
-            $this->parseCommentLine($i, \trim($line));
+            // https://docs.phpdoc.org/2.9/guides/docblocks.html
+            // > A tag always starts on a new line with an at-sign (@) followed by the name of the tag.
+            // > Between the start of the line and the tag’s name (including at-sign) there may be one or more spaces or tabs.
+            $line = \trim($line);
+            $trimmed = \preg_replace('/^\/?[\*\s]+/', '', $line);
+            if (($trimmed[0] ?? '') !== '@') {
+                continue;
+            }
+            $this->parseCommentLine($i, $line, $trimmed);
         }
 
         if (\count($this->template_type_list)) {
@@ -391,12 +400,13 @@ final class Builder
         ))->build();
     }
 
-    private function parseCommentLine(int $i, string $line): void
+    private function parseCommentLine(int $i, string $line, string $trimmed): void
     {
         // https://secure.php.net/manual/en/regexp.reference.internal-options.php
         // (?i) makes this case-sensitive, (?-1) makes it case-insensitive
         // phpcs:ignore Generic.Files.LineLength.MaxExceeded
-        if (\preg_match('/@((?i)param|deprecated|var|return|throws|throw|returns|inherits|extends|suppress|unused-param|phan-[a-z0-9_-]*(?-i)|method|property|property-read|property-write|abstract|template|PhanClosureScope|readonly|mixin|seal-(?:methods|properties))(?:[^a-zA-Z0-9_\x7f-\xff-]|$)/D', $line, $matches)) {
+        // Support both regular tags ("@something") and inline versions of tags ("optional_prefix {@something}").
+        if (\preg_match('/(?:^|{)@((?i)param|deprecated|var|return|throws|throw|returns|inherits|extends|suppress|unused-param|no-named-arguments|phan-[a-z0-9_-]*(?-i)|method|property|property-read|property-write|abstract|template(?:-covariant)?|PhanClosureScope|readonly|mixin|seal-(?:methods|properties))(?:[^a-zA-Z0-9_\x7f-\xff-]|$)/D', $trimmed, $matches)) {
             $case_sensitive_type = $matches[1];
             $type = \strtolower($case_sensitive_type);
 
@@ -411,7 +421,8 @@ final class Builder
                     $this->maybeParseVarLine($i, $line);
                     break;
                 case 'template':
-                    $this->maybeParseTemplateType($i, $line);
+                case 'template-covariant': // XXX Phan does not actually support @template-covariant semantics, it is just better than treating `T` as a classlike name.
+                    $this->maybeParseTemplateType($i, $line, $type);
                     break;
                 case 'inherits':
                 case 'extends':
@@ -480,6 +491,11 @@ final class Builder
                         $this->comment_flags |= Flags::IS_PHPDOC_ABSTRACT;
                     }
                     break;
+                case 'no-named-arguments':
+                    if ($this->checkCompatible('@no-named-arguments', Comment::ON_CLASS_OR_FUNCTIONLIKE, $i)) {
+                        $this->comment_flags |= Flags::NO_NAMED_ARGUMENTS;
+                    }
+                    break;
                 default:
                     if (\strpos($type, 'phan-') === 0) {
                         $this->maybeParsePhanCustomAnnotation($i, $line, $type, $case_sensitive_type);
@@ -524,15 +540,73 @@ final class Builder
             if ($type->isObjectWithKnownFQSEN()) {
                 $this->phan_overrides['mixin'][] = $type;
             } else {
-                Issue::maybeEmit(
-                    $this->code_base,
-                    $this->context,
+                $this->emitIssue(
                     Issue::InvalidMixin,
                     $this->guessActualLineLocation($i),
                     $type
                 );
             }
         }
+    }
+
+    /**
+     * Add the type alias mapping to $context for the current namespace block.
+     */
+    public static function addTypeAliasMapping(CodeBase $code_base, Context $context, string $alias_name, string $union_type_string, string $line = ''): void
+    {
+        if (Type::isInternalTypeString($alias_name, Type::FROM_PHPDOC)) {
+            Issue::maybeEmit(
+                $code_base,
+                $context,
+                Issue::TypeAliasInternalTypeConflict,
+                $context->getLineNumberStart(),
+                $alias_name,
+                $union_type_string
+            );
+            return;
+        }
+        $union_type = UnionType::fromStringInContext(
+            $union_type_string,
+            $context,
+            Type::FROM_PHPDOC,
+            $code_base
+        );
+        if ($union_type->typeCount() === 0) {
+            Issue::maybeEmit(
+                $code_base,
+                $context,
+                Issue::CommentUnextractableTypeAlias,
+                $context->getLineNumberStart(),
+                $line
+            );
+            return;
+        }
+        $context->addTypeAlias(
+            $alias_name,
+            GenericMultiType::fromTypeSet($union_type->getTypeSet())
+        );
+    }
+
+    /**
+     * @internal
+     */
+    public const PHAN_TYPE_ALIAS_REGEX = '/@phan-type\s+' . self::WORD_REGEX . '\s*=\s*(' . UnionType::union_type_regex . ')/';
+
+    private function parsePhanType(int $i, string $line): void
+    {
+        $lineno = $this->guessActualLineLocation($i);
+        if (!\preg_match(self::PHAN_TYPE_ALIAS_REGEX, $line, $matches)) {
+            $this->emitIssue(
+                Issue::CommentUnextractableTypeAlias,
+                $lineno,
+                $line
+            );
+
+            return;
+        }
+        $alias_name = $matches[1];
+        $union_type_string = $matches[2];
+        self::addTypeAliasMapping($this->code_base, (clone $this->context)->withLineNumberStart($lineno), $alias_name, $union_type_string, $line);
     }
 
     private function parseParamLine(int $i, string $line): void
@@ -583,11 +657,11 @@ final class Builder
         }
     }
 
-    private function maybeParseTemplateType(int $i, string $line): void
+    private function maybeParseTemplateType(int $i, string $line, string $tag_name): void
     {
         // Make sure support for generic types is enabled
         if (Config::getValue('generic_types_enabled')) {
-            if ($this->checkCompatible('@template', Comment::HAS_TEMPLATE_ANNOTATION, $i)) {
+            if ($this->checkCompatible("@$tag_name", Comment::HAS_TEMPLATE_ANNOTATION, $i)) {
                 $template_type = $this->templateTypeFromCommentLine($line);
                 if ($template_type) {
                     $this->template_type_list[$template_type->getName()] = $template_type;
@@ -855,7 +929,7 @@ final class Builder
                 // Do nothing, see BuiltinSuppressionPlugin
                 return;
             case 'phan-template':
-                $this->maybeParseTemplateType($i, $line);
+                $this->maybeParseTemplateType($i, $line, $type);
                 return;
             case 'phan-inherits':
             case 'phan-extends':
@@ -882,6 +956,9 @@ final class Builder
                 return;
             case 'phan-mixin':
                 $this->parseMixin($i, $line, 'phan-mixin');
+                return;
+            case 'phan-type':
+                $this->parsePhanType($i, $line);
                 return;
             default:
                 $this->emitIssueWithSuggestion(
@@ -938,6 +1015,7 @@ final class Builder
         '@phan-suppress-next-next-line' => '',
         '@phan-suppress-previous-line' => '',
         '@phan-template' => '',
+        '@phan-type' => '',
         '@phan-var' => '',
         '@phan-write-only' => '',
     ];
@@ -1079,7 +1157,7 @@ final class Builder
         string $line
     ): ?TemplateType {
         // Backslashes or nested templates wouldn't make sense, so use WORD_REGEX.
-        if (\preg_match('/@(?:phan-)?template\s+(' . self::WORD_REGEX . ')/', $line, $match)) {
+        if (\preg_match('/@(?:phan-)?template(?:-covariant)?\s+(' . self::WORD_REGEX . ')/', $line, $match)) {
             $template_type_identifier = $match[1];
             return TemplateType::instanceForId($template_type_identifier, false);
         }
@@ -1260,7 +1338,6 @@ final class Builder
                 // TODO: Would need to use a different approach if templates were ever supported
                 //       e.g. The magic method parsing doesn't support commas?
                 $params_strings = self::extractMethodParts($arg_list);
-                $failed = false;
                 foreach ($params_strings as $i => $param_string) {
                     $param = $this->magicParamFromMagicMethodParamString($param_string, $i, $comment_line_offset);
                     if ($param === null) {
@@ -1270,13 +1347,9 @@ final class Builder
                             \trim($line),
                             $param_string
                         );
-                        $failed = true;
+                        return null;
                     }
                     $comment_params[] = $param;
-                }
-                if ($failed) {
-                    // Emit everything that was wrong with the parameters of the @method annotation at once, then reject it.
-                    return null;
                 }
             }
 

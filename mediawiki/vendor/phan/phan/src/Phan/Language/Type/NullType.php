@@ -14,8 +14,10 @@ use Phan\Language\UnionType;
  * Singleton representing the type `null`
  * @phan-pure
  */
-final class NullType extends ScalarType
+final class NullType extends ScalarType implements LiteralTypeInterface
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'null';
 
@@ -48,12 +50,12 @@ final class NullType extends ScalarType
         );
     }
 
-    public function canCastToNonNullableType(Type $type): bool
+    public function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         // null_casts_as_any_type means that null or nullable can cast to any type?
         return Config::get_null_casts_as_any_type()
-            || (Config::get_null_casts_as_array() && $type->isArrayLike())
-            || parent::canCastToNonNullableType($type);
+            || (Config::get_null_casts_as_array() && $type->isArrayLike($code_base))
+            || parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
@@ -63,19 +65,23 @@ final class NullType extends ScalarType
      */
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool
     {
-        return $other->isNullable() || $other instanceof MixedType || $other instanceof TemplateType;
+        return $other->isNullable() || $other instanceof TemplateType;
     }
 
-    public function isSubtypeOf(Type $type): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isSubtypeOf(Type $type, CodeBase $code_base): bool
     {
         return $type->isNullable();
     }
 
     /**
      * @unused-param $type
+     * @unused-param $code_base
      * @override
      */
-    public function isSubtypeOfNonNullableType(Type $type): bool
+    public function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
         return false;
     }
@@ -84,8 +90,26 @@ final class NullType extends ScalarType
      * @return bool
      * True if this Type can be cast to the given Type
      * cleanly
+     * @unused-param $code_base
      */
-    public function canCastToType(Type $type): bool
+    public function canCastToTypeWithoutConfig(Type $type, CodeBase $code_base): bool
+    {
+        // Check to see if we have an exact object match
+        if ($this === $type) {
+            return true;
+        }
+
+        // Null can cast to a nullable type or mixed (but not non-null-mixed).
+        return $type->isNullable();
+    }
+
+    /**
+     * @return bool
+     * True if this Type can be cast to the given Type
+     * cleanly (accounting for templates, intersection types, etc.)
+     * @unused-param $code_base
+     */
+    public function canCastToType(Type $type, CodeBase $code_base): bool
     {
         // Check to see if we have an exact object match
         if ($this === $type) {
@@ -93,7 +117,7 @@ final class NullType extends ScalarType
         }
 
         // Null can cast to a nullable type.
-        if ($type->is_nullable) {
+        if ($type->isNullable()) {
             return true;
         }
 
@@ -112,78 +136,11 @@ final class NullType extends ScalarType
                 \in_array($type->getName(), $scalar_implicit_partial['null'] ?? [], true)) {
                 return true;
             }
-        }
-        if (\get_class($type) === MixedType::class) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return bool
-     * True if this Type can be cast to the given Type
-     * cleanly
-     */
-    public function canCastToTypeWithoutConfig(Type $type): bool
-    {
-        // Check to see if we have an exact object match
-        if ($this === $type) {
-            return true;
-        }
-
-        // Null can cast to a nullable type or mixed.
-        if ($type->is_nullable) {
-            return true;
-        }
-
-        if (\get_class($type) === MixedType::class) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return bool
-     * True if this Type can be cast to the given Type
-     * cleanly (accounting for templates)
-     */
-    public function canCastToTypeHandlingTemplates(Type $type, CodeBase $code_base): bool
-    {
-        // Check to see if we have an exact object match
-        if ($this === $type) {
-            return true;
-        }
-
-        // Null can cast to a nullable type.
-        if ($type->is_nullable) {
-            return true;
-        }
-
-        if (Config::get_null_casts_as_any_type()) {
-            return true;
-        }
-
-        // NullType is a sub-type of ScalarType. So it's affected by scalar_implicit_cast.
-        if ($type->isScalar()) {
-            if (Config::getValue('scalar_implicit_cast')) {
-                return true;
-            }
-            $scalar_implicit_partial = Config::getValue('scalar_implicit_partial');
-            // check if $type->getName() is in the list of permitted types $this->getName() can cast to.
-            if (\count($scalar_implicit_partial) > 0 &&
-                \in_array($type->getName(), $scalar_implicit_partial['null'] ?? [], true)) {
-                return true;
-            }
-        }
-        if ($type instanceof MixedType) {
-            return $type->isPossiblyFalsey();
         }
 
         // Test to see if we can cast to the non-nullable version
         // of the target type.
-        return parent::canCastToNonNullableTypeHandlingTemplates($type, $code_base);
+        return false;
     }
 
     /**
@@ -206,6 +163,11 @@ final class NullType extends ScalarType
     }
 
     public function isNullable(): bool
+    {
+        return true;
+    }
+
+    public function isNullableLabeled(): bool
     {
         return true;
     }
@@ -279,5 +241,22 @@ final class NullType extends ScalarType
     public function isScalar(): bool
     {
         return false;
+    }
+
+    /** @return null */
+    public function getValue()
+    {
+        return null;
+    }
+
+    public function asNonLiteralType(): Type
+    {
+        return $this;
+    }
+
+    /** @unused-param $code_base */
+    public function weaklyOverlaps(Type $type, CodeBase $code_base): bool
+    {
+        return $type->isPossiblyFalsey();
     }
 }

@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Doctrine\DBAL\Portability;
 
+use Doctrine\DBAL\Driver\Middleware\AbstractResultMiddleware;
 use Doctrine\DBAL\Driver\Result as ResultInterface;
 
-final class Result implements ResultInterface
+final class Result extends AbstractResultMiddleware
 {
-    /** @var ResultInterface */
-    private $result;
-
-    /** @var Converter */
-    private $converter;
+    private Converter $converter;
 
     /**
      * @internal The result can be only instantiated by the portability connection or statement.
      */
     public function __construct(ResultInterface $result, Converter $converter)
     {
-        $this->result    = $result;
+        parent::__construct($result);
+
         $this->converter = $converter;
     }
 
@@ -29,7 +27,7 @@ final class Result implements ResultInterface
     public function fetchNumeric()
     {
         return $this->converter->convertNumeric(
-            $this->result->fetchNumeric()
+            parent::fetchNumeric()
         );
     }
 
@@ -39,7 +37,7 @@ final class Result implements ResultInterface
     public function fetchAssociative()
     {
         return $this->converter->convertAssociative(
-            $this->result->fetchAssociative()
+            parent::fetchAssociative()
         );
     }
 
@@ -49,7 +47,7 @@ final class Result implements ResultInterface
     public function fetchOne()
     {
         return $this->converter->convertOne(
-            $this->result->fetchOne()
+            parent::fetchOne()
         );
     }
 
@@ -59,7 +57,7 @@ final class Result implements ResultInterface
     public function fetchAllNumeric(): array
     {
         return $this->converter->convertAllNumeric(
-            $this->result->fetchAllNumeric()
+            parent::fetchAllNumeric()
         );
     }
 
@@ -69,7 +67,7 @@ final class Result implements ResultInterface
     public function fetchAllAssociative(): array
     {
         return $this->converter->convertAllAssociative(
-            $this->result->fetchAllAssociative()
+            parent::fetchAllAssociative()
         );
     }
 
@@ -79,22 +77,7 @@ final class Result implements ResultInterface
     public function fetchFirstColumn(): array
     {
         return $this->converter->convertFirstColumn(
-            $this->result->fetchFirstColumn()
+            parent::fetchFirstColumn()
         );
-    }
-
-    public function rowCount(): int
-    {
-        return $this->result->rowCount();
-    }
-
-    public function columnCount(): int
-    {
-        return $this->result->columnCount();
-    }
-
-    public function free(): void
-    {
-        $this->result->free();
     }
 }

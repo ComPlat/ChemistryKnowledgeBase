@@ -12,13 +12,11 @@ use function in_array;
 /**
  * The type registry is responsible for holding a map of all known DBAL types.
  * The types are stored using the flyweight pattern so that one type only exists as exactly one instance.
- *
- * @internal TypeRegistry exists for forward compatibility, its API should not be considered stable.
  */
 final class TypeRegistry
 {
     /** @var array<string, Type> Map of type names and their corresponding flyweight objects. */
-    private $instances;
+    private array $instances;
 
     /**
      * @param array<string, Type> $instances

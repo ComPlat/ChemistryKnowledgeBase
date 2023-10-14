@@ -2,70 +2,69 @@
 
 namespace WMDE\HamcrestHtml;
 
+use DOMDocument;
 use Hamcrest\Description;
 use Hamcrest\Matcher;
 use Hamcrest\TypeSafeDiagnosingMatcher;
 
-class RootElementMatcher extends TypeSafeDiagnosingMatcher
-{
-    /**
-     * @var Matcher
-     */
-    private $tagMatcher;
+class RootElementMatcher extends TypeSafeDiagnosingMatcher {
 
-    /**
-     * @param Matcher|null $tagMatcher
-     *
-     * @return static
-     */
-    public static function havingRootElement(Matcher $tagMatcher = null) {
-        return new static($tagMatcher);
-    }
+	/**
+	 * @var Matcher|null
+	 */
+	private $tagMatcher;
 
-    public function __construct(Matcher $tagMatcher = null)
-    {
-        parent::__construct(self::TYPE_OBJECT, \DOMDocument::class);
-        $this->tagMatcher = $tagMatcher;
-    }
+	/**
+	 * @param Matcher|null $tagMatcher
+	 *
+	 * @return static
+	 */
+	public static function havingRootElement( Matcher $tagMatcher = null ) {
+		return new static( $tagMatcher );
+	}
 
-    public function describeTo(Description $description)
-    {
-        $description->appendText('having root element ');
-        if ($this->tagMatcher) {
-            $description->appendDescriptionOf($this->tagMatcher);
-        }
-    }
+	public function __construct( Matcher $tagMatcher = null ) {
+		parent::__construct( self::TYPE_OBJECT, DOMDocument::class );
+		$this->tagMatcher = $tagMatcher;
+	}
 
-    /**
-     * @param \DOMDocument $item
-     * @param Description $mismatchDescription
-     *
-     * @return bool
-     */
-    protected function matchesSafelyWithDiagnosticDescription($item, Description $mismatchDescription)
-    {
-        $DOMNodeList = iterator_to_array($item->documentElement->childNodes);
+	public function describeTo( Description $description ) {
+		$description->appendText( 'having root element ' );
+		if ( $this->tagMatcher ) {
+			$description->appendDescriptionOf( $this->tagMatcher );
+		}
+	}
 
-        $body = array_shift($DOMNodeList);
-        $DOMNodeList = iterator_to_array($body->childNodes);
-        if (count($DOMNodeList) > 1) {
-            //TODO Test this description
-            $mismatchDescription->appendText('having ' . count($DOMNodeList) . ' root elements ');
-            return false;
-        }
+	/**
+	 * @param DOMDocument $item
+	 * @param Description $mismatchDescription
+	 *
+	 * @return bool
+	 */
+	protected function matchesSafelyWithDiagnosticDescription(
+		$item, Description $mismatchDescription
+	) {
+		$DOMNodeList = $item->documentElement->childNodes->item( 0 )->childNodes;
+		if ( $DOMNodeList->length > 1 ) {
+			// TODO Test this description
+			$mismatchDescription->appendText( 'having ' . $DOMNodeList->length . ' root elements ' );
+			return false;
+		}
 
-        $target = array_shift($DOMNodeList);
-        if (!$target) {
-            //TODO Reproduce?
-            $mismatchDescription->appendText('having no root elements ');
-            return false;
-        }
-        if ($this->tagMatcher) {
-            $mismatchDescription->appendText('root element ');
-            $this->tagMatcher->describeMismatch($target, $mismatchDescription);
-            return $this->tagMatcher->matches($target);
-        }
+		$target = $DOMNodeList->item( 0 );
+		if ( !$target ) {
+			// TODO Reproduce?
+			$mismatchDescription->appendText( 'having no root elements ' );
+			return false;
+		}
 
-        return (bool)$target;
-    }
+		if ( $this->tagMatcher ) {
+			$mismatchDescription->appendText( 'root element ' );
+			$this->tagMatcher->describeMismatch( $target, $mismatchDescription );
+			return $this->tagMatcher->matches( $target );
+		}
+
+		return true;
+	}
+
 }

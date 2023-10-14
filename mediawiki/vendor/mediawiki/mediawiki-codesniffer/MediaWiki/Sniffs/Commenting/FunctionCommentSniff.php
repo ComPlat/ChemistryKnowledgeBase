@@ -19,63 +19,43 @@
 
 namespace MediaWiki\Sniffs\Commenting;
 
+use MediaWiki\Sniffs\PHPUnit\PHPUnitTestTrait;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Util\Tokens;
 
 class FunctionCommentSniff implements Sniff {
 
+	use DocumentationTypeTrait;
+	use PHPUnitTestTrait;
+
 	/**
 	 * Standard class methods that
 	 * don't require documentation
 	 */
 	private const SKIP_STANDARD_METHODS = [
-		'__toString', '__destruct',
-		'__sleep', '__wakeup',
-		'__clone'
-	];
-
-	/**
-	 * Mapping for swap short types
-	 */
-	private const SHORT_TYPE_MAPPING = [
-		'boolean' => 'bool',
-		'boolean[]' => 'bool[]',
-		'integer' => 'int',
-		'integer[]' => 'int[]',
-	];
-
-	/**
-	 * Mapping for primitive types to case correct
-	 * Cannot just detect case due to classes being uppercase
-	 *
-	 * @var string[]
-	 */
-	private const PRIMITIVE_TYPE_MAPPING = [
-		'Array' => 'array',
-		'Array[]' => 'array[]',
-		'Bool' => 'bool',
-		'Bool[]' => 'bool[]',
-		'Float' => 'float',
-		'Float[]' => 'float[]',
-		'Int' => 'int',
-		'Int[]' => 'int[]',
-		'Mixed' => 'mixed',
-		'Mixed[]' => 'mixed[]',
-		'Null' => 'null',
-		'Null[]' => 'null[]',
-		'Object' => 'object',
-		'Object[]' => 'object[]',
-		'String' => 'string',
-		'String[]' => 'string[]',
-		'Callable' => 'callable',
-		'Callable[]' => 'callable[]',
+		'__toString',
+		'__destruct',
+		'__sleep',
+		'__wakeup',
+		'__clone',
+		'__invoke',
+		'__call',
+		'__callStatic',
+		'__get',
+		'__set',
+		'__isset',
+		'__unset',
+		'__serialize',
+		'__unserialize',
+		'__set_state',
+		'__debugInfo',
 	];
 
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_FUNCTION ];
 	}
 
@@ -88,11 +68,6 @@ class FunctionCommentSniff implements Sniff {
 	 * @return void
 	 */
 	public function process( File $phpcsFile, $stackPtr ) {
-		if ( substr( $phpcsFile->getFilename(), -8 ) === 'Test.php' ) {
-			// Don't check documentation for test cases
-			return;
-		}
-
 		$funcName = $phpcsFile->getDeclarationName( $stackPtr );
 		if ( $funcName === null || in_array( $funcName, self::SKIP_STANDARD_METHODS ) ) {
 			// Don't require documentation for an obvious method
@@ -117,7 +92,9 @@ class FunctionCommentSniff implements Sniff {
 			&& $tokens[$commentEnd]['code'] !== T_COMMENT
 		) {
 			// Don't require documentation for functions with no parameters, except getters
-			if ( substr( $funcName, 0, 3 ) === 'get' || $phpcsFile->getMethodParameters( $stackPtr ) ) {
+			if ( ( substr( $funcName, 0, 3 ) === 'get' || $phpcsFile->getMethodParameters( $stackPtr ) )
+				&& !$this->isTestFile( $phpcsFile, $stackPtr )
+			) {
 				$methodProps = $phpcsFile->getMethodProperties( $stackPtr );
 				$phpcsFile->addError(
 					'Missing function doc comment',
@@ -130,13 +107,19 @@ class FunctionCommentSniff implements Sniff {
 			return;
 		}
 		if ( $tokens[$commentEnd]['code'] === T_COMMENT ) {
-			$phpcsFile->addError( 'You must use "/**" style comments for a function comment',
-			$stackPtr, 'WrongStyle' );
+			$phpcsFile->addError(
+				'You must use "/**" style comments for a function comment',
+				$stackPtr,
+				'WrongStyle'
+			);
 			return;
 		}
 		if ( $tokens[$commentEnd]['line'] !== $tokens[$stackPtr]['line'] - 1 ) {
-			$error = 'There must be no blank lines after the function comment';
-			$phpcsFile->addError( $error, $commentEnd, 'SpacingAfter' );
+			$phpcsFile->addError(
+				'There must be no blank lines after the function comment',
+				$commentEnd,
+				'SpacingAfter'
+			);
 		}
 		$commentStart = $tokens[$commentEnd]['comment_opener'];
 
@@ -147,6 +130,14 @@ class FunctionCommentSniff implements Sniff {
 				// their documentation
 				return;
 			}
+		}
+
+		// Don't validate functions with {@inheritDoc}, per T270830
+		// Not available in comment_tags, need to check manually
+		$end = reset( $tokens[$commentStart]['comment_tags'] ) ?: $commentEnd;
+		$rawComment = $phpcsFile->getTokensAsString( $commentStart + 1, $end - $commentStart - 1 );
+		if ( stripos( $rawComment, '{@inheritDoc}' ) !== false ) {
+			return;
 		}
 
 		$this->processReturn( $phpcsFile, $stackPtr, $commentStart );
@@ -161,139 +152,150 @@ class FunctionCommentSniff implements Sniff {
 	 * @param int $stackPtr The position of the current token in the stack passed in $tokens.
 	 * @param int $commentStart The position in the stack where the comment started.
 	 */
-	protected function processReturn( File $phpcsFile, $stackPtr, $commentStart ) {
+	protected function processReturn( File $phpcsFile, int $stackPtr, int $commentStart ): void {
 		$tokens = $phpcsFile->getTokens();
-		// Return if no scope_opener.
-		if ( !isset( $tokens[$stackPtr]['scope_opener'] ) ) {
-			return;
-		}
 
 		// Skip constructors
 		if ( $phpcsFile->getDeclarationName( $stackPtr ) === '__construct' ) {
 			return;
 		}
 
-		$endFunction = $tokens[$stackPtr]['scope_closer'];
 		$found = false;
-		for ( $i = $endFunction - 1; $i > $stackPtr; $i-- ) {
-			$token = $tokens[$i];
-			if ( isset( $token['scope_condition'] ) && (
-				$tokens[$token['scope_condition']]['code'] === T_CLOSURE ||
-				$tokens[$token['scope_condition']]['code'] === T_FUNCTION ||
-				$tokens[$token['scope_condition']]['code'] === T_ANON_CLASS
-			) ) {
-				// Skip to the other side of the closure/inner function and continue
-				$i = $token['scope_condition'];
-				continue;
-			}
-			if ( $token['code'] === T_RETURN ) {
-				if ( isset( $tokens[$i + 1] ) && $tokens[$i + 1]['code'] === T_SEMICOLON ) {
-					// This is a `return;` so it doesn't need documentation
+		// if function has body (not abstract or part of interface)
+		if ( isset( $tokens[$stackPtr]['scope_opener'] ) ) {
+			$endFunction = $tokens[$stackPtr]['scope_closer'];
+			for ( $i = $endFunction - 1; $i > $stackPtr; $i-- ) {
+				$token = $tokens[$i];
+				if ( isset( $token['scope_condition'] ) && (
+					$tokens[$token['scope_condition']]['code'] === T_CLOSURE ||
+					$tokens[$token['scope_condition']]['code'] === T_FUNCTION ||
+					$tokens[$token['scope_condition']]['code'] === T_ANON_CLASS
+				) ) {
+					// Skip to the other side of the closure/inner function and continue
+					$i = $token['scope_condition'];
 					continue;
 				}
-				$found = true;
-				break;
+				if ( $token['code'] === T_RETURN ||
+					$token['code'] === T_YIELD ||
+					$token['code'] === T_YIELD_FROM
+				) {
+					if ( isset( $tokens[$i + 1] ) && $tokens[$i + 1]['code'] === T_SEMICOLON ) {
+						// This is a `return;` so it doesn't need documentation
+						continue;
+					}
+					$found = true;
+					break;
+				}
 			}
 		}
 
-		if ( !$found ) {
-			return;
+		// If a return type is provided, there should be a @return
+		$returnType = $phpcsFile->getMethodProperties( $stackPtr )['return_type'];
+		if ( $returnType !== '' && $returnType !== 'void' ) {
+			$found = true;
 		}
 
-		$return = null;
+		$returnPtr = null;
 		foreach ( $tokens[$commentStart]['comment_tags'] as $ptr ) {
-			$tag = $tokens[$ptr]['content'];
-			if ( $tag !== '@return' ) {
+			if ( $tokens[$ptr]['content'] !== '@return' ) {
 				continue;
 			}
-			if ( $return ) {
-				$error = 'Only 1 @return tag is allowed in a function comment';
-				$phpcsFile->addError( $error, $ptr, 'DuplicateReturn' );
+			if ( $returnPtr ) {
+				$phpcsFile->addError( 'Only 1 @return tag is allowed in a function comment', $ptr, 'DuplicateReturn' );
 				return;
 			}
-			$return = $ptr;
+			$returnPtr = $ptr;
 		}
-		if ( $return !== null ) {
-			$retTypeSpacing = $return + 1;
-			if ( $tokens[$retTypeSpacing]['code'] === T_DOC_COMMENT_WHITESPACE ) {
+		if ( $returnPtr !== null ) {
+			$retTypeSpacingPtr = $returnPtr + 1;
+			// Check spaces before type
+			if ( $tokens[$retTypeSpacingPtr]['code'] === T_DOC_COMMENT_WHITESPACE ) {
 				$expectedSpaces = 1;
-				$currentSpaces = strlen( $tokens[$retTypeSpacing]['content'] );
+				$currentSpaces = strlen( $tokens[$retTypeSpacingPtr]['content'] );
 				if ( $currentSpaces !== $expectedSpaces ) {
 					$fix = $phpcsFile->addFixableWarning(
 						'Expected %s spaces before return type; %s found',
-						$retTypeSpacing,
+						$retTypeSpacingPtr,
 						'SpacingBeforeReturnType',
 						[ $expectedSpaces, $currentSpaces ]
 					);
 					if ( $fix ) {
-						$phpcsFile->fixer->replaceToken( $retTypeSpacing, ' ' );
+						$phpcsFile->fixer->replaceToken( $retTypeSpacingPtr, ' ' );
 					}
 				}
 			}
-			$retType = $return + 2;
+			$retTypePtr = $returnPtr + 2;
 			$content = '';
-			if ( $tokens[$retType]['code'] === T_DOC_COMMENT_STRING ) {
-				$content = $tokens[$retType]['content'];
+			if ( $tokens[$retTypePtr]['code'] === T_DOC_COMMENT_STRING ) {
+				$content = $tokens[$retTypePtr]['content'];
 			}
 			if ( $content === '' ) {
-				$error = 'Return type missing for @return tag in function comment';
-				$phpcsFile->addError( $error, $return, 'MissingReturnType' );
+				$phpcsFile->addError(
+					'Return type missing for @return tag in function comment',
+					$returnPtr,
+					'MissingReturnType'
+				);
 				return;
 			}
-			// The first word of the return type is the actual type
-			$exploded = explode( ' ', $content, 2 );
-			$type = $exploded[0];
-			$comment = $exploded[1] ?? null;
+			[ $type, $separatorLength, $comment ] = $this->splitTypeAndComment( $content );
 			$fixType = false;
 			// Check for unneeded punctation
 			$type = $this->fixTrailingPunctation(
 				$phpcsFile,
-				$retType,
+				$retTypePtr,
 				$type,
 				$fixType,
 				'return type'
 			);
 			$type = $this->fixWrappedParenthesis(
 				$phpcsFile,
-				$retType,
+				$retTypePtr,
 				$type,
 				$fixType,
 				'return type'
 			);
 			// Check the type for short types
-			$type = $this->fixShortTypes( $phpcsFile, $retType, $type, $fixType, 'return' );
+			$type = $this->fixShortTypes( $phpcsFile, $retTypePtr, $type, $fixType, 'return' );
 			$this->maybeAddObjectTypehintError(
 				$phpcsFile,
-				$retType,
+				$retTypePtr,
+				$type,
+				'return'
+			);
+			$this->maybeAddTypeTypehintError(
+				$phpcsFile,
+				$retTypePtr,
 				$type,
 				'return'
 			);
 			// Check spacing after type
-			if ( $comment !== null ) {
+			if ( $comment !== '' ) {
 				$expectedSpaces = 1;
-				$currentSpaces = strspn( $comment, ' ' ) + 1;
-				if ( $currentSpaces !== $expectedSpaces ) {
+				if ( $separatorLength !== $expectedSpaces ) {
 					$fix = $phpcsFile->addFixableWarning(
 						'Expected %s spaces after return type; %s found',
-						$retType,
+						$retTypePtr,
 						'SpacingAfterReturnType',
-						[ $expectedSpaces, $currentSpaces ]
+						[ $expectedSpaces, $separatorLength ]
 					);
 					if ( $fix ) {
 						$fixType = true;
-						$comment = substr( $comment, $currentSpaces - 1 );
+						$separatorLength = $expectedSpaces;
 					}
 				}
 			}
 			if ( $fixType ) {
 				$phpcsFile->fixer->replaceToken(
-					$retType,
-					$type . ( $comment !== null ? ' ' . $comment : '' )
+					$retTypePtr,
+					$type . ( $comment !== '' ? str_repeat( ' ', $separatorLength ) . $comment : '' )
 				);
 			}
-		} else {
-			$error = 'Missing @return tag in function comment';
-			$phpcsFile->addError( $error, $tokens[$commentStart]['comment_closer'], 'MissingReturn' );
+		} elseif ( $found && !$this->isTestFunction( $phpcsFile, $stackPtr ) ) {
+			$phpcsFile->addError(
+				'Missing @return tag in function comment',
+				$tokens[$commentStart]['comment_closer'],
+				'MissingReturn'
+			);
 		}
 	}
 
@@ -303,38 +305,71 @@ class FunctionCommentSniff implements Sniff {
 	 * @param File $phpcsFile The file being scanned.
 	 * @param int $commentStart The position in the stack where the comment started.
 	 */
-	protected function processThrows( File $phpcsFile, $commentStart ) {
+	protected function processThrows( File $phpcsFile, int $commentStart ): void {
 		$tokens = $phpcsFile->getTokens();
 		foreach ( $tokens[$commentStart]['comment_tags'] as $tag ) {
-			$tagContent = $tokens[$tag]['content'];
-			if ( $tagContent !== '@throws' ) {
+			if ( $tokens[$tag]['content'] !== '@throws' ) {
 				continue;
 			}
-			$exception = null;
-			$comment = null;
-			if ( $tokens[$tag + 2]['code'] === T_DOC_COMMENT_STRING ) {
-				preg_match( '/([^\s]+)(?:\s+(.*))?/', $tokens[$tag + 2]['content'], $matches );
-				$exception = $matches[1];
-				$comment = $matches[2] ?? null;
-			}
-			if ( $exception === null ) {
-				$error = 'Exception type missing for @throws tag in function comment';
-				$phpcsFile->addError( $error, $tag, 'InvalidThrows' );
-			} else {
-				$fix = false;
-				$exception = $this->fixWrappedParenthesis(
-					$phpcsFile,
-					$tag,
-					$exception,
-					$fix,
-					'exception type'
-				);
-				if ( $fix ) {
-					$phpcsFile->fixer->replaceToken(
-						$tag + 2,
-						$exception . ( $comment === null ? '' : ' ' . $comment )
+			// Check spaces before exception
+			if ( $tokens[$tag + 1]['code'] === T_DOC_COMMENT_WHITESPACE ) {
+				$expectedSpaces = 1;
+				$currentSpaces = strlen( $tokens[$tag + 1]['content'] );
+				if ( $currentSpaces !== $expectedSpaces ) {
+					$fix = $phpcsFile->addFixableWarning(
+						'Expected %s spaces before exception type; %s found',
+						$tag + 1,
+						'SpacingBeforeExceptionType',
+						[ $expectedSpaces, $currentSpaces ]
 					);
+					if ( $fix ) {
+						$phpcsFile->fixer->replaceToken( $tag + 1, ' ' );
+					}
 				}
+			}
+			$exception = '';
+			$comment = '';
+			$separatorLength = null;
+			if ( $tokens[$tag + 2]['code'] === T_DOC_COMMENT_STRING ) {
+				[ $exception, $separatorLength, $comment ] = $this->splitTypeAndComment( $tokens[$tag + 2]['content'] );
+			}
+			if ( $exception === '' ) {
+				$phpcsFile->addError(
+					'Exception type missing for @throws tag in function comment',
+					$tag,
+					'InvalidThrows'
+				);
+				continue;
+			}
+			$fixType = false;
+			$exception = $this->fixWrappedParenthesis(
+				$phpcsFile,
+				$tag,
+				$exception,
+				$fixType,
+				'exception type'
+			);
+			// Check spacing after exception
+			if ( $comment !== '' ) {
+				$expectedSpaces = 1;
+				if ( $separatorLength !== $expectedSpaces ) {
+					$fix = $phpcsFile->addFixableWarning(
+						'Expected %s spaces after exception type; %s found',
+						$tag + 2,
+						'SpacingAfterExceptionType',
+						[ $expectedSpaces, $separatorLength ]
+					);
+					if ( $fix ) {
+						$fixType = true;
+						$separatorLength = $expectedSpaces;
+					}
+				}
+			}
+			if ( $fixType ) {
+				$phpcsFile->fixer->replaceToken(
+					$tag + 2,
+					$exception . ( $comment !== '' ? str_repeat( ' ', $separatorLength ) . $comment : '' )
+				);
 			}
 		}
 	}
@@ -346,13 +381,11 @@ class FunctionCommentSniff implements Sniff {
 	 * @param int $stackPtr The position of the current token in the stack passed in $tokens.
 	 * @param int $commentStart The position in the stack where the comment started.
 	 */
-	protected function processParams( File $phpcsFile, $stackPtr, $commentStart ) {
+	protected function processParams( File $phpcsFile, int $stackPtr, int $commentStart ): void {
 		$tokens = $phpcsFile->getTokens();
 		$params = [];
 		foreach ( $tokens[$commentStart]['comment_tags'] as $pos => $tag ) {
-			$tagContent = $tokens[$tag]['content'];
-
-			if ( $tagContent !== '@param' ) {
+			if ( $tokens[$tag]['content'] !== '@param' ) {
 				continue;
 			}
 
@@ -378,6 +411,9 @@ class FunctionCommentSniff implements Sniff {
 							|
 							# or pairs of brackets around plain letters, never single brackets
 							\[ [^&$.\[\]]* \]
+							|
+							# allow & on intersect types, but not as pass-by-ref
+							& [^$.\[\]]
 						)*) (?:
 							# Match parameter name with variadic arg or surround by {} or []
 							( (?: \.\.\. | [\[\{] )? [&$] \S+ )
@@ -561,11 +597,13 @@ class FunctionCommentSniff implements Sniff {
 				}
 				$defaultNull = ( $realParams[$pos]['default'] ?? '' ) === 'null';
 			} elseif ( $param['variadic_arg'] || $param['legacy_variadic_arg'] ) {
-				$error = 'Variadic parameter documented but not present in the signature';
-				$phpcsFile->addError( $error, $param['tag'], 'VariadicDocNotSignature' );
+				$phpcsFile->addError(
+					'Variadic parameter documented but not present in the signature',
+					$param['tag'],
+					'VariadicDocNotSignature'
+				);
 			} else {
-				$error = 'Superfluous parameter comment';
-				$phpcsFile->addError( $error, $param['tag'], 'ExtraParamComment' );
+				$phpcsFile->addError( 'Superfluous parameter comment', $param['tag'], 'ExtraParamComment' );
 			}
 			$foundParams[] = $var;
 			$fixType = false;
@@ -580,6 +618,12 @@ class FunctionCommentSniff implements Sniff {
 			// Check the short type of boolean and integer
 			$type = $this->fixShortTypes( $phpcsFile, $param['tag'], $type, $fixType, 'param' );
 			$this->maybeAddObjectTypehintError(
+				$phpcsFile,
+				$param['tag'],
+				$type,
+				'param'
+			);
+			$this->maybeAddTypeTypehintError(
 				$phpcsFile,
 				$param['tag'],
 				$type,
@@ -676,11 +720,17 @@ class FunctionCommentSniff implements Sniff {
 				);
 			}
 		}
-		// Report missing comments.
+		// Report missing comments. On tests only, when not everything is missing.
 		$missing = array_diff( array_column( $realParams, 'name' ), $foundParams );
-		foreach ( $missing as $neededParam ) {
-			$error = 'Doc comment for parameter "%s" missing';
-			$phpcsFile->addError( $error, $commentStart, 'MissingParamTag', [ $neededParam ] );
+		if ( $foundParams !== [] || !$this->isTestFunction( $phpcsFile, $stackPtr ) ) {
+			foreach ( $missing as $neededParam ) {
+				$phpcsFile->addError(
+					'Doc comment for parameter "%s" missing',
+					$commentStart,
+					'MissingParamTag',
+					[ $neededParam ]
+				);
+			}
 		}
 	}
 
@@ -691,7 +741,7 @@ class FunctionCommentSniff implements Sniff {
 	 * @param array $param Array of the @param
 	 * @param array $fixParam Array with fixes to @param. Only provide keys to replace
 	 */
-	protected function replaceParamComment( File $phpcsFile, array $param, array $fixParam ) {
+	protected function replaceParamComment( File $phpcsFile, array $param, array $fixParam ): void {
 		// Use the old value for unchanged keys
 		$fixParam += $param;
 
@@ -707,101 +757,4 @@ class FunctionCommentSniff implements Sniff {
 		$phpcsFile->fixer->replaceToken( $fixParam['tag'] + 2, $content );
 	}
 
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return"
-	 * @return string Updated $typesString
-	 */
-	private function fixShortTypes( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		$typeList = explode( '|', $typesString );
-		foreach ( $typeList as &$type ) {
-			// Corrects long types from both upper and lowercase to lowercase shorttype
-			$key = lcfirst( $type );
-			if ( isset( self::SHORT_TYPE_MAPPING[$key] ) ) {
-				$type = self::SHORT_TYPE_MAPPING[$key];
-				$code = 'NotShort' . str_replace( '[]', 'Array', ucfirst( $type ) ) . ucfirst( $annotation );
-				$fix = $phpcsFile->addFixableError(
-					'Short type of "%s" should be used for @%s tag',
-					$stackPtr,
-					$code,
-					[ $type, $annotation ]
-				) || $fix;
-			} elseif ( isset( self::PRIMITIVE_TYPE_MAPPING[$type] ) ) {
-				$type = self::PRIMITIVE_TYPE_MAPPING[$type];
-				$code = 'UppercasePrimitive' . str_replace( '[]', 'Array', ucfirst( $type ) ) . ucfirst( $annotation );
-				$fix = $phpcsFile->addFixableError(
-					'Lowercase type of "%s" should be used for @%s tag',
-					$stackPtr,
-					$code,
-					[ $type, $annotation ]
-				) || $fix;
-			}
-		}
-		return implode( '|', $typeList );
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return" + "name" or "type"
-	 * @return string Updated $typesString
-	 */
-	private function fixTrailingPunctation( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		if ( preg_match( '/^(.*)((?:(?![\[\]_{}])\p{P})+)$/', $typesString, $matches ) ) {
-			$typesString = $matches[1];
-			$fix = $phpcsFile->addFixableError(
-				'%s should not end with punctuation "%s"',
-				$stackPtr,
-				'NotPunctuation' . str_replace( ' ', '', ucwords( $annotation ) ),
-				[ ucfirst( $annotation ), $matches[2] ]
-			) || $fix;
-		}
-		return $typesString;
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param bool &$fix Set when autofix is needed
-	 * @param string $annotation Either "param" or "return" + "name" or "type"
-	 * @return string Updated $typesString
-	 */
-	private function fixWrappedParenthesis( File $phpcsFile, $stackPtr, $typesString, &$fix, $annotation ) {
-		if ( preg_match( '/^([{\[]+)(.*)([\]}]+)$/', $typesString, $matches ) ) {
-			$typesString = $matches[2];
-			$fix = $phpcsFile->addFixableError(
-				'%s should not be wrapped in parenthesis; %s and %s found',
-				$stackPtr,
-				'NotParenthesis' . str_replace( ' ', '', ucwords( $annotation ) ),
-				[ ucfirst( $annotation ), $matches[1], $matches[3] ]
-			) || $fix;
-		}
-		return $typesString;
-	}
-
-	/**
-	 * @param File $phpcsFile
-	 * @param int $stackPtr
-	 * @param string $typesString
-	 * @param string $annotation Either "param" or "return"
-	 */
-	private function maybeAddObjectTypehintError( File $phpcsFile, $stackPtr, $typesString, $annotation ) {
-		$typeList = explode( '|', $typesString );
-		foreach ( $typeList as $type ) {
-			if ( $type === 'object' || $type === 'object[]' ) {
-				$phpcsFile->addError(
-					'`object` should not be used as a typehint. If the types are known, list the relevant ' .
-						'classes; if this is meant to refer to stdClass, use `stdClass` directly.',
-					$stackPtr,
-					'ObjectTypeHint' . ucfirst( $annotation )
-				);
-			}
-		}
-	}
 }

@@ -4,8 +4,16 @@ CHANGELOG
 View diff for a specific commit:  
 https://github.com/johnkary/phpunit-speedtrap/commit/XXX where XXX is the commit hash
 
-View diff between two versions:  
-https://github.com/johnkary/phpunit-speedtrap/compare/v3.2.0...v3.3.0
+## 4.0.1 (xxx)
+
+* README documents working with Symfony Framework `simple-phpunit`
+
+## 4.0.0 (2021-05-03)
+
+* Changelog ([`v3.3.0...v.4.0.0`](https://github.com/johnkary/phpunit-speedtrap/compare/v3.3.0...v4.0.0))
+* [PR #81](https://github.com/johnkary/phpunit-speedtrap/pull/81) Reformat slow test case output for compatibility with PHPUnit --filter option
+* [PR #82](https://github.com/johnkary/phpunit-speedtrap/pull/82) New option `stopOnSlow` stops execution upon first slow test. Default: false.
+* [PR #84](https://github.com/johnkary/phpunit-speedtrap/pull/84) New annotation option `@slowThreshold 0` disables checks for individual tests.
 
 ## 3.3.0 (2020-12-18)
 

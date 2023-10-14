@@ -79,6 +79,7 @@ class Colorizing
         'CONST'         => 'light_red',
         'COUNT'         => 'light_magenta',
         'DETAILS'       => 'light_green',
+        'ENUM'          => 'green',
         'FILE'          => 'light_cyan',
         'FUNCTIONLIKE'  => 'light_yellow',
         'FUNCTION'      => 'light_yellow',
@@ -187,10 +188,10 @@ class Colorizing
         $color_codes = [];
         foreach (\explode(',', $color) as $color_component) {
             $color_code = self::STYLES[$color_component] ?? null;
-            $color_codes[] = $color_code;
             if ($color_code === null) {
                 return null;
             }
+            $color_codes[] = $color_code;
         }
         return \implode(';', $color_codes);
     }

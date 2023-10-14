@@ -105,7 +105,7 @@ final class MiscParamPlugin extends PluginV3 implements
             if ($needle_type->hasAnyTypeOverlap($code_base, $element_type)) {
                 return false;
             }
-            if (!$is_strict && $needle_type->hasAnyWeakTypeOverlap($element_type)) {
+            if (!$is_strict && $needle_type->hasAnyWeakTypeOverlap($element_type, $code_base)) {
                 return false;
             }
         }
@@ -131,7 +131,7 @@ final class MiscParamPlugin extends PluginV3 implements
             return false;
         }
         $key_type = $key_type->asRealUnionType();
-        if ($key_type->hasMixedType()) {
+        if ($key_type->hasMixedOrNonEmptyMixedType()) {
             return false;
         }
         $key_can_be_int = $key_type->hasIntType();
@@ -167,7 +167,6 @@ final class MiscParamPlugin extends PluginV3 implements
                     continue;
                 }
                 if ($key_value !== null) {
-                    // @phan-suppress-next-line PhanPartialTypeMismatchArgumentInternal
                     if (\array_key_exists($key_value, $type->getFieldTypes())) {
                         return false;
                     }
@@ -256,7 +255,6 @@ final class MiscParamPlugin extends PluginV3 implements
             $needle_type_fetcher = RedundantCondition::getLoopNodeTypeFetcher($code_base, $needle_node);
             $haystack_type_fetcher = RedundantCondition::getLoopNodeTypeFetcher($code_base, $haystack_node);
             if ($needle_type_fetcher || $haystack_type_fetcher) {
-                // @phan-suppress-next-line PhanAccessMethodInternal
                 $context->deferCheckToOutermostLoop(static function (Context $context_after_loop) use ($code_base, $context, $args, $issue_args, $node, $haystack, $needle, $needle_type_fetcher, $haystack_type_fetcher): void {
                     if ($needle_type_fetcher) {
                         $needle = ($needle_type_fetcher($context_after_loop) ?? $needle);
@@ -312,7 +310,6 @@ final class MiscParamPlugin extends PluginV3 implements
             $key_type_fetcher = RedundantCondition::getLoopNodeTypeFetcher($code_base, $key_node);
             $array_type_fetcher = RedundantCondition::getLoopNodeTypeFetcher($code_base, $array_node);
             if ($key_type_fetcher || $array_type_fetcher) {
-                // @phan-suppress-next-line PhanAccessMethodInternal
                 $context->deferCheckToOutermostLoop(static function (Context $context_after_loop) use ($code_base, $context, $args, $issue_args, $node, $key_type, $array_type, $key_type_fetcher, $array_type_fetcher): void {
                     // XXX this will have false positives if variables are unset in the loop.
                     if ($key_type_fetcher) {
@@ -503,7 +500,8 @@ final class MiscParamPlugin extends PluginV3 implements
                 if ($arg1_type->isExclusivelyArray()) {
                     $did_warn = false;
                     if (!$arg2_type->canCastToUnionType(
-                        StringType::instance(false)->asPHPDocUnionType()
+                        StringType::instance(false)->asPHPDocUnionType(),
+                        $code_base
                     )) {
                         $did_warn = true;
                         Issue::maybeEmit(
@@ -549,7 +547,8 @@ final class MiscParamPlugin extends PluginV3 implements
                     throw $stop_exception;
                 } elseif ($arg1_type->isNonNullStringType()) {
                     if (!$arg2_type->canCastToUnionType(
-                        ArrayType::instance(false)->asPHPDocUnionType()
+                        ArrayType::instance(false)->asPHPDocUnionType(),
+                        $code_base
                     )) {
                         Issue::maybeEmit(
                             $code_base,
@@ -1214,8 +1213,7 @@ final class MiscParamPlugin extends PluginV3 implements
 
     /**
      * @param Codebase $code_base @phan-unused-param
-     * @return array<string,Closure>
-     * @phan-return array<string,Closure(CodeBase,Context,FunctionInterface,array):void>
+     * @return array<string,Closure(CodeBase,Context,FunctionInterface,array,?Node):void>
      */
     public function getAnalyzeFunctionCallClosures(CodeBase $code_base): array
     {
@@ -1248,9 +1246,7 @@ final class MiscParamPlugin extends PluginV3 implements
         );
 
         // See if it can be cast to the given type
-        $can_cast = $node_type->canCastToUnionType(
-            $cast_type
-        );
+        $can_cast = $node_type->canCastToUnionType($cast_type, $code_base);
 
         // If it can't, emit the log message
         if (!$can_cast) {
@@ -1304,10 +1300,11 @@ final class MiscParamPlugin extends PluginV3 implements
     private static function canCastToStringArrayLike(CodeBase $code_base, Context $context, UnionType $union_type): bool
     {
         if ($union_type->canCastToUnionType(
-            UnionType::fromFullyQualifiedPHPDocString('string[]|int[]')
+            UnionType::fromFullyQualifiedPHPDocString('string[]|int[]'),
+            $code_base
         )) {
             return true;
         }
-        return $union_type->genericArrayElementTypes()->hasClassWithToStringMethod($code_base, $context);
+        return $union_type->genericArrayElementTypes(false, $code_base)->hasClassWithToStringMethod($code_base, $context);
     }
 }

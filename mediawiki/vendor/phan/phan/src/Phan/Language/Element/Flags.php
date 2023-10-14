@@ -22,7 +22,8 @@ class Flags
     public const IS_OVERRIDE                  = (1 << 6);
     public const HAS_YIELD                    = (1 << 7);
 
-    public const CLASS_HAS_DYNAMIC_PROPERTIES = (1 << 8);
+    public const HAS_STATIC_VARIABLE          = (1 << 8);  // used on function-likes
+    public const CLASS_HAS_DYNAMIC_PROPERTIES = (1 << 8);  // used on classes
     public const IS_CLONE_OF_VARIADIC         = (1 << 9);
     public const CLASS_FORBID_UNDECLARED_MAGIC_PROPERTIES = (1 << 10);
     public const CLASS_FORBID_UNDECLARED_MAGIC_METHODS    = (1 << 11);
@@ -44,6 +45,8 @@ class Flags
     // For dead code detection
     public const WAS_PROPERTY_READ = (1 << 18);
     public const WAS_PROPERTY_WRITTEN = (1 << 19);
+    // For methods
+    public const NO_NAMED_ARGUMENTS = (1 << 19);
 
     public const IS_DYNAMIC_PROPERTY = (1 << 20);
     // Is this a dynamic global constant?
@@ -60,13 +63,19 @@ class Flags
     public const IS_OVERRIDDEN_BY_ANOTHER = (1 << 25);
     // Currently applies only to some variables (e.g. static variables)
     public const IS_CONSTANT_DEFINITION = (1 << 26);
+    // only set on methods
+    public const HAS_TENTATIVE_RETURN_TYPE = (1 << 26);
     // Also used for `@phan-hardcode-return-type`
     public const HARDCODED_RETURN_TYPE = (1 << 26);
 
     // Flag to be set on fake __construct methods (e.g. for classes/interfaces without having them defined explicitly)
     // Currently for strict visibility checking, because fake constructors have public visibility by default, and Phan
     // fails thinking that child classes are violating the visibility if they have a private or protected __construct
+    // only set on methods.
     public const IS_FAKE_CONSTRUCTOR = (1 << 27);
+    // only set on properties.
+    public const IS_ENUM_PROPERTY = (1 << 27);
+
     public const IS_EXTERNAL_MUTATION_FREE = (1 << 28);
     public const IS_SIDE_EFFECT_FREE = self::IS_READ_ONLY | self::IS_EXTERNAL_MUTATION_FREE;
     // @abstract tag on class constants or other elements

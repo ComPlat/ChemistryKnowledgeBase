@@ -14,8 +14,10 @@ use Phan\Language\UnionType;
  * Represents the return type `void`
  * @phan-pure
  */
-final class VoidType extends NativeType
+final class VoidType extends NativeType implements LiteralTypeInterface
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'void';
 
@@ -55,10 +57,13 @@ final class VoidType extends NativeType
      */
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool
     {
-        return $other->isNullable() || $other instanceof MixedType || $other instanceof TemplateType;
+        return $other->isNullable() || $other instanceof TemplateType;
     }
 
-    public function isSubtypeOf(Type $type): bool
+    /**
+     * @suppress PhanUnusedPublicFinalMethodParameter
+     */
+    public function isSubtypeOf(Type $type, CodeBase $code_base): bool
     {
         return $type->isNullable();
     }
@@ -66,9 +71,9 @@ final class VoidType extends NativeType
     /**
      * void cannot be a subtype of a non-nullable type
      *
-     * @unused-param $type
+     * @suppress PhanUnusedPublicFinalMethodParameter
      */
-    public function isSubtypeOfNonNullableType(Type $type): bool
+    public function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
         return false;
     }
@@ -84,70 +89,26 @@ final class VoidType extends NativeType
     }
 
     /**
-     * @return bool
-     * True if this Type can be cast to the given Type
-     * cleanly
+     * @suppress PhanUnusedPublicFinalMethodParameter
      */
-    public function canCastToType(Type $type): bool
+    public function canCastToTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         // Check to see if we have an exact object match
         if ($this === $type) {
             return true;
         }
 
-        // Null(void) can cast to a nullable type.
-        if ($type->is_nullable) {
-            return true;
-        }
-
-        if (Config::get_null_casts_as_any_type()) {
-            return true;
-        }
-
-        // NullType is a sub-type of ScalarType. So it's affected by scalar_implicit_cast.
-        if ($type->isScalar()) {
-            if (Config::getValue('scalar_implicit_cast')) {
-                return true;
-            }
-            $scalar_implicit_partial = Config::getValue('scalar_implicit_partial');
-            // check if $type->getName() is in the list of permitted types $this->getName() can cast to.
-            if (\count($scalar_implicit_partial) > 0 &&
-                \in_array($type->getName(), $scalar_implicit_partial['null'] ?? [], true)) {
-                return true;
-            }
-        }
-        if (\get_class($type) === MixedType::class) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function canCastToTypeWithoutConfig(Type $type): bool
-    {
-        // Check to see if we have an exact object match
-        if ($this === $type) {
-            return true;
-        }
-
-        // Null(void) can cast to a nullable type or mixed.
-        if ($type->is_nullable) {
-            return true;
-        }
-
-        if (\get_class($type) === MixedType::class) {
-            return true;
-        }
-
-        return false;
+        // Null(void) can cast to a nullable type or mixed (but not non-null-mixed).
+        return $type->isNullable();
     }
 
     /**
      * Returns true if this contains a type that is definitely nullable or a non-object.
      * e.g. returns true false, array, int
      *      returns false for callable, object, iterable, T, etc.
+     * @unused-param $code_base
      */
-    public function isDefiniteNonCallableType(): bool
+    public function isDefiniteNonCallableType(CodeBase $code_base): bool
     {
         return true;
     }
@@ -155,9 +116,9 @@ final class VoidType extends NativeType
     /**
      * @return bool
      * True if this Type can be cast to the given Type
-     * cleanly (accounting for templates)
+     * cleanly (accounting for templates, intersection types, etc)
      */
-    public function canCastToTypeHandlingTemplates(Type $type, CodeBase $code_base): bool
+    public function canCastToType(Type $type, CodeBase $code_base): bool
     {
         // Check to see if we have an exact object match
         if ($this === $type) {
@@ -186,7 +147,7 @@ final class VoidType extends NativeType
             }
         }
         if ($type instanceof MixedType) {
-            return !$type instanceof NonEmptyMixedType;
+            return $type->isNullable();
         }
 
         // Test to see if we can cast to the non-nullable version
@@ -197,8 +158,9 @@ final class VoidType extends NativeType
     /**
      * @unused-param $type
      * @override
+     * @suppress PhanUnusedPublicFinalMethodParameter
      */
-    public function canCastToNonNullableType(Type $type): bool
+    public function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         // null_casts_as_any_type means that null or nullable can cast to any type?
         // But don't allow it for void?
@@ -206,10 +168,10 @@ final class VoidType extends NativeType
     }
 
     /**
-     * @unused-param $type
      * @override
+     * @suppress PhanUnusedPublicFinalMethodParameter
      */
-    public function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    public function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         return false;
     }
@@ -229,6 +191,11 @@ final class VoidType extends NativeType
     }
 
     public function isNullable(): bool
+    {
+        return true;
+    }
+
+    public function isNullableLabeled(): bool
     {
         return true;
     }
@@ -303,5 +270,22 @@ final class VoidType extends NativeType
     public function isScalar(): bool
     {
         return false;
+    }
+
+    /** @return null */
+    public function getValue()
+    {
+        return null;
+    }
+
+    public function asNonLiteralType(): Type
+    {
+        return $this;
+    }
+
+    /** @unused-param $code_base */
+    public function weaklyOverlaps(Type $type, CodeBase $code_base): bool
+    {
+        return $type->isPossiblyFalsey();
     }
 }

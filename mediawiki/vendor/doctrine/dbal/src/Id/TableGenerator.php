@@ -7,6 +7,7 @@ use Doctrine\DBAL\Driver;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\LockMode;
+use Doctrine\Deprecations\Deprecation;
 use Throwable;
 
 use function array_change_key_case;
@@ -51,17 +52,18 @@ use const CASE_LOWER;
  *
  * If no row is present for a given sequence a new one will be created with the
  * default values 'value' = 1 and 'increment_by' = 1
+ *
+ * @deprecated
  */
 class TableGenerator
 {
-    /** @var Connection */
-    private $conn;
+    private Connection $conn;
 
     /** @var string */
     private $generatorTableName;
 
     /** @var mixed[][] */
-    private $sequences = [];
+    private array $sequences = [];
 
     /**
      * @param string $generatorTableName
@@ -70,6 +72,12 @@ class TableGenerator
      */
     public function __construct(Connection $conn, $generatorTableName = 'sequences')
     {
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/4681',
+            'The TableGenerator class is is deprecated.',
+        );
+
         if ($conn->getDriver() instanceof Driver\PDO\SQLite\Driver) {
             throw new Exception('Cannot use TableGenerator with SQLite.');
         }

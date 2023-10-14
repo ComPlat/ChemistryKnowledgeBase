@@ -29,6 +29,7 @@ use Phan\Memoize;
  * Phan's representation of a closure or global function.
  *
  * @phan-file-suppress PhanPartialTypeMismatchArgument
+ * @property FullyQualifiedFunctionName $fqsen
  */
 class Func extends AddressableElement implements FunctionInterface
 {
@@ -184,6 +185,7 @@ class Func extends AddressableElement implements FunctionInterface
             $node->lineno ?? 0,
             Comment::ON_FUNCTION
         );
+        $func->setPhanFlags($func->getPhanFlags() | $comment->getPhanFlagsForFunc());
 
         // Defer adding params to the local scope for user functions. (FunctionTrait::addParamsToScopeOfFunctionOrMethod)
         // See PreOrderAnalysisVisitor->visitFuncDecl and visitClosure
@@ -200,6 +202,11 @@ class Func extends AddressableElement implements FunctionInterface
             $node->children['params']
         );
         $func->setParameterList($parameter_list);
+        $func->setAttributeList(Attribute::fromNodeForAttributeList(
+            $code_base,
+            $element_context,
+            $node->children['attributes'] ?? null
+        ));
 
         // Redefine the function's internal scope to point to the new class before adding any variables to the scope.
 
@@ -313,6 +320,9 @@ class Func extends AddressableElement implements FunctionInterface
         return $func;
     }
 
+    /**
+     * @suppress PhanTypeMismatchReturn FunctionInterface->Method
+     */
     public function getFQSEN(): FullyQualifiedFunctionName
     {
         return $this->fqsen;
@@ -322,12 +332,11 @@ class Func extends AddressableElement implements FunctionInterface
      * @return \Generator
      * @phan-return \Generator<Func>
      * The set of all alternates to this function
-     * @suppress PhanParamSignatureMismatch
      */
     public function alternateGenerator(CodeBase $code_base): \Generator
     {
         $alternate_id = 0;
-        $fqsen = $this->getFQSEN();
+        $fqsen = $this->fqsen;
 
         while ($code_base->hasFunctionWithFQSEN($fqsen)) {
             yield $code_base->getFunctionByFQSEN($fqsen);
@@ -387,7 +396,7 @@ class Func extends AddressableElement implements FunctionInterface
      */
     public function isClosure(): bool
     {
-        return $this->getFQSEN()->isClosure();
+        return $this->fqsen->isClosure();
     }
 
     /**
@@ -404,7 +413,7 @@ class Func extends AddressableElement implements FunctionInterface
 
     public function getMarkupDescription(): string
     {
-        $fqsen = $this->getFQSEN();
+        $fqsen = $this->fqsen;
         $namespace = \ltrim($fqsen->getNamespace(), '\\');
         $stub = '';
         if (StringUtil::isNonZeroLengthString($namespace)) {
@@ -431,8 +440,13 @@ class Func extends AddressableElement implements FunctionInterface
      */
     public function toStubInfo(): array
     {
-        $fqsen = $this->getFQSEN();
-        $stub = 'function ';
+        $fqsen = $this->fqsen;
+        $stub = '';
+        if (self::shouldAddDescriptionsToStubs()) {
+            $description = (string)MarkupDescription::extractDescriptionFromDocComment($this);
+            $stub .= MarkupDescription::convertStringToDocComment($description);
+        }
+        $stub .= 'function ';
         if ($this->returnsRef()) {
             $stub .= '&';
         }

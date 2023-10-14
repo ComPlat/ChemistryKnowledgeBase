@@ -7,7 +7,10 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use function array_merge;
 
 /**
- * Schema Diff.
+ * Differences between two schemas.
+ *
+ * The object contains the operations to change the schema stored in $fromSchema
+ * to a target schema.
  */
 class SchemaDiff
 {
@@ -137,28 +140,10 @@ class SchemaDiff
             }
         }
 
-        $foreignKeySql = [];
-        foreach ($this->newTables as $table) {
-            $sql = array_merge(
-                $sql,
-                $platform->getCreateTableSQL($table, AbstractPlatform::CREATE_INDEXES)
-            );
-
-            if (! $platform->supportsForeignKeyConstraints()) {
-                continue;
-            }
-
-            foreach ($table->getForeignKeys() as $foreignKey) {
-                $foreignKeySql[] = $platform->getCreateForeignKeySQL($foreignKey, $table);
-            }
-        }
-
-        $sql = array_merge($sql, $foreignKeySql);
+        $sql = array_merge($sql, $platform->getCreateTablesSQL($this->newTables));
 
         if ($saveMode === false) {
-            foreach ($this->removedTables as $table) {
-                $sql[] = $platform->getDropTableSQL($table);
-            }
+            $sql = array_merge($sql, $platform->getDropTablesSQL($this->removedTables));
         }
 
         foreach ($this->changedTables as $tableDiff) {

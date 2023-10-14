@@ -8,11 +8,13 @@ use function strtoupper;
 
 /**
  * Abstract interface for a SQL reserved keyword dictionary.
+ *
+ * @psalm-consistent-constructor
  */
 abstract class KeywordList
 {
     /** @var string[]|null */
-    private $keywords;
+    private ?array $keywords = null;
 
     /**
      * Checks if the given word is a keyword of this dialect/vendor platform.
@@ -47,6 +49,8 @@ abstract class KeywordList
 
     /**
      * Returns the name of this keyword list.
+     *
+     * @deprecated
      *
      * @return string
      */

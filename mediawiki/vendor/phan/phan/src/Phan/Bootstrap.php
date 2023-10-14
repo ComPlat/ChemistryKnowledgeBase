@@ -35,7 +35,7 @@ if (function_exists('uopz_allow_exit') && !ini_get('uopz.disable')) {
 if (PHP_VERSION_ID < 70200) {
     fprintf(
         STDERR,
-        "ERROR: Phan 3.x requires PHP 7.2+ to run, but PHP %s is installed." . PHP_EOL,
+        "ERROR: Phan 5.x requires PHP 7.2+ to run, but PHP %s is installed." . PHP_EOL,
         PHP_VERSION
     );
     fwrite(STDERR, "PHP 7.1 reached its end of life in December 2019." . PHP_EOL);
@@ -44,7 +44,7 @@ if (PHP_VERSION_ID < 70200) {
     exit(1);
 }
 
-const LATEST_KNOWN_PHP_AST_VERSION = '1.0.10';
+const LATEST_KNOWN_PHP_AST_VERSION = '1.0.16';
 
 /**
  * Dump instructions on how to install php-ast
@@ -61,7 +61,9 @@ function phan_output_ast_installation_instructions(): void
         $extension_dir .= ' (extension directory does not exist and may need to be changed)';
     }
     if (DIRECTORY_SEPARATOR === '\\') {
-        if (PHP_VERSION_ID < 70500 || !preg_match('/[a-zA-Z]/', PHP_VERSION)) {
+        if (PHP_VERSION_ID >= 70300 && PHP_VERSION_ID < 80100 || !preg_match('/[a-zA-Z]/', PHP_VERSION)) {
+            // e.g. https://windows.php.net/downloads/pecl/releases/ast/1.0.16/php_ast-1.0.16-8.0-nts-vs16-x64.zip for php 8.0, 64-bit non thread safe
+            // e.g. https://windows.php.net/downloads/pecl/releases/ast/1.0.16/php_ast-1.0.16-7.4-ts-vc15-x86.zip for php 7.4, 32-bit thread safe
             fprintf(
                 STDERR,
                 PHP_EOL . "Windows users can download php-ast from https://windows.php.net/downloads/pecl/releases/ast/%s/php_ast-%s-%s-%s-%s-%s.zip" . PHP_EOL,
@@ -69,17 +71,24 @@ function phan_output_ast_installation_instructions(): void
                 LATEST_KNOWN_PHP_AST_VERSION,
                 PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
                 PHP_ZTS ? 'ts' : 'nts',
-                'vc15',
+                PHP_VERSION_ID >= 80000 ? 'vs16' : 'vc15',
                 PHP_INT_SIZE == 4 ? 'x86' : 'x64'
             );
             fwrite(STDERR, "(if that link doesn't work, check https://windows.php.net/downloads/pecl/releases/ast/ )" . PHP_EOL);
             fwrite(STDERR, "To install php-ast, add php_ast.dll from the zip to $extension_dir," . PHP_EOL);
-            fwrite(STDERR, "Then, enable php-ast by adding the following lines to your php.ini file at '$ini_path'" . PHP_EOL . PHP_EOL);
-            if (!is_dir((string)$configured_extension_dir) && is_dir($new_extension_dir)) {
-                fwrite(STDERR, "extension_dir=$new_extension_dir" . PHP_EOL);
+        } else {
+            if (PHP_VERSION_ID < 70300) {
+                fwrite(STDERR, "php-ast 1.0.11 is the minimum php-ast version needed for ast version 85. https://pecl.php.net/package/ast/1.0.11/windows does not supply dlls for php 7.2 because php-ast 1.0.11 was published after security support for php 7.2 was dropped" . PHP_EOL);
+            } else {
+                fprintf(STDERR, "Releases for php %s may not yet be available at https://windows.php.net/downloads/pecl/releases/ast/" . PHP_EOL, PHP_VERSION);
             }
-            fwrite(STDERR, "extension=php_ast.dll" . PHP_EOL . PHP_EOL);
+            fwrite(STDERR, "To build php-ast from source for Windows, see https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2 and https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2#building_pecl_extensions" . PHP_EOL);
         }
+        fwrite(STDERR, "Then, enable php-ast by adding the following lines to your php.ini file at '$ini_path'" . PHP_EOL . PHP_EOL);
+        if (!is_dir((string)$configured_extension_dir) && is_dir($new_extension_dir)) {
+            fwrite(STDERR, "extension_dir=$new_extension_dir" . PHP_EOL);
+        }
+        fwrite(STDERR, "extension=php_ast.dll" . PHP_EOL . PHP_EOL);
     } else {
         fwrite(STDERR, <<<EOT
 php-ast can be installed in the following ways:
@@ -102,54 +111,6 @@ EOT
     fwrite(STDERR, "For more information, see https://github.com/phan/phan/wiki/Getting-Started#installing-dependencies" . PHP_EOL);
 }
 
-if (extension_loaded('ast')) {
-    // Warn if the php-ast version is too low.
-    $ast_version = (string)phpversion('ast');
-    if (PHP_VERSION_ID >= 80000 && version_compare($ast_version, '1.0.10') < 0) {
-        fprintf(
-            STDERR,
-            "ERROR: Phan 3.x requires php-ast 1.0.10+ to properly analyze ASTs for php 8.0+. php-ast %s and php %s is installed." . PHP_EOL,
-            $ast_version,
-            PHP_VERSION
-        );
-        phan_output_ast_installation_instructions();
-        fwrite(STDERR, "Exiting without analyzing files." . PHP_EOL);
-        exit(1);
-    } elseif (PHP_VERSION_ID >= 70400 && version_compare($ast_version, '1.0.2') < 0) {
-        fprintf(
-            STDERR,
-            "WARNING: Phan 3.x requires php-ast 1.0.2+ to properly analyze ASTs for php 7.4+ (1.0.6+ is recommended). php-ast %s and php %s is installed." . PHP_EOL,
-            $ast_version,
-            PHP_VERSION
-        );
-        phan_output_ast_installation_instructions();
-    } elseif (version_compare($ast_version, '1.0.0') <= 0) {
-        if ($ast_version === '') {
-            // Seen in php 7.3 with file_cache when ast is initially enabled but later disabled, due to the result of extension_loaded being assumed to be a constant by opcache.
-            fwrite(STDERR, "ERROR: extension_loaded('ast') is true, but phpversion('ast') is the empty string. You probably need to clear opcache (opcache.file_cache='" . ini_get('opcache.file_cache') . "')" . PHP_EOL);
-        }
-        // TODO: Change this to a warning for 0.1.5 - 1.0.0. (https://github.com/phan/phan/issues/2954)
-        // 0.1.5 introduced the ast\Node constructor, which is required by the polyfill
-        //
-        // NOTE: We haven't loaded the autoloader yet, so these issue messages can't be colorized.
-        fprintf(
-            STDERR,
-            "ERROR: Phan 3.x requires php-ast %s+ because it depends on AST version %d. php-ast '%s' is installed." . PHP_EOL,
-            Config::MINIMUM_AST_EXTENSION_VERSION,
-            Config::AST_VERSION,
-            $ast_version
-        );
-        phan_output_ast_installation_instructions();
-        fwrite(STDERR, "Exiting without analyzing files." . PHP_EOL);
-        exit(1);
-    }
-    // @phan-suppress-next-line PhanRedundantCondition, PhanImpossibleCondition, PhanSuspiciousValueComparison
-    if (PHP_VERSION_ID >= 80000 && strpos(PHP_VERSION, 'dev') === false && version_compare(PHP_VERSION, '8.0.0beta4') < 0) {
-        fwrite(STDERR, "WARNING: Phan may not work properly in PHP 8 versions before PHP 8.0.0beta4. The currently used PHP version is " . PHP_VERSION . PHP_EOL);
-    }
-    unset($ast_version);
-}
-
 // Use the composer autoloader
 $found_autoloader = false;
 foreach ([
@@ -162,6 +123,62 @@ foreach ([
         $found_autoloader = true;
         break;
     }
+}
+
+if (extension_loaded('ast')) {
+    // Warn if the php-ast version is too low.
+    $ast_version = (string)phpversion('ast');
+    if ($ast_version === '') {
+        // Seen in php 7.3 with file_cache when ast is initially enabled but later disabled, due to the result of extension_loaded being assumed to be a constant by opcache.
+        CLI::printErrorToStderr("extension_loaded('ast') is true, but phpversion('ast') is the empty string. You probably need to clear opcache (opcache.file_cache='" . ini_get('opcache.file_cache') . "')" . PHP_EOL);
+    }
+    $phan_output_ast_too_old_and_exit = /** @return never */ static function (string $minimum_ast_version, string $php_version_bound) use ($ast_version): void {
+        $error_message = sprintf(
+            "Phan 5.x requires php-ast %s+ to properly analyze ASTs for php %s+. php-ast %s and php %s is installed." . PHP_EOL,
+            $minimum_ast_version,
+            $php_version_bound,
+            $ast_version,
+            PHP_VERSION
+        );
+        CLI::printErrorToStderr($error_message);
+        phan_output_ast_installation_instructions();
+        fwrite(STDERR, "Exiting without analyzing files." . PHP_EOL);
+        exit(1);
+    };
+
+    if (PHP_VERSION_ID >= 80200 && version_compare($ast_version, '1.0.15') < 0) {
+        $phan_output_ast_too_old_and_exit('1.0.15', '8.2');
+    } elseif (PHP_VERSION_ID >= 80100 && version_compare($ast_version, '1.0.14') < 0) {
+        $phan_output_ast_too_old_and_exit('1.0.14', '8.1');
+    } elseif (PHP_VERSION_ID >= 80000 && version_compare($ast_version, '1.0.11') < 0) {
+        $phan_output_ast_too_old_and_exit('1.0.11', '8.0');
+    } elseif (PHP_VERSION_ID >= 70400 && version_compare($ast_version, '1.0.2') < 0) {
+        fprintf(
+            STDERR,
+            "WARNING: Phan 5.x requires php-ast 1.0.2+ to properly analyze ASTs for php 7.4+ (1.0.15+ is recommended). php-ast %s and php %s is installed." . PHP_EOL,
+            $ast_version,
+            PHP_VERSION
+        );
+        phan_output_ast_installation_instructions();
+    } elseif (version_compare($ast_version, '1.0.0') <= 0) {
+        $error_message = sprintf(
+            "Phan 5.x requires php-ast %s+ because it depends on AST version %d. php-ast '%s' is installed." . PHP_EOL,
+            Config::MINIMUM_AST_EXTENSION_VERSION,
+            Config::AST_VERSION,
+            $ast_version
+        );
+        CLI::printErrorToStderr($error_message);
+        phan_output_ast_installation_instructions();
+        fwrite(STDERR, "Exiting without analyzing files." . PHP_EOL);
+        exit(1);
+    }
+    // @phan-suppress-next-line PhanRedundantCondition, PhanImpossibleCondition, PhanSuspiciousValueComparison
+    if (PHP_VERSION_ID < 80100 && PHP_VERSION_ID % 100 === 0 && PHP_EXTRA_VERSION !== '') {
+        // Warn for 8.0.0RC1, 7.4.0alpha1, 7.3.0-dev, etc.
+        // But don't warn for 8.1.0 since there's no way to upgrade to a stable release.
+        fwrite(STDERR, "WARNING: Phan may not work properly in versions prior to the first stable release of a php minor version. The currently used PHP version is " . PHP_VERSION . PHP_EOL);
+    }
+    unset($ast_version);
 }
 unset($file);
 if (!$found_autoloader) {
@@ -199,6 +216,7 @@ if (!extension_loaded('filter') && !function_exists('filter_var')) {
 /**
  * Print more of the backtrace than is done by default
  * @suppress PhanAccessMethodInternal
+ * @return never
  */
 set_exception_handler(static function (Throwable $throwable): void {
     fwrite(STDERR, "ERROR: $throwable\n");
@@ -340,29 +358,48 @@ function phan_error_handler(int $errno, string $errstr, string $errfile, int $er
         // Don't execute the PHP internal error handler.
         return true;
     }
-    if ($errno === E_DEPRECATED && preg_match('/^(Constant |Method ReflectionParameter::getClass)/', $errstr)) {
-        // Suppress deprecation notices running `vendor/bin/paratest` in php 8
-        // Constants such as ENCHANT can be deprecated when calling constant()
-        return true;
+    if ($errno === E_DEPRECATED) {
+        // Because php 7.2 is used in CI we're stuck on an unmaintained paratest version.
+        if (preg_match('/^Creation of dynamic property (ParaTest\\\\Runners|Microsoft\\\\PhpParser|Phan\\\\LanguageServer\\\\LanguageServer::)/', $errstr)) {
+            return true;
+        }
+        if (preg_match('/^Use of "\w+" in callables is deprecated/i', $errstr) && str_contains(str_replace('\\', '/', $errfile), 'vendor/webmozart/assert')) {
+            // TODO: Remove after bumping the minimum webmozart version to a release that fixes this
+            // https://github.com/webmozarts/assert/pull/260/files
+            return true;
+        }
+        if (preg_match('/^(Constant |Method ReflectionParameter::getClass)/', $errstr)) {
+            // Suppress deprecation notices running `vendor/bin/paratest` in php 8
+            // Constants such as ENCHANT can be deprecated when calling constant()
+            return true;
+        }
+        if (preg_match('/^The Serializable interface is deprecated/', $errstr)) {
+            if (preg_match('@/vendor/phpunit/@', $errfile)) {
+                // Suppress deprecation notices running phpunit in php 8.1 with the Serializable interface.
+                // phpunit 8 stopped being maintained before Serializable was deprecated.
+                return true;
+            }
+        }
+        if (preg_match('/ast\\\\parse_.*Version.*is deprecated/i', $errstr)) {
+            static $did_warn = false;
+            if (!$did_warn) {
+                $did_warn = true;
+                if (!getenv('PHAN_SUPPRESS_AST_DEPRECATION')) {
+                    CLI::printWarningToStderr(sprintf(
+                        "php-ast AST version %d used by Phan %s has been deprecated in php-ast %s. Check if a newer version of Phan is available." . PHP_EOL,
+                        Config::AST_VERSION,
+                        CLI::PHAN_VERSION,
+                        (string)phpversion('ast')
+                    ));
+                    fwrite(STDERR, "(Set PHAN_SUPPRESS_AST_DEPRECATION=1 to suppress this message)" . PHP_EOL);
+                }
+            }
+            // Don't execute the PHP internal error handler
+            return true;
+        }
     }
     if ($errno === E_NOTICE && preg_match('/^(iconv_strlen)/', $errstr)) {
         // Suppress deprecation notices in symfony/polyfill-mbstring
-        return true;
-    }
-    if ($errno === E_DEPRECATED && preg_match('/ast\\\\parse_.*Version.*is deprecated/i', $errstr)) {
-        static $did_warn = false;
-        if (!$did_warn) {
-            $did_warn = true;
-            if (!getenv('PHAN_SUPPRESS_AST_DEPRECATION')) {
-                CLI::printWarningToStderr(sprintf(
-                    "php-ast AST version %d used by Phan %s has been deprecated. Check if a newer version of Phan is available." . PHP_EOL,
-                    Config::AST_VERSION,
-                    CLI::PHAN_VERSION
-                ));
-                fwrite(STDERR, "(Set PHAN_SUPPRESS_AST_DEPRECATION=1 to suppress this message)" . PHP_EOL);
-            }
-        }
-        // Don't execute the PHP internal error handler
         return true;
     }
     fwrite(STDERR, "$errfile:$errline [$errno] $errstr\n");

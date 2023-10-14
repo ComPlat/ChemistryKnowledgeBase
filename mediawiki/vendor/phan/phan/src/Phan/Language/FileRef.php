@@ -189,19 +189,31 @@ class FileRef implements \Serializable
 
     public function serialize(): string
     {
-        return $this->__toString();
+        return \serialize($this->__serialize());
     }
 
     /**
      * @param string $serialized
-     * @suppress PhanParamSignatureRealMismatchHasNoParamTypeInternal, PhanUnusedSuppression parameter type widening was allowed in php 7.2, signature changed in php 8
      */
     public function unserialize($serialized): void
     {
-        $map = \explode(':', $serialized);
-        $this->file = $map[0];
-        $this->line_number_start = (int)$map[1];
-        $this->line_number_end = (int)($map[2] ?? 0);
+        $this->__unserialize(\unserialize($serialized));
+    }
+
+    /**
+     * @return array{0:string, 1:int, 2:int}
+     */
+    public function __serialize(): array
+    {
+        return [$this->file, $this->line_number_start, $this->line_number_end];
+    }
+
+    /**
+     * @param array{0:string, 1:int, 2:int} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$this->file, $this->line_number_start, $this->line_number_end] = $data;
     }
 
     /**

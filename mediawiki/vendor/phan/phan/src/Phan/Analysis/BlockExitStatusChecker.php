@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Phan\Analysis;
 
 use AssertionError;
+use ast;
 use ast\Node;
 use Phan\AST\Visitor\KindVisitorImplementation;
 
@@ -43,11 +44,17 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
     public const STATUS_CONTINUE       = (1 << 22);       // At least one branch leads to a continue statement
     public const STATUS_BREAK          = (1 << 23);       // At least one branch leads to a break statement
     public const STATUS_THROW          = (1 << 24);       // At least one branch leads to a throw statement
-    public const STATUS_RETURN         = (1 << 25);       // At least one branch leads to a return/exit() statement (or an infinite loop)
+    public const STATUS_RETURN         = (1 << 25);       // At least one branch leads to a return statement
+    public const STATUS_NORETURN       = (1 << 26);       // At least one branch leads to a exit() statement (or an infinite loop)
 
     public const STATUS_THROW_OR_RETURN_BITMASK =
         self::STATUS_THROW |
-        self::STATUS_RETURN;
+        self::STATUS_RETURN |
+        self::STATUS_NORETURN;
+
+    public const STATUS_NOT_RETURN_BITMASK =
+        self::STATUS_THROW |
+        self::STATUS_NORETURN;
 
     // Any status which doesn't lead to proceeding.
     public const STATUS_NOT_PROCEED_BITMASK =
@@ -55,7 +62,8 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
         self::STATUS_CONTINUE |
         self::STATUS_BREAK |
         self::STATUS_THROW |
-        self::STATUS_RETURN;
+        self::STATUS_RETURN |
+        self::STATUS_NORETURN;
 
     public const STATUS_BITMASK =
         self::STATUS_PROCEED |
@@ -102,7 +110,7 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
     {
         if ($cond instanceof Node) {
             // TODO: Could look up values for remaining constants and inline expressions, but doing that has low value.
-            if ($cond->kind === \ast\AST_CONST) {
+            if ($cond->kind === ast\AST_CONST) {
                 $cond_name_string = $cond->children['name']->children['name'] ?? null;
                 return \is_string($cond_name_string) && \strcasecmp($cond_name_string, 'true') === 0;
             }
@@ -360,7 +368,6 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
 
     /**
      * @return int the corresponding status code
-     * @suppress PhanTypeMismatchArgumentNullable
      */
     public function visitMatchArm(Node $node): int
     {
@@ -475,7 +482,7 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
     {
         $status = $inner_status & ~self::UNEXITABLE_LOOP_INNER_STATUS;
         if ($status === 0) {
-            return self::STATUS_RETURN;  // this is an infinite loop, it didn't contain break/throw/return statements?
+            return self::STATUS_NORETURN;  // this is an infinite loop, it didn't contain break/throw/return statements?
         }
         if (($status & self::STATUS_BREAK) !== 0) {
             // if the inside of "while (true) {} contains a break statement,
@@ -500,7 +507,7 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
      */
     public function visitExit(Node $node): int
     {
-        return self::STATUS_RETURN;
+        return self::STATUS_NORETURN;
     }
 
     /**
@@ -509,7 +516,7 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
     public function visitUnaryOp(Node $node): int
     {
         // Don't modify $node->flags, use unmodified flags here
-        if ($node->flags !== \ast\flags\UNARY_SILENCE) {
+        if ($node->flags !== ast\flags\UNARY_SILENCE) {
             return self::STATUS_PROCEED;
         }
         // Analyze exit status of `@expr` like `expr` (e.g. @trigger_error())
@@ -537,11 +544,47 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
         return $status;
     }
 
+    /**
+     * Determines the exit status of a static method call.
+     *
+     * @return int the corresponding status code
+     */
+    public function visitStaticCall(Node $node): int
+    {
+        // TODO: The expression or arguments might unconditionally throw, though that is rare in practice.
+        return ($node->flags & self::STATUS_BITMASK) ?: self::STATUS_PROCEED;
+    }
+
+    /**
+     * Determines the exit status of an instance method call.
+     *
+     * @return int the corresponding status code
+     * @override
+     * @see UseReturnValueVisitor::checkIfUsingFunctionThatNeverReturns()
+     */
+    public function visitMethodCall(Node $node): int
+    {
+        // TODO: The expression or arguments might unconditionally throw, though that is rare in practice.
+        return ($node->flags & self::STATUS_BITMASK) ?: self::STATUS_PROCEED;
+    }
+
+    /**
+     * Determines the exit status of an instance method call.
+     *
+     * @return int the corresponding status code
+     * @override
+     */
+    public function visitNullsafeMethodCall(Node $node): int
+    {
+        // TODO: The expression or arguments might unconditionally throw, though that is rare in practice.
+        return ($node->flags & self::STATUS_BITMASK) ?: self::STATUS_PROCEED;
+    }
+
     private static function computeStatusOfCall(Node $node): int
     {
         $expression = $node->children['expr'];
         if ($expression instanceof Node) {
-            if ($expression->kind !== \ast\AST_NAME) {
+            if ($expression->kind !== ast\AST_NAME) {
                 return self::STATUS_PROCEED;  // best guess
             }
             $function_name = $expression->children['name'];
@@ -555,7 +598,12 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
             $function_name = $expression;
         }
         if ($function_name === '') {
+            // TODO: Check for all invalid fqsens, allowing 'NS\ClassName::methodName'
             return self::STATUS_THROW;  // nonsense such as ''();
+        }
+        if ($node->children['args']->kind === ast\AST_CALLABLE_CONVERT) {
+            // This is creating a closure, not calling it.
+            return self::STATUS_PROCEED;
         }
         if ($function_name[0] === '\\') {
             $function_name = \substr($function_name, 1);
@@ -579,17 +627,22 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
         if (!($constant_ast instanceof Node)) {
             return self::STATUS_PROCEED;
         }
-        if ($constant_ast->kind !== \ast\AST_CONST) {
+        if ($constant_ast->kind !== ast\AST_CONST) {
             return self::STATUS_PROCEED;
         }
         $name = $constant_ast->children['name']->children['name'] ?? null;
         if (!\is_string($name)) {
             return self::STATUS_PROCEED;
         }
-        if (\in_array($name, ['E_ERROR', 'E_PARSE', 'E_CORE_ERROR', 'E_COMPILE_ERROR', 'E_USER_ERROR'], true)) {
-            return self::STATUS_RETURN;
+        // The returned code for exit() is 'return', e.g. E_USER_ERROR makes trigger_error emit an error then abort execution.
+        // NOTE: Native errors either emit a notice about being invalid error types to pass to this function (e.g. E_ERROR).
+        // must be one of E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE, or E_USER_DEPRECATED
+        if ($name === 'E_USER_ERROR') {
+            // Fatal error
+            return self::STATUS_NORETURN;
         }
-        if ($name === 'E_RECOVERABLE_ERROR') {
+        if (!\in_array($name, ['E_USER_WARNING', 'E_USER_NOTICE', 'E_USER_DEPRECATED'], true)) {
+            // Newer php versions throw a ValueError for invalid types.
             return self::STATUS_THROW;
         }
 
@@ -737,7 +790,7 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
             }
             $status = $this->check($child);
             if (($status & self::STATUS_PROCEED) === 0) {
-                // If it's guaranteed we won't stop after this statement,
+                // If it's guaranteed we won't proceed after this statement,
                 // then skip the subsequent statements.
                 return $status | ($maybe_status & ~self::STATUS_PROCEED);
             }
@@ -760,6 +813,14 @@ final class BlockExitStatusChecker extends KindVisitorImplementation
     public static function willUnconditionallyThrowOrReturn(Node $node): bool
     {
         return ((new self())->__invoke($node) & ~self::STATUS_THROW_OR_RETURN_BITMASK) === 0;
+    }
+
+    /**
+     * Will the node $node unconditionally throw or exit (or infinitely loop)
+     */
+    public static function willUnconditionallyNeverReturn(Node $node): bool
+    {
+        return ((new self())->__invoke($node) & ~self::STATUS_NOT_RETURN_BITMASK) === 0;
     }
 
     /**

@@ -11,21 +11,20 @@ use Phan\Language\UnionType;
 
 /**
  * Phan's representation of the type for `callable-array`.
+ *
+ * NOTE: A CallableArrayType is not technically a list type because [1 => $methodName, 0 => $classOrObject] is also callable.
  * @phan-pure
  */
 class CallableArrayType extends ArrayType
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'callable-array';
 
     public function isAlwaysTruthy(): bool
     {
         return !$this->is_nullable;
-    }
-
-    public function isPossiblyObject(): bool
-    {
-        return false;  // Overrides IterableType returning true
     }
 
     public function isPossiblyTruthy(): bool
@@ -60,11 +59,16 @@ class CallableArrayType extends ArrayType
 
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool
     {
+        if ($other->isDefiniteNonCallableType($code_base)) {
+            return false;
+        }
         if ($other instanceof IterableType) {
-            return !$other->isDefiniteNonCallableType();
+            return true;
         }
         // TODO: More specific.
+        // e.g. can't cast to certain array shapes or arrays with string keys.
         return $other instanceof CallableType
+            || $other instanceof CallableDeclarationType
             || parent::canCastToDeclaredType($code_base, $context, $other);
     }
 }

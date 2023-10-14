@@ -35,7 +35,7 @@ class AlphabeticArraySortSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_DOC_COMMENT_OPEN_TAG ];
 	}
 
@@ -61,7 +61,7 @@ class AlphabeticArraySortSniff implements Sniff {
 	 * @param int $tagPtr Token position of the tag
 	 * @param int $docEnd Token position of the end of the doc comment
 	 */
-	private function processDocTag( File $phpcsFile, array $tokens, $tagPtr, $docEnd ) {
+	private function processDocTag( File $phpcsFile, array $tokens, int $tagPtr, int $docEnd ): void {
 		$arrayToken = $phpcsFile->findNext( [ T_OPEN_SHORT_ARRAY, T_ARRAY ], $docEnd + 1 );
 		if ( $arrayToken === false || (
 			// On the same line or one line after the doc block
@@ -162,7 +162,7 @@ class AlphabeticArraySortSniff implements Sniff {
 	 * @param string[] $sorted
 	 * @param array[] $unsorted
 	 */
-	private function warnOnFirstMismatch( File $phpcsFile, $sorted, $unsorted ) {
+	private function warnOnFirstMismatch( File $phpcsFile, array $sorted, array $unsorted ): void {
 		$iteratorUnsorted = new ArrayIterator( $unsorted );
 		foreach ( $sorted as $sortedKey ) {
 			$unsortedKey = $iteratorUnsorted->key();
@@ -190,7 +190,7 @@ class AlphabeticArraySortSniff implements Sniff {
 	 * @param array[] $unsorted
 	 * @param int $stackPtr
 	 */
-	private function rebuildSortedArray( File $phpcsFile, $sorted, $unsorted, $stackPtr ) {
+	private function rebuildSortedArray( File $phpcsFile, array $sorted, array $unsorted, int $stackPtr ): void {
 		$phpcsFile->fixer->beginChangeset();
 		$iteratorSorted = new ArrayIterator( $sorted );
 		$newArray = '';
@@ -200,7 +200,9 @@ class AlphabeticArraySortSniff implements Sniff {
 			if ( $lastEnd !== false ) {
 				$newArray .= $phpcsFile->getTokensAsString(
 					$lastEnd + 1,
-					$values['key'] - $lastEnd - 1
+					$values['key'] - $lastEnd - 1,
+					// keep tabs on multiline statements
+					true
 				);
 			}
 			$lastEnd = $values['end'];
@@ -210,7 +212,9 @@ class AlphabeticArraySortSniff implements Sniff {
 			$unsortedToken = $unsorted[$sortedKey];
 			$newArray .= $phpcsFile->getTokensAsString(
 				$unsortedToken['key'],
-				$unsortedToken['end'] - $unsortedToken['key'] + 1
+				$unsortedToken['end'] - $unsortedToken['key'] + 1,
+				// keep tabs on multiline statements
+				true
 			);
 			$iteratorSorted->next();
 
@@ -229,7 +233,7 @@ class AlphabeticArraySortSniff implements Sniff {
 	 * @param array[] $statementList Array mapping keys to tokens
 	 * @return string[] Sorted list of keys
 	 */
-	private function sortStatements( array $statementList ) : array {
+	private function sortStatements( array $statementList ): array {
 		$map = [];
 		foreach ( $statementList as $key => $_ ) {
 			$map[$key] = trim( $key, "'\"" );

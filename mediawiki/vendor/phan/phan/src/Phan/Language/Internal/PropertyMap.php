@@ -13,7 +13,7 @@ $ast_node_shape_inner = \implode(',', [
     "catches?:ast\Node",
     "class?:ast\Node",
     "cond?:$ordinary_ast_node",
-    "const?:string",
+    "const?:string|ast\Node",
     "dim?:$ordinary_ast_node",
     "declares?:ast\Node",
     "docComment?:?string",
@@ -118,6 +118,10 @@ return [
         'lineno' => 'int',
         'name' => '?string',
     ],
+    'backedenum' => [
+        'name' => 'string',
+        'value' => 'int|string',
+    ],
     'collator' => ['name' => 'string'],
     'curlfile' => [
         'mime' => 'string',
@@ -133,6 +137,14 @@ return [
         'm' => 'int',
         's' => 'int',
         'y' => 'int',
+    ],
+    'dateperiod' => [
+        'current' => '?DateTimeInterface',
+        'end' => '?DateTimeInterface',
+        'include_start_date' => 'bool',
+        'interval' => 'DateInterval',
+        'recurrences' => 'int',
+        'start' => 'DateTimeInterface',
     ],
     'directory' => ['handle' => 'resource', 'path' => 'string'],
     'directoryiterator' => ['name' => 'string'],
@@ -413,6 +425,9 @@ return [
     ],
     'tokyotyrantexception' => ['code' => 'int'],
     'transliterator' => ['id' => 'string'],
+    'unitenum' => [
+        'name' => 'string',
+    ],
     'xmlreader' => [
         'attributeCount' => 'int',
         'baseURI' => 'string',

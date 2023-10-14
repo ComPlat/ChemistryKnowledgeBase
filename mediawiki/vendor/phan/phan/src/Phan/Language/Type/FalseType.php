@@ -16,8 +16,10 @@ use Phan\Language\Type;
  * @see BoolType
  * @phan-pure
  */
-final class FalseType extends ScalarType
+final class FalseType extends ScalarType implements LiteralTypeInterface
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'false';
 
@@ -47,6 +49,11 @@ final class FalseType extends ScalarType
     }
 
     public function isPossiblyFalse(): bool
+    {
+        return true;
+    }
+
+    public function isPossiblyTrue(): bool
     {
         return true;
     }
@@ -94,10 +101,15 @@ final class FalseType extends ScalarType
         return self::performComparison(false, $scalar, $flags);
     }
 
+    /**
+     * Check if this type can possibly cast to the declared type, ignoring nullability of this type
+     *
+     * Precondition: This is either non-nullable or the type NullType/VoidType
+     * @unused-param $context
+     */
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool
     {
-        return $other->isInBoolFamily() ||
-            \get_class($other) === MixedType::class ||
+        return $other->isPossiblyTrue() ||
             $other instanceof TemplateType ||
             (!$context->isStrictTypes() && parent::canCastToDeclaredType($code_base, $context, $other));
     }
@@ -111,5 +123,11 @@ final class FalseType extends ScalarType
     public function asSignatureType(): Type
     {
         return BoolType::instance($this->is_nullable);
+    }
+
+    /** @return false */
+    public function getValue(): bool
+    {
+        return false;
     }
 }

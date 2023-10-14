@@ -25,6 +25,7 @@
 use ast\Node;
 use Phan\AST\UnionTypeVisitor;
 use Phan\CodeBase;
+use Phan\Exception\CodeBaseException;
 use Phan\Language\Context;
 use Phan\Language\Element\FunctionInterface;
 use Phan\Language\FQSEN\FullyQualifiedClassName;
@@ -33,7 +34,7 @@ use SecurityCheckPlugin\MWPreVisitor;
 use SecurityCheckPlugin\MWVisitor;
 use SecurityCheckPlugin\SecurityCheckPlugin;
 use SecurityCheckPlugin\Taintedness;
-use SecurityCheckPlugin\TaintednessBaseVisitor;
+use SecurityCheckPlugin\TaintednessVisitor;
 
 class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 	/**
@@ -53,22 +54,22 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 	/**
 	 * @inheritDoc
 	 */
-	protected function getCustomFuncTaints() : array {
+	protected function getCustomFuncTaints(): array {
 		$selectWrapper = [
-				self::SQL_EXEC_TAINT,
-				// List of fields. MW does not escape things like COUNT(*)
-				self::SQL_EXEC_TAINT,
-				// Where conditions
-				self::SQL_NUMKEY_EXEC_TAINT,
-				// the function name doesn't seem to be escaped
-				self::SQL_EXEC_TAINT,
-				// OPTIONS. Its complicated. HAVING is like WHERE
-				// This is treated as special case
-				self::NO_TAINT,
-				// Join conditions. This is treated as special case
-				self::NO_TAINT,
-				// What should DB results be considered?
-				'overall' => self::YES_TAINT
+			self::SQL_EXEC_TAINT,
+			// List of fields. MW does not escape things like COUNT(*)
+			self::SQL_EXEC_TAINT,
+			// Where conditions
+			self::SQL_NUMKEY_EXEC_TAINT,
+			// the function name doesn't seem to be escaped
+			self::SQL_EXEC_TAINT,
+			// OPTIONS. Its complicated. HAVING is like WHERE
+			// This is treated as special case
+			self::NO_TAINT,
+			// Join conditions. This is treated as special case
+			self::NO_TAINT,
+			// What should DB results be considered?
+			'overall' => self::YES_TAINT
 		];
 
 		$linkRendererMethods = [
@@ -78,6 +79,13 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			self::NO_TAINT, /* attribs */
 			self::NO_TAINT, /* query */
 			'overall' => self::ESCAPED_TAINT
+		];
+
+		$shellCommandOutput = [
+			// This is a bit unclear. Most of the time
+			// you should probably be escaping the results
+			// of a shell command, but not all the time.
+			'overall' => self::YES_TAINT
 		];
 
 		return [
@@ -302,7 +310,7 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			'\Message::__toString' => [ 'overall' => self::ESCAPED_TAINT ],
 			'\Message::escaped' => [ 'overall' => self::ESCAPED_TAINT ],
 			'\Message::rawParams' => [
-				self::HTML_TAINT | self::RAW_PARAM | self::VARIADIC_PARAM,
+				self::HTML_EXEC_TAINT | self::RAW_PARAM | self::VARIADIC_PARAM,
 				// meh, not sure how right the overall is.
 				'overall' => self::HTML_TAINT
 			],
@@ -331,21 +339,22 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 				'overall' => self::NO_TAINT
 			],
 			'\MediaWiki\Shell\Command::unsafeParams' => [
-				self::SHELL_EXEC_TAINT,
+				self::SHELL_EXEC_TAINT | self::VARIADIC_PARAM,
 				'overall' => self::NO_TAINT
 			],
-			'\MediaWiki\Shell\Result::getStdout' => [
-				// This is a bit unclear. Most of the time
-				// you should probably be escaping the results
-				// of a shell command, but not all the time.
-				'overall' => self::YES_TAINT
+			'\MediaWiki\Shell\Result::getStdout' => $shellCommandOutput,
+			'\MediaWiki\Shell\Result::getStderr' => $shellCommandOutput,
+			// Methods from wikimedia/Shellbox
+			'\Shellbox\Shellbox::escape' => [
+				( self::YES_TAINT & ~self::SHELL_TAINT ) | self::VARIADIC_PARAM,
+				'overall' => self::NO_TAINT
 			],
-			'\MediaWiki\Shell\Result::getStderr' => [
-				// This is a bit unclear. Most of the time
-				// you should probably be escaping the results
-				// of a shell command, but not all the time.
-				'overall' => self::YES_TAINT
+			'\Shellbox\Command\Command::unsafeParams' => [
+				self::SHELL_EXEC_TAINT | self::VARIADIC_PARAM,
+				'overall' => self::NO_TAINT
 			],
+			'\Shellbox\Command\UnboxedResult::getStdout' => $shellCommandOutput,
+			'\Shellbox\Command\UnboxedResult::getStderr' => $shellCommandOutput,
 			'\Html::rawElement' => [
 				self::YES_TAINT,
 				self::ESCAPES_HTML,
@@ -444,7 +453,7 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			'\WebRequest::getHeader' => [ 'overall' => self::YES_TAINT, ],
 			'\WebRequest::getAcceptLang' => [ 'overall' => self::YES_TAINT, ],
 			'\HtmlArmor::__construct' => [
-				self::HTML_TAINT | self::RAW_PARAM,
+				self::HTML_EXEC_TAINT | self::RAW_PARAM,
 				'overall' => self::NO_TAINT
 			],
 			// Due to limitations in how we handle list()
@@ -464,7 +473,7 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			// the url query parameters.
 			'\Linker::linkKnown' => [
 				self::NO_TAINT, /* target */
-				self::HTML_TAINT | self::RAW_PARAM, /* raw html text */
+				self::HTML_EXEC_TAINT | self::RAW_PARAM, /* raw html text */
 				// The array keys for this aren't escaped (!)
 				self::NO_TAINT, /* customAttribs */
 				self::NO_TAINT, /* query */
@@ -476,6 +485,36 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			'\MediaWiki\Linker\LinkRenderer::makeKnownLink' => $linkRendererMethods,
 			'\MediaWiki\Linker\LinkRenderer::makePreloadedLink' => $linkRendererMethods,
 			'\MediaWiki\Linker\LinkRenderer::makeBrokenLink' => $linkRendererMethods,
+			// The value of a status object can be pretty much anything, with any degree of taintedness
+			// and escaping. Since it's a widely used class, it will accumulate a lot of links and taintedness
+			// offset, resulting in huge objects (the short string representation of those Taintedness objects
+			// can reach lengths in the order of tens of millions).
+			// Since the plugin cannot keep track the taintedness of a property per-instance (as it assumes that
+			// every property will be used with the same escaping level), we just annotate the methods as safe.
+			'\StatusValue::newGood' => [
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
+			'\Status::newGood' => [
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
+			'\StatusValue::getValue' => [
+				'overall' => self::NO_TAINT
+			],
+			'\Status::getValue' => [
+				'overall' => self::NO_TAINT
+			],
+			'\StatusValue::setResult' => [
+				self::NO_TAINT,
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
+			'\Status::setResult' => [
+				self::NO_TAINT,
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
 		];
 	}
 
@@ -485,13 +524,12 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 	 * @inheritDoc
 	 */
 	public function isFalsePositive(
-		Taintedness $lhsTaint,
-		Taintedness $rhsTaint,
+		int $combinedTaint,
 		string &$msg,
 		Context $context,
 		CodeBase $code_base
-	) : bool {
-		if ( $lhsTaint->withOnly( $rhsTaint )->get() === self::HTML_TAINT ) {
+	): bool {
+		if ( $combinedTaint === self::HTML_TAINT ) {
 			$path = str_replace( '\\', '/', $context->getFile() );
 			if (
 				strpos( $path, 'maintenance/' ) === 0 ||
@@ -511,7 +549,7 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 				return false;
 			}
 			$classFQSEN = $context->getClassFQSEN();
-			$isMaint = TaintednessBaseVisitor::isSubclassOf( $classFQSEN, $maintFQSEN, $code_base );
+			$isMaint = TaintednessVisitor::isSubclassOf( $classFQSEN, $maintFQSEN, $code_base );
 			if ( $isMaint ) {
 				$msg .= ' [Likely false positive because in a subclass of Maintenance, thus probably CLI]';
 				return true;
@@ -544,17 +582,22 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 		FunctionTaintedness $funcTaint,
 		Context $context,
 		CodeBase $code_base
-	) : Taintedness {
+	): Taintedness {
 		if ( $curArgTaintedness->has( self::ESCAPED_TAINT ) ) {
 			$argumentIsMaybeAMsg = false;
 			/** @var \Phan\Language\Element\Clazz[] $classes */
 			$classes = UnionTypeVisitor::unionTypeFromNode( $code_base, $context, $argument )
 				->asClassList( $code_base, $context );
-			foreach ( $classes as $cl ) {
-				if ( $cl->getFQSEN()->__toString() === '\Message' ) {
-					$argumentIsMaybeAMsg = true;
-					break;
+			try {
+				foreach ( $classes as $cl ) {
+					if ( $cl->getFQSEN()->__toString() === '\Message' ) {
+						$argumentIsMaybeAMsg = true;
+						break;
+					}
 				}
+			} catch ( CodeBaseException $_ ) {
+				// A class that doesn't exist, don't crash.
+				return $curArgTaintedness;
 			}
 
 			$param = $func->getParameterForCaller( $argIndex );
@@ -563,12 +606,17 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			}
 			/** @var \Phan\Language\Element\Clazz[] $classesParam */
 			$classesParam = $param->getUnionType()->asClassList( $code_base, $context );
-			foreach ( $classesParam as $cl ) {
-				if ( $cl->getFQSEN()->__toString() === '\Message' ) {
-					// So we are here. Input is a Message, and func expects either a Message or string
-					// (or something else). So disable double escape check.
-					return $curArgTaintedness->without( self::ESCAPED_TAINT );
+			try {
+				foreach ( $classesParam as $cl ) {
+					if ( $cl->getFQSEN()->__toString() === '\Message' ) {
+						// So we are here. Input is a Message, and func expects either a Message or string
+						// (or something else). So disable double escape check.
+						return $curArgTaintedness->without( self::ESCAPED_TAINT );
+					}
 				}
+			} catch ( CodeBaseException $_ ) {
+				// A class that doesn't exist, don't crash.
+				return $curArgTaintedness;
 			}
 		}
 		return $curArgTaintedness;

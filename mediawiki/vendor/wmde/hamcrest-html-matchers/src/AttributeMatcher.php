@@ -2,84 +2,88 @@
 
 namespace WMDE\HamcrestHtml;
 
+use DOMAttr;
+use DOMElement;
 use Hamcrest\Description;
 use Hamcrest\Matcher;
 use Hamcrest\Util;
 
-class AttributeMatcher extends TagMatcher
-{
-    /**
-     * @var Matcher
-     */
-    private $attributeNameMatcher;
+class AttributeMatcher extends TagMatcher {
 
-    /**
-     * @var Matcher|null
-     */
-    private $valueMatcher;
+	/**
+	 * @var Matcher
+	 */
+	private $attributeNameMatcher;
 
-    public static function withAttribute($attributeName) {
-        return new static(Util::wrapValueWithIsEqual($attributeName));
-    }
+	/**
+	 * @var Matcher|null
+	 */
+	private $valueMatcher;
 
-    /**
-     * AttributeMatcher constructor.
-     * @param \Hamcrest\Matcher $attributeNameMatcher
-     */
-    public function __construct(Matcher $attributeNameMatcher)
-    {
-        parent::__construct();
+	/**
+	 * @param Matcher|string $attributeName
+	 *
+	 * @return self
+	 */
+	public static function withAttribute( $attributeName ) {
+		return new static( Util::wrapValueWithIsEqual( $attributeName ) );
+	}
 
-        $this->attributeNameMatcher = $attributeNameMatcher;
-    }
+	/**
+	 * @param Matcher $attributeNameMatcher
+	 */
+	public function __construct( Matcher $attributeNameMatcher ) {
+		parent::__construct();
 
-    /**
-     * @param Matcher|mixed $value
-     * @return AttributeMatcher
-     */
-    public function havingValue($value)
-    {
-        //TODO: Throw exception if value is set
-        $result = clone $this;
-        $result->valueMatcher = Util::wrapValueWithIsEqual($value);
+		$this->attributeNameMatcher = $attributeNameMatcher;
+	}
 
-        return $result;
-    }
+	/**
+	 * @param Matcher|string $value
+	 *
+	 * @return AttributeMatcher
+	 */
+	public function havingValue( $value ) {
+		// TODO: Throw exception if value is set
+		$result = clone $this;
+		$result->valueMatcher = Util::wrapValueWithIsEqual( $value );
 
-    public function describeTo(Description $description)
-    {
-        $description->appendText('with attribute ')
-            ->appendDescriptionOf($this->attributeNameMatcher);
-        if ($this->valueMatcher) {
-            $description->appendText(' having value ')
-                ->appendDescriptionOf($this->valueMatcher);
-        }
-    }
+		return $result;
+	}
 
-    /**
-     * @param \DOMElement $item
-     * @param Description $mismatchDescription
-     *
-     * @return bool
-     */
-    protected function matchesSafelyWithDiagnosticDescription($item, Description $mismatchDescription)
-    {
-        /** @var \DOMAttr $attribute */
-        foreach ($item->attributes as $attribute) {
-            if ($this->valueMatcher) {
-                if (
-                    $this->attributeNameMatcher->matches($attribute->name)
-                    && $this->valueMatcher->matches($attribute->value)
-                ) {
-                    return true;
-                }
-            } else {
-                if ($this->attributeNameMatcher->matches($attribute->name)) {
-                    return true;
-                }
-            }
-        }
+	public function describeTo( Description $description ) {
+		$description->appendText( 'with attribute ' )
+			->appendDescriptionOf( $this->attributeNameMatcher );
+		if ( $this->valueMatcher ) {
+			$description->appendText( ' having value ' )
+				->appendDescriptionOf( $this->valueMatcher );
+		}
+	}
 
-        return false;
-    }
+	/**
+	 * @param DOMElement $item
+	 * @param Description $mismatchDescription
+	 *
+	 * @return bool
+	 */
+	protected function matchesSafelyWithDiagnosticDescription(
+		$item, Description $mismatchDescription
+	) {
+		/** @var DOMAttr $attribute */
+		foreach ( $item->attributes as $attribute ) {
+			if ( $this->valueMatcher ) {
+				if (
+					$this->attributeNameMatcher->matches( $attribute->name )
+					&& $this->valueMatcher->matches( $attribute->value )
+				) {
+					return true;
+				}
+			} elseif ( $this->attributeNameMatcher->matches( $attribute->name ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 }

@@ -8,8 +8,12 @@ use Phan\Phan;
 
 define("PDEP_IGNORE_STATIC", 1 << 0);
 define("PDEP_HIDE_LABELS", 1 << 1);
+define("PDEP_IGNORE_NEW", 1 << 2);
 
-/** Prints a usage message for 'pdep' and exits. */
+/**
+ * Prints a usage message for 'pdep' and exits.
+ * @return never
+ */
 function pdep_usage(int $status) : void {
     global $argv;
     echo <<<EOT
@@ -25,6 +29,7 @@ Usage: {$argv[0]} [options] [files or classes...]
  -m, --graphml       GraphML output
      --hide-labels   Labels are hidden - hover in yEd to see them
      --ignore-static Don't include static calls and static var dependencies
+     --ignore-new    Don't include instantiation dependencies
  -d, --depth <depth_level>
     When walking the dependency graph, limit it to this depth. For
     example,
@@ -67,6 +72,7 @@ call_user_func(static function () : void {
             'graph',
             'graphml',
             'ignore-static',
+            'ignore-new',
             'hide-labels',
             'find-classes',
             'find-files',
@@ -134,6 +140,9 @@ call_user_func(static function () : void {
             case 'ignore-static':
                 $graph_flags |= \PDEP_IGNORE_STATIC;
                 break;
+            case 'ignore-new':
+                $graph_flags |= \PDEP_IGNORE_NEW;
+                break;
             case 'hide-labels':
                 $graph_flags |= \PDEP_HIDE_LABELS;
                 break;
@@ -180,7 +189,6 @@ call_user_func(static function () : void {
 
     $cwd = \getcwd();
 
-    // @phan-suppress-next-line PhanThrowTypeAbsentForCall
     $cli_builder->setOption('allow-polyfill-parser');
     $cli_builder->setOption('processes', '1');
     $cli_builder->setOption('plugin', dirname($tool_dir) . '/src/Phan/Plugin/Internal/DependencyGraphPlugin.php');

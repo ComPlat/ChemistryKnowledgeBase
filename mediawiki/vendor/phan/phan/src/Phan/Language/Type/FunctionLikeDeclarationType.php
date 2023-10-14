@@ -20,6 +20,7 @@ use Phan\Language\Scope\ClosedScope;
 use Phan\Language\Type;
 use Phan\Language\UnionType;
 use Phan\Library\StringUtil;
+use Phan\PluginV3;
 
 /**
  * Phan's base class for representations of `callable(MyClass):MyOtherClass` and `Closure(MyClass):MyOtherClass`
@@ -83,7 +84,6 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @param list<ClosureDeclarationParameter> $params
      * @param UnionType $return_type
-     * @suppress PhanPluginUnknownObjectMethodCall TODO: Figure out how the type is getting overridden in PostOrderAnalysisVisitor->analyzeCallToFunctionLike
      */
     public function __construct(FileRef $file_ref, array $params, UnionType $return_type, bool $returns_reference, bool $is_nullable)
     {
@@ -132,16 +132,20 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         });
     }
 
+    /**
+     * @return never
+     */
     public function __clone()
     {
-        throw new \AssertionError('Should not clone ClosureTypeDeclaration');
+        throw new \AssertionError('Should not clone ' . static::class);
     }
 
     /**
+     * @unused-param $code_base
      * @return bool
      * True if this type is a callable or a Closure or a FunctionLikeDeclarationType
      */
-    public function isCallable(): bool
+    public function isCallable(CodeBase $code_base): bool
     {
         return true;
     }
@@ -166,7 +170,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      *
      * -e.g. `Closure(mixed):SubClass` can be used when a `Closure(int):BaseClass` is expected.
      */
-    public function canCastToNonNullableFunctionLikeDeclarationType(FunctionLikeDeclarationType $type): bool
+    public function canCastToNonNullableFunctionLikeDeclarationType(FunctionLikeDeclarationType $type, CodeBase $code_base): bool
     {
         if ($this->required_param_count > $type->required_param_count) {
             return false;
@@ -178,7 +182,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
             return false;
         }
         // TODO: Allow nullable/null to cast to void?
-        if (!$this->return_type->canCastToUnionType($type->return_type)) {
+        if (!$this->return_type->canCastToUnionType($type->return_type, $code_base)) {
             return false;
         }
         foreach ($this->params as $i => $param) {
@@ -186,7 +190,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
             if (!$other_param) {
                 break;
             }
-            if (!$param->canCastToParameterIgnoringVariadic($other_param)) {
+            if (!$param->canCastToParameterIgnoringVariadic($other_param, $code_base)) {
                 return false;
             }
         }
@@ -205,11 +209,8 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      */
     protected function canCastToNonNullableTypeHandlingTemplates(Type $type, CodeBase $code_base): bool
     {
-        if (parent::canCastToNonNullableTypeHandlingTemplates($type, $code_base)) {
-            return true;
-        }
         if (!($type instanceof FunctionLikeDeclarationType)) {
-            return false;
+            return parent::canCastToNonNullableTypeHandlingTemplates($type, $code_base);
         }
         if ($this->required_param_count > $type->required_param_count) {
             return false;
@@ -221,7 +222,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
             return false;
         }
         // TODO: Allow nullable/null to cast to void?
-        if (!$this->return_type->asExpandedTypes($code_base)->canCastToUnionTypeHandlingTemplates($type->return_type, $code_base)) {
+        if (!$this->return_type->asExpandedTypes($code_base)->canCastToUnionType($type->return_type, $code_base)) {
             return false;
         }
         foreach ($this->params as $i => $param) {
@@ -292,7 +293,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      * e.g. returns true for false, array, int
      *      returns false for callable, array, object, iterable, T, etc.
      */
-    public function isDefiniteNonCallableType(): bool
+    public function isDefiniteNonCallableType(CodeBase $code_base): bool
     {
         return false;
     }
@@ -301,7 +302,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      * @param CodeBase $code_base @unused-param
      * @param Context $context @unused-param
      */
-    public function asFunctionInterfaceOrNull(CodeBase $code_base, Context $context): ?FunctionInterface
+    public function asFunctionInterfaceOrNull(CodeBase $code_base, Context $context, bool $warn = true): ?FunctionInterface
     {
         return $this;
     }
@@ -392,6 +393,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @unused-param $fqsen
+     * @return never
      * @override
      */
     public function setFQSEN(FQSEN $fqsen): void
@@ -420,6 +422,8 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @override
+     * @return never
+     * @param list<Node|int|string|float> $args
      */
     public function analyzeFunctionCall(CodeBase $code_base, Context $context, array $args, Node $node = null): void
     {
@@ -430,6 +434,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      * @unused-param $context
      * @unused-param $code_base
      * @param Parameter[] $parameter_list @unused-param
+     * @return never
      * @override
      */
     public function analyzeWithNewParams(Context $context, CodeBase $code_base, array $parameter_list): Context
@@ -440,19 +445,26 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @override
      * @unused-param $parameter
+     * @return never
      */
     public function appendParameter(Parameter $parameter): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
-    /** @override */
+    /**
+     * @override
+     * @return never
+     */
     public function clearParameterList(): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
-    /** @override */
+    /**
+     * @override
+     * @return never
+     */
     public function cloneParameterList(): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -484,7 +496,11 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         return '';
     }
 
-    /** @override */
+    /**
+     * @override
+     * @param list<Node|int|string|float> $args
+     * @return never
+     */
     public function getDependentReturnType(CodeBase $code_base, Context $context, array $args): UnionType
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -534,7 +550,10 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         return true;
     }
 
-    /** @override */
+    /**
+     * @override
+     * @return never
+     */
     public function getInternalScope(): ClosedScope
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -637,6 +656,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @param list<Parameter> $parameter_list
+     * @return never
      */
     public function setParameterList(array $parameter_list): void
     {
@@ -645,6 +665,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @internal - moves real parameter defaults to the inferred phpdoc parameters
+     * @return never
      */
     public function inheritRealParameterDefaults(): void
     {
@@ -696,6 +717,9 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         return false;
     }
 
+    /**
+     * @return never
+     */
     public function recordOutputReferenceParamName(string $parameter_name): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -708,22 +732,32 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @unused
+     * @return never
      */
     public function setComment(Comment $comment): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
+    /**
+     * @return never
+     */
     public function setFunctionCallAnalyzer(Closure $analyzer): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
-    public function addFunctionCallAnalyzer(Closure $analyzer): void
+    /**
+     * @return never
+     */
+    public function addFunctionCallAnalyzer(Closure $closure, PluginV3 $plugin = null): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
+    /**
+     * @return never
+     */
     public function setDependentReturnTypeClosure(Closure $analyzer): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -732,6 +766,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @override
      * @unused-param $has_return
+     * @return never
      */
     public function setHasReturn(bool $has_return): void
     {
@@ -741,6 +776,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @override
      * @unused-param $has_yield
+     * @return never
      */
     public function setHasYield(bool $has_yield): void
     {
@@ -752,6 +788,24 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         return false;
     }
 
+    /**
+     * @override
+     * @unused-param $has_static_variable
+     * @return never
+     */
+    public function setHasStaticVariable(bool $has_static_variable): void
+    {
+        throw new \AssertionError('unexpected call to ' . __METHOD__);
+    }
+
+    public function hasStaticVariable(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @return never
+     */
     public function setInternalScope(ClosedScope $scope): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -760,6 +814,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @unused-param $is_return_type_undefined
      * @override
+     * @return never
      */
     public function setIsReturnTypeUndefined(bool $is_return_type_undefined): void
     {
@@ -769,6 +824,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @unused-param $number
      * @override
+     * @return never
      */
     public function setNumberOfOptionalParameters(int $number): void
     {
@@ -778,12 +834,16 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
     /**
      * @unused-param $number
      * @override
+     * @return never
      */
     public function setNumberOfRequiredParameters(int $number): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
     }
 
+    /**
+     * @return never
+     */
     public function setPHPDocParameterTypeMap(array $parameter_map): void
     {
         throw new \AssertionError('unexpected call to ' . __METHOD__);
@@ -791,6 +851,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @param ?UnionType $union_type the raw phpdoc union type
+     * @return never
      */
     public function setPHPDocReturnType(?UnionType $union_type): void
     {
@@ -873,12 +934,16 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     /**
      * @param list<string> $suppress_issue_list
+     * @return never
      */
     public function setSuppressIssueSet(array $suppress_issue_list): void
     {
         throw new \AssertionError('should not call ' . __METHOD__);
     }
 
+    /**
+     * @return never
+     */
     public function setUnionType(UnionType $type): void
     {
         throw new \AssertionError('should not call ' . __METHOD__);
@@ -1014,7 +1079,7 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
      */
     private function getReturnTemplateTypeExtractorClosure(CodeBase $code_base, TemplateType $template_type): ?Closure
     {
-        $return_closure = $this->getUnionType()->getTemplateTypeExtractorClosure($code_base, $template_type);
+        $return_closure = $this->return_type->getTemplateTypeExtractorClosure($code_base, $template_type);
         if (!$return_closure) {
             return null;
         }
@@ -1063,6 +1128,16 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
         return false;
     }
 
+    public function setHasTentativeReturnType(): void
+    {
+        // no-op
+    }
+
+    public function hasTentativeReturnType(): bool
+    {
+        return false;
+    }
+
     public function getVariableTypeFallbackMap(CodeBase $code_base): array
     {
         return [];
@@ -1074,8 +1149,40 @@ abstract class FunctionLikeDeclarationType extends Type implements FunctionInter
 
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool
     {
-        return !$other->isDefiniteNonCallableType();
+        return !$other->isDefiniteNonCallableType($code_base);
     }
+
+    /**
+     * @return never
+     */
+    public function setAttributeList(array $attribute_list): void
+    {
+        throw new \AssertionError('should not call ' . __METHOD__);
+    }
+
+    public function getAttributeList(): array
+    {
+        return [];
+    }
+
+    public function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
+    {
+        if ($type->isDefiniteNonCallableType($code_base)) {
+            return false;
+        }
+        return parent::isSubtypeOfNonNullableType($type, $code_base);
+    }
+
+    public function getPhanFlags(): int
+    {
+        return 0;
+    }
+
+    public function hasNoNamedArguments(): bool
+    {
+        return false;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     // End FunctionInterface overrides
     ////////////////////////////////////////////////////////////////////////////////

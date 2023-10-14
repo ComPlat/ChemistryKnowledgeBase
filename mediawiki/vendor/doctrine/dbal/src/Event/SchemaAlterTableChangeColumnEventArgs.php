@@ -11,21 +11,16 @@ use function func_get_args;
 use function is_array;
 
 /**
- * Event Arguments used when SQL queries for changing table columns are generated inside {@link AbstractPlatform}.
+ * Event Arguments used when SQL queries for changing table columns are generated inside {@see AbstractPlatform}.
  */
 class SchemaAlterTableChangeColumnEventArgs extends SchemaEventArgs
 {
-    /** @var ColumnDiff */
-    private $columnDiff;
-
-    /** @var TableDiff */
-    private $tableDiff;
-
-    /** @var AbstractPlatform */
-    private $platform;
+    private ColumnDiff $columnDiff;
+    private TableDiff $tableDiff;
+    private AbstractPlatform $platform;
 
     /** @var string[] */
-    private $sql = [];
+    private array $sql = [];
 
     public function __construct(ColumnDiff $columnDiff, TableDiff $tableDiff, AbstractPlatform $platform)
     {

@@ -2,6 +2,7 @@
 
 namespace Doctrine\DBAL\Query;
 
+use Doctrine\DBAL\Cache\QueryCacheProfile;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
@@ -10,6 +11,7 @@ use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\Deprecations\Deprecation;
 
 use function array_key_exists;
 use function array_keys;
@@ -36,26 +38,40 @@ use function substr;
  */
 class QueryBuilder
 {
-    /*
-     * The query types.
+    /**
+     * @deprecated
      */
     public const SELECT = 0;
+
+    /**
+     * @deprecated
+     */
     public const DELETE = 1;
+
+    /**
+     * @deprecated
+     */
     public const UPDATE = 2;
+
+    /**
+     * @deprecated
+     */
     public const INSERT = 3;
 
-    /*
-     * The builder states.
+    /**
+     * @deprecated
      */
     public const STATE_DIRTY = 0;
+
+    /**
+     * @deprecated
+     */
     public const STATE_CLEAN = 1;
 
     /**
      * The DBAL Connection.
-     *
-     * @var Connection
      */
-    private $connection;
+    private Connection $connection;
 
     /*
      * The default values of SQL parts collection
@@ -78,14 +94,12 @@ class QueryBuilder
      *
      * @var mixed[]
      */
-    private $sqlParts = self::SQL_PARTS_DEFAULTS;
+    private array $sqlParts = self::SQL_PARTS_DEFAULTS;
 
     /**
      * The complete SQL string for this query.
-     *
-     * @var string
      */
-    private $sql;
+    private ?string $sql = null;
 
     /**
      * The query parameters.
@@ -99,42 +113,37 @@ class QueryBuilder
      *
      * @var array<int, int|string|Type|null>|array<string, int|string|Type|null>
      */
-    private $paramTypes = [];
+    private array $paramTypes = [];
 
     /**
      * The type of query this is. Can be select, update or delete.
-     *
-     * @var int
      */
-    private $type = self::SELECT;
+    private int $type = self::SELECT;
 
     /**
      * The state of the query object. Can be dirty or clean.
-     *
-     * @var int
      */
-    private $state = self::STATE_CLEAN;
+    private int $state = self::STATE_CLEAN;
 
     /**
      * The index of the first result to retrieve.
-     *
-     * @var int
      */
-    private $firstResult;
+    private int $firstResult = 0;
 
     /**
      * The maximum number of results to retrieve or NULL to retrieve all results.
-     *
-     * @var int|null
      */
-    private $maxResults;
+    private ?int $maxResults = null;
 
     /**
      * The counter of bound parameters used with {@see bindValue).
-     *
-     * @var int
      */
-    private $boundCounter = 0;
+    private int $boundCounter = 0;
+
+    /**
+     * The query cache profile used for caching results.
+     */
+    private ?QueryCacheProfile $resultCacheProfile = null;
 
     /**
      * Initializes a new <tt>QueryBuilder</tt>.
@@ -170,10 +179,19 @@ class QueryBuilder
     /**
      * Gets the type of the currently built query.
      *
+     * @deprecated If necessary, track the type of the query being built outside of the builder.
+     *
      * @return int
      */
     public function getType()
     {
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/5551',
+            'Relying on the type of the query being built is deprecated.'
+                . ' If necessary, track the type of the query being built outside of the builder.'
+        );
+
         return $this->type;
     }
 
@@ -190,25 +208,178 @@ class QueryBuilder
     /**
      * Gets the state of this query builder instance.
      *
+     * @deprecated The builder state is an internal concern.
+     *
      * @return int Either QueryBuilder::STATE_DIRTY or QueryBuilder::STATE_CLEAN.
      */
     public function getState()
     {
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/5551',
+            'Relying on the query builder state is deprecated as it is an internal concern.'
+        );
+
         return $this->state;
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the first row of the result
+     * as an associative array.
+     *
+     * @return array<string, mixed>|false False is returned if no rows are found.
+     *
+     * @throws Exception
+     */
+    public function fetchAssociative()
+    {
+        return $this->executeQuery()->fetchAssociative();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the first row of the result
+     * as a numerically indexed array.
+     *
+     * @return array<int, mixed>|false False is returned if no rows are found.
+     *
+     * @throws Exception
+     */
+    public function fetchNumeric()
+    {
+        return $this->executeQuery()->fetchNumeric();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the value of a single column
+     * of the first row of the result.
+     *
+     * @return mixed|false False is returned if no rows are found.
+     *
+     * @throws Exception
+     */
+    public function fetchOne()
+    {
+        return $this->executeQuery()->fetchOne();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the result as an array of numeric arrays.
+     *
+     * @return array<int,array<int,mixed>>
+     *
+     * @throws Exception
+     */
+    public function fetchAllNumeric(): array
+    {
+        return $this->executeQuery()->fetchAllNumeric();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the result as an array of associative arrays.
+     *
+     * @return array<int,array<string,mixed>>
+     *
+     * @throws Exception
+     */
+    public function fetchAllAssociative(): array
+    {
+        return $this->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the result as an associative array with the keys
+     * mapped to the first column and the values mapped to the second column.
+     *
+     * @return array<mixed,mixed>
+     *
+     * @throws Exception
+     */
+    public function fetchAllKeyValue(): array
+    {
+        return $this->executeQuery()->fetchAllKeyValue();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the result as an associative array with the keys mapped
+     * to the first column and the values being an associative array representing the rest of the columns
+     * and their values.
+     *
+     * @return array<mixed,array<string,mixed>>
+     *
+     * @throws Exception
+     */
+    public function fetchAllAssociativeIndexed(): array
+    {
+        return $this->executeQuery()->fetchAllAssociativeIndexed();
+    }
+
+    /**
+     * Prepares and executes an SQL query and returns the result as an array of the first column values.
+     *
+     * @return array<int,mixed>
+     *
+     * @throws Exception
+     */
+    public function fetchFirstColumn(): array
+    {
+        return $this->executeQuery()->fetchFirstColumn();
+    }
+
+    /**
+     * Executes an SQL query (SELECT) and returns a Result.
+     *
+     * @throws Exception
+     */
+    public function executeQuery(): Result
+    {
+        return $this->connection->executeQuery(
+            $this->getSQL(),
+            $this->params,
+            $this->paramTypes,
+            $this->resultCacheProfile
+        );
+    }
+
+    /**
+     * Executes an SQL statement and returns the number of affected rows.
+     *
+     * Should be used for INSERT, UPDATE and DELETE
+     *
+     * @return int The number of affected rows.
+     *
+     * @throws Exception
+     */
+    public function executeStatement(): int
+    {
+        return $this->connection->executeStatement($this->getSQL(), $this->params, $this->paramTypes);
     }
 
     /**
      * Executes this query using the bound parameters and their types.
      *
-     * @return Result|int
+     * @deprecated Use {@see executeQuery()} or {@see executeStatement()} instead.
+     *
+     * @return Result|int|string
      *
      * @throws Exception
      */
     public function execute()
     {
         if ($this->type === self::SELECT) {
-            return $this->connection->executeQuery($this->getSQL(), $this->params, $this->paramTypes);
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/4578',
+                'QueryBuilder::execute() is deprecated, use QueryBuilder::executeQuery() for SQL queries instead.'
+            );
+
+            return $this->executeQuery();
         }
+
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/4578',
+            'QueryBuilder::execute() is deprecated, use QueryBuilder::executeStatement() for SQL statements instead.'
+        );
 
         return $this->connection->executeStatement($this->getSQL(), $this->params, $this->paramTypes);
     }
@@ -264,19 +435,26 @@ class QueryBuilder
      *         ->select('u')
      *         ->from('users', 'u')
      *         ->where('u.id = :user_id')
-     *         ->setParameter(':user_id', 1);
+     *         ->setParameter('user_id', 1);
      * </code>
      *
      * @param int|string           $key   Parameter position or name
      * @param mixed                $value Parameter value
-     * @param int|string|Type|null $type  One of the {@link ParameterType} constants or DBAL type
+     * @param int|string|Type|null $type  Parameter type
      *
      * @return $this This QueryBuilder instance.
      */
-    public function setParameter($key, $value, $type = null)
+    public function setParameter($key, $value, $type = ParameterType::STRING)
     {
         if ($type !== null) {
             $this->paramTypes[$key] = $type;
+        } else {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5550',
+                'Using NULL as prepared statement parameter type is deprecated.'
+                    . 'Omit or use Parameter::STRING instead'
+            );
         }
 
         $this->params[$key] = $value;
@@ -293,8 +471,8 @@ class QueryBuilder
      *         ->from('users', 'u')
      *         ->where('u.id = :user_id1 OR u.id = :user_id2')
      *         ->setParameters(array(
-     *             ':user_id1' => 1,
-     *             ':user_id2' => 2
+     *             'user_id1' => 1,
+     *             'user_id2' => 2
      *         ));
      * </code>
      *
@@ -349,11 +527,11 @@ class QueryBuilder
      *
      * @param int|string $key The key of the bound parameter type
      *
-     * @return int|string|Type|null The value of the bound parameter type
+     * @return int|string|Type The value of the bound parameter type
      */
     public function getParameterType($key)
     {
-        return $this->paramTypes[$key] ?? null;
+        return $this->paramTypes[$key] ?? ParameterType::STRING;
     }
 
     /**
@@ -483,6 +661,15 @@ class QueryBuilder
             return $this;
         }
 
+        if (is_array($select)) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/3837',
+                'Passing an array for the first argument to QueryBuilder::select() is deprecated, ' .
+                'pass each value as an individual variadic argument instead.'
+            );
+        }
+
         $selects = is_array($select) ? $select : func_get_args();
 
         return $this->add('select', $selects);
@@ -531,6 +718,15 @@ class QueryBuilder
 
         if ($select === null) {
             return $this;
+        }
+
+        if (is_array($select)) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/3837',
+                'Passing an array for the first argument to QueryBuilder::addSelect() is deprecated, ' .
+                'pass each value as an individual variadic argument instead.'
+            );
         }
 
         $selects = is_array($select) ? $select : func_get_args();
@@ -905,6 +1101,15 @@ class QueryBuilder
             return $this;
         }
 
+        if (is_array($groupBy)) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/3837',
+                'Passing an array for the first argument to QueryBuilder::groupBy() is deprecated, ' .
+                'pass each value as an individual variadic argument instead.'
+            );
+        }
+
         $groupBy = is_array($groupBy) ? $groupBy : func_get_args();
 
         return $this->add('groupBy', $groupBy, false);
@@ -932,6 +1137,15 @@ class QueryBuilder
     {
         if (is_array($groupBy) && count($groupBy) === 0) {
             return $this;
+        }
+
+        if (is_array($groupBy)) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/3837',
+                'Passing an array for the first argument to QueryBuilder::addGroupBy() is deprecated, ' .
+                'pass each value as an individual variadic argument instead.'
+            );
         }
 
         $groupBy = is_array($groupBy) ? $groupBy : func_get_args();
@@ -1110,9 +1324,7 @@ class QueryBuilder
      */
     public function resetQueryParts($queryPartNames = null)
     {
-        if ($queryPartNames === null) {
-            $queryPartNames = array_keys($this->sqlParts);
-        }
+        $queryPartNames ??= array_keys($this->sqlParts);
 
         foreach ($queryPartNames as $queryPartName) {
             $this->resetQueryPart($queryPartName);
@@ -1138,11 +1350,9 @@ class QueryBuilder
     }
 
     /**
-     * @return string
-     *
      * @throws QueryException
      */
-    private function getSQLForSelect()
+    private function getSQLForSelect(): string
     {
         $query = 'SELECT ' . ($this->sqlParts['distinct'] ? 'DISTINCT ' : '') .
                   implode(', ', $this->sqlParts['select']);
@@ -1169,7 +1379,7 @@ class QueryBuilder
      *
      * @throws QueryException
      */
-    private function getFromClauses()
+    private function getFromClauses(): array
     {
         $fromClauses  = [];
         $knownAliases = [];
@@ -1208,20 +1418,15 @@ class QueryBuilder
         }
     }
 
-    /**
-     * @return bool
-     */
-    private function isLimitQuery()
+    private function isLimitQuery(): bool
     {
-        return $this->maxResults !== null || $this->firstResult !== null;
+        return $this->maxResults !== null || $this->firstResult !== 0;
     }
 
     /**
      * Converts this instance into an INSERT string in SQL.
-     *
-     * @return string
      */
-    private function getSQLForInsert()
+    private function getSQLForInsert(): string
     {
         return 'INSERT INTO ' . $this->sqlParts['from']['table'] .
         ' (' . implode(', ', array_keys($this->sqlParts['values'])) . ')' .
@@ -1230,10 +1435,8 @@ class QueryBuilder
 
     /**
      * Converts this instance into an UPDATE string in SQL.
-     *
-     * @return string
      */
-    private function getSQLForUpdate()
+    private function getSQLForUpdate(): string
     {
         $table = $this->sqlParts['from']['table']
             . ($this->sqlParts['from']['alias'] ? ' ' . $this->sqlParts['from']['alias'] : '');
@@ -1245,10 +1448,8 @@ class QueryBuilder
 
     /**
      * Converts this instance into a DELETE string in SQL.
-     *
-     * @return string
      */
-    private function getSQLForDelete()
+    private function getSQLForDelete(): string
     {
         $table = $this->sqlParts['from']['table']
             . ($this->sqlParts['from']['alias'] ? ' ' . $this->sqlParts['from']['alias'] : '');
@@ -1271,18 +1472,18 @@ class QueryBuilder
     /**
      * Creates a new named parameter and bind the value $value to it.
      *
-     * This method provides a shortcut for {@link Statement::bindValue()}
+     * This method provides a shortcut for {@see Statement::bindValue()}
      * when using prepared statements.
      *
      * The parameter $value specifies the value that you want to bind. If
-     * $placeholder is not provided bindValue() will automatically create a
-     * placeholder for you. An automatic placeholder will be of the name
-     * ':dcValue1', ':dcValue2' etc.
+     * $placeholder is not provided createNamedParameter() will automatically
+     * create a placeholder for you. An automatic placeholder will be of the
+     * name ':dcValue1', ':dcValue2' etc.
      *
      * Example:
      * <code>
      * $value = 2;
-     * $q->eq( 'id', $q->bindValue( $value ) );
+     * $q->eq( 'id', $q->createNamedParameter( $value ) );
      * $stmt = $q->executeQuery(); // executed with 'id = 2'
      * </code>
      *
@@ -1340,11 +1541,9 @@ class QueryBuilder
      * @param string             $fromAlias
      * @param array<string,true> $knownAliases
      *
-     * @return string
-     *
      * @throws QueryException
      */
-    private function getSQLForJoins($fromAlias, array &$knownAliases)
+    private function getSQLForJoins($fromAlias, array &$knownAliases): string
     {
         $sql = '';
 
@@ -1399,5 +1598,30 @@ class QueryBuilder
 
             $this->params[$name] = clone $param;
         }
+    }
+
+    /**
+     * Enables caching of the results of this query, for given amount of seconds
+     * and optionally specified witch key to use for the cache entry.
+     *
+     * @return $this
+     */
+    public function enableResultCache(QueryCacheProfile $cacheProfile): self
+    {
+        $this->resultCacheProfile = $cacheProfile;
+
+        return $this;
+    }
+
+    /**
+     * Disables caching of the results of this query.
+     *
+     * @return $this
+     */
+    public function disableResultCache(): self
+    {
+        $this->resultCacheProfile = null;
+
+        return $this;
     }
 }

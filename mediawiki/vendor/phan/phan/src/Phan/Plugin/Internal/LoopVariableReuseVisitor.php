@@ -61,7 +61,6 @@ class LoopVariableReuseVisitor extends PluginAwarePostAnalysisVisitor
      *
      * @param Node $node a node of kind ast\AST_FOR
      * @return array<string|int,Node>
-     * @suppress PhanAccessMethodInternal
      */
     public function extractLoopVariablesOfFor(Node $node): array
     {
@@ -88,7 +87,6 @@ class LoopVariableReuseVisitor extends PluginAwarePostAnalysisVisitor
      *
      * @param Node $node a node of kind ast\AST_WHILE
      * @return array<string|int,Node>
-     * @suppress PhanAccessMethodInternal
      */
     public function extractLoopVariablesOfWhile(Node $node): array
     {
@@ -148,7 +146,7 @@ class LoopVariableReuseVisitor extends PluginAwarePostAnalysisVisitor
             $inner_node = $variables[$variable_name];
             $this->emitPluginIssue(
                 $this->code_base,
-                (clone($this->context))->withLineNumberStart($inner_node->lineno),
+                (clone $this->context)->withLineNumberStart($inner_node->lineno),
                 'PhanPluginLoopVariableReuse',
                 'Variable ${VARIABLE} used in loop was also used in an outer loop on line {LINE}',
                 [$variable_name, $node->lineno]

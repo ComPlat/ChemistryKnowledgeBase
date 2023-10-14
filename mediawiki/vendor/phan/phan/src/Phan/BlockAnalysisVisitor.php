@@ -37,6 +37,8 @@ use Phan\Language\Scope\BranchScope;
 use Phan\Language\Scope\GlobalScope;
 use Phan\Language\Scope\PropertyScope;
 use Phan\Language\Type;
+use Phan\Language\Type\ArrayType;
+use Phan\Language\Type\IterableType;
 use Phan\Language\UnionType;
 use Phan\Library\StringUtil;
 use Phan\Parse\ParseVisitor;
@@ -48,6 +50,7 @@ use function array_map;
 use function count;
 use function end;
 use function explode;
+use function is_object;
 use function is_string;
 use function preg_match;
 use function rtrim;
@@ -314,6 +317,11 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             $node
         );
 
+        $key = $node->children['key'];
+        if ($key !== null) {
+            $this->analyzeArrayKeyType($key, $node->lineno);
+        }
+
         // With a context that is inside of the node passed
         // to this method, we analyze all children of the
         // node.
@@ -334,6 +342,45 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             $node
         );
         return $context;
+    }
+
+    /**
+     * @param int|string|float|Node $key_node
+     */
+    private function analyzeArrayKeyType($key_node, int $start_line): void
+    {
+        if (is_object($key_node)) {
+            $union_type = UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $key_node);
+            $key = $union_type->asSingleScalarValueOrNullOrSelf();
+            if (is_object($key)) {
+                if (!$union_type->canCastToUnionType(UnionType::fromFullyQualifiedPHPDocString('?int|?string'), $this->code_base)) {
+                    $this->emitIssue(
+                        Issue::TypeInvalidArrayKey,
+                        $start_line,
+                        ASTReverter::toShortString($key_node),
+                        $union_type
+                    );
+                }
+                return;
+            }
+        } else {
+            $key = $key_node;
+        }
+        if (\is_int($key) || is_string($key)) {
+            return;
+        }
+        if (\is_float($key) && (float)(int)$key === $key) {
+            // php 8.1 deprecates casting floats to integers.
+            return;
+        }
+        // php 8.1 deprecates casting resources to integers implicitly as well
+
+        $this->emitIssue(
+            Issue::TypeInvalidArrayKeyLiteral,
+            $start_line,
+            ASTReverter::toShortString($key_node),
+            \var_representation($key)
+        );
     }
 
     /**
@@ -366,7 +413,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
                 $context,
                 Issue::NoopNumericLiteral,
                 $context->getLineNumberStart() ?: $this->getLineNumberOfParent() ?: $node->lineno,
-                \var_export($child_node, true)
+                \var_representation($child_node)
             );
         }
     }
@@ -442,6 +489,16 @@ class BlockAnalysisVisitor extends AnalysisVisitor
                         $union_type_string
                     );
                 }
+            }
+        }
+        // @phan-suppress-next-line PhanAccessClassConstantInternal
+        if (\preg_match_all(Builder::PHAN_TYPE_ALIAS_REGEX, $text, $matches, \PREG_SET_ORDER) > 0) {
+            $has_known_annotations = true;
+            foreach ($matches as $group) {
+                $alias_name = $group[1];
+                $union_type_string = $group[2];
+                // @phan-suppress-next-line PhanAccessMethodInternal
+                Builder::addTypeAliasMapping($this->code_base, $this->context, $alias_name, $union_type_string);
             }
         }
 
@@ -953,9 +1010,11 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             } else {
                 // e.g. look up global constants and class constants.
                 // TODO: Handle non-empty-array, etc.
-                $expr_value = (new ContextNode($code_base, $this->context, $expr_node))->getEquivalentPHPScalarValue();
-
-                $has_at_least_one_iteration = \is_array($expr_value) && count($expr_value) > 0;
+                $union_type = UnionTypeVisitor::unionTypeFromNode($code_base, $this->context, $expr_node);
+                $has_at_least_one_iteration = !$union_type->containsFalsey() && !$union_type->isEmpty() &&
+                    !$union_type->hasTypeMatchingCallback(static function (Type $type): bool {
+                        return !$type instanceof ArrayType;
+                    });
             }
         }
 
@@ -1018,8 +1077,8 @@ class BlockAnalysisVisitor extends AnalysisVisitor
         if (Config::getValue('unused_variable_detection') &&
             !$expression_union_type->isEmpty() && !$expression_union_type->hasPossiblyObjectTypes() &&
             InferPureSnippetVisitor::isSideEffectFreeSnippet($this->code_base, $inner_context, $stmts_node) &&
-            self::isLoopVariableWithoutSideEffects($node->children['key']) &&
-            self::isLoopVariableWithoutSideEffects($node->children['value'])
+            self::isLoopVariableWithoutSideEffects($key_node) &&
+            self::isLoopVariableWithoutSideEffects($value_node)
         ) {
             VariableTrackerVisitor::recordHasLoopBodyWithoutSideEffects($node);
         }
@@ -1085,7 +1144,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
                 }
                 return true;
             default:
-                return ParseVisitor::isConstExpr($node);
+                return ParseVisitor::isConstExpr($node, ParseVisitor::CONSTANT_EXPRESSION_FORBID_NEW_EXPRESSION);
         }
     }
 
@@ -1098,7 +1157,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
         if ($union_type->isEmpty()) {
             return;
         }
-        if (!$union_type->hasPossiblyObjectTypes() && !$union_type->hasIterable()) {
+        if (!$union_type->hasPossiblyObjectTypes() && !$union_type->hasIterable($this->code_base)) {
             $this->emitIssue(
                 Issue::TypeMismatchForeach,
                 $node->children['expr']->lineno ?? $node->lineno,
@@ -1108,11 +1167,12 @@ class BlockAnalysisVisitor extends AnalysisVisitor
         }
         $has_object = false;
         foreach ($union_type->getTypeSet() as $type) {
-            if (!$type->isObjectWithKnownFQSEN()) {
+            if (!$type->hasObjectWithKnownFQSEN()) {
                 continue;
             }
             try {
-                if ($type->asExpandedTypes($this->code_base)->hasTraversable()) {
+                // e.g. don't warn about ArrayObject&CustomInterface because the expanded type set includes Traversable
+                if ($type->isTraversable($this->code_base)) {
                     continue;
                 }
             } catch (RecursionDepthException $_) {
@@ -1127,7 +1187,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             RedundantCondition::emitInstance(
                 $node->children['expr'],
                 $this->code_base,
-                (clone($this->context))->withLineNumberStart($node->children['expr']->lineno ?? $node->lineno),
+                (clone $this->context)->withLineNumberStart($node->children['expr']->lineno ?? $node->lineno),
                 Issue::EmptyForeach,
                 [(string)$union_type],
                 Closure::fromCallable([self::class, 'isEmptyIterable'])
@@ -1138,7 +1198,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
                 RedundantCondition::emitInstance(
                     $node->children['expr'],
                     $this->code_base,
-                    (clone($this->context))->withLineNumberStart($node->children['expr']->lineno ?? $node->lineno),
+                    (clone $this->context)->withLineNumberStart($node->children['expr']->lineno ?? $node->lineno),
                     Issue::EmptyForeachBody,
                     [(string)$union_type],
                     Closure::fromCallable([self::class, 'isDefinitelyNotObject'])
@@ -1172,7 +1232,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             if ($type->isPossiblyObject()) {
                 return false;
             }
-            if (!$type->isIterable()) {
+            if (!$type instanceof IterableType) {
                 continue;
             }
             if ($type->isPossiblyTruthy()) {
@@ -1187,36 +1247,44 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
     private function warnAboutNonTraversableType(Node $node, Type $type): void
     {
-        $fqsen = FullyQualifiedClassName::fromType($type);
-        if (!$this->code_base->hasClassWithFQSEN($fqsen)) {
-            return;
-        }
-        if ($fqsen->__toString() === '\stdClass') {
-            // stdClass is the only non-Traversable that I'm aware of that's commonly traversed over.
-            return;
-        }
-        $class = $this->code_base->getClassByFQSEN($fqsen);
-        $status = $class->checkCanIterateFromContext(
-            $this->code_base,
-            $this->context
-        );
-        switch ($status) {
-            case Clazz::CAN_ITERATE_STATUS_NO_ACCESSIBLE_PROPERTIES:
-                $issue = Issue::TypeNoAccessiblePropertiesForeach;
-                break;
-            case Clazz::CAN_ITERATE_STATUS_NO_PROPERTIES:
-                $issue = Issue::TypeNoPropertiesForeach;
-                break;
-            default:
-                $issue = Issue::TypeSuspiciousNonTraversableForeach;
-                break;
-        }
+        // @phan-suppress-next-line PhanPluginUseReturnValueKnown
+        $type->anyTypePartsMatchCallback(function (Type $part) use ($node, $type): bool {
+            if (!$part->isObjectWithKnownFQSEN()) {
+                return false;
+            }
+            $fqsen = FullyQualifiedClassName::fromType($part);
+            if (!$this->code_base->hasClassWithFQSEN($fqsen)) {
+                return true;
+            }
+            if (\in_array($fqsen->__toString(), ['\stdClass', '\Countable'], true)) {
+                // stdClass is the only non-Traversable that I'm aware of that's commonly traversed over.
+                // Countable as the only known interface is a common false positive. (`if (count(x)) {foreach...}`)
+                return true;
+            }
+            $class = $this->code_base->getClassByFQSEN($fqsen);
+            $status = $class->checkCanIterateFromContext(
+                $this->code_base,
+                $this->context
+            );
+            switch ($status) {
+                case Clazz::CAN_ITERATE_STATUS_NO_ACCESSIBLE_PROPERTIES:
+                    $issue = Issue::TypeNoAccessiblePropertiesForeach;
+                    break;
+                case Clazz::CAN_ITERATE_STATUS_NO_PROPERTIES:
+                    $issue = Issue::TypeNoPropertiesForeach;
+                    break;
+                default:
+                    $issue = Issue::TypeSuspiciousNonTraversableForeach;
+                    break;
+            }
 
-        $this->emitIssue(
-            $issue,
-            $node->children['expr']->lineno ?? $node->lineno,
-            $type
-        );
+            $this->emitIssue(
+                $issue,
+                $node->children['expr']->lineno ?? $node->lineno,
+                $type
+            );
+            return true;
+        });
     }
 
     private function analyzeForeachIteration(Context $context, UnionType $expression_union_type, Node $node): Context
@@ -1249,9 +1317,8 @@ class BlockAnalysisVisitor extends AnalysisVisitor
                     "Can't use list() as a key element - aborting"
                 );
             } else {
-                // TODO: Support Traversable<Key, T> then return Key.
                 // If we see array<int,T> or array<string,T> and no other array types, we're reasonably sure the foreach key is an integer or a string, so set it.
-                // (Or if we see iterable<int,T>
+                // For Traversable<Key, T> or iterable<Key, T>, return Key.
                 $context = (new AssignmentVisitor(
                     $code_base,
                     $context,
@@ -1268,6 +1335,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
     /**
      * Analyze an expression such as `[$a] = $values` or `list('key' => $v) = $values` for backwards compatibility issues
+     * Precondition: minimum_target_php_version_id >-= 70100
      */
     public static function analyzeArrayAssignBackwardsCompatibility(CodeBase $code_base, Context $context, Node $node): void
     {
@@ -1790,7 +1858,6 @@ class BlockAnalysisVisitor extends AnalysisVisitor
      * The updated context after visiting the node
      *
      * Based on visitSwitchList
-     * @suppress PhanAccessMethodInternal
      */
     public function visitMatchArmList(Node $node): Context
     {
@@ -2441,9 +2508,10 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
         // Analyze the catch blocks and finally blocks with a mix of the types
         // from the try block and the catch blocks.
-        // NOTE: when strict_mode = 1, variables that are only defined in some Contexts
-        // but not others will be treated as absent.
-        // TODO: Improve in future releases
+        // There's still some ways this could be improved for combining contexts.
+        // (It's difficult to do this perfectly, especially since almost any expression in a try block
+        // may throw under some circumstances)
+        //
         // NOTE: We let ContextMergeVisitor->visitTry decide if the block exit status is valid.
         $context = (new ContextMergeVisitor(
             $context,
@@ -2476,6 +2544,13 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             // Step into each catch node and get an
             // updated context for the node
             $catch_context = $this->analyzeAndGetUpdatedContext($catch_context, $node, $catch_node);
+            $catch_stmts_node = $catch_node->children['stmts'];
+            if ($catch_stmts_node instanceof Node && BlockExitStatusChecker::willUnconditionallySkipRemainingStatements($catch_stmts_node)) {
+                // e.g. "} catch (Exception $e) { break; }"
+                if (!BlockExitStatusChecker::willUnconditionallyThrowOrReturn($catch_stmts_node)) {
+                    $this->recordLoopContextForBreakOrContinue($catch_context);
+                }
+            }
             // NOTE: We let ContextMergeVisitor->mergeCatchContext decide if the block exit status is valid.
             $catch_context_list[] = $catch_context;
         }
@@ -2490,7 +2565,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             $context = (new ContextMergeVisitor(
                 $context,
                 $catch_context_list
-            ))->mergeCatchContext($node);
+            ))->mergeCatchContext($node, BlockExitStatusChecker::willUnconditionallyThrowOrReturn($try_node));
         }
 
         $finally_node = $node->children['finally'] ?? null;
@@ -2545,7 +2620,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
             $catch_line = $catch_node->lineno;
 
-            foreach ($union_type->getTypeSet() as $type) {
+            foreach ($union_type->getUniqueFlattenedTypeSet() as $type) {
                 foreach ($type->asExpandedTypes($code_base)->getTypeSet() as $ancestor_type) {
                     // Check if any of the ancestors were already caught by a previous catch statement
                     $line = $caught_union_types[\spl_object_id($ancestor_type)] ?? null;
@@ -2645,7 +2720,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
         if ($right_node instanceof Node) {
             $right_context = $this->analyzeAndGetUpdatedContext($context_with_left_condition, $node, $right_node);
-            if ($right_node->kind === ast\AST_THROW) {
+            if (BlockExitStatusChecker::willUnconditionallySkipRemainingStatements($right_node)) {
                 return $this->postOrderAnalyze($context_with_false_left_condition, $node);
             }
             if (ScopeImpactCheckingVisitor::hasPossibleImpact($this->code_base, $context, $right_node)) {
@@ -2714,7 +2789,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
 
         if ($right_node instanceof Node) {
             $right_context = $this->analyzeAndGetUpdatedContext($context_with_false_left_condition, $node, $right_node);
-            if ($right_node->kind === ast\AST_THROW) {
+            if (BlockExitStatusChecker::willUnconditionallySkipRemainingStatements($right_node)) {
                 return $this->postOrderAnalyze($context_with_true_left_condition, $node);
             }
             if (ScopeImpactCheckingVisitor::hasPossibleImpact($this->code_base, $context, $right_node)) {
@@ -2810,7 +2885,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
     {
         $left_node = $node->children['left'];
         $right_node = $node->children['right'];
-        // @phan-suppress-next-line PhanPartialTypeMismatchArgumentInternal, PhanPossiblyUndeclaredProperty
+        // @phan-suppress-next-line PhanPartialTypeMismatchArgumentInternal
         if ($right_node instanceof Node && $right_node->kind === ast\AST_CONST && \strcasecmp($right_node->children['name']->children['name'] ?? '', 'null') === 0) {
             if ($left_node instanceof Node && self::isAlwaysDefined($context, $left_node)) {
                 $this->emitIssue(
@@ -2832,7 +2907,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             RedundantCondition::emitInstance(
                 $left_node,
                 $this->code_base,
-                (clone($context))->withLineNumberStart($node->lineno),
+                (clone $context)->withLineNumberStart($node->lineno),
                 Issue::CoalescingNeverNull,
                 [
                     ASTReverter::toShortString($left_node),
@@ -2848,7 +2923,7 @@ class BlockAnalysisVisitor extends AnalysisVisitor
             RedundantCondition::emitInstance(
                 $left_node,
                 $this->code_base,
-                (clone($context))->withLineNumberStart($node->lineno),
+                (clone $context)->withLineNumberStart($node->lineno),
                 Issue::CoalescingAlwaysNull,
                 [
                     ASTReverter::toShortString($left_node),

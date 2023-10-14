@@ -5,6 +5,7 @@ namespace Doctrine\DBAL\Types;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\Deprecations\Deprecation;
 
 use function array_map;
 use function get_class;
@@ -12,7 +13,7 @@ use function get_class;
 /**
  * The base class for so-called Doctrine mapping types.
  *
- * A Type object is obtained by calling the static {@link getType()} method.
+ * A Type object is obtained by calling the static {@see getType()} method.
  */
 abstract class Type
 {
@@ -47,8 +48,7 @@ abstract class Type
         Types::TIME_IMMUTABLE       => TimeImmutableType::class,
     ];
 
-    /** @var TypeRegistry|null */
-    private static $typeRegistry;
+    private static ?TypeRegistry $typeRegistry = null;
 
     /**
      * @internal Do not instantiate directly - use {@see Type::addType()} method instead.
@@ -102,22 +102,15 @@ abstract class Type
     /**
      * Gets the name of this type.
      *
-     * @return string
+     * @deprecated this method will be removed in Doctrine DBAL 4.0.
      *
-     * @todo Needed?
+     * @return string
      */
     abstract public function getName();
 
-    /**
-     * @internal This method is only to be used within DBAL for forward compatibility purposes. Do not use directly.
-     */
     final public static function getTypeRegistry(): TypeRegistry
     {
-        if (self::$typeRegistry === null) {
-            self::$typeRegistry = self::createTypeRegistry();
-        }
-
-        return self::$typeRegistry;
+        return self::$typeRegistry ??= self::createTypeRegistry();
     }
 
     private static function createTypeRegistry(): TypeRegistry
@@ -192,7 +185,7 @@ abstract class Type
      * Gets the (preferred) binding type for values of this type that
      * can be used when binding parameters to prepared statements.
      *
-     * This method should return one of the {@link ParameterType} constants.
+     * This method should return one of the {@see ParameterType} constants.
      *
      * @return int
      */
@@ -205,7 +198,7 @@ abstract class Type
      * Gets the types array map which holds all registered types and the corresponding
      * type class
      *
-     * @return string[]
+     * @return array<string, string>
      */
     public static function getTypesMap()
     {
@@ -221,9 +214,12 @@ abstract class Type
      * Does working with this column require SQL conversion functions?
      *
      * This is a metadata function that is required for example in the ORM.
-     * Usage of {@link convertToDatabaseValueSQL} and
-     * {@link convertToPHPValueSQL} works for any type and mostly
+     * Usage of {@see convertToDatabaseValueSQL} and
+     * {@see convertToPHPValueSQL} works for any type and mostly
      * does nothing. This method can additionally be used for optimization purposes.
+     *
+     * @deprecated Consumers should call {@see convertToDatabaseValueSQL} and {@see convertToPHPValueSQL}
+     * regardless of the type.
      *
      * @return bool
      */
@@ -273,10 +269,19 @@ abstract class Type
      * one of those types as commented, which will have Doctrine use an SQL
      * comment to typehint the actual Doctrine Type.
      *
+     * @deprecated
+     *
      * @return bool
      */
     public function requiresSQLCommentHint(AbstractPlatform $platform)
     {
+        Deprecation::triggerIfCalledFromOutside(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/5509',
+            '%s is deprecated.',
+            __METHOD__
+        );
+
         return false;
     }
 }

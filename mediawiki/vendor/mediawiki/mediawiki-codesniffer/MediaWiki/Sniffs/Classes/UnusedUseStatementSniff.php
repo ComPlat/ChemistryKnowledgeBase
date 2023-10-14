@@ -43,16 +43,22 @@ class UnusedUseStatementSniff implements Sniff {
 		'@see' => null,
 		'@throws' => null,
 		'@var' => null,
+		// phan
+		'@phan-param' => null,
+		'@phan-property' => null,
+		'@phan-return' => null,
+		'@phan-var' => null,
 		// Deprecated
 		'@expectedException' => null,
 		'@method' => null,
+		'@phan-method' => null,
 		'@type' => null,
 	];
 
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_USE ];
 	}
 
@@ -67,12 +73,24 @@ class UnusedUseStatementSniff implements Sniff {
 	public function process( File $phpcsFile, $stackPtr ) {
 		$tokens = $phpcsFile->getTokens();
 
-		// Only check use statements in the global scope.
+		// In case this is a `use` of a class (or constant or function) within
+		// a bracketed namespace rather than in the global scope, update the end
+		// accordingly
+		$useScopeEnd = $phpcsFile->numTokens;
+
 		if ( !empty( $tokens[$stackPtr]['conditions'] ) ) {
+			// We only care about use statements in the global scope, or the
+			// equivalent for bracketed namespace (use statements in the namespace
+			// and not in any class, etc.)
 			// TODO: Use array_key_first() if available
 			$scope = key( $tokens[$stackPtr]['conditions'] );
-			// This avoids checking other use keywords (in traits and closures) in the same scope
-			return $tokens[$scope]['scope_closer'] ?? $stackPtr;
+			if ( count( $tokens[$stackPtr]['conditions'] ) === 1
+				&& $tokens[$stackPtr]['conditions'][$scope] === T_NAMESPACE
+			) {
+				$useScopeEnd = $tokens[$scope]['scope_closer'];
+			} else {
+				return $tokens[$scope]['scope_closer'] ?? $stackPtr;
+			}
 		}
 
 		$afterUseSection = $stackPtr;
@@ -88,12 +106,8 @@ class UnusedUseStatementSniff implements Sniff {
 		// Search where the class name is used. PHP treats class names case
 		// insensitive, that's why we cannot search for the exact class name string
 		// and need to iterate over all T_STRING tokens in the file.
-		for ( $i = $afterUseSection; $i < $phpcsFile->numTokens; $i++ ) {
-			if ( $tokens[$i]['code'] === T_RETURN_TYPE ) {
-				// If the name is used in a PHP 7 function return type declaration
-				$className = $tokens[$i]['content'];
-
-			} elseif ( $tokens[$i]['code'] === T_STRING ) {
+		for ( $i = $afterUseSection; $i < $useScopeEnd; $i++ ) {
+			if ( $tokens[$i]['code'] === T_STRING ) {
 				if ( !isset( $shortClassNames[ strtolower( $tokens[$i]['content'] ) ] ) ) {
 					continue;
 				}
@@ -120,29 +134,23 @@ class UnusedUseStatementSniff implements Sniff {
 				// Usage in a doc comment
 				if ( !array_key_exists( $tokens[$i]['content'], self::CLASS_TAGS )
 					|| $tokens[$i + 2]['code'] !== T_DOC_COMMENT_STRING
-					|| !preg_match( '/^(?:\$\w+\h+)?(\S+)(?=\s|$)/', $tokens[$i + 2]['content'], $matches )
 				) {
 					continue;
 				}
-
-				// We aren't interested in the later, whitespace-separated parts of comments
-				// like `@param (Class1|Class2)[]|Class3<Class4,Class5> $var Description`.
-				$docType = $matches[1];
+				$docType = $this->extractType( $tokens[$i + 2]['content'] );
 				if ( !preg_match_all( $classNamesPattern, $docType, $matches ) ) {
 					continue;
 				}
 				$className = $matches[1];
 
 			} elseif ( $tokens[$i]['code'] === T_CONSTANT_ENCAPSED_STRING ) {
-				// Ensure class name is followed by a space so that we know its the
-				// end of the class name given to phan
 				if ( $tokens[$i + 1]['code'] !== T_SEMICOLON
-					|| !preg_match( '/\W@phan-var\S*\s+(\S+)\s/i', $tokens[$i]['content'], $matches )
+					|| !preg_match( '/^.@phan-var\S*\s+(.*)/i', $tokens[$i]['content'], $matches )
 				) {
 					continue;
 				}
 
-				$phanVarType = $matches[1];
+				$phanVarType = $this->extractType( $matches[1] );
 				if ( !preg_match_all( $classNamesPattern, $phanVarType, $matches ) ) {
 					continue;
 				}
@@ -158,14 +166,49 @@ class UnusedUseStatementSniff implements Sniff {
 			}
 		}
 
-		foreach ( $shortClassNames as $i ) {
-			$fix = $phpcsFile->addFixableWarning( 'Unused use statement', $i, 'UnusedUse' );
+		foreach ( $shortClassNames as [ $i, $shortClassName ] ) {
+			$fix = $phpcsFile->addFixableWarning(
+				'Unused use statement "%s"',
+				$i,
+				'UnusedUse',
+				[ $shortClassName ]
+			);
 			if ( $fix ) {
 				$this->removeUseStatement( $phpcsFile, $i );
 			}
 		}
 
 		return $afterUseSection;
+	}
+
+	/**
+	 * Extracts the type from PHPDoc comment strings like "bool[] $var Comment" and
+	 * "$var bool[] Comment" (wrong order, but that's for another sniff), while respecting types
+	 * like "array<int, array<string, bool>>".
+	 *
+	 * @param string $str
+	 *
+	 * @return string
+	 */
+	private function extractType( string $str ): string {
+		$start = 0;
+		$brackets = 0;
+		$strLen = strlen( $str );
+		for ( $i = 0; $i < $strLen; $i += strcspn( $str, ' <>', $i + 1 ) + 1 ) {
+			$char = $str[$i];
+			if ( $char === ' ' && !$brackets ) {
+				// If we find the variable name before the type, continue
+				if ( $str[$start] !== '$' ) {
+					return substr( $str, $start, $i );
+				}
+				$start = $i + 1;
+			} elseif ( $char === '>' && $brackets ) {
+				$brackets--;
+			} elseif ( $char === '<' ) {
+				$brackets++;
+			}
+		}
+		return substr( $str, $start );
 	}
 
 	/**
@@ -179,7 +222,7 @@ class UnusedUseStatementSniff implements Sniff {
 		File $phpcsFile,
 		int $stackPtr,
 		int &$afterUseSection
-	) : array {
+	): array {
 		$tokens = $phpcsFile->getTokens();
 		$currentUsePtr = $stackPtr;
 
@@ -203,9 +246,11 @@ class UnusedUseStatementSniff implements Sniff {
 			// Find the unprefixed class name or "as" alias, if there is one
 			$classNamePtr = $phpcsFile->findPrevious( T_STRING, $semicolon - 1, $currentUsePtr );
 			if ( !$classNamePtr ) {
+				// Live coding
 				break;
 			}
-			$shortClassNames[ strtolower( $tokens[$classNamePtr]['content'] ) ] = $currentUsePtr;
+			$shortClassName = $tokens[$classNamePtr]['content'];
+			$shortClassNames[strtolower( $shortClassName )] = [ $currentUsePtr, $shortClassName ];
 
 			// Check if the referenced class is in the same namespace as the current
 			// file. If it is then the use statement is not necessary.
@@ -215,7 +260,7 @@ class UnusedUseStatementSniff implements Sniff {
 			if ( $tokens[$prev]['code'] !== T_AS ) {
 				$useNamespace = $this->readNamespace( $phpcsFile, $prev + 1, $classNamePtr - 2 );
 				if ( $useNamespace === $namespace ) {
-					$this->addSameNamespaceWarning( $phpcsFile, $currentUsePtr );
+					$this->addSameNamespaceWarning( $phpcsFile, $currentUsePtr, $shortClassName );
 				}
 			}
 
@@ -233,9 +278,8 @@ class UnusedUseStatementSniff implements Sniff {
 	 *
 	 * @return string
 	 */
-	private function findNamespace( File $phpcsFile, int $stackPtr ) : string {
-		// There are probably less tokens between the start of the file and the namespace token
-		$namespacePtr = $phpcsFile->findNext( T_NAMESPACE, 1, $stackPtr - 1 );
+	private function findNamespace( File $phpcsFile, int $stackPtr ): string {
+		$namespacePtr = $phpcsFile->findPrevious( T_NAMESPACE, $stackPtr - 1 );
 		if ( !$namespacePtr ) {
 			return '';
 		}
@@ -250,7 +294,7 @@ class UnusedUseStatementSniff implements Sniff {
 	 *
 	 * @return string
 	 */
-	private function readNamespace( File $phpcsFile, int $start, int $end ) : string {
+	private function readNamespace( File $phpcsFile, int $start, int $end ): string {
 		$tokens = $phpcsFile->getTokens();
 		$content = '';
 
@@ -278,10 +322,15 @@ class UnusedUseStatementSniff implements Sniff {
 	/**
 	 * @param File $phpcsFile
 	 * @param int $stackPtr
+	 * @param string $shortClassName
 	 */
-	private function addSameNamespaceWarning( File $phpcsFile, int $stackPtr ) {
-		$warning = 'Unnecessary use statement in the same namespace';
-		$fix = $phpcsFile->addFixableWarning( $warning, $stackPtr, 'UnnecessaryUse' );
+	private function addSameNamespaceWarning( File $phpcsFile, int $stackPtr, string $shortClassName ): void {
+		$fix = $phpcsFile->addFixableWarning(
+			'Unnecessary use statement "%s" in the same namespace',
+			$stackPtr,
+			'UnnecessaryUse',
+			[ $shortClassName ]
+		);
 		if ( $fix ) {
 			$this->removeUseStatement( $phpcsFile, $stackPtr );
 		}
@@ -291,7 +340,7 @@ class UnusedUseStatementSniff implements Sniff {
 	 * @param array &$classNames List of class names found in the use section
 	 * @param string|string[] $usedClassNames Class name(s) to be marked as used
 	 */
-	private function markAsUsed( array &$classNames, $usedClassNames ) {
+	private function markAsUsed( array &$classNames, $usedClassNames ): void {
 		foreach ( (array)$usedClassNames as $className ) {
 			unset( $classNames[ strtolower( $className ) ] );
 		}
@@ -301,16 +350,21 @@ class UnusedUseStatementSniff implements Sniff {
 	 * @param File $phpcsFile
 	 * @param int $stackPtr
 	 */
-	private function removeUseStatement( File $phpcsFile, int $stackPtr ) {
+	private function removeUseStatement( File $phpcsFile, int $stackPtr ): void {
 		$tokens = $phpcsFile->getTokens();
 		// Remove the whole use statement line.
 		$phpcsFile->fixer->beginChangeset();
 
-		$i = $stackPtr;
+		// Removing any whitespace before the use statement, for use statements in bracketed
+		// namespaces
+		$i = $phpcsFile->findFirstOnLine( [ T_WHITESPACE ], $stackPtr );
+		if ( !$i ) {
+			// No whitespace beforehand
+			$i = $stackPtr;
+		}
 		do {
 			$phpcsFile->fixer->replaceToken( $i, '' );
-			$i++;
-		} while ( isset( $tokens[$i] ) && $tokens[$i]['code'] !== T_SEMICOLON );
+		} while ( $tokens[$i++]['code'] !== T_SEMICOLON && isset( $tokens[$i] ) );
 
 		// Also remove whitespace after the semicolon (new lines).
 		while ( isset( $tokens[$i] )

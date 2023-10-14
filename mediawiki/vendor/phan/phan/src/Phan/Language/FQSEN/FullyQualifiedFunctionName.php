@@ -61,15 +61,16 @@ class FullyQualifiedFunctionName extends FullyQualifiedGlobalStructuralElement i
         $fqsen_string = $parts[0];
         $alternate_id = (int)($parts[1] ?? 0);
 
-        $parts = \explode('\\', $fqsen_string);
+        $parts = \explode('\\', $fqsen_string); // explode returns a non-empty array, array_pop must return a string.
         $name = \array_pop($parts);
 
-        if ($name === '' || $name === false) {
+        if ($name === '') {
             throw new EmptyFQSENException("The name cannot be empty", $fqsen_string);
         }
 
         // Check for a name map
         if ($context->hasNamespaceMapFor(static::getNamespaceMapType(), $fqsen_string)) {
+            // @phan-suppress-next-line PhanTypeMismatchReturnSuperType
             return $context->getNamespaceMapFor(
                 static::getNamespaceMapType(),
                 $fqsen_string

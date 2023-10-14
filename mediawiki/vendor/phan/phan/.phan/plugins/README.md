@@ -56,6 +56,11 @@ Also see [DollarDollarPlugin.php](#dollardollarpluginphp) for a meaningful real-
 Checks if a function or method with a non-void return type will **unconditionally** return or throw.
 This is stricter than Phan's default checks (Phan accepts a function or method that **may** return something, or functions that unconditionally throw).
 
+- **PhanPluginInconsistentReturnMethod**: `Method {METHOD} has no return type and will inconsistently return or not return`
+- **PhanPluginAlwaysReturnMethod**: `Method {METHOD} has a return type of {TYPE}, but may fail to return a value`
+- **PhanPluginInconsistentReturnFunction**: `Function {FUNCTION} has no return type and will inconsistently return or not return`
+- **PhanPluginAlwaysReturnFunction**: `Function {FUNCTION} has a return type of {TYPE}, but may fail to return a value`
+
 #### DuplicateArrayKeyPlugin.php
 
 Warns about common errors in php array keys and switch statements. Has the following checks (This is able to resolve global and class constants to their scalar values).
@@ -162,7 +167,11 @@ and the absolute path `/usr/bin/php7.4`. (see `phan --extended-help`)
 This plugin warns when code fails to use the return value of internal functions/methods such as `sprintf` or `array_merge` or `Exception->getCode()`.
 (functions/methods where the return value should almost always be used)
 
-- **PhanPluginUseReturnValueInternalKnown**: `Expected to use the return value of the internal function/method {FUNCTION}`,
+This also warns when using a return value of a function that returns the type `never`.
+
+- **PhanPluginUseReturnValueInternalKnown**: `Expected to use the return value of the internal function/method {FUNCTION}` (and similar issues),
+- **PhanPluginUseReturnValueGenerator**: `Expected to use the return value of the function/method {FUNCTION} returning a generator of type {TYPE}`,
+- **PhanUseReturnValueOfNever**: `Saw use of value of expression {CODE} which likely uses the function {FUNCTIONLIKE} with a return type of '{TYPE}' - this will not return normally`,
 
 `'plugin_config' => ['infer_pure_method' => true]` will make this plugin automatically infer which methods are pure, recursively.
 This is a best-effort heuristic.
@@ -213,6 +222,7 @@ The setting `'plugin_config' => ['empty_statement_list_ignore_todos' => true]` c
 - **PhanPluginEmptyStatementIf**: `Empty statement list statement detected for the last if/elseif statement`
 - **PhanPluginEmptyStatementSwitch** `No side effects seen for any cases of this switch statement`
 - **PhanPluginEmptyStatementTryBody** `Empty statement list statement detected for the try statement's body`
+- **PhanPluginEmptyStatementPossiblyNonThrowingTryBody**: `Found a try block that looks like it might not throw. Note that this check is a heuristic prone to false positives, especially because error handlers, signal handlers, destructors, and other things may all lead to throwing.`
 - **PhanPluginEmptyStatementTryFinally** `Empty statement list statement detected for the try's finally body`
 - **PhanPluginEmptyStatementWhileLoop** `Empty statement list statement detected for the while loop`
 
@@ -391,9 +401,9 @@ Warns about elements containing unknown types (function/method/closure return ty
 - **PhanPluginUnknownMethodReturnType**: `Method {METHOD} has no declared or inferred return type`
 - **PhanPluginUnknownMethodParamType**: `Method {METHOD} has no declared or inferred parameter type for ${PARAMETER}`
 - **PhanPluginUnknownFunctionReturnType**: `Function {FUNCTION} has no declared or inferred return type`
-- **PhanPluginUnknownFunctionParamType**: `Function {FUNCTION} has no declared or inferred return type for ${PARAMETER}`
+- **PhanPluginUnknownFunctionParamType**: `Function {FUNCTION} has no declared or inferred parameter type for ${PARAMETER}`
 - **PhanPluginUnknownClosureReturnType**: `Closure {FUNCTION} has no declared or inferred return type`
-- **PhanPluginUnknownClosureParamType**: `Closure {FUNCTION} has no declared or inferred return type for ${PARAMETER}`
+- **PhanPluginUnknownClosureParamType**: `Closure {FUNCTION} has no declared or inferred parameter type for ${PARAMETER}`
 - **PhanPluginUnknownPropertyType**: `Property {PROPERTY} has an initial type that cannot be inferred`
 
 #### DuplicateExpressionPlugin.php
@@ -591,6 +601,16 @@ This is only useful in applications or libraries that print output in only a few
 - **PhanPluginRemoveDebugCall**: `Saw call to {FUNCTION} for debugging`
 
 Suppression comments can use the issue name `PhanPluginRemoveDebugAny` to suppress all issue types emitted by this plugin.
+
+#### AddNeverReturnTypePlugin.php
+
+This plugin checks if a function or method will not return (and has no overrides).
+If the function doesn't have a return type of never.
+then this plugin will emit an issue.
+Closures and short error functions are currently not checked
+
+- **PhanPluginNeverReturnMethod**: `Method {METHOD} never returns and has a return type of {TYPE}, but phpdoc type {TYPE} could be used instead`
+- **PhanPluginNeverReturnFunction**: `Function {FUNCTION} never returns and has a return type of {TYPE}, but phpdoc type {TYPE} could be used instead`
 
 ### 4. Demo plugins:
 

@@ -2,20 +2,18 @@
 
 namespace Doctrine\DBAL\Driver\SQLSrv;
 
-use Doctrine\DBAL\Driver\Exception;
 use Doctrine\DBAL\Driver\Result as ResultInterface;
 use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
 use Doctrine\DBAL\Driver\SQLSrv\Exception\Error;
 use Doctrine\DBAL\Driver\Statement as DriverStatement;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\Deprecations\Deprecation;
 
 use function is_float;
 use function is_int;
 use function sprintf;
 use function sqlsrv_begin_transaction;
 use function sqlsrv_commit;
-use function sqlsrv_configure;
-use function sqlsrv_connect;
 use function sqlsrv_query;
 use function sqlsrv_rollback;
 use function sqlsrv_rows_affected;
@@ -25,33 +23,16 @@ use function str_replace;
 final class Connection implements ServerInfoAwareConnection
 {
     /** @var resource */
-    protected $conn;
-
-    /** @var LastInsertId */
-    protected $lastInsertId;
+    private $connection;
 
     /**
      * @internal The connection can be only instantiated by its driver.
      *
-     * @param string  $serverName
-     * @param mixed[] $connectionOptions
-     *
-     * @throws Exception
+     * @param resource $connection
      */
-    public function __construct($serverName, $connectionOptions)
+    public function __construct($connection)
     {
-        if (! sqlsrv_configure('WarningsReturnAsErrors', 0)) {
-            throw Error::new();
-        }
-
-        $conn = sqlsrv_connect($serverName, $connectionOptions);
-
-        if ($conn === false) {
-            throw Error::new();
-        }
-
-        $this->conn         = $conn;
-        $this->lastInsertId = new LastInsertId();
+        $this->connection = $connection;
     }
 
     /**
@@ -59,14 +40,14 @@ final class Connection implements ServerInfoAwareConnection
      */
     public function getServerVersion()
     {
-        $serverInfo = sqlsrv_server_info($this->conn);
+        $serverInfo = sqlsrv_server_info($this->connection);
 
         return $serverInfo['SQLServerVersion'];
     }
 
     public function prepare(string $sql): DriverStatement
     {
-        return new Statement($this->conn, $sql, $this->lastInsertId);
+        return new Statement($this->connection, $sql);
     }
 
     public function query(string $sql): ResultInterface
@@ -92,7 +73,7 @@ final class Connection implements ServerInfoAwareConnection
 
     public function exec(string $sql): int
     {
-        $stmt = sqlsrv_query($this->conn, $sql);
+        $stmt = sqlsrv_query($this->connection, $sql);
 
         if ($stmt === false) {
             throw Error::new();
@@ -113,6 +94,12 @@ final class Connection implements ServerInfoAwareConnection
     public function lastInsertId($name = null)
     {
         if ($name !== null) {
+            Deprecation::triggerIfCalledFromOutside(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/issues/4687',
+                'The usage of Connection::lastInsertId() with a sequence name is deprecated.'
+            );
+
             $result = $this->prepare('SELECT CONVERT(VARCHAR(MAX), current_value) FROM sys.sequences WHERE name = ?')
                 ->execute([$name]);
         } else {
@@ -122,12 +109,27 @@ final class Connection implements ServerInfoAwareConnection
         return $result->fetchOne();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function beginTransaction()
+    public function beginTransaction(): bool
     {
-        if (! sqlsrv_begin_transaction($this->conn)) {
+        if (! sqlsrv_begin_transaction($this->connection)) {
+            throw Error::new();
+        }
+
+        return true;
+    }
+
+    public function commit(): bool
+    {
+        if (! sqlsrv_commit($this->connection)) {
+            throw Error::new();
+        }
+
+        return true;
+    }
+
+    public function rollBack(): bool
+    {
+        if (! sqlsrv_rollback($this->connection)) {
             throw Error::new();
         }
 
@@ -135,26 +137,10 @@ final class Connection implements ServerInfoAwareConnection
     }
 
     /**
-     * {@inheritDoc}
+     * @return resource
      */
-    public function commit()
+    public function getNativeConnection()
     {
-        if (! sqlsrv_commit($this->conn)) {
-            throw Error::new();
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function rollBack()
-    {
-        if (! sqlsrv_rollback($this->conn)) {
-            throw Error::new();
-        }
-
-        return true;
+        return $this->connection;
     }
 }

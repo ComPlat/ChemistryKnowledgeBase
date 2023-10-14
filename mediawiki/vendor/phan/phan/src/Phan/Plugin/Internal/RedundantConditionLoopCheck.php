@@ -66,19 +66,18 @@ class RedundantConditionLoopCheck
         switch ($cond_node->flags) {
             case flags\BINARY_IS_SMALLER:
             case flags\BINARY_IS_SMALLER_OR_EQUAL:
-                // @phan-suppress-next-line PhanUnusedVariable FIXME This is used in the fallthrough; Phan shouldn't warn
                 $negate = !$negate;
                 // fallthrough
             case flags\BINARY_IS_GREATER:
             case flags\BINARY_IS_GREATER_OR_EQUAL:
                 if (is_string($name = self::getVarName($left_node))) {
                     // e.g. if $i < 10
-                    if (ParseVisitor::isConstExpr($right_node)) {
+                    if (ParseVisitor::isConstExpr($right_node, ParseVisitor::CONSTANT_EXPRESSION_FORBID_NEW_EXPRESSION)) {
                         return [$name => $negate];
                     }
                 } elseif (is_string($name = self::getVarName($right_node))) {
                     // e.g. if 10 < $i
-                    if (ParseVisitor::isConstExpr($left_node)) {
+                    if (ParseVisitor::isConstExpr($left_node, ParseVisitor::CONSTANT_EXPRESSION_FORBID_NEW_EXPRESSION)) {
                         return [$name => !$negate];
                     }
                 }

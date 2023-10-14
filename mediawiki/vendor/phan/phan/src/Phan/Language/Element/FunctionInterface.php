@@ -15,6 +15,7 @@ use Phan\Language\Type;
 use Phan\Language\Type\FunctionLikeDeclarationType;
 use Phan\Language\Type\TemplateType;
 use Phan\Language\UnionType;
+use Phan\PluginV3;
 
 /**
  * Interface defining the behavior of both Methods and Functions
@@ -144,7 +145,7 @@ interface FunctionInterface extends AddressableElementInterface
      * Set to true to mark this method as having a
      * yield statement (Only through `yield`)
      * This implies that it has a return value of \Generator.
-     * (or a parent interface)
+     * (or a parent interface or type)
      */
     public function setHasYield(bool $has_yield): void;
 
@@ -153,6 +154,20 @@ interface FunctionInterface extends AddressableElementInterface
      * True if this method yields any value(i.e. it is a \Generator)
      */
     public function hasYield(): bool;
+
+    /**
+     * @param bool $has_static_variable
+     * Set to true to mark this method as having a
+     * static variable.
+     */
+    public function setHasStaticVariable(bool $has_static_variable): void;
+
+    /**
+     * @return bool
+     * True if this method has any static variables
+     */
+    public function hasStaticVariable(): bool;
+
 
     /**
      * @return list<Parameter>
@@ -339,21 +354,24 @@ interface FunctionInterface extends AddressableElementInterface
      *
      * @param CodeBase $code_base
      * @param Context $context
-     * @param list<Node|int|string> $args
+     * @param list<Node|int|string|float> $args
      * @param ?Node $node - the node causing the call. This may be dynamic, e.g. call_user_func_array. This will be required in Phan 3.
      */
     public function analyzeFunctionCall(CodeBase $code_base, Context $context, array $args, Node $node = null): void;
 
     /**
      * Make additional analysis logic of this function/method use $closure
-     * If callers need to invoke multiple closures, they should pass in a closure to invoke multiple closures or use addFunctionCallAnalyzer.
+     * If callers need to invoke multiple closures, they should pass in a closure to invoke multiple closures with addFunctionCallAnalyzer and the plugin that created the closure.
+     * @suppress PhanUnreferencedPublicMethod
+     * @deprecated
      */
     public function setFunctionCallAnalyzer(Closure $closure): void;
 
     /**
      * If callers need to invoke multiple closures, they should pass in a closure to invoke multiple closures.
+     * @param ?PluginV3 $plugin @phan-mandatory-param
      */
-    public function addFunctionCallAnalyzer(Closure $closure): void;
+    public function addFunctionCallAnalyzer(Closure $closure, ?PluginV3 $plugin = null): void;
 
     /**
      * Initialize the inner scope of this method with variables created from the parameters.
@@ -389,6 +407,16 @@ interface FunctionInterface extends AddressableElementInterface
      * Check if this function or method is marked as pure (having no visible side effects)
      */
     public function isPure(): bool;
+
+    /**
+     * Mark this function or method as having a tentative return type
+     */
+    public function setHasTentativeReturnType(): void;
+
+    /**
+     * Check if this function has a tentative return type
+     */
+    public function hasTentativeReturnType(): bool;
 
     /**
      * @return UnionType of 0 or more types from (at)throws annotations on this function-like
@@ -479,4 +507,26 @@ interface FunctionInterface extends AddressableElementInterface
      * Record the existence of a parameter with an `(at)phan-mandatory-param` comment at $offset
      */
     public function recordHasMandatoryPHPDocParamAtOffset(int $parameter_offset): void;
+
+    /**
+     * Set the attributes associated with this function-like
+     * @param list<Attribute> $attribute_list
+     */
+    public function setAttributeList(array $attribute_list): void;
+
+    /**
+     * Get the attributes associated with this function-like
+     * @return list<Attribute>
+     */
+    public function getAttributeList(): array;
+
+    /**
+     * Get the phan flags associated with this function-like
+     */
+    public function getPhanFlags(): int;
+
+    /**
+     * Check if this function was implemented with (at)no-named-arguments
+     */
+    public function hasNoNamedArguments(): bool;
 }

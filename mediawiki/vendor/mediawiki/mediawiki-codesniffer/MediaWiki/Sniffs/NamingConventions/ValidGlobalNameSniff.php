@@ -44,16 +44,23 @@ class ValidGlobalNameSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_GLOBAL ];
 	}
 
 	/**
 	 * @param File $phpcsFile
 	 * @param int $stackPtr The current token index.
-	 * @return void
+	 * @return int|void
 	 */
 	public function process( File $phpcsFile, $stackPtr ) {
+		// If there are no prefixes specified, we have nothing to do for this file
+		if ( $this->allowedPrefixes === [] ) {
+			// @codeCoverageIgnoreStart
+			return $phpcsFile->numTokens;
+			// @codeCoverageIgnoreEnd
+		}
+
 		$tokens = $phpcsFile->getTokens();
 
 		$nameIndex = $phpcsFile->findNext( T_VARIABLE, $stackPtr + 1 );
@@ -62,6 +69,8 @@ class ValidGlobalNameSniff implements Sniff {
 			return;
 		}
 
+		// Note: This requires at least 1 character after the prefix
+		$allowedPrefixesPattern = '/^\$(?:' . implode( '|', $this->allowedPrefixes ) . ')(.)/';
 		$semicolonIndex = $phpcsFile->findNext( T_SEMICOLON, $stackPtr + 1 );
 
 		while ( $nameIndex < $semicolonIndex ) {
@@ -73,22 +82,24 @@ class ValidGlobalNameSniff implements Sniff {
 				if ( in_array( $globalName, $this->ignoreList ) ||
 					in_array( $globalName, self::PHP_RESERVED )
 				) {
-					return;
+					// need to manually increment $nameIndex here since
+					// we won't reach the line at the end that does it
+					$nameIndex++;
+					continue;
 				}
 
 				// Determine if a simple error message can be used
 
 				if ( count( $this->allowedPrefixes ) === 1 ) {
 					// Skip '$' and forge a valid global variable name
-					$expected = '$' . $this->allowedPrefixes[0] . ucfirst( substr( $globalName, 1 ) );
+					$expected = '"$' . $this->allowedPrefixes[0] . ucfirst( substr( $globalName, 1 ) ) . '"';
 
 					// Build message telling you the allowed prefix
 					$allowedPrefix = '\'' . $this->allowedPrefixes[0] . '\'';
-				// If there are no prefixes specified, don't do anything
-				} elseif ( $this->allowedPrefixes === [] ) {
-					return;
 				} else {
-					// Build a list of forged valid global variable names
+					// We already checked for an empty set of allowed prefixes earlier,
+					// so if the count is not 1 them it must be multiple;
+					// build a list of forged valid global variable names
 					$expected = 'one of "$'
 						. implode( ucfirst( substr( $globalName, 1 ) . '", "$' ), $this->allowedPrefixes )
 						. ucfirst( substr( $globalName, 1 ) )
@@ -101,24 +112,21 @@ class ValidGlobalNameSniff implements Sniff {
 				}
 
 				// Verify global is prefixed with an allowed prefix
-				if ( !in_array( substr( $globalName, 1, 2 ), $this->allowedPrefixes ) ) {
+				$isAllowed = preg_match( $allowedPrefixesPattern, $globalName, $matches );
+				if ( !$isAllowed ) {
 					$phpcsFile->addError(
-						'Global variable "%s" is lacking an allowed prefix (%s). Should be "%s".',
+						'Global variable "%s" is lacking an allowed prefix (%s). Should be %s.',
 						$stackPtr,
 						'allowedPrefix',
 						[ $globalName, $allowedPrefix, $expected ]
 					);
-				} else {
-					// Verify global is probably CamelCase
-					$val = ord( substr( $globalName, 3, 1 ) );
-					if ( !( $val >= 65 && $val <= 90 ) && !( $val >= 48 && $val <= 57 ) ) {
-						$phpcsFile->addError(
-							'Global variable "%s" should use CamelCase: "%s"',
-							$stackPtr,
-							'CamelCase',
-							[ $globalName, $expected ]
-						);
-					}
+				} elseif ( ctype_lower( $matches[1] ) ) {
+					$phpcsFile->addError(
+						'Global variable "%s" should use CamelCase: %s',
+						$stackPtr,
+						'CamelCase',
+						[ $globalName, $expected ]
+					);
 				}
 			}
 			$nameIndex++;

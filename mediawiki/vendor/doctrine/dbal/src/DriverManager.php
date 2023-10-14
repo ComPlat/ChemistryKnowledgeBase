@@ -11,7 +11,6 @@ use Doctrine\DBAL\Driver\SQLSrv;
 
 use function array_keys;
 use function array_merge;
-use function assert;
 use function class_implements;
 use function in_array;
 use function is_string;
@@ -25,15 +24,58 @@ use function strpos;
 use function substr;
 
 /**
- * Factory for creating Doctrine\DBAL\Connection instances.
+ * Factory for creating {@see Connection} instances.
+ *
+ * @psalm-type OverrideParams = array{
+ *     charset?: string,
+ *     dbname?: string,
+ *     default_dbname?: string,
+ *     driver?: key-of<self::DRIVER_MAP>,
+ *     driverClass?: class-string<Driver>,
+ *     driverOptions?: array<mixed>,
+ *     host?: string,
+ *     password?: string,
+ *     path?: string,
+ *     pdo?: \PDO,
+ *     platform?: Platforms\AbstractPlatform,
+ *     port?: int,
+ *     user?: string,
+ *     unix_socket?: string,
+ * }
+ * @psalm-type Params = array{
+ *     charset?: string,
+ *     dbname?: string,
+ *     defaultTableOptions?: array<string, mixed>,
+ *     default_dbname?: string,
+ *     driver?: key-of<self::DRIVER_MAP>,
+ *     driverClass?: class-string<Driver>,
+ *     driverOptions?: array<mixed>,
+ *     host?: string,
+ *     keepSlave?: bool,
+ *     keepReplica?: bool,
+ *     master?: OverrideParams,
+ *     memory?: bool,
+ *     password?: string,
+ *     path?: string,
+ *     pdo?: \PDO,
+ *     platform?: Platforms\AbstractPlatform,
+ *     port?: int,
+ *     primary?: OverrideParams,
+ *     replica?: array<OverrideParams>,
+ *     serverVersion?: string,
+ *     sharding?: array<string,mixed>,
+ *     slaves?: array<OverrideParams>,
+ *     user?: string,
+ *     wrapperClass?: class-string<Connection>,
+ *     unix_socket?: string,
+ * }
  */
 final class DriverManager
 {
     /**
      * List of supported drivers and their mappings to the driver classes.
      *
-     * To add your own driver use the 'driverClass' parameter to
-     * {@link DriverManager::getConnection()}.
+     * To add your own driver use the 'driverClass' parameter to {@see DriverManager::getConnection()}.
      */
     private const DRIVER_MAP = [
         'pdo_mysql'          => PDO\MySQL\Driver::class,
@@ -52,7 +94,7 @@ final class DriverManager
      *
      * @var string[]
      */
-    private static $driverSchemeAliases = [
+    private static array $driverSchemeAliases = [
         'db2'        => 'ibm_db2',
         'mssql'      => 'pdo_sqlsrv',
         'mysql'      => 'pdo_mysql',
@@ -80,7 +122,7 @@ final class DriverManager
      *
      * $params must contain at least one of the following.
      *
-     * Either 'driver' with one of the array keys of {@link DRIVER_MAP},
+     * Either 'driver' with one of the array keys of {@see DRIVER_MAP},
      * OR 'driverClass' that contains the full class name (with namespace) of the
      * driver class to instantiate.
      *
@@ -103,13 +145,37 @@ final class DriverManager
      * <b>driverClass</b>:
      * The driver class to use.
      *
-     * @param array{wrapperClass?: class-string<T>} $params
-     * @param Configuration|null                    $config       The configuration to use.
-     * @param EventManager|null                     $eventManager The event manager to use.
+     * @param Configuration|null $config       The configuration to use.
+     * @param EventManager|null  $eventManager The event manager to use.
+     * @psalm-param array{
+     *     charset?: string,
+     *     dbname?: string,
+     *     default_dbname?: string,
+     *     driver?: key-of<self::DRIVER_MAP>,
+     *     driverClass?: class-string<Driver>,
+     *     driverOptions?: array<mixed>,
+     *     host?: string,
+     *     keepSlave?: bool,
+     *     keepReplica?: bool,
+     *     master?: OverrideParams,
+     *     memory?: bool,
+     *     password?: string,
+     *     path?: string,
+     *     pdo?: \PDO,
+     *     platform?: Platforms\AbstractPlatform,
+     *     port?: int,
+     *     primary?: OverrideParams,
+     *     replica?: array<OverrideParams>,
+     *     sharding?: array<string,mixed>,
+     *     slaves?: array<OverrideParams>,
+     *     user?: string,
+     *     wrapperClass?: class-string<T>,
+     * } $params
+     *
+     * @psalm-return ($params is array{wrapperClass:mixed} ? T : Connection)
      *
      * @throws Exception
      *
-     * @psalm-return ($params is array{wrapperClass:mixed} ? T : Connection)
      * @template T of Connection
      */
     public static function getConnection(
@@ -118,15 +184,9 @@ final class DriverManager
         ?EventManager $eventManager = null
     ): Connection {
         // create default config and event manager, if not set
-        if ($config === null) {
-            $config = new Configuration();
-        }
-
-        if ($eventManager === null) {
-            $eventManager = new EventManager();
-        }
-
-        $params = self::parseDatabaseUrl($params);
+        $config       ??= new Configuration();
+        $eventManager ??= new EventManager();
+        $params         = self::parseDatabaseUrl($params);
 
         // URL support for PrimaryReplicaConnection
         if (isset($params['primary'])) {
@@ -139,24 +199,7 @@ final class DriverManager
             }
         }
 
-        if (isset($params['driverClass'])) {
-            if (! in_array(Driver::class, class_implements($params['driverClass']), true)) {
-                throw Exception::invalidDriverClass($params['driverClass']);
-            }
-
-            /** @var class-string<Driver> $driverClass */
-            $driverClass = $params['driverClass'];
-        } elseif (isset($params['driver'])) {
-            if (! isset(self::DRIVER_MAP[$params['driver']])) {
-                throw Exception::unknownDriver($params['driver'], array_keys(self::DRIVER_MAP));
-            }
-
-            $driverClass = self::DRIVER_MAP[$params['driver']];
-        } else {
-            throw Exception::driverRequired();
-        }
-
-        $driver = new $driverClass();
+        $driver = self::createDriver($params);
 
         foreach ($config->getMiddlewares() as $middleware) {
             $driver = $middleware->wrap($driver);
@@ -186,6 +229,38 @@ final class DriverManager
     }
 
     /**
+     * @param array<string,mixed> $params
+     * @psalm-param Params $params
+     * @phpstan-param array<string,mixed> $params
+     *
+     * @throws Exception
+     */
+    private static function createDriver(array $params): Driver
+    {
+        if (isset($params['driverClass'])) {
+            $interfaces = class_implements($params['driverClass']);
+
+            if ($interfaces === false || ! in_array(Driver::class, $interfaces, true)) {
+                throw Exception::invalidDriverClass($params['driverClass']);
+            }
+
+            return new $params['driverClass']();
+        }
+
+        if (isset($params['driver'])) {
+            if (! isset(self::DRIVER_MAP[$params['driver']])) {
+                throw Exception::unknownDriver($params['driver'], array_keys(self::DRIVER_MAP));
+            }
+
+            $class = self::DRIVER_MAP[$params['driver']];
+
+            return new $class();
+        }
+
+        throw Exception::driverRequired();
+    }
+
+    /**
      * Normalizes the given connection URL path.
      *
      * @return string The normalized connection URL path
@@ -201,9 +276,13 @@ final class DriverManager
      * updated list of parameters.
      *
      * @param mixed[] $params The list of parameters.
+     * @psalm-param Params $params
+     * @phpstan-param array<string,mixed> $params
      *
      * @return mixed[] A modified list of parameters with info from a database
      *                 URL extracted into indidivual parameter parts.
+     * @psalm-return Params
+     * @phpstan-return array<string,mixed>
      *
      * @throws Exception
      */
@@ -215,8 +294,6 @@ final class DriverManager
 
         // (pdo_)?sqlite3?:///... => (pdo_)?sqlite3?://localhost/... or else the URL will be invalid
         $url = preg_replace('#^((?:pdo_)?sqlite3?):///#', '$1://localhost/', $params['url']);
-        assert(is_string($url));
-
         $url = parse_url($url);
 
         if ($url === false) {
@@ -259,7 +336,7 @@ final class DriverManager
      * Parses the given connection URL and resolves the given connection parameters.
      *
      * Assumes that the connection URL scheme is already parsed and resolved into the given connection parameters
-     * via {@link parseDatabaseUrlScheme}.
+     * via {@see parseDatabaseUrlScheme}.
      *
      * @see parseDatabaseUrlScheme
      *
@@ -313,7 +390,7 @@ final class DriverManager
     /**
      * Parses the given regular connection URL and resolves the given connection parameters.
      *
-     * Assumes that the "path" URL part is already normalized via {@link normalizeDatabaseUrlPath}.
+     * Assumes that the "path" URL part is already normalized via {@see normalizeDatabaseUrlPath}.
      *
      * @see normalizeDatabaseUrlPath
      *
@@ -332,7 +409,7 @@ final class DriverManager
     /**
      * Parses the given SQLite connection URL and resolves the given connection parameters.
      *
-     * Assumes that the "path" URL part is already normalized via {@link normalizeDatabaseUrlPath}.
+     * Assumes that the "path" URL part is already normalized via {@see normalizeDatabaseUrlPath}.
      *
      * @see normalizeDatabaseUrlPath
      *

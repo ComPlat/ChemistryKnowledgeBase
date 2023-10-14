@@ -1,6 +1,6 @@
 # phpunit-speedtrap
 
-[![Build Status](https://travis-ci.org/johnkary/phpunit-speedtrap.svg?branch=master)](https://travis-ci.org/johnkary/phpunit-speedtrap)
+[![Integrate](https://github.com/johnkary/phpunit-speedtrap/workflows/Integrate/badge.svg?branch=master)](https://github.com/johnkary/phpunit-speedtrap/actions)
 
 SpeedTrap reports on slow-running PHPUnit tests right in the console.
 
@@ -8,7 +8,7 @@ Many factors affect test execution time. A test not properly isolated from varia
 
 SpeedTrap helps **identify slow tests** but cannot explain **why** those tests are slow. For that consider using [Blackfire.io](https://blackfire.io) to profile the test suite, or another PHPUnit listener [PHPUnit\_Listener\_XHProf](https://github.com/sebastianbergmann/phpunit-testlistener-xhprof), to specifically identify slow code.
 
-![Screenshot of terminal using SpeedTrap](http://i.imgur.com/Zr34giR.png)
+![Screenshot of terminal using SpeedTrap](https://i.imgur.com/xSpWL4Z.png)
 
 ## Installation
 
@@ -38,6 +38,7 @@ SpeedTrap also supports these parameters:
 
 * **slowThreshold** - Number of milliseconds when a test is considered "slow" (Default: 500ms)
 * **reportLength** - Number of slow tests included in the report (Default: 10 tests)
+* **stopOnSlow** - Stop execution upon first slow test (Default: false). Activate by setting "true".
 
 Each parameter is set in `phpunit.xml`:
 
@@ -53,7 +54,10 @@ Each parameter is set in `phpunit.xml`:
                         <integer>500</integer>
                     </element>
                     <element key="reportLength">
-                        <integer>5</integer>
+                        <integer>10</integer>
+                    </element>
+                    <element key="stopOnSlow">
+                        <boolean>false</boolean>
                     </element>
                 </array>
             </arguments>
@@ -80,6 +84,8 @@ class SomeTestCase extends PHPUnit\Framework\TestCase
     }
 }
 ```
+
+Setting `@slowThreshold 0` will never report that test as slow.
 
 ## Disable slowness profiling using an environment variable
 
@@ -172,6 +178,43 @@ Step 2) When executing `phpunit` from the command-line, enable slowness profilin
 
 ```bash
 $ PHPUNIT_SPEEDTRAP=enabled ./vendor/bin/phpunit
+```
+
+## Using with Symfony Framework
+
+[Symfony Framework](https://symfony.com/) comes with package [symfony/phpunit-bridge](https://packagist.org/packages/symfony/phpunit-bridge) that installs its own version of PHPUnit and **ignores** what is defined in your project's composer.json or composer.lock file. See the PHPUnit versions it installs with command `ls vendor/bin/.phpunit/`
+
+symfony/phpunit-bridge allows environment variable `SYMFONY_PHPUNIT_REQUIRE` to define additional dependencies while installing phpunit.
+
+The easiest way to set environment variables for the script `simple-phpunit` is via phpunit.xml.dist:
+
+phpunit.xml.dist
+```xml
+<phpunit bootstrap="vendor/autoload.php">
+    <php>
+        <env name="SYMFONY_PHPUNIT_REQUIRE" value="johnkary/phpunit-speedtrap:^4"/>
+        <env name="SYMFONY_PHPUNIT_VERSION" value="9"/>
+    </php>
+</phpunit>
+```
+(add the listener as described above)
+
+Using the above example, running `vendor/bin/simple-phpunit` will now install the latest PHPUnit 9 and require the latest phpunit-speedtrap v4.
+
+## Development
+
+Follow these steps to add new features or develop your own fork:
+
+```
+# Get source code (or replace with your fork URL)
+$ git checkout https://github.com/johnkary/phpunit-speedtrap.git phpunit-speedtrap
+
+# Install dev dependencies
+$ cd phpunit-speedtrap
+$ composer install
+
+# Run test suite to verify code runs as expected
+$ vendor/bin/phpunit
 ```
 
 ## Inspiration

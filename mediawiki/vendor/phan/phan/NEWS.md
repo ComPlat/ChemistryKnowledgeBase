@@ -1,5 +1,546 @@
 Phan NEWS
 
+Aug 25 2022, Phan 5.4.1
+-----------------------
+
+New Features(Analysis):
+- Support parsing php 8.2's disjunctive normal form types (e.g. `A|(B&C)` (https://wiki.php.net/rfc/dnf_types). (#4699)
+- Support php 8.2 class constants on trait RFC. (#4687)
+  Emit `PhanCompatibleTraitConstant` when using constants on traits with a `minimum_target_php_version` below `'8.2'`
+  Emit `PhanAccessClassConstantOfTraitDirectly` when directly referencing the class constant on the trait declaration.
+- Emit `PhanTypeModifyImmutableObjectProperty` for PHP 8.1 `readonly` properties when modified anywhere outside of the
+  declaring class's scope. (#4710)
+
+Miscellaneous:
+- Allow `array_filter` `$callback` to be null (#4715)
+
+Aug 08 2022, Phan 5.4.0
+-----------------------
+
+New Features(CLI, Configs):
+- Add `tool/analyze_phpt` to analyze phpt files. See https://www.phpinternalsbook.com/tests/phpt_file_structure.html
+
+New Features(Analysis):
+- Support php 8.2's `true` type (https://wiki.php.net/rfc/true-type).
+  Emit `PhanCompatTrueType` when `true` is used when `minimum_target_php_version` is less than 8.2.
+- Emit `PhanCompatStandaloneType` instead of `PhanInvalidNode` for uses of null/false as real standalone types to support php 8.2 https://wiki.php.net/rfc/null-false-standalone-types
+  (Not emitted when `minimum_target_php_version` is 8.2 or higher)
+- Improve support for php 8.2 readonly classes and php 8.1 readonly properties
+
+Bug fixes:
+- Fix php 8.2.0-dev deprecation notice for `ast\Node` when running Phan in php 5.2.0 with the polyfill instead of the native php-ast version.
+- Fix DuplicateArrayKeyPlugin "Implicit conversion from float ... to int" warning causing crash in php 8.1 (#4666)
+- Fix slow memory leak of reference cycles in the language server - enable garbage collection for the Phan daemon/language server consistently. (#4665)
+  (This fix is only enabled in php 7.3+ when using pcntl, the pcntl fallback already re-enabled garbage collection. php 7.3 improved the garbage collection efficiency for large collections of objects.)
+- Move `PhanGenericConstructorTypes` warning to the class inheriting a constructor if needed (#4675)
+- Fix crash when combining types for null and an array with PHP_INT_MAX as a key (#4688)
+- Fix incorrect type inference for arrays with keys that were invalid UTF-8 (#4688)
+- Fix error due to deprecation notice running Phan in php 8.2 due to use of `"${}"` string interpolation (#4692)
+
+Jan 31 2022, Phan 5.3.2
+-----------------------
+
+New Features(Analysis):
+- Use intersection type of original variable value and array elements when inferring type of `$var` in `in_array($var, $array)`
+  instead of just the type of the array elements (#4630)
+- Treat type of concatenation of one or more non-real strings as a phpdoc(non-real) string with the real type string. (#4635)
+- In `phan --init`, allow inferring php 8.1 as the target php version in the generated config file. (#4655)
+
+Maintenance:
+- Allow installing xdebug-handler version ^3.0 (#4639)
+- Allow installing symfony/console version ^6.0 (#4642)
+
+Bug fixes:
+- Fix AST download link for PHP 8.0+ for Windows (#4645)
+- Fix dead code detection for PHP 8.0 non-capturing catch statements. (#4633)
+  This should still analyze the catch body even if there is no caught exception variable.
+- Ignore phpdoc comment tags that don't start at the start of a line of the doc comment (`* @sometag`) or aren't an inline tag (`* something {@sometag}`). (#4640)
+  See https://docs.phpdoc.org/3.0/guide/references/phpdoc/tags/internal.html and https://docs.phpdoc.org/2.9/guides/docblocks.html
+
+  E.g. `* This is not @abstract.` is no longer treated as an abstract method.
+
+Dec 14 2021, Phan 5.3.1
+-----------------------
+
+New Features(Analysis):
+- Emit `PhanDeprecatedPartiallySupportedCallable` for functions that work with `call_user_func($expr)` but not `$expr()`.
+  The literal strings `'self'`, `'parent'`, and `'static'` in `'self::methodName'` or `['self', 'methodName']` in callables were deprecated in PHP 8.2.
+- Emit `PhanDeprecatedPartiallySupportedCallableAlternateScope` for uses of callables such as `[new SubClass(), 'Base::method']` specifying an alternate scope.
+- Make pass-by-ref vars result in a merged union type, not an overwritten one. (#4602)
+
+Plugins:
+- Update format string message for `PhanPluginUnknownClosureParamType` and `PhanPluginUnknownFunctionParamType`.
+
+Bug fixes:
+- Avoid crashing when running in PHP 8.2+ after php 8.2 deprecated dynamic(undeclared) properties on classes without `#[AllowDynamicProperties]`.
+
+Nov 13 2021, Phan 5.3.0
+-----------------------
+
+New Features(Analysis):
+- Fix false positive PhanPossiblyUndeclaredVariable warning when a `try` block unconditionally returns/throws/exits (#4419)
+- Fix false positive warnings when analyzing enums, infer that automatically generated methods of enums exist. (#4313)
+- Properly resolve template type when `getIterator` returns an `Iterator` that includes a template. (#4556)
+- Fix false positives such as `PhanTypeMismatchArgumentNullable` analyzing recursive call with parameter set to literal, without real type information. (#4550)
+  (e.g. `function ($retry = true) { if ($retry) {/*...*/} some_call_using_retry($retry); }`)
+- Properly detect `PhanUnusedVariable` in try-catch where catch always rethrows. (#4567)
+- Make read-only/write-only property detection more accurate for assignment operations (e.g. `+=`, `??=`) and increment/decrement operations. (#4570)
+- Improve estimates of array sizes when analyzing calls that unpack values, based on the inferred real type set. (#4577)
+- Infer that variadic parameters can have string keys (as of php 8.0) (#4579)
+- Emit `PhanParamTooFewUnpack` and `PhanParamTooFewInternalUnpack` to indicate when argument unpacking may provide too few arguments to the called function. (#4577)
+- Support the non-standard `@no-named-arguments` PHPDoc comment on function-likes. (#4580, #4152)
+  Treat variadic parameters as list types when this annotation is used,
+  warn about unpacking string arguments or explicitly passing named arguments to functions using this declaration.
+- Warn about argument unpacking that may pass strings to internal functions (e.g. `var_dump(...['a' => 'unsupported'])`) (#4579)
+  New issue types: `PhanSuspiciousNamedArgumentVariadicInternalUnpack`
+- Support `@phan-type AliasName=UnionType` annotation in inline strings or element comments (#4562)
+
+  These aliases will apply to remaining statements in the current
+  **top-level namespace blocks,** similar to use statements, but can also be defined
+  in methods and apply to subsequent methods.
+
+  This can be of use in avoiding repetition of phpdoc for long type definitions.
+
+  ```php
+  // Alternate inline string version to work around php-ast limitations
+  '@phan-type UserData = array{name: string, id: int, createdAt: DateTime}';
+
+  /**
+   * @type-alias UserData = array{name: string, id: int, createdAt: DateTime}
+   * (applies to phpdoc in this and all subsequent AST nodes in the namespace block)
+   */
+  class ExampleElementWithPHPDoc {
+      /**
+       * @param UserData[] $users
+       * @return list<UserData>
+       */
+      public function filterUsers(array $values): array { /* ... */ }
+  }
+
+  // The UserData alias is still defined and can be used in other statements
+
+  namespace XYZ;
+  // The UserData alias is no longer defined in the new namespace block.
+  ```
+- When analyzing calls that modify variables as pass by reference, merge old types with existing types
+  to account for possibility of branches or early returns (#4602)
+
+Plugins:
+- Warn about non-empty try statements that are unlikely to throw in `EmptyStatementListPlugin` (#4555)
+- Warn in `AlwaysReturnPlugin` about functions/methods with no return type that have at least one return statement with an expression, but may fall through to the end of the function body without an explicit return (#4587)
+
+Bug fixes:
+- Fix off-by-one error when inferring from comparison conditions such as `count($arr) > 0` and `count($arr) >= 1` that the array is non-empty. (#4551)
+- Fix checking file path suppressed by baseline (with `/`) on windows (#4149)
+- Fix crash when inferring type of array access for scalar other than int/string (e.g. `$arr[true]`) (#4573)
+- Properly read `--processes N` CLI flag before checking if phan should restart without `grpc`  (#4608)
+
+Maintenance:
+- Account for a few PHP 8.0 signature changes for PDOStatement::fetchAll and Phar methods. (#4569)
+
+Sep 14 2021, Phan 5.2.1
+-----------------------
+
+New Features(Analysis):
+- Improve analysis of conditions detecting the empty/non-empty array. (#4523)
+  E.g. support `if ($x === []) {...} else {...}`, `if (count($x) > 0) {...} else {...}`, etc.
+- Raise severity of `PhanTypeNonVarPassByRef` to critical. It throws an Error in php 8.0+. (#3830)
+- Infer from conditions such as `in_array($var, $array, true)` that $array is a non-empty array and that $var is of a type found in the elements of $array. (#2511)
+
+Plugins:
+- Emit a proper warning when `InvokePHPNativeSyntaxCheckPlugin` is passed a path to a php binary that is missing or invalid (or if the syntax check crashed). (#4116)
+  Previously, Phan would crash with an error such as `fwrite(): write of 8196 bytes failed with errno=32 Broken pipe`
+- Fix false positive `PhanPluginMoreSpecificActualReturnType` for phpdoc array shape return type and returned generic array. (#4531)
+
+Bug fixes:
+- Fix type inference logic that was looking for array specializations rather than array or any array subtype (#4512)
+- Fix false positive `PhanUnreferencedClosure`/`PhanUnreferencedFunction` seen when a closure/function name was passed to a function such as `uasort` that already had a plugin analyzing calls of the closure. (#4090, #4519)
+- Fix false positive/negative `PhanTypeMissingReturn*` instances. (#4537)
+
+  The check was wrong and should have been checking for a statement list that throws/exits.
+  Return statements can be omitted if a function unconditionally exits.
+
+  Also, check for the real `never` return type when emitting issues
+- Fix false positive `PhanPossiblyUndefinedGlobalVariable*` instance when `global $var` is used within a conditional. (#4539)
+- Fix false positive `PhanPluginRedundantAssignmentInLoop` instance when a variable is modified in a catch statement with a break/continue. (#4542)
+- Fix some incorrect line numbers in some plugin issues.
+- Fix crash seen when parsing intersection types containing union types such as `non-empty-array&array<'a'|'b'>` (#4544)
+
+Maintenance:
+- Fix old return type signature for `get_headers` (#3273)
+- Print instructions on how to upgrade php-ast to 1.0.11+ if an outdated version is installed. (#4532)
+
+Aug 26 2021, Phan 5.2.0
+-----------------------
+
+Plugins:
+- Add `AddNeverReturnTypePlugin`` which will suggest adding a phpdoc return type of `@return never`. (#4468)
+
+Bug fixes:
+- When using the polyfill parser, properly parse nullable class property declarations as nullable. (#4492)
+- Don't emit PhanIncompatibleRealPropertyType for private base property. (#4426)
+- Fix false positive where a method overriding an existing method could be treated as having overrides. (#4502)
+- Consistently support `numeric-string` in all phpdoc
+- Fix false positive `PhanTypeMismatchPropertyDefaultReal` warning for literal integer and `float` typed property. (#4507)
+- Fix false positive warnings such as `PhanImpossibleTypeComparison` about string subtypes not casting to other string subtypes (#4514)
+
+Maintenance:
+- Change internal representation of FunctionSignatureMap delta files.
+- Add a new exit status bit flag to `BlockExitStatusChecker` to indicate that a function will exit or infinitely loop (`STATUS_NORETURN`) (#4468)
+- Internally represent the base function map using php 8.0 signatures instead of php 7.3 - applying deltas backwards has the same result (#4478)
+
+Aug 07 2021, Phan 5.1.0
+-----------------------
+
+New Features (Analysis):
+- Support running Phan 5 with AST version 80 instead of 85 but warn about php-ast being outdated.
+
+Documentation:
+- Update documentation of `--target-php-version` and `--minimum-target-php-version`
+
+Aug 01 2021, Phan 5.0.0
+-----------------------
+
+New Features (Analysis):
+- Warn about implicitly nullable parameter intersection types (`function(A&B $paramName = null)`) being a compile error.
+  New issue type: `PhanTypeMismatchDefaultIntersection`
+- Emit `PhanTypeMismatchArgumentSuperType` instead of `PhanTypeMismatchArgument` when passing in an object supertype (e.g. ancestor class) of an object instead of a subtype.
+  Emit `PhanTypeMismatchReturnSuperType` instead of `PhanTypeMismatchReturn` when returning an object supertype (e.g. ancestor class) of an object instead of a subtype.
+
+  Phan 5 starts warning about ancestor classes being incompatible argument or return types in cases where it previously allowed it. (#4413)
+
+Jul 24 2021, Phan 5.0.0a4
+-------------------------
+
+New Features (Analysis):
+- Use the enum class declaration type (int, string, or absent) from AST version 85 to check if enum cases are valid. (#4313)
+  New issue types: `PhanSyntaxEnumCaseExpectedValue`, `PhanSyntaxEnumCaseUnexpectedValue`, `PhanTypeUnexpectedEnumCaseType`
+
+Backwards incompatible changes:
+- Bump the minimum required AST version from 80 to 85 (Required to analyze php 8.1 enum classes - 'type' was added in AST version 85).
+- In php 8.1, require php-ast 1.0.14 to natively parse AST version 85.
+
+Maintenance:
+- Upgrade tolerant-php-parser from 0.1.0 to 0.1.1 to prepare to support new php syntax in the polyfill/fallback parser. (#4449)
+
+Bug fixes:
+- Fix extraction of reflection attribute target type bitmask from internal attributes such as PHP 8.1's `ReturnTypeWillChange`
+
+Jul 15 2021, Phan 5.0.0a3
+-------------------------
+
+New Features (Analysis):
++ Support parsing php 8.1 intersection types in php-ast 1.0.13+ (#4469)
+  (not yet supported in polyfill)
++ Support parsing php 8.1 first-class callable syntax in unreleased php-ast version (#4464)
++ Support parsing php 8.1 readonly property modifier (#4463)
++ Support allowing `new` expressions in php 8.1 readonly property modifier (#4460)
++ Emit `PhanTypeInvalidArrayKey` and `PhanTypeInvalidArrayKeyValue` for invalid array key literal types or values.
++ Fix false positive `PhanTypeMissingReturn`/`PhanPluginAlwaysReturnMethod` for method with phpdoc return type of `@return never`
++ Warn about direct access to static methods or properties on traits (instead of classes using those methods/properties) being deprecated in php 8.1 (#4396)
++ Add `Stringable` to allowed types for sprintf variadic arguments. This currently requires explicitly implementing Stringable. (#4466)
+
+Bug fixes:
+- Fix a crash when analyzing array literals with invalid key literal values in php 8.1.
+- Fix a crash due to deprecation notices for accessing trait methods/properties directly in php 8.1
+
+Jun 26 2021, Phan 5.0.0a2
+-------------------------
+
+New Features (Analysis):
+- Improve accuracy of checks for weak type overlap for redundant condition warnings on `<=`
+- Emit `PhanAccessOverridesFinalConstant` when overriding a final class constant. (#4436)
+- Emit `PhanCompatibleFinalClassConstant` if class constants have the final modifier in codebases supporting a minimum target php version older than 8.1 (#4436)
+- Analyze class constants declared in interfaces as if they were final in php versions prior to 8.1. (#4436)
+- Warn about using $this or superglobals as a parameter or closure use. (#4336)
+
+New Features (CLI)
+- Use `var_representation`/polyfill for generating representations of values in issue messages.
+
+Maintenance:
+- Upgrade tolerant-php-parser from 0.0.23 to 0.1.0 to prepare to support new php syntax in the polyfill/fallback parser. (#4449)
+
+Bug fixes:
+- Properly warn about referencing $this from a `static fn` declared in an instance method. (#4336)
+- Fix a crash getting template parameters of intersection types
+
+May 30 2021, Phan 5.0.0a1
+-------------------------
+
+Phan 5 introduces support for intersection types, and improves the accuracy of type casting checks and type inference to catch more issues.
+
+This is the unstable branch for alpha releases of Phan 5. Planned/remaining work is described in https://github.com/phan/phan/issues/4413
+
+If you are migrating from Phan 4, it may be useful to set up or update a Phan [baseline file](https://github.com/phan/phan/wiki/Phan-Config-Settings#baseline_path) to catch issues such as nullable type mismatches.
+https://github.com/phan/phan/wiki/Tutorial-for-Analyzing-a-Large-Sloppy-Code-Base has other advice on setting up suppressions.
+For example, Phan is now more consistently warning about nullable arguments (i.e. both `\X|null` and `?\X`) in a few cases where it may have not warned about passing `\X|null` to a function that expects a non-null type.
+
+If you are using plugins that are not part of Phan itself, they may have issues in Phan 5 due
+to additional required methods being added to many of Phan's methods.
+
+New Features (Analysis):
++ Support parsing intersection types in phpdoc and checking if intersection types satisfy type comparisons
++ Support inferring intersection types from conditions such as `instanceof`
++ Warn about impossible type combinations in phpdoc intersection types.
+  New issue types: `PhanImpossibleIntersectionType`
++ Improve type checking precision for whether a type can cast to another type.
++ Improve precision of checking if a type is a subtype of another type.
++ Split out warnings about possibly invalid types for property access (non-object) and possibly invalid classes for property access
+  New issue types: `PhanPossiblyUndeclaredPropertyOfClass`
++ Also check for partially invalid expressions for instance properties during assignment (`PhanPossiblyUndeclaredProperty*`)
++ Treat `@template-covariant T` as an alias of `@template T` - Previously, that tag was not parsed and `T` would be treated like a (probably undeclared) classlike name. (#4432)
+
+Bug fixes:
++ Fix wrong expression in issue message for PhanPossiblyNullTypeMismatchProperty (#4427)
+
+Breaking Changes:
++ Many internal methods now require a mandatory `CodeBase` instance. This will affect third party plugins.
++ Remove `--language-server-min-diagnostic-delay-ms`.
+
+May 19 2021, Phan 4.0.7 (dev)
+-----------------------
+
+Language Server/Daemon mode:
++ Fix an uncaught exception sometimes seen checking for issue suppressions when pcntl is unavailable.
+
+Bug fixes:
++ Don't emit `PhanCompatibleNonCapturingCatch` when `minimum_target_php_version` is `'8.0'` or newer. (#4433)
++ Stop ignoring `@return null` and `@param null $paramName` in phpdoc. (#4453)
+
+  Stop special casing `@param null` now that Phan allows many other literal types in param types.
+
+May 19 2021, Phan 4.0.6
+-----------------------
+
+New Features (Analysis):
++ Partially support php 8.1 enums (#4313)
+  (infer the real type is the class type, that they cannot be instantiated, that enum values cannot be reused, and that class constants will exist for enum cases)
+
+  New issue types: `PhanReusedEnumCaseValue`, `PhanTypeInstantiateEnum`, `PhanTypeInvalidEnumCaseType`, `PhanSyntaxInconsistentEnum`,
+  `PhanInstanceMethodWithNoEnumCases`, `PhanInstanceMethodWithNoEnumCases`, `PhanEnumCannotHaveProperties`, `PhanUnreferencedEnumCase`,
+  `PhanEnumForbiddenMagicMethod`.
++ Support php 7.4 covariant return types and contravariant parameter types when the configured or inferred `minimum_target_php_version` is `'7.4'` or newer (#3795)
++ Add initial support for the php 8.1 `never` type (in real return types and phpdoc). (#4380)
+  Also add support for the phpdoc aliases `no-return`, `never-return`, and `never-returns`
++ Support casting `iterable<K, V>` to `Traversable<K, V>` with `is_object` or `!is_array` checks
++ Detect more types of expressions that never return when inferring types (e.g. when analyzing `?:`, `??` operators)
++ Use php 8.1's tentative return types from reflection (`hasTentativeReturnType`, `getTentativeReturnType`) to assume real return types of internal functions/methods (#4400)
+
+  This can be disabled by setting `use_tentative_return_type` to `false` (e.g. when using subclasses of internal classes that return incompatible types).
++ Warn about modifying properties of classes that are immutable at runtime (enums, internal classes such as `\Closure` and `\WeakRef`, etc.) (#4313)
+  New issue type: `PhanTypeModifyImmutableObjectProperty`
+
+Dead code detection:
++ Infer that functions with a return type of `never` (or phpdoc aliases such as `no-return`) are unreachable when performing control flow analysis.
+  This can be disabled by setting `dead_code_detection_treat_never_type_as_unreachable` to false
+
+  Note that control flow is only affected when `UseReturnValuePlugin` is enabled.
+
+Plugins:
++ In `UseReturnValuePlugin`, also start warning about when using the result of an expression that evaluates to `never`
+  New issue types: `PhanUseReturnValueOfNever`
+
+Bug fixes:
++ As part of the work on php 7.4 contravariant parameter types,
+  don't automatically inherit inferred parameter types from ancestor classlikes when (1) there is no `@param` tag with a type for the parameter on the overriding method and (2) the ancestor parameter types are a subtype of the real parameter types unless
+
+  1. `@inheritDoc` is used.
+  2. This is a generic array type such as `array<string,mixed>` that is a specialization of an array type.
+     If you want to indicate that the overriding method can be any array type, add `@param array $paramName`.
++ Change composer.json dependency on `composer/xdebug-handler` from `^2.0` to `^1.1|2.0` to avoid conflicting with other libraries or applications that depend on xdebug-handler 1.x (#4382)
++ Support parsing multiple declare directives in the polyfill/fallback parser (#4160)
+
+Apr 29 2021, Phan 4.0.5
+-----------------------
+
+New Features (Analysis):
++ Fix handling of some redundant condition checks involving `non-null-mixed` and `null` (#4388, #4391)
++ Emit `PhanCompatibleSerializeInterfaceDeprecated` when a class implements Serializable without also implementing the `__serialize` and `__unserialize` methods as well. (#4387)
+  PHP 8.1 deprecates the `Serializable` interface when `__serialize` and `__unserialize` aren't also implemented to be used instead of `serialize`/`unserialize`.
+
+Maintenance:
++ Warn about running phan with multiple processes without pcntl before the analysis phase starts.
++ Start implementing `__serialize`/`__unserialize` in Phan itself in places that use `Serializable`.
++ Use different static variables in different subclasses of `Phan\Language\Type` to account for changes in static variable inheritance in php 8.1. (#4379)
+
+Bug fixes:
++ Allow `?T` to be used in parameter/property types with `@template T` (#4388)
+
+Apr 14 2021, Phan 4.0.4
+-----------------------
+
+New Features (CLI, Config):
++ Support `--doc-comment` flag on `tool/make_stubs` to emit the doc comments Phan
+  is using for internal elements along with the stubs.
+  (these are the doc comments Phan would use for hover text in the language server)
++ Allow `target_php_version` and `minimum_target_php_version` to be 8.1 or newer.
+
+New Features (Analysis):
++ Support the php 8.1 array unpacking with string keys RFC (#4358).
+  Don't emit warnings about array unpacking with string keys when `minimum_target_php_version` is '8.1' or newer.
++ Support php 8.1 `array_is_list(array $array): bool` conditional and its negation. (#4348)
++ Fix some false positive issues when trying to eagerly evaluate expressions without emitting issues (#4377)
+
+Bug fixes:
++ Fix crash analyzing union type in trait (#4383)
+
+Maintenance:
++ Update from xdebug-handler 1.x to 2.0.0 to support Xdebug 3 (#4382)
+
+Plugins:
++ Cache plugin instances in `ConfigPluginSet`. This is useful for unit testing stateless plugins which declare the plugin class in the same file returning the plugin instance. (#4352)
+
+Jan 29 2021, Phan 4.0.3
+-----------------------
+
+New Features:
++ Support inferring iterable value types/keys from `getIterator` returning an ordinary `Iterator<X>` (previously only inferred types for subclasses of Iterator)
+
+Bug fixes:
++ Fix crash when rendering `[...$x]` in an issue message (#4351)
++ Infer that `if ($x)` `converts non-null-mixed` to `non-empty-mixed`
++ Fix false positive warning case for PhanParamSignaturePHPDocMismatchParamType when a phpdoc parameter has a default value (#4357)
++ Properly warn about accessing a private class constant as `self::CONST_NAME` from inside of a subclass of the constant's declaring class (#4360)
++ Properly infer `allow_method_param_type_widening` from `minimum_target_php_version` to avoid false positive `PhanParamSignatureRealMismatchHasNoParamType`.
+
+Jan 09 2021, Phan 4.0.2
+-----------------------
+
+New Features:
++ Improve suggestions for `PhanUndeclaredThis` inside of static methods/closures (#4336)
+
+Language Server/Daemon mode:
++ Properly generate code completions for `::` and `->` at the end of a line on files using Windows line endings(`\r\n`) instead of Unix newlines(`\n`) on any OS (#4345)
+  Previously, those were not completed.
+
+Bug fixes:
++ Fix false positive `PhanParamSignatureMismatch` for variadic overriding a function using `func_get_args()` (#4340)
++ Don't emit PhanTypeNoPropertiesForeach for the Countable interface on its own. (#4342)
++ Fix false positive type mismatch warning for casts from callable-object/callable-array/callable-string
+  to `function(paramtypes):returntype` (#4343)
+
+Dec 31 2020, Phan 4.0.1
+-----------------------
+
+New Features:
++ Emit `PhanCompatibleAssertDeclaration` when declaring a function called `assert`. (#4333)
+
+Bug fixes:
++ Fix false positive `PhanInvalidConstantExpression` for named arguments in attributes (#4334)
+
+Merge changes from Phan 3.2.10
+
+Dec 23 2020, Phan 4.0.0
+-----------------------
+
++ Merge changes from Phan 3.2.9.
++ Relax minimum php-ast restrictions when polyfill is used for Phan 4.
++ Fix conflicting class constant seen in polyfill when php-ast 1.0.6 was installed.
+
+The Phan v4 release line has the following changes from Phan 3:
+- Bump the minimum required AST version from 70 to 80 (Required to analyze php 8.0 attributes - the rest of the php 8.0 syntax changes are supported in both Phan 3 and Phan 4).
+  A few third party plugins may be affected by the increase of the AST version.
+- Supports analyzing whether `#[...]` attributes are used properly when run with PHP 8.0+
+
+Dec 23 2020, Phan 4.0.0-RC2
+---------------------------
+
+Merge changes from Phan 3.2.8.
+
+Dec 13 2020, Phan 4.0.0-RC1
+---------------------------
+
+Merge changes from Phan 3.2.7.
+
+Nov 27 2020, Phan 4.0.0-alpha5
+------------------------------
+
+Merge changes from Phan 3.2.6.
+
+Nov 26 2020, Phan 4.0.0-alpha4
+------------------------------
+
+Merge changes from Phan 3.2.5.
+
+Nov 12 2020, Phan 4.0.0-alpha3
+------------------------------
+
+Merge changes from Phan 3.2.4.
+
+Oct 12 2020, Phan 4.0.0-alpha2
+------------------------------
+
+Merge changes from Phan 3.2.3.
+
+Sep 19 2020, Phan 4.0.0-alpha1
+------------------------------
+
+New features (Analysis):
++ Support analyzing PHP 8.0 attributes when Phan is run with php 8.0 or newer.
+  Warn if the attribute syntax is likely to be incompatible in php 7.
+  Warn if using attributes incorrectly or with incorrect argument lists.
+
+  New issue types: `PhanCompatibleAttributeGroupOnSameLine`, `PhanCompatibleAttributeGroupOnMultipleLines`,
+  `PhanAttributeNonAttribute`, `PhanAttributeNonClass`, `PhanAttributeNonRepeatable`,
+  `PhanUndeclaredClassAttribute`, `PhanAttributeWrongTarget`, `PhanAccessNonPublicAttribute`.
+
+Backwards incompatible changes:
++ Switch from AST version 70 to AST version 80.
+  `php-ast` should be upgraded to version 1.0.10-dev or newer.
++ Drop the no-op `--polyfill-parse-all-doc-comments` flag.
+
+Miscellaneous:
++ Make various classes from Phan implement `Stringable`.
+
+Dec 31 2020, Phan 3.2.10 (dev)
+-----------------------
+
+Bug fixes:
++ Fix false positive PhanPossiblyFalseTypeReturn with strict type checking for substr when target php version is 8.0+ (#4335)
+
+Dec 26 2020, Phan 3.2.9
+-----------------------
+
+Bug fixes:
++ Fix a few parameter names for issue messages (#4316)
++ Fix bug that could cause Phan not to warn about `SomeClassWithoutConstruct::__construct`
+  in some edge cases. (#4323)
++ Properly infer `self` is referring to the current object context even when the object context is unknown in namespaces. (#4070)
+
+Deprecations:
++ Emit a deprecation notice when running this in PHP 7 and php-ast < 1.0.7. (#4189)
+  This can be suppressed by setting the environment variable `PHAN_SUPPRESS_AST_DEPRECATION=1`.
+
+Dec 23 2020, Phan 3.2.8
+-----------------------
+
+Bug fixes:
++ Fix false positive PhanUnusedVariable for variable redefined in loop (#4301)
++ Fix handling of `-z`/`--signature-compatibility` - that option now enables `analyze_signature_compatibility` instead of disabling it. (#4303)
++ Fix possible `PhanCoalescingNeverUndefined` for variable defined in catch block (#4305)
++ Don't emit `PhanCompatibleConstructorPropertyPromotion` when `minimum_target_php_version` is 8.0 or newer. (#4307)
++ Infer that PHP 8.0 constructor property promotion's properties have write references. (#4308)
+  They are written to by the constructor.
++ Inherit phpdoc parameter types for the property declaration in php 8.0 constructor property promotion (#4311)
+
+Dec 13 2020, Phan 3.2.7
+-----------------------
+
+New features (Analysis):
++ Update real parameter names to match php 8.0's parameter names for php's own internal methods (including variadics and those with multiple signatures). (#4263)
+  Update real parameter names, types, and return types for some PECL extensions.
++ Raise the severity of some php 8.0 incompatibility issues to critical.
++ Fix handling of references after renaming variadic reference parameters of `fscanf`/`scanf`/`mb_convert_variables`
++ Mention if PhanUndeclaredFunction is potentially caused by the target php version being too old. (#4230)
++ Improve real type inference for conditionals on literal types (#4288)
++ Change the way the real type set of array access is inferred for mixes of array shapes and arrays (#4296)
++ Emit `PhanSuspiciousNamedArgumentVariadicInternal` when using named arguments with variadic parameters of internal functions that are
+  not among the few reflection functions known to support named arguments. (#4284)
++ Don't suggest instance properties as alternatives to undefined variables inside of static methods.
+
+Bug fixes:
++ Support a `non-null-mixed` type and change the way analysis involving nullability is checked for `mixed` (phpdoc and real). (#4278, #4276)
+
 Nov 27 2020, Phan 3.2.6
 -----------------------
 
@@ -8,7 +549,7 @@ New features (Analysis):
 + Infer that an instance property exists for PHP 8.0 constructor property promotion. (#3938)
 + Infer types of properties from arguments passed into constructor for PHP 8.0 constructor property promotion. (#3938)
 + Emit `PhanInvalidNode` and `PhanRedefineProperty` when misusing syntax for constructor property promotion. (#3938)
-+ Emit `PhanCompatibleConstructorPropertyPromotion` when the project's `minimum_target_php_version` is older than `8.0` (#3938)
++ Emit `PhanCompatibleConstructorPropertyPromotion` when constructor property promotion is used. (#3938)
 + Emit `PhanSuspiciousMagicConstant` when using `__FUNCTION__` inside of a closure. (#4222)
 
 Nov 26 2020, Phan 3.2.5

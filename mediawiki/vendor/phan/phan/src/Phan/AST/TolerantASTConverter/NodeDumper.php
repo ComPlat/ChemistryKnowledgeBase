@@ -125,7 +125,7 @@ class NodeDumper
                 $padding,
                 $key !== '' ? $key . ': ' : '',
                 self::dumpClassName($ast_node),
-                $this->include_offset ? ' (@' . $ast_node->getStart() . ')' : ''
+                $this->include_offset ? ' (@' . $ast_node->getStartPosition() . ')' : ''
             );
 
             $result = $first_part;
@@ -145,7 +145,7 @@ class NodeDumper
                 \Phan\Library\StringUtil::jsonEncode(\substr($this->file_contents, $ast_node->fullStart, $ast_node->length))
             );
         } elseif (\is_scalar($ast_node)) {
-            return \var_export($ast_node, true);
+            return \var_representation($ast_node);
         } elseif ($ast_node === null) {
             return 'null';
         } else {

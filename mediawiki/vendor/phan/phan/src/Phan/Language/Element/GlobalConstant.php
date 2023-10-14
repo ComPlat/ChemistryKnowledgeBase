@@ -15,6 +15,7 @@ use Phan\Library\StringUtil;
 
 /**
  * Phan's representation of a global constant
+ * @property FullyQualifiedGlobalConstantName $fqsen
  */
 class GlobalConstant extends AddressableElement implements ConstantInterface
 {
@@ -56,11 +57,12 @@ class GlobalConstant extends AddressableElement implements ConstantInterface
         return parent::getUnionType();
     }
 
-    // TODO: Make callers check for object types. Those are impossible.
     public function setUnionType(UnionType $type): void
     {
-        if ($this->isDynamicConstant() || !$type->hasRealTypeSet()) {
-            $type = $type->withRealTypeSet(UnionType::typeSetFromString('array|bool|float|int|string|resource|null'));
+        // Note: in php 8.1, constants can also be objects if those objects are enums.
+        // So the real type set includes every type.
+        if ($this->isDynamicConstant()) {
+            $type = $type->eraseRealTypeSet();
         }
         parent::setUnionType($type);
     }
@@ -69,6 +71,7 @@ class GlobalConstant extends AddressableElement implements ConstantInterface
      * @return FullyQualifiedGlobalConstantName
      * The fully-qualified structural element name of this
      * structural element
+     * @suppress PhanTypeMismatchReturn TODO: different low severity issue type for base class to subclass cast
      */
     public function getFQSEN(): FullyQualifiedGlobalConstantName
     {
@@ -94,7 +97,7 @@ class GlobalConstant extends AddressableElement implements ConstantInterface
         string $name
     ): GlobalConstant {
         if (!\defined($name)) {
-            throw new InvalidArgumentException(\sprintf("This should not happen, defined(%s) is false, but the constant was returned by get_defined_constants()", \var_export($name, true)));
+            throw new InvalidArgumentException(\sprintf("This should not happen, defined(%s) is false, but the constant was returned by get_defined_constants()", \var_representation($name)));
         }
         $value = \constant($name);
         $constant_fqsen = FullyQualifiedGlobalConstantName::fromFullyQualifiedString(
@@ -135,7 +138,7 @@ class GlobalConstant extends AddressableElement implements ConstantInterface
     /** @return array{0:string,1:string} [string $namespace, string $text] */
     public function toStubInfo(): array
     {
-        $fqsen = (string)$this->getFQSEN();
+        $fqsen = (string)$this->fqsen;
         $pos = \strrpos($fqsen, '\\');
         if ($pos !== false) {
             $name = (string)\substr($fqsen, $pos + 1);
@@ -151,13 +154,27 @@ class GlobalConstant extends AddressableElement implements ConstantInterface
             $repr = 'null';
             $comment = '  // could not find';
         }
-        $namespace = \ltrim($this->getFQSEN()->getNamespace(), '\\');
+        $namespace = \ltrim($this->fqsen->getNamespace(), '\\');
         if (\preg_match('@^[a-zA-Z_\x7f-\xff\\\][a-zA-Z0-9_\x7f-\xff\\\]*$@D', $name)) {
             $string = "const $name = $repr;$comment\n";
         } else {
             // Internal extension defined a constant with an invalid identifier.
-            $string = \sprintf("define(%s, %s);%s\n", \var_export($name, true), $repr, $comment);
+            $string = \sprintf("define(%s, %s);%s\n", \var_representation($name), $repr, $comment);
+        }
+        if (self::shouldAddDescriptionsToStubs()) {
+            $description = (string)MarkupDescription::extractDescriptionFromDocComment($this);
+            $string = MarkupDescription::convertStringToDocComment($description) . $string;
         }
         return [$namespace, $string];
+    }
+
+    /**
+     * PHP does not support parsing attributes on global constants.
+     *
+     * @return list<Attribute>
+     */
+    public function getAttributeList(): array
+    {
+        return [];
     }
 }

@@ -12,11 +12,12 @@ declare(strict_types=1);
  * With modifications to be a functional replacement for the data
  * structures and global constants of ext-ast. (for class ast\Node)
  *
- * This supports AST version 70
+ * This supports AST version 85
  *
  * However, this file does not define any global functions such as
  * ast\parse_code() and ast\parse_file(). (to avoid confusion)
  *
+ * TODO: Add remaining constants
  *
  * @phan-file-suppress PhanUnreferencedConstant, UnusedPluginFileSuppression - Plugins may reference some of these constants
  * @phan-file-suppress PhanPluginUnknownArrayPropertyType, PhanPluginUnknownArrayMethodParamType this is a stub
@@ -48,6 +49,8 @@ const AST_TYPE_UNION = 144;
 const AST_ATTRIBUTE_LIST = 145;
 const AST_ATTRIBUTE_GROUP = 146;
 const AST_MATCH_ARM_LIST = 147;
+const AST_TYPE_INTERSECTION = 148;
+const AST_CALLABLE_CONVERT = 149;
 const AST_NAME = 2048;
 const AST_CLOSURE_VAR = 2049;
 const AST_NULLABLE_TYPE = 2050;
@@ -132,6 +135,7 @@ const AST_CATCH = 773;
 const AST_FOR = 1024;
 const AST_FOREACH = 1025;
 const AST_PARAM = 1280;
+const AST_ENUM_CASE = 1279;
 // END AST KIND CONSTANTS
 
 // AST FLAG CONSTANTS
@@ -159,10 +163,12 @@ const CLASS_FINAL = 32;
 const CLASS_TRAIT = 2;
 const CLASS_INTERFACE = 1;
 const CLASS_ANONYMOUS = 4;
+const CLASS_ENUM = 268435456;
 const PARAM_REF = 8;
 const PARAM_VARIADIC = 16;
 const TYPE_NULL = 1;
 const TYPE_FALSE = 2;
+const TYPE_TRUE = 3;
 const TYPE_BOOL = 17;
 const TYPE_LONG = 4;
 const TYPE_DOUBLE = 5;
@@ -174,6 +180,7 @@ const TYPE_VOID = 14;
 const TYPE_ITERABLE = 13;
 const TYPE_STATIC = 15;
 const TYPE_MIXED = 16;
+const TYPE_NEVER = 17;
 const UNARY_BOOL_NOT = 14;
 const UNARY_BITWISE_NOT = 13;
 const UNARY_SILENCE = 260;
@@ -236,7 +243,9 @@ if (!\class_exists('\ast\Node')) {
     /**
      * This class describes a single node in a PHP AST.
      * @suppress PhanRedefineClassInternal
+     * @phan-suppress-next-next-line PhanUndeclaredClassAttribute class suppression isn't working for duplicate of internal class.
      */
+    #[\AllowDynamicProperties]
     class Node
     {
         /** @var int AST Node Kind. Values are one of ast\AST_* constants. */

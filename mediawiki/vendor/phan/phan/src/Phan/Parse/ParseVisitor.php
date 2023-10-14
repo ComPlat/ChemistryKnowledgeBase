@@ -20,9 +20,13 @@ use Phan\Exception\IssueException;
 use Phan\Exception\UnanalyzableException;
 use Phan\Issue;
 use Phan\Language\Context;
+use Phan\Language\Element\Attribute;
 use Phan\Language\Element\ClassConstant;
 use Phan\Language\Element\Clazz;
 use Phan\Language\Element\Comment;
+use Phan\Language\Element\Comment\Builder;
+use Phan\Language\Element\EnumCase;
+use Phan\Language\Element\Flags;
 use Phan\Language\Element\Func;
 use Phan\Language\Element\FunctionFactory;
 use Phan\Language\Element\FunctionInterface;
@@ -41,13 +45,15 @@ use Phan\Language\FutureUnionType;
 use Phan\Language\Type;
 use Phan\Language\Type\ArrayShapeType;
 use Phan\Language\Type\ArrayType;
-use Phan\Language\Type\CallableType;
 use Phan\Language\Type\MixedType;
+use Phan\Language\Type\NeverType;
 use Phan\Language\Type\NullType;
 use Phan\Language\Type\StringType;
 use Phan\Language\UnionType;
 use Phan\Library\FileCache;
 use Phan\Library\None;
+
+use function count;
 
 /**
  * The class is a visitor for AST nodes that does parsing. Each
@@ -130,7 +136,7 @@ class ParseVisitor extends ScopeVisitor
 
         // Build the class from what we know so far
         $class_context = $this->context
-            ->withLineNumberStart($node->lineno ?? 0)
+            ->withLineNumberStart($node->lineno)
             ->withLineNumberEnd($node->endLineno ?? 0);
 
         $class = new Clazz(
@@ -142,6 +148,15 @@ class ParseVisitor extends ScopeVisitor
         );
         $class->setDeclId($node->children['__declId']);
         $class->setDidFinishParsing(false);
+        $class->setAttributeList(Attribute::fromNodeForAttributeList(
+            $this->code_base,
+            $class_context,
+            $node->children['attributes'] ?? null
+        ));
+        if ($node->flags & ast\flags\CLASS_ENUM) {
+            $this->populateEnumClass($class, $class_context, $node);
+        }
+
         try {
             // Set the scope of the class's context to be the
             // internal scope of the class
@@ -199,9 +214,10 @@ class ParseVisitor extends ScopeVisitor
             // Look to see if we have a parent class
             $extends_node = $node->children['extends'] ?? null;
             if ($extends_node instanceof Node) {
-                $parent_class_name = (string)UnionTypeVisitor::unionTypeFromClassNode($this->code_base, $this->context, $extends_node);
+                $parent_class_name = UnionTypeVisitor::unionTypeFromClassNode($this->code_base, $this->context, $extends_node)->__toString();
 
                 // The name is fully qualified.
+                // This will throw an FQSENException if php-ast or the polyfill unexpectedly parsed an invalid class name.
                 $parent_fqsen = FullyQualifiedClassName::fromFullyQualifiedString(
                     $parent_class_name
                 );
@@ -236,6 +252,85 @@ class ParseVisitor extends ScopeVisitor
         }
 
         return $class_context;
+    }
+
+    private function populateEnumClass(Clazz $class, Context $class_context, Node $node): void
+    {
+        $type_node = $node->children['type'] ?? null;
+        $class_fqsen = $class->getFQSEN();
+        $case_union_type = $class_fqsen->asType()->asRealUnionType();
+        $case_field_types = [];
+        foreach ($node->children['stmts']->children ?? [] as $case) {
+            if ($case instanceof Node && $case->kind === ast\AST_ENUM_CASE) {
+                // TODO: If individual enum cases get distinct types in the type system, replace this with that
+                $case_field_types[] = $case_union_type;
+            }
+        }
+        $case_count = count($case_field_types);
+        if ($type_node) {
+            $enum_type = UnionTypeVisitor::unionTypeFromNode(
+                $this->code_base,
+                $class_context,
+                $type_node
+            );
+            $class->setEnumType($enum_type);
+
+            $from_type = $case_count ? $case_union_type : NeverType::instance(false)->asRealUnionType();
+            $value_parameter = new Parameter(
+                $class_context,
+                'value',
+                $enum_type,
+                0
+            );
+            // Note: The Method constructor will clone these parameters for us
+            $from_parameters = [$value_parameter];
+            $from_method = new Method(
+                $class_context,
+                'from',
+                $from_type,
+                ast\flags\MODIFIER_STATIC | ast\flags\MODIFIER_PUBLIC,
+                FullyQualifiedMethodName::make($class->getFQSEN(), 'from'),
+                $from_parameters
+            );
+            $from_method->setNumberOfRequiredParameters(1);
+            $from_method->setRealParameterList($from_parameters);
+            $from_method->setRealReturnType($from_type);
+            $from_method->setPhanFlags(Flags::IS_PHP_INTERNAL | Flags::IS_SIDE_EFFECT_FREE);
+            $class->addMethod($this->code_base, $from_method, None::instance());
+
+            $try_from_type = $case_count ? $from_type->withIsNullable(true) : NullType::instance(false)->asRealUnionType();
+            $try_from_method = new Method(
+                $class_context,
+                'tryFrom',
+                $try_from_type->withIsNullable(true),
+                ast\flags\MODIFIER_STATIC | ast\flags\MODIFIER_PUBLIC,
+                FullyQualifiedMethodName::make($class->getFQSEN(), 'tryFrom'),
+                $from_parameters
+            );
+            $try_from_method->setNumberOfRequiredParameters(1);
+            $try_from_method->setRealParameterList($from_parameters);
+            $try_from_method->setRealReturnType($try_from_type);
+            $try_from_method->setPhanFlags(Flags::IS_PHP_INTERNAL | Flags::IS_SIDE_EFFECT_FREE);
+            $class->addMethod($this->code_base, $try_from_method, None::instance());
+        }
+        $cases_type = ArrayShapeType::fromFieldTypes($case_field_types, false)->asRealUnionType();
+        $cases_method = new Method(
+            $class_context,
+            'cases',
+            $cases_type,
+            ast\flags\MODIFIER_STATIC | ast\flags\MODIFIER_PUBLIC,
+            FullyQualifiedMethodName::make($class->getFQSEN(), 'cases'),
+            []
+        );
+        $cases_method->setRealReturnType($cases_type);
+        $cases_method->setPhanFlags(Flags::IS_PHP_INTERNAL | Flags::IS_SIDE_EFFECT_FREE);
+        $class->addMethod($this->code_base, $cases_method, None::instance());
+
+        // @phan-suppress-next-line PhanThrowTypeAbsentForCall
+        $base_enum_fqsen = FullyQualifiedClassName::fromFullyQualifiedString(
+            $type_node ? '\BackedEnum' : '\UnitEnum'
+        );
+        $class->addInterfaceClassFQSEN($base_enum_fqsen, $node->lineno);
     }
 
     /**
@@ -314,7 +409,7 @@ class ParseVisitor extends ScopeVisitor
         }
 
         $method = Method::fromNode(
-            clone($context),
+            clone $context,
             $code_base,
             $node,
             $method_fqsen,
@@ -339,18 +434,20 @@ class ParseVisitor extends ScopeVisitor
 
             // Handle constructor property promotion of __construct parameters
             foreach ($method->getParameterList() as $i => $parameter) {
-                if ($parameter->getFlags() & Parameter::PARAM_MODIFIER_VISIBILITY_FLAGS) {
+                if ($parameter->getFlags() & Parameter::PARAM_MODIFIER_FLAGS) {
                     // @phan-suppress-next-line PhanTypeMismatchArgumentNullable kind is AST_PARAM
-                    $this->addPromotedConstructorPropertyFromParam($class, $parameter, $node->children['params']->children[$i]);
+                    $this->addPromotedConstructorPropertyFromParam($class, $method, $parameter, $node->children['params']->children[$i]);
                 }
             }
-        } elseif ('__invoke' === $method_name_lower) {
-            // TODO: More precise callable shape
-            $class->addAdditionalType(CallableType::instance(false));
-        } elseif ('__tostring' === $method_name_lower
-            && !$this->context->isStrictTypes()
-        ) {
-            $class->addAdditionalType(StringType::instance(false));
+        } elseif ('__tostring' === $method_name_lower) {
+            if (!$this->context->isStrictTypes()) {
+                $class->addAdditionalType(StringType::instance(false));
+            }
+            // In PHP 8 and later having a __toString method automatically adds the Stringable interface, #4476
+            if (Config::get_closest_minimum_target_php_version_id() >= 80000) {
+                // @phan-suppress-next-line PhanThrowTypeAbsentForCall should not happen, built in type
+                $class->addAdditionalType(Type::fromFullyQualifiedString('\Stringable'));
+            }
         }
 
 
@@ -366,12 +463,12 @@ class ParseVisitor extends ScopeVisitor
      */
     private function addPromotedConstructorPropertyFromParam(
         Clazz $class,
+        Method $method,
         Parameter $parameter,
         Node $parameter_node
-    ): void  {
-        $code_base = $this->code_base;
+    ): void {
         $lineno = $parameter_node->lineno;
-        $context = (clone($this->context))->withLineNumberStart($lineno);
+        $context = (clone $this->context)->withLineNumberStart($lineno);
         if ($parameter_node->flags & ast\flags\PARAM_VARIADIC) {
             $this->emitIssue(
                 Issue::InvalidNode,
@@ -380,51 +477,44 @@ class ParseVisitor extends ScopeVisitor
             );
             return;
         }
-        $property_fqsen = FullyQualifiedPropertyName::make($class->getFQSEN(), $parameter->getName());
-
-        if ($code_base->hasPropertyWithFQSEN($property_fqsen)) {
-            $old_property = $code_base->getPropertyByFQSEN($property_fqsen);
-            if ($old_property->getDefiningFQSEN() === $property_fqsen) {
-                // Note: PHPDoc properties are parsed by Phan before real properties, so they take precedence (e.g. they are more visible)
-                // PhanRedefineMagicProperty is a separate check.
-                if ($old_property->isFromPHPDoc()) {
-                    return;
-                }
-                $this->emitIssue(
-                    Issue::RedefineProperty,
-                    $lineno,
-                    $property_fqsen->getName(),
-                    $context->getFile(),
-                    $lineno,
-                    $context->getFile(),
-                    $old_property->getContext()->getLineNumberStart()
-                );
-                return;
-            }
-        }
-        // TODO support attributes in Phan 4
         // TODO: this should probably use FutureUnionType instead.
-        $property = new Property(
-            $context,
-            $parameter->getName(),
-            $parameter->getUnionType(),
-            $parameter_node->flags & Parameter::PARAM_MODIFIER_VISIBILITY_FLAGS,
-            $property_fqsen,
-            $parameter->getUnionType()->getRealUnionType()
-        );
         $doc_comment = $parameter_node->children['docComment'] ?? '';
-        // Get a comment on the property declaration
-        $comment = Comment::fromStringInContext(
+        $name = $parameter->getName();
+        $method_comment = $method->getComment();
+        $variable_comment = $method_comment ? ($method_comment->getParameterMap()[$name] ?? null) : null;
+        $property_comment = Comment::fromStringInContext(
             $doc_comment,
-            $code_base,
-            $context,
+            $this->code_base,
+            $this->context,
             $lineno,
-            Comment::ON_PROPERTY  // TODO: Could optionally add a new ON_PARAM kind?
+            Comment::ON_PROPERTY
         );
-        $property->setDocComment($doc_comment);
-        $property->setPhanFlags($comment->getPhanFlagsForProperty());
-        $property->setSuppressIssueSet($comment->getSuppressIssueSet());
-        $class->addProperty($code_base, $property, None::instance());
+        $attributes = Attribute::fromNodeForAttributeList(
+            $this->code_base,
+            $this->context,
+            $parameter_node->children['attributes']
+        );
+
+        $property = $this->addProperty(
+            $class,
+            $parameter->getName(),
+            $parameter_node->children['default'],
+            $parameter->getUnionType()->getRealUnionType(),
+            $variable_comment,
+            $lineno,
+            $parameter_node->flags & Parameter::PARAM_MODIFIER_FLAGS,
+            $doc_comment,
+            $property_comment,
+            $attributes,
+            true
+        );
+        if (!$property) {
+            return;
+        }
+        $property->setAttributeList($parameter->getAttributeList());
+        // Get a comment on the property declaration
+        $property->setHasWriteReference(); // Assigned from within constructor
+        $property->addReference($context); // Assigned from within constructor
         if ($class->isImmutable()) {
             if (!$property->isStatic() && !$property->isWriteOnly()) {
                 $property->setIsReadOnly(true);
@@ -445,7 +535,7 @@ class ParseVisitor extends ScopeVisitor
     public function visitPropGroup(Node $node): Context
     {
         // Bomb out if we're not in a class context
-        ['props' => $props_node, 'type' => $type_node] = $node->children;
+        ['attributes' => $attributes_node, 'props' => $props_node, 'type' => $type_node] = $node->children;
         if (!$props_node instanceof Node) {
             throw new AssertionError('Expected list of properties to be a node');
         }
@@ -467,7 +557,6 @@ class ParseVisitor extends ScopeVisitor
         } else {
             $real_union_type = UnionType::empty();
         }
-        $real_type_set = $real_union_type->getTypeSet();
 
         $class = $this->getContextClass();
         $doc_comment = '';
@@ -483,6 +572,11 @@ class ParseVisitor extends ScopeVisitor
             $props_node->lineno ?? 0,
             Comment::ON_PROPERTY
         );
+        $attributes = Attribute::fromNodeForAttributeList(
+            $this->code_base,
+            $this->context,
+            $attributes_node
+        );
 
         foreach ($props_node->children as $i => $child_node) {
             // Ignore children which are not property elements
@@ -492,234 +586,279 @@ class ParseVisitor extends ScopeVisitor
                 continue;
             }
             $variable = $comment->getVariableList()[$i] ?? null;
-            $variable_has_literals = $variable && $variable->getUnionType()->hasLiterals();
-
-            // If something goes wrong will getting the type of
-            // a property, we'll store it as a future union
-            // type and try to figure it out later
-            $future_union_type_node = null;
-
             $default_node = $child_node->children['default'];
-
-            $context_for_property = (clone($this->context))->withLineNumberStart($child_node->lineno);
-
             $property_name = $child_node->children['name'];
-
             if (!\is_string($property_name)) {
                 throw new AssertionError(
                     'Property name must be a string. '
                     . 'Got '
                     . \print_r($property_name, true)
                     . ' at '
-                    . $context_for_property
+                    . (clone $this->context)->withLineNumberStart($child_node->lineno)
                 );
             }
-
-
-            if ($default_node === null) {
-                // This is a declaration such as `public $x;` with no $default_node
-                // (we don't assume the property is always null, to reduce false positives)
-                // We don't need to compare this to the real union type
-                $union_type = $real_union_type;
-                $default_type = NullType::instance(false)->asRealUnionType();
-            } else {
-                if ($default_node instanceof Node) {
-                    $this->checkNodeIsConstExpr($default_node);
-                    $union_type = $this->resolveDefaultPropertyNode($default_node);
-                    if (!$union_type) {
-                        // We'll type check this union type against the real union type when the future union type is resolved
-                        $future_union_type_node = $default_node;
-                        $union_type = UnionType::empty();
-                    }
-                } else {
-                    // Get the type of the default (not a literal)
-                    // The literal value needs to be known to warn about incompatible composition of traits
-                    $union_type = Type::fromObject($default_node)->asPHPDocUnionType();
-                }
-                $default_type = $union_type;
-                // Erase the corresponding real type set to avoid false positives such as `$x->prop['field'] === null` is redundant/impossible.
-                $union_type = $union_type->asNonLiteralType()->eraseRealTypeSetRecursively();
-                if ($real_union_type->isEmpty()) {
-                    if ($union_type->isType(NullType::instance(false))) {
-                        $union_type = UnionType::empty();
-                    }
-                } else {
-                    if (!$union_type->isStrictSubtypeOf($this->code_base, $real_union_type)) {
-                        $this->emitIssue(
-                            Issue::TypeMismatchPropertyDefaultReal,
-                            $context_for_property->getLineNumberStart(),
-                            $real_union_type,
-                            $property_name,
-                            ASTReverter::toShortString($default_node),
-                            $union_type
-                        );
-                        $union_type = $real_union_type;
-                    } else {
-                        $original_union_type = $union_type;
-                        foreach ($real_union_type->getTypeSet() as $type) {
-                            if (!$type->asPHPDocUnionType()->isStrictSubtypeOf($this->code_base, $original_union_type)) {
-                                $union_type = $union_type->withType($type);
-                            }
-                        }
-                    }
-                    $union_type = $union_type->withRealTypeSet($real_union_type->getTypeSet())->asNormalizedTypes();
-                }
-            }
-
-            $property_fqsen = FullyQualifiedPropertyName::make(
-                $class->getFQSEN(),
-                $property_name
-            );
-            if ($this->code_base->hasPropertyWithFQSEN($property_fqsen)) {
-                $old_property = $this->code_base->getPropertyByFQSEN($property_fqsen);
-                if ($old_property->getDefiningFQSEN() === $property_fqsen) {
-                    // Note: PHPDoc properties are parsed by Phan before real properties, so they take precedence (e.g. they are more visible)
-                    // PhanRedefineMagicProperty is a separate check.
-                    if ($old_property->isFromPHPDoc()) {
-                        continue;
-                    }
-                    $this->emitIssue(
-                        Issue::RedefineProperty,
-                        $child_node->lineno,
-                        $property_name,
-                        $this->context->getFile(),
-                        $child_node->lineno,
-                        $this->context->getFile(),
-                        $old_property->getContext()->getLineNumberStart()
-                    );
-                    continue;
-                }
-            }
-
-            $property = new Property(
-                $context_for_property,
+            $this->addProperty(
+                $class,
                 $property_name,
-                $union_type,
+                $default_node,
+                $real_union_type,
+                $variable,
+                $child_node->lineno,
                 $node->flags,
-                $property_fqsen,
-                $real_union_type
+                $doc_comment,
+                $comment,
+                $attributes,
+                false
             );
-            if ($variable) {
-                $property->setPHPDocUnionType($variable->getUnionType());
-            } elseif ($real_union_type) {
-                $property->setPHPDocUnionType($real_union_type);
-            }
-            $property->setDefaultType($default_type);
-
-            $property->setPhanFlags($comment->getPhanFlagsForProperty());
-            $property->setDocComment($doc_comment);
-
-            // Add the property to the class
-            $class->addProperty($this->code_base, $property, None::instance());
-
-            $property->setSuppressIssueSet($comment->getSuppressIssueSet());
-
-            if ($future_union_type_node instanceof Node) {
-                $future_union_type = new FutureUnionType(
-                    $this->code_base,
-                    new ElementContext($property),
-                    //new ElementContext($property),
-                    $future_union_type_node
-                );
-            } else {
-                $future_union_type = null;
-            }
-            // Look for any @var declarations
-            if ($variable) {
-                $original_union_type = $union_type;
-                // We try to avoid resolving $future_union_type except when necessary,
-                // to avoid issues such as https://github.com/phan/phan/issues/311 and many more.
-                if ($future_union_type) {
-                    try {
-                        $original_union_type = $future_union_type->get()->eraseRealTypeSetRecursively();
-                        if (!$variable_has_literals) {
-                            $original_union_type = $original_union_type->asNonLiteralType();
-                        }
-                        // We successfully resolved the union type. We no longer need $future_union_type
-                        $future_union_type = null;
-                    } catch (IssueException $_) {
-                        // Do nothing
-                    }
-                    if ($future_union_type === null) {
-                        if ($original_union_type->isType(ArrayShapeType::empty())) {
-                            $union_type = ArrayType::instance(false)->asPHPDocUnionType();
-                        } elseif ($original_union_type->isType(NullType::instance(false))) {
-                            $union_type = UnionType::empty();
-                        } else {
-                            $union_type = $original_union_type;
-                        }
-                        // Replace the empty union type with the resolved union type.
-                        $property->setUnionType($union_type->withRealTypeSet($real_type_set));
-                    }
-                }
-
-                if ($default_node !== null &&
-                    !$original_union_type->isType(NullType::instance(false)) &&
-                    !$variable->getUnionType()->asExpandedTypes($this->code_base)->canCastToUnionType($original_union_type) &&
-                    !$original_union_type->asExpandedTypes($this->code_base)->canCastToUnionType($variable->getUnionType()) &&
-                    !$property->checkHasSuppressIssueAndIncrementCount(Issue::TypeMismatchPropertyDefault)
-                ) {
-                    $this->emitIssue(
-                        Issue::TypeMismatchPropertyDefault,
-                        $child_node->lineno,
-                        (string)$variable->getUnionType(),
-                        $property->getName(),
-                        ASTReverter::toShortString($default_node),
-                        (string)$original_union_type
-                    );
-                }
-
-                // Don't set 'null' as the type if that's the default
-                // given that its the default default.
-                if ($union_type->isType(NullType::instance(false))) {
-                    $union_type = UnionType::empty();
-                }
-
-                $original_property_type = $property->getUnionType();
-                $original_variable_type = $variable->getUnionType();
-                $variable_type = $original_variable_type->withStaticResolvedInContext($this->context);
-                if ($variable_type !== $original_variable_type) {
-                    // Instance properties with (at)var static will have the same type as the class they're in
-                    // TODO: Support `static[]` as well when inheriting
-                    if ($property->isStatic()) {
-                        $this->emitIssue(
-                            Issue::StaticPropIsStaticType,
-                            $variable->getLineno(),
-                            $property->getRepresentationForIssue(),
-                            $original_variable_type,
-                            $variable_type
-                        );
-                    } else {
-                        $property->setHasStaticInUnionType(true);
-                    }
-                }
-                if ($variable_type->hasGenericArray() && !$original_property_type->hasTypeMatchingCallback(static function (Type $type): bool {
-                    return \get_class($type) !== ArrayType::class;
-                })) {
-                    // Don't convert `/** @var T[] */ public $x = []` to union type `T[]|array`
-                    $property->setUnionType($variable_type->withRealTypeSet($real_type_set));
-                } else {
-                    // Set the declared type to the doc-comment type and add
-                    // |null if the default value is null
-                    $property->setUnionType($original_property_type->withUnionType($variable_type)->withRealTypeSet($real_type_set));
-                }
-            }
-
-            // Wait until after we've added the (at)var type
-            // before setting the future so that calling
-            // $property->getUnionType() doesn't force the
-            // future to be reified.
-            if ($future_union_type instanceof FutureUnionType) {
-                $property->setFutureUnionType($future_union_type);
-            }
-            if ($class->isImmutable()) {
-                if (!$property->isStatic() && !$property->isWriteOnly()) {
-                    $property->setIsReadOnly(true);
-                }
-            }
         }
 
         return $this->context;
+    }
+
+
+    /**
+     * @param ?(ast\Node|string|float|int) $default_node
+     * @param list<Attribute> $attributes
+     */
+    private function addProperty(Clazz $class, string $property_name, $default_node, UnionType $real_union_type, ?Comment\Parameter $variable, int $lineno, int $flags, ?string $doc_comment, Comment $property_comment, array $attributes, bool $from_parameter): ?Property
+    {
+        $original_flags = $flags;
+        if ($class->getFlags() & ast\flags\CLASS_READONLY) {
+            $flags |= ast\flags\MODIFIER_READONLY;
+        }
+        if ($flags & ast\flags\MODIFIER_READONLY) {
+            if ($real_union_type->isEmpty()) {
+                $this->emitIssue(
+                    Issue::ReadonlyPropertyMissingType,
+                    $lineno,
+                    $property_name
+                );
+            }
+        }
+        $variable_has_literals = $variable && $variable->getUnionType()->hasLiterals();
+
+        // If something goes wrong will getting the type of
+        // a property, we'll store it as a future union
+        // type and try to figure it out later
+        $future_union_type_node = null;
+
+        $context_for_property = (clone $this->context)->withLineNumberStart($lineno);
+        $real_type_set = $real_union_type->getTypeSet();
+
+        if ($default_node === null) {
+            // This is a declaration such as `public $x;` with no $default_node
+            // (we don't assume the property is always null, to reduce false positives)
+            // We don't need to compare this to the real union type
+            $union_type = $real_union_type;
+            $default_type = NullType::instance(false)->asRealUnionType();
+        } else {
+            if ($default_node instanceof Node) {
+                $this->checkNodeIsConstExprOrWarn(
+                    $default_node,
+                    $from_parameter ? self::CONSTANT_EXPRESSION_IN_PARAMETER : self::CONSTANT_EXPRESSION_IN_PROPERTY
+                );
+                $union_type = $this->resolveDefaultPropertyNode($default_node);
+                if (!$union_type) {
+                    // We'll type check this union type against the real union type when the future union type is resolved
+                    $future_union_type_node = $default_node;
+                    $union_type = UnionType::empty();
+                }
+            } else {
+                // Get the type of the default (not a literal)
+                // The literal value needs to be known to warn about incompatible composition of traits
+                $union_type = Type::fromObject($default_node)->asPHPDocUnionType();
+            }
+            $default_type = $union_type;
+            // Erase the corresponding real type set to avoid false positives such as `$x->prop['field'] === null` is redundant/impossible.
+            $union_type = $union_type->asNonLiteralType()->eraseRealTypeSetRecursively();
+            if ($real_union_type->isEmpty()) {
+                if ($union_type->isType(NullType::instance(false))) {
+                    $union_type = UnionType::empty();
+                }
+            } else {
+                if (!$union_type->canCastToUnionType($real_union_type, $this->code_base)) {
+                    $this->emitIssue(
+                        Issue::TypeMismatchPropertyDefaultReal,
+                        $lineno,
+                        $real_union_type,
+                        $property_name,
+                        ASTReverter::toShortString($default_node),
+                        $union_type
+                    );
+                    $union_type = $real_union_type;
+                } else {
+                    $original_union_type = $union_type;
+                    foreach ($real_union_type->getTypeSet() as $type) {
+                        if (!$type->asPHPDocUnionType()->isStrictSubtypeOf($this->code_base, $original_union_type)) {
+                            $union_type = $union_type->withType($type);
+                        }
+                    }
+                }
+                $union_type = $union_type->withRealTypeSet($real_union_type->getTypeSet())->asNormalizedTypes();
+            }
+        }
+
+        $property_fqsen = FullyQualifiedPropertyName::make(
+            $class->getFQSEN(),
+            $property_name
+        );
+        if ($this->code_base->hasPropertyWithFQSEN($property_fqsen)) {
+            $old_property = $this->code_base->getPropertyByFQSEN($property_fqsen);
+            if ($old_property->getDefiningFQSEN() === $property_fqsen) {
+                // Note: PHPDoc properties are parsed by Phan before real properties, so they take precedence (e.g. they are more visible)
+                // PhanRedefineMagicProperty is a separate check.
+                if ($old_property->isFromPHPDoc()) {
+                    return null;
+                }
+                $this->emitIssue(
+                    Issue::RedefineProperty,
+                    $lineno,
+                    $property_name,
+                    $this->context->getFile(),
+                    $lineno,
+                    $this->context->getFile(),
+                    $old_property->getContext()->getLineNumberStart()
+                );
+                return null;
+            }
+        }
+
+        $property = new Property(
+            $context_for_property,
+            $property_name,
+            $union_type,
+            $flags,
+            $property_fqsen,
+            $real_union_type
+        );
+        $property->setAttributeList($attributes);
+        if ($variable) {
+            $property->setPHPDocUnionType($variable->getUnionType());
+        } else {
+            $property->setPHPDocUnionType($real_union_type);
+        }
+        $property->setDefaultType($default_type);
+
+        $phan_flags = $property_comment->getPhanFlagsForProperty();
+        if ($flags & ast\flags\MODIFIER_READONLY) {
+            $phan_flags |= Flags::IS_READ_ONLY;
+            if (($original_flags & ast\flags\MODIFIER_READONLY) && Config::get_closest_minimum_target_php_version_id() < 80100) {
+                Issue::maybeEmit(
+                    $this->code_base,
+                    $context_for_property,
+                    Issue::CompatibleReadonlyProperty,
+                    $lineno,
+                    $property
+                );
+            }
+        }
+        $property->setPhanFlags($phan_flags);
+        $property->setDocComment($doc_comment);
+
+        // Add the property to the class
+        $class->addProperty($this->code_base, $property, None::instance());
+
+        $property->setSuppressIssueSet($property_comment->getSuppressIssueSet());
+
+        if ($future_union_type_node instanceof Node) {
+            $future_union_type = new FutureUnionType(
+                $this->code_base,
+                new ElementContext($property),
+                //new ElementContext($property),
+                $future_union_type_node
+            );
+        } else {
+            $future_union_type = null;
+        }
+        // Look for any @var declarations
+        if ($variable) {
+            $original_union_type = $union_type;
+            // We try to avoid resolving $future_union_type except when necessary,
+            // to avoid issues such as https://github.com/phan/phan/issues/311 and many more.
+            if ($future_union_type) {
+                try {
+                    $original_union_type = $future_union_type->get()->eraseRealTypeSetRecursively();
+                    if (!$variable_has_literals) {
+                        $original_union_type = $original_union_type->asNonLiteralType();
+                    }
+                    // We successfully resolved the union type. We no longer need $future_union_type
+                    $future_union_type = null;
+                } catch (IssueException $_) {
+                    // Do nothing
+                }
+                if ($future_union_type === null) {
+                    if ($original_union_type->isType(ArrayShapeType::empty())) {
+                        $union_type = ArrayType::instance(false)->asPHPDocUnionType();
+                    } elseif ($original_union_type->isType(NullType::instance(false))) {
+                        $union_type = UnionType::empty();
+                    } else {
+                        $union_type = $original_union_type;
+                    }
+                    // Replace the empty union type with the resolved union type.
+                    $property->setUnionType($union_type->withRealTypeSet($real_type_set));
+                }
+            }
+
+            // XXX during the parse phase, parent classes may be missing.
+            if ($default_node !== null &&
+                !$original_union_type->isType(NullType::instance(false)) &&
+                !$variable->getUnionType()->canCastToUnionType($original_union_type, $this->code_base) &&
+                !$original_union_type->canCastToUnionType($variable->getUnionType(), $this->code_base) &&
+                !$property->checkHasSuppressIssueAndIncrementCount(Issue::TypeMismatchPropertyDefault)
+            ) {
+                $this->emitIssue(
+                    Issue::TypeMismatchPropertyDefault,
+                    $lineno,
+                    (string)$variable->getUnionType(),
+                    $property->getName(),
+                    ASTReverter::toShortString($default_node),
+                    (string)$original_union_type
+                );
+            }
+
+            $original_property_type = $property->getUnionType();
+            $original_variable_type = $variable->getUnionType();
+            $variable_type = $original_variable_type->withStaticResolvedInContext($this->context);
+            if ($variable_type !== $original_variable_type) {
+                // Instance properties with (at)var static will have the same type as the class they're in
+                // TODO: Support `static[]` as well when inheriting
+                if ($property->isStatic()) {
+                    $this->emitIssue(
+                        Issue::StaticPropIsStaticType,
+                        $variable->getLineno(),
+                        $property->getRepresentationForIssue(),
+                        $original_variable_type,
+                        $variable_type
+                    );
+                } else {
+                    $property->setHasStaticInUnionType(true);
+                }
+            }
+            if ($variable_type->hasGenericArray() && !$original_property_type->hasTypeMatchingCallback(static function (Type $type): bool {
+                return \get_class($type) !== ArrayType::class;
+            })) {
+                // Don't convert `/** @var T[] */ public $x = []` to union type `T[]|array`
+                $property->setUnionType($variable_type->withRealTypeSet($real_type_set));
+            } else {
+                // Set the declared type to the doc-comment type and add
+                // |null if the default value is null
+                $property->setUnionType($original_property_type->withUnionType($variable_type)->withRealTypeSet($real_type_set));
+            }
+        }
+
+        // Wait until after we've added the (at)var type
+        // before setting the future so that calling
+        // $property->getUnionType() doesn't force the
+        // future to be reified.
+        if ($future_union_type instanceof FutureUnionType) {
+            $property->setFutureUnionType($future_union_type);
+        }
+        if ($class->isImmutable()) {
+            if (!$property->isStatic() && !$property->isWriteOnly()) {
+                $property->setIsReadOnly(true);
+            }
+        }
+        return $property;
     }
 
     /**
@@ -745,7 +884,7 @@ class ParseVisitor extends ScopeVisitor
     }
 
     /**
-     * Visit a node with kind `\ast\AST_CLASS_CONST_DECL`
+     * Visit a node with kind `\ast\AST_CLASS_CONST_GROUP`
      *
      * @param Node $node
      * A node to parse
@@ -755,11 +894,29 @@ class ParseVisitor extends ScopeVisitor
      * parsing the node
      *
      */
-    public function visitClassConstDecl(Node $node): Context
+    public function visitClassConstGroup(Node $node): Context
     {
         $class = $this->getContextClass();
+        $attributes = Attribute::fromNodeForAttributeList(
+            $this->code_base,
+            $this->context,
+            $node->children['attributes']
+        );
+        if (($node->flags & ast\flags\MODIFIER_FINAL) && Config::get_closest_minimum_target_php_version_id() < 80100) {
+            $this->emitIssue(
+                Issue::CompatibleFinalClassConstant,
+                $node->lineno
+            );
+        }
+        if ($node->flags & (ast\flags\MODIFIER_STATIC | ast\flags\MODIFIER_ABSTRACT)) {
+            $this->emitIssue(
+                Issue::InvalidNode,
+                $node->lineno,
+                "Invalid modifiers for class constant group"
+            );
+        }
 
-        foreach ($node->children as $child_node) {
+        foreach ($node->children['const']->children ?? [] as $child_node) {
             if (!$child_node instanceof Node) {
                 throw new AssertionError('expected class const element to be a Node');
             }
@@ -794,31 +951,35 @@ class ParseVisitor extends ScopeVisitor
                 $doc_comment,
                 $this->code_base,
                 $this->context,
-                $child_node->lineno ?? 0,
+                $child_node->lineno,
                 Comment::ON_CONST
             );
 
-            $line_number_start = $child_node->lineno ?? 0;
+            $line_number_start = $child_node->lineno;
+            $flags = $node->flags;
+            // Prior to php 8.1, it was impossible to override constants declared in interfaces.
+            if ($class->isInterface() && Config::get_closest_minimum_target_php_version_id() < 80100) {
+                $flags |= ast\flags\MODIFIER_FINAL;
+            }
+
             $constant = new ClassConstant(
                 $this->context
                     ->withLineNumberStart($line_number_start)
                     ->withLineNumberEnd($child_node->endLineno ?? $line_number_start),
                 $name,
                 UnionType::empty(),
-                $node->flags ?? 0,
+                $flags,
                 $fqsen
             );
 
             $constant->setDocComment($doc_comment);
-            $constant->setIsDeprecated($comment->isDeprecated());
-            $constant->setIsNSInternal($comment->isNSInternal());
-            $constant->setIsOverrideIntended($comment->isOverrideIntended());
-            $constant->setIsPHPDocAbstract($comment->isPHPDocAbstract());
-            $constant->setSuppressIssueSet($comment->getSuppressIssueSet());
+            $constant->setAttributeList($attributes);
+
+            $this->handleClassConstantComment($constant, $comment);
+
             $value_node = $child_node->children['value'];
             if ($value_node instanceof Node) {
-                try {
-                    self::checkIsAllowedInConstExpr($value_node);
+                if ($this->checkNodeIsConstExprOrWarn($value_node, self::CONSTANT_EXPRESSION_IN_CLASS_CONSTANT)) {
                     // TODO: Avoid using this when it only contains literals (nothing depending on the CodeBase),
                     $constant->setFutureUnionType(
                         new FutureUnionType(
@@ -827,12 +988,8 @@ class ParseVisitor extends ScopeVisitor
                             $value_node
                         )
                     );
-                } catch (InvalidArgumentException $_) {
+                } else {
                     $constant->setUnionType(MixedType::instance(false)->asPHPDocUnionType());
-                    $this->emitIssue(
-                        Issue::InvalidConstantExpression,
-                        $value_node->lineno
-                    );
                 }
             } else {
                 // This is a literal scalar value.
@@ -843,25 +1000,131 @@ class ParseVisitor extends ScopeVisitor
                 $constant->setUnionType(Type::fromObject($value_node)->asRealUnionType());
             }
             $constant->setNodeForValue($value_node);
-            $constant->setComment($comment);
 
-            $class->addConstant(
-                $this->code_base,
-                $constant
-            );
-            foreach ($comment->getVariableList() as $var) {
-                if ($var->getUnionType()->hasTemplateTypeRecursive()) {
-                    $this->emitIssue(
-                        Issue::TemplateTypeConstant,
-                        $constant->getFileRef()->getLineNumberStart(),
-                        (string)$constant->getFQSEN()
-                    );
-                    break;
-                }
+            $class->addConstant($this->code_base, $constant);
+        }
+
+        return $this->context;
+    }
+
+    /**
+     * Visit a node with kind `\ast\AST_ENUM_CASE`
+     *
+     * @param Node $node
+     * A node to parse
+     *
+     * @return Context
+     * A new or an unchanged context resulting from
+     * parsing the node
+     */
+    public function visitEnumCase(Node $node): Context
+    {
+        $class = $this->getContextClass();
+        $attributes = Attribute::fromNodeForAttributeList(
+            $this->code_base,
+            $this->context,
+            $node->children['attributes']
+        );
+
+        $name = $node->children['name'];
+        if (!\is_string($name)) {
+            throw new AssertionError('expected enum case name to be a string');
+        }
+        $fqsen = FullyQualifiedClassConstantName::make($class->getFQSEN(), $name);
+        $lineno = $node->lineno;
+
+        if (!$class->isEnum()) {
+            $this->emitIssue(Issue::InvalidNode, $lineno, 'Cannot declare an enum case statement in a non-enum');
+            return $this->context;
+        }
+
+        if ($this->code_base->hasClassConstantWithFQSEN($fqsen)) {
+            $old_constant = $this->code_base->getClassConstantByFQSEN($fqsen);
+            if ($old_constant->getDefiningFQSEN() === $fqsen) {
+                $this->emitIssue(
+                    Issue::RedefineClassConstant,
+                    $lineno,
+                    $name,
+                    $this->context->getFile(),
+                    $lineno,
+                    $this->context->getFile(),
+                    $old_constant->getContext()->getLineNumberStart()
+                );
+                return $this->context;
+            }
+        }
+
+        // Get a comment on the declaration
+        $doc_comment = $node->children['docComment'] ?? '';
+        $comment = Comment::fromStringInContext(
+            $doc_comment,
+            $this->code_base,
+            $this->context,
+            $lineno,
+            Comment::ON_CONST
+        );
+
+        $constant = new EnumCase(
+            $this->context
+                ->withLineNumberStart($lineno)
+                ->withLineNumberEnd($node->endLineno ?? $lineno),
+            $name,
+            UnionType::empty(),
+            $node->flags,
+            $fqsen
+        );
+
+        $constant->setDocComment($doc_comment);
+        $constant->setAttributeList($attributes);
+
+        $this->handleClassConstantComment($constant, $comment);
+
+        $value_node = $node->children['expr'];
+        if ($value_node instanceof Node) {
+            // NOTE: In php itself, the same types of operations are allowed as other constant expressions (i.e. isConstExpr is the correct check).
+            //
+            // However, const expressions for enum cases are evaluated when compiling an enum,
+            // including looking up global constants and class constants,
+            // and if that can't be evaluated then it's a fatal compile error.
+            $this->checkNodeIsConstExprOrWarn($value_node, self::CONSTANT_EXPRESSION_IN_CLASS_CONSTANT);
+        }
+        $constant->setUnionType($class->getFQSEN()->asType()->asRealUnionType());
+        $constant->setNodeForValue($value_node);
+
+        $class->addEnumCase($this->code_base, $constant);
+
+        foreach ($comment->getVariableList() as $var) {
+            if ($var->getUnionType()->hasTemplateTypeRecursive()) {
+                $this->emitIssue(
+                    Issue::TemplateTypeConstant,
+                    $constant->getFileRef()->getLineNumberStart(),
+                    (string)$constant->getFQSEN()
+                );
+                break;
             }
         }
 
         return $this->context;
+    }
+
+    private function handleClassConstantComment(ClassConstant $constant, Comment $comment): void
+    {
+        $constant->setIsDeprecated($comment->isDeprecated());
+        $constant->setIsNSInternal($comment->isNSInternal());
+        $constant->setIsOverrideIntended($comment->isOverrideIntended());
+        $constant->setIsPHPDocAbstract($comment->isPHPDocAbstract());
+        $constant->setSuppressIssueSet($comment->getSuppressIssueSet());
+        $constant->setComment($comment);
+        foreach ($comment->getVariableList() as $var) {
+            if ($var->getUnionType()->hasTemplateTypeRecursive()) {
+                $this->emitIssue(
+                    Issue::TemplateTypeConstant,
+                    $constant->getFileRef()->getLineNumberStart(),
+                    (string)$constant->getFQSEN()
+                );
+                break;
+            }
+        }
     }
 
     /**
@@ -871,21 +1134,19 @@ class ParseVisitor extends ScopeVisitor
     {
         $default = $node->children['default'];
         if ($default instanceof Node) {
-            $this->checkNodeIsConstExpr($default);
+            $this->checkNodeIsConstExprOrWarn($default, self::CONSTANT_EXPRESSION_IN_STATIC_VARIABLE);
         }
-        return $this->context;
-    }
+        $context = $this->context;
+        // Make sure we're actually returning from a method.
+        if ($context->isInFunctionLikeScope()) {
+            // Get the method/function/closure we're in
+            $method = $context->getFunctionLikeInScope($this->code_base);
 
-    private function checkNodeIsConstExpr(Node $node): void
-    {
-        try {
-            self::checkIsAllowedInConstExpr($node);
-        } catch (InvalidArgumentException $_) {
-            $this->emitIssue(
-                Issue::InvalidConstantExpression,
-                $node->lineno
-            );
+            // Mark the method as having a static variable
+            $method->setHasStaticVariable(true);
         }
+
+        return $context;
     }
 
     /**
@@ -906,14 +1167,7 @@ class ParseVisitor extends ScopeVisitor
             }
 
             $value_node = $child_node->children['value'];
-            try {
-                self::checkIsAllowedInConstExpr($value_node);
-            } catch (InvalidArgumentException $_) {
-                // InvalidArgumentException was caused by an invalid node kind in a constant expression (value_node should be a Node but Phan can't tell)
-                $this->emitIssue(
-                    Issue::InvalidConstantExpression,
-                    $value_node->lineno ?? $child_node->lineno
-                );
+            if ($value_node instanceof Node && !$this->checkNodeIsConstExprOrWarn($value_node, self::CONSTANT_EXPRESSION_IN_CONSTANT)) {
                 // Note: Global constants with invalid value expressions aren't declared.
                 // However, class constants are declared with placeholders to make inheritance checks, etc. easier.
                 // Both will emit PhanInvalidConstantExpression
@@ -1035,12 +1289,6 @@ class ParseVisitor extends ScopeVisitor
      */
     public function visitArrowFunc(Node $node): Context
     {
-        if (!isset($node->children['params'])) {
-            $msg = "php-ast 1.0.2 or newer is required to correctly parse short arrow functions, but an older version is installed. A short arrow function was seen at $this->context";
-            // @phan-suppress-next-line PhanPluginRemoveDebugCall
-            \fwrite(\STDERR, $msg . \PHP_EOL);
-            throw new AssertionError($msg);
-        }
         return $this->visitClosure($node);
     }
 
@@ -1082,7 +1330,8 @@ class ParseVisitor extends ScopeVisitor
         if (Config::get_backward_compatibility_checks()) {
             $this->analyzeBackwardCompatibility($node);
 
-            foreach ($node->children['args']->children as $arg_node) {
+            // Handle first-class callables which have no args
+            foreach ($node->children['args']->children ?? [] as $arg_node) {
                 if ($arg_node instanceof Node) {
                     $this->analyzeBackwardCompatibility($arg_node);
                 }
@@ -1093,11 +1342,12 @@ class ParseVisitor extends ScopeVisitor
 
     private function analyzeDefine(Node $node): void
     {
-        $args = $node->children['args'];
-        if (\count($args->children) < 2) {
+        $args = $node->children['args']->children ?? [];
+        if (\count($args) < 2) {
+            // Ignore first-class callables and calls with too few arguments.
             return;
         }
-        $name = $args->children[0];
+        $name = $args[0];
         if ($name instanceof Node) {
             try {
                 $name_type = UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $name, false);
@@ -1116,7 +1366,7 @@ class ParseVisitor extends ScopeVisitor
             $this->context,
             $node->lineno,
             $name,
-            $args->children[1],
+            $args[1],
             0,
             '',
             true,
@@ -1485,7 +1735,9 @@ class ParseVisitor extends ScopeVisitor
         $constant = new GlobalConstant(
             $context->withLineNumberStart($lineno),
             $name,
-            UnionType::fromFullyQualifiedRealString('array|bool|float|int|string|resource|null'),
+            // NOTE: With php 8.1 enums, global constants can be assigned to enums,
+            // so this can be any valid type starting in php 8.1.
+            UnionType::fromFullyQualifiedRealString('mixed'),
             $flags,
             $fqsen
         );
@@ -1566,7 +1818,7 @@ class ParseVisitor extends ScopeVisitor
      */
     private function recordClassAlias(Node $node): void
     {
-        $args = $node->children['args']->children;
+        $args = $node->children['args']->children ?? [];
         if (\count($args) < 2 || \count($args) > 3) {
             return;
         }
@@ -1624,14 +1876,37 @@ class ParseVisitor extends ScopeVisitor
     {
         return $this->context;
     }
+    public function visitCallableConvert(Node $node): Context
+    {
+        return $this->context;
+    }
     public function visitArgList(Node $node): Context
     {
         return $this->context;
     }
     public function visitStmtList(Node $node): Context
     {
+        foreach ($node->children as $c) {
+            if (\is_string($c) && \strpos($c, '@phan-type') !== false) {
+                $this->analyzePhanTypeAliasStatement($c);
+            }
+        }
         return $this->context;
     }
+
+    private function analyzePhanTypeAliasStatement(string $text): void
+    {
+        // @phan-suppress-next-line PhanAccessClassConstantInternal
+        if (\preg_match_all(Builder::PHAN_TYPE_ALIAS_REGEX, $text, $matches, \PREG_SET_ORDER) > 0) {
+            foreach ($matches as $group) {
+                $alias_name = $group[1];
+                $union_type_string = $group[2];
+                // @phan-suppress-next-line PhanAccessMethodInternal
+                Builder::addTypeAliasMapping($this->code_base, $this->context, $alias_name, $union_type_string);
+            }
+        }
+    }
+
     public function visitNullsafeProp(Node $node): Context
     {
         return $this->context;
@@ -1668,6 +1943,57 @@ class ParseVisitor extends ScopeVisitor
     ];
 
     /**
+     * @internal
+     */
+    public const ALLOWED_CONST_EXPRESSION_KINDS_WITH_NEW = [
+        ast\AST_ARRAY_ELEM => true,
+        ast\AST_ARRAY => true,
+        ast\AST_BINARY_OP => true,
+        ast\AST_CLASS_CONST => true,
+        ast\AST_CLASS_NAME => true,
+        ast\AST_CONDITIONAL => true,
+        ast\AST_CONST => true,
+        ast\AST_DIM => true,
+        ast\AST_MAGIC_CONST => true,
+        ast\AST_NAME => true,
+        ast\AST_UNARY_OP => true,
+        ast\AST_UNPACK => true,
+
+        ast\AST_NEW => true,
+        ast\AST_ARG_LIST => true,
+        ast\AST_NAMED_ARG => true,
+    ];
+
+    public const CONSTANT_EXPRESSION_IN_ATTRIBUTE = 1;
+    public const CONSTANT_EXPRESSION_IN_PARAMETER = self::CONSTANT_EXPRESSION_IN_ATTRIBUTE;
+    public const CONSTANT_EXPRESSION_IN_CONSTANT = self::CONSTANT_EXPRESSION_IN_ATTRIBUTE;
+    public const CONSTANT_EXPRESSION_IN_STATIC_VARIABLE = self::CONSTANT_EXPRESSION_IN_ATTRIBUTE;
+
+    public const CONSTANT_EXPRESSION_IN_CLASS_CONSTANT = 2;
+    public const CONSTANT_EXPRESSION_IN_PROPERTY = self::CONSTANT_EXPRESSION_IN_CLASS_CONSTANT;
+    public const CONSTANT_EXPRESSION_FORBID_NEW_EXPRESSION = self::CONSTANT_EXPRESSION_IN_CLASS_CONSTANT;
+
+    /**
+     * If the expression $node contains invalid AST kinds for a constant expression, then this warns.
+     *
+     * @param 1|2 $const_expr_context determines what ast node kinds can be used in a constant expression
+     */
+    public function checkNodeIsConstExprOrWarn(Node $node, int $const_expr_context): bool
+    {
+        try {
+            self::checkIsAllowedInConstExpr($node, $const_expr_context);
+            return true;
+        } catch (InvalidArgumentException $e) {
+            $this->emitIssue(
+                Issue::InvalidConstantExpression,
+                $node->lineno,
+                $e->getMessage()
+            );
+            return false;
+        }
+    }
+
+    /**
      * This is meant to avoid causing errors in Phan where Phan expects a constant to be found.
      *
      * @param Node|string|float|int|bool|null $n
@@ -1679,29 +2005,38 @@ class ParseVisitor extends ScopeVisitor
      *
      * @internal
      */
-    public static function checkIsAllowedInConstExpr($n): void
+    public static function checkIsAllowedInConstExpr($n, int $const_expr_context): void
     {
         if (!($n instanceof Node)) {
             return;
         }
         if (!\array_key_exists($n->kind, self::ALLOWED_CONST_EXPRESSION_KINDS)) {
-            throw new InvalidArgumentException();
+            if ($const_expr_context === self::CONSTANT_EXPRESSION_IN_STATIC_VARIABLE && \array_key_exists($n->kind, self::ALLOWED_CONST_EXPRESSION_KINDS_WITH_NEW)) {
+                if (Config::get_closest_minimum_target_php_version_id() < 80100) {
+                    throw new InvalidArgumentException(ASTReverter::toShortString($n) . " (new expression requires minimum_target_php_version >= '8.1')");
+                }
+            } else {
+                throw new InvalidArgumentException(ASTReverter::toShortString($n));
+            }
         }
         foreach ($n->children as $child_node) {
-            self::checkIsAllowedInConstExpr($child_node);
+            self::checkIsAllowedInConstExpr($child_node, $const_expr_context);
         }
     }
 
     /**
      * @param Node|string|float|int|bool|null $n
+     * @param 1|2 $const_expr_context
+     * @param string &$error_message $error_message @phan-output-reference
      * @return bool - If true, then $n is a valid constant AST.
      */
-    public static function isConstExpr($n): bool
+    public static function isConstExpr($n, int $const_expr_context, string &$error_message = ''): bool
     {
         try {
-            self::checkIsAllowedInConstExpr($n);
+            self::checkIsAllowedInConstExpr($n, $const_expr_context);
             return true;
-        } catch (InvalidArgumentException $_) {
+        } catch (InvalidArgumentException $e) {
+            $error_message = $e->getMessage();
             return false;
         }
     }

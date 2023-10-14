@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Phan\Language;
 
+use ArrayObject;
 use AssertionError;
 use ast\Node;
 use Closure;
+use Exception;
 use Phan\CodeBase;
 use Phan\Exception\CodeBaseException;
 use Phan\Issue;
@@ -70,6 +72,11 @@ class Context extends FileRef
     private $parse_namespace_map = [];
 
     /**
+     * @var ArrayObject<string,Type> shared among all clones of this context. Can include GenericMultiType.
+     */
+    private $type_alias_map;
+
+    /**
      * @var int
      * strict_types setting for the file
      */
@@ -99,6 +106,7 @@ class Context extends FileRef
     public function __construct()
     {
         $this->scope = new GlobalScope();
+        $this->type_alias_map = new ArrayObject();
     }
 
     /**
@@ -114,6 +122,10 @@ class Context extends FileRef
         $context->namespace = $namespace;
         $context->namespace_id += 1;  // Assumes namespaces are walked in order
         $context->namespace_map = [];
+
+        if ($context->namespace_id > 1) {
+            $context->type_alias_map = new ArrayObject();
+        }
         return $context;
     }
 
@@ -286,6 +298,20 @@ class Context extends FileRef
             $target,
             $alias
         );
+    }
+
+    public function addTypeAlias(string $alias_name, Type $type): bool
+    {
+        if ($this->type_alias_map->offsetExists($alias_name)) {
+            return false;
+        }
+        $this->type_alias_map->offsetSet($alias_name, $type);
+        return true;
+    }
+
+    public function getTypeAlias(string $alias_name): ?Type
+    {
+        return $this->type_alias_map[$alias_name] ?? null;
     }
 
     /**
@@ -652,7 +678,7 @@ class Context extends FileRef
 
         if ($fqsen instanceof FullyQualifiedMethodName) {
             if (!$code_base->hasMethodWithFQSEN($fqsen)) {
-                throw new RuntimeException("Method does not exist");
+                throw new RuntimeException("Method $fqsen does not exist");
             }
             return $code_base->getMethodByFQSEN($fqsen);
         }
@@ -734,7 +760,11 @@ class Context extends FileRef
             return false;
         }
 
-        $element = $this->getElementInScope($code_base);
+        try {
+            $element = $this->getElementInScope($code_base);
+        } catch (Exception $_) {
+            return false;
+        }
         if ($element instanceof ClassElement) {
             $defining_fqsen = $element->getRealDefiningFQSEN();
             if ($defining_fqsen !== $element->getFQSEN()) {

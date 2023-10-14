@@ -10,7 +10,6 @@ use ast\Node;
 use Error;
 use Exception;
 use Phan\Analysis\ConditionVisitor;
-use Phan\Analysis\ConditionVisitorUtil;
 use Phan\CodeBase;
 use Phan\Config;
 use Phan\Exception\CodeBaseException;
@@ -61,7 +60,6 @@ use function strtolower;
 
 /**
  * Methods for an AST node in context
- * @phan-file-suppress PhanPartialTypeMismatchArgument, PhanTypeMismatchArgumentNullable
  * @phan-file-suppress PhanPluginDescriptionlessCommentOnPublicMethod
  */
 class ContextNode
@@ -73,13 +71,13 @@ class ContextNode
     /** @var Context The context in which we are requesting information about the Node $this->node */
     private $context;
 
-    /** @var Node|array|bool|string|float|int|bool|null the node which we're requesting information about. */
+    /** @var Node|string|float|int|null the node which we're requesting information about. */
     private $node;
 
     /**
      * @param CodeBase $code_base The code base within which we're operating
      * @param Context $context The context in which we are requesting information about the Node.
-     * @param Node|array|string|float|int|bool|null $node the node which we're requesting information about.
+     * @param ?(Node|string|float|int) $node the node which we're requesting information about.
      */
     public function __construct(
         CodeBase $code_base,
@@ -383,6 +381,10 @@ class ContextNode
 
         // This is the class which will have the method hidden
         foreach ($adaptation_node->children['insteadof']->children as $trait_insteadof_class_name) {
+            if (!$trait_insteadof_class_name instanceof Node) {
+                // Fallback parser issue?
+                continue;
+            }
             try {
                 $trait_insteadof_fqsen = (new ContextNode(
                     $this->code_base,
@@ -464,7 +466,7 @@ class ContextNode
             if ($int_or_string_type === null) {
                 $int_or_string_type = UnionType::fromFullyQualifiedPHPDocString('int|string|null');
             }
-            if (!$name_node_type->canCastToUnionType($int_or_string_type)) {
+            if (!$name_node_type->canCastToUnionType($int_or_string_type, $this->code_base)) {
                 $this->emitIssue(Issue::TypeSuspiciousIndirectVariable, $name_node->lineno ?? 0, (string)$name_node_type);
             }
 
@@ -580,7 +582,6 @@ class ContextNode
             return [];
         }
 
-        // TODO: Should this check that count($class_list) > 0 instead? Or just always check?
         if (\count($class_list) === 0) {
             if (!$union_type->hasTypeMatchingCallback(function (Type $type) use ($expected_type_categories): bool {
                 if ($this->node instanceof Node) {
@@ -646,7 +647,7 @@ class ContextNode
      * @param bool $is_static
      * Set to true if this is a static method call
      *
-     * @param bool $is_direct
+     * @param bool $is_direct @phan-mandatory-param
      * Set to true if this is directly invoking the method (guaranteed not to be special syntax)
      *
      * @param bool $is_new_expression
@@ -755,7 +756,7 @@ class ContextNode
                 || (!$union_type->isEmpty()
                     && $union_type->isNativeType()
                     && !$union_type->hasTypeMatchingCallback(static function (Type $type): bool {
-                        return !$type->isNullable() && ($type instanceof MixedType || $type instanceof ObjectType);
+                        return !$type->isNullableLabeled() && ($type instanceof MixedType || $type instanceof ObjectType);
                     })
                     // reject `$stringVar->method()` but not `$stringVar::method()` and not (`new $stringVar()`
                     && !(($is_static || $is_new_expression) && $union_type->hasNonNullStringType())
@@ -790,13 +791,10 @@ class ContextNode
                     // TODO: Could favor the most generic subclass in a union type
                     continue;
                 }
-                $method = $class->getMethodByName(
-                    $this->code_base,
-                    $method_name
-                );
+                $method = $class->getMethodByName($this->code_base, $method_name);
                 if ($method->hasTemplateType()) {
                     try {
-                        return $method->resolveTemplateType(
+                        $method = $method->resolveTemplateType(
                             $this->code_base,
                             UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $node->children['expr'] ?? $node->children['class'])
                         );
@@ -811,9 +809,11 @@ class ContextNode
                 $class_without_method = $class->getFQSEN();
             }
         }
-        $method = $method ?? $call_method;
+        if (!$method || ($is_direct && $method->isFakeConstructor())) {
+            $method = $call_method;
+        }
         if ($method) {
-            if ($class_without_method && Config::get_strict_method_checking()) {
+            if ($class_without_method && Config::get_strict_method_checking() && !$this->isDefinitelyPossiblyUndeclaredMethod($node, $method_name, $is_direct)) {
                 $this->emitIssue(
                     Issue::PossiblyUndeclaredMethod,
                     $node->lineno,
@@ -857,6 +857,43 @@ class ContextNode
     }
 
     /**
+     * @throws IssueException
+     */
+    private function isDefinitelyPossiblyUndeclaredMethod(Node $node, string $method_name, bool $is_direct): bool
+    {
+        try {
+            $union_type = UnionTypeVisitor::unionTypeFromClassNode(
+                $this->code_base,
+                $this->context,
+                $node->children['expr']
+                    ?? $node->children['class']
+            );
+        } catch (FQSENException $e) {
+            throw new IssueException(
+                Issue::fromType($e instanceof EmptyFQSENException ? Issue::EmptyFQSENInClasslike : Issue::InvalidFQSENInClasslike)(
+                    $this->context->getFile(),
+                    $node->lineno,
+                    [$e->getFQSEN()]
+                )
+            );
+        }
+        // Typically, this should only return false for intersection types that include a mix of types that have and don't have the method.
+        foreach ($union_type->getTypeSet() as $type) {
+            if (!$type->hasObjectWithKnownFQSEN()) {
+                continue;
+            }
+            foreach ($type->asPHPDocUnionType()->asClassList($this->code_base, $this->context) as $class) {
+                if ($class->hasMethodWithName($this->code_base, $method_name, $is_direct)) {
+                    continue 2;
+                }
+            }
+            // Part of the union type includes a type or intersection type that does not have that method.
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Yields a list of FunctionInterface objects for the 'expr' of an AST_CALL.
      * @return iterable<mixed, FunctionInterface>
      */
@@ -879,6 +916,17 @@ class ContextNode
         if ($expression->kind === ast\AST_NAME) {
             $name = $expression->children['name'];
             try {
+                if (!\is_string($name)) {
+                    // Impossible?
+                    Issue::maybeEmit(
+                        $this->code_base,
+                        $this->context,
+                        Issue::TypeInvalidCallable,
+                        $this->context->getLineNumberStart(),
+                        '(unexpectedly unknown name)'
+                    );
+                    return [];
+                }
                 return [
                     $this->getFunction($name, false, $return_placeholder_for_undefined),
                 ];
@@ -928,7 +976,7 @@ class ContextNode
             }
         }
         if (!$has_type) {
-            if (!$union_type->hasPossiblyCallableType()) {
+            if (!$union_type->hasPossiblyCallableType($code_base)) {
                 Issue::maybeEmit(
                     $code_base,
                     $context,
@@ -939,7 +987,7 @@ class ContextNode
                 return;
             }
         }
-        if (Config::get_strict_method_checking() && $union_type->containsDefiniteNonCallableType()) {
+        if (Config::get_strict_method_checking() && $union_type->containsDefiniteNonCallableType($code_base)) {
             Issue::maybeEmit(
                 $code_base,
                 $context,
@@ -1341,7 +1389,7 @@ class ContextNode
                 $property_name = (string)$property_name;
             }
             if (!\is_string($property_name)) {
-                throw $this->createExceptionForInvalidPropertyName($node, $is_static);
+                $this->throwExceptionForInvalidPropertyName($node, $is_static);
             }
         }
 
@@ -1458,42 +1506,13 @@ class ContextNode
         }
         if (!$is_static && Config::get_strict_object_checking() &&
                 !($node->flags & PhanAnnotationAdder::FLAG_IGNORE_UNDEF)) {
-            $union_type = UnionTypeVisitor::unionTypeFromNode(
-                $this->code_base,
-                $this->context,
-                $node->children['expr']
-            );
-            $invalid = UnionType::empty();
-            foreach ($union_type->getTypeSet() as $type) {
-                if (!$type->isPossiblyObject()) {
-                    $invalid = $invalid->withType($type);
-                } elseif ($type->isNullable()) {
-                    $invalid = $invalid->withType(NullType::instance(false));
-                }
-            }
-            if (!$invalid->isEmpty()) {
-                if ($node->flags & PhanAnnotationAdder::FLAG_IGNORE_NULLABLE) {
-                    $invalid = $invalid->nonNullableClone();
-                }
-                if (!$invalid->isEmpty()) {
-                    $this->emitIssue(
-                        Issue::PossiblyUndeclaredProperty,
-                        $node->lineno,
-                        $property_name,
-                        $union_type,
-                        $invalid
-                    );
-                    if ($property) {
-                        return $property;
-                    }
-                }
-            }
+            self::checkPossiblyUndeclaredInstanceProperty($this->code_base, $this->context, $node, $property_name);
         }
         if ($property) {
             if ($class_without_property && Config::get_strict_object_checking() &&
                     !($node->flags & PhanAnnotationAdder::FLAG_IGNORE_UNDEF)) {
                 $this->emitIssue(
-                    Issue::PossiblyUndeclaredProperty,
+                    Issue::PossiblyUndeclaredPropertyOfClass,
                     $node->lineno,
                     $property_name,
                     UnionTypeVisitor::unionTypeFromNode(
@@ -1584,19 +1603,59 @@ class ContextNode
     }
 
     /**
-     * @return NodeException|IssueException
+     * Warn if the expression of an AST_PROP is possibly invalid for an instance property
+     * (both for reading and for writing)
      */
-    private function createExceptionForInvalidPropertyName(Node $node, bool $is_static): Exception
+    public static function checkPossiblyUndeclaredInstanceProperty(CodeBase $code_base, Context $context, Node $node, string $property_name): void
+    {
+        $union_type = UnionTypeVisitor::unionTypeFromNode(
+            $code_base,
+            $context,
+            $node->children['expr']
+        );
+        $invalid = UnionType::empty();
+        foreach ($union_type->getTypeSet() as $type) {
+            if (!$type->isPossiblyObject()) {
+                $invalid = $invalid->withType($type);
+            } elseif ($type->isNullableLabeled()) {
+                $invalid = $invalid->withType(NullType::instance(false));
+            }
+        }
+        if (!$invalid->isEmpty()) {
+            if ($node->flags & PhanAnnotationAdder::FLAG_IGNORE_NULLABLE) {
+                $invalid = $invalid->nonNullableClone();
+            }
+            if (!$invalid->isEmpty()) {
+                // XXX: Previously, this would only warn about null/nullable, not about scalars and arrays.
+                // Probably to reduce false positives.
+                Issue::maybeEmit(
+                    $code_base,
+                    $context,
+                    Issue::PossiblyUndeclaredProperty,
+                    $node->lineno,
+                    $property_name,
+                    $union_type,
+                    $invalid
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws NodeException|IssueException
+     * @return no-return
+     */
+    private function throwExceptionForInvalidPropertyName(Node $node, bool $is_static): void
     {
         $property_type = UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $node->children['prop']);
-        if ($property_type->canCastToUnionType(StringType::instance(false)->asPHPDocUnionType())) {
+        if ($property_type->canCastToUnionType(StringType::instance(false)->asPHPDocUnionType(), $this->code_base)) {
             // If we know it can be a string, throw a NodeException instead of a specific issue
-            return new NodeException(
+            throw new NodeException(
                 $node,
                 "Cannot figure out property name"
             );
         }
-        return new IssueException(
+        throw new IssueException(
             Issue::fromType($is_static ? Issue::TypeInvalidStaticPropertyName : Issue::TypeInvalidPropertyName)(
                 $this->context->getFile(),
                 $node->lineno,
@@ -1647,6 +1706,7 @@ class ContextNode
             // For instance properties, ignore it,
             // because we'll create our own property
         }
+        // Post-condition: $is_static is false, because otherwise an exception would have been thrown
 
         $node = $this->node;
         if (!($node instanceof Node)) {
@@ -1654,8 +1714,8 @@ class ContextNode
         }
 
         try {
-            $expected_type_categories = $is_static ? self::CLASS_LIST_ACCEPT_OBJECT_OR_CLASS_NAME : self::CLASS_LIST_ACCEPT_OBJECT;
-            $expected_issue = $is_static ? Issue::TypeExpectedObjectStaticPropAccess : Issue::TypeExpectedObjectPropAccess;
+            $expected_type_categories = /* $is_static ? self::CLASS_LIST_ACCEPT_OBJECT_OR_CLASS_NAME : */ self::CLASS_LIST_ACCEPT_OBJECT;
+            $expected_issue = /* $is_static ? Issue::TypeExpectedObjectStaticPropAccess : */ Issue::TypeExpectedObjectPropAccess;
             $class_list = (new ContextNode(
                 $this->code_base,
                 $this->context,
@@ -1731,17 +1791,6 @@ class ContextNode
         }
 
         $code_base = $this->code_base;
-
-        $constant_name_lower = \strtolower($constant_name);
-        if ($constant_name_lower === 'true' || $constant_name_lower === 'false' || $constant_name_lower === 'null') {
-            return $code_base->getGlobalConstantByFQSEN(
-                // @phan-suppress-next-line PhanThrowTypeMismatchForCall
-                FullyQualifiedGlobalConstantName::fromFullyQualifiedString(
-                    $constant_name_lower
-                )
-            );
-        }
-
         $context = $this->context;
         $flags = $node->children['name']->flags ?? 0;
         try {
@@ -1787,6 +1836,18 @@ class ContextNode
         } catch (FQSENException $e) {
             throw new AssertionError("Impossible FQSENException: " . $e->getMessage());
         }
+
+        // Handle true/false/null, even for edge cases such as `use const null as somethingelse;`
+        $fqsen_lower = \strtolower($fqsen->__toString());
+        if (\in_array($fqsen_lower, ['\true', '\false', '\null'], true)) {
+            return $code_base->getGlobalConstantByFQSEN(
+                // @phan-suppress-next-line PhanThrowTypeMismatchForCall
+                FullyQualifiedGlobalConstantName::fromFullyQualifiedString(
+                    $fqsen_lower
+                )
+            );
+        }
+
         // This is either a fully qualified constant,
         // or a relative constant for which nothing was found in the namespace
 
@@ -1837,6 +1898,7 @@ class ContextNode
 
     /**
      * @throws IssueException
+     * @return never
      */
     private function throwUndeclaredGlobalConstantIssueException(CodeBase $code_base, Context $context, FullyQualifiedGlobalConstantName $fqsen): void
     {
@@ -1878,6 +1940,9 @@ class ContextNode
         }
 
         $constant_name = $node->children['const'];
+        if (!is_string($constant_name)) {
+            throw new AssertionError('$constant_name must be a string');
+        }
         if (!\strcasecmp($constant_name, 'class')) {
             $constant_name = 'class';
         }
@@ -2004,6 +2069,12 @@ class ContextNode
      */
     public function getClosure(): Func
     {
+        if (!$this->node instanceof Node) {
+            throw new CodeBaseException(
+                null,
+                "Could not find closure - invalid node. This should not happen."
+            );
+        }
         $closure_fqsen =
             FullyQualifiedFunctionName::fromClosureInContext(
                 $this->context,
@@ -2046,25 +2117,24 @@ class ContextNode
         $llnode = $this->node;
 
         if ($kind !== ast\AST_DIM) {
-            if (!($this->node->children['expr'] instanceof Node)) {
+            $expr = $this->node->children['expr'];
+            if (!($expr instanceof Node)) {
                 return;
             }
 
-            if ($this->node->children['expr']->kind !== ast\AST_DIM) {
+            if ($expr->kind !== ast\AST_DIM) {
                 (new ContextNode(
                     $this->code_base,
                     $this->context,
-                    $this->node->children['expr']
+                    $expr
                 ))->analyzeBackwardCompatibility();
                 return;
             }
 
-            $temp = $this->node->children['expr']->children['expr'];
-            $llnode = $this->node->children['expr'];
-            $lnode = $temp;
+            $temp = $expr->children['expr'];
+            $llnode = $expr;
         } else {
             $temp = $this->node->children['expr'];
-            $lnode = $temp;
         }
 
         // Strings can have DIMs, it turns out.
@@ -2078,6 +2148,7 @@ class ContextNode
             return;
         }
 
+        $lnode = $temp;
         while ($temp instanceof Node
             && ($temp->kind === ast\AST_PROP
             || $temp->kind === ast\AST_STATIC_PROP)
@@ -2224,6 +2295,8 @@ class ContextNode
     // This currently only supports static variables.
     // When disabled, all variables will be resolved.
     public const RESOLVE_ONLY_CONSTANT_VARS = (1 << 7);
+    // Don't use variables.
+    public const RESOLVE_DONT_USE_VARS = (1 << 8);
 
     public const RESOLVE_DEFAULT =
         self::RESOLVE_ARRAYS |
@@ -2309,7 +2382,7 @@ class ContextNode
      *
      * @see self::getEquivalentPHPValue()
      *
-     * @param Node|float|int|string $node
+     * @param ?(Node|array|resource|float|int|string) $node
      * @return Node|string[]|int[]|float[]|string|float|int|bool|resource|null -
      *         If this could be resolved and we're certain of the value, this gets a raw PHP value for $node.
      *         Otherwise, this returns $node.
@@ -2356,7 +2429,7 @@ class ContextNode
                 $new_node = $constant->getNodeForValue();
                 if (is_object($new_node)) {
                     // Avoid infinite recursion, only resolve once
-                    $new_node = (new ContextNode($this->code_base, $constant->getContext(), $new_node))->getEquivalentPHPValueForNode($new_node, $flags & ~self::RESOLVE_CONSTANTS);
+                    $new_node = (new ContextNode($this->code_base, $constant->getContext(), $new_node))->getEquivalentPHPValueForNode($new_node, $flags & ~(self::RESOLVE_CONSTANTS | self::RESOLVE_ONLY_CONSTANT_VARS | self::RESOLVE_DONT_USE_VARS));
                 }
                 return $new_node;
             case ast\AST_CLASS_CONST:
@@ -2476,6 +2549,7 @@ class ContextNode
             return $node;
         }
         try {
+            // @phan-suppress-next-line PhanPartialTypeMismatchArgument throwing an Error is caught
             return InferValue::computeBinaryOpResult($left_value, $right_value, $node->flags);
         } catch (Error $e) {
             self::handleErrorInOperation($node, $e);
@@ -2508,6 +2582,7 @@ class ContextNode
         }
 
         try {
+            // @phan-suppress-next-line PhanPartialTypeMismatchArgument throwing an Error is caught
             return InferValue::computeUnaryOpResult($operand_value, $node->flags);
         } catch (Error $e) {
             self::handleErrorInOperation($node, $e);
@@ -2578,10 +2653,11 @@ class ContextNode
     private function getValueForCall(Node $node, int $flags)
     {
         $arg_list = $node->children['args']->children;
-        if (\count($arg_list) !== 1) {
+        // arg_list[0] should always be set.
+        if (\count($arg_list) !== 1 || !isset($arg_list[0])) {
             return $node;
         }
-        $raw_function_name = ConditionVisitorUtil::getFunctionName($node);
+        $raw_function_name = ConditionVisitor::getFunctionName($node);
         if (!is_string($raw_function_name)) {
             return $node;
         }
@@ -2663,9 +2739,9 @@ class ContextNode
      *
      * This does not create new object instances.
      *
-     * @return Node|string|float|int|bool|null -
+     * @return Node|string|float|int|bool|null|resource -
      *         If this could be resolved and we're certain of the value, this gets an equivalent definition.
-     *         Otherwise, this returns $node. If this would be an array, this returns $node.
+     *         Otherwise, if this would be an array or an object, this returns $node.
      *
      * @suppress PhanPartialTypeMismatchReturn the flags prevent this from returning an array
      */

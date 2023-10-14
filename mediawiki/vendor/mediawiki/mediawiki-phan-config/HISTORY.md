@@ -1,5 +1,27 @@
 # MediaWiki-Phan-Config release history #
 
+## 0.12.1 / 2023-04-17
+* Enable PhanCompatibleSerializeInterfaceDeprecated (Umherirrender)
+* Create a separate config file for libraries (Daimona Eaytoy)
+
+## 0.12.0 / 2022-10-06
+* Avoid PhanRedefinedInheritedInterface by excluding symfony/polyfill-php80 (Umherirrender)
+* Bump minimum PHP version to 7.4 (C. Scott Ananian)
+* Disable PhanPluginDuplicateExpressionAssignmentOperation (Reedy)
+* Bump phan to 5.4.1 and taint-check to 4.0.0 (Daimona Eaytoy)
+
+## 0.11.1 / 2021-11-08
+* Set minimum and target PHP version (Daimona Eaytoy)
+
+## 0.11.0 / 2021-09-03
+* Enable plugin UseReturnValuePlugin (Umherirrender)
+* Exclude stubs from .phan configurations in libraries (C. Scott Ananian)
+* Suppress PhanDeprecatedCaseInsensitiveDefine (Umherirrender)
+* Suppress phan issues about use statements (Umherirrender)
+* Add plugins: LoopVariableReusePlugin, RedundantAssignmentPlugin, UnreachableCodePlugin, SimplifyExpressionPlugin, DuplicateArrayKeyPlugin (Daimona Eaytoy)
+* Remove hack that allows disabling taint-check (Daimona Eaytoy)
+* Bump phan to 5.2.0, taint-check to 3.3.2 (Daimona Eaytoy)
+
 ## 0.10.6 / 2020-12-14
 * Add a ConfigBuilder class to configure phan (Daimona Eaytoy)
 * Remove option for filtering the list of directories (Daimona Eaytoy)

@@ -32,7 +32,7 @@ class UnsortedUseStatementsSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() : array {
+	public function register(): array {
 		return [ T_USE ];
 	}
 
@@ -46,63 +46,121 @@ class UnsortedUseStatementsSniff implements Sniff {
 	public function process( File $phpcsFile, $stackPtr ) {
 		$tokens = $phpcsFile->getTokens();
 
-		// Only check use statements in the global scope.
+		// In case this is a `use` of a class (or constant or function) within
+		// a bracketed namespace rather than in the global scope, update the end
+		// accordingly
+		$useScopeEnd = $phpcsFile->numTokens;
+
 		if ( !empty( $tokens[$stackPtr]['conditions'] ) ) {
+			// We only care about use statements in the global scope, or the
+			// equivalent for bracketed namespace (use statements in the namespace
+			// and not in any class, etc.)
 			// TODO: Use array_key_first() if available
 			$scope = key( $tokens[$stackPtr]['conditions'] );
-			return $tokens[$scope]['scope_closer'] ?? $stackPtr;
+			if ( count( $tokens[$stackPtr]['conditions'] ) === 1
+				&& $tokens[$stackPtr]['conditions'][$scope] === T_NAMESPACE
+			) {
+				$useScopeEnd = $tokens[$scope]['scope_closer'];
+			} else {
+				return $tokens[$scope]['scope_closer'] ?? $stackPtr;
+			}
 		}
 
-		$useStatementList = $this->makeUseStatementList( $phpcsFile, $stackPtr );
+		$useStatementList = $this->makeUseStatementList( $phpcsFile, $stackPtr, $useScopeEnd );
 		// Nothing to do, bail out as fast as possible
 		if ( count( $useStatementList ) <= 1 ) {
 			return;
 		}
 
 		$sortedStatements = $this->sortByFullQualifiedClassName( $useStatementList );
+		// Continue *after* the last use token to not process it twice
+		$afterLastUse = end( $useStatementList )['end'] + 1;
 
-		if ( $useStatementList !== $sortedStatements ) {
-			$fix = $phpcsFile->addFixableWarning(
-				'Use statements are not alphabetically sorted',
-				$stackPtr,
-				'UnsortedUse'
-			);
+		if ( $useStatementList === $sortedStatements ) {
+			return $afterLastUse;
+		}
 
-			if ( $fix ) {
-				$phpcsFile->fixer->beginChangeset();
+		$fix = $phpcsFile->addFixableWarning(
+			'Use statements are not alphabetically sorted',
+			$stackPtr,
+			'UnsortedUse'
+		);
+		if ( !$fix ) {
+			return $afterLastUse;
+		}
 
-				foreach ( $useStatementList as $statement ) {
-					for ( $i = $statement['start']; $i <= $statement['end']; $i++ ) {
-						$phpcsFile->fixer->replaceToken( $i, '' );
-					}
-					// Also remove the newline at the end of the line, if there is one
-					if ( $tokens[$i]['code'] === T_WHITESPACE
-						&& $tokens[$i]['line'] < $tokens[$i + 1]['line']
-					) {
-						$phpcsFile->fixer->replaceToken( $i, '' );
-					}
+		// Find how much whitespace there was before the T_USE for the first
+		// use statement, so that we can indent the rest the same amount,
+		// used for bracketed namespaces
+		$leadingWhitespace = '';
+		$firstOnLine = $phpcsFile->findFirstOnLine(
+			[ T_WHITESPACE ],
+			$stackPtr
+		);
+
+		$phpcsFile->fixer->beginChangeset();
+
+		// If there was no leading whitespace, we will be inserting the
+		// sorted list in the location of the first T_USE, but if there
+		// was whitespace, insert at the start of that line
+		$insertPoint = $stackPtr;
+		if ( $firstOnLine ) {
+			$insertPoint = $firstOnLine;
+			for ( $iii = $firstOnLine; $iii < $stackPtr; $iii++ ) {
+				if ( $tokens[$iii]['code'] === T_WHITESPACE ) {
+					// Handle tabs converted to spaces automatically
+					// by using orig_content if available
+					$leadingWhitespace .= $tokens[$iii]['orig_content'] ?? $tokens[$iii]['content'];
+					// Remove the whitespace from before the first
+					// use statement, will be added back when the
+					// statement is rewritten
+					$phpcsFile->fixer->replaceToken( $iii, '' );
 				}
-
-				foreach ( $sortedStatements as $statement ) {
-					$phpcsFile->fixer->addContent( $stackPtr, $statement['originalContent'] );
-					$phpcsFile->fixer->addNewline( $stackPtr );
-				}
-
-				$phpcsFile->fixer->endChangeset();
 			}
 		}
 
-		// Continue *after* the last use token, to not process it twice
-		return end( $useStatementList )['end'] + 1;
+		foreach ( $useStatementList as $statement ) {
+			// Remove any whitespace before the start, so that it
+			// doesn't add up for use statements in a bracketed namespace
+			$thisLine = $tokens[ $statement['start'] ]['line'];
+			$i = $statement['start'] - 1;
+			while ( $tokens[$i]['line'] === $thisLine &&
+				$tokens[$i]['code'] === T_WHITESPACE
+			) {
+				$phpcsFile->fixer->replaceToken( $i, '' );
+				$i--;
+			}
+			for ( $i = $statement['start']; $i <= $statement['end']; $i++ ) {
+				$phpcsFile->fixer->replaceToken( $i, '' );
+			}
+			// Also remove the newline at the end of the line, if there is one
+			if ( $tokens[$i]['code'] === T_WHITESPACE
+				&& $tokens[$i]['line'] < $tokens[$i + 1]['line']
+			) {
+				$phpcsFile->fixer->replaceToken( $i, '' );
+			}
+		}
+
+		foreach ( $sortedStatements as $statement ) {
+			$phpcsFile->fixer->addContent( $insertPoint, $leadingWhitespace );
+			$phpcsFile->fixer->addContent( $insertPoint, $statement['originalContent'] );
+			$phpcsFile->fixer->addNewline( $insertPoint );
+		}
+
+		$phpcsFile->fixer->endChangeset();
+
+		return $afterLastUse;
 	}
 
 	/**
 	 * @param File $phpcsFile
 	 * @param int $stackPtr
+	 * @param int $useScopeEnd
 	 * @return array[]
 	 */
-	private function makeUseStatementList( File $phpcsFile, int $stackPtr ) : array {
+	private function makeUseStatementList( File $phpcsFile, int $stackPtr, int $useScopeEnd ): array {
 		$tokens = $phpcsFile->getTokens();
+		$next = $stackPtr;
 		$list = [];
 
 		do {
@@ -110,10 +168,13 @@ class UnsortedUseStatementsSniff implements Sniff {
 			$group = 0;
 			$sortKey = '';
 			$collectSortKey = false;
+			$start = $next;
 
 			// The end condition here is for when a file ends directly after a "use"
-			for ( $i = $stackPtr; $i < $phpcsFile->numTokens; $i++ ) {
-				[ 'code' => $code, 'content' => $content ] = $tokens[$i];
+			// in the case of statements in the global scope, or to properly limit the
+			// search in case of a bracketed namespace
+			for ( ; $next < $useScopeEnd; $next++ ) {
+				[ 'code' => $code, 'content' => $content ] = $tokens[$next];
 				$originalContent .= $content;
 
 				if ( $code === T_STRING ) {
@@ -131,8 +192,8 @@ class UnsortedUseStatementsSniff implements Sniff {
 					$collectSortKey = false;
 				} elseif ( $code === T_SEMICOLON && $sortKey ) {
 					$list[] = [
-						'start' => $stackPtr,
-						'end' => $i,
+						'start' => $start,
+						'end' => $next,
 						'originalContent' => $originalContent,
 						'group' => $group,
 						// No need to trim(), no spaces or leading backslashes have been collected
@@ -140,7 +201,9 @@ class UnsortedUseStatementsSniff implements Sniff {
 					];
 
 					// Try to find the next "use" token after the current one
-					$stackPtr = $phpcsFile->findNext( Tokens::$emptyTokens, $i + 1, null, true );
+					// We don't care about the end of the findNext since that is enforced
+					// via the for condition
+					$next = $phpcsFile->findNext( Tokens::$emptyTokens, $next + 1, null, true );
 					break;
 				} elseif ( isset( Tokens::$emptyTokens[$code] ) ) {
 					// We never want any space or comment in the sort key
@@ -154,7 +217,7 @@ class UnsortedUseStatementsSniff implements Sniff {
 					$sortKey .= $content;
 				}
 			}
-		} while ( $stackPtr && $tokens[$stackPtr]['code'] === T_USE );
+		} while ( $next && isset( $tokens[$next] ) && $tokens[$next]['code'] === T_USE );
 
 		return $list;
 	}
@@ -163,8 +226,8 @@ class UnsortedUseStatementsSniff implements Sniff {
 	 * @param array[] $list
 	 * @return array[]
 	 */
-	private function sortByFullQualifiedClassName( array $list ) : array {
-		usort( $list, function ( array $a, array $b ) {
+	private function sortByFullQualifiedClassName( array $list ): array {
+		usort( $list, static function ( array $a, array $b ) {
 			if ( $a['group'] !== $b['group'] ) {
 				return $a['group'] <=> $b['group'];
 			}

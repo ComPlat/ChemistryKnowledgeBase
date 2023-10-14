@@ -10,6 +10,7 @@ use ast\Node;
 use InvalidArgumentException;
 use Phan\AST\ASTReverter;
 use Phan\AST\UnionTypeVisitor;
+use Phan\CLI;
 use Phan\CodeBase;
 use Phan\Exception\IssueException;
 use Phan\Issue;
@@ -21,12 +22,14 @@ use Phan\Language\Type;
 use Phan\Language\Type\ArrayType;
 use Phan\Language\Type\ClosureDeclarationParameter;
 use Phan\Language\Type\FalseType;
+use Phan\Language\Type\IntersectionType;
 use Phan\Language\Type\MixedType;
 use Phan\Language\Type\NullType;
 use Phan\Language\Type\TrueType;
 use Phan\Language\UnionType;
 use Phan\Library\StringUtil;
 use Phan\Parse\ParseVisitor;
+use Throwable;
 
 use function is_string;
 use function preg_match;
@@ -41,21 +44,30 @@ use function strlen;
  */
 class Parameter extends Variable
 {
+    use HasAttributesTrait;
+
     public const REFERENCE_DEFAULT = 1;
     public const REFERENCE_READ_WRITE = 2;
     public const REFERENCE_WRITE_ONLY = 3;
     public const REFERENCE_IGNORED = 4;
 
     public const PARAM_MODIFIER_VISIBILITY_FLAGS = ast\flags\PARAM_MODIFIER_PUBLIC | ast\flags\PARAM_MODIFIER_PRIVATE | ast\flags\PARAM_MODIFIER_PROTECTED;
-
+    /** NOTE: Currently, any of these flags imply that constructor property promotion is being used */
+    public const PARAM_MODIFIER_FLAGS = self::PARAM_MODIFIER_VISIBILITY_FLAGS | ast\flags\MODIFIER_READONLY;
 
     // __construct(Context $context, string $name, UnionType $type, int $flags) inherited from Variable
 
     /**
      * @var UnionType|null
-     * The type of the default value, if any
+     * The type of the default value, if any (converting literals to non-literals)
      */
     private $default_value_type = null;
+
+    /**
+     * @var UnionType|null
+     * The type of the default value, if any
+     */
+    private $default_value_literal_type = null;
 
     /**
      * @var FutureUnionType|null
@@ -128,6 +140,7 @@ class Parameter extends Variable
     public function setDefaultValueType(UnionType $type): void
     {
         $this->default_value_type = $type;
+        $this->default_value_literal_type = $type;
     }
 
     /**
@@ -151,7 +164,7 @@ class Parameter extends Variable
     /**
      * @return UnionType
      * The type of the default value for this parameter
-     * if it exists
+     * if it exists (converting literals to non-literals)
      */
     public function getDefaultValueType(): UnionType
     {
@@ -159,7 +172,8 @@ class Parameter extends Variable
         if ($future_type !== null) {
             // Only attempt to resolve the future type once.
             try {
-                $this->default_value_type = $future_type->get()->asNonLiteralType();
+                $this->default_value_literal_type = $future_type->get();
+                $this->default_value_type = $this->default_value_literal_type->asNonLiteralType();
             } catch (IssueException $exception) {
                 // Ignore exceptions
                 Issue::maybeEmitInstance(
@@ -172,8 +186,37 @@ class Parameter extends Variable
                 $this->default_value_future_type = null;
             }
         }
-        // @phan-suppress-next-line PhanPossiblyNullTypeReturn callers should check hasDefaultType
+        // @phan-suppress-next-line PhanPossiblyNullTypeReturn callers should check hasDefaultValue
         return $this->default_value_type;
+    }
+
+    /**
+     * @return UnionType
+     * The type of the default value for this parameter
+     * if it exists (keeping literals)
+     */
+    public function getDefaultValueLiteralType(): UnionType
+    {
+        $future_type = $this->default_value_future_type;
+        if ($future_type !== null) {
+            // Only attempt to resolve the future type once.
+            try {
+                $this->default_value_literal_type = $future_type->get();
+                $this->default_value_type = $this->default_value_literal_type->asNonLiteralType();
+            } catch (IssueException $exception) {
+                // Ignore exceptions
+                Issue::maybeEmitInstance(
+                    $future_type->getCodebase(),  // @phan-suppress-current-line PhanAccessMethodInternal
+                    $future_type->getContext(),  // @phan-suppress-current-line PhanAccessMethodInternal
+                    $exception->getIssueInstance()
+                );
+            } finally {
+                // Only try to resolve the FutureType once.
+                $this->default_value_future_type = null;
+            }
+        }
+        // @phan-suppress-next-line PhanPossiblyNullTypeReturn callers should check hasDefaultValue
+        return $this->default_value_literal_type;
     }
 
     /**
@@ -190,9 +233,23 @@ class Parameter extends Variable
      * then the parameter type should be converted to nullable
      * (E.g. `int $x = null` and `?int $x = null` are equivalent.
      */
-    public function handleDefaultValueOfNull(): void
+    public function handleDefaultValueOfNull(CodeBase $code_base, Context $context): void
     {
         if ($this->default_value_type && $this->default_value_type->isType(NullType::instance(false))) {
+            foreach ($this->getNonVariadicUnionType()->getRealTypeSet() as $type) {
+                if ($type instanceof IntersectionType) {
+                    Issue::maybeEmit(
+                        $code_base,
+                        $context,
+                        Issue::TypeMismatchDefaultIntersection,
+                        $this->default_value->lineno ?? $context->getLineNumberStart(),
+                        $this->getNonVariadicUnionType(),
+                        $this->getName(),
+                        'null'
+                    );
+                    return;
+                }
+            }
             // If it isn't already nullable, convert the parameter type to nullable.
             $this->convertToNullable();
         }
@@ -257,24 +314,35 @@ class Parameter extends Variable
         $parameter_type = UnionType::fromReflectionType($reflection_parameter->getType());
         $parameter = self::create(
             new Context(),
+            // @phan-suppress-next-line PhanCoalescingNeverNull
             $reflection_parameter->getName() ?? "arg",
             $parameter_type,
             $flags
         );
         if ($reflection_parameter->isOptional()) {
-            if ($reflection_parameter->isDefaultValueAvailable()) {
-                $default_value = $reflection_parameter->getDefaultValue();
-                $parameter->setDefaultValue($default_value);
-                $default_type = Type::fromObject($default_value)->asPHPDocUnionType();
-                if ($reflection_parameter->isDefaultValueConstant()) {
-                    $parameter->default_value_constant_name = $reflection_parameter->getDefaultValueConstantName();
-                }
-                $parameter->default_value_from_reflection = true;
+            if (!$parameter_type->isEmpty() && !$parameter_type->containsNullable()) {
+                $default_type = $parameter_type;
             } else {
-                if (!$parameter_type->isEmpty() && !$parameter_type->containsNullable()) {
-                    $default_type = $parameter_type;
-                } else {
-                    $default_type = NullType::instance(false)->asPHPDocUnionType();
+                $default_type = NullType::instance(false)->asPHPDocUnionType();
+            }
+            if ($reflection_parameter->isDefaultValueAvailable()) {
+                try {
+                    $default_value = $reflection_parameter->getDefaultValue();
+                    $parameter->setDefaultValue($default_value);
+                    $default_type = Type::fromObject($default_value)->asPHPDocUnionType();
+                    if ($reflection_parameter->isDefaultValueConstant()) {
+                        $parameter->default_value_constant_name = $reflection_parameter->getDefaultValueConstantName();
+                    }
+                    $parameter->default_value_from_reflection = true;
+                } catch (Throwable $e) {
+                    CLI::printErrorToStderr(\sprintf(
+                        "Warning: encountered invalid ReflectionParameter information for param $%s: %s %s\n",
+                        $reflection_parameter->getName(),
+                        \get_class($e),
+                        $e->getMessage()
+                    ));
+                    // Uncomment to show which function is invalid
+                    // phan_print_backtrace();
                 }
             }
             $parameter->setDefaultValueType($default_type);
@@ -333,8 +401,25 @@ class Parameter extends Variable
 
         // Create the skeleton parameter from what we know so far
         $parameter_name = (string)$node->children['name'];
+        if ($parameter_name === 'this') {
+            Issue::maybeEmit(
+                $code_base,
+                $context,
+                Issue::InvalidNode,
+                $node->lineno,
+                'Cannot use $this as a parameter'
+            );
+        } elseif (Variable::isSuperglobalVariableWithName($parameter_name)) {
+            Issue::maybeEmit(
+                $code_base,
+                $context,
+                Issue::InvalidNode,
+                $node->lineno,
+                "Cannot re-assign auto-global variable \$$parameter_name"
+            );
+        }
         $parameter = Parameter::create(
-            (clone($context))->withLineNumberStart($node->lineno),
+            (clone $context)->withLineNumberStart($node->lineno),
             $parameter_name,
             $union_type,
             $node->flags
@@ -356,19 +441,20 @@ class Parameter extends Variable
             $parameter->setDefaultValue($default_node);
             try {
                 // @phan-suppress-next-line PhanAccessMethodInternal
-                ParseVisitor::checkIsAllowedInConstExpr($default_node);
+                ParseVisitor::checkIsAllowedInConstExpr($default_node, ParseVisitor::CONSTANT_EXPRESSION_IN_PARAMETER);
 
                 // We can't figure out default values during the
                 // parsing phase, unfortunately
                 $has_error = false;
-            } catch (InvalidArgumentException $_) {
+            } catch (InvalidArgumentException $e) {
                 // If the parameter default is an invalid constant expression,
                 // then don't use that value elsewhere.
                 Issue::maybeEmit(
                     $code_base,
                     $context,
                     Issue::InvalidConstantExpression,
-                    $default_node->lineno ?? $node->lineno
+                    $default_node->lineno ?? $node->lineno,
+                    $e->getMessage()
                 );
                 $has_error = true;
             }
@@ -399,12 +485,20 @@ class Parameter extends Variable
                 if (!$has_error) {
                     $parameter->setDefaultValueFutureType(new FutureUnionType(
                         $code_base,
-                        (clone($context))->withLineNumberStart($default_node->lineno ?? 0),
+                        (clone $context)->withLineNumberStart($default_node->lineno ?? 0),
                         $default_node
                     ));
                 }
             }
-            $parameter->handleDefaultValueOfNull();
+            $parameter->handleDefaultValueOfNull($code_base, $context);
+        }
+        $attributes_node = $node->children['attributes'] ?? null;
+        if ($attributes_node instanceof Node) {
+            $parameter->setAttributeList(Attribute::fromNodeForAttributeList(
+                $code_base,
+                $context,
+                $attributes_node
+            ));
         }
 
         return $parameter;
@@ -472,9 +566,9 @@ class Parameter extends Variable
      *
      * If this parameter is not variadic, returns $this.
      *
-     * @return static (usually $this)
+     * @return Parameter (usually $this)
      */
-    public function asNonVariadic()
+    public function asNonVariadic(): Parameter
     {
         return $this;
     }
@@ -588,6 +682,22 @@ class Parameter extends Variable
         return $this->getPhanFlagsHasState(Flags::IS_PARAM_USING_NULLABLE_SYNTAX);
     }
 
+    /**
+     * Mark that this parameter does not support being used with named arguments
+     */
+    public function setHasNoNamedArguments(): void
+    {
+        $this->enablePhanFlagBits(Flags::NO_NAMED_ARGUMENTS);
+    }
+
+    /**
+     * Is this a parameter of a function that does not use named arguments?
+     */
+    public function hasNoNamedArguments(): bool
+    {
+        return $this->getPhanFlagsHasState(Flags::NO_NAMED_ARGUMENTS);
+    }
+
     public function __toString(): string
     {
         $string = '';
@@ -595,6 +705,9 @@ class Parameter extends Variable
         if ($flags & self::PARAM_MODIFIER_VISIBILITY_FLAGS) {
             $string .= $flags & ast\flags\PARAM_MODIFIER_PUBLIC ? 'public ' :
                         ($flags & ast\flags\PARAM_MODIFIER_PROTECTED ? 'protected ' : 'private ');
+        }
+        if ($flags & ast\flags\MODIFIER_READONLY) {
+            $string .= 'readonly ';
         }
 
         $union_type = $this->getNonVariadicUnionType();
@@ -829,7 +942,7 @@ class Parameter extends Variable
      */
     public function createContext(FunctionInterface $function): Context
     {
-        return clone($function->getContext())->withLineNumberStart($this->getFileRef()->getLineNumberStart());
+        return (clone $function->getContext())->withLineNumberStart($this->getFileRef()->getLineNumberStart());
     }
 
     /**
@@ -848,6 +961,7 @@ class Parameter extends Variable
     {
         $this->default_value = $other->default_value;
         $this->default_value_type = $other->default_value_type;
+        $this->default_value_literal_type = $other->default_value_literal_type;
         if ($other->default_value_from_reflection) {
             $this->default_value_from_reflection = true;
         }

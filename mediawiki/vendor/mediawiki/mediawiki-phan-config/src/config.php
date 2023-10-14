@@ -18,7 +18,12 @@
  * @file
  */
 
-use MediaWikiPhanConfig\ConfigBuilder;
+use MediaWikiPhanConfig\MediaWikiConfigBuilder;
+
+require_once __DIR__ . '/base-config-functions.php';
+
+// Replace \\ by / for windows users to let exclude work correctly
+$DIR = str_replace( '\\', '/', __DIR__ );
 
 // TODO: Use \Phan\Config::projectPath()
 $IP = getenv( 'MW_INSTALL_PATH' ) !== false
@@ -31,55 +36,11 @@ $VP = getenv( 'MW_VENDOR_PATH' ) !== false
 	? str_replace( '\\', '/', getenv( 'MW_VENDOR_PATH' ) )
 	: $IP;
 
-// Replace \\ by / for windows users to let exclude work correctly
-$DIR = str_replace( '\\', '/', __DIR__ );
-
-// TODO: Do we need to explicitly set these? If so, move to ConfigBuilder. Remove otherwise.
-$baseOptions = [
-	'backward_compatibility_checks' => false,
-
-	'parent_constructor_required' => [
-	],
-
-	'quick_mode' => false,
-	'analyze_signature_compatibility' => true,
-	'ignore_undeclared_variables_in_global_scope' => false,
-	'read_type_annotations' => true,
-	'disable_suppression' => false,
-	'dump_ast' => false,
-	'dump_signatures_file' => null,
-	'processes' => 1,
-	'whitelist_issue_types' => [],
-	'markdown_issue_messages' => false,
-	'generic_types_enabled' => true,
-	'plugins' => [
-		'PregRegexCheckerPlugin',
-		'UnusedSuppressionPlugin',
-		'DuplicateExpressionPlugin',
-	],
-	'plugin_config' => [],
-	// BC for repos not checking whether these are set
-	'file_list' => [],
-	'exclude_file_list' => [],
-];
-
-$baseCfg = new ConfigBuilder( $IP, $baseOptions );
-
-if ( !defined( 'MSG_EOR' ) ) {
-	$baseCfg->addFiles( $DIR . '/stubs/sockets.windows.php' );
-}
-
-/**
- * Internal helper used to filter dirs. This is used so that we can include commonly-used dir
- * names without phan complaining about "directory not found". It should NOT be used in
- * repo-specific config files.
- */
-$filterDirs = function ( array $dirs ) : array {
-	return array_filter( $dirs, 'file_exists' );
-};
+$baseCfg = new MediaWikiConfigBuilder( $IP );
+setBaseOptions( $DIR, $baseCfg );
 
 $baseCfg = $baseCfg
-	->setDirectoryList( $filterDirs( [
+	->setDirectoryList( filterDirs( [
 		'includes/',
 		'src/',
 		'maintenance/',
@@ -97,36 +58,10 @@ $baseCfg = $baseCfg
 		$IP . '/maintenance',
 		$IP . '/.phan/stubs/',
 		$VP . '/vendor',
-		$DIR . '/stubs',
+
 	] )
-	->setExcludeFileRegex(
-		'@vendor/(' .
-		// Exclude known dev dependencies
-		'(' . implode( '|', [
-			'composer/installers',
-			'jakub-onderka/php-console-color',
-			'jakub-onderka/php-console-highlighter',
-			'jakub-onderka/php-parallel-lint',
-			'mediawiki/mediawiki-codesniffer',
-			'microsoft/tolerant-php-parser',
-			'phan/phan',
-			'phpunit/php-code-coverage',
-			'squizlabs/php_codesniffer',
-		] ) . ')' .
-		'|' .
-		// Also exclude tests folder from dependencies
-		'.*/[Tt]ests?' .
-		')/@'
-	)
-	->setMinimumSeverity( 0 )
-	->allowMissingProperties( false )
-	->allowNullCastsAsAnyType( false )
-	->allowScalarImplicitCasts( false )
-	->enableDeadCodeDetection( false )
-	->shouldDeadCodeDetectionPreferFalseNegatives( true )
-	// TODO Enable by default
-	->setProgressBarMode( ConfigBuilder::PROGRESS_BAR_DISABLED )
 	->setSuppressedIssuesList( [
+		// Deprecation warnings
 		'PhanDeprecatedFunction',
 		'PhanDeprecatedClass',
 		'PhanDeprecatedClassConstant',
@@ -134,7 +69,19 @@ $baseCfg = $baseCfg
 		'PhanDeprecatedInterface',
 		'PhanDeprecatedProperty',
 		'PhanDeprecatedTrait',
+
+		// Covered by codesniffer
 		'PhanUnreferencedUseNormal',
+		'PhanUnreferencedUseFunction',
+		'PhanUnreferencedUseConstant',
+		'PhanDuplicateUseNormal',
+		'PhanDuplicateUseFunction',
+		'PhanDuplicateUseConstant',
+		'PhanUseNormalNoEffect',
+		'PhanUseNormalNamespacedNoEffect',
+		'PhanUseFunctionNoEffect',
+		'PhanUseConstantNoEffect',
+		'PhanDeprecatedCaseInsensitiveDefine',
 
 		// https://github.com/phan/phan/issues/3420
 		'PhanAccessClassConstantInternal',
@@ -147,9 +94,10 @@ $baseCfg = $baseCfg
 		'PhanParamNameIndicatingUnused',
 		'PhanParamNameIndicatingUnusedInClosure',
 		'PhanProvidingUnusedParameter',
+
+		// Would probably have many false positives
+		'PhanPluginMixedKeyNoKey',
 	] )
-	->readClassAliases( true )
-	->enableRedundantConditionDetection( true )
 	->addGlobalsWithTypes( [
 		'wgContLang' => '\\Language',
 		'wgParser' => '\\Parser',
@@ -160,12 +108,14 @@ $baseCfg = $baseCfg
 		'wgLang' => '\\Language',
 		'wgOut' => '\\OutputPage',
 		'wgRequest' => '\\WebRequest',
-	] );
-
-// Hacky variable to quickly disable taint-check if something explodes.
-// @note This is **NOT** a stable feature. It's only for BC and could be removed or changed
-// without prior notice.
-$baseCfg->makeTaintCheckAdjustments( !isset( $disableTaintCheck ), $DIR, $IP );
+	] )
+	->enableTaintCheck( $DIR, $VP )
+	->suppressIssueTypes(
+		// PHP 7.4 functionality; suppress by default until we no longer support PHP < 7.4.
+		// In reality, this means when MW 1.35 is EOL, expected September 2023.
+		// This will hopefully prevent some issues with backporting.
+		'PhanPluginDuplicateExpressionAssignmentOperation',
+	);
 
 // BC: We're not ready to use the ConfigBuilder everywhere
 return $baseCfg->make();

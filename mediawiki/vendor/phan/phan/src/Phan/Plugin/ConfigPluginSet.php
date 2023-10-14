@@ -118,6 +118,9 @@ final class ConfigPluginSet extends PluginV3 implements
     /** @var list<PluginV3>|null - Cached plugin set for this instance. Lazily generated. */
     private $plugin_set;
 
+    /** @var array<string,PluginV3> - Shared cache of plugin instances to avoid requiring class files more than once. */
+    private static $plugin_instances_cache = [];
+
     /**
      * @var associative-array<int, Closure(CodeBase,Context,Node|int|string|float):void> - plugins to analyze nodes in pre-order
      */
@@ -156,7 +159,7 @@ final class ConfigPluginSet extends PluginV3 implements
     /** @var list<AnalyzeClassCapability>|null - plugins to analyze class declarations. */
     private $analyze_class_plugin_set;
 
-    /** @var list<AnalyzeFunctionCallCapability>|null - plugins to analyze invocations of subsets of functions and methods. */
+    /** @var list<PluginV3&AnalyzeFunctionCallCapability>|null - plugins to analyze invocations of subsets of functions and methods. */
     private $analyze_function_call_plugin_set;
 
     /** @var list<AnalyzeFunctionCapability>|null - plugins to analyze function declarations. */
@@ -717,6 +720,15 @@ final class ConfigPluginSet extends PluginV3 implements
     }
 
     /**
+     * @return list<PluginV3&AnalyzeFunctionCallCapability>
+     * @internal
+     */
+    public function getAnalyzeFunctionCallPluginSet(): array
+    {
+        return $this->analyze_function_call_plugin_set ?? [];
+    }
+
+    /**
      * @param CodeBase $code_base
      * @return array<string,\Closure> maps FQSEN string to closure
      */
@@ -856,7 +868,6 @@ final class ConfigPluginSet extends PluginV3 implements
         if ($old_plugin_for_kind) {
             /**
              * @param list<Node> $parent_node_list
-             * @suppress PhanInfiniteRecursion the old plugin is referring to a different closure
              */
             $this->post_analyze_node_plugin_set[$kind] = static function (CodeBase $code_base, Context $context, Node $node, array $parent_node_list = []) use ($old_plugin_for_kind, $new_plugin): void {
                 $old_plugin_for_kind($code_base, $context, $node, $parent_node_list);
@@ -920,6 +931,10 @@ final class ConfigPluginSet extends PluginV3 implements
             }
             $loaded_plugin_files[$plugin_file_name] = true;
 
+            if (isset(self::$plugin_instances_cache[$plugin_file_name])) {
+                return clone(self::$plugin_instances_cache[$plugin_file_name]);
+            }
+
             try {
                 $plugin_instance = require($plugin_file_name);
             } catch (UnloadablePluginException $e) {
@@ -949,6 +964,7 @@ final class ConfigPluginSet extends PluginV3 implements
                 throw new AssertionError("Plugins must extend \Phan\PluginV3. The plugin at $plugin_file_name does not.");
             }
 
+            self::$plugin_instances_cache[$plugin_file_name] = $plugin_instance;
             return $plugin_instance;
         };
         // Add user-defined plugins.
@@ -1013,6 +1029,7 @@ final class ConfigPluginSet extends PluginV3 implements
                 \fwrite(STDERR, CLI::colorizeHelpSectionIfSupported("WARNING: ") . "Could not load baseline from file '$load_baseline_path'" . PHP_EOL);
             }
         }
+        $plugin_set = \array_values(\array_filter($plugin_set));
 
         // Register the entire set.
         $this->plugin_set = $plugin_set;
@@ -1063,29 +1080,31 @@ final class ConfigPluginSet extends PluginV3 implements
      */
     private static function registerMergeVariableInfoClosure(array $plugin_set): void
     {
+        $closures = [];
         foreach (self::filterByClass($plugin_set, MergeVariableInfoCapability::class) as $plugin) {
-            $closure = $plugin->getMergeVariableInfoClosure();
-            self::$mergeVariableInfoClosure = self::mergeMergeVariableInfoClosures($closure, self::$mergeVariableInfoClosure);
-        }
-    }
-
-    /**
-     * @param Closure(Variable,Scope[],bool):void $a
-     * @param ?Closure(Variable,Scope[],bool):void $b
-     * @return Closure(Variable,Scope[],bool):void
-     */
-    private static function mergeMergeVariableInfoClosures(Closure $a, Closure $b = null): Closure
-    {
-        if (!$b) {
-            return $a;
+            $closures[] = $plugin->getMergeVariableInfoClosure();
         }
 
+        // If we have no plugins registering closures, no overall closure is needed
+        if (!$closures) {
+            self::$mergeVariableInfoClosure = null;
+            return;
+        }
+
+        // If we have only one plugin registering a closure, just use that
+        if (count($closures) === 1) {
+            self::$mergeVariableInfoClosure = reset($closures);
+            return;
+        }
+
+        // If we have multiple plugins registering closures, combine them
         /**
          * @param list<Scope> $child_scopes
          */
-        return static function (Variable $variable, array $child_scopes, bool $var_exists_in_all_branches) use ($a, $b): void {
-            $a($variable, $child_scopes, $var_exists_in_all_branches);
-            $b($variable, $child_scopes, $var_exists_in_all_branches);
+        self::$mergeVariableInfoClosure = static function (Variable $variable, array $child_scopes, bool $var_exists_in_all_branches) use ($closures): void {
+            foreach ($closures as $c) {
+                $c($variable, $child_scopes, $var_exists_in_all_branches);
+            }
         };
     }
 
@@ -1143,7 +1162,7 @@ final class ConfigPluginSet extends PluginV3 implements
         // @see PreAnalyzeNodeCapability (magic to create parent_node_list)
         $closure = self::getGenericClosureForPluginAwarePreAnalysisVisitor($plugin_analysis_class);
         $handled_node_kinds = $plugin_analysis_class::getHandledNodeKinds();
-        if (\count($handled_node_kinds) === 0) {
+        if (!$handled_node_kinds) {
             // @phan-suppress-next-line PhanPluginRemoveDebugCall
             \fprintf(
                 STDERR,
@@ -1242,7 +1261,7 @@ final class ConfigPluginSet extends PluginV3 implements
         $closure = self::getGenericClosureForPluginAwarePostAnalysisVisitor($plugin_analysis_class);
 
         $handled_node_kinds = $plugin_analysis_class::getHandledNodeKinds();
-        if (\count($handled_node_kinds) === 0) {
+        if (!$handled_node_kinds) {
             // @phan-suppress-next-line PhanPluginRemoveDebugCall
             \fprintf(
                 STDERR,
@@ -1342,7 +1361,7 @@ final class ConfigPluginSet extends PluginV3 implements
         $closure = self::getGenericClosureForBeforeLoopBodyAnalysisVisitor($plugin_analysis_class);
 
         $handled_node_kinds = $plugin_analysis_class::getHandledNodeKinds();
-        if (\count($handled_node_kinds) === 0) {
+        if (!$handled_node_kinds) {
             // @phan-suppress-next-line PhanPluginRemoveDebugCall
             \fprintf(
                 STDERR,
@@ -1409,7 +1428,7 @@ final class ConfigPluginSet extends PluginV3 implements
      * @template T
      * @param list<PluginV3> $plugin_set
      * @param class-string<T> $interface_name
-     * @return list<T>
+     * @return list<PluginV3&T>
      * @suppress PhanPartialTypeMismatchReturn unable to infer this
      */
     private static function filterByClass(array $plugin_set, string $interface_name): array

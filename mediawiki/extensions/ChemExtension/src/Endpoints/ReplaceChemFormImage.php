@@ -5,10 +5,10 @@ use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MolfileUpdateJob;
 use DIQA\ChemExtension\Specials\ReplaceMoleculeJob;
-use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use RequestContext;
 use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -16,15 +16,15 @@ class ReplaceChemFormImage extends SimpleHandler {
 
     public function run() {
 
-        global $wgUser;
         if (!in_array('editor', MediaWikiServices::getInstance()
             ->getUserGroupManager()
-            ->getUserGroups( $wgUser))) {
+            ->getUserGroups( RequestContext::getMain()->getUser()))) {
             $res = new Response();
             $res->setStatus(403);
             return $res;
         }
 
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $params = $this->getValidatedParams();
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
@@ -36,7 +36,7 @@ class ReplaceChemFormImage extends SimpleHandler {
             // moleculeKey did not change, still refers to the old molecule. only image changed.
             $chemFormRepo->addOrUpdateChemFormImage($params['moleculeKey'], base64_encode($params['imgData']));
             $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
-            JobQueueGroup::singleton()->push( $job );
+            $jobQueue->push( $job );
             $res = new Response();
             $res->setStatus(200);
             return $res;
@@ -49,9 +49,9 @@ class ReplaceChemFormImage extends SimpleHandler {
             $title = Title::newFromText($params['chemFormId'], NS_MOLECULE);
             $params['chemform'] = $chemForm;
             $job = new ReplaceMoleculeJob($title, $params);
-            JobQueueGroup::singleton()->push( $job );
+            $jobQueue->push( $job );
             $job = new MolfileUpdateJob($title, $params);
-            JobQueueGroup::singleton()->push( $job );
+            $jobQueue->push( $job );
             $res = new Response();
             $res->setStatus(200);
             return $res;

@@ -10,18 +10,15 @@ use function func_get_args;
 use function is_array;
 
 /**
- * Event Arguments used when SQL queries for creating tables are generated inside {@link AbstractPlatform}.
+ * Event Arguments used when SQL queries for creating tables are generated inside {@see AbstractPlatform}.
  */
 class SchemaAlterTableEventArgs extends SchemaEventArgs
 {
-    /** @var TableDiff */
-    private $tableDiff;
-
-    /** @var AbstractPlatform */
-    private $platform;
+    private TableDiff $tableDiff;
+    private AbstractPlatform $platform;
 
     /** @var string[] */
-    private $sql = [];
+    private array $sql = [];
 
     public function __construct(TableDiff $tableDiff, AbstractPlatform $platform)
     {

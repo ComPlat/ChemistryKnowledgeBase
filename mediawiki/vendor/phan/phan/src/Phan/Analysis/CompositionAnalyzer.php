@@ -8,6 +8,7 @@ use Phan\CodeBase;
 use Phan\Exception\IssueException;
 use Phan\Issue;
 use Phan\Language\Element\Clazz;
+use Phan\Language\Element\Flags;
 use Phan\Language\UnionType;
 
 /**
@@ -41,6 +42,9 @@ class CompositionAnalyzer
         // and check to see if the types line up.
         // (This must be done after hydration, because some properties are loaded from traits)
         foreach ($class->getPropertyMap($code_base) as $property) {
+            if ($property->getPhanFlagsHasState(Flags::IS_ENUM_PROPERTY)) {
+                continue;
+            }
             try {
                 $property_union_type = $property->getDefaultType() ?? UnionType::empty();
             } catch (IssueException $_) {
@@ -87,7 +91,8 @@ class CompositionAnalyzer
                 } catch (IssueException $_) {
                     $inherited_property_union_type = UnionType::empty();
                 }
-                if (!$property->isDynamicOrFromPHPDoc()) {
+                // Don't complain about incompatible types if the base property is private, #4426
+                if (!$property->isDynamicOrFromPHPDoc() && !$inherited_property->isPrivate()) {
                     $real_property_type = $property->getRealUnionType()->asNormalizedTypes();
                     $real_inherited_property_type = $inherited_property->getRealUnionType()->asNormalizedTypes();
                     if (!$real_property_type->isEqualTo($real_inherited_property_type)) {
@@ -110,9 +115,10 @@ class CompositionAnalyzer
                     // No need to warn about incompatible composition of trait with another ancestor if the property's default was overridden
                     continue;
                 }
+                // TODO: Why expand?
                 $can_cast =
-                    $property_union_type->canCastToExpandedUnionType(
-                        $inherited_property_union_type,
+                    $property_union_type->canCastToUnionType(
+                        $inherited_property_union_type->asExpandedTypes($code_base),
                         $code_base
                     );
 

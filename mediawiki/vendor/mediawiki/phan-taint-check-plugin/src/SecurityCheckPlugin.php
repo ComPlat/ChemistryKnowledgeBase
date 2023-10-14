@@ -25,6 +25,7 @@ namespace SecurityCheckPlugin;
 use AssertionError;
 use ast\Node;
 use Closure;
+use Error;
 use Phan\CodeBase;
 use Phan\Config;
 use Phan\Language\Context;
@@ -32,8 +33,8 @@ use Phan\Language\Element\Comment\Builder;
 use Phan\Language\Element\FunctionInterface;
 use Phan\Language\Element\Variable;
 use Phan\Language\FQSEN\FullyQualifiedFunctionLikeName;
+use Phan\Language\FQSEN\FullyQualifiedMethodName;
 use Phan\Language\Scope;
-use Phan\Library\Set;
 use Phan\PluginV3;
 use Phan\PluginV3\AnalyzeLiteralStatementCapability;
 use Phan\PluginV3\BeforeLoopBodyAnalysisCapability;
@@ -51,6 +52,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	MergeVariableInfoCapability,
 	AnalyzeLiteralStatementCapability
 {
+	use TaintednessAccessorsTrait;
 
 	// Various taint flags. The _EXEC_ varieties mean
 	// that it is unsafe to assign that type of taint
@@ -58,54 +60,49 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 
 	public const NO_TAINT = 0;
 
-	// For declaration type things. Given a special value for
-	// debugging purposes, but inapplicable taint should not
-	// actually show up anywhere.
-	public const INAPPLICABLE_TAINT = 1 << 0;
-
 	// Flag to denote that we don't know
-	public const UNKNOWN_TAINT = 1 << 1;
+	public const UNKNOWN_TAINT = 1 << 0;
 
 	// Flag for function parameters and the like, where it
 	// preserves whatever taint the function is given.
-	public const PRESERVE_TAINT = 1 << 2;
+	public const PRESERVE_TAINT = 1 << 1;
 
 	// In future might separate out different types of html quoting.
 	// e.g. "<div data-foo='" . htmlspecialchars( $bar ) . "'>";
 	// is unsafe.
-	public const HTML_TAINT = 1 << 3;
-	public const HTML_EXEC_TAINT = 1 << 4;
+	public const HTML_TAINT = 1 << 2;
+	public const HTML_EXEC_TAINT = 1 << 3;
 
-	public const SQL_TAINT = 1 << 5;
-	public const SQL_EXEC_TAINT = 1 << 6;
+	public const SQL_TAINT = 1 << 4;
+	public const SQL_EXEC_TAINT = 1 << 5;
 
-	public const SHELL_TAINT = 1 << 7;
-	public const SHELL_EXEC_TAINT = 1 << 8;
+	public const SHELL_TAINT = 1 << 6;
+	public const SHELL_EXEC_TAINT = 1 << 7;
 
-	public const SERIALIZE_TAINT = 1 << 9;
-	public const SERIALIZE_EXEC_TAINT = 1 << 10;
+	public const SERIALIZE_TAINT = 1 << 8;
+	public const SERIALIZE_EXEC_TAINT = 1 << 9;
 
 	// Tainted paths, as input to include(), require() and some FS functions (path traversal)
-	public const PATH_TAINT = 1 << 11;
-	public const PATH_EXEC_TAINT = 1 << 12;
+	public const PATH_TAINT = 1 << 10;
+	public const PATH_EXEC_TAINT = 1 << 11;
 
 	// User-controlled code, for RCE
-	public const CODE_TAINT = 1 << 13;
-	public const CODE_EXEC_TAINT = 1 << 14;
+	public const CODE_TAINT = 1 << 12;
+	public const CODE_EXEC_TAINT = 1 << 13;
 
 	// User-controlled regular expressions, for ReDoS
-	public const REGEX_TAINT = 1 << 15;
-	public const REGEX_EXEC_TAINT = 1 << 16;
+	public const REGEX_TAINT = 1 << 14;
+	public const REGEX_EXEC_TAINT = 1 << 15;
 
 	// For stuff that doesn't fit another category
-	public const MISC_TAINT = 1 << 17;
-	public const MISC_EXEC_TAINT = 1 << 18;
+	public const MISC_TAINT = 1 << 16;
+	public const MISC_EXEC_TAINT = 1 << 17;
 
 	// To allow people to add other application specific taints.
-	public const CUSTOM1_TAINT = 1 << 19;
-	public const CUSTOM1_EXEC_TAINT = 1 << 20;
-	public const CUSTOM2_TAINT = 1 << 21;
-	public const CUSTOM2_EXEC_TAINT = 1 << 22;
+	public const CUSTOM1_TAINT = 1 << 18;
+	public const CUSTOM1_EXEC_TAINT = 1 << 19;
+	public const CUSTOM2_TAINT = 1 << 20;
+	public const CUSTOM2_EXEC_TAINT = 1 << 21;
 
 	// Special purpose for supporting MediaWiki's IDatabase::select
 	// and friends. Like SQL_TAINT, but only applies to the numeric
@@ -115,26 +112,34 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	// The associative keys also have this flag if they are tainted.
 	// It is also assumed anything with this flag will also have
 	// the SQL_TAINT flag set.
-	public const SQL_NUMKEY_TAINT = 1 << 23;
-	public const SQL_NUMKEY_EXEC_TAINT = 1 << 24;
+	public const SQL_NUMKEY_TAINT = 1 << 22;
+	public const SQL_NUMKEY_EXEC_TAINT = 1 << 23;
 
 	// For double escaped variables
-	public const ESCAPED_TAINT = 1 << 25;
-	public const ESCAPED_EXEC_TAINT = 1 << 26;
+	public const ESCAPED_TAINT = 1 << 24;
+	public const ESCAPED_EXEC_TAINT = 1 << 25;
 
 	// Special purpose flags (Starting at 2^28)
+	// TODO Renumber these. Requires changing format of the hardcoded arrays
 	// Cancel's out all EXEC flags on a function arg if arg is array.
 	public const ARRAY_OK = 1 << 28;
 
 	// Do not allow autodetected taint info override given taint.
+	// TODO Store this and other special flags somewhere else in the FunctionTaintedness object, not
+	// as normal taint flags.
 	public const NO_OVERRIDE = 1 << 29;
 
 	// Represents a parameter expecting a raw value, for which escaping should have already
-	// taken place. E.g. in MW this happens for Message::rawParams. In practice, this turns
-	// the func taint into EXEC, but without propagation.
+	// taken place. E.g. in MW this happens for Message::rawParams. In practice, this avoids
+	// backpropagation of EXEC flags.
+	// TODO Do we still need this?
 	public const RAW_PARAM = 1 << 30;
 
 	public const VARIADIC_PARAM = 1 << 31;
+
+	// *All* function flags
+	//TODO Add a structure test for this
+	public const FUNCTION_FLAGS = self::ARRAY_OK | self::NO_OVERRIDE | self::RAW_PARAM;
 
 	// Combination flags.
 
@@ -143,6 +148,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		self::PATH_TAINT | self::CODE_TAINT | self::REGEX_TAINT | self::CUSTOM1_TAINT | self::CUSTOM2_TAINT |
 		self::MISC_TAINT;
 	public const EXEC_TAINT = self::YES_TAINT << 1;
+	// @phan-suppress-next-line PhanUnreferencedPublicClassConstant
 	public const YES_EXEC_TAINT = self::YES_TAINT | self::EXEC_TAINT;
 
 	// ALL taint is YES + special purpose taints, but not including special flags.
@@ -151,16 +157,14 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		self::EXEC_TAINT | self::SQL_NUMKEY_EXEC_TAINT | self::ESCAPED_EXEC_TAINT;
 	public const ALL_YES_EXEC_TAINT = self::ALL_TAINT | self::ALL_EXEC_TAINT;
 
-	// Taints that support backpropagation. Does not include numkey
-	// due to special array handling.
-	public const BACKPROP_TAINTS = self::ALL_EXEC_TAINT & ~self::SQL_NUMKEY_EXEC_TAINT;
+	// Taints that support backpropagation.
+	public const BACKPROP_TAINTS = self::ALL_EXEC_TAINT;
 
 	public const ESCAPES_HTML = ( self::YES_TAINT & ~self::HTML_TAINT ) | self::ESCAPED_EXEC_TAINT;
 
 	// As the name would suggest, this must include *ALL* possible taint flags.
-	public const ALL_TAINT_FLAGS = self::ALL_YES_EXEC_TAINT | self::ARRAY_OK | self::RAW_PARAM |
-		self::NO_OVERRIDE | self::INAPPLICABLE_TAINT | self::UNKNOWN_TAINT | self::PRESERVE_TAINT |
-		self::VARIADIC_PARAM;
+	public const ALL_TAINT_FLAGS = self::ALL_YES_EXEC_TAINT | self::FUNCTION_FLAGS |
+		self::UNKNOWN_TAINT | self::PRESERVE_TAINT | self::VARIADIC_PARAM;
 
 	/**
 	 * Used to print taint debug data, see BlockAnalysisVisitor::PHAN_DEBUG_VAR_REGEX
@@ -169,7 +173,8 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		'/@phan-debug-var-taintedness\s+\$(' . Builder::WORD_REGEX . '(,\s*\$' . Builder::WORD_REGEX . ')*)/';
 	// @phan-suppress-previous-line PhanAccessClassConstantInternal It's just perfect for use here
 
-	public const PARAM_ANNOTATION_REGEX = '/@param-taint &?(?P<variadic>\.\.\.)?\$(?P<paramname>\S+)\s+(?P<taint>.*)$/';
+	public const PARAM_ANNOTATION_REGEX =
+		'/@param-taint\s+&?(?P<variadic>\.\.\.)?\$(?P<paramname>\S+)\s+(?P<taint>.*)$/';
 
 	/**
 	 * @var self Passed to the visitor for context
@@ -177,8 +182,9 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	public static $pluginInstance;
 
 	/**
-	 * @var FunctionTaintedness[] Cache of parsed docblocks. This is declared here (as opposed to
-	 *  the BaseVisitor) so that PHPUnit can snapshot and restore it.
+	 * @var array<array<FunctionTaintedness|MethodLinks>> Cache of parsed docblocks. This is declared here (as opposed
+	 *  to the BaseVisitor) so that PHPUnit can snapshot and restore it.
+	 * @phan-var array<array{0:FunctionTaintedness,1:MethodLinks}>
 	 */
 	public static $docblockCache = [];
 
@@ -196,7 +202,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	/**
 	 * Ensure that the options we need are enabled.
 	 */
-	private function assertRequiredConfig() : void {
+	private function assertRequiredConfig(): void {
 		if ( Config::get_quick_mode() ) {
 			throw new AssertionError( 'Quick mode must be disabled to run taint-check' );
 		}
@@ -205,42 +211,87 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	/**
 	 * @inheritDoc
 	 */
-	public function getMergeVariableInfoClosure() : Closure {
+	public function getMergeVariableInfoClosure(): Closure {
 		/**
 		 * For branches that are not guaranteed to be executed, merge taint info for any involved
 		 * variable across all branches.
+		 *
+		 * @note This method is HOT, so keep it optimized
+		 *
 		 * @param Variable $variable
 		 * @param Scope[] $scopeList
 		 * @param bool $varExistsInAllScopes @phan-unused-param
-		 * @suppress PhanUnreferencedClosure
+		 * @suppress PhanUnreferencedClosure, PhanUndeclaredProperty
 		 */
 		return static function ( Variable $variable, array $scopeList, bool $varExistsInAllScopes ) {
 			$varName = $variable->getName();
 
-			$methodLinks = new Set();
-			$error = [];
-			$taintedness = Taintedness::newSafe();
-
+			$vars = [];
+			$firstVar = null;
 			foreach ( $scopeList as $scope ) {
 				$localVar = $scope->getVariableByNameOrNull( $varName );
-				if ( !$localVar ) {
-					continue;
+				if ( $localVar ) {
+					if ( !$firstVar ) {
+						$firstVar = $localVar;
+					} else {
+						$vars[] = $localVar;
+					}
 				}
-
-				if ( property_exists( $localVar, 'taintedness' ) ) {
-					$taintedness->mergeWith( $localVar->taintedness );
-				}
-
-				$variableObjLinks = $localVar->taintedMethodLinks ?? new Set;
-				$methodLinks->addAll( $variableObjLinks );
-
-				$varError = $localVar->taintedOriginalError ?? [];
-				$error = TaintednessBaseVisitor::mergeCausedByLines( $error, $varError );
 			}
 
-			$variable->taintedness = $taintedness;
-			$variable->taintedMethodLinks = $methodLinks;
-			$variable->taintedOriginalError = $error;
+			if ( !$firstVar ) {
+				return;
+			}
+
+			$taintedness = $prevTaint = $firstVar->taintedness ?? null;
+			$methodLinks = $prevLinks = $firstVar->taintedMethodLinks ?? null;
+			$error = $prevErr = $firstVar->taintedOriginalError ?? null;
+
+			foreach ( $vars as $localVar ) {
+				// Below we only merge data if it's non-null in the current scope and different from the previous
+				// branch. Using arrays to save all previous values and then in_array seems useless on MW core,
+				// since >99% cases of duplication are already covered by these simple checks.
+
+				$taintOrNull = $localVar->taintedness ?? null;
+				if ( $taintOrNull && $taintOrNull !== $prevTaint ) {
+					$prevTaint = $taintOrNull;
+					if ( $taintedness ) {
+						$taintedness->mergeWith( $taintOrNull );
+					} else {
+						$taintedness = $taintOrNull;
+					}
+				}
+
+				$variableObjLinksOrNull = $localVar->taintedMethodLinks ?? null;
+				if ( $variableObjLinksOrNull && $variableObjLinksOrNull !== $prevLinks ) {
+					$prevLinks = $variableObjLinksOrNull;
+					if ( $methodLinks ) {
+						$methodLinks->mergeWith( $variableObjLinksOrNull );
+					} else {
+						$methodLinks = $variableObjLinksOrNull;
+					}
+				}
+
+				$varErrorOrNull = $localVar->taintedOriginalError ?? null;
+				if ( $varErrorOrNull && $varErrorOrNull !== $prevErr ) {
+					$prevErr = $varErrorOrNull;
+					if ( $error ) {
+						$error->mergeWith( $varErrorOrNull );
+					} else {
+						$error = $varErrorOrNull;
+					}
+				}
+			}
+
+			if ( $taintedness ) {
+				self::setTaintednessRaw( $variable, $taintedness );
+			}
+			if ( $methodLinks ) {
+				self::setMethodLinks( $variable, $methodLinks );
+			}
+			if ( $error ) {
+				self::setCausedByRaw( $variable, $error );
+			}
 		};
 	}
 
@@ -257,9 +308,8 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 					$varName = ltrim( trim( $rawVar ), '$' );
 					if ( $context->getScope()->hasVariableWithName( $varName ) ) {
 						$var = $context->getScope()->getVariableByName( $varName );
-						$taint = property_exists( $var, 'taintedness' )
-							? $var->taintedness->toShortString()
-							: 'unset';
+						$taintOrNull = self::getTaintednessRaw( $var );
+						$taint = $taintOrNull ? $taintOrNull->toShortString() : 'unset';
 						$msg = "Variable {CODE} has taintedness: {DETAILS}";
 						$params = [ "\$$varName", $taint ];
 					} else {
@@ -276,6 +326,28 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 					$found = true;
 				}
 			}
+		} elseif ( strpos( $statement, '@taint-check-debug-method-first-arg' ) !== false ) {
+			// FIXME This is a hack. The annotation is INTERNAL, for use only in the backpropoffsets-blowup
+			// test. We should either find a better way to test that, or maybe add a public annotation
+			// for debugging taintedness of a method (probably unreadable on a single line).
+			$funcName = preg_replace( '/@taint-check-debug-method-first-arg ([a-z:]+)\b.*/i', '$1', $statement );
+			// Let any exception bubble up here, the annotation is for internal use in testing
+			$fqsen = FullyQualifiedMethodName::fromStringInContext( $funcName, $context );
+			$method = $codeBase->getMethodByFQSEN( $fqsen );
+			/** @var FunctionTaintedness|null $fTaint */
+			// @phan-suppress-next-line PhanUndeclaredProperty
+			$fTaint = $method->funcTaint ?? null;
+			if ( !$fTaint ) {
+				return false;
+			}
+			self::emitIssue(
+				$codeBase,
+				$context,
+				'SecurityCheckDebugTaintedness',
+				"Method {CODE} has first param with taintedness: {DETAILS}",
+				[ $funcName, $fTaint->getParamSinkTaint( 0 )->toShortString() ]
+			);
+			return true;
 		}
 		return $found;
 	}
@@ -289,13 +361,16 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @param int $taint
 	 * @return string
 	 */
-	public static function taintToString( int $taint ) : string {
+	public static function taintToString( int $taint ): string {
 		if ( $taint === self::NO_TAINT ) {
 			return 'NONE';
 		}
 
 		// Note, order matters here.
 		static $mapping = [
+			self::UNKNOWN_TAINT => 'UNKNOWN',
+			self::PRESERVE_TAINT => 'PRESERVE',
+			self::ALL_TAINT => 'ALL',
 			self::YES_TAINT => 'YES',
 			self::YES_TAINT &
 			( ~self::HTML_TAINT ) => '~HTML',
@@ -323,6 +398,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			self::MISC_TAINT => 'MISC',
 			self::SQL_NUMKEY_TAINT => 'SQL_NUMKEY',
 			self::ARRAY_OK => 'ARRAY_OK',
+			self::ALL_EXEC_TAINT => '*ALL',
 			self::HTML_EXEC_TAINT => '*HTML',
 			self::SQL_EXEC_TAINT => '*SQL',
 			self::SHELL_EXEC_TAINT => '*SHELL',
@@ -344,26 +420,18 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				$taint &= ~$bitmap;
 			}
 		}
-		// Catch-all flags
-		if ( ( $taint & self::ALL_EXEC_TAINT ) !== 0 ) {
-			$types[] = '*ALL';
-			$taint &= ~self::ALL_EXEC_TAINT;
+		if ( $taint !== 0 ) {
+			$types[] = "Unrecognized: $taint";
 		}
-		if ( ( $taint & self::ALL_TAINT ) !== 0 ) {
-			$types[] = 'ALL';
-		}
-		$taintTypes = implode( ', ', $types );
-		$flags = [];
-		if ( ( $taint & self::RAW_PARAM ) === self::RAW_PARAM ) {
-			$flags[] = 'raw param';
-		}
-		if ( ( $taint & self::VARIADIC_PARAM ) === self::VARIADIC_PARAM ) {
-			$flags[] = 'variadic param';
-		}
-		if ( $flags ) {
-			$taintTypes .= ' (' . implode( ', ', $flags ) . ')';
-		}
-		return $taintTypes;
+		return implode( ', ', $types );
+	}
+
+	/**
+	 * @param FullyQualifiedFunctionLikeName $fqsen
+	 * @return bool
+	 */
+	public function builtinFuncHasTaint( FullyQualifiedFunctionLikeName $fqsen ): bool {
+		return $this->getBuiltinFuncTaint( $fqsen ) !== null;
 	}
 
 	/**
@@ -377,11 +445,11 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @param FullyQualifiedFunctionLikeName $fqsen The function/method in question
 	 * @return FunctionTaintedness|null Null to autodetect taintedness
 	 */
-	public function getBuiltinFuncTaint( FullyQualifiedFunctionLikeName $fqsen ) : ?FunctionTaintedness {
+	public function getBuiltinFuncTaint( FullyQualifiedFunctionLikeName $fqsen ): ?FunctionTaintedness {
 		$name = (string)$fqsen;
 
 		if ( isset( self::$builtinFuncTaintCache[$name] ) ) {
-			return clone self::$builtinFuncTaintCache[$name];
+			return self::$builtinFuncTaintCache[$name];
 		}
 
 		static $funcTaints = null;
@@ -391,17 +459,61 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 
 		if ( isset( $funcTaints[$name] ) ) {
 			$intTaint = $funcTaints[$name];
-			$taint = [];
+			self::assertFunctionTaintArrayWellFormed( $intTaint );
+			// Note: for backcompat, we set NO_OVERRIDE everywhere.
+			$overallFlags = ( $intTaint['overall'] & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
+			$res = new FunctionTaintedness( new Taintedness( $intTaint['overall'] & ~$overallFlags ) );
+			$res->addOverallFlags( $overallFlags );
+			unset( $intTaint['overall'] );
 			foreach ( $intTaint as $i => $val ) {
-				$objVal = new Taintedness( $val );
-				// For backcompat, make self::NO_OVERRIDE always be set.
-				$objVal->add( self::NO_OVERRIDE );
-				$taint[$i] = $objVal;
+				assert( ( $val & self::UNKNOWN_TAINT ) === 0, 'Cannot set UNKNOWN' );
+				$paramFlags = ( $val & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
+				// TODO Split sink and preserve in the hardcoded arrays
+				if ( $val & self::VARIADIC_PARAM ) {
+					$pTaint = new Taintedness( $val & ~( self::VARIADIC_PARAM | $paramFlags ) );
+					$res->setVariadicParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
+					$res->setVariadicParamPreservedTaint(
+						$i,
+						$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
+					);
+					$res->addVariadicParamFlags( $paramFlags );
+				} else {
+					$pTaint = new Taintedness( $val & ~$paramFlags );
+					$res->setParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
+					$res->setParamPreservedTaint(
+						$i,
+						$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
+					);
+					$res->addParamFlags( $i, $paramFlags );
+				}
 			}
-			self::$builtinFuncTaintCache[$name] = FunctionTaintedness::newFromArray( $taint );
-			return clone self::$builtinFuncTaintCache[$name];
+			self::$builtinFuncTaintCache[$name] = $res;
+			return self::$builtinFuncTaintCache[$name];
 		}
 		return null;
+	}
+
+	/**
+	 * Assert that a taintednes array is well formed, and fail hard if it isn't.
+	 *
+	 * @param int[] $taint
+	 */
+	private static function assertFunctionTaintArrayWellFormed( array $taint ): void {
+		if ( !isset( $taint['overall'] ) ) {
+			throw new Error( 'Overall taint must be set' );
+		}
+
+		foreach ( $taint as $i => $t ) {
+			if ( !is_int( $i ) && $i !== 'overall' ) {
+				throw new Error( "Taint indexes must be int or 'overall', got '$i'" );
+			}
+			if ( !is_int( $t ) || ( $t & ~self::ALL_TAINT_FLAGS ) ) {
+				throw new Error( "Wrong taint index $i, got: " . var_export( $t, true ) );
+			}
+			if ( $t & ~self::ALL_TAINT_FLAGS ) {
+				throw new Error( "Taint index $i has unknown flags: " . decbin( $t ) );
+			}
+		}
 	}
 
 	/**
@@ -413,7 +525,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 *
 	 *   For example: [ self::YES_TAINT, 'overall' => self::NO_TAINT ]
 	 *   means that the taint of the return value is the same as the taint
-	 *   of the the first arg, and all other args are ignored.
+	 *   of the first arg, and all other args are ignored.
 	 *   [ self::HTML_EXEC_TAINT, 'overall' => self::NO_TAINT ]
 	 *   Means that the first arg is output in an html context (e.g. like echo)
 	 *   [ self::YES_TAINT & ~self::HTML_TAINT, 'overall' => self::NO_TAINT ]
@@ -423,7 +535,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @see FunctionTaintedness for more details
 	 * @phan-return array<string,int[]>
 	 */
-	abstract protected function getCustomFuncTaints() : array;
+	abstract protected function getCustomFuncTaints(): array;
 
 	/**
 	 * Can be used to force specific issues to be marked false positives
@@ -431,10 +543,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * For example, a specific application might be able to recognize
 	 * that we are in a CLI context, and thus the XSS is really a false positive.
 	 *
-	 * @note The $lhsTaint parameter uses the self::*_TAINT constants,
-	 *   NOT the *_EXEC_TAINT constants.
-	 * @param Taintedness $lhsTaint The dangerous taints to be output (e.g. LHS of assignment)
-	 * @param Taintedness $rhsTaint The taint of the expression
+	 * @param int $combinedTaint Combined and adjusted taint of LHS+RHS
 	 * @param string &$msg Issue description (so plugin can modify to state why false)
 	 * @param Context $context
 	 * @param CodeBase $code_base
@@ -442,12 +551,11 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @suppress PhanUnusedPublicMethodParameter No param is used
 	 */
 	public function isFalsePositive(
-		Taintedness $lhsTaint,
-		Taintedness $rhsTaint,
+		int $combinedTaint,
 		string &$msg,
 		Context $context,
 		CodeBase $code_base
-	) : bool {
+	): bool {
 		return false;
 	}
 
@@ -481,54 +589,58 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 *  * array_ok - sets self::ARRAY_OK
 	 *  * allow_override - Allow autodetected taints to override annotation
 	 *
-	 * @todo Should UNKNOWN_TAINT be in here? What about ~ operator?
+	 * @todo What about ~ operator?
 	 * @note The special casing to have escapes_html always add exec_escaped
 	 *   (and having htmlnoent exist) is "experimental" and may change in
 	 *   future versions (Maybe all types should set exec_escaped. Maybe it
 	 *   should be explicit)
+	 * @note Excluding UNKNOWN here on purpose, as if we're setting it, it's not unknown
 	 * @param string $line A line from the docblock
-	 * @return Taintedness|null null on no info
+	 * @return array|null Array of [taintedness, flags], or null on no info
+	 * @phan-return array{0:Taintedness,1:int}|null
 	 */
-	public static function parseTaintLine( string $line ) : ?Taintedness {
+	public static function parseTaintLine( string $line ): ?array {
 		$types = '(?P<type>htmlnoent|html|sql|shell|serialize|custom1|'
 			. 'custom2|misc|code|path|regex|sql_numkey|escaped|none|tainted)';
 		$prefixes = '(?P<prefix>escapes|onlysafefor|exec)';
-		$taintExpr = "/^(?P<taint>(?:${prefixes}_)?$types|array_ok|allow_override|raw_param)$/";
+		$taintExpr = "(?P<taint>(?:${prefixes}_)?$types|array_ok|allow_override|raw_param)";
 
-		$taints = explode( ',', strtolower( $line ) );
+		$filteredLine = preg_replace( "/((?:$taintExpr,? *)+)(?: .*)?$/", '$1', $line );
+		$taints = explode( ',', strtolower( $filteredLine ) );
 		$taints = array_map( 'trim', $taints );
 
-		$overallTaint = new Taintedness( self::NO_OVERRIDE );
+		$overallTaint = new Taintedness( self::NO_TAINT );
+		$overallFlags = self::NO_OVERRIDE;
 		$numberOfTaintsProcessed = 0;
 		foreach ( $taints as $taint ) {
 			$taintParts = [];
-			if ( !preg_match( $taintExpr, $taint, $taintParts ) ) {
+			if ( !preg_match( "/^$taintExpr$/", $taint, $taintParts ) ) {
 				continue;
 			}
 			$numberOfTaintsProcessed++;
 			if ( $taintParts['taint'] === 'array_ok' ) {
-				$overallTaint->add( self::ARRAY_OK );
+				$overallFlags |= self::ARRAY_OK;
 				continue;
 			}
 			if ( $taintParts['taint'] === 'allow_override' ) {
-				$overallTaint->remove( self::NO_OVERRIDE );
+				$overallFlags &= ~self::NO_OVERRIDE;
 				continue;
 			}
 			if ( $taintParts['taint'] === 'raw_param' ) {
-				$overallTaint->add( self::RAW_PARAM );
+				$overallFlags |= self::RAW_PARAM;
 				continue;
 			}
-			$taintAsInt = new Taintedness( self::convertTaintNameToConstant( $taintParts['type'] ) );
+			$taintAsInt = self::convertTaintNameToConstant( $taintParts['type'] );
 			switch ( $taintParts['prefix'] ) {
 				case '':
 					$overallTaint->add( $taintAsInt );
 					break;
 				case 'exec':
-					$overallTaint->add( $taintAsInt->asYesToExecTaint() );
+					$overallTaint->add( Taintedness::flagsAsYesToExecTaint( $taintAsInt ) );
 					break;
 				case 'escapes':
 				case 'onlysafefor':
-					$overallTaint->add( Taintedness::newTainted()->without( $taintAsInt ) );
+					$overallTaint->add( self::YES_TAINT & ~$taintAsInt );
 					if ( $taintParts['type'] === 'html' ) {
 						if ( $taintParts['prefix'] === 'escapes' ) {
 							$overallTaint->add( self::ESCAPED_EXEC_TAINT );
@@ -542,7 +654,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		if ( $numberOfTaintsProcessed === 0 ) {
 			return null;
 		}
-		return $overallTaint;
+		return [ $overallTaint, $overallFlags ];
 	}
 
 	/**
@@ -566,7 +678,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		FunctionTaintedness $funcTaint,
 		Context $context,
 		CodeBase $code_base
-	) : Taintedness {
+	): Taintedness {
 		// no-op
 		return $curArgTaintedness;
 	}
@@ -580,7 +692,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 *   escaped, none (= self::NO_TAINT), tainted (= self::YES_TAINT)
 	 * @return int One of the TAINT constants
 	 */
-	public static function convertTaintNameToConstant( string $name ) : int {
+	public static function convertTaintNameToConstant( string $name ): int {
 		switch ( $name ) {
 			case 'html':
 			case 'htmlnoent':
@@ -622,7 +734,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @return int[][] List of func taints (See getBuiltinFuncTaint())
 	 * @phan-return array<string,int[]>
 	 */
-	protected function getPHPFuncTaints() : array {
+	protected function getPHPFuncTaints(): array {
 		$pregMatchTaint = [
 			self::REGEX_EXEC_TAINT,
 			self::YES_TAINT,
@@ -759,6 +871,22 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				self::YES_TAINT & ~self::SQL_TAINT,
 				'overall' => self::NO_TAINT
 			],
+			'\PDO::query' => [
+				self::SQL_EXEC_TAINT,
+				self::NO_TAINT,
+				self::NO_TAINT,
+				self::NO_TAINT,
+				'overall' => self::UNKNOWN_TAINT
+			],
+			'\PDO::prepare' => [
+				self::SQL_EXEC_TAINT,
+				self::NO_TAINT,
+				'overall' => self::UNKNOWN_TAINT
+			],
+			'\PDO::exec' => [
+				self::SQL_EXEC_TAINT,
+				'overall' => self::NO_TAINT
+			],
 			'\base64_encode' => [
 				self::YES_TAINT & ~self::HTML_TAINT,
 				'overall' => self::NO_TAINT
@@ -794,16 +922,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			'\printf' => [
 				self::HTML_EXEC_TAINT,
 				// TODO We could check if the respective specifiers are safe
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
-				self::HTML_EXEC_TAINT,
+				self::HTML_EXEC_TAINT | self::VARIADIC_PARAM,
 				'overall' => self::NO_TAINT
 			],
 			'\preg_filter' => [
@@ -843,14 +962,29 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				self::NO_TAINT,
 				self::NO_TAINT,
 				'overall' => self::NO_TAINT
-			]
+			],
+			// We assume that hashing functions are safe, see T272492
+			'\md5' => [
+				self::NO_TAINT,
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
+			'\sha1' => [
+				self::NO_TAINT,
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
+			'\crc32' => [
+				self::NO_TAINT,
+				'overall' => self::NO_TAINT
+			],
 		];
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public static function getBeforeLoopBodyAnalysisVisitorClassName() : string {
+	public static function getBeforeLoopBodyAnalysisVisitorClassName(): string {
 		return TaintednessLoopVisitor::class;
 	}
 }

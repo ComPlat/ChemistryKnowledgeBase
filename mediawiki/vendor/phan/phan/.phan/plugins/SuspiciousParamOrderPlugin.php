@@ -49,6 +49,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
         $args = $node->children['args']->children;
         if (count($args) < 1) {
             // Can't have a suspicious param order/position if there are no params
+            // (or for AST_CALLABLE_CONVERT)
             return;
         }
         $expression = $node->children['expr'];
@@ -183,7 +184,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
                 $j = $cycle[($array_index + 1) % count($cycle)];
                 $type = UnionTypeVisitor::unionTypeFromNode($this->code_base, $this->context, $args[$i]);
                 // echo "Checking if $type can cast to $parameters[$j]\n";
-                if (!$type->asExpandedTypes($this->code_base)->canCastToUnionType($parameters[$j]->getUnionType())) {
+                if (!$type->canCastToUnionType($parameters[$j]->getUnionType(), $this->code_base)) {
                     continue 2;
                 }
             }
@@ -200,7 +201,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
             if ($function->isPHPInternal()) {
                 $this->emitPluginIssue(
                     $this->code_base,
-                    clone($this->context)->withLineNumberStart($node->lineno),
+                    (clone $this->context)->withLineNumberStart($node->lineno),
                     self::SuspiciousParamOrderInternal,
                     'Suspicious order for arguments named {DETAILS} - These are being passed to parameters {DETAILS} of {FUNCTION}',
                     [
@@ -212,7 +213,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
             } else {
                 $this->emitPluginIssue(
                     $this->code_base,
-                    clone($this->context)->withLineNumberStart($node->lineno),
+                    (clone $this->context)->withLineNumberStart($node->lineno),
                     self::SuspiciousParamOrder,
                     'Suspicious order for arguments named {DETAILS} - These are being passed to parameters {DETAILS} of {FUNCTION} defined at {FILE}:{LINE}',
                     [
@@ -237,10 +238,11 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
      */
     private function checkMovedArg(FunctionInterface $function, array $args, Node $node, array $arg_names, array $places_set = []): void
     {
+        $real_parameters = $function->getRealParameterList();
         $parameters = $function->getParameterList();
         /** @var associative-array<string,?int> maps lowercase param names to their unique index, or null */
         $parameter_names = [];
-        foreach ($parameters as $i => $param) {
+        foreach ($real_parameters as $i => $param) {
             if (isset($places_set[$i])) {
                 continue;
             }
@@ -256,34 +258,46 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
             if ($other_i === null || $other_i === $i) {
                 continue;
             }
-            $param = $parameters[$other_i];
-            if ($param->isVariadic()) {
-                // Skip warning about signatures such as var_dump($var, ...$args)
+            $real_param = $real_parameters[$other_i];
+            if ($real_param->isVariadic()) {
+                // Skip warning about signatures such as var_dump($var, ...$args) or array_unshift($values, $arg, $arg2)
+                //
+                // NOTE: For internal functions, some functions such as implode() have alternate signatures where the real parameter is in a different place,
+                // which is why this checks both $real_param and $param
+                //
+                // For user-defined functions, alternates are not supported.
                 continue;
             }
-            $param_details = '#' . ($other_i + 1) . ' (' . trim($param->getUnionType() . ' $' . $param->getName()) . ')';
+            $param = $parameters[$other_i] ?? null;
+            if ($param && $param->getName() === $real_param->getName()) {
+                if ($param->isVariadic()) {
+                    continue;
+                }
+                $real_param = $param;
+            }
+            $real_param_details = '#' . ($other_i + 1) . ' (' . trim($real_param->getUnionType() . ' $' . $real_param->getName()) . ')';
             $arg_details = self::extractName($args[$i]) ?? 'unknown';
             if ($function->isPHPInternal()) {
                 $this->emitPluginIssue(
                     $this->code_base,
-                    clone($this->context)->withLineNumberStart($args[$i]->lineno ?? $node->lineno),
+                    (clone $this->context)->withLineNumberStart($args[$i]->lineno ?? $node->lineno),
                     self::SuspiciousParamPositionInternal,
                     'Suspicious order for argument {DETAILS} - This is getting passed to parameter {DETAILS} of {FUNCTION}',
                     [
                         $arg_details,
-                        $param_details,
+                        $real_param_details,
                         $function->getRepresentationForIssue(true),
                     ]
                 );
             } else {
                 $this->emitPluginIssue(
                     $this->code_base,
-                    clone($this->context)->withLineNumberStart($args[$i]->lineno ?? $node->lineno),
+                    (clone $this->context)->withLineNumberStart($args[$i]->lineno ?? $node->lineno),
                     self::SuspiciousParamPosition,
                     'Suspicious order for argument {DETAILS} - This is getting passed to parameter {DETAILS} of {FUNCTION} defined at {FILE}:{LINE}',
                     [
                         $arg_details,
-                        $param_details,
+                        $real_param_details,
                         $function->getRepresentationForIssue(true),
                         $function->getContext()->getFile(),
                         $function->getContext()->getLineNumberStart(),
@@ -361,6 +375,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
         $args = $node->children['args']->children;
         if (count($args) < 1) {
             // Can't have a suspicious param order/position if there are no params
+            // (or for AST_CALLABLE_CONVERT)
             return;
         }
 
@@ -374,7 +389,7 @@ class SuspiciousParamOrderVisitor extends PluginAwarePostAnalysisVisitor
                 $this->code_base,
                 $this->context,
                 $node
-            ))->getMethod($method_name, false);
+            ))->getMethod($method_name, false, true);
         } catch (Exception $_) {
             return;
         }

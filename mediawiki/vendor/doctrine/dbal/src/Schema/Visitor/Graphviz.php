@@ -13,11 +13,12 @@ use function strtolower;
 
 /**
  * Create a Graphviz output of a Schema.
+ *
+ * @deprecated
  */
 class Graphviz extends AbstractVisitor
 {
-    /** @var string */
-    private $output = '';
+    private string $output = '';
 
     /**
      * {@inheritdoc}
@@ -62,10 +63,7 @@ class Graphviz extends AbstractVisitor
         );
     }
 
-    /**
-     * @return string
-     */
-    private function createTableLabel(Table $table)
+    private function createTableLabel(Table $table): string
     {
         // Start the table
         $label = '<<TABLE CELLSPACING="0" BORDER="1" ALIGN="LEFT">';
@@ -107,10 +105,8 @@ class Graphviz extends AbstractVisitor
     /**
      * @param string   $name
      * @param string[] $options
-     *
-     * @return string
      */
-    private function createNode($name, $options)
+    private function createNode($name, $options): string
     {
         $node = $name . ' [';
         foreach ($options as $key => $value) {
@@ -126,10 +122,8 @@ class Graphviz extends AbstractVisitor
      * @param string   $node1
      * @param string   $node2
      * @param string[] $options
-     *
-     * @return string
      */
-    private function createNodeRelation($node1, $node2, $options)
+    private function createNodeRelation($node1, $node2, $options): string
     {
         $relation = $node1 . ' -> ' . $node2 . ' [';
         foreach ($options as $key => $value) {

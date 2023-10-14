@@ -1,6 +1,6 @@
-This is the set of Hamcrest matchers for HTML assertrions 
-=========================================================
-[![Build Status](https://travis-ci.org/wmde/hamcrest-html-matchers.svg?branch=master)](https://travis-ci.org/wmde/hamcrest-html-matchers)
+This is the set of Hamcrest matchers for HTML assertions
+========================================================
+[![Build Status](https://github.com/wmde/hamcrest-html-matchers/actions/workflows/php.yml/badge.svg)](https://github.com/wmde/hamcrest-html-matchers/actions/workflows/php.yml)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/wmde/hamcrest-html-matchers/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/wmde/hamcrest-html-matchers/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/wmde/hamcrest-html-matchers/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/wmde/hamcrest-html-matchers/?branch=master)
 
@@ -36,7 +36,7 @@ Usage limitations:
 
 Documentation
 -------------
-Information about general Hamcrest usage can be found at [Hamcrest github repository](https://github.com/hamcrest/hamcrest-php).
+Information about general Hamcrest usage can be found at [Hamcrest GitHub repository](https://github.com/hamcrest/hamcrest-php).
 
 
 Available Matchers

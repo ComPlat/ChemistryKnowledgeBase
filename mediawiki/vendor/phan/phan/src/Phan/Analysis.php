@@ -9,6 +9,7 @@ use ast\Node;
 use CompileError;
 use InvalidArgumentException;
 use ParseError;
+use Phan\Analysis\AttributeAnalyzer;
 use Phan\Analysis\DuplicateFunctionAnalyzer;
 use Phan\Analysis\ParameterTypesAnalyzer;
 use Phan\Analysis\ReferenceCountsAnalyzer;
@@ -275,6 +276,11 @@ class Analysis
                 $function_or_method
             );
 
+            AttributeAnalyzer::analyzeAttributesOfFunctionInterface(
+                $code_base,
+                $function_or_method
+            );
+
             // Infer more accurate return types
             // For daemon mode/the language server, we also call this whenever we use the return type of a function/method.
             $function_or_method->analyzeReturnTypes($code_base);
@@ -406,42 +412,47 @@ class Analysis
             }
         }
 
-        foreach ($plugin_set->getAnalyzeFunctionCallClosures($code_base) as $fqsen_string => $closure) {
-            try {
-                if (\strpos($fqsen_string, '::') !== false) {
-                    // This is an override of a method.
-                    [$class, $method_name] = \explode('::', $fqsen_string, 2);
-                    $class_fqsen = FullyQualifiedClassName::fromFullyQualifiedString($class);
-                    if (!$code_base->hasClassWithFQSEN($class_fqsen)) {
-                        continue;
-                    }
-                    $class = $code_base->getClassByFQSEN($class_fqsen);
-                    // Note: This is used because it will create methods such as __construct if they do not exist.
-                    if ($class->hasMethodWithName($code_base, $method_name, false)) {
-                        $method = $class->getMethodByName($code_base, $method_name);
-                        $method->addFunctionCallAnalyzer($closure);
-
-                        $methods_by_defining_fqsen = $methods_by_defining_fqsen ?? $code_base->getMethodsMapGroupedByDefiningFQSEN();
-                        $fqsen = FullyQualifiedMethodName::fromFullyQualifiedString($fqsen_string);
-                        if (!$methods_by_defining_fqsen->offsetExists($fqsen)) {
+        // To fix issues such as https://github.com/phan/phan/issues/4090, this (1) always calls addFunctionCallAnalyzer,
+        // and (2) automatically loads definitions for functions and methods by calling hasFunctionWithFQSEN (etc.), so that internal function definitions used by previous plugins can be iterated over by the next plugin being called (e.g. if getFunctionSet is called).
+        // @phan-suppress-next-line PhanAccessMethodInternal
+        foreach ($plugin_set->getAnalyzeFunctionCallPluginSet() as $plugin) {
+            foreach ($plugin->getAnalyzeFunctionCallClosures($code_base) as $fqsen_string => $closure) {
+                try {
+                    if (\strpos($fqsen_string, '::') !== false) {
+                        // This is an override of a method.
+                        [$class, $method_name] = \explode('::', $fqsen_string, 2);
+                        $class_fqsen = FullyQualifiedClassName::fromFullyQualifiedString($class);
+                        if (!$code_base->hasClassWithFQSEN($class_fqsen)) {
                             continue;
                         }
+                        $class = $code_base->getClassByFQSEN($class_fqsen);
+                        // Note: This is used because it will create methods such as __construct if they do not exist.
+                        if ($class->hasMethodWithName($code_base, $method_name, false)) {
+                            $method = $class->getMethodByName($code_base, $method_name);
+                            $method->addFunctionCallAnalyzer($closure, $plugin);
 
-                        foreach ($methods_by_defining_fqsen->offsetGet($fqsen) as $child_method) {
-                            $child_method->addFunctionCallAnalyzer($closure);
+                            $methods_by_defining_fqsen = $methods_by_defining_fqsen ?? $code_base->getMethodsMapGroupedByDefiningFQSEN();
+                            $fqsen = FullyQualifiedMethodName::fromFullyQualifiedString($fqsen_string);
+                            if (!$methods_by_defining_fqsen->offsetExists($fqsen)) {
+                                continue;
+                            }
+
+                            foreach ($methods_by_defining_fqsen->offsetGet($fqsen) as $child_method) {
+                                $child_method->addFunctionCallAnalyzer($closure, $plugin);
+                            }
+                        }
+                    } else {
+                        // This is a function.
+                        $fqsen = FullyQualifiedFunctionName::fromFullyQualifiedString($fqsen_string);
+                        if ($code_base->hasFunctionWithFQSEN($fqsen)) {
+                            $function = $code_base->getFunctionByFQSEN($fqsen);
+                            $function->addFunctionCallAnalyzer($closure, $plugin);
                         }
                     }
-                } else {
-                    // This is an override of a function.
-                    $fqsen = FullyQualifiedFunctionName::fromFullyQualifiedString($fqsen_string);
-                    if ($code_base->hasFunctionWithFQSEN($fqsen)) {
-                        $function = $code_base->getFunctionByFQSEN($fqsen);
-                        $function->setFunctionCallAnalyzer($closure);
-                    }
+                } catch (FQSENException | InvalidArgumentException $e) {
+                    // @phan-suppress-next-line PhanPluginRemoveDebugCall
+                    \fprintf(STDERR, "getAnalyzeFunctionCallClosures returned an invalid FQSEN %s: %s\n", $fqsen_string, $e->getMessage());
                 }
-            } catch (FQSENException | InvalidArgumentException $e) {
-                // @phan-suppress-next-line PhanPluginRemoveDebugCall
-                \fprintf(STDERR, "getAnalyzeFunctionCallClosures returned an invalid FQSEN %s: %s\n", $fqsen_string, $e->getMessage());
             }
         }
     }
@@ -474,6 +485,10 @@ class Analysis
             } catch (RecursionDepthException $_) {
                 continue;
             }
+            AttributeAnalyzer::analyzeAttributesOfClass(
+                $code_base,
+                $class
+            );
         }
         CLI::progress('classes', 1.0, null);
     }

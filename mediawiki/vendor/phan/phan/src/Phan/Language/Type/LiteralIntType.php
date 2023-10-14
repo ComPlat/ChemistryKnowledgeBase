@@ -16,6 +16,8 @@ use RuntimeException;
  */
 final class LiteralIntType extends IntType implements LiteralTypeInterface
 {
+    use NativeTypeTrait;
+
     /** @var int $value */
     private $value;
 
@@ -30,6 +32,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
      * @unused-param $is_nullable
      * @internal - do not call
      * @deprecated
+     * @return never
      */
     public static function instance(bool $is_nullable)
     {
@@ -128,7 +131,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             switch ($type::NAME) {
@@ -150,7 +153,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
                     break;
                 case 'float':
                     if ($type instanceof LiteralFloatType) {
-                        return $type->getValue() == $this->getValue();
+                        return $type->getValue() == $this->value;
                     }
                     return true;
                 case 'true':
@@ -172,7 +175,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
             }
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
@@ -180,7 +183,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    protected function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             switch ($type::NAME) {
@@ -201,14 +204,14 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
             }
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
      * @return bool
      * True if this Type is a subtype of the given type
      */
-    protected function isSubtypeOfNonNullableType(Type $type): bool
+    protected function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             if ($type instanceof IntType) {
@@ -223,7 +226,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
             return false;
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::isSubtypeOfNonNullableType($type, $code_base);
     }
 
     /**
@@ -263,7 +266,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
         return IntType::instance($this->is_nullable);
     }
 
-    public function weaklyOverlaps(Type $other): bool
+    public function weaklyOverlaps(Type $other, CodeBase $code_base): bool
     {
         // TODO: Could be stricter
         if ($other instanceof ScalarType) {
@@ -272,7 +275,7 @@ final class LiteralIntType extends IntType implements LiteralTypeInterface
             }
             return $this->value ? ($this->is_nullable || $other->isPossiblyTruthy()) : $other->isPossiblyFalsey();
         }
-        return parent::weaklyOverlaps($other);
+        return parent::weaklyOverlaps($other, $code_base);
     }
 
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool

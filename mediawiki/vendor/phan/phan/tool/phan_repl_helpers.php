@@ -79,7 +79,6 @@ function phan_repl_help($value = "\x00extended_help"): void
         return;
     }
     if ($value instanceof Closure || (is_string($value) && function_exists($value)) || $value instanceof ReflectionFunction) {
-        // @phan-suppress-next-line PhanPartialTypeMismatchArgumentInternal not sure why
         $reflection_function = $value instanceof ReflectionFunction ? $value : new ReflectionFunction($value);
         $function_name = $reflection_function->getName();
         $doc_comment = $reflection_function->getDocComment();
@@ -400,7 +399,7 @@ class PhanPhpShellUtils
      */
     public function generateCompletionsForGlobalName(string $prefix): array
     {
-        $function_candidates = array_values(array_merge(...array_values(get_defined_functions(true))));
+        $function_candidates = array_values(array_merge([], ...array_values(get_defined_functions(true))));
         $function_completions = $this->generateCompletionsFromCandidates($function_candidates, $prefix, '');
         // @phan-suppress-next-line PhanRedundantArrayValuesCall
         $other_candidates = array_values(array_merge(
@@ -466,7 +465,6 @@ class PhanPhpShellUtils
                 if (is_array($prev_token)) {
                     $prev_token_kind = $prev_token[0];
                     // TODO: T_NAME_RELATIVE for namespace\
-                    // @phan-suppress-next-line PhanUndeclaredConstant
                     if ($prev_token_kind === T_STRING || PHP_VERSION_ID >= 80000 && in_array($prev_token_kind, [T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)) {
                         $last_token_str = ltrim($prev_token[1], '\\') . $last_token_str;
                     }

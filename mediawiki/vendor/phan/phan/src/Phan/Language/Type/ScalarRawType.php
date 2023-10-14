@@ -14,11 +14,13 @@ namespace Phan\Language\Type;
  */
 final class ScalarRawType extends ScalarType implements MultiType
 {
+    use NativeTypeTrait;
+
     /** @override */
     public const NAME = 'scalar';
 
     /**
-     * @return list<ScalarType>
+     * @return array{0:BoolType,1:IntType,2:FloatType,3:StringType}
      */
     public function asIndividualTypeInstances(): array
     {

@@ -19,6 +19,7 @@ use Phan\Language\Type\ArrayShapeType;
 use Phan\Language\Type\ClassStringType;
 use Phan\Language\Type\FloatType;
 use Phan\Language\Type\IntType;
+use Phan\Language\Type\LiteralStringType;
 use Phan\Language\Type\ResourceType;
 use Phan\Language\UnionType;
 use Phan\PluginV3;
@@ -51,11 +52,11 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
          * @param string $expected_type
          * @return Closure(CodeBase, Context, FunctionInterface, list<mixed>, ?Node):void
          */
-        $make_first_arg_checker = static function (Closure $checker, string $expected_type): Closure {
+        $make_first_arg_checker = static function (Closure $checker, string $expected_type, bool $fail_early_on_non_empty_mixed = true): Closure {
             /**
              * @param list<Node|int|float|string> $args
              */
-            return static function (CodeBase $code_base, Context $context, FunctionInterface $unused_function, array $args, ?Node $_) use ($checker, $expected_type): void {
+            return static function (CodeBase $code_base, Context $context, FunctionInterface $unused_function, array $args, ?Node $_) use ($checker, $expected_type, $fail_early_on_non_empty_mixed): void {
                 if (count($args) < 1) {
                     return;
                 }
@@ -69,7 +70,7 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
                     return;
                 }
                 $real_union_type = $union_type->getRealUnionType()->withStaticResolvedInContext($context);
-                if ($real_union_type->hasMixedType()) {
+                if ($fail_early_on_non_empty_mixed ? $real_union_type->hasMixedOrNonEmptyMixedType() : $real_union_type->hasMixedTypeStrict()) {
                     return;
                 }
                 $result = $checker($real_union_type);
@@ -126,15 +127,33 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
                 $arg_checker($code_base, $context, $function, $args, $node);
             };
         };
+        /**
+         * @param Closure(UnionType, CodeBase, Context):int $checker returns _IS_IMPOSSIBLE/_IS_REDUNDANT/_IS_REASONABLE_CONDITION
+         * @param string $expected_type
+         * @return Closure(CodeBase, Context, FunctionInterface, list<mixed>, ?Node):void
+         */
+        $make_context_aware_first_arg_checker = static function (Closure $checker, string $expected_type) use ($make_first_arg_checker): Closure {
+            /**
+             * @param list<Node|int|float|string> $args
+             */
+            return static function (CodeBase $code_base, Context $context, FunctionInterface $function, array $args, ?Node $node) use ($checker, $expected_type, $make_first_arg_checker): void {
+                $single_checker = static function (UnionType $type) use ($checker, $code_base, $context): int {
+                    return $checker($type, $code_base, $context);
+                };
+                $arg_checker = $make_first_arg_checker($single_checker, $expected_type);
+                $arg_checker($code_base, $context, $function, $args, $node);
+            };
+        };
 
         $make_simple_first_arg_checker = static function (string $extract_types_method, string $expected_type) use ($make_first_arg_checker): Closure {
             $method = new ReflectionMethod(UnionType::class, $extract_types_method);
             /** @suppress PhanPluginUnknownObjectMethodCall ReflectionMethod cannot be analyzed */
             return $make_first_arg_checker(static function (UnionType $type) use ($method): int {
-                $new_real_type = $method->invoke($type)->nonNullableClone();
+                $new_real_type = $method->invoke($type);
                 if ($new_real_type->isEmpty()) {
                     return self::_IS_IMPOSSIBLE;
                 }
+                $new_real_type = $new_real_type->nonNullableClone();
                 if ($new_real_type->isEqualTo($type)) {
                     return self::_IS_REDUNDANT;
                 }
@@ -144,10 +163,11 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
         $resource_callback = $make_first_arg_checker(static function (UnionType $type): int {
             $new_real_type = $type->makeFromFilter(static function (Type $type): bool {
                 return $type instanceof ResourceType;
-            })->nonNullableClone();
+            });
             if ($new_real_type->isEmpty()) {
                 return self::_IS_IMPOSSIBLE;
             }
+            $new_real_type = $new_real_type->nonNullableClone();
             if ($new_real_type->isEqualTo($type)) {
                 return self::_IS_REDUNDANT;
             }
@@ -161,7 +181,7 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
                 return self::_IS_REDUNDANT;
             }
             return self::_IS_REASONABLE_CONDITION;
-        }, 'null');
+        }, 'null', false);
         $numeric_callback = $make_first_arg_checker(static function (UnionType $union_type): int {
             $has_non_numeric = false;
             $has_numeric = false;
@@ -172,6 +192,10 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
                 if ($type instanceof IntType || $type instanceof FloatType) {
                     $has_numeric = true;
                 } elseif ($type->isPossiblyNumeric()) {
+                    if ($type instanceof LiteralStringType) {
+                        $has_numeric = true;
+                        continue;
+                    }
                     return self::_IS_REASONABLE_CONDITION;
                 } else {
                     $has_non_numeric = true;
@@ -198,11 +222,12 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
                 return self::_IS_REASONABLE_CONDITION;
             }, $expected_type);
         };
-        $callable_callback = $make_first_arg_checker(static function (UnionType $type): int {
-            $new_real_type = $type->callableTypes()->nonNullableClone();
+        $callable_callback = $make_codebase_aware_first_arg_checker(static function (UnionType $type, CodeBase $code_base): int {
+            $new_real_type = $type->callableTypes($code_base);
             if ($new_real_type->isEmpty()) {
                 return self::_IS_IMPOSSIBLE;
             }
+            $new_real_type = $new_real_type->nonNullableClone();
             if ($new_real_type->isEqualTo($type)) {
                 if (!$new_real_type->hasTypeMatchingCallback(static function (Type $type): bool {
                     return $type instanceof ArrayShapeType;
@@ -268,9 +293,9 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
             return self::_IS_REASONABLE_CONDITION;
         }, 'iterable');
         /** @suppress PhanAccessMethodInternal */
-        $countable_callback = $make_codebase_aware_first_arg_checker(static function (UnionType $union_type, CodeBase $code_base): int {
+        $countable_callback = $make_context_aware_first_arg_checker(static function (UnionType $union_type, CodeBase $code_base, Context $context): int {
             $new_real_type = UnionType::of(
-                UnionType::castTypeListToCountable($code_base, $union_type->getTypeSet(), true),
+                UnionType::castTypeListToCountable($code_base, $union_type->getTypeSet(), $context),
                 []
             );
             if ($new_real_type->isEmpty()) {
@@ -283,6 +308,7 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
         }, 'countable');
         $object_callback = $make_simple_first_arg_checker('objectTypesStrictAllowEmpty', 'object');
         $array_callback = $make_simple_first_arg_checker('arrayTypesStrictCastAllowEmpty', 'array');
+        $array_is_list_callback = $make_simple_first_arg_checker('listTypesStrictCastAllowEmpty', 'list');
         $string_callback = $make_simple_first_arg_checker('stringTypes', 'string');
 
         // TODO: Implement checks for the commented out conditions.
@@ -307,6 +333,7 @@ final class RedundantConditionCallPlugin extends PluginV3 implements
             'is_scalar' => $scalar_callback,
             'is_string' => $string_callback,
 
+            'array_is_list' => $array_is_list_callback,
             'class_exists' => $class_exists_callback,
             'intval' => $intval_callback,
             'boolval' => $boolval_callback,

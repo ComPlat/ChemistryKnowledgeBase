@@ -15,20 +15,21 @@ class AssignmentInReturnSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [
 			T_RETURN,
+			T_YIELD,
+			T_YIELD_FROM,
 		];
 	}
 
 	/**
 	 * @param File $phpcsFile
 	 * @param int $stackPtr The current token index.
-	 * @return void
+	 * @return int
 	 */
 	public function process( File $phpcsFile, $stackPtr ) {
 		$tokens = $phpcsFile->getTokens();
-		$token = $tokens[$stackPtr];
 
 		$searchToken = Tokens::$assignmentTokens + [
 			T_CLOSURE,
@@ -39,9 +40,7 @@ class AssignmentInReturnSniff implements Sniff {
 		$next = $phpcsFile->findNext( $searchToken, $stackPtr + 1 );
 		while ( $next !== false ) {
 			$code = $tokens[$next]['code'];
-			if ( ( $code === T_CLOSURE || $code === T_FUNCTION || $code === T_ANON_CLASS )
-				&& isset( $tokens[$next]['scope_closer'] )
-			) {
+			if ( isset( $tokens[$next]['scope_closer'] ) ) {
 				// Skip to the end of the closure/inner function and continue
 				$next = $phpcsFile->findNext( $searchToken, $tokens[$next]['scope_closer'] + 1 );
 				continue;
@@ -55,15 +54,26 @@ class AssignmentInReturnSniff implements Sniff {
 			if ( array_key_exists( $code, Tokens::$assignmentTokens )
 				&& $code !== T_DOUBLE_ARROW
 			) {
+				$errorPtr = $stackPtr;
+				// "yield from" could be multiline, get content from more than one token
+				$content = '';
+				do {
+					$content .= $tokens[$stackPtr]['content'];
+					$stackPtr++;
+				} while ( $tokens[$stackPtr]['code'] === T_YIELD_FROM );
+				// Split by any whitespaces and build better looking content with one space
+				$contentPieces = preg_split( '/\s+/', $content );
 				$phpcsFile->addError(
 					'Assignment expression not allowed within "%s".',
-					$stackPtr,
-					'AssignmentInReturn',
-					[ $token['content'] ]
+					$errorPtr,
+					'AssignmentIn' . implode( '', array_map( 'ucfirst', $contentPieces ) ),
+					[ implode( ' ', $contentPieces ) ]
 				);
 				break;
 			}
 			$next = $phpcsFile->findNext( $searchToken, $next + 1 );
 		}
+		// Do not report multiline yield tokens twice
+		return $stackPtr;
 	}
 }

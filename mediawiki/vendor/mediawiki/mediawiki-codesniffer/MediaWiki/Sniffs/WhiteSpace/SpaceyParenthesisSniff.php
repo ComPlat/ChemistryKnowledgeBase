@@ -19,7 +19,7 @@ class SpaceyParenthesisSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [
 			T_OPEN_PARENTHESIS,
 			T_CLOSE_PARENTHESIS,
@@ -29,28 +29,28 @@ class SpaceyParenthesisSniff implements Sniff {
 	}
 
 	/**
-	 * @param int $token PHPCS token code.
+	 * @param int|string $token PHPCS token code.
 	 * @return bool Whether the token code is closed.
 	 */
-	private function isClosed( $token ) {
+	private function isClosed( $token ): bool {
 		return $token === T_CLOSE_PARENTHESIS
 			|| $token === T_CLOSE_SHORT_ARRAY;
 	}
 
 	/**
-	 * @param int $token PHPCS token code.
+	 * @param int|string $token PHPCS token code.
 	 * @return bool Whether the token code is parenthesis.
 	 */
-	private function isParenthesis( $token ) {
+	private function isParenthesis( $token ): bool {
 		return $token === T_OPEN_PARENTHESIS
 			|| $token === T_CLOSE_PARENTHESIS;
 	}
 
 	/**
-	 * @param int $token PHPCS token code.
+	 * @param int|string $token PHPCS token code.
 	 * @return bool Whether the token code is a comment.
 	 */
-	private function isComment( $token ) {
+	private function isComment( $token ): bool {
 		return $token === T_COMMENT
 			|| $token === T_PHPCS_ENABLE
 			|| $token === T_PHPCS_DISABLE
@@ -77,9 +77,9 @@ class SpaceyParenthesisSniff implements Sniff {
 			&& ( $tokens[$stackPtr - 2]['code'] === T_STRING
 				|| $tokens[$stackPtr - 2]['code'] === T_ARRAY )
 		) {
-			// String (or 'array') followed by whitespace followed by
+			// String followed by whitespace followed by
 			// opening brace is probably a function call.
-			$bracketType = $this->isParenthesis( $currentToken['code'] )
+			$bracketType = $tokens[$stackPtr - 2]['code'] === T_STRING
 				? 'parenthesis of function call'
 				: 'bracket of array';
 			$fix = $phpcsFile->addFixableWarning(
@@ -130,7 +130,7 @@ class SpaceyParenthesisSniff implements Sniff {
 	 * @param File $phpcsFile
 	 * @param int $stackPtr The current token index.
 	 */
-	protected function processOpenParenthesis( File $phpcsFile, $stackPtr ) {
+	protected function processOpenParenthesis( File $phpcsFile, int $stackPtr ): void {
 		$tokens = $phpcsFile->getTokens();
 		$nextToken = $tokens[$stackPtr + 1];
 		// No space or not single space
@@ -161,7 +161,7 @@ class SpaceyParenthesisSniff implements Sniff {
 	 * @param File $phpcsFile
 	 * @param int $stackPtr The current token index.
 	 */
-	protected function processCloseParenthesis( File $phpcsFile, $stackPtr ) {
+	protected function processCloseParenthesis( File $phpcsFile, int $stackPtr ): void {
 		$tokens = $phpcsFile->getTokens();
 		$previousToken = $tokens[$stackPtr - 1];
 

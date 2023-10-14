@@ -19,6 +19,8 @@ use function class_exists;
  */
 class MixedType extends NativeType
 {
+    use NativeTypeTrait;
+
     /** @phan-override */
     public const NAME = 'mixed';
 
@@ -27,18 +29,31 @@ class MixedType extends NativeType
      * For purposes of analysis, there's usually no difference between mixed and nullable mixed.
      *
      * @unused-param $type
+     * @unused-param $code_base
      * @override
      */
-    public function canCastToType(Type $type): bool
+    public function canCastToType(Type $type, CodeBase $code_base): bool
     {
         return true;
     }
 
     /**
      * @param Type[] $target_type_set 1 or more types @phan-unused-param
+     * @unused-param $code_base
      * @override
      */
-    public function canCastToAnyTypeInSet(array $target_type_set): bool
+    public function canCastToAnyTypeInSet(array $target_type_set, CodeBase $code_base): bool
+    {
+        return true;
+    }
+
+    /**
+     * Overridden in NonNullMixedType and NonEmptyMixedType
+     * @unused-param $type
+     * @unused-param $code_base
+     * @override
+     */
+    public function canCastToTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         return true;
     }
@@ -48,9 +63,10 @@ class MixedType extends NativeType
      * For purposes of analysis, there's usually no difference between mixed and nullable mixed.
      *
      * @unused-param $type
+     * @unused-param $code_base
      * @override
      */
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         return true;
     }
@@ -60,21 +76,29 @@ class MixedType extends NativeType
      * For purposes of analysis, there's usually no difference between mixed and nullable mixed.
      *
      * @unused-param $type
+     * @unused-param $code_base
      * @override
      */
-    protected function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    protected function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         return true;
     }
 
-    public function isSubtypeOf(Type $type): bool
+    // FIXME: non-empty-mixed/non-null-mixed is a subtype of mixed, but not vice versa?
+    /**
+     * @unused-param $code_base
+     */
+    public function isSubtypeOf(Type $type, CodeBase $code_base): bool
     {
-        return $type instanceof MixedType;
+        return \get_class($type) === MixedType::class;
     }
 
-    public function isSubtypeOfNonNullableType(Type $type): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
-        return $type instanceof MixedType;
+        return \get_class($type) === MixedType::class;
     }
 
     /**
@@ -147,7 +171,10 @@ class MixedType extends NativeType
         return false;
     }
 
-    public function isDefiniteNonCallableType(): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isDefiniteNonCallableType(CodeBase $code_base): bool
     {
         return false;
     }
@@ -167,6 +194,16 @@ class MixedType extends NativeType
         return false;
     }
 
+    public function isPossiblyFalse(): bool
+    {
+        return true;
+    }
+
+    public function isPossiblyTrue(): bool
+    {
+        return true;
+    }
+
     public function asObjectType(): ?Type
     {
         return ObjectType::instance(false);
@@ -181,5 +218,48 @@ class MixedType extends NativeType
     {
         return NonEmptyMixedType::instance(false);
     }
+
+    /** Overridden by NonEmptyMixedType */
+    public function isNullable(): bool
+    {
+        return true;
+    }
+
+    public function isNullableLabeled(): bool
+    {
+        return $this->is_nullable;
+    }
+
+    /** Overridden by NonEmptyMixedType */
+    public function __toString(): string
+    {
+        return $this->is_nullable ? '?mixed' : 'mixed';
+    }
+
+    /**
+     * @unused-param $other
+     * @unused-param $code_base
+     */
+    public function weaklyOverlaps(Type $other, CodeBase $code_base): bool
+    {
+        return true;
+    }
+
+    public function withIsNullable(bool $is_nullable): Type
+    {
+        if ($is_nullable) {
+            if ($this->is_nullable) {
+                return $this;
+            }
+            return static::instance(false);
+        }
+        return NonNullMixedType::instance(false);
+    }
+
+    public function asScalarType(): ?Type
+    {
+        return ScalarRawType::instance(false);
+    }
 }
 class_exists(NonEmptyMixedType::class);
+class_exists(NonNullMixedType::class);

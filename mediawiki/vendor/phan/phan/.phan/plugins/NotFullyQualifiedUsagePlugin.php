@@ -134,7 +134,7 @@ class NotFullyQualifiedUsageVisitor extends PluginAwarePostAnalysisVisitor
         }
         $this->emitPluginIssue(
             $this->code_base,
-            clone($this->context)->withLineNumberStart($expression->lineno),
+            (clone $this->context)->withLineNumberStart($expression->lineno),
             $issue_type,
             $issue_msg,
             [$function_name, $this->context->getNamespace()]
@@ -167,7 +167,9 @@ class NotFullyQualifiedUsageVisitor extends PluginAwarePostAnalysisVisitor
         }
         $constant_name_lower = strtolower($constant_name);
         if ($constant_name_lower === 'true' || $constant_name_lower === 'false' || $constant_name_lower === 'null') {
-            // These are keywords and are the same in any namespace
+            // These are treated similarly to keywords and are either
+            // 1. the same in any namespace
+            // 2. `use somethingelse\true [as false];`
             return;
         }
 
@@ -183,7 +185,7 @@ class NotFullyQualifiedUsageVisitor extends PluginAwarePostAnalysisVisitor
     {
         $this->emitPluginIssue(
             $this->code_base,
-            clone($this->context)->withLineNumberStart($expression->lineno),
+            (clone $this->context)->withLineNumberStart($expression->lineno),
             self::NotFullyQualifiedGlobalConstant,
             'Expected usage of {CONST} to be fully qualified or have a use statement but none were found in namespace {NAMESPACE}',
             [$constant_name, $this->context->getNamespace()]

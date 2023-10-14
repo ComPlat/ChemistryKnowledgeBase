@@ -1,0 +1,32 @@
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         bootstrap="tests/bootstrap.php"
+         cacheTokens="false"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         stopOnError="false"
+         stopOnFailure="false"
+         stopOnIncomplete="false"
+         stopOnSkipped="false"
+         verbose="true">
+    <testsuites>
+        <testsuite name="semantic-result-formats-unit">
+            <directory>tests/phpunit/Unit</directory>
+        </testsuite>
+        <testsuite name="semantic-result-formats-integration">
+            <directory>tests/phpunit/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist addUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">formats</directory>
+            <directory suffix=".php">src</directory>
+            <file>SemanticResultFormats.hooks.php</file>
+            <file>SemanticResultFormats.parser.php</file>
+            <file>SemanticResultFormats.php</file>
+            <file>SemanticResultFormats.utils.php</file>
+        </whitelist>
+    </filter>
+</phpunit>

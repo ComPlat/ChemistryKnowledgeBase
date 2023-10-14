@@ -19,6 +19,8 @@ use Phan\PluginV3\PostAnalyzeNodeCapability;
  * A plugin that checks for invocations of functions/methods where the return value should be used.
  * Also, gathers statistics on how often those functions/methods are used.
  *
+ * This also warns when the return value of an expression returning `never` is used.
+ *
  * This can be configured by fields of 'plugin_config', or by setting environment variables.
  *
  * Note: When this is using dynamic checks of the whole codebase, the run should be limited to a single process. That check is memory intensive.
@@ -55,6 +57,8 @@ class UseReturnValuePlugin extends PluginV3 implements PostAnalyzeNodeCapability
     public const UseReturnValueInternalKnown = 'PhanPluginUseReturnValueInternalKnown';
     public const UseReturnValueNoopVoid = 'PhanPluginUseReturnValueNoopVoid';
     public const UseReturnValueGenerator = 'PhanPluginUseReturnValueGenerator';
+    public const UseReturnValueOfNever = 'PhanUseReturnValueOfNever';
+    public const UseReturnValueCallableConvert = 'PhanUseReturnValueCallableConvert';
     // phpcs:enable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
 
     public const DEFAULT_THRESHOLD_PERCENTAGE = 98;
@@ -144,7 +148,7 @@ class UseReturnValuePlugin extends PluginV3 implements PostAnalyzeNodeCapability
                         continue;
                     }
                     $line = (int)$matches[1];
-                    $context = (clone($context))->withLineNumberStart($line);
+                    $context = (clone $context)->withLineNumberStart($line);
                     if ($known_must_use_return_value) {
                         self::emitIssue(
                             $code_base,
@@ -204,6 +208,7 @@ class UseReturnValuePlugin extends PluginV3 implements PostAnalyzeNodeCapability
     'array_intersect_assoc' => true,
     'array_intersect_key' => true,
     'array_intersect' => true,
+    'array_is_list' => true,
     'arrayiterator::current' => true,
     'arrayiterator::key' => true,
     'arrayiterator::valid' => true,
@@ -859,6 +864,7 @@ class UseReturnValuePlugin extends PluginV3 implements PostAnalyzeNodeCapability
     'urlencode' => true,
     'utf8_decode' => true,
     'utf8_encode' => true,
+    'var_representation' => true,
     'version_compare' => true,
     'vsprintf' => true,
     'weakreference::create' => true,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Phan\Language\Type;
 
+use Phan\CodeBase;
 use Phan\Language\Type;
 
 /**
@@ -15,6 +16,8 @@ use Phan\Language\Type;
  */
 final class NonEmptyGenericArrayType extends GenericArrayType implements NonEmptyArrayInterface
 {
+    use NativeTypeTrait;
+
     /**
      * @override
      * @return NonEmptyGenericArrayType
@@ -50,12 +53,12 @@ final class NonEmptyGenericArrayType extends GenericArrayType implements NonEmpt
         return $map->offsetGet($type);
     }
 
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if (!$type->isPossiblyTruthy()) {
             return false;
         }
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     /** @override */

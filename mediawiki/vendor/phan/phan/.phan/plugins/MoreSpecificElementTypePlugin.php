@@ -44,6 +44,8 @@ use Phan\PluginV3\PostAnalyzeNodeCapability;
  * add them to the corresponding section of README.md
  *
  * TODO: Account for methods in traits being possibly overrides
+ *
+ * TODO: This does not support intersection types
  */
 class MoreSpecificElementTypePlugin extends PluginV3 implements
     PostAnalyzeNodeCapability,
@@ -99,7 +101,7 @@ class MoreSpecificElementTypePlugin extends PluginV3 implements
             return true;
         }
         if ($declared_return_type->typeCount() === 1) {
-            if ($declared_return_type->getTypeSet()[0]->isObjectWithKnownFQSEN()) {
+            if ($declared_return_type->getTypeSet()[0]->hasObjectWithKnownFQSEN()) {
                 if ($actual_type->typeCount() >= 2) {
                     // Don't warn about Subclass1|Subclass2 being more specific than BaseClass
                     return false;
@@ -109,7 +111,10 @@ class MoreSpecificElementTypePlugin extends PluginV3 implements
         if ($declared_return_type->isStrictSubtypeOf($code_base, $actual_type)) {
             return false;
         }
-        if (!$actual_type->asExpandedTypes($code_base)->canCastToUnionType($declared_return_type)) {
+        if (!$actual_type->isStrictSubtypeOf($code_base, $declared_return_type)) {
+            return false;
+        }
+        if (!$actual_type->canCastToUnionType($declared_return_type, $code_base)) {
             // Don't warn here about type mismatches such as int->string or object->array, but do warn about SubClass->BaseClass.
             // Phan should warn elsewhere about those mismatches
             return false;
@@ -128,7 +133,7 @@ class MoreSpecificElementTypePlugin extends PluginV3 implements
     private static function containsObjectWithKnownFQSEN(UnionType $union_type): bool
     {
         foreach ($union_type->getTypesRecursively() as $type) {
-            if ($type->isObjectWithKnownFQSEN()) {
+            if ($type->hasObjectWithKnownFQSEN()) {
                 return true;
             }
         }

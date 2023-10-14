@@ -18,6 +18,7 @@ use Phan\Library\StringUtil;
 class ClassConstant extends ClassElement implements ConstantInterface
 {
     use ConstantTrait;
+    use HasAttributesTrait;
 
     /** @var ?Comment the phpdoc comment associated with this declaration, if any exists. */
     private $comment;
@@ -64,6 +65,37 @@ class ClassConstant extends ClassElement implements ConstantInterface
     }
 
     /**
+     * Create an alias from a trait use, which is treated as though it was defined in $clazz
+     * E.g. if you import a trait's class constant as private/protected, it becomes private/protected **to the class which used the trait**
+     *
+     * The resulting alias doesn't inherit the Node of the method body, so aliases won't have a redundant analysis step.
+     *
+     * @param Clazz $clazz - The class to treat as the defining class of the alias. (i.e. the inheriting class)
+     */
+    public function createUseAlias(Clazz $clazz): ClassConstant
+    {
+        $constant_fqsen = FullyQualifiedClassConstantName::make(
+            $clazz->getFQSEN(),
+            $this->name
+        );
+
+        $constant = new ClassConstant(
+            $this->getContext(),
+            $this->name,
+            $this->getUnionType(),
+            $this->getFlags(),
+            $constant_fqsen
+        );
+        $constant->setPhanFlags($this->getPhanFlags() & ~(Flags::IS_OVERRIDE | Flags::IS_OVERRIDDEN_BY_ANOTHER));
+
+        $defining_fqsen = $this->getDefiningFQSEN();
+        if ($constant->isPublic()) {
+            $constant->setDefiningFQSEN($defining_fqsen);
+        }
+        return $constant;
+    }
+
+    /**
      * Override the default getter to fill in a future
      * union type if available.
      */
@@ -81,6 +113,7 @@ class ClassConstant extends ClassElement implements ConstantInterface
      * @return FullyQualifiedClassConstantName
      * The fully-qualified structural element name of this
      * structural element
+     * @suppress PhanTypeMismatchReturn (FQSEN on declaration)
      */
     public function getFQSEN(): FQSEN
     {
@@ -112,6 +145,9 @@ class ClassConstant extends ClassElement implements ConstantInterface
         } elseif ($this->isPrivate()) {
             $string .= 'private ';
         }
+        if ($this->isFinal()) {
+            $string .= 'final ';
+        }
 
         $string .= 'const ' . $this->name . ' = ';
         $value_node = $this->getNodeForValue();
@@ -135,11 +171,24 @@ class ClassConstant extends ClassElement implements ConstantInterface
     }
 
     /**
+     * Returns true if this is a final element
+     */
+    public function isFinal(): bool
+    {
+        return $this->getFlagsHasState(\ast\flags\MODIFIER_FINAL);
+    }
+
+    /**
      * Converts this class constant to a stub php snippet that can be used by `tool/make_stubs`
      */
     public function toStub(): string
     {
-        $string = '    ';
+        $string = '';
+        if (self::shouldAddDescriptionsToStubs()) {
+            $description = (string)MarkupDescription::extractDescriptionFromDocComment($this);
+            $string .= MarkupDescription::convertStringToDocComment($description, '    ');
+        }
+        $string .= '    ';
         if ($this->isPrivate()) {
             $string .= 'private ';
         } elseif ($this->isProtected()) {
@@ -150,7 +199,7 @@ class ClassConstant extends ClassElement implements ConstantInterface
         // show public class constants as 'const', not 'public const'.
         // Also, PHP modules probably won't have private/protected constants.
         $string .= 'const ' . $this->name . ' = ';
-        $fqsen = $this->getFQSEN()->__toString();
+        $fqsen = $this->fqsen->__toString();
         if (\defined($fqsen)) {
             // TODO: Could start using $this->getNodeForValue()?
             // NOTE: This is used by tool/make_stubs, which is why it uses reflection instead of getting a node.

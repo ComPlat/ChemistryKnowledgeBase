@@ -25,34 +25,6 @@ abstract class NativeType extends Type
     /** @phan-override */
     public const KEY_PREFIX = '!';
 
-    /**
-     * @param bool $is_nullable
-     * If true, returns a nullable instance of this native type
-     *
-     * @return static
-     * Returns a nullable/non-nullable instance of this native type (possibly unchanged)
-     */
-    public static function instance(bool $is_nullable)
-    {
-        if ($is_nullable) {
-            static $nullable_instance = null;
-
-            if ($nullable_instance === null) {
-                $nullable_instance = static::make('\\', static::NAME, [], true, Type::FROM_NODE);
-            }
-
-            return $nullable_instance;
-        }
-
-        static $instance = null;
-
-        if ($instance === null) {
-            $instance = static::make('\\', static::NAME, [], false, Type::FROM_NODE);
-        }
-
-        return $instance;
-    }
-
     public function isNativeType(): bool
     {
         return true;
@@ -63,7 +35,29 @@ abstract class NativeType extends Type
         return false;
     }
 
-    public function isArrayAccess(): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isArrayAccess(CodeBase $code_base): bool
+    {
+        return false;
+    }
+
+    /**
+     * @unused-param $code_base
+     */
+    public function isIterable(CodeBase $code_base): bool
+    {
+        // overridden in subclasses
+        return false;
+    }
+
+    /**
+     * @return bool
+     * True if this type is a callable or a Closure.
+     * @unused-param $code_base
+     */
+    public function isCallable(CodeBase $code_base): bool
     {
         return false;
     }
@@ -84,7 +78,10 @@ abstract class NativeType extends Type
         return false;
     }
 
-    public function isTraversable(): bool
+    /**
+     * @unused-param $code_base
+     */
+    public function isTraversable(CodeBase $code_base): bool
     {
         return false;
     }
@@ -114,7 +111,7 @@ abstract class NativeType extends Type
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         // Anything can cast to mixed or ?mixed
         // Not much of a distinction in nullable mixed, except to emphasize in comments that it definitely can be null.
@@ -127,7 +124,7 @@ abstract class NativeType extends Type
             || $this instanceof GenericArrayType
             || $type instanceof GenericArrayType
         ) {
-            return parent::canCastToNonNullableType($type);
+            return parent::canCastToNonNullableType($type, $code_base);
         }
 
         static $matrix;
@@ -137,7 +134,7 @@ abstract class NativeType extends Type
 
         // Both this and $type are NativeType and getName() isn't needed
         return $matrix[$this->name][$type->name]
-            ?? parent::canCastToNonNullableType($type);
+            ?? parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
@@ -145,7 +142,7 @@ abstract class NativeType extends Type
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    protected function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         // Anything can cast to mixed or ?mixed
         // Not much of a distinction in nullable mixed, except to emphasize in comments that it definitely can be null.
@@ -158,7 +155,7 @@ abstract class NativeType extends Type
             || $this instanceof GenericArrayType
             || $type instanceof GenericArrayType
         ) {
-            return parent::canCastToNonNullableTypeWithoutConfig($type);
+            return parent::canCastToNonNullableTypeWithoutConfig($type, $code_base);
         }
 
         static $matrix;
@@ -168,10 +165,10 @@ abstract class NativeType extends Type
 
         // Both this and $type are NativeType and getName() isn't needed
         return $matrix[$this->name][$type->name]
-            ?? parent::canCastToNonNullableTypeWithoutConfig($type);
+            ?? parent::canCastToNonNullableTypeWithoutConfig($type, $code_base);
     }
 
-    protected function isSubtypeOfNonNullableType(Type $type): bool
+    protected function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
         // Anything is a subtype of mixed or ?mixed
         if ($type instanceof MixedType) {
@@ -182,7 +179,7 @@ abstract class NativeType extends Type
             || $this instanceof GenericArrayType
             || $type instanceof GenericArrayType
         ) {
-            return parent::canCastToNonNullableType($type);
+            return parent::canCastToNonNullableType($type, $code_base);
         }
 
         static $matrix;
@@ -192,7 +189,7 @@ abstract class NativeType extends Type
 
         // Both this and $type are NativeType and getName() isn't needed
         return $matrix[$this->name][$type->name]
-            ?? parent::canCastToNonNullableType($type);
+            ?? parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
@@ -216,7 +213,10 @@ abstract class NativeType extends Type
                 FalseType::NAME    => in_array(FalseType::NAME, $permitted_cast_type_names, true),
                 FloatType::NAME    => in_array(FloatType::NAME, $permitted_cast_type_names, true),
                 IntType::NAME      => in_array(IntType::NAME, $permitted_cast_type_names, true),
+                // TODO: Handle other subtypes of mixed?
                 MixedType::NAME    => true,
+                NeverType::NAME => in_array(NeverType::NAME, $permitted_cast_type_names, true),
+                NonEmptyStringType::NAME => in_array(NonEmptyStringType::NAME, $permitted_cast_type_names, true),
                 NullType::NAME     => in_array(NullType::NAME, $permitted_cast_type_names, true),
                 ObjectType::NAME   => in_array(ObjectType::NAME, $permitted_cast_type_names, true),
                 ResourceType::NAME => in_array(ResourceType::NAME, $permitted_cast_type_names, true),
@@ -237,17 +237,19 @@ abstract class NativeType extends Type
             CallableArrayType::NAME => $generate_row(CallableArrayType::NAME, CallableType::NAME, ArrayType::NAME),
             CallableObjectType::NAME => $generate_row(CallableObjectType::NAME, CallableType::NAME, ObjectType::NAME),
             CallableType::NAME => $generate_row(CallableType::NAME),
-            CallableStringType::NAME => $generate_row(CallableStringType::NAME, CallableType::NAME, StringType::NAME),
-            ClassStringType::NAME => $generate_row(ClassStringType::NAME, CallableType::NAME, StringType::NAME),
+            CallableStringType::NAME => $generate_row(CallableStringType::NAME, CallableType::NAME, StringType::NAME, NonEmptyStringType::NAME),
+            ClassStringType::NAME => $generate_row(ClassStringType::NAME, StringType::NAME, NonEmptyStringType::NAME),
             FalseType::NAME    => $generate_row(FalseType::NAME, BoolType::NAME, ScalarRawType::NAME),
             FloatType::NAME    => $generate_row(FloatType::NAME, ScalarRawType::NAME),
             IntType::NAME      => $generate_row(IntType::NAME, FloatType::NAME, ScalarRawType::NAME),
             IterableType::NAME => $generate_row(IterableType::NAME),
             MixedType::NAME    => $generate_row(MixedType::NAME),  // MixedType overrides the methods which would use this
+            NeverType::NAME => $generate_row(NeverType::NAME),  // NeverType also overrides methods which would use this
             NullType::NAME     => $generate_row(NullType::NAME),
             ObjectType::NAME   => $generate_row(ObjectType::NAME),
             ResourceType::NAME => $generate_row(ResourceType::NAME),
-            StringType::NAME   => $generate_row(StringType::NAME, CallableType::NAME, ScalarRawType::NAME, CallableStringType::NAME, ClassStringType::NAME),
+            StringType::NAME   => $generate_row(StringType::NAME, CallableType::NAME, ScalarRawType::NAME, CallableStringType::NAME, ClassStringType::NAME, NonEmptyStringType::NAME),
+            NonEmptyStringType::NAME   => $generate_row(NonEmptyStringType::NAME, StringType::NAME, CallableType::NAME, ScalarRawType::NAME, CallableStringType::NAME, ClassStringType::NAME),
             TrueType::NAME     => $generate_row(TrueType::NAME, BoolType::NAME, ScalarRawType::NAME),
             VoidType::NAME     => $generate_row(VoidType::NAME),
         ];
@@ -374,7 +376,7 @@ abstract class NativeType extends Type
     /**
      * @suppress PhanUnusedPublicMethodParameter
      */
-    public function asFunctionInterfaceOrNull(CodeBase $codebase, Context $context): ?\Phan\Language\Element\FunctionInterface
+    public function asFunctionInterfaceOrNull(CodeBase $codebase, Context $context, bool $warn = true): ?\Phan\Language\Element\FunctionInterface
     {
         // overridden in subclasses
         return null;

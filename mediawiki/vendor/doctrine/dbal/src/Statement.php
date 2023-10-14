@@ -2,11 +2,11 @@
 
 namespace Doctrine\DBAL;
 
-use Doctrine\DBAL\Driver\Exception;
-use Doctrine\DBAL\Driver\Statement as DriverStatement;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\Deprecations\Deprecation;
 
+use function func_num_args;
 use function is_string;
 
 /**
@@ -38,7 +38,7 @@ class Statement
     /**
      * The underlying driver statement.
      *
-     * @var DriverStatement
+     * @var Driver\Statement
      */
     protected $stmt;
 
@@ -59,26 +59,19 @@ class Statement
     /**
      * Creates a new <tt>Statement</tt> for the given SQL and <tt>Connection</tt>.
      *
-     * @internal The statement can be only instantiated by {@link Connection}.
+     * @internal The statement can be only instantiated by {@see Connection}.
      *
-     * @param string     $sql  The SQL of the statement.
-     * @param Connection $conn The connection on which the statement should be executed.
+     * @param Connection       $conn      The connection for handling statement errors.
+     * @param Driver\Statement $statement The underlying driver-level statement.
+     * @param string           $sql       The SQL of the statement.
      *
      * @throws Exception
      */
-    public function __construct($sql, Connection $conn)
+    public function __construct(Connection $conn, Driver\Statement $statement, string $sql)
     {
-        $driverConnection = $conn->getWrappedConnection();
-
-        try {
-            $stmt = $driverConnection->prepare($sql);
-        } catch (Exception $ex) {
-            throw $conn->convertExceptionDuringQuery($ex, $sql);
-        }
-
-        $this->sql      = $sql;
-        $this->stmt     = $stmt;
         $this->conn     = $conn;
+        $this->stmt     = $statement;
+        $this->sql      = $sql;
         $this->platform = $conn->getDatabasePlatform();
     }
 
@@ -120,7 +113,7 @@ class Statement
 
         try {
             return $this->stmt->bindValue($param, $value, $bindingType);
-        } catch (Exception $e) {
+        } catch (Driver\Exception $e) {
             throw $this->conn->convertException($e);
         }
     }
@@ -129,6 +122,8 @@ class Statement
      * Binds a parameter to a value by reference.
      *
      * Binding a parameter by reference does not support DBAL mapping types.
+     *
+     * @deprecated Use {@see bindValue()} instead.
      *
      * @param string|int $param    The name or position of the parameter.
      * @param mixed      $variable The reference to the variable to bind.
@@ -142,12 +137,23 @@ class Statement
      */
     public function bindParam($param, &$variable, $type = ParameterType::STRING, $length = null)
     {
+        Deprecation::trigger(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/5563',
+            '%s is deprecated. Use bindValue() instead.',
+            __METHOD__
+        );
+
         $this->params[$param] = $variable;
         $this->types[$param]  = $type;
 
         try {
-            return $this->stmt->bindParam($param, $variable, $type, $length);
-        } catch (Exception $e) {
+            if (func_num_args() > 3) {
+                return $this->stmt->bindParam($param, $variable, $type, $length);
+            }
+
+            return $this->stmt->bindParam($param, $variable, $type);
+        } catch (Driver\Exception $e) {
             throw $this->conn->convertException($e);
         }
     }
@@ -155,12 +161,20 @@ class Statement
     /**
      * Executes the statement with the currently bound parameters.
      *
+     * @deprecated Statement::execute() is deprecated, use Statement::executeQuery() or executeStatement() instead
+     *
      * @param mixed[]|null $params
      *
      * @throws Exception
      */
     public function execute($params = null): Result
     {
+        Deprecation::triggerIfCalledFromOutside(
+            'doctrine/dbal',
+            'https://github.com/doctrine/dbal/pull/4580',
+            'Statement::execute() is deprecated, use Statement::executeQuery() or Statement::executeStatement() instead'
+        );
+
         if ($params !== null) {
             $this->params = $params;
         }
@@ -175,7 +189,7 @@ class Statement
                 $this->stmt->execute($params),
                 $this->conn
             );
-        } catch (Exception $ex) {
+        } catch (Driver\Exception $ex) {
             throw $this->conn->convertExceptionDuringQuery($ex, $this->sql, $this->params, $this->types);
         } finally {
             if ($logger !== null) {
@@ -185,9 +199,59 @@ class Statement
     }
 
     /**
+     * Executes the statement with the currently bound parameters and return result.
+     *
+     * @param mixed[] $params
+     *
+     * @throws Exception
+     */
+    public function executeQuery(array $params = []): Result
+    {
+        if (func_num_args() > 0) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5556',
+                'Passing $params to Statement::executeQuery() is deprecated. Bind parameters using'
+                    . ' Statement::bindParam() or Statement::bindValue() instead.'
+            );
+        }
+
+        if ($params === []) {
+            $params = null; // Workaround as long execute() exists and used internally.
+        }
+
+        return $this->execute($params);
+    }
+
+    /**
+     * Executes the statement with the currently bound parameters and return affected rows.
+     *
+     * @param mixed[] $params
+     *
+     * @throws Exception
+     */
+    public function executeStatement(array $params = []): int
+    {
+        if (func_num_args() > 0) {
+            Deprecation::trigger(
+                'doctrine/dbal',
+                'https://github.com/doctrine/dbal/pull/5556',
+                'Passing $params to Statement::executeStatement() is deprecated. Bind parameters using'
+                    . ' Statement::bindParam() or Statement::bindValue() instead.'
+            );
+        }
+
+        if ($params === []) {
+            $params = null; // Workaround as long execute() exists and used internally.
+        }
+
+        return $this->execute($params)->rowCount();
+    }
+
+    /**
      * Gets the wrapped driver statement.
      *
-     * @return DriverStatement
+     * @return Driver\Statement
      */
     public function getWrappedStatement()
     {

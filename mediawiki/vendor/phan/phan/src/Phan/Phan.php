@@ -22,8 +22,6 @@ use Phan\Output\IgnoredFilesFilterInterface;
 use Phan\Output\IssueCollectorInterface;
 use Phan\Output\IssuePrinterInterface;
 use Phan\Plugin\ConfigPluginSet;
-use phpDocumentor\Reflection\DocBlock\StandardTagFactory;
-use ReflectionMethod;
 
 use function array_combine;
 use function array_filter;
@@ -49,13 +47,12 @@ use function realpath;
 use function sort;
 use function sprintf;
 use function str_replace;
-use function var_export;
+use function var_representation;
 
 use const EXIT_FAILURE;
 use const EXIT_SUCCESS;
 use const JSON_PRETTY_PRINT;
 use const PHP_DEBUG;
-use const PHP_VERSION_ID;
 use const SORT_STRING;
 use const STDERR;
 
@@ -175,7 +172,7 @@ class Phan implements IgnoredFilesFilterInterface
     ];
 
     /**
-     * Analyze the given set of files and emit any issues
+     * Parse and analyze the given set of files and emit any issues
      * found to STDOUT.
      *
      * @param CodeBase $code_base
@@ -215,10 +212,9 @@ class Phan implements IgnoredFilesFilterInterface
             exit(EXIT_SUCCESS);
         }
         if (CLI::isDaemonOrLanguageServer() &&
-            Config::getValue('language_server_use_pcntl_fallback')) {
+            (\PHP_VERSION_ID >= 70300 || Config::getValue('language_server_use_pcntl_fallback'))) {
             // The PCNTL fallback generates cyclic references (to the CodeBase instance which references many other things) in createRestorePoint,
             // so we need to garbage collect that.
-            // This is probably the only part of the code which generates cyclic references
             //
             // 1. Phan clones the old codebase to restore it, and cyclic references exist as a side effect.
             //
@@ -229,6 +225,8 @@ class Phan implements IgnoredFilesFilterInterface
             //
             // This fix works in PHP 7.3, which has an improved garbage collector.
             // It might not work as well in earlier PHP versions on large codebases.
+            //
+            // Other parts of the code also generate reference cycles even with PCNTL enabled.
             gc_enable();
         }
 
@@ -236,6 +234,11 @@ class Phan implements IgnoredFilesFilterInterface
         FileCache::setMaxCacheSize(FileCache::MINIMUM_CACHE_SIZE);
         self::checkForSlowPHPOptions();
         Config::warnIfInvalid();
+        if (Config::getValue('processes') !== 1) {
+            if (!\extension_loaded('pcntl')) {
+                throw new AssertionError('The pcntl extension must be loaded in order for Phan to be able to fork.');
+            }
+        }
         self::loadConfiguredPHPExtensionStubs($code_base);
         $is_daemon_request = Config::getValue('daemonize_socket') || Config::getValue('daemonize_tcp');
         $language_server_config = Config::getValue('language_server_config');
@@ -350,7 +353,6 @@ class Phan implements IgnoredFilesFilterInterface
                     exit(2);
                 }
             } else {
-                self::checkLanguageServerDependencies();
                 if (!is_array($language_server_config)) {
                     throw new AssertionError("Language server config must be an array");
                 }
@@ -381,28 +383,6 @@ class Phan implements IgnoredFilesFilterInterface
         }
 
         return self::finishAnalyzingRemainingStatements($code_base, $request, $analyze_file_path_list, $temporary_file_mapping);
-    }
-
-    /**
-     * @suppress PhanUndeclaredClassConstant, PhanUndeclaredClassReference
-     */
-    private static function checkLanguageServerDependencies(): void
-    {
-        if (PHP_VERSION_ID >= 70200) {
-            return;
-        }
-        if (!\method_exists(StandardTagFactory::class, 'addService')) {
-            return;
-        }
-        $method = new ReflectionMethod(StandardTagFactory::class, 'addService');
-        $first_param = $method->getParameters()[0] ?? null;
-        if (!$first_param) {
-            return;
-        }
-        if (\strpos((string)$first_param, 'object') !== false) {
-            throw new AssertionError('Cannot run the Phan language server with phpdocumentor/reflection-docblock 5.0+ and php 7.1. ' .
-                'Downgrade to phpdocumentor/reflection-docblock=^4.3.4.0 or run Phan with a newer php version.');
-        }
     }
 
     private static function preloadBeforeForkingAnalysisWorkers(CodeBase $code_base): void
@@ -846,11 +826,11 @@ class Phan implements IgnoredFilesFilterInterface
                 continue;
             }
             if (!is_string($path_to_extension)) {
-                throw new \InvalidArgumentException("Invalid autoload_internal_extension_signatures: path for $extension_name is not a string: value: " . var_export($path_to_extension, true));
+                throw new \InvalidArgumentException("Invalid autoload_internal_extension_signatures: path for $extension_name is not a string: value: " . var_representation($path_to_extension));
             }
             $path_to_extension = Config::projectPath($path_to_extension);
             if (!is_file($path_to_extension)) {
-                throw new \InvalidArgumentException("Invalid autoload_internal_extension_signatures: path for $extension_name is not a file: value: " . var_export($path_to_extension, true));
+                throw new \InvalidArgumentException("Invalid autoload_internal_extension_signatures: path for $extension_name is not a file: value: " . var_representation($path_to_extension));
             }
             Analysis::parseFile($code_base, $path_to_extension, false, null, true);
         }

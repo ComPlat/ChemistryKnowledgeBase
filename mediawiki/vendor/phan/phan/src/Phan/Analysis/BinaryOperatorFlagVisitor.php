@@ -89,10 +89,11 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
     /**
      * @throws AssertionError
      * @suppress PhanUnreferencedPrivateMethod this is referenced by __invoke
+     * @return never
      */
     private function handleMissing(Node $node): void
     {
-        throw new AssertionError("All flags must match. Found kind=" . Debug::nodeName($node) . ', flags=' . Element::flagDescription($node) . ' raw flags=' . $node->flags . ' at ' . $this->context->withLineNumberStart((int)$node->lineno));
+        throw new AssertionError("All flags must match. Found kind=" . Debug::nodeName($node) . ', flags=' . Element::flagDescription($node) . ' raw flags=' . $node->flags . ' at ' . (clone $this->context)->withLineNumberStart((int)$node->lineno));
     }
 
     /**
@@ -356,7 +357,7 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
                             // TODO: Emit warning about division by zero.
                             return IntType::instance(false)->asRealUnionType();
                         }
-                        $value = $left_value % $right_value;
+                        $value = ((int)$left_value) % (int)($right_value);
                         return $make_literal_union_type(
                             LiteralIntType::instanceForValue($value, false),
                             $real_int
@@ -445,6 +446,8 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
      */
     public function visitBinaryBoolAnd(Node $node): UnionType
     {
+        // TODO: This might be useful when at least one side is a constant expression or at least one side is `never`
+        // e.g. `const X = Y || Z;`
         return BoolType::instance(false)->asRealUnionType();
     }
 
@@ -483,26 +486,42 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
     public function visitBinaryConcat(Node $node): UnionType
     {
         $left_node = $node->children['left'];
-        $left_value = $left_node instanceof Node ? UnionTypeVisitor::unionTypeFromNode(
-            $this->code_base,
-            $this->context,
-            $left_node,
-            $this->should_catch_issue_exception
-        )->asSingleScalarValueOrNullOrSelf() : $left_node;
+        if ($left_node instanceof Node) {
+            $left_type = UnionTypeVisitor::unionTypeFromNode(
+                $this->code_base,
+                $this->context,
+                $left_node,
+                $this->should_catch_issue_exception
+            );
+            $left_value = $left_type->asSingleScalarValueOrNullOrSelf();
+        } else {
+            $left_value = $left_node;
+        }
         if (\is_object($left_value)) {
             return StringType::instance(false)->asRealUnionType();
         }
         $right_node = $node->children['right'];
-        $right_value = $right_node instanceof Node ? UnionTypeVisitor::unionTypeFromNode(
-            $this->code_base,
-            $this->context,
-            $right_node,
-            $this->should_catch_issue_exception
-        )->asSingleScalarValueOrNullOrSelf() : $right_node;
+        if ($right_node instanceof Node) {
+            $right_type = UnionTypeVisitor::unionTypeFromNode(
+                $this->code_base,
+                $this->context,
+                $right_node,
+                $this->should_catch_issue_exception
+            );
+            $right_value = $right_type->asSingleScalarValueOrNullOrSelf();
+        } else {
+            $right_value = $right_node;
+        }
         if (\is_object($right_value)) {
             return StringType::instance(false)->asRealUnionType();
         }
-        return LiteralStringType::instanceForValue($left_value . $right_value, false)->asRealUnionType();
+        $literal = LiteralStringType::instanceForValue($left_value . $right_value, false);
+        if ((!isset($left_type) || $left_type->getRealUnionType()->isSingleScalarValue()) &&
+            (!isset($right_type) || $right_type->getRealUnionType()->isSingleScalarValue())) {
+            return $literal->asRealUnionType();
+        }
+
+        return new UnionType([$literal], true, [StringType::instance(false)]);
     }
 
     /**
@@ -514,33 +533,37 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
      */
     private function visitBinaryOpCommon(Node $node): UnionType
     {
+        $code_base = $this->code_base;
+        $context = $this->context;
         $left = UnionTypeVisitor::unionTypeFromNode(
-            $this->code_base,
-            $this->context,
+            $code_base,
+            $context,
             $node->children['left'],
             $this->should_catch_issue_exception
         );
 
         $right = UnionTypeVisitor::unionTypeFromNode(
-            $this->code_base,
-            $this->context,
+            $code_base,
+            $context,
             $node->children['right'],
             $this->should_catch_issue_exception
         );
 
-        $left_is_array_like = $left->isExclusivelyArrayLike();
-        $right_is_array_like = $right->isExclusivelyArrayLike();
+        $left_is_array_like = $left->isExclusivelyArrayLike($code_base);
+        $right_is_array_like = $right->isExclusivelyArrayLike($code_base);
 
         $left_can_cast_to_array = $left->canCastToUnionType(
-            ArrayType::instance(false)->asPHPDocUnionType()
+            ArrayType::instance(false)->asPHPDocUnionType(),
+            $this->code_base
         );
 
         $right_can_cast_to_array = $right->canCastToUnionType(
-            ArrayType::instance(false)->asPHPDocUnionType()
+            ArrayType::instance(false)->asPHPDocUnionType(),
+            $this->code_base
         );
 
         if ($left_is_array_like
-            && !$right->hasArrayLike()
+            && !$right->hasArrayLike($code_base)
             && !$right_can_cast_to_array
             && !$right->isEmpty()
             && !$right->containsNullable()
@@ -548,11 +571,11 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
         ) {
             $this->emitIssue(
                 Issue::TypeComparisonFromArray,
-                $node->lineno ?? 0,
+                $node->lineno,
                 (string)$right->asNonLiteralType()
             );
         } elseif ($right_is_array_like
-            && !$left->hasArrayLike()
+            && !$left->hasArrayLike($code_base)
             && !$left_can_cast_to_array
             && !$left->isEmpty()
             && !$left->containsNullable()
@@ -560,7 +583,7 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
         ) {
             $this->emitIssue(
                 Issue::TypeComparisonToArray,
-                $node->lineno ?? 0,
+                $node->lineno,
                 (string)$left->asNonLiteralType()
             );
         }
@@ -745,8 +768,8 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
 
         // If both left and right union types are arrays, then this is array
         // concatenation. (`$left + $right`)
-        if ($left->isGenericArray() && $right->isGenericArray()) {
-            self::checkInvalidArrayShapeCombination($this->code_base, $this->context, $node, $left, $right);
+        if ($left->isArray() && $right->isArray()) {
+            self::checkInvalidArrayShapeCombination($code_base, $context, $node, $left, $right);
             if ($left->isEqualTo($right)) {
                 return $left;
             }
@@ -773,12 +796,12 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
         }
 
         $left_is_array = (
-            !$left->genericArrayElementTypes()->isEmpty()
+            !$left->genericArrayElementTypes(false, $code_base)->isEmpty()
             && $left->nonArrayTypes()->isEmpty()
         ) || $left->isType($array_type);
 
         $right_is_array = (
-            !$right->genericArrayElementTypes()->isEmpty()
+            !$right->genericArrayElementTypes(false, $code_base)->isEmpty()
             && $right->nonArrayTypes()->isEmpty()
         ) || $right->isType($array_type);
 
@@ -789,7 +812,8 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
 
             if ($left_is_array
                 && !$right->canCastToUnionType(
-                    ArrayType::instance(false)->asPHPDocUnionType()
+                    ArrayType::instance(false)->asPHPDocUnionType(),
+                    $code_base
                 )
             ) {
                 $this->emitIssue(
@@ -797,7 +821,7 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
                     $node->lineno ?? 0
                 );
                 return $probably_unknown_type;
-            } elseif ($right_is_array && !$left->canCastToUnionType($array_type->asPHPDocUnionType())) {
+            } elseif ($right_is_array && !$left->canCastToUnionType($array_type->asPHPDocUnionType(), $code_base)) {
                 $this->emitIssue(
                     Issue::TypeInvalidLeftOperand,
                     $node->lineno ?? 0
@@ -838,8 +862,6 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
         }
         $common_left_fields = null;
         foreach ($left->getRealTypeSet() as $type) {
-            // if ($type->isNullable()) { return; }
-
             if (!$type instanceof ArrayShapeType) {
                 if ($type instanceof ListType) {
                     continue;
@@ -1032,16 +1054,15 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
             return $left_type;
         }
 
-        $right_node = $node->children['right'];
-        if ($right_node instanceof Node && $right_node->kind === ast\AST_THROW) {
-            return $left_type->nonNullableClone();
-        }
         $right_type = UnionTypeVisitor::unionTypeFromNode(
             $this->code_base,
             $this->context,
-            $right_node,
+            $node->children['right'],
             $this->should_catch_issue_exception
         );
+        if ($right_type->isNeverType()) {
+            return $left_type->nonNullableClone();
+        }
         if ($left_type->isEmpty()) {
             if ($right_type->isEmpty()) {
                 return MixedType::instance(false)->asPHPDocUnionType();
@@ -1058,6 +1079,9 @@ final class BinaryOperatorFlagVisitor extends FlagVisitorImplementation
         // On the left side, remove null and replace '?T' with 'T'
         // Don't bother if the right side contains null.
         if (!$right_type->isEmpty() && $left_type->containsNullable() && !$right_type->containsNullable()) {
+            if ($left_type->getRealUnionType()->isRealTypeNullOrUndefined()) {
+                return $right_type;
+            }
             $left_type = $left_type->nonNullableClone();
         }
 

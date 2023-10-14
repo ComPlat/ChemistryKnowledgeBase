@@ -11,24 +11,19 @@ use function func_get_args;
 use function is_array;
 
 /**
- * Event Arguments used when SQL queries for renaming table columns are generated inside {@link AbstractPlatform}.
+ * Event Arguments used when SQL queries for renaming table columns are generated inside {@see AbstractPlatform}.
  */
 class SchemaAlterTableRenameColumnEventArgs extends SchemaEventArgs
 {
     /** @var string */
     private $oldColumnName;
 
-    /** @var Column */
-    private $column;
-
-    /** @var TableDiff */
-    private $tableDiff;
-
-    /** @var AbstractPlatform */
-    private $platform;
+    private Column $column;
+    private TableDiff $tableDiff;
+    private AbstractPlatform $platform;
 
     /** @var string[] */
-    private $sql = [];
+    private array $sql = [];
 
     /**
      * @param string $oldColumnName

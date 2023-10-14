@@ -18,7 +18,7 @@ class RedundantVarNameSniff implements Sniff {
 	/**
 	 * @inheritDoc
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_DOC_COMMENT_TAG ];
 	}
 
@@ -45,7 +45,8 @@ class RedundantVarNameSniff implements Sniff {
 
 		$visibilityPtr = $phpcsFile->findPrevious(
 			// This is already compatible with `public int $var;` available since PHP 7.4
-			Tokens::$emptyTokens + [ T_NULLABLE, T_STRING ],
+			// Skip over `static` in the declaration too, T278471
+			Tokens::$emptyTokens + [ T_NULLABLE, T_STRING, T_STATIC ],
 			$variablePtr - 1,
 			$docPtr + 1,
 			true

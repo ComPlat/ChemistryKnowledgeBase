@@ -15,6 +15,8 @@ use Phan\Language\Type;
  */
 final class NonZeroIntType extends IntType
 {
+    use NativeTypeTrait;
+
     public const NAME = 'non-zero-int';
 
     /** @var int $value */
@@ -54,7 +56,7 @@ final class NonZeroIntType extends IntType
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableType(Type $type): bool
+    protected function canCastToNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             switch ($type::NAME) {
@@ -64,6 +66,7 @@ final class NonZeroIntType extends IntType
                     }
                     return true;
                 case 'non-zero-int':
+                case 'scalar':
                     return true;
                 case 'string':
                     if ($type instanceof LiteralStringType) {
@@ -94,7 +97,7 @@ final class NonZeroIntType extends IntType
             }
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
@@ -102,7 +105,7 @@ final class NonZeroIntType extends IntType
      * True if this Type can be cast to the given Type
      * cleanly
      */
-    protected function canCastToNonNullableTypeWithoutConfig(Type $type): bool
+    protected function canCastToNonNullableTypeWithoutConfig(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             switch ($type::NAME) {
@@ -116,31 +119,34 @@ final class NonZeroIntType extends IntType
                         return (bool)$type->getValue();
                     }
                     return true;
+                case 'non-zero-int':
+                case 'scalar':
+                    return true;
                 default:
                     return false;
             }
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     /**
      * @return bool
      * True if this Type is a subtype of the given type
      */
-    protected function isSubtypeOfNonNullableType(Type $type): bool
+    protected function isSubtypeOfNonNullableType(Type $type, CodeBase $code_base): bool
     {
         if ($type instanceof ScalarType) {
             if ($type instanceof IntType) {
                 if ($type instanceof LiteralIntType) {
-                    return (bool)$type->getValue();
+                    return false;
                 }
                 return true;
             }
-            return false;
+            return $type instanceof ScalarRawType;
         }
 
-        return parent::canCastToNonNullableType($type);
+        return parent::canCastToNonNullableType($type, $code_base);
     }
 
     public function asSignatureType(): Type
@@ -148,7 +154,7 @@ final class NonZeroIntType extends IntType
         return IntType::instance($this->is_nullable);
     }
 
-    public function weaklyOverlaps(Type $other): bool
+    public function weaklyOverlaps(Type $other, CodeBase $code_base): bool
     {
         // TODO: Could be stricter
         if ($other instanceof ScalarType) {
@@ -160,7 +166,7 @@ final class NonZeroIntType extends IntType
             }
             return true;
         }
-        return parent::weaklyOverlaps($other);
+        return parent::weaklyOverlaps($other, $code_base);
     }
 
     public function canCastToDeclaredType(CodeBase $code_base, Context $context, Type $other): bool

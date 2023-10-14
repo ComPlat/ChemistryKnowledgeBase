@@ -26,13 +26,13 @@ class Shim
         }
         // Define node kinds that may be absent
         if (!defined('ast\AST_PROP_GROUP')) {
-            define('ast\AST_PROP_GROUP', 0x221);
+            define('ast\AST_PROP_GROUP', 0x2ef);
         }
         if (!defined('ast\AST_CLASS_CONST_GROUP')) {
-            define('ast\AST_CLASS_CONST_GROUP', 0x220);
+            define('ast\AST_CLASS_CONST_GROUP', 0x2ee);
         }
         if (!defined('ast\AST_CLASS_NAME')) {
-            define('ast\AST_CLASS_NAME', 287);
+            define('ast\AST_CLASS_NAME', 0x23d);
         }
         if (!defined('ast\AST_ARROW_FUNC')) {
             define('ast\AST_ARROW_FUNC', 71);
@@ -48,6 +48,12 @@ class Shim
         }
         if (!defined('ast\AST_ATTRIBUTE_GROUP')) {
             define('ast\AST_ATTRIBUTE_GROUP', 251);
+        }
+        if (!defined('ast\AST_TYPE_INTERSECTION')) {
+            define('ast\AST_TYPE_INTERSECTION', 250);
+        }
+        if (!defined('ast\AST_CALLABLE_CONVERT')) {
+            define('ast\AST_CALLABLE_CONVERT', 249);
         }
         if (!defined('ast\AST_MATCH')) {
             define('ast\AST_MATCH', 0x2fc);
@@ -67,6 +73,9 @@ class Shim
         if (!defined('ast\AST_NULLSAFE_METHOD_CALL')) {
             define('ast\AST_NULLSAFE_METHOD_CALL', 0x3ff);
         }
+        if (!defined('ast\AST_ENUM_CASE')) {
+            define('ast\AST_ENUM_CASE', 0x4ff);
+        }
         // Define flags
         if (!defined('ast\flags\DIM_ALTERNATIVE_SYNTAX')) {
             define('ast\flags\DIM_ALTERNATIVE_SYNTAX', 1 << 1);
@@ -84,14 +93,35 @@ class Shim
         if (!defined('ast\flags\PARAM_MODIFIER_PRIVATE')) {
             define('ast\flags\PARAM_MODIFIER_PRIVATE', $max_param_flag << 3);
         }
+        if (!defined('ast\flags\MODIFIER_READONLY')) {
+            define('ast\flags\MODIFIER_READONLY', $max_param_flag << 4);
+        }
         if (!defined('ast\flags\TYPE_FALSE')) {
             define('ast\flags\TYPE_FALSE', 2);
+        }
+        if (!defined('ast\flags\TYPE_TRUE')) {
+            define('ast\flags\TYPE_TRUE', 3);
         }
         if (!defined('ast\flags\TYPE_STATIC')) {
             define('ast\flags\TYPE_STATIC', \PHP_MAJOR_VERSION >= 80000 ? 15 : 20);
         }
         if (!defined('ast\flags\TYPE_MIXED')) {
             define('ast\flags\TYPE_MIXED', \PHP_MAJOR_VERSION >= 80000 ? 16 : 21);
+        }
+        if (!defined('ast\flags\TYPE_NEVER')) {
+            define('ast\flags\TYPE_NEVER', \PHP_MAJOR_VERSION >= 80000 ? 17 : 22);
+        }
+        if (!defined('ast\flags\ENCAPS_VAR_DOLLAR_CURLY')) {
+            define('ast\flags\ENCAPS_VAR_DOLLAR_CURLY', 1);
+        }
+        if (!defined('ast\flags\ENCAPS_VAR_DOLLAR_CURLY_VAR_VAR')) {
+            define('ast\flags\ENCAPS_VAR_DOLLAR_CURLY_VAR_VAR', 2);
+        }
+        if (!defined('ast\flags\CLASS_ENUM')) {
+            define('ast\flags\CLASS_ENUM', 0x10000000);
+        }
+        if (!defined('ast\flags\CLASS_READONLY')) {
+            define('ast\flags\CLASS_READONLY', 0x20000000);
         }
     }
 }

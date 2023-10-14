@@ -80,6 +80,11 @@ interface KindVisitor
     public function visitCall(Node $node);
 
     /**
+     * Visit a node with kind `\ast\AST_CALLABLE_CONVERT`
+     */
+    public function visitCallableConvert(Node $node);
+
+    /**
      * Visit a node with kind `\ast\AST_CAST`
      */
     public function visitCast(Node $node);
@@ -173,6 +178,11 @@ interface KindVisitor
      * Visit a node with kind `\ast\AST_ENCAPS_LIST`
      */
     public function visitEncapsList(Node $node);
+
+    /**
+     * Visit a node with kind `\ast\AST_ENUM_CASE`
+     */
+    public function visitEnumCase(Node $node);
 
     /**
      * Visit a node with kind `\ast\AST_EXIT`
@@ -368,6 +378,11 @@ interface KindVisitor
      * Visit a node with kind `\ast\AST_TYPE`
      */
     public function visitType(Node $node);
+
+    /**
+     * Visit a node with kind `\ast\AST_TYPE_INTERSECTION`
+     */
+    public function visitTypeIntersection(Node $node);
 
     /**
      * Visit a node with kind `\ast\AST_TYPE_UNION`

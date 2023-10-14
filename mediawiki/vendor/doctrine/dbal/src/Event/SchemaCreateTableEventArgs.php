@@ -10,24 +10,22 @@ use function func_get_args;
 use function is_array;
 
 /**
- * Event Arguments used when SQL queries for creating tables are generated inside {@link AbstractPlatform}.
+ * Event Arguments used when SQL queries for creating tables are generated inside {@see AbstractPlatform}.
  */
 class SchemaCreateTableEventArgs extends SchemaEventArgs
 {
-    /** @var Table */
-    private $table;
+    private Table $table;
 
     /** @var mixed[][] */
-    private $columns;
+    private array $columns;
 
     /** @var mixed[] */
-    private $options;
+    private array $options;
 
-    /** @var AbstractPlatform */
-    private $platform;
+    private AbstractPlatform $platform;
 
     /** @var string[] */
-    private $sql = [];
+    private array $sql = [];
 
     /**
      * @param mixed[][] $columns

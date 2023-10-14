@@ -49,6 +49,14 @@ class SpeedTrapListener implements TestListener
     protected $reportLength;
 
     /**
+     * Whether the test runner should halt running additional tests after
+     * finding a slow test.
+     *
+     * @var bool
+     */
+    protected $stopOnSlow;
+
+    /**
      * Collection of slow tests.
      * Keys (string) => Printable label describing the test
      * Values (int) => Test execution time, in milliseconds
@@ -121,7 +129,7 @@ class SpeedTrapListener implements TestListener
      */
     protected function isSlow(int $time, int $slowThreshold): bool
     {
-        return $time >= $slowThreshold;
+        return $slowThreshold && $time >= $slowThreshold;
     }
 
     /**
@@ -132,6 +140,10 @@ class SpeedTrapListener implements TestListener
         $label = $this->makeLabel($test);
 
         $this->slow[$label] = $time;
+
+        if ($this->stopOnSlow) {
+            $test->getTestResultObject()->stop();
+        }
     }
 
     /**
@@ -151,11 +163,14 @@ class SpeedTrapListener implements TestListener
     }
 
     /**
-     * Label describing a test.
+     * Label describing a slow test case. Formatted to support copy/paste with
+     * PHPUnit's --filter CLI option:
+     *
+     *     vendor/bin/phpunit --filter 'JohnKary\\PHPUnit\\Listener\\Tests\\SomeSlowTest::testWithDataProvider with data set "Rock"'
      */
     protected function makeLabel(TestCase $test): string
     {
-        return sprintf('%s:%s', get_class($test), $test->getName());
+        return sprintf('%s::%s', addslashes(get_class($test)), $test->getName());
     }
 
     /**
@@ -213,7 +228,7 @@ class SpeedTrapListener implements TestListener
     protected function renderFooter()
     {
         if ($hidden = $this->getHiddenCount()) {
-            echo sprintf("...and there %s %s more above your threshold hidden from view", $hidden == 1 ? 'is' : 'are', $hidden);
+            printf("...and there %s %s more above your threshold hidden from view\n", $hidden == 1 ? 'is' : 'are', $hidden);
         }
     }
 
@@ -224,6 +239,7 @@ class SpeedTrapListener implements TestListener
     {
         $this->slowThreshold = $options['slowThreshold'] ?? 500;
         $this->reportLength = $options['reportLength'] ?? 10;
+        $this->stopOnSlow = $options['stopOnSlow'] ?? false;
     }
 
     /**

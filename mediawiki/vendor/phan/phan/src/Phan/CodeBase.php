@@ -467,7 +467,7 @@ class CodeBase
             // #1015 workaround for empty constant names ('' and '0').
             if (!\is_string($const_name)) {
                 // @phan-suppress-next-line PhanPluginRemoveDebugCall
-                \fprintf(STDERR, "Saw constant with non-string name of %s. There may be a bug in a PECL extension you are using (php -m will list those)\n", \var_export($const_name, true));
+                \fprintf(STDERR, "Saw constant with non-string name of %s. There may be a bug in a PECL extension you are using (php -m will list those)\n", \var_representation($const_name));
                 continue;
             }
             try {
@@ -490,7 +490,7 @@ class CodeBase
             return;
         }
         // @phan-suppress-next-line PhanPluginRemoveDebugCall
-        \fprintf(STDERR, "Failed to load global constant value for %s, continuing: %s\n", \var_export($const_name, true), $e->getMessage());
+        \fprintf(STDERR, "Failed to load global constant value for %s, continuing: %s\n", \var_representation($const_name), $e->getMessage());
     }
 
     /**
@@ -649,7 +649,7 @@ class CodeBase
     }
 
     /**
-     * @param array{clone:CodeBase,callbacks:?(Closure():void)[]} $restore_point
+     * @param array{clone:CodeBase,callbacks:(?Closure():void)[]} $restore_point
      */
     public function restoreFromRestorePoint(array $restore_point): void
     {
@@ -1072,7 +1072,7 @@ class CodeBase
      */
     public function getInternalClassMap(): Map
     {
-        if (\count($this->fqsen_class_map_reflection) > 0) {
+        if ($this->fqsen_class_map_reflection->count() > 0) {
             $fqsen_class_map_reflection = $this->fqsen_class_map_reflection;
             // Free up memory used by old class map. Prevent it from being freed before we can load it manually.
             $this->fqsen_class_map_reflection = new Map();
@@ -1183,7 +1183,7 @@ class CodeBase
     {
         $set = clone($this->method_set);
         foreach ($this->fqsen_func_map as $value) {
-            // @phan-suppress-next-line PhanTypeMismatchArgument deliberately adding different class instances to an existing set
+            // @phan-suppress-next-line PhanTypeMismatchArgument, PhanPartialTypeMismatchArgument deliberately adding different class instances to an existing set
             $set->attach($value);
         }
         return $set;
@@ -1570,7 +1570,7 @@ class CodeBase
                     if ($reflection_function->isDeprecated()) {
                         $function->setIsDeprecated(true);
                     }
-                    $real_return_type = UnionType::fromReflectionType($reflection_function->getReturnType());
+                    $real_return_type = FunctionFactory::getRealReturnTypeFromReflection($reflection_function);
                     if (Config::getValue('assume_real_types_for_internal_functions')) {
                         // @phan-suppress-next-line PhanAccessMethodInternal
                         $real_type_string = UnionType::getLatestRealFunctionSignatureMap(Config::get_closest_target_php_version_id())[$name] ?? null;
@@ -2107,6 +2107,53 @@ class CodeBase
         }, $namespaces_for_function);
     }
 
+    private static function phpVersionIdToString(int $php_version_id): string
+    {
+        return \sprintf('%d.%d', $php_version_id / 10000, ($php_version_id / 100) % 100);
+    }
+
+    /**
+     * @unused-param $context
+     * @return list<string> 0 or more namespaced function names found in this code base for newer php versions
+     */
+    public function suggestSimilarGlobalFunctionInNewerVersion(
+        string $namespace,
+        string $function_name,
+        Context $context,
+        bool $suggest_in_global_namespace
+    ): array {
+        if (!$suggest_in_global_namespace && $namespace !== '\\') {
+            return [];
+        }
+        $target_php_version_config = Config::get_closest_target_php_version_id();
+        $target_php_version = (int)\floor(\min($target_php_version_config, \PHP_VERSION_ID) / 100) * 100;
+        $targets = [50600, 70000, 70100, 70200, 70300, 70400, 80000];
+        $function_name_lower = strtolower($function_name);
+        foreach ($targets as $i => $target) {
+            // If $target_php_version is 7.1 only check for functions added in 7.2 or newer that weren't in the previous version.
+            // Don't suggest functions added in 7.1
+            $next_target = $targets[$i + 1] ?? 0;
+            if (!$next_target || $next_target <= $target_php_version) {
+                continue;
+            }
+            $signature_map = UnionType::internalFunctionSignatureMap($next_target);
+            if (isset($signature_map[$function_name_lower])) {
+                $old_signature_map = UnionType::internalFunctionSignatureMap($target);
+                if (!isset($old_signature_map[$function_name_lower])) {
+                    $details = \sprintf('target_php_version=%s run with PHP %s', self::phpVersionIdToString($target_php_version_config), self::phpVersionIdToString(\PHP_VERSION_ID));
+                    $suggestion = \sprintf(
+                        '(to use the function %s() added in PHP %s in a project with %s without a polyfill parsed by Phan)',
+                        $function_name,
+                        self::phpVersionIdToString($next_target),
+                        $details
+                    );
+                    return [$suggestion];
+                }
+            }
+        }
+        return [];
+    }
+
     /**
      * @internal
      */
@@ -2162,8 +2209,9 @@ class CodeBase
         if (!$class->isClass()) {
             return null;
         }
-        if (!$class->hasMethodWithName($this, '__construct')) {
-            return null;
+        if (!$class->hasMethodWithName($this, '__construct', true)) {
+            // Allow both the constructor and the absence of a constructor
+            return $fqsen;
         }
         $class_fqsen_in_current_scope = IssueFixSuggester::maybeGetClassInCurrentScope($context);
         if ($class->getMethodByName($this, '__construct')->isAccessibleFromClass($this, $class_fqsen_in_current_scope)) {

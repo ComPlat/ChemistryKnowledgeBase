@@ -33,7 +33,7 @@ class PlusStringConcatSniff implements Sniff {
 	 *
 	 * @return array
 	 */
-	public function register() {
+	public function register(): array {
 		return [ T_PLUS, T_PLUS_EQUAL ];
 	}
 
@@ -49,6 +49,7 @@ class PlusStringConcatSniff implements Sniff {
 		$prev = $phpcsFile->findPrevious( Tokens::$emptyTokens, $stackPtr - 1, null, true );
 		$next = $phpcsFile->findNext( Tokens::$emptyTokens, $stackPtr + 1, null, true );
 		if ( $prev === false || $next === false ) {
+			// Live coding
 			return;
 		}
 		$tokens = $phpcsFile->getTokens();

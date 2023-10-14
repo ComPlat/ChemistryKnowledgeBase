@@ -17,6 +17,7 @@ use Phan\LanguageServer\CompletionRequest;
 use Phan\LanguageServer\FileMapping;
 use Phan\LanguageServer\GoToDefinitionRequest;
 use Phan\LanguageServer\NodeInfoRequest;
+use Phan\LanguageServer\Protocol\Position;
 use Phan\Library\FileCache;
 use Phan\Library\StringUtil;
 use Phan\Output\IssuePrinterInterface;
@@ -39,6 +40,9 @@ use const WNOHANG;
 
 /**
  * Represents the state of a client request to a daemon, and contains methods for sending formatted responses.
+ *
+ * Overridden by subclasses such as ParseRequest.
+ *
  * @phan-file-suppress PhanPluginDescriptionlessCommentOnPublicMethod
  */
 class Request
@@ -166,7 +170,7 @@ class Request
     }
 
     /**
-     * @return void (unreachable)
+     * @return never
      * @throws ExitException to imitate an exit without actually exiting
      */
     public function exit(int $exit_code): void
@@ -224,6 +228,10 @@ class Request
      * When a user types :: or -> and requests code completion at the end of a line,
      * then add __INCOMPLETE_PROPERTY__ or __INCOMPLETE_CLASS_CONST__ so that this
      * can get parsed and completed.
+     *
+     * This is used when completing snippets such as "Foo::" or "$obj->"
+     * which technically can have the next token on subsequent lines but in practice don't.
+     *
      * @param array<string,string> $file_mapping_contents old map from relative file paths to contents.
      * @return array<string,string>
      */
@@ -239,9 +247,9 @@ class Request
             $lines = \explode("\n", $contents);
             $line = $lines[$position->line] ?? null;
             // $len = strlen($line ?? ''); fwrite(STDERR, "Looking at $line : $position of $len\n");
-            if (is_string($line) && strlen($line) === $position->character + 1 && $position->character > 0) {
+            if (is_string($line) && self::isPositionAtEndOfLine($position, $line)) {
                 // fwrite(STDERR, "cursor at the end of the line\n");
-                if (\preg_match('/(::|->)$/D', $line, $matches)) {
+                if (\preg_match('/(::|->)\r?$/D', $line, $matches)) {
                     // fwrite(STDERR, "Updating the file\n");
                     if ($matches[1] === '::') {
                         $addition = TolerantASTConverter::INCOMPLETE_CLASS_CONST;
@@ -256,6 +264,25 @@ class Request
             }
         }
         return $file_mapping_contents;
+    }
+
+    /**
+     * Check if $position's character is at the end of $line.
+     * $line is guaranteed not to contain "\n", but may contain "\r"
+     *
+     * @see self::adjustFileMappingContentsForCompletionRequest()
+     */
+    private static function isPositionAtEndOfLine(Position $position, string $line): bool
+    {
+        if ($position->character <= 0) {
+            // Don't generate completions for empty lines
+            return false;
+        }
+        if (strlen($line) === $position->character + 2 && $line[$position->character + 1] === "\r") {
+            // Support files that have Windows "\r\n" newlines
+            return true;
+        }
+        return strlen($line) === $position->character + 1;
     }
 
     /**
@@ -290,17 +317,19 @@ class Request
         return $printer;
     }
 
+    /** @var ?bool */
+    private static $original_color;
+
     /**
      * Handle a request created by the client with `phan_client --color`
      */
     private function handleClientColorOutput(): void
     {
         // Back up the original state: If pcntl isn't used, we don't want subsequent requests to be accidentally colorized.
-        static $original_color = null;
-        if ($original_color === null) {
-            $original_color = (bool)Config::getValue('color_issue_messages');
+        if (self::$original_color === null) {
+            self::$original_color = (bool)Config::getValue('color_issue_messages');
         }
-        $new_color = $this->request_config[self::PARAM_COLOR] ?? $original_color;
+        $new_color = $this->request_config[self::PARAM_COLOR] ?? self::$original_color;
         Config::setValue('color_issue_messages', $new_color);
     }
 

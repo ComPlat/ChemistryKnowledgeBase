@@ -13,6 +13,7 @@ use Phan\Language\FQSEN\FullyQualifiedMethodName;
 use Phan\Language\Type;
 use Phan\Language\Type\NullType;
 use Phan\Language\UnionType;
+use ReflectionFunctionAbstract;
 
 /**
  * This returns internal function declarations for a given function/method FQSEN,
@@ -24,6 +25,7 @@ class FunctionFactory
      * @return list<Func>
      * One or more (alternate) functions begotten from
      * reflection info and internal functions data
+     * @suppress PhanTypeMismatchReturn FunctionInterface->Method
      */
     public static function functionListFromReflectionFunction(
         FullyQualifiedFunctionName $fqsen,
@@ -52,7 +54,12 @@ class FunctionFactory
             - $reflection_function->getNumberOfRequiredParameters()
         );
         $function->setIsDeprecated($reflection_function->isDeprecated());
-        $real_return_type = UnionType::fromReflectionType($reflection_function->getReturnType());
+
+        $real_return_type = self::getRealReturnTypeFromReflection($reflection_function);
+        // @phan-suppress-next-line PhanUndeclaredMethod
+        if (\PHP_VERSION_ID >= 80100 && $reflection_function->hasTentativeReturnType()) {
+            $function->setHasTentativeReturnType();
+        }
         if (Config::getValue('assume_real_types_for_internal_functions')) {
             // @phan-suppress-next-line PhanAccessMethodInternal
             $real_type_string = UnionType::getLatestRealFunctionSignatureMap(Config::get_closest_target_php_version_id())[$namespaced_name] ?? null;
@@ -73,6 +80,7 @@ class FunctionFactory
      * @return list<Func>
      * One or more (alternate) methods begotten from
      * reflection info and internal method data
+     * @suppress PhanTypeMismatchReturn FunctionInterface->Method
      */
     public static function functionListFromSignature(
         FullyQualifiedFunctionName $fqsen,
@@ -104,6 +112,7 @@ class FunctionFactory
     /**
      * @return list<Method> a list of 1 or more method signatures from a ReflectionMethod
      * and Phan's alternate signatures for that method's FQSEN in FunctionSignatureMap.
+     * @suppress PhanTypeMismatchReturn FunctionInterface->Method
      */
     public static function methodListFromReflectionClassAndMethod(
         Context $context,
@@ -172,11 +181,27 @@ class FunctionFactory
         $method->setIsDeprecated($reflection_method->isDeprecated());
         // https://github.com/phan/phan/issues/888 - Reflection for that class's parameters causes php to throw/hang
         if ($class_name !== 'ServerResponse') {
-            $method->setRealReturnType(UnionType::fromReflectionType($reflection_method->getReturnType()));
+            $method->setRealReturnType(self::getRealReturnTypeFromReflection($reflection_method));
+            // @phan-suppress-next-line PhanUndeclaredMethod
+            if (\PHP_VERSION_ID >= 80100 && $reflection_method->hasTentativeReturnType()) {
+                $method->setHasTentativeReturnType();
+            }
             $method->setRealParameterList(Parameter::listFromReflectionParameterList($reflection_method->getParameters()));
         }
 
         return self::functionListFromFunction($method);
+    }
+
+    /**
+     * Get the return type from reflection (or the tentative return type)
+     * @suppress PhanUndeclaredMethod
+     */
+    public static function getRealReturnTypeFromReflection(ReflectionFunctionAbstract $function): UnionType
+    {
+        if (\PHP_VERSION_ID >= 80100 && $function->hasTentativeReturnType() && Config::getValue('use_tentative_return_type')) {
+            return UnionType::fromReflectionType($function->getTentativeReturnType());
+        }
+        return UnionType::fromReflectionType($function->getReturnType());
     }
 
     /**

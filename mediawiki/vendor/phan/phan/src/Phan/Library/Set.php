@@ -24,9 +24,10 @@ use TypeError;
  * @method bool offsetGet(T $object )
  * @method void offsetSet(T $object,mixed $data = null)
  * @method void offsetUnset(T $object)
+ * @phan-suppress-next-line PhanParamSignaturePHPDocMismatchReturnType TODO: Add a way to indicate that T is subtype of object
  * @method T current()
  *
- * @phan-file-suppress PhanParamSignatureMismatchInternal, PhanParamSignaturePHPDocMismatchHasParamType for these comment method overrides
+ * @phan-file-suppress PhanParamSignatureMismatchInternal for these comment method overrides
  * TODO: Make suppressions in the class doc comment work for magic methods.
  */
 class Set extends \SplObjectStorage
@@ -211,6 +212,7 @@ class Set extends \SplObjectStorage
             /**
              * @param T $element
              * @return object
+             * @suppress PhanTypePossiblyInvalidCloneNotObject phan does not support base types of template types yet.
              */
             static function ($element) {
                 return clone($element);
