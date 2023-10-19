@@ -1,0 +1,15 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client-es5",
+		"wikimedia/jquery",
+		"wikimedia/mediawiki"
+	],
+	"rules": {
+		"no-redeclare": "warn",
+		"compat/compat": "warn"
+	},
+	"ignorePatterns": [
+		"modules/lib/metrics-platform"
+	]
+}

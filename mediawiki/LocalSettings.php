@@ -447,3 +447,10 @@ $fsgShownFacets = [
 
 $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
 $wgExternalLinkTarget = '_blank';
+
+wfLoadExtension( 'EventLogging' );
+$wgEventLoggingBaseUri = '/beacon/event';
+$wgEventLoggingServiceUri = '/beacon/intake-analytics';
+$wgEventLoggingStreamNames = false;
+
+wfLoadExtension( 'GuidedTour' );

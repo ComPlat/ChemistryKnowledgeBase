@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Verdy p",
+			"Wladek92"
+		]
+	},
+	"eventlogging-desc": "Cadre de travail pour journaliser les événements du code côté client",
+	"eventlogging-invalid-json": "JSON non valide",
+	"eventlogging-revision-id": "Version $1",
+	"eventlogging-code-sample-logging-on-server-side": "Journalisation PHP",
+	"eventlogging-code-sample-module-setup-json": "configuration de « extension.json » pour la journalisation en JavaScript",
+	"eventlogging-code-sample-logging-on-client-side": "Journalisation en JavaScript",
+	"eventlogging-error-move-source": "Les pages de schéma peuvent ne pas être renommées",
+	"eventlogging-error-move-destination": "Les pages ne peuvent pas être renommées en pages de schéma"
+}
