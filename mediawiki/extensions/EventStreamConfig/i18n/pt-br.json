@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo Addad de Oliveira"
+		]
+	},
+	"eventstreamconfig-desc": "Expõe a configuração do fluxo de eventos em um terminal da API. Também pode ser usado para expor configurações via ResourceLoader",
+	"apihelp-streamconfigs-summary": "Expõe a configuração do fluxo de eventos",
+	"apihelp-streamconfigs-param-streams": "Lista de fluxos para obter a configuração",
+	"apihelp-streamconfigs-param-all_settings": "Incluir todas as configurações nos resultados da configuração do fluxo",
+	"apihelp-streamconfigs-param-constraints": "Filtrar resultados para entradas de configuração de fluxo que possuem essas configurações",
+	"apihelp-streamconfigs-example-1": "Obter configurações de fluxo para uma lista de fluxos",
+	"apihelp-streamconfigs-example-2": "Obter configuração de fluxo para fluxos com todas as configurações",
+	"apihelp-streamconfigs-example-3": "Obter configuração de fluxo para fluxos que têm configurações correspondentes a essas restrições"
+}

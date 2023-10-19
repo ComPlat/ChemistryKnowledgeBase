@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu"
+		]
+	},
+	"eventstreamconfig-desc": "Expõe a configuração da transmissão de eventos num ponto final da API. Também pode ser usado para expor configurações via ResourceLoader",
+	"apihelp-streamconfigs-param-streams": "Lista de transmissões das quais obter a configuração",
+	"apihelp-streamconfigs-param-all_settings": "Incluir todas as definições nos resultados da configuração de transmissões",
+	"apihelp-streamconfigs-param-constraints": "Filtrar resultados das entradas de configuração de transmissões que tenham estas definições",
+	"apihelp-streamconfigs-example-1": "Obter as configurações de uma lista de transmissões",
+	"apihelp-streamconfigs-example-2": "Obter a configuração de transmissões com todas as definições",
+	"apihelp-streamconfigs-example-3": "Obter a configuração de transmissões com definições que correspondem a estas restrições"
+}

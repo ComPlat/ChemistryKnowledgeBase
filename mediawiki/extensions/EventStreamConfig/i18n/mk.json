@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bjankuloski06"
+		]
+	},
+	"eventstreamconfig-desc": "Изложува поставки на тековници за настани во приложничка завршница. Можеда се користи за да ги даде и преку ResourceLoader",
+	"apihelp-streamconfigs-summary": "Изложува поставки на тековници за настани",
+	"apihelp-streamconfigs-param-streams": "Список на тековници за кои треба да се дадат поставки",
+	"apihelp-streamconfigs-param-all_settings": "Вклучи ги сите нагодувања во исходот",
+	"apihelp-streamconfigs-param-constraints": "Филтрирај го исходот за ставките од поставки за тековници кои ги имаат овие нагодувања",
+	"apihelp-streamconfigs-example-1": "Дај поставки за список од тековници",
+	"apihelp-streamconfigs-example-2": "Дај поставки за тековници со сите нагодувања",
+	"apihelp-streamconfigs-example-3": "Дај поставки за тековници со нагодувања што одговараат на овие ограничувања"
+}

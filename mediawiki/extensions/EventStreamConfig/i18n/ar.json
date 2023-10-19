@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25"
+		]
+	},
+	"eventstreamconfig-desc": "يعرض تكوين تدفق الأحداث في نقطة نهاية API. يمكن أيضًا استخدامها لفضح التكوينات عبر ResourceLoader",
+	"apihelp-streamconfigs-param-streams": "قائمة التدفقات المراد التهيئة لها",
+	"apihelp-streamconfigs-param-all_settings": "تضمين جميع الإعدادات في نتائج تكوين البث",
+	"apihelp-streamconfigs-param-constraints": "تصفية النتائج لإدخالات تكوين الدفق التي تحتوي على هذه الإعدادات",
+	"apihelp-streamconfigs-example-1": "احصل على تكوينات الدفق لقائمة التدفقات",
+	"apihelp-streamconfigs-example-2": "احصل على تكوين الدفق للتدفقات مع جميع الإعدادات",
+	"apihelp-streamconfigs-example-3": "احصل على تهيئة الدفق للتدفقات ذات الإعدادات المطابقة لهذه القيود"
+}

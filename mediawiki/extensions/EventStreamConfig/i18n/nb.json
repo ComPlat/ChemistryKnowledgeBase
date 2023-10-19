@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"eventstreamconfig-desc": "Viser konfigurasjonen for hendelsesstrømmer i et API-endepunkt. Kan også brukes for å vise konfigurasjoner via ResourceLoader",
+	"apihelp-streamconfigs-summary": "Viser konfigurasjon for hendelsesstrøm",
+	"apihelp-streamconfigs-param-streams": "Liste over strømmer konfigurasjon skal hentes for",
+	"apihelp-streamconfigs-param-all_settings": "Inkluder alle innstillinger i strømkonfgurasjonsresultater",
+	"apihelp-streamconfigs-param-constraints": "Filtrer resultater for strømmingskonfigurasjonsoppføringer som har disse innstillingene.",
+	"apihelp-streamconfigs-example-1": "Hent strømkonfigurasjoner for en liste over strømmer",
+	"apihelp-streamconfigs-example-2": "Hent strømkonfigurasjon for strømmer med alle innstillinger",
+	"apihelp-streamconfigs-example-3": "Hent strømmingskonfigurasjon for strømmer som har innstillinger som matcher disse begrensningene."
+}

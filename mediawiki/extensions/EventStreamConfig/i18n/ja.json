@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yusuke1109"
+		]
+	},
+	"eventstreamconfig-desc": "API エンドポイントでイベントストリームの設定を公開する。ResourceLoader経由で設定を公開することもできる"
+}

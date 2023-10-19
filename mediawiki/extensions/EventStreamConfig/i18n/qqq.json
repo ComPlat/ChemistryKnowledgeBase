@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Andrew Otto",
+			"Umherirrender"
+		]
+	},
+	"eventstreamconfig-desc": "{{desc|name=EventStreamConfig|url=https://www.mediawiki.org/wiki/Extension:EventStreamConfig}}",
+	"apihelp-streamconfigs-summary": "{{doc-apihelp-summary|streamconfigs}}",
+	"apihelp-streamconfigs-param-streams": "{{doc-apihelp-param|streamconfigs|streams}}",
+	"apihelp-streamconfigs-param-all_settings": "{{doc-apihelp-param|streamconfigs|all_settings}}",
+	"apihelp-streamconfigs-param-constraints": "{{doc-apihelp-param|streamconfigs|constraints}}",
+	"apihelp-streamconfigs-example-1": "{{doc-apihelp-example|streamconfigs}}",
+	"apihelp-streamconfigs-example-2": "{{doc-apihelp-example|streamconfigs}}",
+	"apihelp-streamconfigs-example-3": "{{doc-apihelp-example|streamconfigs}}"
+}

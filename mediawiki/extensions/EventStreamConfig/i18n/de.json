@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Justman10000"
+		]
+	},
+	"eventstreamconfig-desc": "Stellt die Konfiguration des Ereignisstroms in einem API-Endpunkt bereit. Kann auch verwendet werden, um Konfigurationen über ResourceLoader zu veröffentlichen",
+	"apihelp-streamconfigs-param-streams": "Liste der Streams, für die die Konfiguration abgerufen werden soll",
+	"apihelp-streamconfigs-param-all_settings": "Alle Einstellungen in die Stream-Konfigurationsergebnisse einbeziehen",
+	"apihelp-streamconfigs-param-constraints": "Ergebnisse nach Stream Config-Einträgen filtern, die diese Einstellungen haben",
+	"apihelp-streamconfigs-example-1": "Stream-Konfigurationen für eine Liste von Streams abrufen",
+	"apihelp-streamconfigs-example-2": "Streamkonfiguration für Streams mit allen Einstellungen abrufen",
+	"apihelp-streamconfigs-example-3": "Stream-Konfiguration für Streams abrufen, deren Einstellungen diesen Einschränkungen entsprechen"
+}

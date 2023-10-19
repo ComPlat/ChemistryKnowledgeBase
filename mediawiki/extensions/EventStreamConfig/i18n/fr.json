@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Wladek92",
+			"Zetud",
+			"Verdy p"
+		]
+	},
+	"eventstreamconfig-desc": "Expose la configuration du flux d’événements à un point de terminaison de l’API. Peut aussi être utilisé pour exposer les configurations via le chargeur de ressources.",
+	"apihelp-streamconfigs-summary": "Expose la configuration du flux d’événements",
+	"apihelp-streamconfigs-param-streams": "Liste des flux pour lesquels obtenir la configuration",
+	"apihelp-streamconfigs-param-all_settings": "Inclure tous les paramètres dans les résultats de configuration du flux",
+	"apihelp-streamconfigs-param-constraints": "Filtrer les résultats pour les entrées de configuration de flux qui ont ces paramètres",
+	"apihelp-streamconfigs-example-1": "Obtenir les configurations de flux pour une liste de flux",
+	"apihelp-streamconfigs-example-2": "Obtenir la configuration de flux pour les flux avec tous les paramètres",
+	"apihelp-streamconfigs-example-3": "Obtenir la configuration de flux pour les flux qui ont des paramètres correspondant à ces contraintes"
+}

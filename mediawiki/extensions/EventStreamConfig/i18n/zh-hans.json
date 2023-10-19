@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Shizhao"
+		]
+	},
+	"eventstreamconfig-desc": "在API端点中公开事件流配置。也可用于通过ResourceLoader公开配置",
+	"apihelp-streamconfigs-param-streams": "要获取配置的流列表",
+	"apihelp-streamconfigs-param-all_settings": "在流配置结果中包含所有设置",
+	"apihelp-streamconfigs-param-constraints": "具有这些设置的流配置条目的过滤结果",
+	"apihelp-streamconfigs-example-1": "获取流列表的流配置",
+	"apihelp-streamconfigs-example-2": "获取所有设置的流的流配置",
+	"apihelp-streamconfigs-example-3": "获取具有与这些约束匹配的设置的流的流配置"
+}

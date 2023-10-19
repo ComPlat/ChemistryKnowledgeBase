@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ykhwong"
+		]
+	},
+	"eventstreamconfig-desc": "API 엔드포인트의 이벤트 스트림 구성을 공개합니다. 리소스로더를 통해 구성을 공개하기 위해 사용할 수도 있습니다",
+	"apihelp-streamconfigs-param-streams": "구성을 가져올 스트림 목록",
+	"apihelp-streamconfigs-param-constraints": "이 설정들을 가진 스트림 구성 항목의 결과를 필터링합니다",
+	"apihelp-streamconfigs-example-1": "스트림 목록의 스트림 구성을 가져옵니다",
+	"apihelp-streamconfigs-example-2": "모든 설정의 스트림의 스트림 구성을 가져옵니다",
+	"apihelp-streamconfigs-example-3": "이 제약과 일치하는 설정을 가진 스트림의 스트림 구성을 가져옵니다"
+}

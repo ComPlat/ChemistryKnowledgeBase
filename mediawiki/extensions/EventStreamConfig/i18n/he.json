@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80"
+		]
+	},
+	"eventstreamconfig-desc": "חשיפת הגדרות זרם אירועים (event stream) בנקודת קצה של API. אפשר להשתמש בזה גם לחשיפת הגדרות דרך ResourceLoader",
+	"apihelp-streamconfigs-summary": "חשיפת הגדרות זרם אירועים",
+	"apihelp-streamconfigs-param-streams": "רשימת זרמים שעבורם רוצים לקבל את ההגדרות",
+	"apihelp-streamconfigs-param-all_settings": "הכללת כל ההגדרות בתוצאות הגדרות זרם",
+	"apihelp-streamconfigs-param-constraints": "סינון תוצאות לרשומות הגדרות זרם אירועים שיש להן אפשרויות כאלו",
+	"apihelp-streamconfigs-example-1": "קבלת הגדרות זרמים עבור רשימה של זרמים",
+	"apihelp-streamconfigs-example-2": "קבלת הגדרות זרמים עבור זרמים עם כל ההגדרות",
+	"apihelp-streamconfigs-example-3": "קבלת הגדרות זרם עבור זרמים שיש להם אפשרויות שמתאימות לאילוצים האלה"
+}

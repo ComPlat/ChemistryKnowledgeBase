@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly"
+		]
+	},
+	"eventstreamconfig-desc": "公開在 API 端點的事件串流設置。另外也能夠透過 ResourceLoader 來公開設置",
+	"apihelp-streamconfigs-summary": "公開事件串流設置",
+	"apihelp-streamconfigs-param-streams": "串流清單，用來取得設置用於",
+	"apihelp-streamconfigs-param-all_settings": "包含在串流設置結果的所有設定",
+	"apihelp-streamconfigs-param-constraints": "篩選出串流設置項目具有這些設定的結果",
+	"apihelp-streamconfigs-example-1": "取得所有串流清單的串流設置",
+	"apihelp-streamconfigs-example-2": "取得帶有所有設定用於串流的串流設置",
+	"apihelp-streamconfigs-example-3": "取得設定內容符合這些限制，用於串流的串流設置"
+}

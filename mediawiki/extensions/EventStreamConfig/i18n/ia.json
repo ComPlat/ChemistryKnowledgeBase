@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"eventstreamconfig-desc": "Expone le configuration del fluxo de eventos in un puncto de termination del API. Pote equalmente esser usate pro exponer configurationes via ResourceLoader.",
+	"apihelp-streamconfigs-param-streams": "Lista de fluxos del quales obtener le configuration",
+	"apihelp-streamconfigs-param-all_settings": "Includer tote le parametros in le resultatos de configuration del fluxo",
+	"apihelp-streamconfigs-param-constraints": "Filtrar le resultatos pro le entratas de configuration de fluxo que ha iste parametros",
+	"apihelp-streamconfigs-example-1": "Obtener le configurationes de fluxo pro un lista de fluxos",
+	"apihelp-streamconfigs-example-2": "Obtener le configuration de fluxo pro le fluxos con tote le parametros",
+	"apihelp-streamconfigs-example-3": "Obtener le configuration de fluxo pro le fluxos que ha parametros correspondente a iste restrictiones"
+}

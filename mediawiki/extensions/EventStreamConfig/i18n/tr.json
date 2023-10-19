@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"BaRaN6161 TURK",
+			"MuratTheTurkish"
+		]
+	},
+	"eventstreamconfig-desc": "Bir API uç noktasında olay akışı yapılandırmasını gösterir. ResourceLoader üzerinden yapılandırmaları göstermek için de kullanılabilir",
+	"apihelp-streamconfigs-summary": "Olay akışı yapılandırmasını gösterir",
+	"apihelp-streamconfigs-param-streams": "Yapılandırılacak akışların listesi",
+	"apihelp-streamconfigs-param-all_settings": "Akış yapılandırma sonuçlarına tüm ayarları dahil edin",
+	"apihelp-streamconfigs-param-constraints": "Bu ayarlara sahip akış yapılandırma girdileri için sonuçları filtreleyin",
+	"apihelp-streamconfigs-example-1": "Akış listesi için akış yapılandırmalarını alın",
+	"apihelp-streamconfigs-example-2": "Tüm ayarlarla akışlar için akış yapılandırmasını alın",
+	"apihelp-streamconfigs-example-3": "Bu kısıtlamalarla eşleşen ayarlara sahip akışlar için akış yapılandırmasını alın"
+}

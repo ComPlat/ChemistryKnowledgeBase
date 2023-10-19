@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Joetaras"
+		]
+	},
+	"eventstreamconfig-desc": "Espone l'avvenimende d'u flusse de configurazione jndr'à l'endpoint de l'API. Po pure essere ausate pe fà 'ndrucà le configuraziune cu ResourceLoader",
+	"apihelp-streamconfigs-param-streams": "Elenghe de le stream pe pigghià 'a configurazione pe",
+	"apihelp-streamconfigs-param-all_settings": "'Nglude tutte le 'mbostaziune jndr'à le resultate de configurazione d'u stream",
+	"apihelp-streamconfigs-param-constraints": "Filtre le resultate da 'u stream de le vôsce de configurazione ca onne ste 'mbostaziune",
+	"apihelp-streamconfigs-example-1": "Pigghie le flusse de configurazione pe 'n'elenghe de flusse",
+	"apihelp-streamconfigs-example-2": "Pigghie 'u flusse de configurazione pe le flusse cu tutte le 'mbostaziune",
+	"apihelp-streamconfigs-example-3": "Pigghie 'u flusse de configurazione pe le flusse ca onne le 'mbostaziune ca s'accocchiane cu ste vingole"
+}
