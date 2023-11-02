@@ -9,7 +9,8 @@ use Title;
 
 /**
  * Asynchronous updates for SOLR
- * 
+ * @deprecated remains for now to keep pending jobs in queue working
+ *
  * @author Kai
  *
  */
@@ -34,10 +35,10 @@ class UpdateSolrJob extends Job {
 		$consoleMode = PHP_SAPI === 'cli' && !defined('UNITTEST_MODE');
 		$title = $this->params['title'];
 		$wp = new WikiPage(Title::newFromText($title));
-		
-		// when indexing with jobs, dependent pages do not need special treatment, because jobs already represent the dependent pages
-		global $fsUpdateOnlyCurrentArticle;
-		$fsUpdateOnlyCurrentArticle = true;
+
+        // when indexing with jobs, we must assure not to create new updating jobs
+		global $fsCreateUpdateJob;
+		$fsCreateUpdateJob = false;
 
 		try {
 			$indexer = FSIndexerFactory::create();

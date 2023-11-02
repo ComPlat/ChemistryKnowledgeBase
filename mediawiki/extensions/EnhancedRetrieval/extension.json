@@ -51,7 +51,8 @@
 		"FacetedSearch": "DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial"
 	},
 	"JobClasses": {
-		"UpdateSolrJob": "DIQA\\FacetedSearch\\UpdateSolrJob"
+		"UpdateSolrJob": "DIQA\\FacetedSearch\\UpdateSolrJob",
+		"UpdateSolrWithDependantJob": "DIQA\\FacetedSearch\\UpdateSolrWithDependantJob"
 	},
 	"DefaultUserOptions": {
 		"er-sort-order-preferences": "sort-by-count"

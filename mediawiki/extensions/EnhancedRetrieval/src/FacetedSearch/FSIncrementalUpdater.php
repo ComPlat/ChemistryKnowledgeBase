@@ -73,7 +73,9 @@ class FSIncrementalUpdater  {
      */
     public static function onUpdateDataAfter(SMWStore $store, SemanticData $semanticData) {
         $wikiTitle = $semanticData->getSubject()->getTitle();
-        self::createUpdateJob($wikiTitle);
+        if (self::shouldCreateUpdateJob()) {
+            self::createUpdateJob( $wikiTitle);
+        }
         return true;
     }
 
@@ -97,9 +99,27 @@ class FSIncrementalUpdater  {
             $smwgNamespacesWithSemanticLinks[$wikiTitle->getNamespace()] === true) {
             return true; // already updated in onUpdateDataAfter
         }
-        self::createUpdateJob($wikiTitle);
+        if (self::shouldCreateUpdateJob()) {
+            self::createUpdateJob( $wikiTitle);
+        }
         return true;
 
+    }
+
+    private static function createUpdateJob(Title $title ) : void {
+        $params = [];
+        $params['title'] = $title;
+        $job = new UpdateSolrWithDependantJob(Title::makeTitle(NS_SPECIAL, 'Search'), $params);
+        MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup()->push( $job );
+    }
+
+    private static function shouldCreateUpdateJob() {
+        global $fsCreateUpdateJob;
+        if (isset($fsCreateUpdateJob) && $fsCreateUpdateJob === false) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -250,12 +270,4 @@ class FSIncrementalUpdater  {
         return true;
     }
 
-    private static function createUpdateJob(Title $wikiTitle): void
-    {
-        $params = [];
-        $params['title'] = $wikiTitle->getPrefixedText();
-        $title = Title::makeTitle(NS_SPECIAL, 'Search');
-        $job = new UpdateSolrJob($title, $params);
-        MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup()->push( $job );
-    }
 }

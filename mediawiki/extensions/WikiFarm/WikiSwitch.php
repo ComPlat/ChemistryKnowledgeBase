@@ -29,21 +29,21 @@ if (is_null($wiki)) {
     exit(0);
 }
 
-global $SOLRcore;
+global $fsgSolrCore;
 if ($wiki == 'main') {
     $wgDBname = "chemmain_139";
     $wgScriptPath = "/main/mediawiki";
     $wgArticlePath = '/main/mediawiki/$1';
     $wgUploadDirectory = "/var/www/html/main/images";
     $wgUploadPath = "/main/images";
-    $SOLRcore = 'main';
+    $fsgSolrCore = 'main';
 } else {
     $wgDBname = "chem$wiki";
     $wgScriptPath = "/$wiki/mediawiki";
     $wgArticlePath = "/$wiki/mediawiki/$1";
     $wgUploadDirectory = "/var/www/html/$wiki/images";
     $wgUploadPath = "/$wiki/images";
-    $SOLRcore = $wiki;
+    $fsgSolrCore = $wiki;
 
     global $wgServer;
     $wgForeignFileRepos[] = [

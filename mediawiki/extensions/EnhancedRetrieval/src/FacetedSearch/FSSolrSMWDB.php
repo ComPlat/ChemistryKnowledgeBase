@@ -61,20 +61,8 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
     // --- Constants ---
 
-    /**
-     * Maximal number of synchronous updates during a request
-     * @var int
-     */
-    const MAX_SYNC_UPDATES = 10;
 
      //--- Private fields ---
-
-    /**
-     * Dependant articles which must be updated too
-     * @var array
-     */
-    private $dependant = [];
-
 
 
     /**
@@ -107,10 +95,10 @@ class FSSolrSMWDB extends FSSolrIndexer {
      *      Prints verbose output
      */
     public function updateIndexForArticle(WikiPage $wikiPage, $rawText = null,
-                                          &$messages = [], bool $debugMode = false) : bool {
+                                          &$messages = [], bool $debugMode = false
+                                          ) : bool {
 
         $doc = [];
-        $this->dependant = [];
 
         $pageTitle = $wikiPage->getTitle();
         $pagePrefixedTitle = $pageTitle->getPrefixedText();
@@ -130,7 +118,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
         $doc['id'] = $pageID;
         $doc['smwh_namespace_id'] = $pageNamespace;
-        $doc['smwh_title'] = $pageDbKey; 
+        $doc['smwh_title'] = $pageDbKey;
         $doc['smwh_full_text'] = $text;
         $doc['smwh_displaytitle'] = FacetedSearchUtil::findDisplayTitle( $pageTitle, $wikiPage );
 
@@ -148,8 +136,6 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
         // Let the super class update the index
         $this->updateIndex( $doc, $options, $debugMode );
-
-        $this->updateDependentPages( $this->dependant, $messages, $debugMode);
 
         return true;
     }
@@ -220,30 +206,6 @@ class FSSolrSMWDB extends FSSolrIndexer {
         }
 
         return $text;
-    }
-
-    private function updateDependentPages( array $wikiPages, &$messages = [], bool $debugMode = false ) : void {
-        if($this->updateOnlyCurrentArticle()) {
-            return;
-        }
-
-        if (count( $wikiPages ) > self::MAX_SYNC_UPDATES) {
-            // if more than MAX_SYNC_UPDATES updates are required, create jobs for them
-            foreach($wikiPages as $ttu) {
-                $params = [];
-                $params['title'] = $ttu->getPrefixedText();
-                $title = Title::makeTitle(NS_SPECIAL, 'Search');
-                $job = new UpdateSolrJob($title, $params);
-                MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup()->push( $job );
-            }
-        } else {
-            // if less than MAX_SYNC_UPDATES, do it synchronously
-            global $fsUpdateOnlyCurrentArticle;
-            $fsUpdateOnlyCurrentArticle = true;
-            foreach($wikiPages as $ttu) {
-                $this->updateIndexForArticle(new WikiPage($ttu), null, $messages, $debugMode);
-            }
-        }
     }
 
     /**
@@ -743,8 +705,6 @@ class FSSolrSMWDB extends FSSolrIndexer {
     private function serializeWikiPageDataItem($subject, $property, $dataItem, array &$doc) {
         $obj = $this->createPropertyValueWithLabel( $dataItem );
 
-        $this->updateDependent($subject);
-
         // The values of all properties are stored as string.
         $prop = str_replace(' ', '_', $property->getLabel());
         $prop = self::encodeTitle($prop);
@@ -763,26 +723,6 @@ class FSSolrSMWDB extends FSSolrIndexer {
         $valueLabel = FacetedSearchUtil::findDisplayTitle($title);
         return "$valueId|$valueLabel";
     }
-
-     private function updateDependent($subject) {
-        if($this->updateOnlyCurrentArticle()) {
-            return;
-        }
-
-        $store = ApplicationFactory::getInstance()->getStore();
-        $inProperties = $store->getInProperties($subject);
-
-        foreach($inProperties as $inProperty) {
-            /** @var SMWDIProperty $inProperty */
-            $subjects = $store->getPropertySubjects($inProperty, $subject);
-            foreach($subjects as $subj) {
-                $this->dependant[] = $subj->getTitle();
-            }
-        }
-
-        // remove duplicates
-        $this->dependant = array_unique($this->dependant);
-     }
 
     /**
      * Serialize all other SMWDataItems into $doc array (non-SMWDIWikiPage).
@@ -888,16 +828,5 @@ class FSSolrSMWDB extends FSSolrIndexer {
         }
     }
 
-    /**
-     * @return boolean true iff the global variable $fsUpdateOnlyCurrentArticle is set to true
-     */
-    private function updateOnlyCurrentArticle() {
-        global $fsUpdateOnlyCurrentArticle;
-        if (isset($fsUpdateOnlyCurrentArticle) && $fsUpdateOnlyCurrentArticle === true) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
 

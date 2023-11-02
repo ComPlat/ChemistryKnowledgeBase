@@ -362,8 +362,7 @@ $sfgRenameEditTabs = true;
 #
 # $wgArticlePath = '/mediawiki/$1';
 # $wgOverrideHostname = 'chemwiki.local';
- require_once ("extensions/WikiFarm/WikiSwitch.php");
- wfLoadExtension('WikiFarm');
+
 
 $wgPageFormsAutocompletionURLs['molecule_lookup'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>';
 $wgPageFormsAutocompletionURLs['molecule_lookup_cat'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Catalyst';
@@ -454,3 +453,7 @@ $wgEventLoggingServiceUri = '/beacon/intake-analytics';
 $wgEventLoggingStreamNames = false;
 
 wfLoadExtension( 'GuidedTour' );
+wfLoadExtension( 'EnhancedRetrieval' );
+
+require_once ("extensions/WikiFarm/WikiSwitch.php");
+wfLoadExtension('WikiFarm');

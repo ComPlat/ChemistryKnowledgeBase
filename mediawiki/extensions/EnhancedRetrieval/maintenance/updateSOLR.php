@@ -45,9 +45,9 @@ class UpdateSolr extends Maintenance
             return;
         }
 
-        // when indexing everything, dependent pages do not need special treatment
-        global $fsUpdateOnlyCurrentArticle;
-        $fsUpdateOnlyCurrentArticle = true;
+        // when indexing everything, we dont create any updating job for SOLR
+        global $fsCreateUpdateJob;
+        $fsCreateUpdateJob = false;
 
         $this->linkCache = MediaWikiServices::getInstance()->getLinkCache();
         $this->num_files = 0;
