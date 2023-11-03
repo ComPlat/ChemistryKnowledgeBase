@@ -1,0 +1,100 @@
+/*
+ * Guided Tour to test guided tour features.
+ */
+// Copy the next line into the start of your tour.
+( function ( window, document, $, mw, gt ) {
+
+	// Declare a variable for use later
+	var pageName = 'Help:Guided tours/guider',
+		tour;
+
+	tour = new gt.TourBuilder( {
+		/*
+		 * This is the name of the tour.  It must be lowercase, without any hyphen (-) or
+		 * period (.) characters.
+		 *
+		 * The page where you save an on-wiki tour must be named
+		 * MediaWiki:Guidedtour-tour-{name}.js , in this example MediaWiki:Guidedtour-tour-mytest.js
+		 */
+		name: 'mytest'
+	} );
+
+	// Information defining each tour step
+
+	// This tour shows a central overlay at the start of the tour.
+	// Guiders appear in the center if another position is not specified.
+	// To specify the first step of the tour, use .firstStep instead of .step
+	tour.firstStep( {
+		name: 'overlay',
+		// Note that for on-wiki tours, we use title and description with the actual text.
+		// The title appears in the title bar of the guider.
+		title: 'Testing',
+
+		// The description appears in the body
+		description: 'This is a test of the description. Lorem ipsum dolor sit!',
+
+		// This specifies that there is an overlay behind the guider.
+		overlay: true
+	} )
+	// This specifies the next step of the tour, and will automatically generate a next button.
+	// 'callout' refers to the name used in the step immediately below.  Although putting the steps
+	// in a meaningful order is recommended, any step can be specified as next/back.
+	.next( 'callout' );
+
+	tour.step( {
+		/*
+		 * Callout of left menu
+		 */
+		name: 'callout',
+		title: 'Test callouts',
+		description: 'This is the community portal page.',
+
+                // This positions the guider next to a page element, in this
+                // case the portal link (which is "Community portal" on English
+                // Wikipedia, but varies by site).
+                // The string is a jQuery selector.  "#n-portal" means the HTML
+                // element with this id attribute, and "a" means an a, or link,
+                // element inside that.
+		attachTo: '#n-portal a',
+
+                // This means the guider shows to the right of the Community Portal link
+		position: 'right',
+	} )
+	.next( 'description' )
+	// The 'back' property specifies that you can go back from this step, and where to go
+	// if the back button is clicked.
+	.back( 'overlay' );
+
+	tour.step( {
+		/*
+		 * Test out mediawiki description pages
+		 */
+		name: 'description',
+		title: 'Test MediaWiki description pages',
+
+		// Name of the page to parse
+		description: pageName,
+
+		overlay: true,
+
+		// This means the wikitext for the description will be loaded from the
+		// page name in the description field.
+		onShow: gt.getPageAsDescription,
+
+		buttons: [ {
+			// This makes a button which acts like a wikilink to 'Help:Guided tours/guider'
+			action: 'wikiLink',
+			page: pageName,
+			name: 'Go to description page',
+			// This specifies that the button takes you to the next step of a process,
+			// which affects its appearance.
+			type: 'progressive'
+		}, {
+			// This makes the okay button on this step end the tour.
+			action: 'end'
+		} ]
+	} )
+	.back( 'callout' );
+
+// The following should be the last line of your tour.
+} ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );
