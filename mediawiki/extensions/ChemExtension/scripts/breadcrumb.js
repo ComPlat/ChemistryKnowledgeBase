@@ -39,14 +39,9 @@
         initialized = true;
     }
 
-    let NAVBAR_STATUS_COOKIE = mw.config.get('wgCookiePrefix') + 'mw.chem-extension.navbar-expanded';
+    let NAVBAR_STATUS_COOKIE = mw.config.get("wgDBname") + 'mw.chem-extension.navbar-expanded';
 
     function initializeNavbar() {
-        if (tools.getCookie(NAVBAR_STATUS_COOKIE) === 'expanded') {
-            expandNavbar();
-        } else {
-            collapseNavbar();
-        }
         $('#ce-side-panel-content-collapsed').click((e) => {
             expandNavbar();
         });

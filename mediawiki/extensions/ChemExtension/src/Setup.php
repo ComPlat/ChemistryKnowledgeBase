@@ -171,16 +171,17 @@ class Setup {
 
     public static function onSkinAfterContent( &$data, Skin $skin ) {
         global $wgTitle;
-        $b = new NavigationBar($wgTitle);
-        if (!$wgTitle->isSpecial('FormEdit')) {
-            $data .= $b->getNavigationBar();
-            $data .= $b->getCollapsedNavigationBar();
+        if (is_null($wgTitle) || $wgTitle->isSpecial('FormEdit')) {
+            return;
         }
+        $b = new NavigationBar($wgTitle);
+        $data .= $b->getNavigationBar();
+        $data .= $b->getCollapsedNavigationBar();
+
         global $wgOut;
         $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
-        if ($navBarStatus === 'expanded' && !$wgTitle->isSpecial('FormEdit')) {
-            $wgOut->addInlineStyle('div.container-fluid div.row { margin-left: 400px !important; }');
-        }
+        $marginWidth = $navBarStatus === 'expanded' ? 400 : 40;
+        $wgOut->addInlineStyle("div.container-fluid div.row { margin-left: {$marginWidth}px !important; }");
     }
 
     public static function extendSubtitle($html)

@@ -1,9 +1,4 @@
 
-div.flex-fill div.row:nth-child(2) {
-    margin-right: 0px !important;
-    margin-left: 20px !important;
-}
-
 div#mw-content-text {
     overflow-x: auto;
 }

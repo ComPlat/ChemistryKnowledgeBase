@@ -1,0 +1,1 @@
+<div id="ce-side-panel-content-collapsed" class="ce-side-panel-content-base" style="display:{{$navBarExpanded ? 'none' : 'flex'}}"><div class="verticaltext">Navigation</div></div>

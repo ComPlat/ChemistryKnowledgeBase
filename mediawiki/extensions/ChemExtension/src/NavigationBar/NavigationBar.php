@@ -15,7 +15,6 @@ class NavigationBar
     private $blade;
 
     private $title;
-    private $pageList;
 
     /**
      * Breadcrumb constructor.
@@ -31,15 +30,19 @@ class NavigationBar
     }
 
     public function getCollapsedNavigationBar() {
-        return '<div id="ce-side-panel-content-collapsed" class="ce-side-panel-content-base" style=""><div class="verticaltext">Navigation</div></div>';
+
+        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+        $html = $this->blade->view()->make("navigation.navigation-bar-collapsed",
+            [
+                'navBarExpanded' => $navBarStatus === 'expanded'
+            ]
+        )->render();
+        return str_replace("\n", "", $html);
     }
 
     public function getNavigationBar()
     {
         global $wgScriptPath;
-        if (is_null($this->title)) {
-            return '';
-        }
         OutputPage::setupOOUI();
         $rootCategories = $this->getRootCategoriesToDisplayAsTree();
         $parser = clone MediaWikiServices::getInstance()->getParser();
@@ -58,6 +61,8 @@ class NavigationBar
         $investigationList = new InvestigationList($this->title);
         $moleculesList = new MoleculesList(self::getCssType($this->title));
 
+        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
                 'title' => $this->title,
@@ -72,6 +77,7 @@ class NavigationBar
                 'showPublications' => $this->showPublications(),
                 'showInvestigations' => $this->showInvestigations(),
                 'imgPath' => "$wgScriptPath/extensions/ChemExtension/skins/images",
+                'navBarExpanded' =>  $navBarStatus === 'expanded'
             ]
         )->render();
 
