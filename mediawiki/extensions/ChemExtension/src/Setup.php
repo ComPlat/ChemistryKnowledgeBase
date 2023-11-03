@@ -181,7 +181,12 @@ class Setup {
         global $wgOut;
         $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
         $marginWidth = $navBarStatus === 'expanded' ? 400 : 40;
-        $wgOut->addInlineStyle("div.container-fluid div.row { margin-left: {$marginWidth}px !important; }");
+        $inlineCSS = <<<CSS
+div.container-fluid div.row { margin-left: {$marginWidth}px !important; }
+div#content { padding: 0px !important;}
+CSS;
+
+        $wgOut->addInlineStyle($inlineCSS);
     }
 
     public static function extendSubtitle($html)
