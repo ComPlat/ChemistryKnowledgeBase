@@ -24,11 +24,17 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let node = ve.init.target.getSurface().getModel().getSelectedNode();
                 let inchiKey = this.chooseMoleculeWidget.getMoleculeKey();
                 let showAsImage = this.chooseMoleculeWidget.isShownAsImage();
+                let width = this.chooseMoleculeWidget.getWidth();
+                let height = this.chooseMoleculeWidget.getHeight();
                 let params = node.element.attributes.mw.parts[0].template.params;
                 params.link = params.link || {};
                 params.link.wt = inchiKey;
                 params.image = params.image || {};
                 params.image.wt = showAsImage ? 'true':'false';
+                params.width = params.width || {};
+                params.width.wt = width;
+                params.height = params.height || {};
+                params.height.wt = height;
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
@@ -71,7 +77,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseMoleculeDialog.prototype.getBodyHeight = function () {
-        return 200;
+        return 350;
     };
 
     /* Static Properties */

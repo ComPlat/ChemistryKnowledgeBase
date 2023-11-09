@@ -35,18 +35,39 @@
         this.showAsImage = new OO.ui.CheckboxInputWidget();
         let params = data.template.params;
         this.textWidget.setValue(!params.link ? params.chemformid.wt: params.link.wt);
-        this.showAsImage.setSelected(params.image && params.image.wt === 'true');
+        let imageShown = params.image && params.image.wt === 'true';
+        this.showAsImage.setSelected(imageShown);
         let formLayout = new OO.ui.FormLayout({
             items: [label,this.textWidget]
         });
         let formLayout2 = new OO.ui.FormLayout({
             items: [labelShowAsImage, this.showAsImage]
         });
+        let labelWidth = new OO.ui.LabelWidget({label: "Width in px"});
+        let labelHeight = new OO.ui.LabelWidget({label: "Height in px"});
+        this.width = new OO.ui.TextInputWidget();
+        this.width.setValue(params.width && params.width.wt ? params.width.wt : 300);
+        this.height = new OO.ui.TextInputWidget();
+        this.height.setValue(params.height && params.height.wt ? params.height.wt : 200);
+        let formLayout3 = new OO.ui.FormLayout({
+            items: [labelWidth, this.width]
+        });
+        let formLayout4 = new OO.ui.FormLayout({
+            items: [labelHeight, this.height]
+        });
         this.textWidget.on('change', (item) => {
             this.setActionsDisabled(['edit', 'insert'], item === '');
         });
+        this.width.setDisabled(!imageShown);
+        this.height.setDisabled(!imageShown);
+        this.showAsImage.on('change', (item) => {
+            this.width.setDisabled(!this.width.isDisabled());
+            this.height.setDisabled(!this.height.isDisabled());
+        });
         this.$element.append(formLayout.$element);
         this.$element.append(formLayout2.$element);
+        this.$element.append(formLayout3.$element);
+        this.$element.append(formLayout4.$element);
     }
 
     OO.ui.ChooseMoleculeWidget.prototype.getMoleculeKey = function() {
@@ -55,6 +76,14 @@
 
     OO.ui.ChooseMoleculeWidget.prototype.isShownAsImage = function() {
         return this.showAsImage.isSelected();
+    }
+
+    OO.ui.ChooseMoleculeWidget.prototype.getWidth = function() {
+        return this.width.getValue();
+    }
+
+    OO.ui.ChooseMoleculeWidget.prototype.getHeight = function() {
+        return this.height.getValue();
     }
 
     OO.ui.ChooseMoleculeWidget.prototype.getErrorLabel = function() {

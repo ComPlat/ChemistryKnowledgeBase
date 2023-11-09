@@ -169,14 +169,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                                 i: 0,
                                                 params: {
                                                     link: {wt: ""},
-                                                    image: {wt: ""}
+                                                    image: {wt: ""},
+                                                    width: {wt: ""},
+                                                    height: {wt: ""}
                                                 },
                                                 target: {wt: "#moleculelink:", "function": "moleculelink"}
                                             }
                                         }
                                     ]
                                 },
-                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#moleculelink:","function":"moleculelink"},"params":{"link":{"wt":""}},"image":{"wt":""}},"i":0}}]}"'
+                                originalMw: '"{"parts":[{"template":{"target":{"wt":"#moleculelink:","function":"moleculelink"},"params":{"link":{"wt":""}},"image":{"wt":""},"width":{"wt":""},"height":{"wt":""}},"i":0}}]}"'
                             }
                         }
 
