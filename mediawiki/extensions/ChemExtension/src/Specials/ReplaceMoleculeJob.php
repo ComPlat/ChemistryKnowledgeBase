@@ -39,17 +39,24 @@ class ReplaceMoleculeJob extends Job
             $modificationLog = new ModifyMoleculeLog();
             foreach ($pages as $pageTitle) {
                 $wikitext = WikiTools::getText($pageTitle);
+
+                // replace chemform-tags
+                $originalText = $wikitext;
                 $chemFormParser = new ChemFormParser();
-                $wikiTextAfterChemformChange = $chemFormParser->replaceChemForm($this->params['oldMoleculeKey'],
+                $wikitext = $chemFormParser->replaceChemForm($this->params['oldMoleculeKey'],
                     $wikitext, $this->params['chemform']);
-                $replacedChemForm = ($wikiTextAfterChemformChange !== $wikitext);
+                $replacedChemForm = ($wikitext !== $originalText);
+
+                // replace molecule links
+                $originalText = $wikitext;
                 $parserFunctionParser = new ParserFunctionParser();
-                $wikitextAfterLinkChange = $parserFunctionParser->replaceFunction($wikiTextAfterChemformChange,
+                $wikitext = $parserFunctionParser->replaceFunction($wikitext,
                     'moleculelink', 'link', $this->params['oldMoleculeKey'],
                     ['link' => $this->params['chemform']->getMoleculeKey()]);
-                $replacedChemFormLink = ($wikitextAfterLinkChange !== $wikiTextAfterChemformChange);
-                if ($wikitextAfterLinkChange !== $wikitext) {
-                    WikiTools::doEditContent($pageTitle, $wikiTextAfterChemformChange, "auto-generated", EDIT_UPDATE);
+                $replacedChemFormLink = ($wikitext !== $originalText);
+
+                if ($replacedChemForm || $replacedChemFormLink) {
+                    WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated", EDIT_UPDATE);
                     $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
                 }
                 $modificationLog->addModificationLogEntry($chemFormId, $pageTitle, $replacedChemForm, $replacedChemFormLink,
