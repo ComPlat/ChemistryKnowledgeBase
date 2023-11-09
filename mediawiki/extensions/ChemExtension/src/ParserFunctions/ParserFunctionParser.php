@@ -58,7 +58,7 @@ class ParserFunctionParser {
         return preg_replace_callback($regex,  function($matches) use ($fnName, $param, $value, $newParams) {
             $arguments = $this->parseFunction($fnName, $matches[0])[0];
             if (($arguments[$param] ?? '') === $value) {
-               return self::serializeFunction($fnName, $newParams);
+               return self::serializeFunction($fnName, array_merge($arguments, $newParams));
             } else {
                 return $matches[0];
             }
