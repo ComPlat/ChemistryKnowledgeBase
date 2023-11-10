@@ -137,7 +137,11 @@
     }
 
     function initializeMoleculesFilter() {
-        let input = OO.ui.infuse($('#ce-molecules-filter-input'));
+        let filterInput = $('#ce-molecules-filter-input');
+        if (filterInput.length == 0) {
+            return;
+        }
+        let input = OO.ui.infuse(filterInput);
         input.on('enter', () => {
             searchForMolecule(input);
         });
