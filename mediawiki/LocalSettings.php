@@ -191,10 +191,6 @@ $wgWikiServerPath = __DIR__ ;
 ## this, if it's not already uncommented:
 $wgHashedUploadDirectory = true;
 
-# deactivate MW autocomplete
-$wgEnableOpenSearchSuggest = false;
-
-
 #################################################################
 #
 # Include local server settings, if they exist
