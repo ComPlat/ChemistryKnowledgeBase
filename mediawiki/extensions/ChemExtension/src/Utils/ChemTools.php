@@ -7,7 +7,7 @@ use Title;
 class ChemTools {
 
     const CAS_PATTERN = '/^\d{2,7}-\d{2}-\d$/';
-    const CHEMFORM_ID = '/^\d{6,}$/';
+    const CHEMFORM_ID = '/^(Molecule:)?\d{6,}$/';
 
     public static function isCASNumber($s): bool
     {

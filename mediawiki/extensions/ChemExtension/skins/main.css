@@ -511,3 +511,8 @@ table.ce-center-aligned-table td:not(:first-child) {
 #molecule-log-table td:nth-child(1) {
     width: 30%;
 }
+
+table.formtable div.oo-ui-textInputWidget {
+    max-width: 90% !important;
+    width: 90% !important;
+}
