@@ -12,7 +12,7 @@ class CreateWikiJob extends \Job {
     public function __construct( $title, $params ) {
         parent::__construct( 'CreateWikiJob', $title, $params );
         $this->dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
+            DB_PRIMARY
         );
         $this->wikiRepository = new WikiRepository($this->dbr);
     }

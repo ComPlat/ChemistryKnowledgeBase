@@ -15,7 +15,7 @@ class RemoveWikiJob extends \Job
     {
         parent::__construct('RemoveWikiJob', $title, $params);
         $this->dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_REPLICA
+            DB_PRIMARY
         );
         $this->wikiRepository = new WikiRepository($this->dbr);
     }
@@ -28,6 +28,7 @@ class RemoveWikiJob extends \Job
 
         try {
             if ($this->isWikiCompletelyRemoved($wikiId)) {
+                $this->wikiRepository->removeWiki($wikiId);
                 return;
             }
             echo shell_exec("bash $IP/extensions/WikiFarm/bin/removeWiki.sh wiki$wikiId 2>&1");
