@@ -103,7 +103,11 @@
     }
 
     function initializeInvestigationFilter() {
-        let input = OO.ui.infuse($('#ce-investigation-filter-input'));
+        let filterInput = $('#ce-investigation-filter-input');
+        if (filterInput.length == 0) {
+            return;
+        }
+        let input = OO.ui.infuse(filterInput);
         input.on('enter', () => {
             searchForInvestigation(input);
         });
