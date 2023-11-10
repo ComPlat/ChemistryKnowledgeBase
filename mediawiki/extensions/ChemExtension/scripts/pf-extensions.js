@@ -10,30 +10,19 @@
             let instanceToCopy = target.parent();
             let newInstance = $('.multipleTemplateAdder').addInstance(false);
 
-            // copy combo boxes
-            let select2s = instanceToCopy.find('select[data-select2-id]');
-            let select2sNew = newInstance.find('select[data-select2-id]');
-            for(let i = 0; i < select2s.length; i++) {
-                let combo = select2s.eq(i).select2();
-                var option = new Option( combo.val(), combo.val(), false, true );
-                select2sNew.eq(i).append(option).trigger('change');
-            }
-
-            // copy simple inputs
-            let inputs = instanceToCopy.find('span.inputSpan input');
-            let inputsNew = newInstance.find('span.inputSpan input');
+            // copy all inputs except checkboxes
+            let inputs = instanceToCopy.find('input:not([type="checkbox"])');
+            let inputsNew = newInstance.find('input:not([type="checkbox"])');
             for(let i = 0; i < inputs.length; i++) {
-                let input = inputs.eq(i);
-                inputsNew.eq(i).val(input.val());
+                let value = inputs.eq(i).val();
+                inputsNew.eq(i).val(value);
             }
 
-            // copy standard drop-downs
-            let selects = instanceToCopy.find('span.inputSpan select:not([data-select2-id])');
-            let selectsNew = newInstance.find('span.inputSpan select:not([data-select2-id])');
-            selectsNew.empty();
-            for(let i = 0; i < selects.length; i++) {
-                let options = selects.eq(i).find('option');
-                selectsNew.eq(i).append(options.clone());
+            let checkboxes = instanceToCopy.find('input[type="checkbox"]');
+            let checkboxesNew = newInstance.find('input[type="checkbox"]');
+            for(let i = 0; i < checkboxes.length; i++) {
+                let value = checkboxes.eq(i).is(':checked');
+                checkboxesNew.eq(i).prop('checked', value);
             }
 
             //TODO: copy others like date picker
