@@ -448,7 +448,7 @@ ve.ce.FocusableNode.prototype.onFocusableMouseDown = function ( e ) {
 		nodeRange = this.model.getOuterRange();
 
 	if (ve.ce.FocusableNodeExtension) {
-		ve.ce.FocusableNodeExtension.extend(this);
+		ve.ce.FocusableNodeExtension.extend(this, e.target);
 	}
 
 	if ( e.which === OO.ui.MouseButtons.RIGHT ) {

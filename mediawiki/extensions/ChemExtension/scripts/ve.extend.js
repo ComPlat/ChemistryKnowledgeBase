@@ -170,7 +170,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     }
 
     ve.ce.FocusableNodeExtension = {};
-    ve.ce.FocusableNodeExtension.extend = function(node) {
+    ve.ce.FocusableNodeExtension.extend = function(node, target) {
         let nodes = $('div', node.$highlights);
         if (nodes.eq(0).attr('title') !== '#experimentlist:') {
             return;
@@ -183,16 +183,20 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             $(e).width(width+"px");
             $(e).css({left: widthToReduce+"px", width: width+"px"});
         });
-        $('table.ve-ce-focusableNode span.experiment-editable').off('click');
-        $('table.ve-ce-focusableNode span.experiment-editable').click(function(e) {
-            let target = $(e.target);
-            let form = target.attr('datatype');
-            let index = target.attr('resource');
-            let name = target.attr('data-x-about');
-            let wgPageName = mw.config.get('wgPageName');
-            let wgScriptPath = mw.config.get('wgScriptPath');
-            ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + name + '?expand=' + index, target );
-        });
+        if ($(target).is('span.experiment-editable')) {
+            openPageForms(target);
+        }
+
+    }
+
+    let openPageForms = function(targetEl) {
+        let target = $(targetEl);
+        let form = target.attr('datatype');
+        let index = target.attr('resource');
+        let name = target.attr('data-x-about');
+        let wgPageName = mw.config.get('wgPageName');
+        let wgScriptPath = mw.config.get('wgScriptPath');
+        ext.popupform.handlePopupFormLink( wgScriptPath + '/Special:FormEdit/'+form + '/' + wgPageName + '/' + name + '?expand=' + index, target );
     }
 
     let f = function() {

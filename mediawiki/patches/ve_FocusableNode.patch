@@ -11,7 +11,7 @@ diff --git a/mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode
  		nodeRange = this.model.getOuterRange();
  
 +	if (ve.ce.FocusableNodeExtension) {
-+		ve.ce.FocusableNodeExtension.extend(this);
++		ve.ce.FocusableNodeExtension.extend(this, e.target);
 +	}
  	if ( e.type === 'touchend' && this.touchMoved ) {
  		return;
