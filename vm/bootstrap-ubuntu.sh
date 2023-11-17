@@ -43,7 +43,7 @@ lessc --version
 
 printf "\n\n\n#################### Install PHP\n"
 date
-sudo apt -y install php libapache2-mod-php php-mysql php-xml php-mbstring php-curl php-gd php-zip
+sudo apt -y install php libapache2-mod-php php-mysql php-xml php-mbstring php-curl php-gd php-zip php-intl
 
 
 printf "\n\n\n#################### Install composer\n"
