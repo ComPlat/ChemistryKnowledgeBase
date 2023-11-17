@@ -80,7 +80,8 @@ class SpecialImportPage extends PageCreationSpecial
     {
         global $wgScriptPath;
         global $wgDBname;
-        if ($wgDBname == "chemmain") {
+        global $wgSharedDB;
+        if ($wgDBname == $wgSharedDB) {
             return 'This is the main wiki. You cannot import from here';
         }
         $importButton = new ButtonInputWidget([

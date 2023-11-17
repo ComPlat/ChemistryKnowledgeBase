@@ -21,6 +21,7 @@ class PageImportJob extends Job {
         $params = $this->getParams();
         $o->wikiText = $params['wikitext'];
         $title = escapeshellarg($this->getTitle()->getDBkey());
+        $this->logger->debug('Importing page: ' . $this->getTitle()->getDBkey());
 
         // save wiki in tmp file
         $tmpFile = sys_get_temp_dir() . "/" . uniqid();
@@ -31,6 +32,7 @@ class PageImportJob extends Job {
         $wgWikiFarmBinFolder = $wgWikiFarmBinFolder ?? "$IP/../bin";
         chdir($wgWikiFarmBinFolder);
         print "\nbash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1";
-        echo shell_exec("bash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1");
+        $output = shell_exec("bash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1");
+        $this->logger->debug($output);
     }
 }
