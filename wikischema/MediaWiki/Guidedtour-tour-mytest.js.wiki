@@ -5,7 +5,7 @@
 ( function ( window, document, $, mw, gt ) {
 
     // Declare a variable for use later
-    var pageName = 'Help:Guided tours',
+    var pageName = 'Help:Guided tours/mytest',
         tour;
 
     tour = new gt.TourBuilder( {
@@ -82,7 +82,7 @@
         onShow: gt.getPageAsDescription,
 
         buttons: [ {
-            // This makes a button which acts like a wikilink to 'Help:Guided tours'
+            // This makes a button which acts like a wikilink to 'Help:Guided tours/mytest'
             action: 'wikiLink',
             page: pageName,
             name: 'Go to description page',
