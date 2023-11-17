@@ -1,0 +1,40 @@
+{
+  "name": "diqa/page-import",
+  "type": "mediawiki-extension",
+  "description": "Maintenance tool to import/export wiki pages and images",
+  "keywords": [
+    "import",
+    "export",
+    "wikipage",
+    "cli"
+  ],
+  "homepage": "https://www.diqa.de/",
+  "authors": [
+    {
+      "name": "Kai Kühn",
+      "homepage": "https://www.diqa.de"
+    }
+  ],
+  "license": "GPL-2.0-or-later",
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=7.4.0",
+    "composer/installers": "1.*,>=1.0.1",
+    "diqa/formatter": ">=1.0"
+  },
+  "config": {
+    "process-timeout": 0,
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "DIQA\\": [
+        "src/", "test/"]
+    }
+  },
+  "require-dev": {
+
+  }
+}

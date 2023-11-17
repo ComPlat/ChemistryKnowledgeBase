@@ -1,0 +1,31 @@
+{
+  "name": "diqa/formatter",
+  "description": "CLI formatting library",
+  "type": "library",
+  "keywords": [
+    "formatting",
+    "cli"
+  ],
+  "homepage": "https://www.diqa.de/",
+  "authors": [
+    {
+      "name": "Kai Kühn",
+      "homepage": "https://www.diqa.de"
+    }
+  ],
+  "license": "GPL-2.0-or-later",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=7.2.0",
+    "composer/installers": "1.*,>=1.0.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "DIQA\\Formatter\\": [
+        "src/", "test/"]
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^7"
+  }
+}

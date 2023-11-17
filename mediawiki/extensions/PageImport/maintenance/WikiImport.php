@@ -14,20 +14,27 @@
 //
 // Note: Convert line endings of text files to unix line endings.
 
-namespace WikiImportExport;
 
-use Maintenance;
+use DIQA\Formatter\Color;
+use DIQA\Formatter\Config;
+use DIQA\Formatter\Formatter;
+use DIQA\PageImport\EditWikiPage;
+use DIQA\PageImport\LoggerUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
-use RequestContext;
-use Title;
 
 error_reporting(E_ERROR);
 
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
-require_once 'EditWikiPage.php';
 
 class WikiImport extends Maintenance {
+
+    const SKIPPED  = "[ skipped  ]";
+    const UPDATED  = "[ updated  ]";
+    const CREATED  = "[ created  ]";
+    const CONFLICT = "[ conflict ]";
+    const ERROR    = "[  error   ]";
+    const ONLY_LF  = "[ only LF  ]"; // differ only in line feeds, actually means "skipped"
 
     /// File extension of wiki files
     const FILE_EXTENSION = 'wiki';
@@ -47,8 +54,8 @@ class WikiImport extends Maintenance {
     /// Contains all pages which were not written because last revision was not auto-generated
     private $skipDueToConflict = [];
 
-    /// Contains all pages which were created/updated
-    private $createdOrUpdatedPages = [];
+    private $formatter;
+    private $logger;
 
     public function __construct() {
         parent::__construct();
@@ -61,6 +68,10 @@ class WikiImport extends Maintenance {
     }
 
     public function execute() {
+
+        $this->logger = new LoggerUtils('WikiImporter', 'PageImport', "OFF", false);
+        $this->initFormatter();
+
         // Get all namespaces.
         $this->allNamespaces = $this->getNamespaces();
         $this->processOptions();
@@ -94,29 +105,22 @@ class WikiImport extends Maintenance {
     private function doWikiImport() {
         $relevantNamespaces = $this->getRelevantNamespaces ( $this->selectedNamespaces, $this->allNamespaces );
 
-        echo("Importing files...\n");
+        $this->printLine("\nImporting files...");
 
         foreach ( $relevantNamespaces as $nsID => $nsName ) {
-            echo("$nsName\n");
+            $this->printLine("\n$nsName");
 
             $this->importNamespace ( $nsID, $nsName );
             $this->checkMissingPages ( $nsID, $nsName );
         }
-
-        if (count($this->createdOrUpdatedPages) > 0) {
-            echo "\n\nFollowing pages were created/updated:\n";
-            foreach($this->createdOrUpdatedPages as $p) {
-                echo "\n - {$p->getPrefixedText()}";
-            }
-            echo "\n\n";
-        }
+        $this->printLine("\n");
 
         if (count($this->skipDueToConflict) > 0) {
-            echo "\n\nFollowing pages were skipped due to conflicts:\n";
+            $this->printLine("Following pages were skipped due to conflicts:\n");
             foreach($this->skipDueToConflict as $p) {
-                echo "\n - {$p->getPrefixedText()}";
+                $this->printLine(" - {$p->getPrefixedText()}");
             }
-            echo "\n\n";
+            $this->printLine("\n");
         }
     }
 
@@ -127,6 +131,7 @@ class WikiImport extends Maintenance {
      * @return void
      */
     private function importNamespace( $nsID, $nsName ) {
+        $count = 0;
         $namespaceDir = $this->storageDirectory . '/' . $nsName;
         if (is_dir ( $namespaceDir )) {
             $allFiles = scandir($namespaceDir);
@@ -137,30 +142,15 @@ class WikiImport extends Maintenance {
 
                 $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
                 if ($fileExtension == self::FILE_EXTENSION) {
-                    $this->importFile($nsID, $nsName, "$namespaceDir/$file");
-                }
-                if ($nsID === NS_FILE) {
-                    $imageDir = $this->storageDirectory . '/File';
-                    $imageFilenameInWiki = pathinfo($file, PATHINFO_FILENAME) . ".". pathinfo($file, PATHINFO_EXTENSION);
-                    $title = \Title::newFromDBkey( "File:$imageFilenameInWiki");
-                    $this->uploadImage("$imageDir/$imageFilenameInWiki", $title);
+                    $imported = $this->importFile($nsID, $nsName, "$namespaceDir/$file");
+                    if ($imported) {
+                        $count++;
+                    }
                 }
             }
+            $this->printLine("\t$count file(s) imported.\n");
         } else {
-            echo("\tno files.\n");
-        }
-    }
-
-    function uploadImage($path, $title) {
-        $localFile = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()->newFile( $title );
-        $status = $localFile->upload($path, "auto-generated", "");
-        if ($status->isOK()) {
-            echo "\n\tfile uploaded: ".$title->getPrefixedText()."\n";
-            $this->createdOrUpdatedPages[] = $title;
-        } else {
-            foreach($status->getErrors() as $e) {
-                echo "\n\t".$e['message'].": ".$title->getPrefixedText()."\n";
-            }
+            $this->printLine("\tno files.\n");
         }
     }
 
@@ -175,8 +165,8 @@ class WikiImport extends Maintenance {
         $encodedFileName = pathinfo($file, PATHINFO_FILENAME);
 
         if (empty($encodedFileName)) {
-            echo("\tignoring $file -- It has no title.\n");
-            return;
+            $this->printLine("\tignoring $file -- It has no title.\n");
+            return false;
         }
 
         $decodedFileName = urldecode($encodedFileName);
@@ -197,7 +187,7 @@ class WikiImport extends Maintenance {
         }
 
         if (self::isPredefinedPage($pageTitle)) {
-            return;
+            return false;
         }
 
         if ($pageTitle->exists() && !$this->hasOption('force')) {
@@ -205,20 +195,28 @@ class WikiImport extends Maintenance {
             if (!is_null($revision) && !$this->isAutoGenerated($revision)) {
                 $oldText = $revision->getContent( SlotRecord::MAIN )->getWikitextForTransclusion();
                 if (EditWikiPage::equalIgnoringLineFeeds($newContentString, $oldText)) {
-                    echo("\tWARN: conflicting, but equal: $decodedFileName\n");
-                    return;
+                    $this->printLine($this->formatter->formatLine($pageTitle->getText(), self::ONLY_LF));
+                    return false;
                 }
-                echo("\tWARN: skipping due to conflict: $decodedFileName\n");
+                $this->printLine($this->formatter->formatLine( $pageTitle->getText(), self::CONFLICT));
                 $this->skipDueToConflict[] = $pageTitle;
-                return;
+                return false;
             }
         }
 
         $success = EditWikiPage::doEditContent( $pageTitle, $newContentString, self::SUBJECT, $flags );
-        if ( $success === EditWikiPage::ERROR ) {
-            echo("\tERROR: creating $decodedFileName\n");
+        if ( $success === EditWikiPage::NOT_UPDATED ) {
+            $this->printLine($this->formatter->formatLine( $pageTitle->getText(), self::SKIPPED));
+            return false;
+        } elseif ( $success === EditWikiPage::ERROR ) {
+            $this->printLine($this->formatter->formatLine( $pageTitle->getText(), self::ERROR), 'error');
+            return false;
         } else if ( $success === EditWikiPage::UPDATED ) {
-            $this->createdOrUpdatedPages[] = $pageTitle;
+            $this->printLine($this->formatter->formatLine( $pageTitle->getText(), self::UPDATED));
+            return true;
+        } else if ( $success === EditWikiPage::CREATED ) {
+            $this->printLine($this->formatter->formatLine( $pageTitle->getText(), self::CREATED));
+            return true;
         }
 
     }
@@ -237,7 +235,7 @@ class WikiImport extends Maintenance {
 
             $missingFiles = array_diff($allPages, $allFiles);
             foreach ($missingFiles as $file) {
-                echo("\twiki contains a page for which no file exists: $file\n");
+                $this->printLine("\twiki contains a page for which no file exists: $file\n");
             }
         }
     }
@@ -285,9 +283,9 @@ class WikiImport extends Maintenance {
         } else {
             $unknownNamespaces = array_diff($selectedNamespaces, $allNamespaces);
             if(!empty($unknownNamespaces)) {
-                echo("ERROR: Unknown namespaces:\n");
+                $this->printLine("ERROR: Unknown namespaces:\n", "error");
                 foreach ($unknownNamespaces as $namespace) {
-                    echo("\t$namespace\n");
+                    $this->printLine("\t$namespace\n");
                 }
             }
 
@@ -301,23 +299,57 @@ class WikiImport extends Maintenance {
      */
     private function isAutoGenerated($revision): bool
     {
-        return ($revision->getComment()->text === 'auto-generated' || $revision->getComment()->text === 'Added to the wiki via WikiImport-Script.');
+        return ($revision->getComment()->text === 'auto-generated' || $revision->getComment()->text === self::SUBJECT);
     }
 
-    private static function isPredefinedPage($title) {
-        return in_array($title->getPrefixedText(), [
+    private static function isPredefinedPage(Title $title) {
+
+        // note: for some reason property namespace is not canonical
+        if (defined("SMW_NS_PROPERTY") && $title->getNamespace() === SMW_NS_PROPERTY) {
+            return in_array($title->getText(), [
+                "Foaf:homepage",
+                "Foaf:knows",
+                "Foaf:name",
+                "Owl:differentFrom"]);
+        }
+
+        $nsText = MediaWikiServices::getInstance()->getNamespaceInfo()->
+        getCanonicalName( $title->getNamespace() );
+        return in_array( "$nsText:{$title->getText()}" , [
             "MediaWiki:Smw import foaf",
             "MediaWiki:Smw import owl",
             "MediaWiki:Smw import skos",
-            "Property:Foaf:homepage",
-            "Property:Foaf:knows",
-            "Property:Foaf:name",
-            "Property:Owl:differentFrom",
             "smw/schema:Group:Predefined properties",
             "smw/schema:Group:Schema properties"
         ]);
     }
+
+    private function initFormatter(): void
+    {
+        $config = new Config([80, 20], [Config::LEFT_ALIGN, Config::LEFT_ALIGN]);
+        $config->highlightWord(self::SKIPPED, Color::fromColor(COLOR::BLACK, Color::LIGHT_GREY), 1);
+        $config->highlightWord(self::UPDATED, Color::fromColor(COLOR::BLACK, Color::GREEN), 1);
+        $config->highlightWord(self::CREATED, Color::fromColor(COLOR::BLACK, Color::GREEN), 1);
+        $config->highlightWord(self::CONFLICT, Color::fromColor(COLOR::BLACK, Color::MAGENTA), 1);
+        $config->highlightWord(self::ERROR, Color::fromColor(COLOR::BLACK, Color::RED), 1);
+        $config->highlightWord(self::ONLY_LF, Color::fromColor(COLOR::BLACK, Color::YELLOW), 1);
+        $config->setLeftColumnPadding(0,3);
+        $this->formatter = new Formatter($config);
+    }
+
+    private function printLine($line, $lvl = 'log') {
+        $trimmedLine = trim($this->removeEscapeSeqs($line));
+        if ($trimmedLine !== '') {
+            $this->logger->{$lvl}($trimmedLine);
+        }
+        echo "\n$line";
+    }
+
+    private function removeEscapeSeqs($s) {
+        return preg_replace('/\033\[[^]]+m/', '', $s);
+    }
+
 } // end of WikiImport class
 
-$maintClass = 'WikiImportExport\WikiImport';
+$maintClass = 'WikiImport';
 require_once RUN_MAINTENANCE_IF_MAIN;

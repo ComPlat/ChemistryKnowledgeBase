@@ -453,3 +453,4 @@ wfLoadExtension( 'EnhancedRetrieval' );
 
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');
+wfLoadExtension('PageImport');
