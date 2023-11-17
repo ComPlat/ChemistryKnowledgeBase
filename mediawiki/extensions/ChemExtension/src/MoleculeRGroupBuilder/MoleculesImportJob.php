@@ -62,7 +62,7 @@ class MoleculesImportJob extends Job
 
                 $concreteMolecule = $m['chemForm'];
                 $rGroups = $m['rGroups'];
-                if (is_null($concreteMolecule->getInchi()) || $concreteMolecule->getInchiKey() === '') {
+                if (is_null($concreteMolecule->getInchiKey()) || $concreteMolecule->getInchiKey() === '') {
                     $this->logger->error("Can not create molecule page. Inchikey is empty. {$concreteMolecule->__toString()}");
                     continue;
                 }
