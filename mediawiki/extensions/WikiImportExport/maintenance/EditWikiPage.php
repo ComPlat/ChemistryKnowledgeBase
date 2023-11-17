@@ -72,7 +72,7 @@ class EditWikiPage {
         } else {
             $comment = CommentStoreComment::newUnsavedComment( $editMessageText );
 
-            $updater = WikiPage::factory( $title )->newPageUpdater( $user );
+            $updater = WikiPage::factory( $title )->newPageUpdater( $user->getUser() );
             $updater->setContent( SlotRecord::MAIN, $newContent );
             $updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
             $updater->saveRevision( $comment , $flags );
