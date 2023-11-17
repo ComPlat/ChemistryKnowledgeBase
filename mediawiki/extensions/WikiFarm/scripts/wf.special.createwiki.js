@@ -92,7 +92,7 @@
                     usersMultiselectWidget.onChangeTags = function (e) {
                         saveUserButton.setDisabled(false);
                     };
-                }).error(function (msg) {
+                }).catch(function (msg) {
                     console.log("Error WikiFarm: " + msg.responseText);
                     mw.notify(mw.message('wfarm-ajax-error').text());
                 });
