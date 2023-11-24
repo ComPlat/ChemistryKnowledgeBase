@@ -175,7 +175,7 @@
                 }
             },
             position: {
-                at: 'top right'
+                viewport: $(window)
             }
         });
     }

@@ -2,25 +2,6 @@
 
     window.ChemExtension = window.ChemExtension || {};
     window.ChemExtension.initTooltips = function(container) {
-        $('iframe.chemformula', container).qtip({
-            content: "<div></div>",
-            style: { classes: 'chemformula-tooltip' },
-            events: {
-
-                render: function(event, api) {
-                    // Grab the tooltip element from the API
-                    let tooltip = api.elements.tooltip;
-                    let iframe = api.elements.target;
-                    let downloadURL = iframe.attr('downloadurl');
-                    let tools = new OO.VisualEditorTools();
-                    tools.renderFormula(downloadURL, tooltip);
-
-                }
-            },
-            position: {
-                at: 'top right'
-            }
-        });
 
         $('a[title]', container).each(function(i, e) {
             let el = $(e);
@@ -42,7 +23,7 @@
                     }
                 },
                 position: {
-                    at: 'top right'
+                    viewport: $(window)
                 }
             });
         });
