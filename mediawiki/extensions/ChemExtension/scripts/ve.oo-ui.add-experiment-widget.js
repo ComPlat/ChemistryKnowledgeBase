@@ -164,8 +164,9 @@
             items.push(this.orderField);
 
         } else {
+            let validNamePattern = /^[\w\s_-]+$/;
             let experimentNameValue = data.template ? data.template.params.name.wt : '';
-            this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue, required: true});
+            this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue, required: true, validate: validNamePattern});
             this.experimentNameField = new OO.ui.FieldLayout(
                 this.experimentName,
                 {
@@ -177,7 +178,7 @@
             );
 
             this.experimentName.on('change', (item) => {
-                this.setActionsDisabled(['edit', 'insert'], item == '');
+                this.setActionsDisabled(['edit', 'insert'], item == '' || !item.match(validNamePattern));
             });
 
             this.importFile = new OO.ui.SelectFileInputWidget();
