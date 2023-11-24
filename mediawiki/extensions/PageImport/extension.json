@@ -1,0 +1,24 @@
+{
+  "name": "PageImport",
+  "author": [ "[https://www.diqa.de DIQA-Projektmanagement GmbH]" ],
+  "url": "https://github.com/kkthek/diqa-page-import",
+  "descriptionmsg": "page-import-desc",
+  "license-name": "GPL-2.0-or-later",
+  "type": "other",
+  "version": "1.0",
+  "requires": {
+    "MediaWiki": ">= 1.39",
+    "platform": {
+      "php": ">= 7.4"
+    }
+  },
+  "AutoloadNamespaces": {
+    "DIQA\\PageImport\\": "src/PageImport/"
+  },
+  "MessagesDirs": {
+    "PageImport": [
+      "i18n"
+    ]
+  },
+  "manifest_version": 2
+}

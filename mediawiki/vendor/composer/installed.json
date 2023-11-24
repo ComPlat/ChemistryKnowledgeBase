@@ -876,6 +876,117 @@
             "install-path": "../data-values/validators"
         },
         {
+            "name": "diqa/formatter",
+            "version": "1.1",
+            "version_normalized": "1.1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kkthek/diqa-formatter.git",
+                "reference": "c9f99c27eced77f1c96d797d974bf03084aef0ee"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kkthek/diqa-formatter/zipball/c9f99c27eced77f1c96d797d974bf03084aef0ee",
+                "reference": "c9f99c27eced77f1c96d797d974bf03084aef0ee",
+                "shasum": ""
+            },
+            "require": {
+                "composer/installers": "1.*,>=1.0.1",
+                "php": ">=7.2.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^7"
+            },
+            "time": "2023-05-03T11:16:59+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "DIQA\\Formatter\\": [
+                        "src/",
+                        "test/"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Kai Kühn",
+                    "homepage": "https://www.diqa.de"
+                }
+            ],
+            "description": "CLI formatting library",
+            "homepage": "https://www.diqa.de/",
+            "keywords": [
+                "cli",
+                "formatting"
+            ],
+            "support": {
+                "issues": "https://github.com/kkthek/diqa-formatter/issues",
+                "source": "https://github.com/kkthek/diqa-formatter/tree/release-1.1"
+            },
+            "install-path": "../diqa/formatter"
+        },
+        {
+            "name": "diqa/page-import",
+            "version": "dev-main",
+            "version_normalized": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kkthek/diqa-page-import.git",
+                "reference": "6519f264e078e71061e630213c3b1daa43eda43a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kkthek/diqa-page-import/zipball/6519f264e078e71061e630213c3b1daa43eda43a",
+                "reference": "6519f264e078e71061e630213c3b1daa43eda43a",
+                "shasum": ""
+            },
+            "require": {
+                "composer/installers": "1.*,>=1.0.1",
+                "diqa/formatter": ">=1.0",
+                "php": ">=7.4.0"
+            },
+            "time": "2023-11-03T11:46:25+00:00",
+            "default-branch": true,
+            "type": "mediawiki-extension",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "DIQA\\": [
+                        "src/",
+                        "test/"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Kai Kühn",
+                    "homepage": "https://www.diqa.de"
+                }
+            ],
+            "description": "Maintenance tool to import/export wiki pages and images",
+            "homepage": "https://www.diqa.de/",
+            "keywords": [
+                "cli",
+                "export",
+                "import",
+                "wikipage"
+            ],
+            "support": {
+                "issues": "https://github.com/kkthek/diqa-page-import/issues",
+                "source": "https://github.com/kkthek/diqa-page-import/tree/main"
+            },
+            "install-path": "../../extensions/PageImport"
+        },
+        {
             "name": "doctrine/cache",
             "version": "2.2.0",
             "version_normalized": "2.2.0.0",

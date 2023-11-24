@@ -27,11 +27,11 @@ class ComposerStaticInit_mediawiki_vendor
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
         'b132fa83088803c4ec005da9be2cb320' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/includes/GlobalFunctions.php',
         'c3f7f0e81464740a933532e81fa26cc7' => __DIR__ . '/..' . '/wikimedia/base-convert/src/Functions.php',
+        '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
         '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
         '801c31d8ed748cfa537fa45402288c95' => __DIR__ . '/..' . '/psy/psysh/src/functions.php',
         '6714be961f4a45ae8b9a99d5d55c5d07' => __DIR__ . '/..' . '/tysonandre/var_representation_polyfill/src/var_representation.php',
         'c50606d667a3fde2b80a955639479d3d' => __DIR__ . '/..' . '/wikimedia/timestamp/src/defines.php',
-        '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
         'a84de8315bd92c71bcb39ff2ace7383d' => __DIR__ . '/..' . '/giorgiosironi/eris/src/Generator/functions.php',
         '3324dfbc75ea60346550e520d749543d' => __DIR__ . '/../..' . '/extensions/SemanticCompoundQueries/SemanticCompoundQueries.php',
         '43b3c7644dd913f46db744c4ac998fef' => __DIR__ . '/../..' . '/extensions/SemanticResultFormats/SemanticResultFormats.php',
@@ -218,7 +218,9 @@ class ComposerStaticInit_mediawiki_vendor
             'DeepCopy\\' => 9,
             'DataValues\\Geo\\' => 15,
             'DataValues\\' => 11,
+            'DIQA\\Formatter\\' => 15,
             'DIQA\\FacetedSearch\\' => 19,
+            'DIQA\\' => 5,
         ),
         'C' => 
         array (
@@ -744,9 +746,19 @@ class ComposerStaticInit_mediawiki_vendor
             0 => __DIR__ . '/..' . '/data-values/common/src/DataValues',
             1 => __DIR__ . '/..' . '/data-values/data-values/src',
         ),
+        'DIQA\\Formatter\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/diqa/formatter/src',
+            1 => __DIR__ . '/..' . '/diqa/formatter/test',
+        ),
         'DIQA\\FacetedSearch\\' => 
         array (
             0 => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch',
+        ),
+        'DIQA\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/extensions/PageImport/src',
+            1 => __DIR__ . '/../..' . '/extensions/PageImport/test',
         ),
         'Composer\\XdebugHandler\\' => 
         array (
@@ -1157,9 +1169,25 @@ class ComposerStaticInit_mediawiki_vendor
         'DIQA\\FacetedSearch\\Proxy\\SolrProxy\\SolrService' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Proxy/SolrProxy/SolrService.php',
         'DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Specials/FSFacetedSearchSpecial.php',
         'DIQA\\FacetedSearch\\UpdateSolrJob' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UpdateSolrJob.php',
+        'DIQA\\FacetedSearch\\UpdateSolrWithDependantJob' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UpdateSolrWithDependantJob.php',
         'DIQA\\FacetedSearch\\UserPreference' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UserPreference.php',
         'DIQA\\FacetedSearch\\Util\\DialogAjaxAPI' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Util/DialogAjaxAPI.php',
         'DIQA\\FacetedSearch\\Util\\FacetValueGenerator' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Util/FacetValueGenerator.php',
+        'DIQA\\Formatter\\AlignmentTest' => __DIR__ . '/..' . '/diqa/formatter/test/AlignmentTest.php',
+        'DIQA\\Formatter\\AutomaticLineBreakTest' => __DIR__ . '/..' . '/diqa/formatter/test/AutomaticLineBreakTest.php',
+        'DIQA\\Formatter\\BorderAndPaddingTest' => __DIR__ . '/..' . '/diqa/formatter/test/BorderAndPaddingTest.php',
+        'DIQA\\Formatter\\Color' => __DIR__ . '/..' . '/diqa/formatter/src/Color.php',
+        'DIQA\\Formatter\\ColorTest' => __DIR__ . '/..' . '/diqa/formatter/test/ColorTest.php',
+        'DIQA\\Formatter\\Config' => __DIR__ . '/..' . '/diqa/formatter/src/Config.php',
+        'DIQA\\Formatter\\Formatter' => __DIR__ . '/..' . '/diqa/formatter/src/Formatter.php',
+        'DIQA\\Formatter\\GeneralTest' => __DIR__ . '/..' . '/diqa/formatter/test/GeneralTest.php',
+        'DIQA\\Formatter\\IgnoredCharactersTest' => __DIR__ . '/..' . '/diqa/formatter/test/IgnoredCharactersTest.php',
+        'DIQA\\Formatter\\SeparatorsTest' => __DIR__ . '/..' . '/diqa/formatter/test/SeparatorsTest.php',
+        'DIQA\\Formatter\\TextUtilities' => __DIR__ . '/..' . '/diqa/formatter/src/TextUtilities.php',
+        'DIQA\\Formatter\\TextUtilitiesTest' => __DIR__ . '/..' . '/diqa/formatter/test/TextUtilitiesTest.php',
+        'DIQA\\Formatter\\Tools' => __DIR__ . '/..' . '/diqa/formatter/test/Tools.php',
+        'DIQA\\PageImport\\EditWikiPage' => __DIR__ . '/../..' . '/extensions/PageImport/src/PageImport/EditWikiPage.php',
+        'DIQA\\PageImport\\LoggerUtils' => __DIR__ . '/../..' . '/extensions/PageImport/src/PageImport/LoggerUtils.php',
         'DataValues\\BooleanValue' => __DIR__ . '/..' . '/data-values/data-values/src/BooleanValue.php',
         'DataValues\\DataValue' => __DIR__ . '/..' . '/data-values/data-values/src/DataValue.php',
         'DataValues\\DataValueObject' => __DIR__ . '/..' . '/data-values/data-values/src/DataValueObject.php',
@@ -6791,8 +6819,6 @@ class ComposerStaticInit_mediawiki_vendor
         'SMW\\Tests\\SQLStore\\Exception\\PropertyStatisticsInvalidArgumentExceptionTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Exception/PropertyStatisticsInvalidArgumentExceptionTest.php',
         'SMW\\Tests\\SQLStore\\Exception\\TableMissingIdFieldExceptionTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Exception/TableMissingIdFieldExceptionTest.php',
         'SMW\\Tests\\SQLStore\\InstallerTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/InstallerTest.php',
-        'SMW\\Tests\\SQLStore\\Installer\\TableOptimizerTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Installer/TableOptimizerTest.php',
-        'SMW\\Tests\\SQLStore\\Installer\\VersionExaminerTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Installer/VersionExaminerTest.php',
         'SMW\\Tests\\SQLStore\\Lookup\\ByGroupPropertyValuesLookupTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Lookup/ByGroupPropertyValuesLookupTest.php',
         'SMW\\Tests\\SQLStore\\Lookup\\CachedListLookupTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Lookup/CachedListLookupTest.php',
         'SMW\\Tests\\SQLStore\\Lookup\\ChangePropagationEntityLookupTest' => __DIR__ . '/../..' . '/extensions/SemanticMediaWiki/tests/phpunit/SQLStore/Lookup/ChangePropagationEntityLookupTest.php',

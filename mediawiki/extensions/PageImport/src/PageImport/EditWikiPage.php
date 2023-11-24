@@ -1,5 +1,5 @@
 <?php
-namespace WikiImportExport;
+namespace DIQA\PageImport;
 
 use CommentStoreComment;
 use ContentHandler;
@@ -17,8 +17,9 @@ use WikiPage;
 class EditWikiPage {
 
     public const UPDATED = 1;
-    public const NOT_UPDATED = 2;
-    public const ERROR = 3;
+    public const CREATED = 2;
+    public const NOT_UPDATED = 3;
+    public const ERROR = 4;
 
     /**
      * Replaces the content of the given page with the provide newContentsText.
@@ -66,7 +67,6 @@ class EditWikiPage {
 
         if( self::equalIgnoringLineFeeds(trim($newContent->getWikitextForTransclusion()), trim( $oldText )) ) {
             // do nothing
-            echo("Old and new content are identical. Nothing to do.\n");
             return self::NOT_UPDATED;
 
         } else {
@@ -78,13 +78,13 @@ class EditWikiPage {
             $updater->saveRevision( $comment , $flags );
 
             if ( $updater->wasSuccessful() && $oldText=='' ) {
-                echo("Successfully created page $title.\n");
+                return self::CREATED;
             } else if ( $updater->wasSuccessful() ) {
-                echo("Successfully modified page $title.\n");
+                return self::UPDATED;
             } else {
-                echo("ERROR: Failed modifying page $title.\n");
+                return self::ERROR;
             }
-            return $updater->wasSuccessful() ? self::UPDATED : self::ERROR;
+
         }
     }
 
@@ -126,17 +126,16 @@ class EditWikiPage {
 
         global $wgUser;
 
-        $updater = WikiPage::factory( $title )->newPageUpdater( $wgUser );
+        $updater = WikiPage::factory( $title )->newPageUpdater( $wgUser->getUser() );
         $updater->setContent( SlotRecord::MAIN, $newContent );
         $updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
         $updater->saveRevision( $comment , EDIT_UPDATE | EDIT_MINOR | EDIT_SUPPRESS_RC | EDIT_FORCE_BOT );
 
         if ($updater->wasSuccessful()) {
-            echo("Successfull null edit for $title.\n");
+            return self::UPDATED;
         } else {
-            echo("ERROR: Null edit failed for $title.\n");
+            return self::ERROR;
         }
-        return $updater->wasSuccessful();
     }
 
 }

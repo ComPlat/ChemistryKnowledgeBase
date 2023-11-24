@@ -121,6 +121,26 @@
                 0 => '*',
             ),
         ),
+        'diqa/formatter' => array(
+            'pretty_version' => '1.1',
+            'version' => '1.1.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../diqa/formatter',
+            'aliases' => array(),
+            'reference' => 'c9f99c27eced77f1c96d797d974bf03084aef0ee',
+            'dev_requirement' => false,
+        ),
+        'diqa/page-import' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'type' => 'mediawiki-extension',
+            'install_path' => __DIR__ . '/../../extensions/PageImport',
+            'aliases' => array(
+                0 => '9999999-dev',
+            ),
+            'reference' => '6519f264e078e71061e630213c3b1daa43eda43a',
+            'dev_requirement' => false,
+        ),
         'doctrine/cache' => array(
             'pretty_version' => '2.2.0',
             'version' => '2.2.0.0',
