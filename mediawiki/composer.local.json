@@ -15,17 +15,7 @@
     "extra": {
         "merge-plugin": {
             "include": [
-                "extensions/EnhancedRetrieval/composer.json",
-                "extensions/ODBcore/composer.json",
-                "extensions/ODBbdb/composer.json",
-                "extensions/ODBdms/composer.json",
-                "extensions/ODBgeo/composer.json",
-                "extensions/ODBintegrity/composer.json",
-                "extensions/ODBmerkliste/composer.json",
-                "extensions/ODBpendenzensammler/composer.json",
-                "extensions/ODBreports/composer.json",
-                "extensions/ODBrichtext/composer.json",
-                "extensions/ODBsuche/composer.json"
+                "extensions/EnhancedRetrieval/composer.json"
             ]
         }
     }
