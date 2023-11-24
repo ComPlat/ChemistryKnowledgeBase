@@ -59,3 +59,5 @@ mediawiki/extensions/InvestigationImport/maintenance/test1.txt
 .vscode/launch.json
 mediawiki/extensions/InvestigationImport/resources/~$CV_generic_dataset_withExValues.xlsx
 mediawiki/extensions/InvestigationImport/maintenance/test198.txt
+vm/Vagrantfile
+
