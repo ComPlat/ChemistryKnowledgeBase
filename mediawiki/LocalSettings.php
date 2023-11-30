@@ -141,8 +141,12 @@ wfLoadSkin( 'Vector' );
 #################################################################
 # Logos
 #################################################################
-$wgLogos = ['1x' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png"];
+$wgLogos = ['1x' => "$wgScriptPath/extensions/ChemExtension/resources/home.png"];
 $wgFavicon = "$wgScriptPath/extensions/ChemExtension/resources/favicon.ico";
+$wgFooterIcons['poweredby']['kit'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png",
+    'url' => 'https://www.ibcs.kit.edu/'
+];
 
 #################################################################
 # General settings
