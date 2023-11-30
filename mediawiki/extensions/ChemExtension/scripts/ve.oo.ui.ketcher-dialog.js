@@ -135,9 +135,33 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         let uploadImagePromise;
         if (this.moleculeKeyOld === '') {
             uploadImagePromise = this.ajax.uploadImage(moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+            this.updateModel(uploadImagePromise, node, formulaData);
         } else {
-            uploadImagePromise = this.ajax.uploadImageAndReplaceOld(this.moleculeKeyOld, moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+            this.ajax.getChemFormId("reserved-"+this.moleculeKeyOld).then(() => {
+                // molecule is under construction
+                uploadImagePromise = this.ajax.uploadImageAndReplaceOld(this.moleculeKeyOld, moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+                this.updateModel(uploadImagePromise, node, formulaData);
+            }).catch((response) => {
+                // means: the molecule already exists and is not "under construction"
+                if (this.moleculeKeyOld === moleculeKey) {
+                    OO.ui.alert('To modify a molecule like this, please use Special:ModifyMolecule');
+                    return;
+                } else {
+                    OO.ui.confirm( 'This will create a new molecule. The identity of the molecule will change. Are you sure?' ).done( function ( confirmed ) {
+                        if ( confirmed ) {
+                            uploadImagePromise = this.ajax.uploadImageAndReplaceOld(this.moleculeKeyOld, moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
+                            this.updateModel(uploadImagePromise, node, formulaData);
+                        }
+                    });
+
+                }
+            });
         }
+
+
+    }
+
+    ve.ui.KetcherDialog.prototype.updateModel = function(uploadImagePromise, node, formulaData) {
         uploadImagePromise.then(() => {
             this.updateModelAfterUpload(node, {
                 formula: formulaData.formula,
@@ -148,7 +172,6 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         }).catch((response) => {
             mw.notify('Problem occured on uploading image: ' + response.responseText, {type: 'error'});
         });
-
     }
 
     ve.ui.KetcherDialog.prototype.updateModelAfterUpload = function (node, formulaData) {
