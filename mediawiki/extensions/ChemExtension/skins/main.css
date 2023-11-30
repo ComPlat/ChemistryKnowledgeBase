@@ -520,3 +520,7 @@ table.formtable div.oo-ui-textInputWidget {
 table.wikitable td p {
     margin-bottom: 0rem;
 }
+
+div.navbar-tool {
+    margin-left: 20px;
+}
