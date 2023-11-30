@@ -147,7 +147,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     OO.ui.alert('To modify a molecule like this, please use Special:ModifyMolecule');
                     return;
                 } else {
-                    OO.ui.confirm( 'This will create a new molecule. The identity of the molecule will change. Are you sure?' ).done( function ( confirmed ) {
+                    OO.ui.confirm( 'This will create a new molecule. If you want to change the molecule go to Special:ModifyMolecule. Do you want to create a new molecule?' ).done( function ( confirmed ) {
                         if ( confirmed ) {
                             uploadImagePromise = this.ajax.uploadImageAndReplaceOld(this.moleculeKeyOld, moleculeKey, btoa(unescape(encodeURIComponent(imgData))));
                             this.updateModel(uploadImagePromise, node, formulaData);
