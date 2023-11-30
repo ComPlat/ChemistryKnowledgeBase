@@ -125,6 +125,12 @@
         initializeRGroups();
     });
 
+    mw.hook( 've.activationComplete' ).add(function() {
+        $('#cancelve').show();
+
+    });
+
+    $('#cancelve').hide();
     mw.hook( 've.deactivationComplete' ).add(function() {
         window.location.reload();
     });
@@ -132,6 +138,7 @@
         initialize();
         initializeToggleBoxes();
         initializeDOIInfoBoxToggle();
+        $('#cancelve').hide();
     });
 
 }(jQuery));

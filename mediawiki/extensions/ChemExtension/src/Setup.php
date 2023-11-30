@@ -127,10 +127,17 @@ class Setup {
         if (is_null($wgTitle)) {
             return;
         }
-        $links[ 'actions' ][] = [
+        $links['actions'][] = [
             'text' => "Export as JSON-LD",
-            'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=".urlencode($wgTitle->getPrefixedText())
-			];
+            'href' => "$wgScriptPath/rest.php/ChemExtension/v1/json-ld?page=" . urlencode($wgTitle->getPrefixedText())
+        ];
+
+        $links['actions'][] = [
+            'text' => "Cancel edit",
+            'href' => "javascript:ve.init.target.getSurface().emit( 'cancel' );",
+            'id'=>'cancelve'
+        ];
+
     }
 
     public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
