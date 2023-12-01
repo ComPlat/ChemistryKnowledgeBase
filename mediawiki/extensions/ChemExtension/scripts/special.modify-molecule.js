@@ -54,7 +54,11 @@
                             })
                             .catch((res) => {
                                 this.modifyButton.setDisabled(false);
-                                mw.notify('Problem occured: ' + res.statusText, {type: 'error'});
+                                if (res.status === 409) {
+                                    mw.notify('Problem occured: ' + res.responseText, {type: 'error'});
+                                } else {
+                                    mw.notify('Problem occured: ' + res.responseText, {type: 'error'});
+                                }
                             });
                     });
 

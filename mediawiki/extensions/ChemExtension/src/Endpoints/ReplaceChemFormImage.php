@@ -57,8 +57,8 @@ class ReplaceChemFormImage extends SimpleHandler {
             return $res;
         } else {
             // new molecule already exists
-            $res = new Response("Molecule with molecule_key '". $params['moleculeKey'] . "' already exists");
-            $res->setStatus(400);
+            $res = new Response("Molecule with molecule_key '". $params['moleculeKey'] . "' already exists ($chemFormId)");
+            $res->setStatus(409);
             return $res;
         }
 
