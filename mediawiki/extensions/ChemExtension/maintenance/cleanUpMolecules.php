@@ -70,7 +70,7 @@ class cleanUpMolecules extends \Maintenance
             $services = MediaWikiServices::getInstance();
             foreach ($ids as $id) {
                 $moleculeTitle = \Title::newFromText($id, NS_MOLECULE);
-                $deleteOk = $this->hasOption('dry-run');
+                $deleteOk = false;
 
                 if (!$this->hasOption('dry-run') && $moleculeTitle->exists()) {
                     $deleter = $services->getUserFactory()->newFromName("WikiSysop");
@@ -80,10 +80,13 @@ class cleanUpMolecules extends \Maintenance
                         ->deleteIfAllowed("cleanUpChemTables");
                     $deleteOk = $deleteStatus->isOK();
                 }
-                if ($deleteOk) {
-                    $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[DELETED]');
-                } else {
-                    $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[FAILED]');
+                echo "\n";
+                if ($deleteOk && $moleculeTitle->exists()) {
+                    echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[DELETED]');
+                } else if ($this->hasOption('dry-run') && $moleculeTitle->exists()) {
+                    echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[TO BE DELETED]');
+                } else if (!$deleteOk && !$this->hasOption('dry-run')) {
+                    echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[FAILED]');
                 }
 
             }
@@ -96,7 +99,12 @@ class cleanUpMolecules extends \Maintenance
                     $repo->deleteAllChemFormIndexByChemFormId($id);
                     $repo->deleteChemForm($id);
                 }
-                $this->formatter->formatLine("Index with ID $id found", '[DELETED]');
+                echo "\n";
+                if ($this->hasOption('dry-run')) {
+                    echo $this->formatter->formatLine("Index with ID $id found", '[TO BE DELETED]');
+                } else {
+                    echo $this->formatter->formatLine("Index with ID $id found", '[DELETED]');
+                }
             }
             print "\nfinished\n";
         } catch (Exception $e) {
