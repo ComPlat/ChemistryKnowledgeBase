@@ -80,12 +80,14 @@ class cleanUpMolecules extends \Maintenance
                         ->deleteIfAllowed("cleanUpChemTables");
                     $deleteOk = $deleteStatus->isOK();
                 }
-                echo "\n";
                 if ($deleteOk && $moleculeTitle->exists()) {
+                    echo "\n";
                     echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[DELETED]');
                 } else if ($this->hasOption('dry-run') && $moleculeTitle->exists()) {
+                    echo "\n";
                     echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[TO BE DELETED]');
                 } else if (!$deleteOk && !$this->hasOption('dry-run')) {
+                    echo "\n";
                     echo $this->formatter->formatLine($moleculeTitle->getPrefixedText(), '[FAILED]');
                 }
 
