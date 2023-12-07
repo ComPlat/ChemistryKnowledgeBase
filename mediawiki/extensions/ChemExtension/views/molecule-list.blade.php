@@ -1,3 +1,8 @@
+@if(!is_null($publicationPageForConcreteMolecule))
+    <p>The molecule template was defined here:
+        <a target="_blank" href="{{$publicationPageForConcreteMolecule->getFullURL()}}">{{$publicationPageForConcreteMolecule->getText()}}</a>
+    </p>
+@endif
 <h2>Molecule is used on following pages</h2>
 @if(count($topicPages) > 0)
     <div class="ce-page-type ce-page-type-topic" style="margin-top: 15px">topic</div>
@@ -27,14 +32,6 @@
     <div class="ce-page-type ce-page-type-other" style="margin-top: 15px">other</div>
     <ul>
         @foreach($otherPages as $p)
-            <li><a target="_blank" href="{{$p->getFullURL()}}">{{$p->getText()}}</a></li>
-        @endforeach
-    </ul>
-@endif
-@if(count($publicationPageForConcreteMolecule) > 0)
-    <h2>The molecule template was defined here</h2>
-    <ul>
-        @foreach($publicationPageForConcreteMolecule as $p)
             <li><a target="_blank" href="{{$p->getFullURL()}}">{{$p->getText()}}</a></li>
         @endforeach
     </ul>

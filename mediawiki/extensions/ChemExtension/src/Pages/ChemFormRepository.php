@@ -253,16 +253,15 @@ class ChemFormRepository
         return $results;
     }
 
-    public function getPublicationPageForConcreteMolecule(Title $moleculePage): array
+    public function getPublicationPageForConcreteMolecule(Title $moleculePage): ?Title
     {
-        $results = [];
         $res = $this->db->select('molecule_collection', [ 'DISTINCT publication_page_id'],
             ['molecule_page_id' => $moleculePage->getArticleID()]);
-        foreach ($res as $row) {
-            $results[] = Title::newFromID($row->publication_page_id);
-
+        if ($res->numRows() > 0) {
+            $row = $res->fetchObject();
+            return Title::newFromID($row->publication_page_id);
         }
-        return $results;
+        return null;
     }
 
     public function getConcreteMoleculesByKey($moleculeKey, Title $publicationPage): array
