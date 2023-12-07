@@ -4,7 +4,6 @@ namespace DIQA\ChemExtension\Pages;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
-use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use Title;
 
@@ -43,7 +42,8 @@ class MoleculePageCreator
         $jobParams['parent'] = $parent;
         $job = new MoleculePageCreationJob($title, $jobParams);
         if ($async) {
-            JobQueueGroup::singleton()->push($job);
+            $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+            $jobQueue->push($job);
         } else {
             $job->run();
         }

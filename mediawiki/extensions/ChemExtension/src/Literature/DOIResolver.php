@@ -3,7 +3,6 @@
 namespace DIQA\ChemExtension\Literature;
 
 use Exception;
-use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use Title;
 
@@ -61,7 +60,8 @@ class DOIResolver
         $jobParams = [];
         $jobParams['doi'] = $doi;
         $job = new LiteratureResolverJob($wikiPage, $jobParams);
-        JobQueueGroup::singleton()->push($job);
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push($job);
     }
 
     /**

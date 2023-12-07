@@ -14,14 +14,13 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
-use JobQueueGroup;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\User\UserIdentity;
-use WikiPage;
 use Title;
+use WikiPage;
 
 class MultiContentSave
 {
@@ -115,7 +114,8 @@ class MultiContentSave
         $jobParams = [];
         $jobParams['moleculeCollections'] = $moleculeCollections;
         $job = new MoleculesImportJob($pageTitle, $jobParams);
-        JobQueueGroup::singleton()->push($job);
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push($job);
 
     }
 

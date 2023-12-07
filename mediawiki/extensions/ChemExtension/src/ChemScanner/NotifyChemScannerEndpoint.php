@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\ChemScanner;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
-use JobQueueGroup;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\Response;
 use Title;
@@ -53,7 +53,8 @@ class NotifyChemScannerEndpoint extends Handler
         $jobParams['body'] = $body;
         $jobParams['job_id'] = $jobId;
         $job = new ChemScannerImportJob($title, $jobParams);
-        JobQueueGroup::singleton()->push($job);
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push($job);
     }
 
     public function needsReadAccess()

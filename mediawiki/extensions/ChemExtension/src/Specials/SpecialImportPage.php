@@ -6,7 +6,7 @@ use DIQA\ChemExtension\Pages\PageImportJob;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
-use JobQueueGroup;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
@@ -138,12 +138,13 @@ class SpecialImportPage extends PageCreationSpecial
             }
             $job = new PageImportJob($pageTitleObj, ['wikitext' => $text]);
             $this->addedJobs[$pageTitleObj->getPrefixedText()] = ['main' => $job, 'subPages' => [] ];
-            JobQueueGroup::singleton()->push($job);
+            $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+            $jobQueue->push($job);
             $subPages = $pageTitleObj->getSubpages();
             foreach ($subPages as $subPage) {
                 $job = new PageImportJob($subPage, ['wikitext' => WikiTools::getText($subPage)]);
                 $this->addedJobs[$pageTitleObj->getPrefixedText()]['subPages'][] = $job;
-                JobQueueGroup::singleton()->push($job);
+                $jobQueue->push($job);
             }
         }
     }
