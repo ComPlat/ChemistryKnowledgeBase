@@ -149,14 +149,18 @@ class RenderFormula
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
 
+        $publicationPageForConcreteMolecule = $repo->getPublicationPageForConcreteMolecule($wgTitle);
+
         $html = $blade->view()->make("molecule-list",
             [
                 'topicPages' => $topicPages,
                 'publicationPages' => $publicationPages,
                 'investigationPages' => $investigationPages,
-                'otherPages' => $otherPages
+                'otherPages' => $otherPages,
+                'publicationPageForConcreteMolecule' => $publicationPageForConcreteMolecule,
             ]
         )->render();
         $out->addHTML($html);
+
     }
 }

@@ -31,3 +31,11 @@
         @endforeach
     </ul>
 @endif
+@if(count($publicationPageForConcreteMolecule) > 0)
+    <h2>The molecule template was defined here</h2>
+    <ul>
+        @foreach($publicationPageForConcreteMolecule as $p)
+            <li><a target="_blank" href="{{$p->getFullURL()}}">{{$p->getText()}}</a></li>
+        @endforeach
+    </ul>
+@endif
