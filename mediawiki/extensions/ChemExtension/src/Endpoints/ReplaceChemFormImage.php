@@ -41,7 +41,7 @@ class ReplaceChemFormImage extends SimpleHandler {
             $res->setStatus(200);
             return $res;
         } else if (is_null($chemFormId)) {
-            // moleculeKey has changed, ie. chemFormId must be updated with a new moleculeKey and image
+            // moleculeKey has changed, ie. chemFormId remains the same but must be updated with a new moleculeKey and image
 
             $chemFormRepo->updateImageAndMoleculeKey($params['chemFormId'], $params['moleculeKey'],
                 base64_encode($params['imgData']));
@@ -56,9 +56,19 @@ class ReplaceChemFormImage extends SimpleHandler {
             $res->setStatus(200);
             return $res;
         } else {
-            // new molecule already exists
-            $res = new Response("Molecule with molecule_key '". $params['moleculeKey'] . "' already exists ($chemFormId)");
-            $res->setStatus(409);
+            // new molecule already exists, so change all references to from the old to the new. This includes
+            // also change to new chemFormIds
+            // old molecule remains unchanged
+            $params['chemform'] = ChemForm::fromMolOrRxn(base64_decode($params['molOrRxn']), $params['smiles'], $params['inchi'], $params['inchikey']);
+            $params['oldChemFormId'] = $chemFormRepo->getChemFormId($params['oldMoleculeKey']);
+            $params['moleculeKey'] = $params['oldMoleculeKey'];
+            $params['newChemFormId'] = $chemFormId;
+            $params['replaceChemFormId'] = true;
+            $title = Title::newFromText($chemFormId, NS_MOLECULE);
+            $job = new ReplaceMoleculeJob($title, $params);
+            $jobQueue->push( $job );
+            $res = new Response();
+            $res->setStatus(200);
             return $res;
         }
 

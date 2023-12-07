@@ -11,6 +11,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use Job;
 use Exception;
+use Title;
 
 class ReplaceMoleculeJob extends Job
 {
@@ -30,11 +31,19 @@ class ReplaceMoleculeJob extends Job
         try {
 
             $this->logger->log("Replacing molecule with inchikey {$this->params['oldMoleculeKey']} by " . $this->params['chemform']);
-
+            $this->logger->log(print_r($this->params, true));
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
             $repo = new ChemFormRepository($dbr);
             $chemFormId = $repo->getChemFormId($this->params['moleculeKey']);
             $pages = $repo->getPagesByChemFormId($chemFormId);
+
+            usort($pages, function($p1, $p2) {
+                if ($p1->isSubpage() && !$p2->isSubpage()) {
+                    return -1;
+                } else if (!$p1->isSubpage() && $p2->isSubpage()) {
+                    return 1;
+                } else return 0;
+            });
 
             $modificationLog = new ModifyMoleculeLog();
             foreach ($pages as $pageTitle) {
@@ -55,12 +64,26 @@ class ReplaceMoleculeJob extends Job
                     ['link' => $this->params['chemform']->getMoleculeKey()]);
                 $replacedChemFormLink = ($wikitext !== $originalText);
 
-                if ($replacedChemForm || $replacedChemFormLink) {
-                    WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated", EDIT_UPDATE);
-                    $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
+                // replace chemformIds. This only happens if the modified molecule already exists.
+                 if ($this->params['replaceChemFormId'] ?? false) {
+                    $search = Title::newFromText($this->params['oldChemFormId'], NS_MOLECULE)->getPrefixedText();
+                    $replace = Title::newFromText($this->params['newChemFormId'], NS_MOLECULE)->getPrefixedText();
+                    $wikitext = str_replace($search, $replace, $wikitext);
                 }
-                $modificationLog->addModificationLogEntry($chemFormId, $pageTitle, $replacedChemForm, $replacedChemFormLink,
-                    !$replacedChemForm && !$replacedChemFormLink);
+
+                 // note: if there was no change, the index is only indirectly created because the molecule is used
+                 // in an investigation of this page. In this case, add something to force a change.
+                 if ($wikitext === $originalText) {
+                     $wikitext .= "\nPlease remove this!";
+                 }
+                 $successful =  WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated", EDIT_UPDATE);
+                 if ($successful) {
+                     $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
+                     $modificationLog->addModificationLogEntry($chemFormId, $pageTitle, $replacedChemForm, $replacedChemFormLink,
+                         !$replacedChemForm && !$replacedChemFormLink);
+                 } else {
+                     $this->logger->error("Update failed: {$pageTitle->getPrefixedText()}");
+                 }
             }
             $modificationLog->saveLog();
             $this->logger->log("done.");
