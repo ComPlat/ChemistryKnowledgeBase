@@ -36,8 +36,8 @@
 
         this.ajax.getInchiKey(formulaV3000).then((response) => {
             let ketcher = this.tools.getKetcher();
-            ketcher.generateImage(formulaV3000, {outputFormat: 'svg'}).then((svgBlob) => {
-                svgBlob.text().then((imgData) => {
+            this.ajax.renderImage(formulaV3000).then((responseRender) => {
+                let imgData = responseRender.svg;
                     ketcher.getSmiles().then((smiles) => {
                         let newMoleculeKey;
                         if (this.tools.getNumberOfMoleculeRGroups(formulaV3000) > 0) {
@@ -63,10 +63,8 @@
                     });
 
                 });
-            });
-
-        }).catch((response) => {
-            mw.notify('Problem updating molecule: ' + response.responseText, {type: 'error'});
+            }).catch((response) => {
+                mw.notify('Problem updating molecule: ' + response.responseText, {type: 'error'});
         });
 
     }
