@@ -32,21 +32,21 @@ class MolfileUpdateJob extends Job
         $this->logger->log("Updating molfile of " . $this->title->getPrefixedText());
         $wikitext = WikiTools::getText($this->title);
         $te = new TemplateEditor($wikitext);
-        $wikitext = $te->replaceTemplateParameters('Molecule', [
+        $te->replaceTemplateParameters('Molecule', [
             'molOrRxn' => base64_decode($this->molfile),
             'moleculeKey' => $this->moleculeKey,
             'smiles' => $this->smiles,
             'inchi' => $this->inchi,
             'inchikey' => $this->inchikey,
         ]);
-        $wikitext = $te->replaceTemplateParameters('MoleculeCollection', [
+        $te->replaceTemplateParameters('MoleculeCollection', [
             'molOrRxn' => base64_decode($this->molfile),
             'moleculeKey' => $this->moleculeKey,
             'smiles' => $this->smiles,
             'inchi' => $this->inchi,
             'inchikey' => $this->inchikey,
         ]);
-        WikiTools::doEditContent($this->title, $wikitext, "auto-generated", EDIT_UPDATE);
+        WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
         $this->logger->log("done");
     }
 

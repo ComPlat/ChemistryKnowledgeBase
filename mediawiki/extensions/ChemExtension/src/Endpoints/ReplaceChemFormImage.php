@@ -5,6 +5,7 @@ use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MolfileUpdateJob;
 use DIQA\ChemExtension\Specials\ReplaceMoleculeJob;
+use Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
@@ -30,48 +31,68 @@ class ReplaceChemFormImage extends SimpleHandler {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
 
         $chemFormRepo = new ChemFormRepository($dbr);
-        $chemFormId = $chemFormRepo->getChemFormId($params['moleculeKey']);
+        $targetChemFormId = $chemFormRepo->getChemFormId($params['moleculeKey']);
 
-        if (!is_null($chemFormId) && $chemFormId === $params['chemFormId']) {
+        if (!is_null($targetChemFormId) && $targetChemFormId === $params['chemFormId']) {
             // moleculeKey did not change, still refers to the old molecule. only image changed.
             $chemFormRepo->addOrUpdateChemFormImage($params['moleculeKey'], base64_encode($params['imgData']));
             $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
             $jobQueue->push( $job );
-            $res = new Response();
-            $res->setStatus(200);
-            return $res;
-        } else if (is_null($chemFormId)) {
-            // moleculeKey has changed, ie. chemFormId remains the same but must be updated with a new moleculeKey and image
-
-            $chemFormRepo->updateImageAndMoleculeKey($params['chemFormId'], $params['moleculeKey'],
-                base64_encode($params['imgData']));
-            $chemForm = ChemForm::fromMolOrRxn(base64_decode($params['molOrRxn']), $params['smiles'], $params['inchi'], $params['inchikey']);
-            $title = Title::newFromText($params['chemFormId'], NS_MOLECULE);
-            $params['chemform'] = $chemForm;
-            $job = new ReplaceMoleculeJob($title, $params);
-            $jobQueue->push( $job );
-            $job = new MolfileUpdateJob($title, $params);
-            $jobQueue->push( $job );
-            $res = new Response();
+            $res = new Response('Molecule key did not change, image is updated');
             $res->setStatus(200);
             return $res;
         } else {
-            // new molecule already exists, so change all references to from the old to the new. This includes
-            // also change to new chemFormIds
-            // old molecule remains unchanged
-            $params['chemform'] = ChemForm::fromMolOrRxn(base64_decode($params['molOrRxn']), $params['smiles'], $params['inchi'], $params['inchikey']);
-            $params['oldChemFormId'] = $chemFormRepo->getChemFormId($params['oldMoleculeKey']);
-            $params['moleculeKey'] = $params['oldMoleculeKey'];
-            $params['newChemFormId'] = $chemFormId;
-            $params['replaceChemFormId'] = true;
-            $title = Title::newFromText($chemFormId, NS_MOLECULE);
-            $job = new ReplaceMoleculeJob($title, $params);
-            $jobQueue->push( $job );
-            $res = new Response();
+
+            $chemForm = ChemForm::fromMolOrRxn(
+                base64_decode($params['molOrRxn']),
+                $params['smiles'],
+                $params['inchi'],
+                $params['inchikey']);
+
+            if (is_null($targetChemFormId)) {
+
+                // moleculeKey has changed to a non-existing molecule, ie. chemFormId can remain the same
+                // but must be updated with the new moleculeKey and image
+                // this especially means chemFormIds do not have to be changed
+
+                $chemFormRepo->updateImageAndMoleculeKey($params['chemFormId'], $params['moleculeKey'],
+                    base64_encode($params['imgData']));
+                $job = $this->createJobForReplacingMolecule($params['chemFormId'], $params['oldMoleculeKey'], null, $chemForm);
+                $jobQueue->push($job);
+
+                $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
+                $jobQueue->push($job);
+                $message = "Molecule key changed, references are adapted";
+
+            } else {
+
+                // new molecule already exists, so change all references from the old to the new.
+                // This especially means chemFormIds also have to changed to the new.
+                // old molecule remains unchanged
+
+                $job = $this->createJobForReplacingMolecule($params['chemFormId'], $params['oldMoleculeKey'], $targetChemFormId, $chemForm);
+                $jobQueue->push($job);
+                $message = "Molecule already exists, references are adapted including chemFormIds";
+            }
+
+            $res = new Response($message);
             $res->setStatus(200);
             return $res;
         }
 
+    }
+
+    private function createJobForReplacingMolecule($oldChemFormId, $oldMoleculeKey, $targetChemFormId, ChemForm $chemForm): Job
+    {
+
+        $paramsJob = [];
+        $paramsJob['targetChemForm'] = $chemForm;
+        $paramsJob['targetChemFormId'] = $targetChemFormId;
+        $paramsJob['oldChemFormId'] = $oldChemFormId;
+        $paramsJob['oldMoleculeKey'] = $oldMoleculeKey;
+        $paramsJob['replaceChemFormId'] = !is_null($targetChemFormId);
+        $title = Title::newFromText($oldChemFormId, NS_MOLECULE);
+        return new ReplaceMoleculeJob($title, $paramsJob);
     }
 
     public function needsWriteAccess() {
@@ -123,4 +144,5 @@ class ReplaceChemFormImage extends SimpleHandler {
             ],
         ];
     }
+
 }

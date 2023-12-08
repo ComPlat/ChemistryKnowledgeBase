@@ -30,13 +30,15 @@ class ReplaceMoleculeJob extends Job
     {
         try {
 
-            $this->logger->log("Replacing molecule with inchikey {$this->params['oldMoleculeKey']} by " . $this->params['chemform']);
+            $this->logger->log("ReplaceMoleculeJob with inchikey {$this->params['oldMoleculeKey']}");
             $this->logger->log(print_r($this->params, true));
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
-            $repo = new ChemFormRepository($dbr);
-            $chemFormId = $repo->getChemFormId($this->params['moleculeKey']);
-            $pages = $repo->getPagesByChemFormId($chemFormId);
 
+            // process all pages which references to "targetChemFormId" in the index
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+            $repo = new ChemFormRepository($dbr);
+            $pages = $repo->getPagesByChemFormId($this->params['oldChemFormId']);
+
+            // sort so that subpages are processed before main pages
             usort($pages, function($p1, $p2) {
                 if ($p1->isSubpage() && !$p2->isSubpage()) {
                     return -1;
@@ -53,7 +55,7 @@ class ReplaceMoleculeJob extends Job
                 $originalText = $wikitext;
                 $chemFormParser = new ChemFormParser();
                 $wikitext = $chemFormParser->replaceChemForm($this->params['oldMoleculeKey'],
-                    $wikitext, $this->params['chemform']);
+                    $wikitext, $this->params['targetChemForm']);
                 $replacedChemForm = ($wikitext !== $originalText);
 
                 // replace molecule links
@@ -61,13 +63,13 @@ class ReplaceMoleculeJob extends Job
                 $parserFunctionParser = new ParserFunctionParser();
                 $wikitext = $parserFunctionParser->replaceFunction($wikitext,
                     'moleculelink', 'link', $this->params['oldMoleculeKey'],
-                    ['link' => $this->params['chemform']->getMoleculeKey()]);
+                    ['link' => $this->params['targetChemForm']->getMoleculeKey()]);
                 $replacedChemFormLink = ($wikitext !== $originalText);
 
-                // replace chemformIds. This only happens if the modified molecule already exists.
+                // replace chemformIds. (if necessary)
                  if ($this->params['replaceChemFormId'] ?? false) {
                     $search = Title::newFromText($this->params['oldChemFormId'], NS_MOLECULE)->getPrefixedText();
-                    $replace = Title::newFromText($this->params['newChemFormId'], NS_MOLECULE)->getPrefixedText();
+                    $replace = Title::newFromText($this->params['targetChemFormId'], NS_MOLECULE)->getPrefixedText();
                     $wikitext = str_replace($search, $replace, $wikitext);
                 }
 
@@ -79,7 +81,7 @@ class ReplaceMoleculeJob extends Job
                  $successful =  WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated", EDIT_UPDATE);
                  if ($successful) {
                      $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
-                     $modificationLog->addModificationLogEntry($chemFormId, $pageTitle, $replacedChemForm, $replacedChemFormLink,
+                     $modificationLog->addModificationLogEntry($this->params['oldChemFormId'], $pageTitle, $replacedChemForm, $replacedChemFormLink,
                          !$replacedChemForm && !$replacedChemFormLink);
                  } else {
                      $this->logger->error("Update failed: {$pageTitle->getPrefixedText()}");
