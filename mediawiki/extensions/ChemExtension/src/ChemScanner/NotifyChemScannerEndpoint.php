@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ChemScanner;
 
+use DIQA\ChemExtension\Jobs\ChemScannerImportJob;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use MediaWiki\MediaWikiServices;

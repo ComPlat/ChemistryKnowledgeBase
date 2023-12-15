@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\Chemscanner;
+namespace DIQA\ChemExtension\Jobs;
 
 
 use DIQA\ChemExtension\Utils\LoggerUtils;

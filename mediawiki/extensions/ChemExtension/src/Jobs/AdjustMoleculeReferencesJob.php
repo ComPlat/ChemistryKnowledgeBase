@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\Specials;
+namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
@@ -13,15 +13,15 @@ use Job;
 use Exception;
 use Title;
 
-class ReplaceMoleculeJob extends Job
+class AdjustMoleculeReferencesJob extends Job
 {
     private $logger;
 
 
     public function __construct($title, $params)
     {
-        parent::__construct('ReplaceMoleculeJob', $title, $params);
-        $this->logger = new LoggerUtils('ReplaceMoleculeJob', 'ChemExtension');
+        parent::__construct('AdjustMoleculeReferencesJob', $title, $params);
+        $this->logger = new LoggerUtils('AdjustMoleculeReferencesJob', 'ChemExtension');
 
 
     }
@@ -30,22 +30,16 @@ class ReplaceMoleculeJob extends Job
     {
         try {
 
-            $this->logger->log("ReplaceMoleculeJob with inchikey {$this->params['oldMoleculeKey']}");
+            $this->logger->log("AdjustMoleculeReferencesJob with inchikey {$this->params['oldMoleculeKey']}");
             $this->logger->log(print_r($this->params, true));
 
-            // process all pages which references to "targetChemFormId" in the index
+            // process all pages which references to "oldChemFormId" in the index
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
             $repo = new ChemFormRepository($dbr);
             $pages = $repo->getPagesByChemFormId($this->params['oldChemFormId']);
 
             // sort so that subpages are processed before main pages
-            usort($pages, function($p1, $p2) {
-                if ($p1->isSubpage() && !$p2->isSubpage()) {
-                    return -1;
-                } else if (!$p1->isSubpage() && $p2->isSubpage()) {
-                    return 1;
-                } else return 0;
-            });
+            WikiTools::sortPageListBySubpages($pages);
 
             $modificationLog = new ModifyMoleculeLog();
             foreach ($pages as $pageTitle) {
@@ -73,12 +67,8 @@ class ReplaceMoleculeJob extends Job
                     $wikitext = str_replace($search, $replace, $wikitext);
                 }
 
-                 // note: if there was no change, the index is only indirectly created because the molecule is used
-                 // in an investigation of this page. In this case, add something to force a change.
-                 if ($wikitext === $originalText) {
-                     $wikitext .= "\nPlease remove this!";
-                 }
-                 $successful =  WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated", EDIT_UPDATE);
+                 $successful =  WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated",
+                     EDIT_UPDATE | EDIT_MINOR | EDIT_SUPPRESS_RC | EDIT_FORCE_BOT, null, true);
                  if ($successful) {
                      $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
                      $modificationLog->addModificationLogEntry($this->params['oldChemFormId'], $pageTitle, $replacedChemForm, $replacedChemFormLink,

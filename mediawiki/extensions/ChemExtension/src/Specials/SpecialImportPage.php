@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\Pages\PageImportJob;
+use DIQA\ChemExtension\Jobs\PageImportJob;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;

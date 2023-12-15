@@ -145,4 +145,14 @@ class WikiTools {
         }
         return "";
     }
+
+    public static function sortPageListBySubpages(array & $pageTitles) {
+        usort($pageTitles, function($p1, $p2) {
+            if ($p1->isSubpage() && !$p2->isSubpage()) {
+                return -1;
+            } else if (!$p1->isSubpage() && $p2->isSubpage()) {
+                return 1;
+            } else return 0;
+        });
+    }
 }

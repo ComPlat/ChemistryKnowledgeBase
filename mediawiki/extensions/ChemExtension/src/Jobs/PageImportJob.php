@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\Pages;
+namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Job;

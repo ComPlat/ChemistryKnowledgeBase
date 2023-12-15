@@ -1,10 +1,12 @@
 <?php
 
-namespace DIQA\ChemExtension\Pages;
+namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock;
+use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\Pages\MoleculePageComparer;
 use DIQA\ChemExtension\PubChem\PubChemService;
 use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;

@@ -336,9 +336,17 @@ operations. These are:
 * *MoleculePageCreationJob*. When a page is saved, a molecule page has to be created. Since there
   can be a lot of molecules on a page, this operation needs to be asynchronous. 
   The job class is *MoleculePageCreationJob*. It creates exactly one molecule page.
-* *MoleculeImportJob*: This job creates concrete molecules from a molecule collection. This can be also a time-consuming operation
-  because for every molecule a page is created. The job class is *MoleculeImportJob*. It takes a set
+* *RGroupMaterializationJob*: This job creates concrete molecules from a molecule collection. This can be also a time-consuming operation
+  because for every molecule a page is created. The job class is *RGroupMaterializationJob*. It takes a set
   of molecule collections with rests and creates for each collection a set of concrete molecules.
+* *AdjustMoleculeReferencesJob*: Updates references to a changed molecule (Via Special:ModifyMolecule). It updates:
+    * chemform-tag (&lt;chemform&gt;) with new molfile, smiles and inchi(-key)
+    * molecule links (#moleculelink:) with new molecule key
+    * molecule page references (eg. Molecule:100456) in links or in template parameters).
+* *MoleculePageUpdateJob*: Updates the molecule page after the molecule was changed. (Via Special:ModifyMolecule)
+It updates the molecule template with proper molfile, smiles and inchi(-key).
+* PageImportJob: Imports pages from subwikis. 
+* LiteratureResolverJob: Imports DOI data asynchronously
 
 ## Mediawiki callback classes / initializations
 * MultiContentSave: Called when a page is saved. Registered in Setup class

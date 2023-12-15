@@ -3,8 +3,8 @@ namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Pages\MolfileUpdateJob;
-use DIQA\ChemExtension\Specials\ReplaceMoleculeJob;
+use DIQA\ChemExtension\Jobs\MoleculePageUpdateJob;
+use DIQA\ChemExtension\Jobs\AdjustMoleculeReferencesJob;
 use Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
@@ -36,7 +36,7 @@ class ReplaceChemFormImage extends SimpleHandler {
         if (!is_null($targetChemFormId) && $targetChemFormId === $params['chemFormId']) {
             // moleculeKey did not change, still refers to the old molecule. only image changed.
             $chemFormRepo->addOrUpdateChemFormImage($params['moleculeKey'], base64_encode($params['imgData']));
-            $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
+            $job = new MoleculePageUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
             $jobQueue->push( $job );
             $res = new Response('Molecule key did not change, image is updated');
             $res->setStatus(200);
@@ -60,7 +60,7 @@ class ReplaceChemFormImage extends SimpleHandler {
                 $job = $this->createJobForReplacingMolecule($params['chemFormId'], $params['oldMoleculeKey'], null, $chemForm);
                 $jobQueue->push($job);
 
-                $job = new MolfileUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
+                $job = new MoleculePageUpdateJob(Title::newFromText($params['chemFormId'], NS_MOLECULE), $params);
                 $jobQueue->push($job);
                 $message = "Molecule key changed, references are adapted";
 
@@ -92,7 +92,7 @@ class ReplaceChemFormImage extends SimpleHandler {
         $paramsJob['oldMoleculeKey'] = $oldMoleculeKey;
         $paramsJob['replaceChemFormId'] = !is_null($targetChemFormId);
         $title = Title::newFromText($oldChemFormId, NS_MOLECULE);
-        return new ReplaceMoleculeJob($title, $paramsJob);
+        return new AdjustMoleculeReferencesJob($title, $paramsJob);
     }
 
     public function needsWriteAccess() {

@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension;
 
-use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculesImportJob;
+use DIQA\ChemExtension\Jobs\RGroupMaterializationJob;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
@@ -113,7 +113,7 @@ class MultiContentSave
     {
         $jobParams = [];
         $jobParams['moleculeCollections'] = $moleculeCollections;
-        $job = new MoleculesImportJob($pageTitle, $jobParams);
+        $job = new RGroupMaterializationJob($pageTitle, $jobParams);
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $jobQueue->push($job);
 

@@ -2,16 +2,12 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
-use DIQA\ChemExtension\NavigationBar\NavigationBar;
+use DIQA\ChemExtension\Jobs\MoleculePageCreationJob;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Pages\MoleculePageCreationJob;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
-use OOUI\FormLayout;
-use OOUI\LabelWidget;
-use OOUI\Tag;
 use OutputPage;
 use Parser;
 use Philo\Blade\Blade;

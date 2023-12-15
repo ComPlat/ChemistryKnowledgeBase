@@ -140,13 +140,13 @@
 
     ],
     "JobClasses": {
-        "ChemScannerImportJob": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerImportJob",
-        "MoleculesImportJob": "DIQA\\ChemExtension\\MoleculeRGroupBuilder\\MoleculesImportJob",
-        "MoleculePageCreationJob": "DIQA\\ChemExtension\\Pages\\MoleculePageCreationJob",
-        "LiteratureResolverJob": "DIQA\\ChemExtension\\Literature\\LiteratureResolverJob",
-        "MolfileUpdateJob": "DIQA\\ChemExtension\\Pages\\MolfileUpdateJob",
-        "ReplaceMoleculeJob": "DIQA\\ChemExtension\\Specials\\ReplaceMoleculeJob",
-        "PageImportJob": "DIQA\\ChemExtension\\Pages\\PageImportJob"
+        "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",
+        "RGroupMaterializationJob": "DIQA\\ChemExtension\\Jobs\\RGroupMaterializationJob",
+        "MoleculePageCreationJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageCreationJob",
+        "LiteratureResolverJob": "DIQA\\ChemExtension\\Jobs\\LiteratureResolverJob",
+        "MoleculePageUpdateJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageUpdateJob",
+        "AdjustMoleculeReferencesJob": "DIQA\\ChemExtension\\Jobs\\AdjustMoleculeReferencesJob",
+        "PageImportJob": "DIQA\\ChemExtension\\Jobs\\PageImportJob"
     },
     "manifest_version": 2
 }

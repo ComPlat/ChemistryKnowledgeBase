@@ -1,12 +1,13 @@
 <?php
 
-namespace DIQA\ChemExtension\Literature;
+namespace DIQA\ChemExtension\Jobs;
 
-use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
+use DIQA\ChemExtension\Literature\DOIResolver;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
+use Job;
 
-class LiteratureResolverJob extends \Job {
+class LiteratureResolverJob extends Job {
 
     private $logger;
     private $doi;

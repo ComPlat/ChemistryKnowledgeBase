@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Literature;
 
+use DIQA\ChemExtension\Jobs\LiteratureResolverJob;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Title;

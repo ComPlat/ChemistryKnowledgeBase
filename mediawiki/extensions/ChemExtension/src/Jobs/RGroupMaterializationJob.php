@@ -1,8 +1,10 @@
 <?php
 
-namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
+namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
+use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
+use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
@@ -12,7 +14,7 @@ use Exception;
 use Job;
 use MediaWiki\MediaWikiServices;
 
-class MoleculesImportJob extends Job
+class RGroupMaterializationJob extends Job
 {
 
     private $logger;
@@ -24,7 +26,7 @@ class MoleculesImportJob extends Job
 
     public function __construct($title, $params)
     {
-        parent::__construct('MoleculesImportJob', $title, $params);
+        parent::__construct('RGroupMaterializationJob', $title, $params);
 
         global $wgCEUseMoleculeRGroupsClientMock;
         $this->rGroupClient = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()

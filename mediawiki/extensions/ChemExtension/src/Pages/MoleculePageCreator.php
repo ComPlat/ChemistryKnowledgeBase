@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Pages;
 
+use DIQA\ChemExtension\Jobs\MoleculePageCreationJob;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use MediaWiki\MediaWikiServices;
