@@ -524,3 +524,7 @@ table.wikitable td p {
 div.navbar-tool {
     margin-left: 20px;
 }
+
+div.experiment-link-container {
+    overflow-x: auto;
+}
