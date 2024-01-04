@@ -20,12 +20,12 @@ class ChemFormParser
             $attributes = $this->parseAttributes($attributeStrings[$i]);
             $results[] = new ChemForm(
                 $formulas[$i],
-                $attributes['smiles'] ?? '',
-                $attributes['inchi'] ?? '',
-                $attributes['inchikey'] ?? '',
-                $attributes['width'] ?? '',
-                $attributes['height'] ?? '',
-                $attributes['float'] ?? '',
+                trim($attributes['smiles']) ?? '',
+                trim($attributes['inchi']) ?? '',
+                trim($attributes['inchikey']) ?? '',
+                trim($attributes['width']) ?? '',
+                trim($attributes['height']) ?? '',
+                trim($attributes['float']) ?? '',
                 self::parseRGroups($attributes));
         }
         return $results;
