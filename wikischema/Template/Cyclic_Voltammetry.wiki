@@ -7,7 +7,6 @@ This is the Cyclic Voltammetry template.
 <td>
 {{#formatAsTable:{{{redox potential|}}} }}
 </td>
-<td>{{{lambda|}}}</td>
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
 <td>{{{electrolyte|}}}</td>
@@ -29,7 +28,6 @@ This is the Cyclic Voltammetry template.
  |Analyte={{{anl|}}}
  |Analyte concentration={{{anl conc|}}}
  |Reduction potential={{{redox potential|}}}
- |Lambda={{{lambda|}}}
  |Solvent A={{{solv|}}}
  |Solvent volume={{{solv vol|}}}
  |Electrolyte={{{electrolyte|}}}
