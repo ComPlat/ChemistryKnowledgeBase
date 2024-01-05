@@ -192,6 +192,10 @@ class FSIncrementalUpdater  {
         return true;
     }
 
+    public static function onTitleMoveComplete() {
+        // dummy. do not remove!
+    }
+
     /**
      * This hook is called before a page is deleted.
      *
