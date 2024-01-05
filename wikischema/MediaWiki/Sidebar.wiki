@@ -1,6 +1,6 @@
 * Authoring
 ** Import a Paper with ChemScanner|Import a Paper with ChemScanner
-** Special:CreateNewPaper|Create a new Paper
+** Special:CreateNewPaper|Create a new publication
 ** Special:CreateNewTopic|Create a new Topic Page
 * Tools
 ** Browse Topics|Browse Topics
@@ -17,6 +17,6 @@
 ** Special:ModifyMolecule|Modify molecules
 * Help
 ** Help:Getting Started|Getting Started
-** Help:Create new paper|Create new Paper
+** Help:Create new paper|Create new publication
 ** Help:Creating a Private Space|Creating a Private Space
 ** Special:Version|Wiki Version
