@@ -62,12 +62,7 @@ class MoleculePageCreationJob extends Job
      */
     private function getPageContent(): string
     {
-        $pageContent = $this->getTemplate();
-        if ($this->chemForm->hasRGroupDefinitions()) {
-            $pageContent .= "\n\n==R-Groups==";
-            $pageContent .= "\n" . $this->getRGroupTable();
-        }
-        return $pageContent;
+        return $this->getTemplate();
     }
 
     /**
@@ -87,14 +82,6 @@ class MoleculePageCreationJob extends Job
         $formulaTemplateData = $this->getFormulaTemplateData();
 
         return $this->serializeTemplate($template, array_merge($pubChemTemplateData, $formulaTemplateData));
-    }
-
-    private function getRGroupTable(): string
-    {
-        if (count($this->chemForm->getRGroups()) === 0) {
-            return '';
-        }
-        return "\n{{#showMoleculeCollection: }}";
     }
 
     private function getRawPubChemData($inchiKey): ?array
