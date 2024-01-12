@@ -16,7 +16,7 @@
          * The page where you save an on-wiki tour must be named
          * MediaWiki:Guidedtour-tour-{name}.js , in this example MediaWiki:Guidedtour-tour-mytest.js
          */
-        name: 'mytest'
+        name: 'testa'
     } );
 
     // Information defining each tour step
@@ -55,7 +55,7 @@
         // The string is a jQuery selector.  "#n-portal" means the HTML
         // element with this id attribute, and "a" means an a, or link,
         // element inside that.
-        attachTo: '#n-portal a',
+        attachTo: '#ce-side-panel-content-collapsed',
 
         // This means the guider shows to the right of the Community Portal link
         position: 'right',

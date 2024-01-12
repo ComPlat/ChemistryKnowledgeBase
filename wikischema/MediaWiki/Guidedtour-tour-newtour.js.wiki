@@ -5,7 +5,7 @@
 ( function ( window, document, $, mw, gt ) {
 
     // Declare a variable for use later
-    var pageName = 'Help:Guided tours/mytest',
+    var pageName = 'Help:Guided tours/newtour',
         tour;
 
     tour = new gt.TourBuilder( {
@@ -16,7 +16,7 @@
          * The page where you save an on-wiki tour must be named
          * MediaWiki:Guidedtour-tour-{name}.js , in this example MediaWiki:Guidedtour-tour-mytest.js
          */
-        name: 'mytest'
+        name: 'newtour'
     } );
 
     // Information defining each tour step
@@ -25,13 +25,13 @@
     // Guiders appear in the center if another position is not specified.
     // To specify the first step of the tour, use .firstStep instead of .step
     tour.firstStep( {
-        name: 'overlay',
+        name: 'intro',
         // Note that for on-wiki tours, we use title and description with the actual text.
         // The title appears in the title bar of the guider.
-        title: 'Testing',
+        title: 'Welcome',
 
         // The description appears in the body
-        description: 'boop!',
+        description: 'Welcome to the Introduction tour for MediaWiki',
 
         // This specifies that there is an overlay behind the guider.
         overlay: true
@@ -39,15 +39,15 @@
         // This specifies the next step of the tour, and will automatically generate a next button.
         // 'callout' refers to the name used in the step immediately below.  Although putting the steps
         // in a meaningful order is recommended, any step can be specified as next/back.
-        .next( 'callout' );
+        .next( 'homebutton' );
 
     tour.step( {
         /*
          * Callout of left menu
          */
-        name: 'callout',
-        title: 'Test callouts',
-        description: 'test.',
+        name: 'homebutton',
+        title: 'Home Button',
+        description: 'Here is the home buttton click here to return to the home page',
 
         // This positions the guider next to a page element, in this
         // case the portal link (which is "Community portal" on English
@@ -55,46 +55,84 @@
         // The string is a jQuery selector.  "#n-portal" means the HTML
         // element with this id attribute, and "a" means an a, or link,
         // element inside that.
-        attachTo: '#n-portal a',
-
+        attachTo: '#mw-navigation a',
+        
         // This means the guider shows to the right of the Community Portal link
         position: 'right',
     } )
-        .next( 'description' )
+        .next( 'feat_mol' )
         // The 'back' property specifies that you can go back from this step, and where to go
         // if the back button is clicked.
-        .back( 'overlay' );
+        .back( 'intro' );
 
     tour.step( {
         /*
          * Test out mediawiki description pages
          */
-        name: 'description',
-        title: 'Test MediaWiki description pages',
+        name: 'feat_mol',
+        title: 'Featured Molecule',
 
         // Name of the page to parse
-        description: pageName,
-
-        overlay: true,
-
+        description: 'Clicking this will bring you to the relevant molecule page. From here you can see experiments that use the selected molecule.',
+        overlay: false,
+        attachTo: '#mw-content-text tbody tr th',
+        position: 'left'
         // This means the wikitext for the description will be loaded from the
         // page name in the description field.
-        onShow: gt.getPageAsDescription,
+        // onShow: gt.getPageAsDescription,
 
-        buttons: [ {
-            // This makes a button which acts like a wikilink to 'Help:Guided tours/mytest'
-            action: 'wikiLink',
-            page: pageName,
-            name: 'Go to description page',
-            // This specifies that the button takes you to the next step of a process,
-            // which affects its appearance.
-            type: 'progressive'
-        }, {
-            // This makes the okay button on this step end the tour.
-            action: 'end'
-        } ]
+        // buttons: [ {
+        //     // This makes a button which acts like a wikilink to 'Help:Guided tours/mytest'
+        //     action: 'wikiLink',
+        //     page: pageName,
+        //     name: 'Go to description page',
+        //     // This specifies that the button takes you to the next step of a process,
+        //     // which affects its appearance.
+        //     type: 'progressive'
+        // }, {
+        //     // This makes the okay button on this step end the tour.
+        //     action: 'end'
+        // } ]
     } )
-        .back( 'callout' );
+        .next("m_topic")
+        .back( 'homebutton' );
+
+        tour.step( {
+            name:  "m_topic",
+            title: "Main Topic",
+            description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria" ,
+            overlay: true,
+            // attachTo: ,
+
+        })
+        .next("pub")
+        .back("feat_mol");
+
+        tour.step( {
+            name: "pub",
+            title: "Publication",
+            description:"Here is the level at which papers are stored" ,
+            overlay: true,
+            // attachTo: ,
+
+        })
+        .next("testa")
+        .back("m_topic");
+
+        tour.step( {
+            name: "testa",
+            title: "test atttach",
+            description:"test attatchment" ,
+           // overlay: true,
+            attachTo: "#ce-side-panel-content-collapsed" ,
+            position: 'right',
+
+        })
+        //  .next()
+        .back("pub");
 
 // The following should be the last line of your tour.
+
+
+
 } ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );
