@@ -44,7 +44,8 @@ class ShowMoleculeCollection {
         foreach($moleculesToDisplay as $moleculeId => $data) {
             $rows[] = [
                 'molecule' => Title::newFromID($moleculeId),
-                'publications' => array_map(function($e) { return Title::newFromID($e); }, $data['publications']),
+                'publications' => array_filter(array_map(function($e) { return Title::newFromID($e); }, $data['publications']),
+                    function($e) { return !is_null($e); }),
                 'rGroups' => ArrayTools::propertiesToArray($data['rGroups'])
             ];
 
