@@ -24,5 +24,10 @@
 
 {{DISPLAYTITLE: Molecule collection {{PAGENAME}} }}
 
+==R-Groups==
+
+{{#showMoleculeCollection: }}
+
+
 [[Category:Molecule collection]]
 ‎<includeonly>

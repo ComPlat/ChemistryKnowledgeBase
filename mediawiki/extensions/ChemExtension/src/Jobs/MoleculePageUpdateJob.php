@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Job;
@@ -40,8 +41,19 @@ class MoleculePageUpdateJob extends Job
             'inchikey' => $this->inchikey,
         ];
         $this->logger->log("Parameters: " . print_r($params, true));
-        $te->replaceTemplateParameters('Molecule', $params);
-        $te->replaceTemplateParameters('MoleculeCollection', $params);
+        if ($te->exists('Molecule')) {
+            $te->replaceTemplateParameters('Molecule', $params);
+            if (MolfileProcessor::hasRGroups($params['molOrRxn'])) {
+                $te->replaceTemplateName('Molecule', 'MoleculeCollection');
+            }
+        }
+        if ($te->exists('MoleculeCollection')) {
+            $te->replaceTemplateParameters('MoleculeCollection', $params);
+            if (!MolfileProcessor::hasRGroups($params['molOrRxn'])) {
+                $te->replaceTemplateName('MoleculeCollection', 'Molecule');
+            }
+        }
+
         WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
         $this->logger->log("done");
     }

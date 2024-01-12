@@ -74,8 +74,22 @@ class TemplateEditor {
 			}
 			return $this->serializeTemplate ( $currentTemplateName, $newParams );
 		}, $this->wikitext );
+        $this->parseTemplates($this->wikitext);
 		return $this->wikitext;
 	}
+
+    public function replaceTemplateName($oldTemplateName, $newTemplateName) {
+        $this->wikitext = preg_replace_callback ( static::TEMPLATE_PATTERN, function (array $matches) use($oldTemplateName, $newTemplateName) {
+            $currentTemplateName = $matches [1];
+            if ($oldTemplateName != $currentTemplateName) {
+                return $matches[0];
+            }
+            return $this->serializeTemplate ( $newTemplateName, $this->templateParams[$oldTemplateName] );
+        }, $this->wikitext );
+        $this->parseTemplates($this->wikitext);
+        return $this->wikitext;
+
+    }
 
 	public function serializeTemplate($templateName, $params) {
 		$text = '{{' . $templateName;
