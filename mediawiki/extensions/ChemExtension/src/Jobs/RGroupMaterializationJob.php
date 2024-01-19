@@ -12,6 +12,7 @@ use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use Job;
+use Title;
 use MediaWiki\MediaWikiServices;
 
 class RGroupMaterializationJob extends Job
@@ -23,6 +24,7 @@ class RGroupMaterializationJob extends Job
     private $pageCreator;
     private $moleculeRendererClient;
     private $chemFormRepo;
+    private $concreteMolecules;
 
     public function __construct($title, $params)
     {
@@ -34,9 +36,10 @@ class RGroupMaterializationJob extends Job
         $this->publicationPageTitle = $title;
         $this->pageCreator = new MoleculePageCreator();
         $this->moleculeRendererClient = new MoleculeRendererClientImpl();
-        $this->logger = new LoggerUtils('MoleculesImportJob', 'ChemExtension');
+        $this->logger = new LoggerUtils('RGroupMaterializationJob', 'ChemExtension');
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->chemFormRepo = new ChemFormRepository($dbr);
+        $this->concreteMolecules = $this->chemFormRepo->getAllConcreteMolecule($title);
     }
 
     public function run()
@@ -68,8 +71,16 @@ class RGroupMaterializationJob extends Job
                     $this->logger->error("Can not create molecule page. Inchikey is empty. {$concreteMolecule->__toString()}");
                     continue;
                 }
-                $this->createMoleculePage($concreteMolecule, $collection, $rGroups);
-                $this->renderMolecule($concreteMolecule);
+                $existingMolecule = $this->getConcreteMoleculeWithRGroup($rGroups);
+
+                if ($existingMolecule !== false) {
+                    // concrete molecule already exists, so change it
+                    $this->updateExistingMolecule($existingMolecule['molecule_page_id'], $collection, $concreteMolecule, $rGroups);
+                } else {
+
+                    $this->createMoleculePage($concreteMolecule, $collection, $rGroups);
+                    $this->renderMolecule($concreteMolecule);
+                }
             }
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
@@ -116,6 +127,60 @@ class RGroupMaterializationJob extends Job
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }
+    }
+
+    private function getConcreteMoleculeWithRGroup($rGroups)
+    {
+        $find = array_filter($this->concreteMolecules, function($e) use($rGroups) {
+                    return json_encode($e['rGroups']) === json_encode($rGroups);
+            });
+        return reset($find);
+    }
+
+    /**
+     * @param $molecule_page_id
+     * @param $concreteMolecule
+     */
+    private function updateExistingMolecule($molecule_page_id, $collection, ChemForm $concreteMolecule, $rGroups): void
+    {
+        // is null if molecule does not already exist
+        $targetChemFormId = $this->chemFormRepo->getChemFormId($concreteMolecule->getMoleculeKey());
+
+        $this->renderMolecule($concreteMolecule);
+        $moleculePage = Title::newFromId($molecule_page_id);
+        $paramsJob = [
+            'molOrRxn' => base64_encode($concreteMolecule->getMolOrRxn()),
+            'moleculeKey' => $concreteMolecule->getMoleculeKey(),
+            'smiles' => $concreteMolecule->getSmiles(),
+            'inchi' => $concreteMolecule->getInchi(),
+            'inchikey' => $concreteMolecule->getInchiKey(),
+        ];
+        $job = new MoleculePageUpdateJob($moleculePage, $paramsJob);
+        $job->run();
+
+
+        $chemFormId = $moleculePage->getText();
+        $moleculeKey = $this->chemFormRepo->getMoleculeKey($chemFormId);
+        $paramsJob = [];
+        $paramsJob['targetChemForm'] = $concreteMolecule;
+        $paramsJob['targetChemFormId'] = $targetChemFormId;
+        $paramsJob['oldChemFormId'] = $chemFormId;
+        $paramsJob['oldMoleculeKey'] = $moleculeKey;
+        $paramsJob['replaceChemFormId'] = !is_null($targetChemFormId);
+        $job = new AdjustMoleculeReferencesJob($moleculePage, $paramsJob);
+        $job->run();
+
+
+        $moleculeCollection = $collection['chemForm'];
+        $moleculeCollectionTitle = $collection['title'];
+
+        $concreteMoleculeTitle = $moleculePage;
+        $this->logger->log("Updated molecule/reaction page: {$concreteMoleculeTitle->getPrefixedText()}, "
+            . "chemform: {$concreteMolecule->__toString()}, moleculeKey: {$concreteMolecule->getMoleculeKey()}");
+
+        $moleculeCollectionId = $this->chemFormRepo->getChemFormId($moleculeCollection->getMoleculeKey());
+        $this->chemFormRepo->addConcreteMolecule($this->publicationPageTitle, $moleculeCollectionTitle,
+            $concreteMoleculeTitle, $moleculeCollectionId, $rGroups);
     }
 
 }
