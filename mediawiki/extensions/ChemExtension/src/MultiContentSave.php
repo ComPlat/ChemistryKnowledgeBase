@@ -2,8 +2,6 @@
 
 namespace DIQA\ChemExtension;
 
-use DIQA\ChemExtension\Jobs\RGroupMaterializationJob;
-use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
@@ -75,15 +73,12 @@ class MultiContentSave
         $chemForms = $chemFormParser->parse($wikitext);
 
         $pageCreator = new MoleculePageCreator();
-        $moleculeCollections = [];
 
         foreach ($chemForms as $chemForm) {
             try {
                 if ($createPages) {
                     $moleculePage = $pageCreator->createNewMoleculePage($chemForm, null, true);
-                    if ($chemForm->hasRGroupDefinitions()) {
-                        $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
-                    }
+
                     self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 } else {
                     $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
@@ -100,24 +95,9 @@ class MultiContentSave
             }
         }
 
-        if (count($moleculeCollections) > 0 && $createPages) {
-            self::addMoleculeCollectionJob($moleculeCollections, $pageTitle);
-        }
-    }
-
-    /**
-     * @param ChemForm $chemForm
-     * @param Title|null $title
-     */
-    private static function addMoleculeCollectionJob(array $moleculeCollections, Title $pageTitle): void
-    {
-        $jobParams = [];
-        $jobParams['moleculeCollections'] = $moleculeCollections;
-        $job = new RGroupMaterializationJob($pageTitle, $jobParams);
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $jobQueue->push($job);
 
     }
+
 
     private static function removeAllMoleculesFromChemFormIndex($pageTitle)
     {

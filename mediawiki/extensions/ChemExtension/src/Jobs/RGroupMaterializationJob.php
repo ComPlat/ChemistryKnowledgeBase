@@ -10,6 +10,7 @@ use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\MolfileProcessor;
 use Exception;
 use Job;
 use Title;
@@ -75,11 +76,9 @@ class RGroupMaterializationJob extends Job
 
                 if ($existingMolecule !== false) {
                     // concrete molecule already exists, so change it
-                    $this->updateExistingMolecule($existingMolecule['molecule_page_id'], $collection, $concreteMolecule, $rGroups);
+                    $this->updateExistingMoleculePage($existingMolecule['molecule_page_id'], $collection, $concreteMolecule, $rGroups);
                 } else {
-
-                    $this->createMoleculePage($concreteMolecule, $collection, $rGroups);
-                    $this->renderMolecule($concreteMolecule);
+                    $this->createNewMoleculePage($concreteMolecule, $collection, $rGroups);
                 }
             }
         } catch (Exception $e) {
@@ -95,7 +94,7 @@ class RGroupMaterializationJob extends Job
      * @param array $rGroups RGroups [ 'r1' => ..., 'r2' => ..., ... ]
      * @throws Exception
      */
-    private function createMoleculePage(ChemForm $concreteMolecule, array $collection, array $rGroups): void
+    private function createNewMoleculePage(ChemForm $concreteMolecule, array $collection, array $rGroups): void
     {
         $moleculeCollection = $collection['chemForm'];
         $moleculeCollectionTitle = $collection['title'];
@@ -107,6 +106,7 @@ class RGroupMaterializationJob extends Job
         $moleculeCollectionId = $this->chemFormRepo->getChemFormId($moleculeCollection->getMoleculeKey());
         $this->chemFormRepo->addConcreteMolecule($this->publicationPageTitle, $moleculeCollectionTitle,
             $concreteMoleculeTitle, $moleculeCollectionId, $rGroups);
+        $this->renderAndAddMolecule($concreteMolecule);
     }
 
     /**
@@ -115,13 +115,27 @@ class RGroupMaterializationJob extends Job
      *
      * @param ChemForm $concreteMolecule
      */
-    private function renderMolecule(ChemForm $concreteMolecule): void
+    private function renderAndAddMolecule(ChemForm $concreteMolecule): void
     {
         try {
             $renderedMolecule = $this->moleculeRendererClient->render($concreteMolecule->getMolOrRxn());
             $image = $this->chemFormRepo->getChemFormImageByKey($concreteMolecule->getMoleculeKey());
             if (is_null($image) || $image === '') {
                 $this->chemFormRepo->addOrUpdateChemFormImage($concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
+                $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
+            }
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
+        }
+    }
+
+    private function renderAndUpdateMolecule(ChemForm $concreteMolecule, Title $moleculePage): void
+    {
+        try {
+            $renderedMolecule = $this->moleculeRendererClient->render($concreteMolecule->getMolOrRxn());
+            $image = $this->chemFormRepo->getChemFormImageByKey($concreteMolecule->getMoleculeKey());
+            if (is_null($image) || $image === '') {
+                $this->chemFormRepo->updateImageAndMoleculeKey($moleculePage->getText(), $concreteMolecule->getMoleculeKey(), base64_encode($renderedMolecule->svg));
                 $this->logger->log("Rendered molecule SVG: " . $renderedMolecule->svg);
             }
         } catch (Exception $e) {
@@ -141,13 +155,19 @@ class RGroupMaterializationJob extends Job
      * @param $molecule_page_id
      * @param $concreteMolecule
      */
-    private function updateExistingMolecule($molecule_page_id, $collection, ChemForm $concreteMolecule, $rGroups): void
+    private function updateExistingMoleculePage($molecule_page_id, $collection, ChemForm $concreteMolecule, $rGroups): void
     {
+        if (!$this->rGroupsBindingsComplete($collection['chemForm'], $rGroups)) {
+            $this->logger->warn("RGroup bindings do not match the molecule. Update skipped");
+            $this->logger->log($collection['chemForm']->__toString());
+            $this->logger->log(print_r($rGroups, true));
+            return;
+        }
         // is null if molecule does not already exist
         $targetChemFormId = $this->chemFormRepo->getChemFormId($concreteMolecule->getMoleculeKey());
 
-        $this->renderMolecule($concreteMolecule);
         $moleculePage = Title::newFromId($molecule_page_id);
+        $this->renderAndUpdateMolecule($concreteMolecule, $moleculePage);
         $paramsJob = [
             'molOrRxn' => base64_encode($concreteMolecule->getMolOrRxn()),
             'moleculeKey' => $concreteMolecule->getMoleculeKey(),
@@ -181,6 +201,15 @@ class RGroupMaterializationJob extends Job
         $moleculeCollectionId = $this->chemFormRepo->getChemFormId($moleculeCollection->getMoleculeKey());
         $this->chemFormRepo->addConcreteMolecule($this->publicationPageTitle, $moleculeCollectionTitle,
             $concreteMoleculeTitle, $moleculeCollectionId, $rGroups);
+    }
+
+    private function rGroupsBindingsComplete(ChemForm $chemForm, $rGroupBindings)
+    {
+        $rGroupsInMolecule = MolfileProcessor::getRGroupIds($chemForm->getMolOrRxn());
+        $rGroupsInBindings = array_keys($rGroupBindings);
+        sort($rGroupsInMolecule);
+        sort($rGroupsInBindings);
+        return $rGroupsInMolecule === $rGroupsInBindings;
     }
 
 }
