@@ -3,11 +3,12 @@
 namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
+use SMWDIProperty;
 use Title;
+use SMWDIWikiPage;
 
 class RenderMoleculeLink
 {
@@ -58,6 +59,7 @@ class RenderMoleculeLink
             [
                 'url' => $page->getFullURL(),
                 'label' => $page->getText(),
+                'name' => self::getNamesOfMolecule($page),
                 'fullPageTitle' => $page->getPrefixedText(),
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
                 'image' => ($parameters['image'] ?? false) === "true",
@@ -74,5 +76,32 @@ class RenderMoleculeLink
     private static function returnAsHTML($text)
     {
         return [$text, 'noparse' => true, 'isHTML' => true];
+    }
+
+    private static function getNamesOfMolecule($moleculeTitle) {
+        $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+        $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+            SMWDIProperty::newFromUserLabel("Trivialname"));
+        if (count($res) > 0) {
+            $first = reset($res);
+            return $first->getString();
+        } else {
+            $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+            $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+                SMWDIProperty::newFromUserLabel("Abbreviation"));
+            if (count($res) > 0) {
+                $first = reset($res);
+                return $first->getString();
+            } else {
+                $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+                $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+                    SMWDIProperty::newFromUserLabel("IUPACName"));
+                if (count($res) > 0) {
+                    $first = reset($res);
+                    return $first->getString();
+                }
+            }
+        }
+        return null;
     }
 }
