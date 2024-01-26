@@ -2,6 +2,8 @@
 
 namespace DIQA\ChemExtension;
 
+use DIQA\ChemExtension\Literature\DOITools;
+use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
@@ -46,6 +48,7 @@ class MultiContentSave
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($article->getTitle());
         $repo->deleteAllConcreteMoleculeByMoleculePage($article->getTitle());
+        self::removeAllLiteratureReferencesFromIndex($article->getTitle());
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
             $repo->deleteChemForm($article->getTitle()->getText());
@@ -106,6 +109,13 @@ class MultiContentSave
         $repo->deleteAllChemFormIndexByPage($pageTitle);
     }
 
+    public static function removeAllLiteratureReferencesFromIndex($pageTitle)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new LiteratureRepository($dbr);
+        $repo->deleteIndexForPage($pageTitle);
+    }
+
     private static function parseMoleculeLinks($wikitext, Title $pageTitle)
     {
         $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
@@ -126,6 +136,26 @@ class MultiContentSave
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
+        }
+    }
+
+    public static function parseAndUpdateLiteratureReferences($wikitext, Title $pageTitle)
+    {
+
+        $parser = new ParserFunctionParser();
+        $literatureReferences = $parser->parseFunction('literature', $wikitext);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new LiteratureRepository($dbr);
+
+        foreach ($literatureReferences as $f) {
+            $doi = $f['doi'] ?? null;
+            if (is_null($doi)) {
+                continue;
+            }
+            // fixes "broken" DOIs
+            $doi = DOITools::parseDOI($doi);
+            // add to index
+            $repo->addToLiteratureIndex($doi, $pageTitle);
         }
     }
 
@@ -178,8 +208,10 @@ class MultiContentSave
 
     public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
+        self::removeAllLiteratureReferencesFromIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle, $createPages);
         self::parseMoleculeLinks($wikitext, $pageTitle);
+        self::parseAndUpdateLiteratureReferences($wikitext, $pageTitle);
 
         self::addMoleculesToIndex($pageTitle);
         self::addToCategoryIndex($pageTitle);
