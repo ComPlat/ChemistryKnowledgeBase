@@ -16,6 +16,7 @@ This is the Photocatalytic CO2 conversion template.
 <td resource="Additives and solvents" property="hidden">{{{solvent-ratio|}}}</td>
 <td resource="Additives and solvents">{{{additives|}}}</td>
 <td resource="Additives and solvents" property="hidden">{{{additives conc|}}}</td>
+<td resource="Feedstock gas" property="hidden">{{DisplayMolecule|{{{feedstock gas|}}} }}</td>
 <td resource="Physical data" property="hidden">{{{pH|}}}</td>
 <td resource="Physical data" property="hidden">{{{Temperature|}}}</td>
 <td resource="General,Physical data">{{{λexc|}}}</td>
@@ -53,6 +54,7 @@ This is the Photocatalytic CO2 conversion template.
  |Solvent ratio={{{solvent-ratio|}}}
  |Additives={{{additives|}}}
  |Additives concentration={{{additives conc|}}}
+ |Feedstock gas={{{feedstock gas|}}}
  |PH value={{{pH|}}}
  |Temperature={{{Temperature|}}}
  |Excitation wavelength={{{λexc|}}}
