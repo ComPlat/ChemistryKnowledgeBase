@@ -60,6 +60,5 @@ mediawiki/extensions/InvestigationImport/maintenance/test1.txt
 mediawiki/extensions/InvestigationImport/resources/~$CV_generic_dataset_withExValues.xlsx
 mediawiki/extensions/InvestigationImport/maintenance/test198.txt
 
-vm/Vagrantfile
-mediawiki/db_14_12_23.sql
+mediawiki/*.sql
 
