@@ -1,0 +1,15 @@
+This page shows all publications. You can edit the query in the [[http://chemwiki.scc.kit.edu/main/mediawiki/index.php?title=Special:Ask&q=%5B%5BCategory%3ATopic%5D%5D&p=format%3Dtable%2Flink%3Dall%2Fheaders%3Dshow%2Fsearchlabel%3DJSON%2Fclass%3Dsortable-20wikitable-20smwtable%2Fmainlabel%3D%2Fprettyprint%3Dtrue%2Funescape%3Dtrue&po=%3FCategory%3DTopics%0A&sort=&order=asc&offset=0&limit=200&eq=yes#search Semantic search]]
+
+{{#ask: [[Category:Topic]]
+ |?Category=Topics
+ |format=broadtable
+ |limit=200
+ |offset=0
+ |link=all
+ |sort=
+ |order=asc
+ |headers=show
+ |mainlabel=Publications
+ |searchlabel=... further results
+ |class=sortable wikitable smwtable
+}}
