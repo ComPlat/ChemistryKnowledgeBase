@@ -51,9 +51,10 @@ class FindMissingItems extends SpecialPage
         ];
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
-        $res = $dbr->select('templatelinks',
-            ['tl_from', "GROUP_CONCAT(tl_title SEPARATOR ',') AS types"],
-            ["tl_title IN ('".implode("','", $typesOfItems)."')"],
+        $res = $dbr->select(['templatelinks', 'linktarget'],
+            ['tl_from', "GROUP_CONCAT(lt_title SEPARATOR ',') AS types"],
+            [   "tl_target_id = lt_id",
+                "lt_title IN ('".implode("','", $typesOfItems)."')"],
             __METHOD__,
             ['GROUP BY' => 'tl_from']
         );
