@@ -28,6 +28,9 @@ SQL;
         $results = [];
         foreach ($res as $row) {
             $title = \Title::newFromText($row->page_title, $row->page_namespace);
+            if ($title->isRedirect()) {
+                continue;
+            }
             $results[$title->getPrefixedText()] = [
                 'title' => $title,
                 'type' => $this->getInvestigationType($title)];

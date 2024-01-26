@@ -35,6 +35,7 @@
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "ArticleDeleteComplete": "DIQA\\ChemExtension\\MultiContentSave::onArticleDeleteComplete",
+        "PageMoveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageMoveComplete",
         "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates",
         "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",

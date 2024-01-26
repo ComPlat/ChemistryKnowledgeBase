@@ -14,6 +14,7 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
@@ -21,6 +22,7 @@ use MediaWiki\Storage\EditResult;
 use MediaWiki\User\UserIdentity;
 use Title;
 use WikiPage;
+use User;
 
 class MultiContentSave
 {
@@ -42,7 +44,7 @@ class MultiContentSave
         self::parseContentAndUpdateIndex($wikitext, $pageTitle, true);
     }
 
-    public static function onArticleDeleteComplete( &$article, \User &$user, $reason, $id, $content, \LogEntry
+    public static function onArticleDeleteComplete( &$article, User &$user, $reason, $id, $content, \LogEntry
         $logEntry, $archivedRevisionCount ) {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
@@ -52,6 +54,29 @@ class MultiContentSave
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
             $repo->deleteChemForm($article->getTitle()->getText());
+        }
+    }
+
+    public static function onPageMoveComplete(
+        LinkTarget $old,
+        LinkTarget $new,
+        UserIdentity $userIdentity,
+        int $pageid,
+        int $redirid,
+        string $reason,
+        RevisionRecord $revision
+    ) {
+        $oldTitle = Title::newFromText($old->getText(), $old->getNamespace());
+        $newTitle = Title::newFromText($new->getText(), $new->getNamespace());
+        if ($oldTitle->isSubpage()) {
+            $baseTitle = $oldTitle->getBaseTitle();
+            $wikitext = WikiTools::getText($baseTitle);
+            $parser = new ParserFunctionParser();
+            $newWikitext = $parser->replaceFunction($wikitext, 'experimentlist',
+                'name', $oldTitle->getSubpageText(), ['name' => $newTitle->getSubpageText()]);
+            if ($wikitext !== $newWikitext) {
+                WikiTools::doEditContent($baseTitle, $newWikitext, "auto-updated");
+            }
         }
     }
 
