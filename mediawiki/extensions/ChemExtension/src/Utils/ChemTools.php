@@ -2,7 +2,8 @@
 
 namespace DIQA\ChemExtension\Utils;
 
-use Title;
+use SMWDIProperty;
+use SMWDIWikiPage;
 
 class ChemTools {
 
@@ -26,6 +27,33 @@ class ChemTools {
             }
         }
         return $matches[1] ?? null;
+    }
+
+    public static function getNamesOfMolecule($moleculeTitle) {
+        $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+        $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+            SMWDIProperty::newFromUserLabel("Trivialname"));
+        if (count($res) > 0) {
+            $first = reset($res);
+            return $first->getString();
+        } else {
+            $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+            $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+                SMWDIProperty::newFromUserLabel("Abbreviation"));
+            if (count($res) > 0) {
+                $first = reset($res);
+                return $first->getString();
+            } else {
+                $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+                $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
+                    SMWDIProperty::newFromUserLabel("IUPACName"));
+                if (count($res) > 0) {
+                    $first = reset($res);
+                    return $first->getString();
+                }
+            }
+        }
+        return null;
     }
 
 }
