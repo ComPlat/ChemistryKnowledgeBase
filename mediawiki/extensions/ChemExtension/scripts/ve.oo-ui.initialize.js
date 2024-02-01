@@ -49,6 +49,8 @@
 
             }
         });
+
+        $('#toc').prepend($('table.infobox'));
     }
 
     function whichChild(node) {
