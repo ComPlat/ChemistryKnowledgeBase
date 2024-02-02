@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\ChemTools;
+use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
@@ -54,11 +55,15 @@ class RenderMoleculeLink
 
 
         global $wgScriptPath;
+        $namesOfMolecule = ChemTools::getNamesOfMolecule($page);
+        if (WikiTools::isInVisualEditor()) {
+            $namesOfMolecule .= " ({$page->getText()})";
+        }
         $html = $blade->view()->make("molecule-link",
             [
                 'url' => $page->getFullURL(),
                 'label' => $page->getText(),
-                'name' => ChemTools::getNamesOfMolecule($page),
+                'name' => $namesOfMolecule,
                 'fullPageTitle' => $page->getPrefixedText(),
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
                 'image' => ($parameters['image'] ?? false) === "true",
