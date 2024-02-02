@@ -35,5 +35,8 @@
 	"specialmodifymoleculelog": "Modification-Log für Moleküle",
 	"molecule-id-label" : "Molekül-ID",
 	"molecule-id-hint": "Molekül-ID eingeben",
-	"chemext-show-log-button": "Zeige Log"
+	"chemext-show-log-button": "Zeige Log",
+	"tags-label": "Tags (noch nicht funktional)",
+	"tags-hint": "Bitte geben Sie Tags ein"
+
 }

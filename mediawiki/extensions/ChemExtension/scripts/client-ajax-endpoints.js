@@ -114,6 +114,22 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.searchForTags = function (searchText, restrictTo) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/search-tags";
+        let data = {
+            searchText: searchText
+        };
+        if (restrictTo) {
+            data.restrictTo = restrictTo;
+        }
+        return $.ajax({
+            method: "GET",
+            url: url,
+            data: data
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.isJobPending = function (pageId) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/job/pending?pageId=" + pageId;

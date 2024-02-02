@@ -51,6 +51,7 @@ class Setup {
                 $baseScript . '/ve.oo-ui.rgroups-lookup.js',
                 $baseScript . '/ve.oo.ui.progress-dialog.js',
                 $baseScript . '/ve.oo-ui.inchikey-lookup.js',
+                $baseScript . '/ve.oo-ui.tags-input.js',
                 $baseScript . '/ve.oo.ui.ketcher-widget.js',
                 $baseScript . '/ve.oo.ui.ketcher-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-rgroups-widget.js',

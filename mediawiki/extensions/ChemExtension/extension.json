@@ -103,6 +103,11 @@
             "class": "DIQA\\ChemExtension\\Endpoints\\SearchForMolecule"
         },
         {
+            "path": "/ChemExtension/v1/search-tags",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\SearchForTags"
+        },
+        {
             "path": "/ChemExtension/v1/chemform/rgroups",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetRGroups"
