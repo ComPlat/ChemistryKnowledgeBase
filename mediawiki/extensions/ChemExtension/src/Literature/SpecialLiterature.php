@@ -74,6 +74,8 @@ class SpecialLiterature extends SpecialPage
         } else {
             $data = $literature['data'];
         }
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $repo = new LiteratureRepository($dbr);
 
         $html = $this->blade->view()->make("doi-special-literature",
             [
@@ -93,6 +95,7 @@ class SpecialLiterature extends SpecialPage
                 'funders' => count($data->funder) === 0 ? "-" : array_map(function ($e) {
                     return $e->name;
                 }, $data->funder),
+                'usedBy' => $repo->getPagesForDOI($data->DOI),
             ]
         )->render();
 

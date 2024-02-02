@@ -17,6 +17,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th resource="Additives and solvents" property="hidden" title="solvent ratio">solv A/B/C</th>
 <th resource="Additives and solvents" title="additives">additives</th>
 <th resource="Additives and solvents" property="hidden" title="additives concentration">additives conc [M]</th>
+<th resource="Feedstock gas" property="hidden" title="feedstock gas">feedstock gas</th>
 <th resource="Physical data" property="hidden" title="pH">pH</th>
 <th resource="Physical data" property="hidden" title="temperature">T [°C]</th>
 <th resource="General,Physical data" title="irradiation wavelength">λexc [nm]</th>

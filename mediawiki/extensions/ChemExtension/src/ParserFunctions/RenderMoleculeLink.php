@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Utils\WikiTools;
+use DIQA\ChemExtension\Utils\ChemTools;
 use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
@@ -58,6 +58,7 @@ class RenderMoleculeLink
             [
                 'url' => $page->getFullURL(),
                 'label' => $page->getText(),
+                'name' => ChemTools::getNamesOfMolecule($page),
                 'fullPageTitle' => $page->getPrefixedText(),
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($moleculeKey),
                 'image' => ($parameters['image'] ?? false) === "true",
@@ -75,4 +76,6 @@ class RenderMoleculeLink
     {
         return [$text, 'noparse' => true, 'isHTML' => true];
     }
+
+
 }

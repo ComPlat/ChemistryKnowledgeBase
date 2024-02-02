@@ -2,8 +2,8 @@
 
 namespace DIQA\ChemExtension;
 
-use DIQA\ChemExtension\Jobs\RGroupMaterializationJob;
-use DIQA\ChemExtension\Pages\ChemForm;
+use DIQA\ChemExtension\Literature\DOITools;
+use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormParser;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageCreator;
@@ -14,6 +14,7 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
@@ -21,6 +22,7 @@ use MediaWiki\Storage\EditResult;
 use MediaWiki\User\UserIdentity;
 use Title;
 use WikiPage;
+use User;
 
 class MultiContentSave
 {
@@ -42,15 +44,39 @@ class MultiContentSave
         self::parseContentAndUpdateIndex($wikitext, $pageTitle, true);
     }
 
-    public static function onArticleDeleteComplete( &$article, \User &$user, $reason, $id, $content, \LogEntry
+    public static function onArticleDeleteComplete( &$article, User &$user, $reason, $id, $content, \LogEntry
         $logEntry, $archivedRevisionCount ) {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($article->getTitle());
         $repo->deleteAllConcreteMoleculeByMoleculePage($article->getTitle());
+        self::removeAllLiteratureReferencesFromIndex($article->getTitle());
         if ($article->getTitle()->getNamespace() === NS_MOLECULE
         || $article->getTitle()->getNamespace() === NS_REACTION) {
             $repo->deleteChemForm($article->getTitle()->getText());
+        }
+    }
+
+    public static function onPageMoveComplete(
+        LinkTarget $old,
+        LinkTarget $new,
+        UserIdentity $userIdentity,
+        int $pageid,
+        int $redirid,
+        string $reason,
+        RevisionRecord $revision
+    ) {
+        $oldTitle = Title::newFromText($old->getText(), $old->getNamespace());
+        $newTitle = Title::newFromText($new->getText(), $new->getNamespace());
+        if ($oldTitle->isSubpage()) {
+            $baseTitle = $oldTitle->getBaseTitle();
+            $wikitext = WikiTools::getText($baseTitle);
+            $parser = new ParserFunctionParser();
+            $newWikitext = $parser->replaceFunction($wikitext, 'experimentlist',
+                'name', $oldTitle->getSubpageText(), ['name' => $newTitle->getSubpageText()]);
+            if ($wikitext !== $newWikitext) {
+                WikiTools::doEditContent($baseTitle, $newWikitext, "auto-updated");
+            }
         }
     }
 
@@ -75,15 +101,12 @@ class MultiContentSave
         $chemForms = $chemFormParser->parse($wikitext);
 
         $pageCreator = new MoleculePageCreator();
-        $moleculeCollections = [];
 
         foreach ($chemForms as $chemForm) {
             try {
                 if ($createPages) {
                     $moleculePage = $pageCreator->createNewMoleculePage($chemForm, null, true);
-                    if ($chemForm->hasRGroupDefinitions()) {
-                        $moleculeCollections[] = ['title' => $moleculePage['title'], 'chemForm' => $chemForm];
-                    }
+
                     self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 } else {
                     $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
@@ -100,30 +123,22 @@ class MultiContentSave
             }
         }
 
-        if (count($moleculeCollections) > 0 && $createPages) {
-            self::addMoleculeCollectionJob($moleculeCollections, $pageTitle);
-        }
-    }
-
-    /**
-     * @param ChemForm $chemForm
-     * @param Title|null $title
-     */
-    private static function addMoleculeCollectionJob(array $moleculeCollections, Title $pageTitle): void
-    {
-        $jobParams = [];
-        $jobParams['moleculeCollections'] = $moleculeCollections;
-        $job = new RGroupMaterializationJob($pageTitle, $jobParams);
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $jobQueue->push($job);
 
     }
+
 
     private static function removeAllMoleculesFromChemFormIndex($pageTitle)
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($pageTitle);
+    }
+
+    public static function removeAllLiteratureReferencesFromIndex($pageTitle)
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new LiteratureRepository($dbr);
+        $repo->deleteIndexForPage($pageTitle);
     }
 
     private static function parseMoleculeLinks($wikitext, Title $pageTitle)
@@ -146,6 +161,26 @@ class MultiContentSave
             } catch (Exception $e) {
                 $logger->error($e->getMessage());
             }
+        }
+    }
+
+    public static function parseAndUpdateLiteratureReferences($wikitext, Title $pageTitle)
+    {
+
+        $parser = new ParserFunctionParser();
+        $literatureReferences = $parser->parseFunction('literature', $wikitext);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new LiteratureRepository($dbr);
+
+        foreach ($literatureReferences as $f) {
+            $doi = $f['doi'] ?? null;
+            if (is_null($doi)) {
+                continue;
+            }
+            // fixes "broken" DOIs
+            $doi = DOITools::parseDOI($doi);
+            // add to index
+            $repo->addToLiteratureIndex($doi, $pageTitle);
         }
     }
 
@@ -198,8 +233,10 @@ class MultiContentSave
 
     public static function parseContentAndUpdateIndex(string $wikitext, Title $pageTitle, bool $createPages) {
         self::removeAllMoleculesFromChemFormIndex($pageTitle);
+        self::removeAllLiteratureReferencesFromIndex($pageTitle);
         self::parseChemicalFormulas($wikitext, $pageTitle, $createPages);
         self::parseMoleculeLinks($wikitext, $pageTitle);
+        self::parseAndUpdateLiteratureReferences($wikitext, $pageTitle);
 
         self::addMoleculesToIndex($pageTitle);
         self::addToCategoryIndex($pageTitle);

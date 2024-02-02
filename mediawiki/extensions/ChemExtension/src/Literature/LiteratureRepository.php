@@ -24,14 +24,21 @@ class LiteratureRepository {
                     )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE literature ADD CONSTRAINT literature_doi_key_unique UNIQUE IF NOT EXISTS (doi)');
 
-        return [ 'literature' ];
+        $this->db->query('CREATE TABLE IF NOT EXISTS literature_index (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        doi VARCHAR(255) NOT NULL,
+                        page_id INT(10) UNSIGNED NOT NULL
+                    )  ENGINE=INNODB;');
+
+        return [ 'literature', 'literature_index' ];
     }
 
     public function dropTables()
     {
         $this->db->query('DROP TABLE IF EXISTS literature;');
+        $this->db->query('DROP TABLE IF EXISTS literature_index;');
 
-        return [ 'literature' ];
+        return [ 'literature', 'literature_index' ];
     }
 
     public function addLiterature($doi, $data): int
@@ -58,6 +65,33 @@ class LiteratureRepository {
         }
 
         return $id;
+    }
+
+    public function addToLiteratureIndex($doi, $title): int
+    {
+        $this->db->insert('literature_index',
+            [
+                'doi' => $doi,
+                'page_id' => $title->getArticleID(),
+            ]);
+        return $this->db->insertId();
+    }
+
+    public function deleteIndexForPage($title) {
+        $this->db->delete('literature_index', [
+            'page_id' => $title->getArticleID(),
+        ]);
+    }
+
+    public function getPagesForDOI($doi): array
+    {
+        $res = $this->db->select('literature_index', ['page_id'],
+            ['doi' => $doi ]);
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = \Title::newFromID($row->page_id);
+        }
+        return $results;
     }
 
     public function addLiteraturePlaceholder($doi): int {

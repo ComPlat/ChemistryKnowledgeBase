@@ -64,6 +64,9 @@ class DOITools {
             return null;
         }
         $doi = $urlParts['path'];
+        if (strpos($doi, 'doi.org/') === 0) {
+            $doi = substr($doi, strlen('doi.org/'));
+        }
         return strpos($doi, '/') === 0 ? substr($doi, 1) : $doi;
     }
 

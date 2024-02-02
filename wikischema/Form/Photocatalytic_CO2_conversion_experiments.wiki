@@ -53,6 +53,9 @@ Experiments:
 ! additives conc [M]:
 | {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
+! feedstock gas:
+| {{{field|feedstock gas|input type=combobox|property=Feedstock gas|values from url=molecule_lookup}}}
+|-
 ! pH:
 | {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14!)$/}}}
 |-

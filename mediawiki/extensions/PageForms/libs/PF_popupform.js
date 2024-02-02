@@ -746,6 +746,7 @@ window.ext.popupform = ( function () {
 		// catch 'Cancel'-Link (and other 'back'-links) and close frame instead of going back
 		var backlinks = allLinks.filter('a[href="javascript:history.go(-1);"]');
 		backlinks.click(handleCloseFrame);
+		$('.pfSendBack', window.frames[0].document).off('click').click(handleCloseFrame);
 
 		// promote any other links to open in main window, prevent nested browsing
 		allLinks

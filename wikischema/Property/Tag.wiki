@@ -1,0 +1,13 @@
+; Purpose
+* [[Property description::Contains tags that describe the content of the page.@en]]
+
+; Datatype
+* [[Has type::String]].
+
+; Values
+* An arbitrary string.
+
+; Label
+* [[Has preferred property label::Tag@en]]
+
+

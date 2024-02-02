@@ -42,5 +42,7 @@
 	"specialmodifymoleculelog": "Modification log for molecules",
 	"molecule-id-label" : "Molecule-ID",
 	"molecule-id-hint": "Molecule-ID eingeben",
-	"chemext-show-log-button": "Show Log"
+	"chemext-show-log-button": "Show Log",
+	"tags-label": "Tags (not yet functional)",
+	"tags-hint": "Enter tags"
 }

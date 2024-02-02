@@ -121,3 +121,14 @@
     </td>
     </tr>
 </table>
+
+<h2>Used by</h2>
+@if (count($usedBy) === 0)
+-none-
+@else
+<ul>
+@foreach($usedBy as $page)
+   <li><a href="{{$page->getFullURL()}}">{{$page->getPrefixedText()}}</a></li>
+@endforeach
+</ul>
+@endif

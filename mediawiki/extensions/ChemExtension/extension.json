@@ -35,6 +35,7 @@
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "ArticleDeleteComplete": "DIQA\\ChemExtension\\MultiContentSave::onArticleDeleteComplete",
+        "PageMoveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageMoveComplete",
         "LoadExtensionSchemaUpdates": "DIQA\\ChemExtension\\Maintenance\\setupStore::onLoadExtensionSchemaUpdates",
         "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
@@ -100,6 +101,11 @@
             "path": "/ChemExtension/v1/search-molecule",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\SearchForMolecule"
+        },
+        {
+            "path": "/ChemExtension/v1/search-tags",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\SearchForTags"
         },
         {
             "path": "/ChemExtension/v1/chemform/rgroups",

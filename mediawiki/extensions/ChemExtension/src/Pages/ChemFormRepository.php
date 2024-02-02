@@ -227,6 +227,23 @@ class ChemFormRepository
             ]);
     }
 
+    public function getAllConcreteMolecule(Title $publicationPage): array
+    {
+        $res = $this->db->select('molecule_collection', ['molecule_page_id', 'rgroups'],
+            [
+                'publication_page_id' => $publicationPage->getArticleID(),
+            ]);
+        $results = [];
+        foreach ($res as $row) {
+            $results[] =
+                [
+                    'molecule_page_id' => $row->molecule_page_id,
+                    'rGroups' => json_decode($row->rgroups),
+                ];
+        }
+        return $results;
+    }
+
     public function deleteAllConcreteMoleculeByMoleculePage(Title $moleculePage)
     {
         $this->db->delete('molecule_collection',

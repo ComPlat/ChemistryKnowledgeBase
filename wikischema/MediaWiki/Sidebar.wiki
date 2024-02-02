@@ -2,6 +2,7 @@
 ** Import a Paper with ChemScanner|Import a Paper with ChemScanner
 ** Special:CreateNewPaper|Create a new publication
 ** Special:CreateNewTopic|Create a new Topic Page
+** All_publications|All publications
 * Tools
 ** Browse Topics|Browse Topics
 ** Search for Molecules|Search for Molecules

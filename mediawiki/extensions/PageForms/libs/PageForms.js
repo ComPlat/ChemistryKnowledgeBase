@@ -2006,8 +2006,10 @@ $('#pf-expand-all a').click(function( event ) {
 	$('div.mw-collapsed a.mw-collapsible-text').click();
 });
 
-$('.pfSendBack').click( function() {
-	window.history.back();
+$('.pfSendBack').click( function(e) {
+	if (window.top == window.self) {
+		window.history.back();
+	}
 });
 
 }( jQuery, mediaWiki ) );

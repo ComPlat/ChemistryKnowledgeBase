@@ -77,7 +77,8 @@ class RenderFormula
                 'height' => $attributes['height'],
                 'showrgroups' => $attributes['showrgroups'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png",
-                'imageAlreadyRendered' => $attributes['imageAlreadyRendered']
+                'imageAlreadyRendered' => $attributes['imageAlreadyRendered'],
+                'name' => ChemTools::getNamesOfMolecule($attributes['chemFormPage']),
             ]
         )->render();
     }

@@ -55,6 +55,14 @@ class MoleculePageCreationJob extends Job
         $object = $this->chemForm->hasRGroupDefinitions() ? "molecule collection" : "molecule";
         $message = "Created/updated $object page: {$title->getPrefixedText()}, smiles: {$this->chemForm->getSmiles()}";
         $this->logger->log($message);
+
+        if ($this->chemForm->hasRGroupDefinitions()) {
+            $jobParams = [];
+            $jobParams['moleculeCollections'] = [ ['title' => $title, 'chemForm' => $this->chemForm] ];
+            $job = new RGroupMaterializationJob($title, $jobParams);
+            $job->run();
+
+        }
     }
 
     /**
