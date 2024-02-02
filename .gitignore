@@ -62,4 +62,4 @@ mediawiki/extensions/InvestigationImport/maintenance/test198.txt
 
 vm/Vagrantfile
 mediawiki/db_14_12_23.sql
-
+mediawiki/LocalSettings.php
