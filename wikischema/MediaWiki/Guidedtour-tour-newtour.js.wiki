@@ -75,8 +75,9 @@
         // Name of the page to parse
         description: 'Clicking this will bring you to the relevant molecule page. From here you can see experiments that use the selected molecule.',
         overlay: false,
-        attachTo: '#mw-content-text tbody tr th',
+        attachTo: 'table tr:nth-child(2) td:nth-child(2)',
         position: 'left'
+        // '#mw-content-text.mw-parser-output.tbody.tr:nth-child(7)'
         // This means the wikitext for the description will be loaded from the
         // page name in the description field.
         // onShow: gt.getPageAsDescription,
@@ -102,7 +103,8 @@
             title: "Main Topic",
             description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria" ,
             overlay: true,
-            // attachTo: ,
+            attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeItem:first-child' ,
+            position: 'right'
 
         })
         .next("pub")
@@ -113,7 +115,8 @@
             title: "Publication",
             description:"Here is the level at which papers are stored" ,
             overlay: true,
-            // attachTo: ,
+            attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeChildren div.CategoryTreeSection ' ,
+            position: 'right'
 
         })
         .next("testa")
@@ -124,7 +127,8 @@
             title: "test atttach",
             description:"test attatchment" ,
            // overlay: true,
-            attachTo: "#ce-side-panel-content-collapsed" ,
+            // attachTo: "#ce-side-panel-content-collapsed" ,
+            attachTo: '#ce-topic-element',
             position: 'right',
 
         })
