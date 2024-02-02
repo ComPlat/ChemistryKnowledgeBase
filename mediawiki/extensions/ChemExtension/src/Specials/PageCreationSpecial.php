@@ -57,7 +57,8 @@ class PageCreationSpecial extends SpecialPage
             }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
             $tagsCommaSeparated = implode(",", $tags);
-            $pageContent .="\n{{BaseTemplate|tags=$tagsCommaSeparated}}";
+            //TODO: add template for tags
+            $pageContent .="\n{{BaseTemplate}}";
 
             $successful = WikiTools::doEditContent($pageTitle, $pageContent, "auto-generated", EDIT_NEW);
             if ($successful) {
