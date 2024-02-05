@@ -2,8 +2,15 @@
  * Guided Tour to test guided tour features.
  */
 // Copy the next line into the start of your tour.
-( function ( window, document, $, mw, gt ) {
 
+( function ( window, document, $, mw, gt ) {
+    var isnav_open = $('#ce-side-panel-content-collapsed')[0].attributes.style ;
+    var navbarstate = '#ce-side-panel-content-collapsed';
+    
+    if (isnav_open == "display:none") {
+        navbarstate = "#ce-topic-element";
+    };
+    console.log(navbarstate)
     // Declare a variable for use later
     var pageName = 'Help:Guided tours/newtour',
         tour;
@@ -125,10 +132,10 @@
         tour.step( {
             name: "testa",
             title: "test atttach",
-            description:"test attatchment" ,
+            description:"this is the highest level of the Organization" ,
            // overlay: true,
             // attachTo: "#ce-side-panel-content-collapsed" ,
-            attachTo: '#ce-topic-element',
+            attachTo: navbarstate,
             position: 'right',
 
         })
