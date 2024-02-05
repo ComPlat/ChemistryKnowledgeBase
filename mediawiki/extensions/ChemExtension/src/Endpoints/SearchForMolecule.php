@@ -96,10 +96,10 @@ class SearchForMolecule extends SimpleHandler
             return "[[Category:Molecule]][[$p::~*$searchText*]]";
         }, $priorityProperties);
 
-        $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts, ['limit' => 10000]),
+        $prioritizedResults = QueryUtils::executeBasicQuery(implode('', $propertyQueryParts),
             [
                 $this->iupacNameProp, $this->casProp, $this->trivialnameProp, $this->inchiKey, $this->abbreviation
-            ]);
+            ], ['limit' => 10000]);
         $allResults = $this->readResults($prioritizedResults);
         if (count($allResults) < self::MAX_RESULTS) {
             $generalResults = QueryUtils::executeBasicQuery(

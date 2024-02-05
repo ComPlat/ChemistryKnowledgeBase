@@ -65,6 +65,10 @@ class RenderFormula
         $blade = new Blade ($views, $cache);
 
         global $wgScriptPath, $wgTitle;
+        $namesOfMolecule = ChemTools::getNamesOfMolecule($attributes['chemFormPage']);
+        if (WikiTools::isInVisualEditor()) {
+            $namesOfMolecule .= " ({$attributes['chemFormPage']->getText()})";
+        }
         return $blade->view()->make("molecule",
             [
                 'url' => $attributes['chemFormPage']->getFullURL(),
@@ -78,7 +82,7 @@ class RenderFormula
                 'showrgroups' => $attributes['showrgroups'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png",
                 'imageAlreadyRendered' => $attributes['imageAlreadyRendered'],
-                'name' => ChemTools::getNamesOfMolecule($attributes['chemFormPage']),
+                'name' => $namesOfMolecule,
             ]
         )->render();
     }

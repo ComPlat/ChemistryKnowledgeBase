@@ -150,6 +150,7 @@ class CreateNewPaper extends PageCreationSpecial
         $doi = $wgRequest->getText('doi', '');
         $paperTitle = $wgRequest->getText('paper-title', '');
         $topicSuper = $wgRequest->getText('topic-super', '');
+        $tagsAsString = $wgRequest->getText('tags', '');
         if ($topicSuper === '') $topicSuper = "Topic";
 
         $doiData = null;
@@ -168,7 +169,9 @@ class CreateNewPaper extends PageCreationSpecial
         } else {
             throw new Exception("Paper title must be set.");
         }
-        $this->createPageAndRedirect($paperTitleObj, $topicSuper, $doiData);
+        $tags = explode("\n", $tagsAsString);
+        $tags = array_filter($tags, fn($e) => trim($e) !== '');
+        $this->createPageAndRedirect($paperTitleObj, $topicSuper, $doiData, $tags);
     }
 
 

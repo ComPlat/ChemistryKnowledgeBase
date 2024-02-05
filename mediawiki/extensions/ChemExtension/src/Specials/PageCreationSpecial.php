@@ -36,7 +36,7 @@ class PageCreationSpecial extends SpecialPage
         return $helpSection;
     }
 
-    protected function createPageAndRedirect(Title $pageTitle, string $superTopics, $doiData = null)
+    protected function createPageAndRedirect(Title $pageTitle, string $superTopics, $doiData = null, $tags = [])
     {
             if ($pageTitle->exists()) {
                 throw new Exception("Page creation failed because page already exists");
@@ -56,6 +56,8 @@ class PageCreationSpecial extends SpecialPage
                 $pageContent .= "{{#doiinfobox: $doi}}\n";
             }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
+            $tagsCommaSeparated = implode(",", $tags);
+            //TODO: add template for tags
             $pageContent .="\n{{BaseTemplate}}";
 
             $successful = WikiTools::doEditContent($pageTitle, $pageContent, "auto-generated", EDIT_NEW);
