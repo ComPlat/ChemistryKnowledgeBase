@@ -50,7 +50,11 @@
             }
         });
 
-        $('#toc').prepend($('table.infobox'));
+        // positioning of about-infobox
+        let subContentWidth = $('.ce-subtitle-content').width();
+        let aboutTableWidth = $('.ce-subtitle-content table.infobox').width();
+        $('.ce-subtitle-content table.infobox').css({'left': (subContentWidth-aboutTableWidth-25) + "px"});
+
     }
 
     function whichChild(node) {
