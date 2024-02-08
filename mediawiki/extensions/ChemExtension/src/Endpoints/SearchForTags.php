@@ -11,7 +11,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 class SearchForTags extends SimpleHandler
 {
 
-    const MAX_RESULTS = 500;
+    const MAX_RESULTS = 50;
 
     private $tagProperty;
 

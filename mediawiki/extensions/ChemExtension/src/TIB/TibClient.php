@@ -36,7 +36,7 @@ class TibClient {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5); //timeout in seconds
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10); //timeout in seconds
 
             $response = curl_exec($ch);
             if (curl_errno($ch)) {
