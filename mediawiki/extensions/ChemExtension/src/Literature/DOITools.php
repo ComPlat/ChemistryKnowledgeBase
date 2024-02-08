@@ -5,6 +5,8 @@ namespace DIQA\ChemExtension\Literature;
 use DateTime;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use Title;
+use SMWDIWikiPage;
+use SMWDIProperty;
 
 class DOITools {
 
@@ -183,6 +185,16 @@ class DOITools {
                 return is_null($typeId) || $typeId == '' ? '-' : $typeId;
             }
         }
+    }
+
+    public static function getDOIFromPage($pageTitle) {
+        $doiResult = smwfGetStore()->getPropertyValues(SMWDIWikiPage::newFromTitle($pageTitle),
+            SMWDIProperty::newFromUserLabel("DOI"));
+        if (count($doiResult) > 0) {
+            $first = reset($doiResult);
+            return $first->getString();
+        }
+        return null;
     }
 
 }

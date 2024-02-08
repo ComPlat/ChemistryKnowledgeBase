@@ -78,11 +78,23 @@ TEMPLATE;
                 $templateData = $this->context['templateData'];
                 foreach($templateData as $rows) {
                     $basePageTitle = Title::newFromText($rows['BasePageName']);
+                    $doidata = null;
                     if (!is_null($basePageTitle)) {
+                        Hooks::run('CollectPublications', [$basePageTitle, & $doidata]);
+                        if (!is_null($doidata)) {
+                            $reference = DOITools::generateReferenceIndex($doidata['data']);
+                            $url = "#literature_$reference";
+                            $openInTab = false;
+                        } else {
+                            $url = $basePageTitle->getFullURL();
+                            $reference = DOITools::generateReferenceIndexFromTitle($basePageTitle);
+                            $openInTab = true;
+                        }
                         $links[] = [
-                            'url' => $basePageTitle->getFullURL(),
+                            'url' => $url,
                             'tooltip' => $basePageTitle->getText(),
-                            'label' => "[".DOITools::generateReferenceIndexFromTitle($basePageTitle)."]"
+                            'label' => "[". $reference ."]",
+                            'openInTab' => $openInTab
                         ];
                     } else {
                         $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];

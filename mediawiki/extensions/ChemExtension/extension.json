@@ -40,6 +40,7 @@
         "ParserGetVariableValueSwitch": "DIQA\\ChemExtension\\Setup::assignValueToMagicWord",
         "MagicWordwgVariableIDs": "DIQA\\ChemExtension\\Setup::declareVarIds",
         "CollectMolecules": "DIQA\\ChemExtension\\MultiContentSave::collectMolecules",
+        "CollectPublications": "DIQA\\ChemExtension\\Literature\\DOIRenderer::collectPublications",
         "SkinAfterContent": "DIQA\\ChemExtension\\Setup::onSkinAfterContent",
         "ExtendSubtitle": "DIQA\\ChemExtension\\Setup::extendSubtitle",
         "chem_catviewer_instances": "DIQA\\ChemExtension\\Setup::categoryViewerInstance",

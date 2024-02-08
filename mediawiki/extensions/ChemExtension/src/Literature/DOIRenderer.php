@@ -4,20 +4,25 @@ namespace DIQA\ChemExtension\Literature;
 
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use MediaWiki\MediaWikiServices;
 use Philo\Blade\Blade;
 use OutputPage;
 
-class DOIRenderer {
+class DOIRenderer
+{
 
-    public function renderReference($doiData) {
+    private static $PUBLICATIONS_FOUND = [];
+
+    public function renderReference($doiData)
+    {
         if ($doiData === '__placeholder__') {
             return '<div class="chem_ext_literature">reference will be resolved</div>';
         }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new Blade ($views, $cache);
 
-        $authors = array_map(function($e) {
+        $authors = array_map(function ($e) {
             return "{$e->given} {$e->family}";
         }, $doiData->author);
 
@@ -27,10 +32,10 @@ class DOIRenderer {
         $pages = $doiData->page ?? "";
         global $wgScriptPath;
 
-        $html = $blade->view ()->make ( "doi-rendered",
+        $html = $blade->view()->make("doi-rendered",
             [
                 'index' => DOITools::generateReferenceIndex($doiData),
-                'title'  => strip_tags(ArrayTools::getFirstIfArray($doiData->title),"<sub><sup><b><i>"),
+                'title' => strip_tags(ArrayTools::getFirstIfArray($doiData->title), "<sub><sup><b><i>"),
                 'authors' => $authors,
                 'journal' => $journal,
                 'volume' => $volume,
@@ -39,7 +44,7 @@ class DOIRenderer {
                 'doi' => $doiData->DOI,
                 'wgScriptPath' => $wgScriptPath,
             ]
-        )->render ();
+        )->render();
 
         return str_replace("\n", "", $html);
     }
@@ -50,11 +55,11 @@ class DOIRenderer {
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new Blade ($views, $cache);
 
         $wikitext = "{{DoiInfo\n";
 
-        $parameters = $blade->view ()->make ( "doi-infobox",
+        $parameters = $blade->view()->make("doi-infobox",
             [
                 'doi' => $data->DOI,
                 'type' => DOITools::getTypeLabel($data->type),
@@ -67,7 +72,7 @@ class DOIRenderer {
                 'licenses' => DOITools::formatLicenses($data->license ?? ''),
                 'issue' => $data->issue ?? '-',
                 'year' => $doiData->issued->{"date-parts"}[0][0] ?? "-",
-                'journal' =>  $doiData->{"container-title"} ?? "-",
+                'journal' => $doiData->{"container-title"} ?? "-",
                 'volume' => $data->volume ?? '-',
                 'pages' => $data->page ?? '-',
                 'subjects' => $data->subject ?? [],
@@ -75,27 +80,50 @@ class DOIRenderer {
                     return $e->name;
                 }, $data->funder),
             ]
-        )->render ();
+        )->render();
         $wikitext .= trim($parameters);
         $wikitext .= "\n}}";
         return $wikitext;
     }
 
-    public function renderReferenceInText($doiData) {
+    public function renderReferenceInText($doiData)
+    {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new Blade ($views, $cache);
 
-        $html = $blade->view ()->make ( "doi-reference",
+        $html = $blade->view()->make("doi-reference",
             [
                 'index' => DOITools::generateReferenceIndex($doiData),
             ]
-        )->render ();
+        )->render();
 
         return str_replace("\n", "", $html);
     }
 
-    public static function outputLiteratureReferences(OutputPage $out): void {
+
+    public static function collectPublications($pageTitle, & $doiData)
+    {
+        if (!array_key_exists($pageTitle->getPrefixedText(), self::$PUBLICATIONS_FOUND)) {
+
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+            $repo = new LiteratureRepository($dbr);
+            $doi = DOITools::getDOIFromPage($pageTitle);
+            if (is_null($doi)) {
+                return;
+            }
+            $l = $repo->getLiterature($doi);
+            if (is_null($l)) {
+                return;
+            }
+            RenderLiterature::$LITERATURE_REFS[$doi] = $l;
+            self::$PUBLICATIONS_FOUND[$pageTitle->getPrefixedText()] = $l;
+        }
+        $doiData = self::$PUBLICATIONS_FOUND[$pageTitle->getPrefixedText()];
+    }
+
+    public static function outputLiteratureReferences(OutputPage $out): void
+    {
         if (count(RenderLiterature::$LITERATURE_REFS) === 0) {
             return;
         }

@@ -1,0 +1,5 @@
+; Purpose
+* [[Property description::Contains a (D)igital-(O)bject-(I)dentifier.@en]]
+
+; Datatype
+* [[Has type::Text]].

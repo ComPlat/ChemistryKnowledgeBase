@@ -1,0 +1,2 @@
+{{#doiinfobox: {{{doi|}}} }}
+{{#set: DOI={{{doi|}}} }}

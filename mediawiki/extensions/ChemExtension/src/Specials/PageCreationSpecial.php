@@ -53,7 +53,7 @@ class PageCreationSpecial extends SpecialPage
             $pageContent = "";
             if (!is_null($doiData)) {
                 $doi = $doiData->DOI;
-                $pageContent .= "{{#doiinfobox: $doi}}\n";
+                $pageContent .= "{{DOI|doi=$doi}}\n";
             }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
             $tagsCommaSeparated = implode(",", $tags);
