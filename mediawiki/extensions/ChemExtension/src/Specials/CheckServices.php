@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Specials;
 
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
+use DIQA\ChemExtension\TIB\TibClient;
 use Philo\Blade\Blade;
 use SpecialPage;
 use Exception;
@@ -30,11 +31,11 @@ class CheckServices extends SpecialPage
     {
         $output = $this->getOutput();
         $this->setHeaders();
-        $RGroupState = $this->checkRGroupsService();
-        $renderState = $this->checkRenderService();
+
         $output->addHTML($this->blade->view()->make("check-services", [
-            'RGroupState' => $RGroupState,
-            'renderState' => $renderState])
+            'RGroupState' => $this->checkRGroupsService(),
+            'renderState' => $this->checkRenderService(),
+            'tibState' => $this->checkTIBService()])
             ->render());
     }
 
@@ -53,6 +54,16 @@ class CheckServices extends SpecialPage
         try {
             $service = new MoleculeRendererClientImpl();
             $service->render( $this->benzolMolfile);
+            return true;
+        } catch (Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    private function checkTIBService() {
+        try {
+            $service = new TibClient();
+            $service->suggest( "atomic", 1);
             return true;
         } catch (Exception $e) {
             return $e->getMessage();

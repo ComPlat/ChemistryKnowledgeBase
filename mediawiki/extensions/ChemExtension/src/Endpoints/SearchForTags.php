@@ -2,13 +2,10 @@
 
 namespace DIQA\ChemExtension\Endpoints;
 
-use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Utils\ChemTools;
+use DIQA\ChemExtension\TIB\TibClient;
 use DIQA\ChemExtension\Utils\QueryUtils;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
 use SMW\Query\QueryResult;
-use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class SearchForTags extends SimpleHandler
@@ -62,10 +59,17 @@ class SearchForTags extends SimpleHandler
         $prioritizedResults = QueryUtils::executeBasicQuery("[[Tag::~*$searchText*]]",
             [
                 $this->tagProperty
-            ], ['limit' => 10000]);
+            ], ['limit' => self::MAX_RESULTS]);
         $allResults = $this->readResults($prioritizedResults);
-
-        return array_slice($allResults, 0, min(count($allResults), 500));
+        $wikiResults = array_slice($allResults, 0, min(count($allResults), self::MAX_RESULTS));
+        $tibResults = [];
+        try {
+            $tibClient = new TibClient();
+            $tibResults = $tibClient->suggest($searchText, self::MAX_RESULTS - count($wikiResults));
+        } catch(\Exception $e) {
+            // ignore
+        }
+        return array_merge($wikiResults, $tibResults);
     }
 
     /**

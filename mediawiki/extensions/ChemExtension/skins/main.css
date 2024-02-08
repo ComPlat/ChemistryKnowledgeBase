@@ -528,3 +528,7 @@ div.navbar-tool {
 div.experiment-link-container {
     overflow-x: auto;
 }
+
+div.chemtext-tags-input.oo-ui-pendingElement-pending {
+    background-color: #eaecf0 !important;
+}

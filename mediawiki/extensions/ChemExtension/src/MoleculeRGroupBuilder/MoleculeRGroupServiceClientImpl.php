@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\MoleculeRGroupBuilder;
 
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 
@@ -55,7 +56,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            list($header, $body) = self::splitResponse($response);
+            list($header, $body) = CurlUtil::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
                 $this->logger->log("Result: " . print_r($body, true));
                 $result = json_decode($body);
@@ -99,13 +100,6 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
         return $results;
     }
 
-    protected static function splitResponse($res): array
-    {
-        $bodyBegin = strpos($res, "\r\n\r\n");
-        list($header, $res) = $bodyBegin !== false ? array(substr($res, 0, $bodyBegin), substr($res, $bodyBegin + 4)) : array($res, "");
-        return array($header, str_replace("%0A%0D%0A%0D", "\r\n\r\n", $res));
-    }
-
     function getMetadata(string $molfile): array
     {
         try {
@@ -133,7 +127,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            list($header, $body) = self::splitResponse($response);
+            list($header, $body) = CurlUtil::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
                 $this->logger->log("Result: " . print_r($body, true));
                 $result = json_decode($body);
@@ -171,7 +165,7 @@ class MoleculeRGroupServiceClientImpl implements MoleculeRGroupServiceClient
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            list($header, $body) = self::splitResponse($response);
+            list($header, $body) = CurlUtil::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
                 $result = json_decode($body);
                 return $result->keys ?? [];
