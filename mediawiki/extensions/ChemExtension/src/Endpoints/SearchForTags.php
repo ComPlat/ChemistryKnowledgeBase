@@ -3,10 +3,12 @@
 namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\TIB\TibClient;
+use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\Rest\SimpleHandler;
 use SMW\Query\QueryResult;
 use Wikimedia\ParamValidator\ParamValidator;
+use Exception;
 
 class SearchForTags extends SimpleHandler
 {
@@ -14,6 +16,7 @@ class SearchForTags extends SimpleHandler
     const MAX_RESULTS = 50;
 
     private $tagProperty;
+    private $logger;
 
     /**
      * SearchForMolecule constructor.
@@ -21,7 +24,7 @@ class SearchForTags extends SimpleHandler
     public function __construct()
     {
         $this->tagProperty = QueryUtils::newPropertyPrintRequest("Tag");
-
+        $this->logger = new LoggerUtils('SearchForTags', 'ChemExtension');
     }
 
     public function run()
@@ -66,8 +69,8 @@ class SearchForTags extends SimpleHandler
         try {
             $tibClient = new TibClient();
             $tibResults = $tibClient->suggest($searchText, self::MAX_RESULTS - count($wikiResults));
-        } catch(\Exception $e) {
-            // ignore
+        } catch(Exception $e) {
+            $this->logger->warn($e->getMessage());
         }
         return array_merge($wikiResults, $tibResults);
     }
