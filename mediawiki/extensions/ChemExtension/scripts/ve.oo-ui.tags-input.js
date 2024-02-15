@@ -4,12 +4,15 @@
 
     OO.ui.TagsMultiSelectWidget = function MwWidgetsTagsMultiselectWidget( config ) {
 
+        config = config || {};
+
         // Parent constructor
         OO.ui.TagsMultiSelectWidget.parent.call( this, $.extend( true,
             {
                 clearInputOnChoose: true,
                 inputPosition: 'inline',
                 allowEditTags: false,
+                allowArbitrary: true,
                 menu: {
                     filterMode: 'substring'
                 }
