@@ -11,7 +11,7 @@
     });
 
     window.addEventListener("mouseup", (event) => {
-        if (!event.ctrlKey) {
+        if (!event.ctrlKey && dialog === null) {
             return;
         }
         handle = setTimeout(() => {
@@ -136,11 +136,19 @@
 
     ve.ui.TaggingDialog.prototype.updateTagsNode = function () {
         let tagsNode = this.findTagsNode();
+        let value = this.inputField.getValue();
         if (tagsNode != null) {
             let template = ve.ui.LinearContextItemExtension.getTemplate(tagsNode.model);
-            let value = this.inputField.getValue();
             template.params.tags.wt = value.join(',');
             tagsNode.forceUpdate();
+        } else {
+            let surface = ve.init.target.getSurface();
+            let item = ve.ui.DataTransferItem.static.newFromString( '{{Tags|tags='+value.join(',')+'}}', 'text/plain' );
+            const handler = ve.ui.dataTransferHandlerFactory.create( 'wikitextString', surface, item );
+            handler.getInsertableData().done((node) => {
+                surface.getView().getModel().getDocument().getDocumentNode().push(node.documentNode.children[0])
+            });
+
         }
 
     }
