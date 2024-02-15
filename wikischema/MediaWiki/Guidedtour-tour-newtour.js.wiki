@@ -6,89 +6,103 @@
 ( function ( window, document, $, mw, gt ) {
     var isnav_open = $('#ce-side-panel-content')[0].attributes.style ;
     var navbarstate = '#ce-side-panel-content-collapsed';
+    var hasEditSection = $( '.mw-editsection' ).length > 0
 
+    console.log(hasEditSection)
     if (isnav_open == "display:none;") {
-        navbarstate = "#ce-topic-element";
-        
+        navbarstate = "#ce-topic-element"; 
     };
-    console.log(isnav_open)
-    console.log(navbarstate);
-    // Declare a variable for use later
-    var pageName = 'Help:Guided tours/newtour',
-        tour;
+
+    var old_pageName = $("#mw-content-text > div > table > tbody > tr:nth-child(4) > td > a").attr('href');
+    if (typeof old_pageName !== 'undefined'){
+        var new_pagename = old_pageName.replace("/main/mediawiki/", "")}
+    
+    console.log($( '.ve-ce-documentNode[contenteditable="true"]' ))
+    // console.log(new_pagename)
+
     function open_nav(){
+        if (1 < 2){
             $('#ce-side-panel-content-collapsed').hide();
             $('#ce-side-panel-content').show();
             $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
-            navbarstate = "#ce-topic-element"
-            console.log("yes");
+            navbarstate = "#ce-topic-element";}
             return "m_topic"
-    }
+            }
+
+    // addEventListener("submit", (event) => {});
+    onsubmit = (event) => {console.log(event)};
+
+    function fix_home(){
+        $('#gt-newtour-homebutton').attr('style', 'width: 400px; position: absolute; top: 6px; left: 63px;');
+        $('#gt-newtour-homebutton > div.guider_arrow.guider_arrow_left').attr('style', 'top: 8.281px;');
+        return "homebutton"
+    }   
+
     tour = new gt.TourBuilder( {
-        /*
-         * This is the name of the tour.  It must be lowercase, without any hyphen (-) or
-         * period (.) characters.
-         *
-         * The page where you save an on-wiki tour must be named
-         * MediaWiki:Guidedtour-tour-{name}.js , in this example MediaWiki:Guidedtour-tour-mytest.js
-         */
         name: 'newtour'
     } );
 
     // Information defining each tour step
-
-    // This tour shows a central overlay at the start of the tour.
-    // Guiders appear in the center if another position is not specified.
-    // To specify the first step of the tour, use .firstStep instead of .step
     tour.firstStep( {
         name: 'intro',
-        // Note that for on-wiki tours, we use title and description with the actual text.
-        // The title appears in the title bar of the guider.
         title: 'Welcome',
-
-        // The description appears in the body
         description: 'Welcome to the Introduction tour for MediaWiki',
-
-        // This specifies that there is an overlay behind the guider.
         overlay: true
     } )
-        // This specifies the next step of the tour, and will automatically generate a next button.
-        // 'callout' refers to the name used in the step immediately below.  Although putting the steps
-        // in a meaningful order is recommended, any step can be specified as next/back.
         .next( 'homebutton' );
 
+
     tour.step( {
-        /*
-         * Callout of left menu
-         */
         name: 'homebutton',
         title: 'Home Button',
         description: 'Here is the home buttton click here to return to the home page',
-
-        // This positions the guider next to a page element, in this
-        // case the portal link (which is "Community portal" on English
-        // Wikipedia, but varies by site).
-        // The string is a jQuery selector.  "#n-portal" means the HTML
-        // element with this id attribute, and "a" means an a, or link,
-        // element inside that.
         attachTo: '#mw-navigation a',
-        
-        // This means the guider shows to the right of the Community Portal link
-        position: 'right',
+        position: 'bottomRight',
     } )
-        .next( 'feat_mol' )
-        // The 'back' property specifies that you can go back from this step, and where to go
-        // if the back button is clicked.
+        .next( 'edit_trans' )
         .back( 'intro' );
 
     tour.step( {
-        /*
-         * Test out mediawiki description pages
-         */
+        name: 'edit_trans',
+        title: 'Edit the whole page…',
+        description: 'Click the \"Edit\" button to make your changes.',
+        attachTo: '#ca-ve-edit',
+        position: 'bottom',
+        closeOnClickOutside: false ,
+        // This indicates that we don't want an automatic next button,
+        // even though we are specifying which step comes next.
+        allowAutomaticNext: false,
+        buttons: [ {
+            // Custom logic to specify a button and its behavior
+            // depending on whether there are sections on the page.
+            action: hasEditSection ? 'next' : 'okay',
+            onclick: function () {
+                if ( hasEditSection ) {
+                    mw.libs.guiders.next();
+                } else {
+                    mw.libs.guiders.hideAll();
+                }
+            }
+        } ]
+        } )
+        // At certain times, called transition points, the callback passed to .transition
+        // will be called.  At those times, this tour checks if the user is editing.  If so,
+        // the tour returns 'preview', indicating that the tour should transition to the
+        // 'preview' step automatically.
+        // step.transition( function () {
+            
+        //     if ( gt.isVisualEditorOpen() ) {
+                
+        //         return 'm_topic';
+        //     }
+        // } )
+        .transition( function () { if ( mw.guidedTour.isEditing() ) { return 'm_topic'; } else{return "search_nav"} } )
+        .next( 'feat_mol' );
+
+
+    tour.step( {
         name: 'feat_mol',
         title: 'Featured Molecule',
-
-        // Name of the page to parse
         description: 'Clicking this will bring you to the relevant molecule page. From here you can see experiments that use the selected molecule.',
         overlay: false,
         attachTo: 'table tr:nth-child(2) td:nth-child(2)',
@@ -109,7 +123,7 @@
         //         // if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'expanded') {
         //         //     tools.createCookie(NAVBAR_STATUS_COOKIE, 'expanded');
         //         // }
-        //     },
+        //     },  closeOnClickOutside: false ,
         //     action: "next",
         //     page: pageName,
         //     name: 'next',
@@ -124,10 +138,10 @@
         // } 
     // ]
     // 
-} 
-    )
+        } )
         .next(open_nav())
         .back( 'homebutton' );
+
 
         tour.step( {
             name:  "m_topic",
@@ -141,6 +155,7 @@
         .next("pub")
         .back("feat_mol");
 
+
         tour.step( {
             name: "pub",
             title: "Publication",
@@ -153,12 +168,11 @@
         .next("testa")
         .back("m_topic");
 
+
         tour.step( {
             name: "testa",
             title: "topic attacment",
             description:"this is the highest level of the Organization" ,
-           // overlay: true,
-            // attachTo: "#ce-side-panel-content-collapsed" ,
             attachTo: navbarstate,
             position: 'right',
 
@@ -171,17 +185,56 @@
             name: "pub_nav",
             title: "Publications",
             description:"This is the publication level. Papers are stored here with each investigation splitting into the next level" ,
-           // overlay: true,
-            // attachTo: "#ce-side-panel-content-collapsed" ,
             attachTo: '#ce-publication-element',
             position: 'right',
-
         })
-        //  .next()
-        .back("pub");
+        .next("search_nav")
+        .back("testa");
+
+
+        tour.step({
+            name:"search_nav",
+            title: "search bar",
+            description: "Here if you click on the search bar and hit enter will allow you to entered facted search",
+            attachTo: "#searchInput",
+            position:"bottom",
+            closeOnClickOutside: false ,
+            allowAutomaticNext : false,
+        })
+        .transition( function () {
+            if ( gt.isEditing() ) {
+                console.log("lets try it")
+                return 'pub_feat';}
+            else (console.log("fail"))})
+        // .next("pub_feat")
+        .back("pub_nav");
+
+
+        tour.step( {
+            name: "pub_feat",
+            title: "Publications",
+            description:"this a featured publications page" ,
+            attachTo: '#mw-content-text > div > table > tbody > tr:nth-child(4)',
+            position: 'top',
+            buttons: [{action: 'wikiLink',
+                page: new_pagename,
+                name: 'Link to Featured Molecues',
+                type: 'progressive',
+            }]
+        })
+        .next("pub_page")
+        .back("search_nav");
+
+
+        tour.step( {
+            name: "pub_page",
+            title: "Publication page",
+            description:"On this page it shows.." ,
+            attachTo: '#Investigation',
+            position: 'top',
+        })
+        // .next("pub_feat")
+        .back("pub_feat");
 
 // The following should be the last line of your tour.
-
-
-
 } ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );

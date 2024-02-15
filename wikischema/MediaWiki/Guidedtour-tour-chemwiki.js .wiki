@@ -1,0 +1,60 @@
+/*
+ * Guided Tour to test guided tour features.
+ */
+// Copy the next line into the start of your tour.
+
+( function ( window, document, $, mw, gt ) {
+    
+    tour = new gt.TourBuilder( {
+        name: 'chemwiki'
+    } );
+
+    // Information defining each tour step
+    tour.firstStep( {
+        name: 'intro',
+        title: 'Welcome',
+        description: 'Welcome to the Introduction tour for MediaWiki',
+        overlay: true
+    } )
+        .next( 'homebutton' );
+
+
+    tour.step( {
+        name: 'homebutton',
+        title: 'Home Button',
+        description: 'Here is the home buttton click here to return to the home page',
+        attachTo: '#mw-navigation a',
+        position: 'bottomRight',
+        onShow: function() {
+			
+				gt.setTourCookie( 'chemwiki' , 'featmol' );
+			 	gt.launchTourFromUserState();
+			 },
+
+        buttons: [{
+            action: 'wikiLink',
+            page: "Category:Homogeneous_photocatalytic_CO2_conversion",
+            name: 'Link to Featured Molecues',
+            type: 'progressive',
+    }],
+    } )
+    // .next( 'feat_mol' )
+    .back( 'intro' );
+    
+    tour.step( {
+        name: 'feat_mol',
+        title: 'Home Button',
+        description: 'this is a test page',
+        attachTo: '#mw-toc-heading',
+        position: 'bottomRight',
+        buttons: [{action: 'wikiLink',
+            page: new_pagename,
+            name: 'Link to Featured Molecues',
+            type: 'progressive',
+        }],
+        } )
+            .next( 'edit_trans' )
+            .back( 'intro' );
+   
+// The following should be the last line of your tour.
+} ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );
