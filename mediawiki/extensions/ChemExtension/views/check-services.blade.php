@@ -15,5 +15,11 @@
                 {{$renderState === true ? 'OK': $renderState}}
             </td>
         </tr>
+        <tr>
+            <td><span style="font-weight: bold">TIB service</span> (contact: kuehn (at) diqa.de)</td>
+            <td class="check-service-state {{$tibState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
+                {{$tibState === true ? 'OK': $tibState}}
+            </td>
+        </tr>
     </table>
 </div>

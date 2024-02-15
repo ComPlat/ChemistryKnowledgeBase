@@ -17,7 +17,11 @@
             config
 
         ) );
+        OO.ui.mixin.PendingElement.call( this, $.extend( true,
+            {
 
+            },
+            config ));
         // Initialization
 
         if ( 'name' in config ) {
@@ -54,36 +58,52 @@
     /**
      * @inheritdoc
      */
-
+    var handle;
+    var lastRequest = null;
 
     OO.ui.TagsMultiSelectWidget.prototype.onInputChange = function (text) {
 
         let widget = this;
         let ajax = new window.ChemExtension.AjaxEndpoints();
-        ajax.searchForTags(text).done((response) => {
-            let data = response.pfautocomplete;
 
-            widget.menu.clearItems();
-            let options = [];
-            let option = new OO.ui.TagsMenuOptionWidget({
-                data: text,
-                label: text
+        if (handle) {
+            clearTimeout(handle);
+        }
+        if (lastRequest) {
+            lastRequest.abort();
+        }
 
-            });
-            options.push(option);
-            for(let i = 0; i < data.length; i++) {
-                option = new OO.ui.TagsMenuOptionWidget({
-                    data: data[i],
-                    label: data[i]
+        handle = setTimeout(function() {
+            widget.pushPending();
+
+            lastRequest = ajax.searchForTags(text).done((response) => {
+                let data = response.pfautocomplete;
+
+                widget.menu.clearItems();
+                let options = [];
+                let option = new OO.ui.TagsMenuOptionWidget({
+                    data: text,
+                    label: text
 
                 });
                 options.push(option);
-            }
-            widget.menu.addItems( options );
-        }).always(() => {
-            OO.ui.TagsMultiSelectWidget.parent.prototype.onInputChange.call( widget );
+                for(let i = 0; i < data.length; i++) {
+                    option = new OO.ui.TagsMenuOptionWidget({
+                        data: data[i],
+                        label: data[i]
 
-        });
+                    });
+                    options.push(option);
+                }
+                widget.menu.addItems( options );
+            }).always(() => {
+                widget.popPending();
+                OO.ui.TagsMultiSelectWidget.parent.prototype.onInputChange.call( widget );
+                lastRequest = null;
+            });
+        }, 300);
+
+
 
     };
 

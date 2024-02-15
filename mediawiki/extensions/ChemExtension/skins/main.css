@@ -528,3 +528,23 @@ div.navbar-tool {
 div.experiment-link-container {
     overflow-x: auto;
 }
+
+div.chemtext-tags-input.oo-ui-pendingElement-pending {
+    background-color: #eaecf0 !important;
+}
+
+div.ce-tag-box-item table td:nth-child(1) {
+    width: 250px;
+}
+
+div.ce-tag-box-item table {
+    width: 80%;
+}
+
+div.ce-tag-box-item {
+    border: 1px solid;
+    border-radius: 5px;
+    padding: 10px;
+    width: 80%;
+    background: lightyellow;
+}

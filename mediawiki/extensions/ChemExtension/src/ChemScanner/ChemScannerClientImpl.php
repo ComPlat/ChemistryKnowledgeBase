@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\ChemScanner;
 
 use CURLFile;
+use DIQA\ChemExtension\Utils\CurlUtil;
 use Exception;
 
 class ChemScannerClientImpl implements ChemScannerClient {
@@ -58,7 +59,7 @@ class ChemScannerClientImpl implements ChemScannerClient {
             }
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            list($header, $body) = self::splitResponse($response);
+            list($header, $body) = CurlUtil::splitResponse($response);
             if ($httpcode >= 200 && $httpcode <= 299) {
                 return json_decode($body);
             }
@@ -69,10 +70,4 @@ class ChemScannerClientImpl implements ChemScannerClient {
         }
     }
 
-    protected static function splitResponse($res): array
-    {
-        $bodyBegin = strpos($res, "\r\n\r\n");
-        list($header, $res) = $bodyBegin !== false ? array(substr($res, 0, $bodyBegin), substr($res, $bodyBegin + 4)) : array($res, "");
-        return array($header, str_replace("%0A%0D%0A%0D", "\r\n\r\n", $res));
-    }
 }

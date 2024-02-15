@@ -1,2 +1,1 @@
-<noinclude>Template for setting display title. Removes the namespace and makes it available to SMW (Display title of) </noinclude>
-<includeonly>{{DISPLAYTITLE: {{SUBPAGENAME}} }}<includeonly>
+<noinclude>Template for setting display title. Removes the namespace and makes it available to SMW (Display title of) </noinclude><includeonly>{{DISPLAYTITLE: {{SUBPAGENAME}} }}</includeonly>
