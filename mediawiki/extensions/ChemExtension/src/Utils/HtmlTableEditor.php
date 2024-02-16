@@ -36,7 +36,7 @@ class HtmlTableEditor
         }
     }
 
-    private function restoreInnerTables() {
+    private function restoreInnerTables($collapseColumns) {
         $xpath = new DOMXPath($this->doc);
         $list = $xpath->query('//span[@inner]');
         foreach ($list as $span) {
@@ -44,7 +44,7 @@ class HtmlTableEditor
             $span->parentNode->replaceChild($this->innerTables[$innerValue], $span);
         }
         global $wgCEHiddenColumns;
-        if ($wgCEHiddenColumns ?? false) {
+        if (($wgCEHiddenColumns ?? false) && $collapseColumns) {
             $this->collapseColumns();
         }
     }
@@ -358,11 +358,11 @@ class HtmlTableEditor
     /**
      * @return false|string
      */
-    public function toHtml()
+    public function toHtml($collapseColumns = true)
     {
         $node = $this->doc->documentElement
             ->firstChild->firstChild; // ignore html/body
-        $this->restoreInnerTables();
+        $this->restoreInnerTables($collapseColumns);
         return $this->doc->saveHTML($node);
     }
 
