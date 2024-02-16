@@ -96,6 +96,9 @@ class MultiContentSave
      */
     private static function parseChemicalFormulas($wikitext, $pageTitle, $createPages): void
     {
+        if ($pageTitle->getNamespace() === NS_MOLECULE) {
+            return;
+        }
         $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
         $chemFormParser = new ChemFormParser();
         $chemForms = $chemFormParser->parse($wikitext);
@@ -105,7 +108,7 @@ class MultiContentSave
         foreach ($chemForms as $chemForm) {
             try {
                 if ($createPages) {
-                    $moleculePage = $pageCreator->createNewMoleculePage($chemForm, null, true);
+                    $moleculePage = $pageCreator->createNewMoleculePage($chemForm, $pageTitle,null, true);
 
                     self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 } else {
