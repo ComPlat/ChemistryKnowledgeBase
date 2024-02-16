@@ -21,6 +21,7 @@
                     let el = $(e);
                     el.append(el.attr('stashed'));
                 });
+                window.ChemExtension.initTooltips();
             } else {
                 th.attr('stashed', th.html());
                 columns.each((i, e) => {
