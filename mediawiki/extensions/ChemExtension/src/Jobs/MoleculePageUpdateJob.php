@@ -53,8 +53,9 @@ class MoleculePageUpdateJob extends Job
                 $te->replaceTemplateName('MoleculeCollection', 'Molecule');
             }
         }
-
-        WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
+        if ($wikitext !== $te->getWikiText()) {
+            WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
+        }
         $this->logger->log("done");
     }
 

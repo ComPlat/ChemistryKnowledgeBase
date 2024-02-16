@@ -67,14 +67,16 @@ class AdjustMoleculeReferencesJob extends Job
                     $wikitext = str_replace($search, $replace, $wikitext);
                 }
 
-                 $successful =  WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated",
-                     EDIT_UPDATE | EDIT_MINOR | EDIT_SUPPRESS_RC | EDIT_FORCE_BOT, null, true);
-                 if ($successful) {
-                     $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
-                     $modificationLog->addModificationLogEntry($this->params['oldChemFormId'], $pageTitle, $replacedChemForm, $replacedChemFormLink,
-                         !$replacedChemForm && !$replacedChemFormLink);
-                 } else {
-                     $this->logger->error("Update failed: {$pageTitle->getPrefixedText()}");
+                 if (($wikitext !== $originalText)) {
+                     $successful = WikiTools::doEditContent($pageTitle, $wikitext, "auto-generated",
+                         EDIT_UPDATE | EDIT_MINOR | EDIT_SUPPRESS_RC | EDIT_FORCE_BOT, null, true);
+                     if ($successful) {
+                         $this->logger->log("Updated page: {$pageTitle->getPrefixedText()}");
+                         $modificationLog->addModificationLogEntry($this->params['oldChemFormId'], $pageTitle, $replacedChemForm, $replacedChemFormLink,
+                             !$replacedChemForm && !$replacedChemFormLink);
+                     } else {
+                         $this->logger->error("Update failed: {$pageTitle->getPrefixedText()}");
+                     }
                  }
             }
             $modificationLog->saveLog();
