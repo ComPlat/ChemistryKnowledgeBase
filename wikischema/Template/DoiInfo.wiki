@@ -28,6 +28,6 @@
 </tr>
 |}}
 <tr style="display: none;">
-<td colspan="2" style="font-size:80%; text-align:center; ">[{{fullurl:Special:Literature|doi={{{doi|}}} }} Show details]</td>
+<td colspan="2" style="font-size:80%; text-align:center; ">[{{fullurl:Special:Literature|doi={{{doi|}}} }} Go to literature page]</td>
 </tr>
 </table></includeonly>
