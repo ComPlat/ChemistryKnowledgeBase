@@ -53,12 +53,12 @@ class AdjustMoleculeReferencesJob extends Job
                 $replacedChemForm = ($wikitext !== $originalText);
 
                 // replace molecule links
-                $originalText = $wikitext;
+                $originalText2 = $wikitext;
                 $parserFunctionParser = new ParserFunctionParser();
                 $wikitext = $parserFunctionParser->replaceFunction($wikitext,
                     'moleculelink', 'link', $this->params['oldMoleculeKey'],
                     ['link' => $this->params['targetChemForm']->getMoleculeKey()]);
-                $replacedChemFormLink = ($wikitext !== $originalText);
+                $replacedChemFormLink = ($wikitext !== $originalText2);
 
                 // replace chemformIds. (if necessary)
                  if ($this->params['replaceChemFormId'] ?? false) {
