@@ -3,6 +3,9 @@
 
     let dialog = null;
     let handle = null;
+    let node = null;
+    let range = null;
+    let lastText = null;
     window.addEventListener("dblclick", (event) => {
         if (handle) {
             clearTimeout(handle);
@@ -14,6 +17,8 @@
         if (!event.ctrlKey && dialog === null) {
             return;
         }
+
+
         handle = setTimeout(() => {
             var windowManager = new OO.ui.WindowManager();
             let t = $(event.target);
@@ -21,8 +26,12 @@
                 return;
             }
             if (dialog) {
+                let tags = dialog.inputField.getValue();
                 dialog.close();
-                dialog.updateTagsNode();
+
+                let surface = ve.init.target.getSurface();
+                ve.ce.AnnotateMouseDownHandler.static.execute(surface, event, node, range, tags, lastText);
+
                 dialog = null;
                 document.getSelection().collapse(document.documentElement);
                 return;
@@ -32,6 +41,10 @@
             if (selectedText == '' || document.getSelection().isCollapsed) {
                 return;
             }
+            let surface = ve.init.target.getSurface();
+            range = surface.getView().model.getSelection().getRange();
+            node = surface.getView().getDocument().getBranchNodeFromOffset( range.from );
+            lastText = selectedText;
 
             dialog = new ve.ui.TaggingDialog({selectedText: selectedText});
             $( document.body ).append( windowManager.$element );
@@ -104,12 +117,7 @@
                         align: 'top'
                     }
                 );
-                let tagsNode = this.findTagsNode();
-                if (tagsNode != null) {
-                    let template = ve.ui.LinearContextItemExtension.getTemplate(tagsNode.model);
-                    let items = template.params.tags.wt.split(",")
-                    this.inputField.setValue(items);
-                }
+
                 setTimeout(() => {
                     this.inputField.focus();
                     this.inputField.changing = true;
@@ -133,46 +141,6 @@
     /* Registration */
 
     ve.ui.windowFactory.register( ve.ui.TaggingDialog );
-
-    ve.ui.TaggingDialog.prototype.updateTagsNode = function () {
-        let tagsNode = this.findTagsNode();
-        let value = this.inputField.getValue();
-        if (tagsNode != null) {
-            let template = ve.ui.LinearContextItemExtension.getTemplate(tagsNode.model);
-            template.params.tags.wt = value.join(',');
-            tagsNode.forceUpdate();
-        } else {
-            let surface = ve.init.target.getSurface();
-            let item = ve.ui.DataTransferItem.static.newFromString( '{{Tags|tags='+value.join(',')+'}}', 'text/plain' );
-            const handler = ve.ui.dataTransferHandlerFactory.create( 'wikitextString', surface, item );
-            handler.getInsertableData().done((node) => {
-                surface.getView().getModel().getDocument().getDocumentNode().push(node.documentNode.children[0])
-            });
-
-        }
-
-    }
-
-    ve.ui.TaggingDialog.prototype.findTagsNode = function () {
-        let tagsNode = null;
-        let documentNode = ve.init.target.getSurface().getView().getDocument().getDocumentNode();
-        let iterate = (node) => {
-            if (!node.children) return;
-            for (let i = 0; i < node.children.length; i++) {
-                let child = node.children[i];
-                if (child.type === 'mwTransclusionBlock') {
-                    let template = ve.ui.LinearContextItemExtension.getTemplate(child.model);
-                    let target = template.target.wt;
-                    if (target === 'Tags') {
-                        tagsNode = child;
-                    }
-                }
-                iterate(child);
-            }
-        }
-        iterate(documentNode);
-        return tagsNode;
-    }
 
 
 }(OO));

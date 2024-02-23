@@ -1,0 +1,1 @@
+<noinclude>Template for inline annotation in VE</noinclude><includeonly>{{#set:{{{property}}}={{{value}}} }}{{{display}}}</includeonly>
