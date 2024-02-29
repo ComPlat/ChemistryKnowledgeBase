@@ -67,6 +67,7 @@
         // Parent constructor
         ve.ui.TaggingDialog.super.call( this, config );
         this.selectedText = config.selectedText || '';
+        this.data = config.data || [];
     };
 
     /* Inheritance */
@@ -117,7 +118,7 @@
                         align: 'top'
                     }
                 );
-
+                this.inputField.setValue(this.data);
                 setTimeout(() => {
                     this.inputField.focus();
                     this.inputField.changing = true;

@@ -61,6 +61,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.ui.LinearContextItemExtension.extendForMoleculeLink(panel, context, model);
         } else if (template.target.wt.trim().indexOf('#experimentlink:') === 0) {
             ve.ui.LinearContextItemExtension.extendForExperimentLink(panel, context, model);
+        } else if (template.target.wt.trim() == 'Annotation') {
+            ve.ui.LinearContextItemExtension.extendForTagTemplate(panel, context, model);
         }
     }
 
@@ -156,6 +158,41 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         panel.$actions.append(addButton.$element);
         panel.editButton.$element.remove();
+    }
+
+    ve.ui.LinearContextItemExtension.extendForTagTemplate = function(panel, context, model) {
+        let addButton = new OO.ui.ButtonWidget({
+            label: 'Change annotations'
+        });
+        let dialog;
+        addButton.on('click', function () {
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+            let value = template.params.value.wt ? template.params.value.wt : '';
+            dialog = new ve.ui.TaggingDialog({data: value.split(',')});
+            let windowManager = new OO.ui.WindowManager();
+            $( document.body ).append( windowManager.$element );
+            windowManager.addWindows( [ dialog ] );
+            windowManager.openWindow( dialog);
+
+        });
+
+        panel.$actions.append(addButton.$element);
+        panel.editButton.$element.remove();
+
+        window.addEventListener("mouseup", (event) => {
+            let t = $(event.target);
+            if (t.closest('div.oo-ui-messageDialog-text').length > 0) {
+                return;
+            }
+            if (dialog) {
+                dialog.close();
+                let selectedNode = ve.init.target.getSurface().getModel().getSelectedNode();
+                let template = ve.ui.LinearContextItemExtension.getTemplate(selectedNode);
+                template.params.value.wt = dialog.inputField.getValue().join(',');
+                ve.init.target.getSurface().getView().getSelection().focusedNode.forceUpdate()
+                dialog = null;
+            }
+        });
     }
 
     ve.ui.LinearContextItemExtension.getTemplate = function(model) {

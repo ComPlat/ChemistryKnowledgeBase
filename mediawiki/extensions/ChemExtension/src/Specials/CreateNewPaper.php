@@ -113,21 +113,6 @@ class CreateNewPaper extends PageCreationSpecial
             ]
         );
 
-        $tags = new FieldLayout(
-            new TagsMultiSelectWidget(['id' =>
-                'chemext-tags',
-                'infusable' => true,
-                'name' => 'tags',
-                'default' => '',
-                'placeholder' => $this->msg('tags-hint')->plain(),
-                'classes' => ['chemtext-tags-input'],
-            ]),
-            [
-                'align' => 'top',
-                'label' => $this->msg('tags-label')->text()
-            ]
-        );
-
         $doiInput = new FieldLayout(
             new TextInputWidget(['id' => 'chemext-doi', 'name' => 'doi', 'placeholder' => $this->msg('doi-hint')]),
             [
@@ -138,7 +123,7 @@ class CreateNewPaper extends PageCreationSpecial
 
         $helpSection = $this->getHelpSection('Help:Create_new_paper');
 
-        return new FormLayout(['items' => [$paperTitle, $topicCategory, $tags, $doiInput, $createPaperButton, $helpSection],
+        return new FormLayout(['items' => [$paperTitle, $topicCategory, $doiInput, $createPaperButton, $helpSection],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:" . $this->getName(),
             'enctype' => 'multipart/form-data',
@@ -150,7 +135,6 @@ class CreateNewPaper extends PageCreationSpecial
         $doi = $wgRequest->getText('doi', '');
         $paperTitle = $wgRequest->getText('paper-title', '');
         $topicSuper = $wgRequest->getText('topic-super', '');
-        $tagsAsString = $wgRequest->getText('tags', '');
         if ($topicSuper === '') $topicSuper = "Topic";
 
         $doiData = null;
@@ -169,9 +153,8 @@ class CreateNewPaper extends PageCreationSpecial
         } else {
             throw new Exception("Paper title must be set.");
         }
-        $tags = explode("\n", $tagsAsString);
-        $tags = array_filter($tags, fn($e) => trim($e) !== '');
-        $this->createPageAndRedirect($paperTitleObj, $topicSuper, $doiData, $tags);
+
+        $this->createPageAndRedirect($paperTitleObj, $topicSuper, $doiData);
     }
 
 
