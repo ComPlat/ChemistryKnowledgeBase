@@ -42,6 +42,7 @@ class DOIRenderer
                 'pages' => $pages,
                 'year' => $year,
                 'doi' => $doiData->DOI,
+                'publicationPage' => DOITools::getPageFromDOI($doiData->DOI),
                 'wgScriptPath' => $wgScriptPath,
             ]
         )->render();

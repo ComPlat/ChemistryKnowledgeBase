@@ -24,4 +24,7 @@
         <span class="chem-extension-literature-small">Pages {{$pages}}.</span>
     @endif
     <span>DOI2: <a href="https://dx.doi.org/{{$doi}}" target="_blank">{{$doi}}</a></span>
+    @if(!is_null($publicationPage))
+    <br/><span>Publication: <a href="{{$publicationPage->getFullURL()}}" target="_blank">{{$publicationPage->getText()}}</a></span>
+    @endif
 </div>

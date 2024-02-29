@@ -234,6 +234,34 @@ class HtmlTableEditor
         foreach ($list as $tr) {
             if ($i === 0) {
                 $td = $this->doc->createElement('th');
+                $text = $this->doc->createTextNode("lit");
+                $td->appendChild($text);
+                $tr->appendChild($td);
+                $i++;
+                continue;
+            }
+            $td = $this->doc->createElement('td');
+            if ($link['withLiteratureRef']) {
+                $linkElement = $this->createLink($link['url'], $link['label'], $link['tooltip'] ?? '', false);
+                $td->appendChild($linkElement);
+            }
+            $tr->appendChild($td);
+            $i++;
+            $link = next($links);
+            if ($link === false) break;
+        }
+
+    }
+
+    public function addPubLinkAsLastColumn(array $links)
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//tr');
+        $i = 0;
+        $link = reset($links);
+        foreach ($list as $tr) {
+            if ($i === 0) {
+                $td = $this->doc->createElement('th');
                 $text = $this->doc->createTextNode("pub");
                 $td->appendChild($text);
                 $tr->appendChild($td);
@@ -241,7 +269,8 @@ class HtmlTableEditor
                 continue;
             }
             $td = $this->doc->createElement('td');
-            $linkElement = $this->createLink($link['url'], $link['label'], $link['tooltip'] ?? '', $link['openInTab'] ?? false);
+            $shortenedTitle = strlen($link['tooltip']) > 30 ? substr($link['tooltip'], 0, 30)."..." : $link['tooltip'];
+            $linkElement = $this->createLink($link['fullUrl'], $shortenedTitle, $link['tooltip'] ?? '', true);
             $td->appendChild($linkElement);
             $tr->appendChild($td);
             $i++;

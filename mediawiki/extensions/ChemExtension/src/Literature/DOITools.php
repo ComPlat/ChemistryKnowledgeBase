@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Utils\ArrayTools;
 use Title;
 use SMWDIWikiPage;
 use SMWDIProperty;
+use SMWDIBlob;
 
 class DOITools {
 
@@ -195,6 +196,12 @@ class DOITools {
             return $first->getString();
         }
         return null;
+    }
+
+    public static function getPageFromDOI($doi) {
+        $doiResult = smwfGetStore()->getPropertySubjects(SMWDIProperty::newFromUserLabel("DOI"), new SMWDIBlob($doi));
+        $doiResult->rewind();
+        return $doiResult->valid() ? $doiResult->current()->getTitle() : null;
     }
 
 }
