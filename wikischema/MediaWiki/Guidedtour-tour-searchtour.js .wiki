@@ -1,0 +1,114 @@
+// Tour of search features
+( function ( window, document, $, mw, gt ) {
+    // tour.step.name are assigned here as well as tour.name
+    var tour_name = "searchtour"
+    var name_1 = "intro";
+    var name_2 = "search_intro"
+    var name_3 = "search_query"
+    var name_4 = "selcted_facets"
+    var name_5 = "sort_by"
+    var name_6 = "catagory"
+    var name_7 = "results"
+    var name_8 = "link_to_search"
+    // Start tour
+    tour = new gt.TourBuilder( {
+        name: tour_name
+    } );
+
+
+    // Information defining each tour step
+
+// 1
+    tour.firstStep( {
+        name: name_1,
+        title: 'Welcome',
+        description: 'Welcome to the Introduction tour for MediaWiki',
+        overlay: false,
+        closeOnClickOutside: false ,
+    } )
+    .next( function() {
+        gt.setTourCookie( tour_name, name_2 );
+        window.location.href = mw.util.getUrl( 'Special:Search' ) ;})
+
+
+// 2
+    tour.step( {
+        name: name_2,
+        title: 'Welcome to the Search Page',
+        description: ' Welcome to the faceted search page here you can search by keywords.',
+        } )
+        .next( name_3 )
+        .back( function() {
+            gt.setTourCookie( tour_name, name_2 );
+            window.location.href = mw.util.getUrl( 'Main_Page' ) ;});
+
+// 3   
+    tour.step({
+        name:name_3,
+        title:"Search Query",
+        description:"Type your query into here.",
+        attachTo:"#query",
+        position: "top",
+        onShow: gt.setTourCookie('chemwiki', name_4),
+
+    })
+   .next(name_4)
+   .back(name_2)
+
+// 4
+   tour.step({
+    name:name_4,
+    title:"Selected Facets",
+    description:"Here you can see the currently selected facets that are filtering this collection.",
+    attachTo:"#wrapper > div.facets > div:nth-child(1) > span",
+    position: "right"
+    })
+    .next(name_5)
+    .back(name_3)
+
+// 5
+    tour.step({
+        name:name_5,
+        title:"Sort By",
+        description:"This drop down menu will sort the results by either relevance , the time it was published, and alphabetically by title",
+        attachTo:"#fs_sort_order_label",
+        position: "top"
+    })
+    .next(name_6)
+    .back(name_4)
+
+// 6
+    tour.step({
+        name:name_6,
+        title:"Category",
+        description:"This drop down menu will change the selected facet being searched for.",
+        attachTo:"#fs_category_filter_label",
+        position: "left"
+    })
+    .next(name_7)
+    .back(name_5)
+
+// 7
+    tour.step({
+        name:name_7,
+        title:"Results",
+        description:"Here is the results of the search clicking on the this will take you to the relevant page.",
+        attachTo:"#pager-header > span",
+        position: "top"
+    })
+    .back(name_6)
+    .next(name_8)
+
+// 8
+    tour.step({
+        name:name_8,
+        title:"Link to Search",
+        description:"Use this feature to either bookmark the save by right clicking and saving the link or copy to share the search with a colleague.",
+        attachTo:"#current_search_link > a",
+        position: "topLeft"
+    })
+    .back(name_7)
+    // .next(name_9)
+
+// The following should be the last line of your tour.
+} ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );
