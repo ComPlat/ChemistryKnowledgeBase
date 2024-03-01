@@ -104,7 +104,7 @@ TEMPLATE;
                     }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
-                $htmlTableEditor->addPubLinkAsLastColumn($links);
+                //$htmlTableEditor->addPubLinkAsLastColumn($links);
                 $htmlTableEditor->hideTables();
                 $htmlTableEditor->addTableClass("experiment-link");
             } else {
