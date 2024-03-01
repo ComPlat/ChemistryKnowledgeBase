@@ -66,6 +66,8 @@ class Setup {
                 $baseScript . '/ve.oo.ui.molecule-link-dialog.js',
                 $baseScript . '/ve.oo.ui.molecule-link-widget.js',
                 $baseScript . '/breadcrumb.js',
+                $baseScript . '/tagging-selector.js',
+                $baseScript . '/ve.oo-ui.annotate-tool.js',
 
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],

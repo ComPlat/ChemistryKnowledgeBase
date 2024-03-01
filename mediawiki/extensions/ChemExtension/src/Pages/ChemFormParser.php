@@ -52,8 +52,8 @@ class ChemFormParser
             $parser = new ChemFormParser();
             $chemForm = $parser->parse($matches[0])[0];
             if ($chemForm->getMoleculeKey() === $moleculeKey) {
-                $chemFormToReplace->merge($chemForm);
-                return $chemFormToReplace->serializeAsWikitext();
+                $chemForm->merge($chemFormToReplace);
+                return $chemForm->serializeAsWikitext();
             } else {
                 return $matches[0];
 

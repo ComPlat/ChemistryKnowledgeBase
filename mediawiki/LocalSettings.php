@@ -422,7 +422,9 @@ $fsgNamespaceBoosts = [
     3300 => 1.5,    // Molekül
     3302 => 1.5,    // Reaction
 ];
-$fsgCategoryFilter = ['Topic' => 'Topic',
+$fsgCategoryFilter = [
+    '' => 'Alle Seiten',
+    'Topic' => 'Topic',
     'Molecule' => 'Molecule',
     'Molecule_collection' => 'Molecule collection',
     'Investigation' => 'Investigation'

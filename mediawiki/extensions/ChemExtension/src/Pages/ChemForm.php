@@ -137,7 +137,7 @@ class ChemForm
 
     public function merge(ChemForm $chemForm) {
         foreach ($this as $key => $value) {
-            if (is_null($this->{$key}) || $this->{$key} === '') {
+            if (!is_null($chemForm->{$key}) && $chemForm->{$key} !== '') {
                 $this->{$key} = $chemForm->{$key};
             }
         }

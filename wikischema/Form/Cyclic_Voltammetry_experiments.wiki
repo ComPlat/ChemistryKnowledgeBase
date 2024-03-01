@@ -51,7 +51,7 @@ experiments:
 | {{{field|scan dir|property=Scan direction|input type=dropdown}}}
 |-
 ! gas (atmosphere):
-| {{{field|gas|property=Gas|input type=dropdown}}}
+| {{{field|gas|property=Gas|input type=combobox}}}
 |-
 ! temperature [° C]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}

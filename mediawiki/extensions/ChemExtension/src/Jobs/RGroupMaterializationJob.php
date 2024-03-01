@@ -45,8 +45,6 @@ class RGroupMaterializationJob extends Job
 
     public function run()
     {
-        $this->chemFormRepo->deleteAllConcreteMolecule($this->publicationPageTitle);
-
         foreach ($this->params['moleculeCollections'] as $collection) {
             $this->importMoleculeCollection($collection);
         }
@@ -62,6 +60,10 @@ class RGroupMaterializationJob extends Job
         try {
 
             $moleculeCollection = $collection['chemForm'];
+            $moleculeCollectionId = $this->chemFormRepo->getChemFormId($moleculeCollection->getMoleculeKey());
+            if (!is_null($moleculeCollectionId)) {
+                $this->chemFormRepo->deleteAllConcreteMoleculeByCollectionId($this->publicationPageTitle, $moleculeCollectionId);
+            }
             $rGroupsTransposed = ArrayTools::transpose($moleculeCollection->getRGroups());
             $concreteMoleculeResults = $this->rGroupClient->buildMolecules($moleculeCollection->getMolOrRxn(), $rGroupsTransposed);
             foreach ($concreteMoleculeResults as $m) {
@@ -98,7 +100,7 @@ class RGroupMaterializationJob extends Job
     {
         $moleculeCollection = $collection['chemForm'];
         $moleculeCollectionTitle = $collection['title'];
-        $result = $this->pageCreator->createNewMoleculePage($concreteMolecule, $moleculeCollectionTitle, false);
+        $result = $this->pageCreator->createNewMoleculePage($concreteMolecule, $this->publicationPageTitle, $moleculeCollectionTitle, false);
         $concreteMoleculeTitle = $result['title'];
         $this->logger->log("Created molecule/reaction page: {$concreteMoleculeTitle->getPrefixedText()}, "
             . "chemform: {$concreteMolecule->__toString()}, moleculeKey: {$concreteMolecule->getMoleculeKey()}");

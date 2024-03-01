@@ -21,6 +21,7 @@
                     let el = $(e);
                     el.append(el.attr('stashed'));
                 });
+                window.ChemExtension.initTooltips();
             } else {
                 th.attr('stashed', th.html());
                 columns.each((i, e) => {
@@ -54,6 +55,14 @@
         let subContentWidth = $('.ce-subtitle-content').width();
         let aboutTableWidth = $('.ce-subtitle-content table.infobox').width();
         $('.ce-subtitle-content table.infobox').css({'left': (subContentWidth-aboutTableWidth-25) + "px"});
+
+        // highlight literature-references
+        $('.experiment-link, span.literature-link a').click((e) => {
+            let target = $(e.target);
+            let href = target.attr('href');
+            $('.chem_ext_literature').css({'font-weight': 'normal'});
+            $(href).css({'font-weight': 'bold'});
+        });
 
     }
 

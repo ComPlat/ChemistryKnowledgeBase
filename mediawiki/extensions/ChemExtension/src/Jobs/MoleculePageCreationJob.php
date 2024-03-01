@@ -23,6 +23,7 @@ class MoleculePageCreationJob extends Job
     private $chemForm;
     private $parent;
     private $rGroupClient;
+    private $publicationPage;
 
     public function __construct($title, $params)
     {
@@ -30,6 +31,7 @@ class MoleculePageCreationJob extends Job
         $this->logger = new LoggerUtils('MoleculePageCreationJob', 'ChemExtension');
         $this->chemForm = $params['chemForm'];
         $this->parent = $params['parent'];
+        $this->publicationPage = $params['publicationPage'];
 
         global $wgCEUseMoleculeRGroupsClientMock;
         $this->rGroupClient = $wgCEUseMoleculeRGroupsClientMock ? new MoleculeRGroupServiceClientMock()
@@ -59,7 +61,7 @@ class MoleculePageCreationJob extends Job
         if ($this->chemForm->hasRGroupDefinitions()) {
             $jobParams = [];
             $jobParams['moleculeCollections'] = [ ['title' => $title, 'chemForm' => $this->chemForm] ];
-            $job = new RGroupMaterializationJob($title, $jobParams);
+            $job = new RGroupMaterializationJob($this->publicationPage, $jobParams);
             $job->run();
 
         }

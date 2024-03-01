@@ -1,4 +1,0 @@
-<noinclude>
-Writes tags into semantic model
-</noinclude>
-<includeonly><div class="ce-tag-box-item"><table><tr><td><div>Tags: {{#if: {{{tags|}}}|{{{tags|}}}|no tags available}}</div></td></tr></table></div>{{#arraymap:{{{tags|}}}|,|x|[[Tag::x| ]]|\s}}</includeonly>

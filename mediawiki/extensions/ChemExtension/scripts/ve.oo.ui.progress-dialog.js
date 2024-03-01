@@ -4,6 +4,7 @@
     ve.ui.IndefiniteProgressDialog = function VeUiIndefiniteProgressDialog( config ) {
         // Parent constructor
         ve.ui.IndefiniteProgressDialog.super.call( this, config );
+        config = config || {};
         this.showText = config.showText || 'In progress...';
     };
 
@@ -13,7 +14,7 @@
 
     /* Static Properties */
 
-    ve.ui.IndefiniteProgressDialog.static.name = 'progress';
+    ve.ui.IndefiniteProgressDialog.static.name = 'progress-chem';
 
     ve.ui.IndefiniteProgressDialog.static.size = 'medium';
 

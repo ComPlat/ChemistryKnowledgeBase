@@ -84,23 +84,27 @@ TEMPLATE;
                         if (!is_null($doidata)) {
                             $reference = DOITools::generateReferenceIndex($doidata['data']);
                             $url = "#literature_$reference";
-                            $openInTab = false;
+                            $fullUrl = $basePageTitle->getFullURL();
+                            $withLiteratureRef = true;
                         } else {
                             $url = $basePageTitle->getFullURL();
+                            $fullUrl = $url;
                             $reference = DOITools::generateReferenceIndexFromTitle($basePageTitle);
-                            $openInTab = true;
+                            $withLiteratureRef = false;
                         }
                         $links[] = [
                             'url' => $url,
+                            'fullUrl' => $fullUrl,
                             'tooltip' => $basePageTitle->getText(),
                             'label' => "[". $reference ."]",
-                            'openInTab' => $openInTab
+                            'withLiteratureRef' => $withLiteratureRef
                         ];
                     } else {
                         $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];
                     }
                 }
                 $htmlTableEditor->addLinkAsLastColumn($links);
+                $htmlTableEditor->addPubLinkAsLastColumn($links);
                 $htmlTableEditor->hideTables();
                 $htmlTableEditor->addTableClass("experiment-link");
             } else {

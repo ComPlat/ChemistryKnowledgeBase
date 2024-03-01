@@ -3,11 +3,17 @@
     window.ChemExtension = window.ChemExtension || {};
     window.ChemExtension.initTooltips = function(container) {
 
-        $('a[title]', container).each(function(i, e) {
+        $('a[title],a[oldtitle]', container).each(function(i, e) {
             let el = $(e);
             let title = el.attr('title');
-            let parts = title.split(":");
-            if (parts[0] != 'Molecule') return;
+            let parts = title ? title.split(":") : [""];
+            if (parts[0] != 'Molecule') {
+                title = el.attr('oldtitle');
+                parts = title ? title.split(":") : [""];
+                if (parts[0] != 'Molecule') {
+                    return;
+                }
+            };
             el.qtip({
                 content: "<div></div>",
                 style: { classes: 'chemformula-tooltip' },

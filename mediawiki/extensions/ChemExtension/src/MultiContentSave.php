@@ -10,6 +10,7 @@ use DIQA\ChemExtension\Pages\MoleculePageCreator;
 use DIQA\ChemExtension\ParserFunctions\ParserFunctionParser;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -96,6 +97,7 @@ class MultiContentSave
      */
     private static function parseChemicalFormulas($wikitext, $pageTitle, $createPages): void
     {
+
         $logger = new LoggerUtils('AfterDataUpdateCompleteHandler', 'ChemExtension');
         $chemFormParser = new ChemFormParser();
         $chemForms = $chemFormParser->parse($wikitext);
@@ -105,7 +107,7 @@ class MultiContentSave
         foreach ($chemForms as $chemForm) {
             try {
                 if ($createPages) {
-                    $moleculePage = $pageCreator->createNewMoleculePage($chemForm, null, true);
+                    $moleculePage = $pageCreator->createNewMoleculePage($chemForm, $pageTitle,null, true);
 
                     self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 } else {
@@ -179,7 +181,14 @@ class MultiContentSave
             }
             // fixes "broken" DOIs
             $doi = DOITools::parseDOI($doi);
-            // add to index
+            $repo->addToLiteratureIndex($doi, $pageTitle);
+        }
+
+        $te = new TemplateEditor($wikitext);
+        $params = $te->getTemplateParams("DOI");
+        if (array_key_exists('doi', $params)) {
+            // fixes "broken" DOIs
+            $doi = DOITools::parseDOI($params['doi']);
             $repo->addToLiteratureIndex($doi, $pageTitle);
         }
     }

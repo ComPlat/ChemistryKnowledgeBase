@@ -1,0 +1,1 @@
+<noinclude>Template for inline annotation in VE</noinclude><includeonly><span style="display:none;">{{#arraymap:{{{value|}}}|,|x| [[{{{property}}}::x|]] |}}</span><span class="ce-annotation">{{{display}}}</span></includeonly>

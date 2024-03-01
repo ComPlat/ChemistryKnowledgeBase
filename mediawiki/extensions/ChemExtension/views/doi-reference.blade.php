@@ -1,1 +1,1 @@
-<span><a href="#literature_{{$index}}">[{{$index}}]</a></span>
+<span class="literature-link"><a href="#literature_{{$index}}">[{{$index}}]</a></span>

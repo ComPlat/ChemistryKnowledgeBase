@@ -81,7 +81,8 @@ class ExperimentListRenderer extends ExperimentRenderer {
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,
                 'experimentName' => $experimentName,
-                'experimentPageTitle' => $experimentPageTitle
+                'experimentPageTitle' => $experimentPageTitle,
+                'inVisualEditor' => WikiTools::isInVisualEditor()
             ])->render ();
         }
 
