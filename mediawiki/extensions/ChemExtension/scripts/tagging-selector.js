@@ -22,7 +22,7 @@
         handle = setTimeout(() => {
             var windowManager = new OO.ui.WindowManager();
             let t = $(event.target);
-            if (t.closest('div.oo-ui-messageDialog-text').length > 0) {
+            if (t.closest('div.oo-ui-messageDialog-container').length > 0) {
                 return;
             }
             if (dialog) {
@@ -114,10 +114,22 @@
                 let fieldLayout = new OO.ui.FieldLayout(
                     this.inputField,
                     {
-                        label: 'Enter term',
+                        label: 'Enter annotations',
                         align: 'top'
                     }
                 );
+                let description = new OO.ui.LabelWidget({label: 'Please select annotations from the list. You can ' +
+                        'enter arbitrary terms as well as suggested terms. The annotations will later help users to find' +
+                        ' documents in the search. They can also be used to query for documents'});
+                let fieldLayout2 = new OO.ui.FieldLayout(
+                    description,
+                    {
+                        label: '',
+                        align: 'top'
+                    }
+                );
+                let url = mw.config.get('wgScriptPath') + '/Help:Tagging';
+                let helpLink = new OO.ui.HtmlSnippet('<a target="_blank" href="'+url+'">Help</a>')
                 this.inputField.setValue(this.data);
                 setTimeout(() => {
                     this.inputField.focus();
@@ -130,6 +142,8 @@
                 }, 300);
 
                 $row.append( fieldLayout.$element );
+                $row.append( fieldLayout2.$element );
+                $row.append( helpLink.toString() );
                 this.text.$element.append( $row );
                 this.actions.setMode( 'default' );
 

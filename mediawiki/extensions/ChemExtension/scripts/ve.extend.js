@@ -181,7 +181,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         window.addEventListener("mouseup", (event) => {
             let t = $(event.target);
-            if (t.closest('div.oo-ui-messageDialog-text').length > 0) {
+            if (t.closest('div.oo-ui-messageDialog-container').length > 0) {
                 return;
             }
             if (dialog) {
@@ -189,7 +189,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let selectedNode = ve.init.target.getSurface().getModel().getSelectedNode();
                 let template = ve.ui.LinearContextItemExtension.getTemplate(selectedNode);
                 template.params.value.wt = dialog.inputField.getValue().join(',');
-                ve.init.target.getSurface().getView().getSelection().focusedNode.forceUpdate()
+                ve.init.target.getSurface().getView().getSelection().focusedNode.forceUpdate();
+                ve.init.target.fromEditedState = true;
+                ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
                 dialog = null;
             }
         });
