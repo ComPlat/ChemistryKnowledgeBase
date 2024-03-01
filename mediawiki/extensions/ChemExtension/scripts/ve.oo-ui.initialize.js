@@ -51,11 +51,6 @@
             }
         });
 
-        // positioning of about-infobox
-        let subContentWidth = $('.ce-subtitle-content').width();
-        let aboutTableWidth = $('.ce-subtitle-content table.infobox').width();
-        $('.ce-subtitle-content table.infobox').css({'left': (subContentWidth-aboutTableWidth-25) + "px"});
-
         // highlight literature-references
         $('.experiment-link, span.literature-link a').click((e) => {
             let target = $(e.target);
@@ -87,9 +82,25 @@
 
     function initializeDOIInfoBoxToggle() {
         $('.infobox th').off('click');
-        $('.infobox th').click((e) => {
-            let table = $(e.target).closest('table');
-            $('tr', table).slice(1).toggle();
+        $('.infobox th').click((e, action) => {
+            let table = $(e.target).closest('table').next();
+            let rows = $('tr', table);
+            if (rows.eq(0).is(':visible') || action === 'close') {
+                table.css({
+                    position: 'relative',
+                    top: "0px",
+                    left: "0px"
+                });
+                rows.hide();
+            } else {
+                let position = table.position();
+                table.css({
+                    position: 'absolute',
+                    top: position.top+"px",
+                    left: position.left+"px"
+                });
+                rows.show();
+            }
         });
     }
 

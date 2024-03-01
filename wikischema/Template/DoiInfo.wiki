@@ -1,8 +1,10 @@
 <noinclude>Template for DOI Infobox</noinclude>
-<includeonly><table class="infobox wikitable" style="position:absolute;font-size:90%; margin-top:0; width:410px; max-width:500px;">
+<includeonly><div><table class="infobox wikitable" style="font-size:90%; margin-top:0; margin-bottom:0;width:410px; max-width:500px;">
 <tr>
 <th colspan="2" style="font-size:120%; text-align:center; cursor: pointer;">About</th>
 </tr>
+</table>
+<table class="wikitable" style="font-size:90%; margin-top:0; margin-bottom:0; width:410px; max-width:500px;">
 <tr style="display: none;">
 <td>DOI</td><td>[https://dx.doi.org/{{{doi|}}} {{{doi|}}}]</td>
 </tr>
@@ -30,4 +32,4 @@
 <tr style="display: none;">
 <td colspan="2" style="font-size:80%; text-align:center; ">[{{fullurl:Special:Literature|doi={{{doi|}}} }} Go to literature page]</td>
 </tr>
-</table></includeonly>
+</table></div></includeonly>

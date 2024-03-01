@@ -57,6 +57,7 @@
         if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'expanded') {
             tools.createCookie(NAVBAR_STATUS_COOKIE, 'expanded');
         }
+        $('.infobox th').trigger('click', ['close']);
     }
 
     function collapseNavbar() {
@@ -66,6 +67,7 @@
         if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'collapsed') {
             tools.createCookie(NAVBAR_STATUS_COOKIE, 'collapsed');
         }
+        $('.infobox th').trigger('click', ['close']);
     }
 
     function initializePublicationFilter() {
