@@ -41,7 +41,7 @@
     tour = new gt.TourBuilder( {
         name: 'newtour'
     } );
-
+// 1
     // Information defining each tour step
     tour.firstStep( {
         name: 'intro',
@@ -51,7 +51,7 @@
     } )
         .next( 'homebutton' );
 
-
+// 2
     tour.step( {
         name: 'homebutton',
         title: 'Home Button',
@@ -61,7 +61,7 @@
     } )
         .next( 'edit_trans' )
         .back( 'intro' );
-
+// 3
     tour.step( {
         name: 'edit_trans',
         title: 'Edit the whole page…',
@@ -71,19 +71,19 @@
         closeOnClickOutside: false ,
         // This indicates that we don't want an automatic next button,
         // even though we are specifying which step comes next.
-        allowAutomaticNext: false,
-        buttons: [ {
-            // Custom logic to specify a button and its behavior
-            // depending on whether there are sections on the page.
-            action: hasEditSection ? 'next' : 'okay',
-            onclick: function () {
-                if ( hasEditSection ) {
-                    mw.libs.guiders.next();
-                } else {
-                    mw.libs.guiders.hideAll();
-                }
-            }
-        } ]
+        // allowAutomaticNext: false,
+        // buttons: [ {
+        //     // Custom logic to specify a button and its behavior
+        //     // depending on whether there are sections on the page.
+        //     action: hasEditSection ? 'next' : 'okay',
+        //     onclick: function () {
+        //         if ( hasEditSection ) {
+        //             mw.libs.guiders.next();
+        //         } else {
+        //             mw.libs.guiders.hideAll();
+        //         }
+        //     }
+        // } ]
         } )
         // At certain times, called transition points, the callback passed to .transition
         // will be called.  At those times, this tour checks if the user is editing.  If so,
@@ -96,10 +96,10 @@
         //         return 'm_topic';
         //     }
         // } )
-        .transition( function () { if ( mw.guidedTour.isEditing() ) { return 'm_topic'; } else{return "search_nav"} } )
+        // .transition( function () { if ( mw.guidedTour.isEditing() ) { return 'm_topic'; } else{return "search_nav"} } )
         .next( 'feat_mol' );
 
-
+// 4
     tour.step( {
         name: 'feat_mol',
         title: 'Featured Molecule',
@@ -142,7 +142,7 @@
         .next(open_nav())
         .back( 'homebutton' );
 
-
+// 5
         tour.step( {
             name:  "m_topic",
             title: "Main Topic",
@@ -155,7 +155,7 @@
         .next("pub")
         .back("feat_mol");
 
-
+// 6
         tour.step( {
             name: "pub",
             title: "Publication",
@@ -168,7 +168,7 @@
         .next("testa")
         .back("m_topic");
 
-
+// 7
         tour.step( {
             name: "testa",
             title: "topic attacment",
@@ -180,7 +180,7 @@
          .next("pub_nav")
         .back("pub");
 
-
+// 8
         tour.step( {
             name: "pub_nav",
             title: "Publications",
@@ -191,7 +191,7 @@
         .next("search_nav")
         .back("testa");
 
-
+// 9
         tour.step({
             name:"search_nav",
             title: "search bar",
@@ -209,7 +209,7 @@
         // .next("pub_feat")
         .back("pub_nav");
 
-
+// 10
         tour.step( {
             name: "pub_feat",
             title: "Publications",
@@ -225,14 +225,27 @@
         .next("pub_page")
         .back("search_nav");
 
-
+// 11
         tour.step( {
             name: "pub_page",
             title: "Publication page",
             description:"On this page it shows.." ,
             attachTo: '#Investigation',
             position: 'top',
-        })
+            buttons: [ {
+                // This makes a button which acts like a wikilink to 'Help:Guided tours/guider'
+                action: 'wikiLink',
+                page: '/mediawiki/Special:Search?tour=searchtour',
+                name: 'go to the search page',
+                // This specifies that the button takes you to the next step of a process,
+                // which affects its appearance.
+                type: 'progressive'
+            }, {
+                // This makes the okay button on this step end the tour.
+                action: 'end'
+            } ]
+        } )
+      
         // .next("pub_feat")
         .back("pub_feat");
 

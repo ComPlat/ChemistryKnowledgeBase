@@ -1,0 +1,129 @@
+// Tour of search features
+( function ( window, document, $, mw, gt ) {
+    // tour.step.name are assigned here as well as tour.name
+    var tour_name = "pub_page"
+    var name_1 = "intro";
+    var name_2 = "pub_intro"
+    var name_3 = "toc"
+    var name_4 = "about"
+    var name_5 = "catalyst"
+    var name_6 = "investigations"
+    var name_7 = "product_tab"
+    var name_8 = "investigation_table"
+    // var name_9 = "publications"
+
+    var tour, launchTourButtons,
+		pageName = mw.config.get( 'wgGuidedTourHelpGuiderUrl' );
+    // Start tour
+    tour = new gt.TourBuilder( {
+        name: tour_name
+    } );
+
+
+    // Information defining each tour step
+
+// 1
+    tour.firstStep( {
+        name: name_1,
+        title: 'Welcome',
+        description: 'Welcome to the Introduction tour for MediaWiki',
+        overlay: false,
+        closeOnClickOutside: false ,
+    } )
+    .next( function() {
+        gt.setTourCookie( tour_name, name_2 );
+        window.location.href = mw.util.getUrl( 'Photochemical_Reduction_of_Carbon_Dioxide_to_Formic_Acid_using_Ruthenium(II)-Based_Catalysts_and_Visible_Light' ) ;})
+
+
+// 2
+    tour.step( {
+        name: name_2,
+        title: 'Welcome to an example publication page',
+        description: 'Welcome to the Publications page here is where information from the paper is extracted into the tables on the page.',
+        } )
+        .next( name_3 )
+        .back( function() {
+            gt.setTourCookie( tour_name, name_2 );
+            window.location.href = mw.util.getUrl( 'Main_Page' ) ;});
+
+// 3   
+    tour.step({
+        name:name_3,
+        title:"Table of Contents",
+        description:"Here is the table of contents that contains the sections for the page.",
+        attachTo:"#toc",
+        position: "right",
+
+    })
+   .next(name_4)
+   .back(name_2)
+
+// 4
+   tour.step({
+    name:name_4,
+    title:"About Box",
+    description:"Here is the about table clicking on  the bar expands the tale showing metadata about the paper",
+    attachTo:"#contentSub > div > table > tbody > tr:nth-child(1) > th",
+    position: "top"
+    })
+    .next(name_5)
+    .back(name_3)
+
+// 5
+    tour.step({
+        name:name_5,
+        title:"Catalysts",
+        description:"Here is the section of catalysts used in the publication",
+        attachTo:"#mw-content-text > div > p:nth-child(6)",
+        position: "top"
+    })
+    .next(name_6)
+    .back(name_4)
+
+// 6
+    tour.step({
+        name:name_6,
+        title:"Investigation",
+        description:"Here is a table with each experiment extracted into a unique investigation.",
+        attachTo:"#ooui-php-10 > span",
+        position: "top"
+    })
+    .next(name_7)
+    .back(name_5)
+
+// 7
+    tour.step({
+        name:name_7,
+        title:"Products Tab",
+        description:"Clicking on the table header will change the focus of the table.",
+        attachTo:"#ooui-php-14 > span",
+        position: "top"
+    })
+    .back(name_6)
+    .next(name_8)
+
+// 8
+    tour.step({
+        name:name_8,
+        title:"Investigations",
+        description:"Here is the  list of different investigations from the publication.",
+        attachTo:"#mw-content-text > ul",
+        position: "topLeft",
+        buttons: launchTourButtons
+    })
+    .back(name_7)
+    // .next(name_9)
+
+// 9
+    // tour.step({
+    //     name:name_9,
+    //     title:"example title",
+    //     description:"",
+    //     attachTo:"#mw-pages > div",
+    //     position: "topLeft"
+    // })
+    // .back(name_8)
+    // .next(name_9)
+
+// The following should be the last line of your tour.
+} ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );
