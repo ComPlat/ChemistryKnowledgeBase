@@ -85,15 +85,18 @@
                 widget.menu.clearItems();
                 let options = [];
                 let option = new OO.ui.TagsMenuOptionWidget({
-                    data: text,
+                    data: text+";",
                     label: text
 
                 });
                 options.push(option);
                 for(let i = 0; i < data.length; i++) {
                     option = new OO.ui.TagsMenuOptionWidget({
-                        data: data[i],
-                        label: data[i]
+                        data: data[i].label+"; "+data[i].ontology,
+                        label: new OO.ui.HtmlSnippet('<div class="ce-menu-item-annotation">' +
+                            '<div>'+data[i].label+'</div>'
+                            +'<div>'+data[i].ontology+'</div>'
+                            +'</div>')
 
                     });
                     options.push(option);
@@ -113,17 +116,21 @@
     OO.ui.TagsMenuOptionWidget = function MwWidgetsNamespacesMenuOptionWidget( config ) {
         // Parent
         OO.ui.TagsMenuOptionWidget.parent.call( this, config );
+        this.data = config.data;
     };
 
     /* Setup */
 
     OO.inheritClass( OO.ui.TagsMenuOptionWidget, OO.ui.MenuOptionWidget );
 
+    OO.ui.TagsMenuOptionWidget.prototype.getLabel = function () {
+        return this.data;
+    };
     /**
      * @inheritdoc
      */
     OO.ui.TagsMenuOptionWidget.prototype.getMatchText = function () {
-        return this.getData() + ' ' + this.getLabel();
+        return this.getLabel();
     };
 
 

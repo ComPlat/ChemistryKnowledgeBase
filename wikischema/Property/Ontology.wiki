@@ -1,0 +1,5 @@
+;Purpose
+* Contains the ontology prefix to identify an ontology for tagging
+
+;Datatype
+* [[Has type::String]]

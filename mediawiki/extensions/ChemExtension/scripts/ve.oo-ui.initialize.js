@@ -72,6 +72,22 @@
         return i;
     }
 
+    function initializeAnnotationTooltips() {
+        $('span.ce-annotation').each((i, e) => {
+            let annotationEl = $(e);
+            let data = annotationEl.attr('resource');
+            let html = data.split(',').map((a) => { return '<li>'+a+'</li>'; });
+            annotationEl.qtip({
+                content: "<div class='ce-annotation-tooltip'><ul>"+html+"</ul></div>",
+                style: {},
+                position: {
+                    viewport: $(window)
+                }
+            });
+
+        });
+    }
+
     function initializeToggleBoxes() {
         $('.toggle-box').off('click');
         $('.toggle-box').click((e) => {
@@ -149,6 +165,7 @@
         initializeDOIInfoBoxToggle();
         intializeExpandNavigationButton();
         initializeRGroups();
+        initializeAnnotationTooltips();
     });
 
     mw.hook( 've.activationComplete' ).add(function() {
