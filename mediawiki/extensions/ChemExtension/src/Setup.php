@@ -15,6 +15,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
+use DIQA\ChemExtension\TIB\TagListRenderer;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use RequestContext;
@@ -152,6 +153,7 @@ class Setup {
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
         InvestigationFinder::renderInvestigationList($out);
+        TagListRenderer::renderTagList($out);
 
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("FormEdit")) {
             $out->addModules('ext.diqa.chemextension.pf');
