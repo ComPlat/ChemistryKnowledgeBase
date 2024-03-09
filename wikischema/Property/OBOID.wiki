@@ -1,0 +1,5 @@
+;Purpose
+* Contains the OBO-ID to identify the term in the ontology
+
+;Datatype
+* [[Has type::String]]

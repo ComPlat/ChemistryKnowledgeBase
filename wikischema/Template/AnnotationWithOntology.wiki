@@ -1,4 +1,4 @@
 <noinclude>
 Template for inline annotation in VE (one tag with ontology).
 {{{1}}} contains a tag and an ontology separated by semi-colon
-</noinclude><includeonly>{{#subobject:|Tag={{#explode:{{{1|}}}|;|0}}|Ontology={{#explode:{{{1|}}}|;|1}}}}</includeonly>
+</noinclude><includeonly>{{#subobject:|Tag={{#explode:{{{1|}}}|;|0}}|Ontology={{#explode:{{{1|}}}|;|1}}|OBOID={{#explode:{{{1|}}}|;|2}} }}</includeonly>

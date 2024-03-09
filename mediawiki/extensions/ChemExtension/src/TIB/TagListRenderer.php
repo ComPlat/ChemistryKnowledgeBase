@@ -17,6 +17,7 @@ class TagListRenderer {
 [[-Has subobject::{{FULLPAGENAME}}]] 
 |?Tag
 |?Ontology
+|?OBOID
 |mainlabel=-
 |format=list
 |default=--no-tags-yet--

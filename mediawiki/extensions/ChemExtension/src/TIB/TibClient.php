@@ -106,6 +106,11 @@ class TibClient {
         if (!isset($curlResult->response->docs)) {
             return [];
         }
-        return array_map(fn($e) => ['label' => $e->label, 'ontology' => $e->ontology_name], $curlResult->response->docs);
+        return array_map(fn($e) =>
+            [   'label' => $e->label,
+                'ontology' => $e->ontology_name,
+                'obo_id' => $e->obo_id
+            ],
+            $curlResult->response->docs);
     }
 }

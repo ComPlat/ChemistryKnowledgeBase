@@ -85,14 +85,14 @@
                 widget.menu.clearItems();
                 let options = [];
                 let option = new OO.ui.TagsMenuOptionWidget({
-                    data: text+";",
+                    data: text+";;",
                     label: text
 
                 });
                 options.push(option);
                 for(let i = 0; i < data.length; i++) {
                     option = new OO.ui.TagsMenuOptionWidget({
-                        data: data[i].label+"; "+data[i].ontology,
+                        data: data[i].label+"; "+data[i].ontology+"; "+data[i].obo_id,
                         label: new OO.ui.HtmlSnippet('<div class="ce-menu-item-annotation">' +
                             '<div>'+data[i].label+'</div>'
                             +'<div>'+data[i].ontology+'</div>'
