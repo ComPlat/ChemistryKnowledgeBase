@@ -48,6 +48,14 @@
         $('#ce-side-panel-close-button').click(function() {
            collapseNavbar();
         });
+        let displayState = $('#ce-side-panel-content').attr('resource');
+        $('#ce-side-panel-content').css({
+            display: displayState
+        });
+        displayState = $('#ce-side-panel-content-collapsed').attr('resource');
+        $('#ce-side-panel-content-collapsed').css({
+            display: displayState
+        });
     }
 
     function expandNavbar() {

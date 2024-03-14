@@ -1,4 +1,4 @@
-<div id="ce-side-panel-content" class="ce-side-panel-content-base" style="display:{{$navBarExpanded ? 'flex':'none'}};">
+<div id="ce-side-panel-content" class="ce-side-panel-content-base" style="display:none;" resource="{{$navBarExpanded ? 'flex':'none'}}">
     <div class="ce-side-panel-footer">
         <span id="ce-side-panel-expand-button"><img src="{{$imgPath}}/expand.png"></span>
     </div>
