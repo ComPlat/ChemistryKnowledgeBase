@@ -548,3 +548,7 @@ div.ce-menu-item-annotation {
 div.ce-annotation-tooltip {
     font-size: medium;
 }
+
+div.mw-category-generated {
+    display: none !important;
+}
