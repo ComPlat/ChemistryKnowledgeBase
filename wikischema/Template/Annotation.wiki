@@ -1,1 +1,6 @@
-<noinclude>Template for inline annotation in VE</noinclude><includeonly><span style="display:none;">{{#arraymap:{{{value|}}}|,|x| [[{{{property}}}::x|]] |}}</span><span class="ce-annotation">{{{display}}}</span></includeonly>
+<noinclude>
+Template for inline annotation in VE (can contain multiple tags with ontology)
+{{{value}}} is a comma-separated list of tags. Tag and ontology are separated by semi-colon:
+e.g. "tag1; onto1, tag2; , tag3; onto3". Ontology can be empty
+{{{display}}} is what is shown on the wiki page/in VE
+</noinclude><includeonly>{{#arraymaptemplate:{{{value|}}}|AnnotationWithOntology|,|}}<span class="ce-annotation" resource="{{{value|}}}">{{{display}}}</span></includeonly>

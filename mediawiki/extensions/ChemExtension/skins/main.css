@@ -535,4 +535,20 @@ div.chemtext-tags-input.oo-ui-pendingElement-pending {
 
 span.ce-annotation {
     background: lightpink;
+    border: black 1px dashed;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+div.ce-menu-item-annotation {
+    display: flex;
+    justify-content: space-between;
+}
+
+div.ce-annotation-tooltip {
+    font-size: medium;
+}
+
+div.mw-category-generated {
+    display: none !important;
 }

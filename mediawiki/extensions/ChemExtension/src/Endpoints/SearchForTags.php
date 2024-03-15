@@ -65,10 +65,11 @@ class SearchForTags extends SimpleHandler
             ], ['limit' => self::MAX_RESULTS]);
         $allResults = $this->readResults($prioritizedResults);
         $wikiResults = array_slice($allResults, 0, min(count($allResults), self::MAX_RESULTS));
+        $wikiResults = array_map(fn($e) => ['label' => $e, 'ontology' => ''], $wikiResults);
         $tibResults = [];
         try {
             $tibClient = new TibClient();
-            $tibResults = $tibClient->suggest($searchText, self::MAX_RESULTS - count($wikiResults));
+            $tibResults = $tibClient->search($searchText, self::MAX_RESULTS - count($wikiResults));
         } catch(Exception $e) {
             $this->logger->warn($e->getMessage());
         }

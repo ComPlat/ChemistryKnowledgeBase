@@ -51,11 +51,6 @@
             }
         });
 
-        // positioning of about-infobox
-        let subContentWidth = $('.ce-subtitle-content').width();
-        let aboutTableWidth = $('.ce-subtitle-content table.infobox').width();
-        $('.ce-subtitle-content table.infobox').css({'left': (subContentWidth-aboutTableWidth-25) + "px"});
-
         // highlight literature-references
         $('.experiment-link, span.literature-link a').click((e) => {
             let target = $(e.target);
@@ -77,6 +72,22 @@
         return i;
     }
 
+    function initializeAnnotationTooltips() {
+        $('span.ce-annotation').each((i, e) => {
+            let annotationEl = $(e);
+            let data = annotationEl.attr('resource');
+            let html = data.split(',').map((a) => { return '<li>'+a+'</li>'; });
+            annotationEl.qtip({
+                content: "<div class='ce-annotation-tooltip'><ul>"+html+"</ul></div>",
+                style: {},
+                position: {
+                    viewport: $(window)
+                }
+            });
+
+        });
+    }
+
     function initializeToggleBoxes() {
         $('.toggle-box').off('click');
         $('.toggle-box').click((e) => {
@@ -87,9 +98,25 @@
 
     function initializeDOIInfoBoxToggle() {
         $('.infobox th').off('click');
-        $('.infobox th').click((e) => {
-            let table = $(e.target).closest('table');
-            $('tr', table).slice(1).toggle();
+        $('.infobox th').click((e, action) => {
+            let table = $(e.target).closest('table').next();
+            let rows = $('tr', table);
+            if (rows.eq(0).is(':visible') || action === 'close') {
+                table.css({
+                    position: 'relative',
+                    top: "0px",
+                    left: "0px"
+                });
+                rows.hide();
+            } else {
+                let position = table.position();
+                table.css({
+                    position: 'absolute',
+                    top: position.top+"px",
+                    left: position.left+"px"
+                });
+                rows.show();
+            }
         });
     }
 
@@ -138,6 +165,7 @@
         initializeDOIInfoBoxToggle();
         intializeExpandNavigationButton();
         initializeRGroups();
+        initializeAnnotationTooltips();
     });
 
     mw.hook( 've.activationComplete' ).add(function() {
