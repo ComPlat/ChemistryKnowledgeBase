@@ -214,7 +214,11 @@ class HtmlTableEditor
         $i = 0;
         foreach ($list as $tr) {
 
-            $td = $this->doc->createElement('td');
+            if ($i > 0) {
+                $td = $this->doc->createElement('td');
+            } else {
+                $td = $this->doc->createElement('th');
+            }
             $textNode = $this->doc->createTextNode("$i.");
             if ($i > 0) {
                 $td->appendChild($textNode);

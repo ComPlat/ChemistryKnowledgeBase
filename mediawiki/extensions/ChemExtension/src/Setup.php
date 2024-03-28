@@ -73,7 +73,7 @@ class Setup {
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
             'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit',
-                'mediawiki.widgets.TitlesMultiselectWidget', 'ext.categoryTree', 'ext.categoryTree.styles'],
+                'mediawiki.widgets.TitlesMultiselectWidget', 'ext.categoryTree', 'ext.categoryTree.styles', 'jquery.tablesorter', 'jquery.tablesorter.styles'],
         );
 
         $wgResourceModules['ext.diqa.qtip'] = array(

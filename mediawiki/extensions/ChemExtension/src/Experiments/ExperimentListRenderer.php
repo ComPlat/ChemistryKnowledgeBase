@@ -78,6 +78,7 @@ class ExperimentListRenderer extends ExperimentRenderer {
                 // required because VE can handle only limited amount of HTML
                 $htmlTableEditor->shortenTable(25);
             }
+            $htmlTableEditor->addTableClass("experiment-list");
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,
                 'experimentName' => $experimentName,
