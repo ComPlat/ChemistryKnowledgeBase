@@ -23,13 +23,6 @@ class ExperimentLinkRenderer extends ExperimentRenderer
         parent::__construct($context);
     }
 
-    public function getCacheKey() {
-        $key = $this->context['page']->getPrefixedText()
-            . $this->context['form']
-            . json_encode($this->context['templateData']);
-        return md5($key);
-    }
-
     /**
      * @throws Exception
      */
@@ -142,7 +135,7 @@ TEMPLATE;
                 'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
                 'description' => $this->context['description'],
                 'buttonCounter' => self::$BUTTON_COUNTER,
-                'cacheKey' => $this->getCacheKey()
+                'cacheKey' => $this->context['cacheKey'],
 
             ])->render ();
         }

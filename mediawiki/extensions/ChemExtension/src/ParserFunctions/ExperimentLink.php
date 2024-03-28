@@ -42,13 +42,7 @@ class ExperimentLink
                 throw new Exception("could not identify current title");
             }
 
-            $renderer = new ExperimentLinkRenderer([
-                'page' => $title,
-                'form' => $parameters['form'],
-                'description' => $parameters['description'] ?? '- please enter description -',
-                'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery))
-            ]);
-            $html = self::getContentFromCache($renderer, $title);
+            $html = self::getContentFromCache($parameters, $selectExperimentQuery, $title);
 
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
         } catch (Exception $e) {
@@ -57,12 +51,30 @@ class ExperimentLink
         }
     }
 
-    private static function getContentFromCache(ExperimentLinkRenderer $renderer, Title $title)
+    private static function getCacheKey($selectExperimentQuery, $parameters, Title $title) {
+        $restrictToPages = $parameters['restrictToPages'] ?? '';
+        $sort = $parameters['sort'] ?? '';
+        $order = $parameters['order'] ?? '';
+        $key =$title->getPrefixedText()
+            . $parameters['form']
+            . $selectExperimentQuery . $restrictToPages . $sort . $order;
+        return md5($key);
+    }
+
+    private static function getContentFromCache($parameters, $selectExperimentQuery, Title $title)
     {
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
 
-        $result = $cache->getWithSetCallback($cache->makeKey('investigation-link-table-data', $renderer->getCacheKey()), $cache::TTL_DAY,
-            function () use ($cache, $title, $renderer) {
+        $cacheKey = self::getCacheKey($selectExperimentQuery, $parameters, $title);
+        $result = $cache->getWithSetCallback($cache->makeKey('investigation-link-table-data', $cacheKey), $cache::TTL_DAY,
+            function () use ($cache, $title, $parameters, $selectExperimentQuery, $cacheKey) {
+                $renderer = new ExperimentLinkRenderer([
+                    'page' => $title,
+                    'form' => $parameters['form'],
+                    'description' => $parameters['description'] ?? '- please enter description -',
+                    'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery)),
+                    'cacheKey' => $cacheKey
+                ]);
                 $html = $renderer->render();
                 return [
                     'table' => $html,
