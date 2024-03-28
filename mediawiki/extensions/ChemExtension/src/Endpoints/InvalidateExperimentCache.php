@@ -13,7 +13,7 @@ class InvalidateExperimentCache extends SimpleHandler {
         $params = $this->getValidatedParams();
 
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        $cache->delete($cache->makeKey('investigation-table-data-2', $params['cacheKey']));
+        $cache->delete($cache->makeKey('investigation-link-table-data', $params['cacheKey']));
 
         $res = new Response();
         $res->setStatus(200);
