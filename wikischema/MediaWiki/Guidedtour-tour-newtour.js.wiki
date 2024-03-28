@@ -229,7 +229,7 @@
         tour.step( {
             name: "pub_page",
             title: "Publication page",
-            description:"On this page it shows.." ,
+            description:"From here you will start the next tour about searching" ,
             attachTo: '#Investigation',
             position: 'top',
             buttons: [ {

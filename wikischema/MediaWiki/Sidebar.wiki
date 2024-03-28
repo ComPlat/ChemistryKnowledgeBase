@@ -21,3 +21,8 @@
 ** Help:Create new publication|Create new publication
 ** Help:Creating a Private Space|Creating a Private Space
 ** Special:Version|Wiki Version
+* Tours
+** {{fullurl:{{FULLPAGENAME}}|tour=newtour}}|Home page tour
+** {{fullurl:{{FULLPAGENAME}}|tour=searchtour}}|Tour of search features
+** {{fullurl:{{FULLPAGENAME}}|tour=topic_page}}|Tour of topic page
+** {{fullurl:{{FULLPAGENAME}}|tour=pub_page}}|Tour of publication page
