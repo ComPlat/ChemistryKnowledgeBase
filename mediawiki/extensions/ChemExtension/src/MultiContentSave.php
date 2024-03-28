@@ -28,7 +28,7 @@ use User;
 class MultiContentSave
 {
 
-    private static $MOLECULES_FOUND = [];
+    public static $MOLECULES_FOUND = [];
 
     public static function onPageSaveComplete(WikiPage $wikiPage, UserIdentity $user,
                                               string $summary, int $flags, RevisionRecord $revisionRecord, EditResult $editResult)

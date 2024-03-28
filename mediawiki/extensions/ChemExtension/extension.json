@@ -59,6 +59,11 @@
     },
     "RestRoutes": [
         {
+            "path": "/ChemExtension/v1/invalidate-inv-cache",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentCache"
+        },
+        {
             "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\ChemScanner\\NotifyChemScannerEndpoint"

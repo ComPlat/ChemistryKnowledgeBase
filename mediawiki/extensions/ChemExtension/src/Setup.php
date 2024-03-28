@@ -223,7 +223,7 @@ CSS;
     public static function categoryViewerInstance(Title $title, & $html) {
         $html = '';
         if (WikiTools::checkIfInTopicCategory($title)) {
-            $html = '<h2>Publications of topic "' . $title->getText(). '"</h2>';
+            $html = '';
         }
     }
 

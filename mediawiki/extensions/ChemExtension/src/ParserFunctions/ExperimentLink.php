@@ -4,10 +4,12 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Experiments\ExperimentLinkRenderer;
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
+use DIQA\ChemExtension\MultiContentSave;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
 use Title;
@@ -46,12 +48,31 @@ class ExperimentLink
                 'description' => $parameters['description'] ?? '- please enter description -',
                 'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery))
             ]);
-            $html = $renderer->render();
+            $html = self::getContentFromCache($renderer, $title);
+
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
-        } catch(Exception $e) {
-            $html = self::getBlade()->view ()->make ( "error", ['message' => $e->getMessage()])->render ();
+        } catch (Exception $e) {
+            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
+    }
+
+    private static function getContentFromCache(ExperimentLinkRenderer $renderer, Title $title)
+    {
+        $cache = MediaWikiServices::getInstance()->getMainObjectStash();
+
+        $result = $cache->getWithSetCallback($cache->makeKey('investigation-link-table-data', $renderer->getCacheKey()), $cache::TTL_DAY,
+            function () use ($cache, $title, $renderer) {
+                $html = $renderer->render();
+                return [
+                    'table' => $html,
+                    'refs' => RenderLiterature::$LITERATURE_REFS,
+                    'molecules' => MultiContentSave::$MOLECULES_FOUND
+                ];
+            });
+        RenderLiterature::$LITERATURE_REFS = array_merge( RenderLiterature::$LITERATURE_REFS, $result['refs']);
+        MultiContentSave::$MOLECULES_FOUND = array_merge( MultiContentSave::$MOLECULES_FOUND, $result['molecules']);
+        return $result['table'];
     }
 
     /**
@@ -64,7 +85,7 @@ class ExperimentLink
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ( $views, $cache );
+        return new Blade ($views, $cache);
     }
 
     /**
@@ -78,27 +99,27 @@ class ExperimentLink
         $order = $parameters['order'] ?? '';
         $restrictToPagesQuery = '';
         if ($restrictToPages !== false && trim($restrictToPages) !== '') {
-            $restrictToPageConstraint = array_map(function($p) {
-                    $title = Title::newFromText(trim($p));
-                    return "[[{$title->getPrefixedText()}]]";
-                }, explode(",", $restrictToPages));
-            $restrictToPagesQuery = "[[BasePageName::<q>".implode(" OR ", $restrictToPageConstraint)."</q>]]";
+            $restrictToPageConstraint = array_map(function ($p) {
+                $title = Title::newFromText(trim($p));
+                return "[[{$title->getPrefixedText()}]]";
+            }, explode(",", $restrictToPages));
+            $restrictToPagesQuery = "[[BasePageName::<q>" . implode(" OR ", $restrictToPageConstraint) . "</q>]]";
         }
         $selectExperimentQuery = trim($selectExperimentQuery) == '' ? '' : $selectExperimentQuery;
 
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($parameters['form']);
         $printRequests = [];
         $properties = $experimentType->getProperties();
-        foreach($properties as $p => $templateParam) {
+        foreach ($properties as $p => $templateParam) {
             $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery);
-        $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, [ 'sort' => $sort, 'order' => $order ]);
+        $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);
         $rows = [];
         while ($row = $results->getNext()) {
             $column = reset($row);
             $oneRow = [];
-            while($column !== false) {
+            while ($column !== false) {
                 $templateParam = $properties[$column->getPrintRequest()->getLabel()] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $column = next($row);

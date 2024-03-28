@@ -51,6 +51,18 @@
             }
         });
 
+        $('span.experiment-link-refresh-button').off('click');
+        $('span.experiment-link-refresh-button').click(function(e) {
+            let buttonLabel = $(e.target);
+            buttonLabel.text('Refreshing...');
+            let cacheKey = buttonLabel.closest('div.experiment-link-border').attr('resource');
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            ajax.invalidateInvestigationCache(cacheKey).done((e) => {
+                mw.notify('Cache invalidated');
+                window.location.reload();
+            });
+        });
+
         // highlight literature-references
         $('.experiment-link, span.literature-link a').click((e) => {
             let target = $(e.target);
