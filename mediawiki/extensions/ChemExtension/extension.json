@@ -49,7 +49,8 @@
         "chem_categorylist": "DIQA\\ChemExtension\\Setup::categoryList",
         "chem_category_count": "DIQA\\ChemExtension\\Setup::categoryCount",
         "SkinTemplateNavigation::Universal": "DIQA\\ChemExtension\\Setup::onSkinTemplateNavigation",
-        "FS_ExtendSearchFulltext": "DIQA\\ChemExtension\\Literature\\DOIRenderer::onExtendSearchFulltext"
+        "FS_ExtendSearchFulltext": ["DIQA\\ChemExtension\\Literature\\DOIRenderer::onExtendSearchFulltext",
+            "DIQA\\ChemExtension\\ParserFunctions\\DOIInfoBox::onExtendSearchFulltext"]
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"

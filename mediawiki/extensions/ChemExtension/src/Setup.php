@@ -262,6 +262,7 @@ CSS;
         RenderLiterature::$LITERATURE_REFS = [];
         MultiContentSave::$MOLECULES_FOUND = [];
         DOIRenderer::$PUBLICATIONS_FOUND = [];
+        DOIInfoBox::$DOI_INFO_BOX = [];
     }
 
     /**

@@ -137,7 +137,7 @@ class DOIRenderer
     }
 
     public static function onExtendSearchFulltext(& $extText) {
-        $extText = '';
+        
         $doiRenderer = new DOIRenderer();
         foreach (RenderLiterature::$LITERATURE_REFS as $l) {
             $output = $doiRenderer->renderReference($l['data']);
