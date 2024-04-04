@@ -147,6 +147,10 @@ $wgFooterIcons['poweredby']['kit'] = [
     'src' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png",
     'url' => 'https://www.ibcs.kit.edu/'
 ];
+$wgFooterIcons['poweredby']['github'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/GitHub_Logo.png",
+    'url' => 'https://github.com/ComPlat/ChemistryKnowledgeBase'
+];
 
 #################################################################
 # General settings
