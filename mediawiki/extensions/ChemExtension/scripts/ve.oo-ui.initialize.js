@@ -42,8 +42,8 @@
         // make tables sortable
         $('table.experiment-link, table.experiment-list').each(function(i,e) {
            let target = $(e);
-           let f = target.find('tr:first-child', target);
-            $('<thead>').insertBefore(target.find('tbody')).append(f);
+           let f = target.find('> tbody tr:first-child', target);
+            $('<thead>').insertBefore(target.find('> tbody')).append(f);
             target.tablesorter();
         });
 
