@@ -63,24 +63,16 @@ class ExperimentLink
 
     private static function getContentFromCache($parameters, $selectExperimentQuery, Title $title)
     {
+        if (WikiTools::isInVisualEditor()) {
+            $result = self::renderTable($title, $parameters, $selectExperimentQuery, '');
+            return $result['table'];
+        }
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
 
         $cacheKey = self::getCacheKey($selectExperimentQuery, $parameters, $title);
         $result = $cache->getWithSetCallback($cache->makeKey('investigation-link-table-data', $cacheKey), $cache::TTL_DAY,
             function () use ($cache, $title, $parameters, $selectExperimentQuery, $cacheKey) {
-                $renderer = new ExperimentLinkRenderer([
-                    'page' => $title,
-                    'form' => $parameters['form'],
-                    'description' => $parameters['description'] ?? '- please enter description -',
-                    'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery)),
-                    'cacheKey' => $cacheKey
-                ]);
-                $html = $renderer->render();
-                return [
-                    'table' => $html,
-                    'refs' => RenderLiterature::$LITERATURE_REFS,
-                    'molecules' => MultiContentSave::$MOLECULES_FOUND
-                ];
+                return self::renderTable($title, $parameters, $selectExperimentQuery, $cacheKey);
             });
         RenderLiterature::$LITERATURE_REFS = array_merge( RenderLiterature::$LITERATURE_REFS, $result['refs']);
         MultiContentSave::$MOLECULES_FOUND = array_merge( MultiContentSave::$MOLECULES_FOUND, $result['molecules']);
@@ -165,5 +157,30 @@ class ExperimentLink
                 "[[-Has subobject::<q>[[Category:$mainTemplate]]</q>]] $q $restrictQuery [[Included::true]]";
         }, preg_split('/[\s\n\r]+OR[\s\n\r]+/', $queryToSelectExperiments));
         return implode(" OR ", $orPartQueries);
+    }
+
+    /**
+     * @param Title $title
+     * @param $parameters
+     * @param $selectExperimentQuery
+     * @param string $cacheKey
+     * @return array
+     * @throws Exception
+     */
+    private static function renderTable(Title $title, $parameters, $selectExperimentQuery, string $cacheKey): array
+    {
+        $renderer = new ExperimentLinkRenderer([
+            'page' => $title,
+            'form' => $parameters['form'],
+            'description' => $parameters['description'] ?? '- please enter description -',
+            'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery)),
+            'cacheKey' => $cacheKey
+        ]);
+        $html = $renderer->render();
+        return [
+            'table' => $html,
+            'refs' => RenderLiterature::$LITERATURE_REFS,
+            'molecules' => MultiContentSave::$MOLECULES_FOUND
+        ];
     }
 }
