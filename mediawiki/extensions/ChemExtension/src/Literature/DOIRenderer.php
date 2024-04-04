@@ -135,4 +135,14 @@ class DOIRenderer
             $out->addHTML($output);
         }
     }
+
+    public static function onExtendSearchFulltext(& $extText) {
+        $extText = '';
+        $doiRenderer = new self();
+        foreach (RenderLiterature::$LITERATURE_REFS as $l) {
+            $output = $doiRenderer->renderReference($l['data']);
+            $extText .= $output;
+        }
+        $extText = \Sanitizer::stripAllTags($extText);
+    }
 }
