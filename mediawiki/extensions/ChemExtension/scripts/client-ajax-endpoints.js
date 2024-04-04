@@ -9,16 +9,17 @@
 
     };
 
-    window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (cacheKey) {
+    window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (cacheKeys) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
-        let url = baseUrl + "/v1/invalidate-inv-cache?cacheKey=" + encodeURIComponent(cacheKey);
+        let url = baseUrl + "/v1/invalidate-inv-cache";
 
         return $.ajax({
             method: "POST",
+            dataType: "json",
+            contentType: "application/json",
             url: url,
-            contentType: "application/octet-stream",
-            data: {},
-            processData: false
+            data: JSON.stringify({cacheKeys: cacheKeys})
+
         });
     }
 

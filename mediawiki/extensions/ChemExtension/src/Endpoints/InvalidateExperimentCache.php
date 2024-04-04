@@ -10,10 +10,23 @@ class InvalidateExperimentCache extends SimpleHandler {
 
     public function run() {
 
-        $params = $this->getValidatedParams();
+        $jsonBody = $this->getRequest()->getBody();
+        if (is_null($jsonBody) || $jsonBody == '') {
+            $res = new Response("message body is empty");
+            $res->setStatus(400);
+            return $res;
+        }
+        $body = json_decode($jsonBody);
+        if (!isset($body->cacheKeys)) {
+            $res = new Response("cacheKeys property is missing");
+            $res->setStatus(400);
+            return $res;
+        }
 
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        $cache->delete($cache->makeKey('investigation-link-table-data', $params['cacheKey']));
+        foreach($body->cacheKeys as $cacheKey) {
+            $cache->delete($cache->makeKey('investigation-link-table-data', $cacheKey));
+        }
 
         $res = new Response();
         $res->setStatus(200);
@@ -25,13 +38,6 @@ class InvalidateExperimentCache extends SimpleHandler {
     }
 
     public function getParamSettings() {
-        return [
-            'cacheKey' => [
-                self::PARAM_SOURCE => 'query',
-                ParamValidator::PARAM_TYPE => 'string',
-                ParamValidator::PARAM_REQUIRED => true,
-            ],
-
-        ];
+        return [];
     }
 }
