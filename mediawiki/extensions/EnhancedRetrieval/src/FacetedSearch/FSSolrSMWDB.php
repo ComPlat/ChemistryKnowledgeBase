@@ -118,6 +118,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
         $extText = '';
         \Hooks::run('FS_ExtendSearchFulltext', [& $extText]);
+        \Hooks::run('CleanupChemExtState');
         $text .= $extText;
 
         $doc['id'] = $pageID;

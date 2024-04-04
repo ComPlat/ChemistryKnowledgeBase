@@ -32,6 +32,7 @@
     },
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
+        "CleanupChemExtState": "DIQA\\ChemExtension\\Setup::cleanupChemExtState",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "ArticleDeleteComplete": "DIQA\\ChemExtension\\MultiContentSave::onArticleDeleteComplete",

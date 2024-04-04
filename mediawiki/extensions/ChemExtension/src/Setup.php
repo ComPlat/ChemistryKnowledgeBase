@@ -257,6 +257,13 @@ CSS;
         $customVariableIds[] = 'counter';
     }
 
+    public static function cleanupChemExtState() {
+
+        RenderLiterature::$LITERATURE_REFS = [];
+        MultiContentSave::$MOLECULES_FOUND = [];
+        DOIRenderer::$PUBLICATIONS_FOUND = [];
+    }
+
     /**
      * @param Parser $parser
      * @throws \MWException

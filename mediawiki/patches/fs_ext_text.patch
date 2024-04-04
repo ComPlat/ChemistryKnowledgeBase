@@ -12,6 +12,7 @@ diff --git a/mediawiki/extensions/EnhancedRetrieval/src/FacetedSearch/FSSolrSMWD
  
 +        $extText = '';
 +        \Hooks::run('FS_ExtendSearchFulltext', [& $extText]);
++        \Hooks::run('CleanupChemExtState');
 +        $text .= $extText;
 +
          $doc['id'] = $pageID;

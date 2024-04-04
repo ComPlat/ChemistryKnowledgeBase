@@ -56,6 +56,7 @@ class MoleculePageUpdateJob extends Job
         if ($wikitext !== $te->getWikiText()) {
             WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
         }
+        \Hooks::run('CleanupChemExtState');
         $this->logger->log("done");
     }
 

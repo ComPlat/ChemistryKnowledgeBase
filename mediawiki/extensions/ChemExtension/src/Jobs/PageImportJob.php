@@ -34,5 +34,6 @@ class PageImportJob extends Job {
         print "\nbash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1";
         $output = shell_exec("bash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1");
         $this->logger->debug($output);
+        \Hooks::run('CleanupChemExtState');
     }
 }

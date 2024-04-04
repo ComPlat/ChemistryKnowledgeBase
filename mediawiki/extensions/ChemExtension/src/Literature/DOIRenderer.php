@@ -5,13 +5,13 @@ namespace DIQA\ChemExtension\Literature;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
 use OutputPage;
+use Philo\Blade\Blade;
 
 class DOIRenderer
 {
 
-    private static $PUBLICATIONS_FOUND = [];
+    public static $PUBLICATIONS_FOUND = [];
 
     public function renderReference($doiData)
     {
@@ -138,11 +138,12 @@ class DOIRenderer
 
     public static function onExtendSearchFulltext(& $extText) {
         $extText = '';
-        $doiRenderer = new self();
+        $doiRenderer = new DOIRenderer();
         foreach (RenderLiterature::$LITERATURE_REFS as $l) {
             $output = $doiRenderer->renderReference($l['data']);
             $extText .= $output;
         }
         $extText = \Sanitizer::stripAllTags($extText);
     }
+
 }
