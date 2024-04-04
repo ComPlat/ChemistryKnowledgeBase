@@ -75,7 +75,7 @@
             let ajax = new window.ChemExtension.AjaxEndpoints();
             ajax.invalidateInvestigationCache(cacheKeys).done((e) => {
                 mw.notify('Cache invalidated');
-               // window.location.reload();
+                window.location.reload();
             });
         });
 
