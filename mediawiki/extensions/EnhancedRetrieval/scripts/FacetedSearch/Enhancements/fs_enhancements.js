@@ -27,4 +27,8 @@ console.log("ER: Loading scripts/FacetedSearch/Enhancements/fs_enhancements.js")
         return res;
     };
 
+    xfs.translateName = function(name) {
+        return name;
+    }
+
 })(jQuery);
