@@ -1,0 +1,4 @@
+<includeonly>
+| {{{1}}} ||  {{{2}}} || {{#doidata: doi={{{3}}}|property=author}} || {{#doidata: doi={{{3}}}|property=doilink}}
+|-
+</includeonly>

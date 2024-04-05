@@ -1,0 +1,5 @@
+<includeonly>
+{| class="wikitable"
+ ! Publications !! Topics !! Authors !! Literature
+ |-
+</includeonly>

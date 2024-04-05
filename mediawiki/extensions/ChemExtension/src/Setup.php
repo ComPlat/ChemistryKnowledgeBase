@@ -6,6 +6,7 @@ use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\ParserFunctions\DOIData;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
@@ -216,6 +217,7 @@ CSS;
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
         $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
+        $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
 
         self::registerShowCachedHandler($parser);
     }

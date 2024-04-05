@@ -2,7 +2,11 @@ This page shows all publications. You can edit the query in the [[http://chemwik
 
 {{#ask: [[Category:Topic]]
  |?Category=Topics
- |format=broadtable
+ |?DOI
+ |format=template
+ |template=PublicationListRow
+ |introtemplate=PublicationListIntro
+ |outrotemplate=PublicationListOutro
  |limit=200
  |offset=0
  |link=all
