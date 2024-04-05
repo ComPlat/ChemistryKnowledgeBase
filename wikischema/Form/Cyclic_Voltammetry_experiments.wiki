@@ -72,7 +72,7 @@ experiments:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}
 |-
 ! include:
-| {{{field|include|input type=checkbox|property=Include}}}
+| {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
 |-
 |}
 {{{end template}}}

@@ -548,3 +548,16 @@ div.ce-menu-item-annotation {
 div.ce-annotation-tooltip {
     font-size: medium;
 }
+
+ul.experiment-help-bullets {
+    font-size: medium;
+}
+
+ul.experiment-help-bullets li {
+    margin-bottom: 1em;
+    line-height: 1em;
+}
+
+img.experiment-help {
+    margin-left: 10px;
+}

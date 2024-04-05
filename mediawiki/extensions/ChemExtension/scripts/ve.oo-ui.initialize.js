@@ -81,6 +81,29 @@
             });
         });
 
+        $('.experiment-link-help').qtip({
+            content: "<ul class='experiment-help-bullets'>" +
+                "<li>double click on table header for showing/hiding columns</li>" +
+                "<li>single click on table header for sorting columns</li>" +
+                "</ul>",
+            style: {},
+            position: {
+                viewport: $(window)
+            }
+        });
+
+        $('.experiment-help').qtip({
+            content: "<ul class='experiment-help-bullets'>" +
+                "<li>double click on table header for showing/hiding columns</li>" +
+                "<li>single click on table header for sorting columns</li>" +
+                "<li>include column specifies if the experiment should be included on topic pages</li>" +
+                "</ul>",
+            style: {},
+            position: {
+                viewport: $(window)
+            }
+        });
+
         // highlight literature-references
         $('.experiment-link, span.literature-link a').click((e) => {
             let target = $(e.target);
