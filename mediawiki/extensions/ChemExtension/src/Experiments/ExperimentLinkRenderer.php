@@ -129,6 +129,7 @@ TEMPLATE;
                 'infusable' => true
             ]);
 
+            global $wgScriptPath;
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
                 'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
@@ -136,7 +137,7 @@ TEMPLATE;
                 'description' => $this->context['description'],
                 'buttonCounter' => self::$BUTTON_COUNTER,
                 'cacheKey' => $this->context['cacheKey'],
-
+                'wgScriptPath' => $wgScriptPath
             ])->render ();
         }
 

@@ -15,7 +15,6 @@
 
         return $.ajax({
             method: "POST",
-            dataType: "json",
             contentType: "application/json",
             url: url,
             data: JSON.stringify({cacheKeys: cacheKeys})

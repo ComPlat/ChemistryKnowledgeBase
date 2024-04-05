@@ -73,9 +73,11 @@
                 cacheKeys.push($(e).attr('resource'));
             });
             let ajax = new window.ChemExtension.AjaxEndpoints();
-            ajax.invalidateInvestigationCache(cacheKeys).done((e) => {
+            ajax.invalidateInvestigationCache(cacheKeys).done(() => {
                 mw.notify('Cache invalidated');
                 window.location.reload();
+            }).fail((e) => {
+                mw.notify('Cache invalidation failed');
             });
         });
 
