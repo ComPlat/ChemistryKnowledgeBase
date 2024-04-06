@@ -187,12 +187,16 @@ class Setup {
         if (is_null($wgTitle) || $wgTitle->isSpecial('FormEdit')) {
             return;
         }
-        $b = new NavigationBar($wgTitle);
-        $data .= $b->getNavigationBar();
-        $data .= $b->getCollapsedNavigationBar();
 
         global $wgOut;
         $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+        if (!is_null($wgOut->getTitle()) && $wgOut->getTitle()->isSpecial("Search")) {
+            $navBarStatus = 'collapsed';
+        }
+        $b = new NavigationBar($wgTitle);
+        $data .= $b->getNavigationBar($navBarStatus);
+        $data .= $b->getCollapsedNavigationBar($navBarStatus);
+
         $marginWidth = $navBarStatus === 'expanded' ? 400 : 40;
         $inlineCSS = <<<CSS
 div.container-fluid div.row { margin-left: {$marginWidth}px !important; }
@@ -294,6 +298,9 @@ CSS;
     private static function addSubtitle(OutputPage $out): void
     {
         $b = new NavigationBar($out->getTitle());
+        if (NavigationBar::getCssType($out->getTitle()) === 'other') {
+            return;
+        }
         $link = self::createModifyLink();
         $investigationHints = self::createInvestigationHint($out);
         $out->addSubtitle('<div class="ce-subtitle-content">'

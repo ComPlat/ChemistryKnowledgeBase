@@ -29,9 +29,8 @@ class NavigationBar
 
     }
 
-    public function getCollapsedNavigationBar() {
+    public function getCollapsedNavigationBar($navBarStatus) {
 
-        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
         $html = $this->blade->view()->make("navigation.navigation-bar-collapsed",
             [
                 'navBarExpanded' => $navBarStatus === 'expanded'
@@ -40,7 +39,7 @@ class NavigationBar
         return str_replace("\n", "", $html);
     }
 
-    public function getNavigationBar()
+    public function getNavigationBar($navBarStatus)
     {
         global $wgScriptPath;
         OutputPage::setupOOUI();
@@ -60,8 +59,6 @@ class NavigationBar
         $pubs = new PublicationList($title);
         $investigationList = new InvestigationList($this->title);
         $moleculesList = new MoleculesList(self::getCssType($this->title));
-
-        $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
 
         $html = $this->blade->view()->make("navigation.navigation-bar",
             [
