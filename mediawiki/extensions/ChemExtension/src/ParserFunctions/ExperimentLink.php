@@ -75,7 +75,7 @@ class ExperimentLink
                 return self::renderTable($title, $parameters, $selectExperimentQuery, $cacheKey);
             });
         RenderLiterature::$LITERATURE_REFS = array_merge( RenderLiterature::$LITERATURE_REFS, $result['refs']);
-        MultiContentSave::$MOLECULES_FOUND = array_merge( MultiContentSave::$MOLECULES_FOUND, $result['molecules']);
+        MultiContentSave::$MOLECULES_FOUND = array_unique(array_merge( MultiContentSave::$MOLECULES_FOUND, $result['molecules']));
         return $result['table'];
     }
 
