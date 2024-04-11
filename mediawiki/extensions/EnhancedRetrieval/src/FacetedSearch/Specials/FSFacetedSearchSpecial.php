@@ -66,9 +66,7 @@ class FSFacetedSearchSpecial extends SpecialPage {
 					<option value="descending" {{fs_descending_order_selected}}>{{fs_title_descending}}</option>
 				</select>
 			</div>
-			<div class="fs_category_filter col-md-6 col-lg-3">
-				{{extendedFilters}}
-			</div>
+			
 		</div>
 		<div class="row">
 			<div class="col-md-12" id="create_article">
@@ -86,6 +84,9 @@ class FSFacetedSearchSpecial extends SpecialPage {
 			</div>
 		</div>
 		<hr class="xfsSeparatorLine">
+		<div class="fs_category_filter">
+				{{extendedFilters}}
+			</div>
 		<span class="xfsComponentHeader" id="xfsAvailableFacets">{{fs_available_facets}}</span>
 		<div style="{{fs_show_categories}}">
 			<span class="xfsFacetHeader">{{fs_categories}}</span>

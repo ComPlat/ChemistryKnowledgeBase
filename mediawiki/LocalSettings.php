@@ -429,6 +429,7 @@ $fsgNamespaceBoosts = [
 $fsgCategoryFilter = [
     '' => 'Alle Seiten',
     'Topic' => 'Topic',
+    'Publication' => 'Publication',
     'Molecule' => 'Molecule',
     'Molecule_collection' => 'Molecule collection',
     'Investigation' => 'Investigation'

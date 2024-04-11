@@ -56,6 +56,7 @@ class PageCreationSpecial extends SpecialPage
                 $pageContent .= "{{DOI|doi=$doi}}\n";
             }
             $pageContent .= implode("\n", $superTopicsAsWikiText);
+            $pageContent .= "[[Category:Publication]]";
 
             $pageContent .="\n{{BaseTemplate}}";
 
