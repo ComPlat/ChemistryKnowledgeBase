@@ -267,7 +267,8 @@
 				"skin/faceted_search.css"
 			],
 			"dependencies": [
-				"ext.facetedSearch.ajaxSolr"
+				"ext.facetedSearch.ajaxSolr",
+				"jquery.ui"
 			],
 			"messages": [
 				"solrNotFound",
