@@ -46,6 +46,15 @@ class DOIData
                     $result = implode(", ", array_map(fn($e) => $e['name'], $authors));
                     break;
                 }
+                case 'publicationDate':
+                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '');
+                    if ($result === '') {
+                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '');
+                    }
+                    break;
+                case 'publisher':
+                    $result = $data->publisher ?? '';
+                    break;
                 case 'usedBy':
                 {
                     $titles = $repo->getPagesForDOI($parameters['doi']);
@@ -67,10 +76,10 @@ class DOIData
                     break;
             }
 
-            return [$result, 'noparse' => true, 'isHTML' => true];
+            return [$result, 'noparse' => true, 'isHTML' => false];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
-            return [$html, 'noparse' => true, 'isHTML' => true];
+            // fail silently not to pollute annotations
+            return ['', 'noparse' => true, 'isHTML' => false];
         }
     }
 

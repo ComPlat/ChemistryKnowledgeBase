@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Date when a publication was published.@en]]
+
+; Datatype
+* [[Has type::Date]].
+
+; Values
+* A date

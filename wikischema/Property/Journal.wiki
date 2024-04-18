@@ -1,0 +1,5 @@
+;Purpose
+* Contains the journal/publisher of a publication
+
+;Datatype
+* [[Has type::String]]

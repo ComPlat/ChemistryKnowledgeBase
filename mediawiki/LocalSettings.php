@@ -436,19 +436,13 @@ $fsgCategoryFilter = [
 ];
 
 $fsgShownFacets = [
-    'Investigation' => ['Additives', 'Additives_concentration', 'Catalyst', 'Catalyst_concentration', 'Concentration',
-        'Electron_donor', 'Electron_donor_concentration', 'Excitation_wavelength',
-        'Hydrogen_donor', 'Hydrogen_donor_concentration', 'Include', 'Included','Irradiation_time', 'PH_value',
-        'Photosensitizer', 'Photosensitizer_concentration','Quantum_yield_CH4', 'Quantum_yield_CO', 'Quantum_yield_H2', 'Quantum_yield_HCOOH',
-        'Quantum_yield_MeOH','Quantum_yield_total','Selectivity','Solvent','Solvent_A', 'Solvent_B', 'Solvent_C',
-        'Solvent_ratio','Temperature','Turnover_frequency','Turnover_frequency_CH4','Turnover_frequency_CO',
-        'Turnover_frequency_H2','Turnover_frequency_HCOOH','Turnover_frequency_MeOH','Turnover_number',
-        'Turnover_number_CH4','Turnover_number_CO','Turnover_number_H2','Turnover_number_HCOOH','Turnover_number_MeOH'
+    'Investigation' => ['Tag', 'Additives', 'Turnover_number', 'Solvent', 'PH_value',
+        'Catalyst', 'Analyte', 'Temperature',
     ],
-    'Molecule' => [ 'CAS', 'MolecularMass', 'MolecularFormula', 'IUPACName', 'Abbreviation','Trivialname','LogP',
-        'HasVendors', 'Synonym', 'ContainsElement', 'InChI', 'InChIKey', 'Smiles', 'Synonym'],
-    'Molecule_collection' => [ 'CAS', 'MolecularMass', 'MolecularFormula', 'IUPACName', 'Abbreviation','Trivialname','LogP',
-        'HasVendors', 'Synonym', 'ContainsElement', 'InChI', 'InChIKey', 'Smiles', 'Synonym']
+    'Molecule' => [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
+    'Molecule_collection' =>  [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
+    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal' ],
+    'Topic' => ['Tag']
 ];
 
 $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
