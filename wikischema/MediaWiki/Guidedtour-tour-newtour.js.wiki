@@ -146,27 +146,27 @@
         tour.step( {
             name:  "m_topic",
             title: "Main Topic",
-            description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria" ,
+            description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria. Each paper is stored at the publication level" ,
             overlay: true,
             attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeItem:first-child' ,
             position: 'right'
 
         })
-        .next("pub")
+        .next("testa")
         .back("feat_mol");
 
 // 6
-        tour.step( {
-            name: "pub",
-            title: "Publication",
-            description:"Here is the level at which papers are stored" ,
-            overlay: true,
-            attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeChildren div.CategoryTreeSection ' ,
-            position: 'right'
+        // tour.step( {
+        //     name: "pub",
+        //     title: "Publication",
+        //     description:"Here is the level at which papers are stored" ,
+        //     overlay: true,
+        //     attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeChildren div.CategoryTreeSection ' ,
+        //     position: 'right'
 
-        })
-        .next("testa")
-        .back("m_topic");
+        // })
+        // .next("testa")
+        // .back("m_topic");
 
 // 7
         tour.step( {
@@ -178,7 +178,7 @@
 
         })
          .next("pub_nav")
-        .back("pub");
+        .back("m_topic");
 
 // 8
         tour.step( {

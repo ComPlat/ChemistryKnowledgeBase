@@ -70,23 +70,23 @@
     tour.step({
         name:name_5,
         title:"Distinction",
-        description:"This section explains the difference of this topic from other topics.",
+        description:"This section explains the difference of this topic from other topics. It also contains the embded data from investigations in the publications page.",
         attachTo:"#mw-content-text > div.mw-parser-output > h3:nth-child(5)",
         position: "left"
     })
-    .next(name_6)
+    .next(name_7)
     .back(name_4)
 
 // 6
-    tour.step({
-        name:name_6,
-        title:"Extracted data table",
-        description:"This table contains all investigations that have a high TON, clicking on the show table reveals the table of extracted data. This table is sorted alphabetically by the catalyst used in the reactio",
-        attachTo:"#ce-show-investigation-1 > button > span.oo-ui-labelElement-label",
-        position: "topLeft"
-    })
-    .next(name_7)
-    .back(name_5)
+    // tour.step({
+    //     name:name_6,
+    //     title:"Extracted data table",
+    //     description:"This table contains all investigations that have a high TON, clicking on the show table reveals the table of extracted data. This table is sorted alphabetically by the catalyst used in the reactio",
+    //     attachTo:"#ce-show-investigation-1 > button > span.oo-ui-labelElement-label",
+    //     position: "topLeft"
+    // })
+    // .next(name_7)
+    // .back(name_5)
 
 // 7
     tour.step({
@@ -96,19 +96,19 @@
         attachTo:"#ce-show-investigation-7 > button > span.oo-ui-labelElement-label",
         position: "topLeft"
     })
-    .back(name_6)
-    .next(name_8)
-
-// 8
-    tour.step({
-        name:name_8,
-        title:"Subtopics",
-        description:"In this section sub topics that are contained in the topic are listed with the number of publications that contain the subtopic",
-        attachTo:"#mw-subcategories > div > div > div",
-        position: "topLeft"
-    })
-    .back(name_7)
+    .back(name_5)
     .next(name_9)
+
+// // 8
+//     tour.step({
+//         name:name_8,
+//         title:"Subtopics",
+//         description:"In this section sub topics that are contained in the topic are listed with the number of publications that contain the subtopic",
+//         attachTo:"#mw-subcategories > div > div > div",
+//         position: "topLeft"
+//     })
+//     .back(name_7)
+//     .next(name_9)
 
 // 9
     tour.step({
@@ -118,7 +118,7 @@
         attachTo:"#mw-pages > div",
         position: "topLeft"
     })
-    .back(name_8)
+    .back(name_7)
     // .next(name_9)
 
 // The following should be the last line of your tour.
