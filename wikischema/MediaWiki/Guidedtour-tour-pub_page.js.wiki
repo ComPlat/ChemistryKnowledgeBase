@@ -63,7 +63,7 @@
     name:name_4,
     title:"About Box",
     description:"Here is the about table clicking on  the bar expands the tale showing metadata about the paper",
-    attachTo:"#contentSub > div > table > tbody > tr:nth-child(1) > th",
+    attachTo:".infobox > tbody:nth-child(1) > tr:nth-child(1) > th:nth-child(1)",
     position: "top"
     })
     .next(name_5)
@@ -74,8 +74,8 @@
         name:name_5,
         title:"Catalysts",
         description:"Here is the section of catalysts used in the publication",
-        attachTo:"#mw-content-text > div > p:nth-child(6)",
-        position: "top"
+        attachTo:"#Catalysts",
+        position: "topRight"
     })
     .next(name_6)
     .back(name_4)
@@ -86,21 +86,21 @@
         title:"Investigation",
         description:"Here is a table with each experiment extracted into a unique investigation.",
         attachTo:"#ooui-php-10 > span",
-        position: "top"
+        position: "topRight"
     })
-    .next(name_7)
+    .next(name_8)
     .back(name_5)
 
 // 7
-    tour.step({
-        name:name_7,
-        title:"Products Tab",
-        description:"Clicking on the table header will change the focus of the table.",
-        attachTo:"#ooui-php-14 > span",
-        position: "top"
-    })
-    .back(name_6)
-    .next(name_8)
+    // tour.step({
+    //     name:name_7,
+    //     title:"Products Tab",
+    //     description:"Clicking on the table header will change the focus of the table.",
+    //     attachTo:"#ooui-php-14 > span",
+    //     position: "top"
+    // })
+    // .back(name_6)
+    // .next(name_8)
 
 // 8
     tour.step({
@@ -111,7 +111,7 @@
         position: "topLeft",
         buttons: launchTourButtons
     })
-    .back(name_7)
+    .back(name_6)
     // .next(name_9)
 
 // 9

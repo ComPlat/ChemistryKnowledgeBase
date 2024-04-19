@@ -60,11 +60,10 @@ mediawiki/extensions/InvestigationImport/maintenance/test1.txt
 mediawiki/extensions/InvestigationImport/resources/~$CV_generic_dataset_withExValues.xlsx
 mediawiki/extensions/InvestigationImport/maintenance/test198.txt
 
-<<<<<<< HEAD
 vm/Vagrantfile
 mediawiki/db_14_12_23.sql
 mediawiki/LocalSettings.php
-=======
 mediawiki/*.sql
 
->>>>>>> d323f3816935e2a501f0add32f522ae612bb50b1
+mediawiki/LocalSettings.php
+vm/Vagrantfile
