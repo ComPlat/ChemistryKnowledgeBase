@@ -441,7 +441,7 @@ $fsgShownFacets = [
     ],
     'Molecule' => [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
     'Molecule_collection' =>  [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
-    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal' ],
+    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal', "Publisher" ],
     'Topic' => ['Tag']
 ];
 
