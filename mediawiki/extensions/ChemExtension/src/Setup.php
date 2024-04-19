@@ -227,7 +227,7 @@ CSS;
     }
 
     public static function categoryViewerInstance(Title $title, & $html) {
-        $html = '';
+        $html = null;
         if (WikiTools::checkIfInTopicCategory($title)) {
             $html = '';
         }
