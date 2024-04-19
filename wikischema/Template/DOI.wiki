@@ -3,7 +3,8 @@ Display DOI infobox and stores several data items about DOI in the semantic mode
 </noinclude><includeonly>
 {{#doiinfobox: {{{doi|}}} }}
 {{#set: DOI={{{doi|}}} }}
-{{#arraymap:{{#doidata: doi={{{doi|}}}|property=author}}|,|x|[[Author::x| ]]|\s}}
-[[Publication date::{{#doidata: doi={{{doi|}}}|property=publicationDate}}| ]]
-[[Journal::{{#doidata: doi={{{doi|}}}|property=publisher}}| ]]
+{{#arraymap:{{#doidata: doi={{{doi|}}}|property=author}}|,|x|[[Author::x|]]|\s}}
+[[Publication date::{{#doidata: doi={{{doi|}}}|property=publicationDate}}|]]
+[[Journal::{{#doidata: doi={{{doi|}}}|property=journal}}|]]
+[[Publisher::{{#doidata: doi={{{doi|}}}|property=publisher}}|]]
 </includeonly>

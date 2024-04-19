@@ -89,6 +89,7 @@ class SpecialLiterature extends SpecialPage
                 'publisher' => $data->publisher,
                 'licenses' => DOITools::formatLicenses($data->license),
                 'issue' => $data->issue,
+                'journal' => $data->{"container-title"} ?? "-",
                 'volume' => $data->volume,
                 'pages' => $data->page,
                 'subjects' => $data->subject,

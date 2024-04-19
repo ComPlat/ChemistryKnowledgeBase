@@ -55,6 +55,9 @@ class DOIData
                 case 'publisher':
                     $result = $data->publisher ?? '';
                     break;
+                case 'journal':
+                    $result = $data->{"container-title"} ?? "";
+                    break;
                 case 'usedBy':
                 {
                     $titles = $repo->getPagesForDOI($parameters['doi']);

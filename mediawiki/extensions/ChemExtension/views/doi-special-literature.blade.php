@@ -51,6 +51,10 @@
         <td>Publisher</td>
         <td>{{$publisher}}</td>
     </tr>
+    <tr>
+        <td>Journal</td>
+        <td>{{$journal}}</td>
+    </tr>
     <td>Licenses</td>
     <td>
         @if(count($licenses) === 0)
