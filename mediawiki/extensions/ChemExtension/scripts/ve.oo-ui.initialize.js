@@ -7,8 +7,9 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        $('table.wikitable:not(.infobox) th').off('click');
-        $('table.wikitable:not(.infobox) th').click((e) => {
+        $('table.wikitable:not(.infobox) th').off('dblclick');
+        $('table.wikitable:not(.infobox) th').dblclick((e) => {
+
             let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
             th.attr('collapsed', !collapsed);
@@ -32,6 +33,18 @@
                 columns.addClass('collapsed-column');
                 columns.empty();
             }
+
+            setTimeout(function() {
+                th.trigger('click'); // hack to reset sort state
+            }, 10);
+        });
+
+        // make tables sortable
+        $('table.experiment-link, table.experiment-list').each(function(i,e) {
+           let target = $(e);
+           let f = target.find('> tbody > tr:first-child', target);
+            $('<thead>').insertBefore(target.find('> tbody')).append(f);
+            target.tablesorter();
         });
 
         $('span.experiment-link-show-button').off('click');
@@ -48,6 +61,46 @@
                 buttonLabel.text('Hide table');
                 table.show();
 
+            }
+        });
+
+        $('span.experiment-link-refresh-button').off('click');
+        $('span.experiment-link-refresh-button').click(function(e) {
+            let buttonLabel = $(e.target);
+            buttonLabel.text('Refreshing...');
+            let cacheKeys = [];
+            $('div.experiment-link-border').each((i, e) => {
+                cacheKeys.push($(e).attr('resource'));
+            });
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            ajax.invalidateInvestigationCache(cacheKeys).done(() => {
+                mw.notify('Cache invalidated');
+                window.location.reload();
+            }).fail((e) => {
+                mw.notify('Cache invalidation failed');
+            });
+        });
+
+        $('.experiment-link-help').qtip({
+            content: "<ul class='experiment-help-bullets'>" +
+                "<li>double click on table header for showing/hiding columns</li>" +
+                "<li>single click on table header for sorting columns</li>" +
+                "</ul>",
+            style: {},
+            position: {
+                viewport: $(window)
+            }
+        });
+
+        $('.experiment-help').qtip({
+            content: "<ul class='experiment-help-bullets'>" +
+                "<li>double click on table header for showing/hiding columns</li>" +
+                "<li>single click on table header for sorting columns</li>" +
+                "<li>include column specifies if the experiment should be included on topic pages</li>" +
+                "</ul>",
+            style: {},
+            position: {
+                viewport: $(window)
             }
         });
 

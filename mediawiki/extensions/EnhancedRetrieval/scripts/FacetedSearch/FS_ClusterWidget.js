@@ -105,6 +105,8 @@ FacetedSearch.classes.ClusterWidget = AjaxSolr.AbstractWidget.extend({
 		
 		var target = $(this.target);
 		target.empty();
+		target.append("<div><span class=\"xfsClusterTitle\"> from: <input style='width: 90px' class='xfsClusterRangepicker xfsClusterRangepickerFrom' type='text'/> to: <input style='width: 90px' class='xfsClusterRangepicker xfsClusterRangepickerTo' type='text'/>"
+			+" <a class='xfsClusterRangepicker-apply'>(apply)</a></span></div>")
 		for (var range in ranges) {
 			var matches = range.match(regex);
 			if (matches) {
@@ -119,8 +121,8 @@ FacetedSearch.classes.ClusterWidget = AjaxSolr.AbstractWidget.extend({
 				var count = ranges[range];
 				if (count > 0) {
 					// Create the HTML for the cluster
-					target.append(AjaxSolr.theme('cluster', 
-						displayFrom, displayTo, count, 
+					target.append(AjaxSolr.theme('cluster',
+						displayFrom, displayTo, count,
 						self.clickClusterHandler({
 							from: from,
 							to: to,
@@ -134,6 +136,29 @@ FacetedSearch.classes.ClusterWidget = AjaxSolr.AbstractWidget.extend({
 			}
 		}
 
+		if (self.getType(this.facetName) === 'date') {
+			target.find('.xfsClusterRangepicker').datepicker({dateFormat: 'yy/mm/dd',});
+		}
+		target.find('.xfsClusterRangepicker-apply').click((e) => {
+			let target = $(e.target);
+			let datepickerFrom = target.closest('.xfsClusterTitle').find('.xfsClusterRangepickerFrom').val();
+			let datepickerTo = target.closest('.xfsClusterTitle').find('.xfsClusterRangepickerTo').val();
+			let from, to;
+			if (self.getType(this.facetName) === 'date') {
+				from = datepickerFrom.replaceAll('/','')+"000000";
+				to = datepickerTo.replaceAll('/','')+"235959";
+			} else {
+				from = datepickerFrom;
+				to = datepickerTo;
+			}
+			self.clickClusterHandler({
+				from: from,
+				to: to,
+				count: 0,
+				facetStatisticField: this.statisticsFieldName,
+				facet: this.facetName
+			})();
+		});
 		// Check if the range is already restricted
 		var rangeRestricted = false;
 		var fq = this.manager.store.values('fq');
@@ -179,6 +204,34 @@ FacetedSearch.classes.ClusterWidget = AjaxSolr.AbstractWidget.extend({
 			fsm.doRequest(0);
 			return false;
 		};
+	},
+
+	getType: function(facetName) {
+		var ATTRIBUTE_REGEX = /smwh_(.*)_xsdvalue_(.*)/;
+		var RELATION_REGEX  = /smwh_(.*)_(.*)/;
+
+		var nameType = facetName.match(ATTRIBUTE_REGEX);
+		if (!nameType) {
+			// maybe a relation facet
+			nameType = facetName.match(RELATION_REGEX);
+			if (!nameType) {
+				return null;
+			}
+		}
+		var type = nameType[2];
+		switch (type) {
+			case 'd':
+			case 'i':
+				// numeric
+				return 'numeric'
+			case 'dt':
+				// date
+				return 'date'
+			case 'b':
+				return 'boolean'
+			default:
+				return 'string';
+		}
 	}
 });
 
@@ -192,3 +245,4 @@ FacetedSearch.classes.ClusterWidget.showPropertyDetailsHandler = function(facet)
 	var clusterer = FacetedSearch.factories.FacetClustererFactory(facet);
 	clusterer.retrieveClusters();
 };
+

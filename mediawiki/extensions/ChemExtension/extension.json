@@ -32,6 +32,7 @@
     },
     "Hooks": {
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
+        "CleanupChemExtState": "DIQA\\ChemExtension\\Setup::cleanupChemExtState",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
         "PageSaveComplete": "DIQA\\ChemExtension\\MultiContentSave::onPageSaveComplete",
         "ArticleDeleteComplete": "DIQA\\ChemExtension\\MultiContentSave::onArticleDeleteComplete",
@@ -47,7 +48,9 @@
         "chem_catviewer_category": "DIQA\\ChemExtension\\Setup::categoryViewerCategory",
         "chem_categorylist": "DIQA\\ChemExtension\\Setup::categoryList",
         "chem_category_count": "DIQA\\ChemExtension\\Setup::categoryCount",
-        "SkinTemplateNavigation::Universal": "DIQA\\ChemExtension\\Setup::onSkinTemplateNavigation"
+        "SkinTemplateNavigation::Universal": "DIQA\\ChemExtension\\Setup::onSkinTemplateNavigation",
+        "FS_ExtendSearchFulltext": ["DIQA\\ChemExtension\\Literature\\DOIRenderer::onExtendSearchFulltext",
+            "DIQA\\ChemExtension\\ParserFunctions\\DOIInfoBox::onExtendSearchFulltext"]
     },
     "ExtensionMessagesFiles": {
         "ChemExtensionMagic": "i18n/MagicWords.php"
@@ -58,6 +61,11 @@
         ]
     },
     "RestRoutes": [
+        {
+            "path": "/ChemExtension/v1/invalidate-inv-cache",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentCache"
+        },
         {
             "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",
             "method": "POST",

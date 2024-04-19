@@ -33,7 +33,7 @@ class ChemScannerImportJob extends Job {
             $this->importChemScannerResult($chemScannerResult);
 
             WikiTools::createNotificationJobs($this->getTitle());
-
+            \Hooks::run('CleanupChemExtState');
         } catch (Exception $e) {
             $this->logger->error("ERROR: " . $e->getMessage());
 

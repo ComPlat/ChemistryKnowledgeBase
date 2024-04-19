@@ -116,6 +116,11 @@ class FSSolrSMWDB extends FSSolrIndexer {
         $pageDbKey  = $pageTitle->getDBkey();
         $text = $rawText ?? $this->getText( $wikiPage, $doc, $messages );
 
+        $extText = '';
+        \Hooks::run('FS_ExtendSearchFulltext', [& $extText]);
+        \Hooks::run('CleanupChemExtState');
+        $text .= $extText;
+
         $doc['id'] = $pageID;
         $doc['smwh_namespace_id'] = $pageNamespace;
         $doc['smwh_title'] = $pageDbKey;

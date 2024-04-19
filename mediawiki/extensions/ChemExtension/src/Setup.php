@@ -6,6 +6,7 @@ use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\ParserFunctions\DOIData;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
@@ -73,7 +74,7 @@ class Setup {
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
             'dependencies' => ['ext.visualEditor.core', 'ext.diqa.qtip', 'jquery.ui', 'ext.pageforms.main', 'ext.pageforms.popupformedit',
-                'mediawiki.widgets.TitlesMultiselectWidget', 'ext.categoryTree', 'ext.categoryTree.styles'],
+                'mediawiki.widgets.TitlesMultiselectWidget', 'ext.categoryTree', 'ext.categoryTree.styles', 'jquery.tablesorter', 'jquery.tablesorter.styles'],
         );
 
         $wgResourceModules['ext.diqa.qtip'] = array(
@@ -186,12 +187,16 @@ class Setup {
         if (is_null($wgTitle) || $wgTitle->isSpecial('FormEdit')) {
             return;
         }
-        $b = new NavigationBar($wgTitle);
-        $data .= $b->getNavigationBar();
-        $data .= $b->getCollapsedNavigationBar();
 
         global $wgOut;
         $navBarStatus = RequestContext::getMain()->getRequest()->getCookie('mw.chem-extension.navbar-expanded');
+        if (!is_null($wgOut->getTitle()) && $wgOut->getTitle()->isSpecial("Search")) {
+            $navBarStatus = 'collapsed';
+        }
+        $b = new NavigationBar($wgTitle);
+        $data .= $b->getNavigationBar($navBarStatus);
+        $data .= $b->getCollapsedNavigationBar($navBarStatus);
+
         $marginWidth = $navBarStatus === 'expanded' ? 400 : 40;
         $inlineCSS = <<<CSS
 div.container-fluid div.row { margin-left: {$marginWidth}px !important; }
@@ -216,6 +221,7 @@ CSS;
         $parser->setFunctionHook( 'extractElements', [ ExtractElements::class, 'extractElements' ] );
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
         $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
+        $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
 
         self::registerShowCachedHandler($parser);
     }
@@ -223,7 +229,7 @@ CSS;
     public static function categoryViewerInstance(Title $title, & $html) {
         $html = '';
         if (WikiTools::checkIfInTopicCategory($title)) {
-            $html = '<h2>Publications of topic "' . $title->getText(). '"</h2>';
+            $html = '';
         }
     }
 
@@ -257,6 +263,14 @@ CSS;
         $customVariableIds[] = 'counter';
     }
 
+    public static function cleanupChemExtState() {
+
+        RenderLiterature::$LITERATURE_REFS = [];
+        MultiContentSave::$MOLECULES_FOUND = [];
+        DOIRenderer::$PUBLICATIONS_FOUND = [];
+        DOIInfoBox::$DOI_INFO_BOX = [];
+    }
+
     /**
      * @param Parser $parser
      * @throws \MWException
@@ -284,6 +298,9 @@ CSS;
     private static function addSubtitle(OutputPage $out): void
     {
         $b = new NavigationBar($out->getTitle());
+        if (NavigationBar::getCssType($out->getTitle()) === 'other') {
+            return;
+        }
         $link = self::createModifyLink();
         $investigationHints = self::createInvestigationHint($out);
         $out->addSubtitle('<div class="ce-subtitle-content">'

@@ -16,6 +16,8 @@ use RequestContext;
 class DOIInfoBox
 {
 
+    public static $DOI_INFO_BOX = [];
+
     /**
      * Renders a DOI infobox
      *
@@ -48,6 +50,7 @@ class DOIInfoBox
             $parserNew = clone MediaWikiServices::getInstance()->getParser();
             $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions(RequestContext::getMain()->getUser()));
             $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
+            self::$DOI_INFO_BOX[] = $html;
 
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);
             return ['', 'noparse' => true, 'isHTML' => true];
@@ -55,6 +58,15 @@ class DOIInfoBox
             $html = self::getBlade()->view ()->make ( "error", ['message' => $e->getMessage()])->render ();
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
+    }
+
+    public static function onExtendSearchFulltext(& $extText) {
+
+        foreach (self::$DOI_INFO_BOX as $html) {
+            $extText .= $html;
+        }
+        $extText = \Sanitizer::stripAllTags($extText);
+
     }
 
     /**

@@ -9,6 +9,19 @@
 
     };
 
+    window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (cacheKeys) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/invalidate-inv-cache";
+
+        return $.ajax({
+            method: "POST",
+            contentType: "application/json",
+            url: url,
+            data: JSON.stringify({cacheKeys: cacheKeys})
+
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.uploadFile = function (fileName, content) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/uploadfile?fileName=" + encodeURIComponent(fileName);

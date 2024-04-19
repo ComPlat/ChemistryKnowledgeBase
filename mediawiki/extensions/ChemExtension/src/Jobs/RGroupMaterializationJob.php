@@ -83,6 +83,7 @@ class RGroupMaterializationJob extends Job
                     $this->createNewMoleculePage($concreteMolecule, $collection, $rGroups);
                 }
             }
+            \Hooks::run('CleanupChemExtState');
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }

@@ -23,7 +23,6 @@ class ExperimentLinkRenderer extends ExperimentRenderer
         parent::__construct($context);
     }
 
-
     /**
      * @throws Exception
      */
@@ -51,13 +50,10 @@ class ExperimentLinkRenderer extends ExperimentRenderer
 |experiments={$experiments}
 }}
 TEMPLATE;
-        $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($templateCall)), $cache::TTL_DAY,
-            function() use($templateCall){
-                $parser = clone MediaWikiServices::getInstance()->getParser();
-                $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions(RequestContext::getMain()->getUser()));
-                return $parserOutput->getText(['enableSectionEditLinks' => false]);
-        });
+
+        $parser = clone MediaWikiServices::getInstance()->getParser();
+        $parserOutput = $parser->parse($templateCall, $this->context['page'], new ParserOptions(RequestContext::getMain()->getUser()));
+        $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
         $results = [];
         $htmlTableEditor = new HtmlTableEditor($html, null);
@@ -113,7 +109,7 @@ TEMPLATE;
             }
 
             self::$BUTTON_COUNTER++;
-            $pageTypes = new ButtonInputWidget([
+            $toggleButton = new ButtonInputWidget([
                 'classes' => ['chemext-button', 'experiment-link-show-button'],
                 'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
                 'type' => 'button',
@@ -123,12 +119,25 @@ TEMPLATE;
                 'infusable' => true
             ]);
 
+            $refreshButton = new ButtonInputWidget([
+                'classes' => ['chemext-button', 'experiment-link-refresh-button'],
+                'id' => 'ce-refresh-investigation-'.self::$BUTTON_COUNTER,
+                'type' => 'button',
+                'label' => 'Refresh',
+                'flags' => ['primary', 'progressive'],
+                'title' => 'Refresh content investigations',
+                'infusable' => true
+            ]);
+
+            global $wgScriptPath;
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
-                'button' => WikiTools::isInVisualEditor() ? '' : $pageTypes->toString(),
+                'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
+                'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
                 'description' => $this->context['description'],
-                'buttonCounter' => self::$BUTTON_COUNTER
-
+                'buttonCounter' => self::$BUTTON_COUNTER,
+                'cacheKey' => $this->context['cacheKey'],
+                'wgScriptPath' => $wgScriptPath
             ])->render ();
         }
 

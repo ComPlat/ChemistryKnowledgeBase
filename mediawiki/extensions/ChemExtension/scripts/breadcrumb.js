@@ -78,6 +78,10 @@
         $('.infobox th').trigger('click', ['close']);
     }
 
+    mw.hook( 've.activationComplete' ).add(function() {
+        collapseNavbar();
+    });
+
     function initializePublicationFilter() {
         let filterInput = $('#ce-publication-filter-input');
         if (filterInput.length == 0) {

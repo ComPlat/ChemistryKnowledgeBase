@@ -80,6 +80,7 @@ class AdjustMoleculeReferencesJob extends Job
                  }
             }
             $modificationLog->saveLog();
+            \Hooks::run('CleanupChemExtState');
             $this->logger->log("done.");
 
         } catch (Exception $e) {

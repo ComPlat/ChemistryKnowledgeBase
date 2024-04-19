@@ -1,0 +1,5 @@
+;Purpose
+* Contains the author of a publication
+
+;Datatype
+* [[Has type::String]]

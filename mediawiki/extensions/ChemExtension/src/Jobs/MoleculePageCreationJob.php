@@ -65,6 +65,7 @@ class MoleculePageCreationJob extends Job
             $job->run();
 
         }
+        \Hooks::run('CleanupChemExtState');
     }
 
     /**

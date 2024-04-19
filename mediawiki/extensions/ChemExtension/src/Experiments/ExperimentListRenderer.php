@@ -78,11 +78,15 @@ class ExperimentListRenderer extends ExperimentRenderer {
                 // required because VE can handle only limited amount of HTML
                 $htmlTableEditor->shortenTable(25);
             }
+
+            global $wgScriptPath;
+            $htmlTableEditor->addTableClass("experiment-list");
             $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
                 'htmlTableEditor' => $htmlTableEditor,
                 'experimentName' => $experimentName,
                 'experimentPageTitle' => $experimentPageTitle,
-                'inVisualEditor' => WikiTools::isInVisualEditor()
+                'inVisualEditor' => WikiTools::isInVisualEditor(),
+                'wgScriptPath' => $wgScriptPath
             ])->render ();
         }
 

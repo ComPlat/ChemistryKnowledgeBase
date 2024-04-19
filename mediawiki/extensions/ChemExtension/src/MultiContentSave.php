@@ -28,7 +28,7 @@ use User;
 class MultiContentSave
 {
 
-    private static $MOLECULES_FOUND = [];
+    public static $MOLECULES_FOUND = [];
 
     public static function onPageSaveComplete(WikiPage $wikiPage, UserIdentity $user,
                                               string $summary, int $flags, RevisionRecord $revisionRecord, EditResult $editResult)
@@ -81,14 +81,12 @@ class MultiContentSave
         }
     }
 
-    public static function resetCollectMolecules(Title $pageTitle)
-    {
-        unset(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()]);
-    }
 
     public static function collectMolecules($chemFormId, $pageTitle)
     {
-        self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()][] = $chemFormId;
+        if (!in_array($chemFormId, self::$MOLECULES_FOUND)) {
+            self::$MOLECULES_FOUND[] = $chemFormId;
+        }
     }
 
 
@@ -200,7 +198,7 @@ class MultiContentSave
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $repo = new ChemFormRepository($dbr);
-        $uniqueListOfMolecules = array_unique(self::$MOLECULES_FOUND[$pageTitle->getPrefixedText()] ?? []);
+        $uniqueListOfMolecules = self::$MOLECULES_FOUND;
 
         foreach ($uniqueListOfMolecules as $chemFormId) {
             $repo->addChemFormToIndex($pageTitle, $chemFormId);
@@ -252,7 +250,7 @@ class MultiContentSave
         if ($pageTitle->isSubpage()) {
             self::addMoleculesFromInvestigation($wikitext, $pageTitle);
         }
-        self::resetCollectMolecules($pageTitle);
+        Setup::cleanupChemExtState();
     }
 
 }

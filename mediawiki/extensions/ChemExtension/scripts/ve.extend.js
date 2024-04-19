@@ -211,7 +211,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ce.FocusableNodeExtension = {};
     ve.ce.FocusableNodeExtension.extend = function(node, target) {
         let nodes = $('div', node.$highlights);
-        if (nodes.eq(0).attr('title') !== '#experimentlist:') {
+        let title = nodes.eq(0).attr('title')
+        if (title && title.trim() !== '#experimentlist:') {
             return;
         }
         // reduces the width of the overlay on the left side to make the content clickable which is under it

@@ -114,7 +114,7 @@ Experiments:
 | {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! include:
-| {{{field|include|input type=checkbox|property=Include}}}
+| {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
 |-
 |}
 {{{end template}}}

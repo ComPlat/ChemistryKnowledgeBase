@@ -523,6 +523,8 @@ class CategoryViewer extends ContextSource {
             $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
             if (isset($html) && $html !== ''){
                 $r .= $html;
+            } else if ($html === '') {
+                return $r;
             } else {
                 $r .= Html::rawElement(
                         'h2',
