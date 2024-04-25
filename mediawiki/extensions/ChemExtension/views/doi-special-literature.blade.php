@@ -17,14 +17,14 @@
             @if(count($authors) === 0)
                 -
             @elseif(count($authors) === 1)
-                {{$a['nameAndAfiliation']}}
+                <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}">{{$a['name']}}</a> {{$a['afiliation']}}
                 @if($a[orcidUrl] != '')
                     <a href="{{$a['orcidUrl']}}">ORCID</a>
                 @endif
             @else
                 <ul>
                 @foreach($authors as $a)
-                    <li>{{$a['nameAndAfiliation']}}
+                    <li> <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}">{{$a['name']}}</a> {{$a['afiliation']}}
                         @if($a[orcidUrl] != '')
                             <a href="{{$a['orcidUrl']}}">ORCID</a>
                         @endif

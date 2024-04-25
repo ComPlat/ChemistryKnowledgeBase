@@ -23,8 +23,8 @@
         "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
         "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule",
         "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage",
-        "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog"
-
+        "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog",
+        "ShowPublications": "DIQA\\ChemExtension\\Specials\\ShowPublications"
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",

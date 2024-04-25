@@ -45,11 +45,9 @@ class DOIInfoBox
                 return ["$doi was not yet resolved.", 'noparse' => true, 'isHTML' => true];
             }
             $doiRenderer = new DOIRenderer();
-            $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
+            $html = $doiRenderer->renderDOIInfoTemplate($data);
 
-            $parserNew = clone MediaWikiServices::getInstance()->getParser();
-            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions(RequestContext::getMain()->getUser()));
-            $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
+
             self::$DOI_INFO_BOX[] = $html;
 
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);

@@ -76,7 +76,7 @@ class SpecialLiterature extends SpecialPage
         }
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new LiteratureRepository($dbr);
-
+        global $wgScriptPath;
         $html = $this->blade->view()->make("doi-special-literature",
             [
                 'doi' => $data->DOI,
@@ -97,6 +97,7 @@ class SpecialLiterature extends SpecialPage
                     return $e->name;
                 }, $data->funder),
                 'usedBy' => $repo->getPagesForDOI($data->DOI),
+                'wgScriptPath' => $wgScriptPath
             ]
         )->render();
 

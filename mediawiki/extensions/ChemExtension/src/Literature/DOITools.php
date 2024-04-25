@@ -115,7 +115,7 @@ class DOITools {
                 return $e->name;
             }, $author->affiliation));
             $name = "{$author->given} {$author->family}";
-            $result[] = ['name' => $name, 'nameAndAfiliation' => "$name, $affiliation", 'orcidUrl' => $author->ORCID ?? ''];
+            $result[] = ['name' => $name, 'nameAndAfiliation' => "$name, $affiliation", 'afiliation' => $affiliation, 'orcidUrl' => $author->ORCID ?? ''];
         }
         return $result;
     }

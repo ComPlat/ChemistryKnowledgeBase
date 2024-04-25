@@ -58,6 +58,11 @@ class DOIData
                 case 'journal':
                     $result = $data->{"container-title"} ?? "";
                     break;
+
+                case 'authorWithOrcid':
+                    $authors = DOITools::formatAuthors($data->author);
+                    $result = implode("", array_map(fn($e) => "{{#subobject:|Author={$e['name']}|Orcid={$e['orcidUrl']} }}", $authors));
+                    return [$result, 'noparse' => false, 'isHTML' => false];
                 case 'usedBy':
                 {
                     $titles = $repo->getPagesForDOI($parameters['doi']);

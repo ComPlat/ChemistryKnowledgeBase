@@ -57,10 +57,8 @@ class DOIRenderer
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
-
-        $wikitext = "{{DoiInfo\n";
-
-        $parameters = $blade->view()->make("doi-infobox",
+        global $wgScriptPath;
+        return $blade->view()->make("doi-infobox",
             [
                 'doi' => $data->DOI,
                 'type' => DOITools::getTypeLabel($data->type),
@@ -80,11 +78,9 @@ class DOIRenderer
                 'funders' => count($data->funder ?? []) === 0 ? [] : array_map(function ($e) {
                     return $e->name;
                 }, $data->funder),
+                'wgScriptPath' => $wgScriptPath
             ]
         )->render();
-        $wikitext .= trim($parameters);
-        $wikitext .= "\n}}";
-        return $wikitext;
     }
 
     public function renderReferenceInText($doiData)
