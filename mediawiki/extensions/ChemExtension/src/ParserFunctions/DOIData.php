@@ -61,7 +61,11 @@ class DOIData
 
                 case 'authorWithOrcid':
                     $authors = DOITools::formatAuthors($data->author);
-                    $result = implode("", array_map(fn($e) => "{{#subobject:|Author={$e['name']}|Orcid={$e['orcidUrl']} }}", $authors));
+                    $result = implode("", array_map(function($e) {
+                            $orcid = $e['orcidUrl'] != '' ? $e['orcidUrl'] : "-";
+                            return "{{#subobject:|Author={$e['name']}|Orcid={$orcid} }}";
+                        }, $authors));
+
                     return [$result, 'noparse' => false, 'isHTML' => false];
                 case 'usedBy':
                 {

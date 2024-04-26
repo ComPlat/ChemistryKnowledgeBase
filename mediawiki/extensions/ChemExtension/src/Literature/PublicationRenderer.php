@@ -46,4 +46,27 @@ QUERY;
         return $parserOutput->getText(['enableSectionEditLinks' => false]);
 
     }
+
+    public static function renderPublicationListByAuthor($author) {
+
+
+        $query = <<<QUERY
+{{#ask:
+[[Has subobject::<q>[[Author::$author]][[Orcid::-]]</q>]]
+|?DOI
+|?Journal
+|?Publication date
+|?Publisher
+|mainlabel=Publication
+|format=table
+|default=--no-publications-yet--
+}}
+QUERY;
+        global $wgTitle;
+        $title = $wgTitle ?? RequestContext::getMain()->getTitle();
+        $parser = clone MediaWikiServices::getInstance()->getParser();
+        $parserOutput = $parser->parse($query, $title, new ParserOptions(RequestContext::getMain()->getUser()));
+        return $parserOutput->getText(['enableSectionEditLinks' => false]);
+
+    }
 }

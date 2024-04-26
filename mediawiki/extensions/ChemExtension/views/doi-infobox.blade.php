@@ -13,7 +13,7 @@
             <td>Authors</td>
             <td>
                 @foreach($authors as $a)
-                    <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}">{{$a['name']}}</a>,
+                    <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}&author={{urlencode($a['name'])}}">{{$a['name']}}</a>,
                 @endforeach
             </td>
         </tr>

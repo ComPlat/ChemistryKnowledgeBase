@@ -17,14 +17,14 @@
             @if(count($authors) === 0)
                 -
             @elseif(count($authors) === 1)
-                <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}">{{$a['name']}}</a> {{$a['afiliation']}}
-                @if($a[orcidUrl] != '')
-                    <a href="{{$a['orcidUrl']}}">ORCID</a>
+                <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$authors[0]['orcidUrl']}}&author={{urlencode($authors[0]['name'])}}">{{$authors[0]['name']}}</a> {{$authors[0]['afiliation']}}
+                @if($authors[0][orcidUrl] != '')
+                    <a href="{{$authors[0]['orcidUrl']}}">ORCID</a>
                 @endif
             @else
                 <ul>
                 @foreach($authors as $a)
-                    <li> <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}">{{$a['name']}}</a> {{$a['afiliation']}}
+                    <li> <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}&author={{urlencode($a['name'])}}">{{$a['name']}}</a> {{$a['afiliation']}}
                         @if($a[orcidUrl] != '')
                             <a href="{{$a['orcidUrl']}}">ORCID</a>
                         @endif

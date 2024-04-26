@@ -24,20 +24,33 @@ class ShowPublications extends SpecialPage
     {
         $output = $this->getOutput();
         $orcid = $this->getRequest()->getText('orcid', '');
-        if ($orcid === '') {
-            $output->addHTML("Parameter 'orcid' is missing");
+        $author = $this->getRequest()->getText('author', '');
+        if ($orcid === '' && $author === '') {
+            $output->addHTML("Parameter 'orcid' and 'author' is missing");
             return;
         }
         
         $this->setHeaders();
-        $author = PublicationRenderer::getAuthorFromOrcid($orcid);
-        if (is_null($author)) {
-            $output->addHTML("Author with ORCID $orcid does not exist");
-            return;
+        $orcidPublications = '';
+        if ($orcid !== '') {
+            $author = PublicationRenderer::getAuthorFromOrcid($orcid);
+            if (is_null($author)) {
+                $output->addHTML("Author with ORCID $orcid does not exist");
+                return;
+            }
+            $output->setPageTitle("Publications of \"$author\"");
+            $orcidPublications = PublicationRenderer::renderPublicationList($orcid);
         }
-        $output->setPageTitle("Publications of $author");
-        $output->addHTML(PublicationRenderer::renderPublicationList($orcid));
+        $authorPublications = PublicationRenderer::renderPublicationListByAuthor($author);
 
+        $output->addHTML($this->blade->view()->make("showPublications.show-publication",
+            [
+                'orcidPublications' => $orcidPublications,
+                'authorPublications' => $authorPublications,
+                'name' => $author,
+                'orcid' => $orcid,
+            ]
+        )->render());
     }
 
 
