@@ -1,2 +1,6 @@
 {{BaseTemplate}}
+==THIS PAGE IS GENERATED TO RESERVE THE TOPIC SPACE IN THIS WIKI - THE MAIN CONTENT IS MISSING==
+
+
+The page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] is an example page in this wiki that contains scientific content
 [[Category:Electrochemical CO2 conversion]]

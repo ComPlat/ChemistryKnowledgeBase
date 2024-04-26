@@ -1,2 +1,14 @@
 {{BaseTemplate}}
+
+== THIS PAGE IS GENERATED TO RESERVE THE TOPIC SPACE IN THIS WIKI - MAIN CONTENT  (such as "Summary of selected scientific progress") IS STILL MISSING ==
+
+===Scope of this topic and related important content===<!--Related content-->
+The content of this topic page covers information on heterogeneous approaches that are relevant for the reduction of CO<sub>2</sub>. To get the right context and preceding information, reading the higher level topics [[:Category:CO2 conversion|<u>CO2 conversion</u>]] and [[:Category:Photocatalytic CO2 conversion|<u>Photocatalytic CO2 conversion</u>]] might be helpful.
+===Distinction from other articles within the topic [[:Category:Photocatalytic CO2 conversion|>Photocatalytic CO2 conversion]]===
+[[:Category:Photocatalytic CO2 conversion|>Photocatalytic CO2 conversion]] can be formally split into processes using homogeneous catalysis or heterogeneous catalysis for the conversion of the starting material CO<sub>2</sub>. In this article, we focus on the  heterogeneous catalysis which involves a catalyst that is not in the same phase as the reactants. The catalyst is usually solid or immobilized to a solid phase. For further information, please see related literature.{{#literature:|doi=https://doi.org/10.1021/acscatal.6b02089}} 
+
+The related topic >[[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] refers to reactions that involve a catalyst that is in the same different phase, usually dissolved in a solvent. For further reading, see related literature at the page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion.]]
+===Important aspects of heterogeneous photocatalytic CO2 conversion===
+In comparison to homogeneous photocatalytic CO<sub>2</sub> conversion, heterogeneous processes benfit from usually from catalyst reusability. As heterogeneous catalysts are typically immobilized on a solid support,  they allow for easier separation and recycling of the catalyst after the reaction.
+===Summary of selected scientific progress===
 [[Category:Photocatalytic CO2 conversion]]
