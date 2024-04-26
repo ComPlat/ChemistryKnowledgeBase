@@ -3,10 +3,6 @@
 ** Special:CreateNewPaper|Create a new publication
 ** Special:CreateNewTopic|Create a new Topic Page
 ** All_publications|All publications
-* Tools
-** Browse Topics|Browse Topics
-** Search for Molecules|Search for Molecules
-** Search for Reactions|Search for Reactions
 * Administration
 ** Special:SpecialCreateWiki|Create or manage a new Space
 ** Special:SpecialImportPage|Integrate Space in Main Wiki
@@ -26,3 +22,6 @@
 ** {{fullurl:{{FULLPAGENAME}}|tour=searchtour}}|Tour of search features
 ** {{fullurl:{{FULLPAGENAME}}|tour=topic_page}}|Tour of topic page
 ** {{fullurl:{{FULLPAGENAME}}|tour=pub_page}}|Tour of publication page
+* Featured
+** All_Molecules|All molecules
+** Browse Topics|Browse Topics

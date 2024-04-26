@@ -1,0 +1,1 @@
+<categorytree mode="pages" depth="5" hideroot="on" hideprefix="categories">Topic</categorytree>
