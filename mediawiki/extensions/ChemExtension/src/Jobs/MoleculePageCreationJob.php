@@ -104,17 +104,14 @@ class MoleculePageCreationJob extends Job
             $record = $result['record'];
             $synonyms = $result['synonyms'];
             $categories = $result['categories'];
-            $synonymsLower = array_map(function ($e) {
-                return strtolower($e);
-            }, $synonyms->getSynonyms());
 
             return [
                 'cid' => $record->getCID(),
-                'iupacName' => strtolower($record->getIUPACName()),
+                'iupacName' => $record->getIUPACName(),
                 'molecularMass' => $record->getMolecularMass(),
                 'molecularFormula' => $record->getMolecularFormula(),
                 'logP' => $record->getLogP(),
-                'synonyms' => array_slice($synonymsLower, 0, min(10, count($synonymsLower))),
+                'synonyms' => array_slice($synonyms->getSynonyms(), 0, min(10, count($synonyms->getSynonyms()))),
                 'cas' => $synonyms->getCAS(),
                 'hasVendors' => $categories->hasVendors(),
 
@@ -157,7 +154,7 @@ class MoleculePageCreationJob extends Job
         $pubChemData['trivialname'] = $firstSynonym;
         $pubChemData['abbrev'] = '';
         $pubChemData['molecularFormula'] = HtmlTools::formatSumFormula($pubChemData['molecularFormula']);
-        $pubChemData['synonyms'] = implode(',', array_map(function ($e) {
+        $pubChemData['synonyms'] = implode('$', array_map(function ($e) {
             return self::sanitize($e);
         }, $pubChemData['synonyms']));
         $pubChemData['hasVendors'] = $pubChemData['hasVendors'] ? 'true' : 'false';
@@ -167,7 +164,7 @@ class MoleculePageCreationJob extends Job
 
     private static function sanitize($s)
     {
-        return str_replace([',', '[', ']'], '', $s);
+        return str_replace([']]'], '', $s);
     }
 
     /**

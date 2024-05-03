@@ -23,7 +23,7 @@
 |-
 | Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|n/a}}
 |-
-| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |n/a}}
+| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|$|x| [[Synonym::x]] }} |n/a}}
 |-
 |}
 
