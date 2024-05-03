@@ -51,11 +51,16 @@ class repairMoleculePages extends PageIterator
         }
         $iupacName = $pubChemData['record']->getIUPACName();
         $synonyms = $pubChemData['synonyms']->getSynonyms();
+        $synonyms = array_slice($synonyms, 0, min(10, count($synonyms)));
+        $synonyms = array_map(fn($e) => str_replace(['$'], '', $e), $synonyms);
+        $synonyms = array_map(fn($e) => str_replace('[', '(', $e), $synonyms);
+        $synonyms = array_map(fn($e) => str_replace(']', ')', $e), $synonyms);
         $te->replaceTemplateParameters('Molecule', [
             'iupacName' => $iupacName,
             'synonyms' => implode('$', $synonyms),
             'trivialname' => $synonyms[0] ?? '' ]);
         $text = $te->getWikiText();
+
         WikiTools::doEditContent($title, $text, "auto-updated", EDIT_UPDATE);
         print "\n".$title->getPrefixedText();
     }
