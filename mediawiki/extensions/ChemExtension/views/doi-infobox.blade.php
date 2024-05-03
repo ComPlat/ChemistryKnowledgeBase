@@ -13,7 +13,7 @@
             <td>Authors</td>
             <td>
                 @foreach($authors as $a)
-                    <a href="{{$wgScriptPath}}/Special:ShowPublications?orcid={{$a['orcidUrl']}}&author={{urlencode($a['name'])}}">{{$a['name']}}</a>,
+                    <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($a['name'], $a['orcidUrl'])->getFullURL()}}">{{$a['name']}}</a>,
                 @endforeach
             </td>
         </tr>

@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Literature;
 
+use DIQA\ChemExtension\Jobs\CreateAuthorPageJob;
 use DIQA\ChemExtension\Jobs\LiteratureResolverJob;
 use Exception;
 use MediaWiki\MediaWikiServices;
@@ -42,6 +43,7 @@ class DOIResolver
         );
         $repo = new LiteratureRepository($dbr);
         $repo->addLiterature($doi, json_encode($result));
+        $this->createAuthorPageJobsAsync($result->author ?? []);
 
         return $result;
 
@@ -63,6 +65,16 @@ class DOIResolver
         $job = new LiteratureResolverJob($wikiPage, $jobParams);
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $jobQueue->push($job);
+    }
+
+    private function createAuthorPageJobsAsync(array $authors)
+    {
+        foreach($authors as $author) {
+            $name = "{$author->given} {$author->family}";
+            $orcid = $author->ORCID ?? '-';
+            $job = new CreateAuthorPageJob(null, ['name' => $name, 'orcid' => $orcid]);
+            MediaWikiServices::getInstance()->getJobQueueGroup()->push($job);
+        }
     }
 
     /**

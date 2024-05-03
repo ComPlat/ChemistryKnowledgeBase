@@ -1,5 +1,5 @@
 @if ($orcid != '')
-    <h2>These publications are are assigned to the author's ORCID</h2>
+    <h2>These publications are assigned to the author's ORCID</h2>
     @if ($orcidPublications == '' || $orcidPublications == '-no-publications-yet--')
         <p>There are no publications for this ORCID</p>
     @else
