@@ -89,10 +89,10 @@ class HtmlTableEditor
         }
     }
 
-    public function removeOtherColumns($tabName)
+    public function removeOtherColumns($tabName, $domSelector = '')
     {
         $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//td');
+        $list = $xpath->query('//td'.$domSelector);
         $toRemove = [];
         foreach ($list as $td) {
             $resourceAttribute = $td->getAttribute('resource');
@@ -104,7 +104,7 @@ class HtmlTableEditor
                 $toRemove[] = $td;
             }
         }
-        $list = $xpath->query('//th');
+        $list = $xpath->query('//th'.$domSelector);
         foreach ($list as $th) {
             $resourceAttribute = $th->getAttribute('resource');
             if ($resourceAttribute == '') {

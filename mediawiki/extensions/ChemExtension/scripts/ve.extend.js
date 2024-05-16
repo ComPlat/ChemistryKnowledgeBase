@@ -68,7 +68,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.LinearContextItemExtension.extendForExperimentList = function(panel, context, model) {
         let addButton = new OO.ui.ButtonWidget({
-            label: 'Add experiment'
+            label: 'Add/edit experiment'
         });
 
         let refreshButton = new OO.ui.ButtonWidget({

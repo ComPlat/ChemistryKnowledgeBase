@@ -39,6 +39,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th resource="Products" property="hidden" title="quantum yield MeOH">Φ MeOH [%]</th>
 <th resource="General,Products" property="hidden" title="selectivity">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
 <th resource="Products" property="hidden" title="total quantum yield">Φ all [%]</th>
+<th title="details" property="hidden">Details</th>
 <th resource="General" property="hidden" title="include">include</th>
 </tr>
 {{{experiments|}}}

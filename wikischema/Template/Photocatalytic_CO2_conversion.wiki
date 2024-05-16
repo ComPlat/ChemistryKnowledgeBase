@@ -38,6 +38,7 @@ This is the Photocatalytic CO2 conversion template.
 <td resource="Products" property="hidden">{{{Φ MeOH|}}}</td>
 <td resource="General,Products" property="hidden">{{Selectivity|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
 <td resource="Products" property="hidden">{{DisplayNumberNotNull|{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }} }}</td>
+<td property="hidden">{{{details|}}}</td>
 <td resource="General" property="hidden">{{{include|}}}</td>
 </tr>{{#subobject:
  |Catalyst={{{catalyst|}}}
@@ -81,6 +82,7 @@ This is the Photocatalytic CO2 conversion template.
  |Selectivity H2={{SelectivityForOne|{{{TON H2|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
  |Selectivity HCOOH={{SelectivityForOne|{{{TON HCOOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
  |Selectivity MeOH={{SelectivityForOne|{{{TON MeOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}
+ |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
 }}</includeonly>
