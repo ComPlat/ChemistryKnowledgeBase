@@ -80,7 +80,7 @@ class DOITools {
         }
         $result = [];
         foreach ($licenses as $license) {
-            $date = self::parseDateFromDateParts($license->start->{'date-parts'});
+            $date = self::parseDateFromDateParts($license->start->{'date-parts'}) ?? '-';
             $result[] = ['date' => $date, 'URL' => $license->URL];
         }
         return $result;
@@ -89,7 +89,7 @@ class DOITools {
     public static function parseDateFromDateParts($dateParts)
     {
         if ($dateParts == '') {
-            return '-';
+            return null;
         }
         $first = $dateParts[0]; // why several at all??
         if (count($first) === 1) {
