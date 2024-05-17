@@ -23,6 +23,8 @@
 |-
 | Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|n/a}}
 |-
+| Molecular role || {{#if: {{{molecular_role|}}} | {{#arraymap:{{{molecular_role|}}}|,|x| [[MolecularRole::x]] }}|n/a}}
+|-
 | Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|$|x| [[Synonym::x]] }} |n/a}}
 |-
 |}

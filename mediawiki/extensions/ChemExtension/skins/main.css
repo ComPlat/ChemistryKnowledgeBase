@@ -517,6 +517,11 @@ table.formtable div.oo-ui-textInputWidget {
     width: 90% !important;
 }
 
+table.formtable input.createboxInput {
+    max-width: 90% !important;
+    width: 90% !important;
+}
+
 table.wikitable td p {
     margin-bottom: 0rem;
 }
