@@ -113,6 +113,9 @@ class TreeNode {
         $list = new Tag('ul');
         $list->addClasses(['ce-breadcrumb']);
         if ($this->isLeaf()) {
+            if ($this->title->isSpecialPage()) {
+                return $list;
+            }
             $li = $this->createListItem($this->title, 0);
             $list->appendContent($li);
         } else {
