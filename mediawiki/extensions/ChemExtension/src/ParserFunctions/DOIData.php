@@ -47,9 +47,12 @@ class DOIData
                     break;
                 }
                 case 'publicationDate':
-                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '');
-                    if ($result === '') {
-                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '');
+;                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'});
+                    if (is_null($result)) {
+                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'});
+                    }
+                    if (is_null($result)) {
+                        $result = '';
                     }
                     break;
                 case 'publisher':
