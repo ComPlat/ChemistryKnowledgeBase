@@ -6,7 +6,7 @@ use MediaWiki\MediaWikiServices;
 
 class UserPreference
 {
-    public static $defaultSortOrder = "sort-by-count";
+    public static $defaultSortOrder = "sort-alphabetically";
 
     static public function setupPreferences($user, &$preferences)
     {

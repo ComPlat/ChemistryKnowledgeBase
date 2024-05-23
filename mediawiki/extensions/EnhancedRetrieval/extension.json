@@ -55,7 +55,7 @@
 		"UpdateSolrWithDependantJob": "DIQA\\FacetedSearch\\UpdateSolrWithDependantJob"
 	},
 	"DefaultUserOptions": {
-		"er-sort-order-preferences": "sort-by-count"
+		"er-sort-order-preferences": "sort-alphabetically"
 	},
 	"config_prefix": "fsg",
 	"config": {
