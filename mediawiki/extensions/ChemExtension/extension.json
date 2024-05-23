@@ -151,6 +151,10 @@
             "path": "/ChemExtension/v1/uploadfile",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\UploadFileToWiki"
+        },{
+            "path": "/ChemExtension/v1/titlesearch",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetTitle"
         }
 
     ],

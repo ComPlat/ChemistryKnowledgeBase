@@ -200,6 +200,25 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.searchForTitle = function (searchTerm, namespace, withNsPrefix) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/titlesearch";
+        let data = {
+            searchTerm: searchTerm
+        };
+        if (namespace) {
+            data.namespace = namespace;
+        }
+        if (withNsPrefix) {
+            data.withNsPrefix = withNsPrefix;
+        }
+        return $.ajax({
+            method: "GET",
+            url: url,
+            data: data,
+        });
+    }
+
     OO.initClass(window.ChemExtension.AjaxEndpoints);
 
 

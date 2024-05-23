@@ -70,6 +70,7 @@ class Setup {
                 $baseScript . '/breadcrumb.js',
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
+                $baseScript . '/ve.oo-ui.title-multi-select-input.js',
 
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
