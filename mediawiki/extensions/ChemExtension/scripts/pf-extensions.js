@@ -4,8 +4,8 @@
     window.ChemExtension = window.ChemExtension || {};
     window.ChemExtension.initPFFieldCounter = 1;
     window.ChemExtension.initPFExtensions = function() {
-        $('span.pf_copy_template').off('click');
-        $('span.pf_copy_template').click((e) => {
+        $('div.pf_copy_template').off('click');
+        $('div.pf_copy_template').click((e) => {
             let target = $(e.target);
             let instanceToCopy = target.parent();
             let newInstance = $('.multipleTemplateAdder').addInstance(false);
