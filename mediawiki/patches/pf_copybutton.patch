@@ -10,7 +10,7 @@ diff --git a/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php b/mediaw
  			<td class="instanceRemove">$removeButton</td>
  			</tr>
  			</table>
-+            <span class="pf_copy_template">copy</span>
++            <div class="pf_copy_template">copy</div>
  END;
  
  		return $text;

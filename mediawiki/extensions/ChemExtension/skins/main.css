@@ -326,9 +326,20 @@ div.ce-missing-item a.image {
     margin-left: 10px;
 }
 
-span.pf_copy_template {
+div.pf_copy_template {
     cursor: pointer;
+    border: 2px blue solid;
+    padding: 2px;
+    border-radius: 5px;
+    background: lightblue;
+    text-align: center;
+    margin-top: 10px;
 }
+
+div.pf_copy_template:hover {
+    background: #6da9f7;
+}
+
 
 span.ce-type-hint {
     width: 10px;
