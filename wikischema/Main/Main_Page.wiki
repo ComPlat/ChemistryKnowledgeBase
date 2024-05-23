@@ -24,7 +24,7 @@
 |-
 | style="padding: 15px" |
 * [[Help:Getting Started]] 
-* [[Help:Create new paper]] 
+* [[Help:Create new publication]]
 * [[Help:Create new topic]]
 * [[Help:ReplaceMolecule]]
 | style="padding: 15px" |
