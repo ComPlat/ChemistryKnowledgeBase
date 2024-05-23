@@ -112,6 +112,11 @@
             $(href).css({'font-weight': 'bold'});
         });
 
+        $('span.ce-moleculelink-show').click((e) => {
+            let target = $(e.target);
+            target.siblings('a').find('span.ce-moleculelink-image').show();
+            target.remove();
+        });
     }
 
     function whichChild(node) {

@@ -1,4 +1,4 @@
 <includeonly>
- | {{{1}}} || {{#moleculelink: |link={{{2}}}|image=true}} || {{{3}}} || {{{4}}} || {{{5}}} || {{{6}}} || {{{7}}}
+ | {{{1}}} || {{#moleculelink: |link={{{2}}}|image=true|toggleImage=true}} || {{{3}}} || {{{4}}} || {{{5}}} || {{{6}}} || {{{7}}}
  |-
 </includeonly>

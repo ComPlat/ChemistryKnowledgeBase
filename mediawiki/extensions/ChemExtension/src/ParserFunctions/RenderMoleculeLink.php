@@ -69,6 +69,7 @@ class RenderMoleculeLink
                 'image' => ($parameters['image'] ?? false) === "true",
                 'width' => $parameters['width'] ?? 300,
                 'height' => $parameters['height'] ?? 200,
+                'toggleImage' => ($parameters['toggleImage'] ?? false) === "true",
             ]
         )->render();
 
