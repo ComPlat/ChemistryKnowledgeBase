@@ -40,12 +40,26 @@
         });
 
         // make tables sortable
+        let updateTitles = function(table){
+
+            table.find('thead th').each((i, e) => {
+                $(e).attr('title', $(e).attr('title-copy') );
+            });
+        };
         $('table.experiment-link, table.experiment-list').each(function(i,e) {
            let target = $(e);
            let f = target.find('> tbody > tr:first-child', target);
-            $('<thead>').insertBefore(target.find('> tbody')).append(f);
+            let head = $('<thead>').insertBefore(target.find('> tbody')).append(f);
+            head.find('th').each((i, e) => {
+                $(e).attr('title-copy', $(e).attr('title') );
+            });
             target.tablesorter();
+            updateTitles(target);
+            target.bind("sortEnd.tablesorter",function() {
+                updateTitles(target);
+            });
         });
+
 
         $('span.experiment-link-show-button').off('click');
         $('span.experiment-link-show-button').click(function(e) {
