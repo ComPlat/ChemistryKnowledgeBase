@@ -61,7 +61,7 @@ class ExperimentLink
         return md5($key);
     }
 
-    private static function getContentFromCache($parameters, $selectExperimentQuery, Title $title)
+    public static function getContentFromCache($parameters, $selectExperimentQuery, Title $title)
     {
         if (WikiTools::isInVisualEditor()) {
             $result = self::renderTable($title, $parameters, $selectExperimentQuery, '');
@@ -174,7 +174,9 @@ class ExperimentLink
             'form' => $parameters['form'],
             'description' => $parameters['description'] ?? '- please enter description -',
             'templateData' => self::getTemplateData($parameters, urldecode($selectExperimentQuery)),
-            'cacheKey' => $cacheKey
+            'cacheKey' => $cacheKey,
+            'parameters' => $parameters,
+            'selectExperimentQuery' => $selectExperimentQuery,
         ]);
         $html = $renderer->render();
         return [

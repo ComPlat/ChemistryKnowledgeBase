@@ -61,8 +61,7 @@
         });
 
 
-        $('span.experiment-link-show-button').off('click');
-        $('span.experiment-link-show-button').click(function(e) {
+        let toggleExperimentHandler = function(e) {
             let buttonLabel = $(e.target);
             let button = buttonLabel.closest('span.experiment-link-show-button');
             let id = button.attr('id');
@@ -76,24 +75,35 @@
                 table.show();
 
             }
-        });
+        };
 
-        $('span.experiment-link-refresh-button').off('click');
-        $('span.experiment-link-refresh-button').click(function(e) {
+        $('span.experiment-link-show-button').off('click');
+        $('span.experiment-link-show-button').click(toggleExperimentHandler);
+
+        let refreshExperimentHandler = function(e) {
             let buttonLabel = $(e.target);
             buttonLabel.text('Refreshing...');
-            let cacheKeys = [];
-            $('div.experiment-link-border').each((i, e) => {
-                cacheKeys.push($(e).attr('resource'));
-            });
             let ajax = new window.ChemExtension.AjaxEndpoints();
-            ajax.invalidateInvestigationCache(cacheKeys).done(() => {
+            ajax.invalidateInvestigationCache($(e.target).closest('button').attr('value')).done((response) => {
                 mw.notify('Cache invalidated');
-                window.location.reload();
+
+                let experimentContainer = $(e.target).closest('.experiment-link-border');
+                let table = experimentContainer.find('table');
+                let visible = table.is(':visible');
+
+                let newNode = $(response.html);
+                experimentContainer.replaceWith(newNode);
+                newNode.find('span.experiment-link-show-button').click(toggleExperimentHandler);
+                newNode.find('span.experiment-link-refresh-button').click(refreshExperimentHandler);
+                if (visible) {
+                    newNode.find('table').show();
+                }
             }).fail((e) => {
                 mw.notify('Cache invalidation failed');
             });
-        });
+        };
+        $('span.experiment-link-refresh-button').off('click');
+        $('span.experiment-link-refresh-button').click(refreshExperimentHandler);
 
         $('.experiment-link-help').qtip({
             content: "<ul class='experiment-help-bullets'>" +

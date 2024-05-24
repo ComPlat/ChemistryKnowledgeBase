@@ -126,7 +126,13 @@ TEMPLATE;
                 'label' => 'Refresh',
                 'flags' => ['primary', 'progressive'],
                 'title' => 'Refresh content investigations',
-                'infusable' => true
+                'infusable' => true,
+                'value' => json_encode([
+                    'parameters' => $this->context['parameters'],
+                    'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                    'page' => $this->context['page']->getPrefixedText(),
+                    'cacheKey' => $this->context['cacheKey']
+                ])
             ]);
 
             global $wgScriptPath;
