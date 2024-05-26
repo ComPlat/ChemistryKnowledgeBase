@@ -146,13 +146,13 @@ The class *ChemFormRepository* abstracts access to these tables.
 <figure>
     <img src="https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/chemform-overview.PNG"
          alt="Chemical formula integration">
-    <figcaption>[Fig. 1] Data flow when users enters a chemical formula in the wiki.</figcaption>
+    <figcaption>[Fig. 1] Data flow when users enter a chemical formula in the wiki.</figcaption>
 </figure>
 
 <figure>
     <img src="https://github.com/ComPlat/ChemistryKnowledgeBase/blob/main/doc/images/rGroups-overview.PNG"
          alt="R-Groups integration">
-    <figcaption>[Fig. 2] Data flow when users enters R-Groups for a molecule collection in the wiki.</figcaption>
+    <figcaption>[Fig. 2] Data flow when users enter R-Groups for a molecule collection in the wiki.</figcaption>
 </figure>
 
 ## Investigations
