@@ -50,8 +50,11 @@ class updateAuthorPages extends \Maintenance
 
             $column = next($row);
             $dataItem = $column->getNextDataItem();
-            if ($dataItem === false) continue;
-            $orcid = $dataItem->getString();
+            if ($dataItem !== false) {
+                $orcid = $dataItem->getString();
+            } else {
+                $orcid = '-';
+            }
 
             if ($orcid === '-') {
                 if (!array_key_exists($author, $searchResults)) {
