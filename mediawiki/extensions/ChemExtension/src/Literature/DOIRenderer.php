@@ -58,13 +58,15 @@ class DOIRenderer
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
         global $wgScriptPath;
+
+        $submittedAt = $data->created->timestamp ?? 0;
         return $blade->view()->make("doi-infobox",
             [
                 'doi' => $data->DOI,
-                'type' => DOITools::getTypeLabel($data->type),
-                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
-                'authors' => DOITools::formatAuthors($data->author),
-                'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
+                'type' => DOITools::getTypeLabel($data->type ?? ''),
+                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title ?? ''), "<sub><sup><b><i>"),
+                'authors' => DOITools::formatAuthors($data->author ?? ''),
+                'submittedAt' => $submittedAt !== 0 ? date('d.m.Y', ($data->created->timestamp / 1000)) : '-',
                 'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '-'),
                 'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '-'),
                 'publisher' => $data->publisher ?? '-',

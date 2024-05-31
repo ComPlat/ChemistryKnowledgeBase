@@ -51,10 +51,10 @@ class PageCreationSpecial extends SpecialPage
             }
 
             $pageContent = "";
-            if (!is_null($doiData)) {
-                $doi = $doiData->DOI;
-                $pageContent .= "{{DOI|doi=$doi}}\n";
-            }
+
+            $doi = $doiData->DOI ?? '';
+            $pageContent .= "{{DOI|doi=$doi}}\n";
+
             $pageContent .= implode("\n", $superTopicsAsWikiText);
             $pageContent .= "[[Category:Publication]]";
 

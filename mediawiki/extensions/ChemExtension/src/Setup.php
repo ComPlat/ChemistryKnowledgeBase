@@ -43,7 +43,7 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
-                $baseScript . '/special.create-topic.js',
+                $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
                 $baseScript . '/client-ajax-endpoints.js',
                 $baseScript . '/render-chemform-tooltip.js',
@@ -142,6 +142,13 @@ class Setup {
             'text' => "Cancel edit",
             'href' => "javascript:ve.init.target.getSurface().emit( 'cancel' );",
             'id'=>'cancelve'
+        ];
+
+        global $wgScriptPath;
+        $links['actions'][] = [
+            'text' => "Edit DOI",
+            'href' => "$wgScriptPath/Special:FormEdit/DOI/{$wgTitle->getPrefixedDBkey()}",
+            'id'=>'editdoi'
         ];
 
     }
