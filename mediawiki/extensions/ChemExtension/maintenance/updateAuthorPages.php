@@ -37,7 +37,7 @@ class updateAuthorPages extends \Maintenance
             [
                 QueryUtils::newPropertyPrintRequest("Author"),
                 QueryUtils::newPropertyPrintRequest("Orcid")
-            ], ['mainlabel' => '-'] );
+            ], ['mainlabel' => '-', 'limit' => 10000] );
 
 
         $searchResults = [];
