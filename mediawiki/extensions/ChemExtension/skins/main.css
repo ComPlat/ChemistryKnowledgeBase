@@ -543,6 +543,11 @@ div.navbar-tool {
 
 div.experiment-link-container {
     overflow-x: auto;
+    transform: rotateX(180deg);
+}
+
+div.experiment-link-container table {
+    transform: rotateX(180deg);
 }
 
 div.chemtext-tags-input.oo-ui-pendingElement-pending {

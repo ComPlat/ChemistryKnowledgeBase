@@ -73,6 +73,7 @@
             } else {
                 buttonLabel.text('Hide table');
                 table.show();
+                window.ChemExtension.NavBar.collapseNavbar();
 
             }
         };

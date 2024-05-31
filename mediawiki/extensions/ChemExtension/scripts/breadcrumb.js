@@ -77,6 +77,9 @@
         }
         $('.infobox th').trigger('click', ['close']);
     }
+    window.ChemExtension = window.ChemExtension || {};
+    window.ChemExtension.NavBar = {};
+    window.ChemExtension.NavBar.collapseNavbar = collapseNavbar;
 
     mw.hook( 've.activationComplete' ).add(function() {
         collapseNavbar();
