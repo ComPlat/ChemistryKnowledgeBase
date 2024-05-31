@@ -17,7 +17,7 @@
             <td>Authors</td>
             <td>
                 @foreach($authors as $a)
-                    <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($a['name'], $a['orcidUrl'])->getFullURL()}}">{{$a['name']}}</a>,
+                    <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($a['name'])->getFullURL()}}">{{$a['name']}}</a>,
                 @endforeach
                 @if(count($authors) === 0)
                     -

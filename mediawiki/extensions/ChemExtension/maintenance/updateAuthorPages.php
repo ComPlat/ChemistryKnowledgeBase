@@ -31,7 +31,7 @@ class updateAuthorPages extends \Maintenance
 
     public function execute()
     {
-        echo "\nTest";
+        echo "\nUpdate author pages...";
         $query = "[[-Has subobject::<q>[[Author::+]]</q>]]";
         $results = QueryUtils::executeBasicQuery($query,
             [

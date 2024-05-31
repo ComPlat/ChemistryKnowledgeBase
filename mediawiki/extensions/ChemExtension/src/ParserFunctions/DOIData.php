@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Jobs\CreateAuthorPageJob;
 use DIQA\ChemExtension\Literature\DOIResolver;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
@@ -47,9 +48,9 @@ class DOIData
                     break;
                 }
                 case 'publicationDate':
-;                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'});
+;                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '');
                     if (is_null($result)) {
-                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'});
+                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '');
                     }
                     if (is_null($result)) {
                         $result = '';
@@ -64,9 +65,10 @@ class DOIData
 
                 case 'authorWithOrcid':
                     $authors = DOITools::formatAuthors($data->author);
-                    $result = implode("", array_map(function($e) {
-                            $orcid = $e['orcidUrl'] != '' ? $e['orcidUrl'] : "-";
-                            return "{{#subobject:|Author={$e['name']}|Orcid={$orcid} }}";
+                    $result = implode("", array_map(function($author) {
+                            $orcid = $author['orcidUrl'] != '' ? $author['orcidUrl'] : "-";
+                            $authorPage = CreateAuthorPageJob::getAuthorPageTitle($author['name']);
+                            return "{{#subobject:|Author={$author['name']}|Orcid={$orcid}|AuthorPage={$authorPage->getPrefixedText()} }}";
                         }, $authors));
 
                     return [$result, 'noparse' => false, 'isHTML' => false];

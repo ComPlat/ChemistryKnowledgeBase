@@ -24,4 +24,5 @@
 ** {{fullurl:{{FULLPAGENAME}}|tour=pub_page}}|Tour of publication page
 * Featured
 ** {{fullurl:Special:Ask/-5B-5BCategory:Molecule-5D-5D-20-5B-5BInChIKey::%2B-5D-5D/-3FInChIKey/-3FAbbreviation/-3FTrivialname/-3FCAS/-3FIUPACName/-3FMolecularFormula/-3FTag/mainlabel%3D/limit%3D100/offset%3D100/format%3Dplainlist/searchlabel%3D...-20further-20results/template%3DMoleculeListRow/introtemplate%3DMoleculeListIntro/outrotemplate%3DMoleculeListOutro}}|All molecules
+** {{fullurl:Special:Ask/-5B-5BAuthor:%2B-5D-5D-20-5B-5B-2DAuthorPage.Orcid::!-2D-5D-5D/-3F-2DAuthorPage%3DPublications/-3F-2DAuthorPage.Author%3DAuthor/-3F-2DAuthorPage.Orcid%3DORCID/mainlabel%3DAuthor-20page/limit%3D100/offset%3D0/format%3Dtable}}|All authors
 ** Browse Topics|Browse Topics

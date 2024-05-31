@@ -19,7 +19,7 @@ class CreateAuthorPageJob extends Job {
         $this->name = $params['name'] ?? '';
         $this->orcid = $params['orcid'] ?? '';
         if (is_null($this->title)) {
-            $this->title = self::getAuthorPageTitle($this->name, $this->orcid);
+            $this->title = self::getAuthorPageTitle($this->name);
         }
 
         parent::__construct('CreateAuthorPageJob', $params);
@@ -39,18 +39,9 @@ class CreateAuthorPageJob extends Job {
         }
     }
 
-    public static function getAuthorPageTitle($author, $orcid): ?Title
+    public static function getAuthorPageTitle($author): ?Title
     {
-        $titleText = $author;
-        if ($author !== '' && $orcid !== '') {
-            // format: 0000-0001-5313-4078
-            preg_match('/\w{4}-\w{4}-\w{4}-\w{4}/', $orcid, $matches);
-            $orcid = $matches[0] ?? '';
-            if ($orcid !== '') {
-                $titleText = "$author ($orcid)";
-            }
-        }
-        return Title::newFromText($titleText, NS_AUTHOR);
+        return Title::newFromText($author, NS_AUTHOR);
     }
 
     public function createAuthorPage(): bool
