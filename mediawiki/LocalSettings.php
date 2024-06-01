@@ -151,6 +151,11 @@ $wgFooterIcons['poweredby']['github'] = [
     'src' => "$wgScriptPath/extensions/ChemExtension/resources/GitHub_Logo.png",
     'url' => 'https://github.com/ComPlat/ChemistryKnowledgeBase'
 ];
+$wgFooterIcons['poweredby']['flaticon'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/flaticon-512.png",
+    'url' => 'https://www.flaticon.com/free-icons/guide" title="guide icons',
+    'title' => 'Flaticon icons created by Freepik - Flaticon'
+];
 
 #################################################################
 # General settings
