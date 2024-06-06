@@ -439,7 +439,7 @@ $fsgNamespaceBoosts = [
     3302 => 1.5,    // Reaction
 ];
 $fsgCategoryFilter = [
-    '' => 'Alle Seiten',
+    '' => 'All pages',
     'Topic' => 'Topic',
     'Publication' => 'Publication',
     'Molecule' => 'Molecule',
