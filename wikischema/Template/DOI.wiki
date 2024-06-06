@@ -1,3 +1,3 @@
 <noinclude>
 Display DOI infobox and stores several data items about DOI in the semantic model.
-</noinclude><includeonly>{{#doiinfobox: {{{doi|}}} }}{{#set: DOI={{{doi|}}} }}{{#arraymap:{{#doidata: doi={{{doi|}}}|property=author}}|,|x|[[Author::x| ]]|\s}}[[Publication date::{{#doidata: doi={{{doi|}}}|property=publicationDate}}| ]][[Journal::{{#doidata: doi={{{doi|}}}|property=journal}}|]][[Publisher::{{#doidata: doi={{{doi|}}}|property=publisher}}|]]{{#doidata:|doi={{{doi|}}}|property=authorWithOrcid}} </includeonly>
+</noinclude><includeonly>{{#doiinfobox: {{{doi|}}} }}{{#set: DOI={{{doi|}}} }}{{#doidata: doi={{{doi|}}}|property=author}}{{#doidata: doi={{{doi|}}}|property=publicationDate}}{{#doidata: doi={{{doi|}}}|property=journal}}{{#doidata: doi={{{doi|}}}|property=publisher}}{{#doidata:|doi={{{doi|}}}|property=authorWithOrcid}} </includeonly>
