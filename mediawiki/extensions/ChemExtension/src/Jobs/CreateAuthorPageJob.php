@@ -95,6 +95,7 @@ TEXT;
 
 TEXT;
 
+        $text .= "\n\n[[Category:Author]]";
         return WikiTools::doEditContent($this->title, $text, "auto-generated", $this->title->exists() ? EDIT_UPDATE : EDIT_NEW);
     }
 }

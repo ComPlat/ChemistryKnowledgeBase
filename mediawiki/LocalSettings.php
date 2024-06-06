@@ -444,7 +444,8 @@ $fsgCategoryFilter = [
     'Publication' => 'Publication',
     'Molecule' => 'Molecule',
     'Molecule_collection' => 'Molecule collection',
-    'Investigation' => 'Investigation'
+    'Investigation' => 'Investigation',
+    'Author' => 'Author'
 ];
 
 $fsgShownFacets = [
