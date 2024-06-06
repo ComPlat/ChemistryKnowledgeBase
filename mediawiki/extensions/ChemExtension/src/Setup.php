@@ -43,6 +43,7 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
+                $baseScript . '/faceted_search.js',
                 $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
                 $baseScript . '/client-ajax-endpoints.js',
