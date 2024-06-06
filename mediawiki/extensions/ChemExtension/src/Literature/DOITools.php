@@ -92,6 +92,9 @@ class DOITools {
             return null;
         }
         $first = $dateParts[0]; // why several at all??
+        if (!is_array($first)) {
+            return '';
+        }
         if (count($first) === 1) {
             return $first[0]; // year
         } else if (count($first) === 2) {

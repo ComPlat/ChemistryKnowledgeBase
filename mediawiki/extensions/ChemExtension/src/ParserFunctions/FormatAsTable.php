@@ -11,6 +11,9 @@ class FormatAsTable {
         $parametersAsStringArray = func_get_args();
         array_shift($parametersAsStringArray); // get rid of Parser
         $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
+        if (!isset($parameters[''])) {
+            return ['', 'noparse' => true, 'isHTML' => true];
+        }
         $rows = explode(";", $parameters['']);
         $result = '<table class="ce-center-aligned-table" inner="true">';
         foreach($rows as $row) {
