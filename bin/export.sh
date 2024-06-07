@@ -9,8 +9,8 @@ fi
 DATE=$(date +%F_%H%M%S)
 
 ## export wiki schema
-php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiExport.php --directory=wikischema$DATE
-# php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiExport.php --directory=wikischema$DATE --namespace=Attribut,Benutzer,Datei,Formular,Hilfe,Kategorie,Konzept,MediaWiki,ODB,Test,Vorlage
+php $MEDIAWIKI/extensions/PageImport/maintenance/WikiExport.php --directory=wikischema$DATE
+# php $MEDIAWIKI/extensions/PageImport/maintenance/WikiExport.php --directory=wikischema$DATE --namespace=Attribut,Benutzer,Datei,Formular,Hilfe,Kategorie,Konzept,MediaWiki,ODB,Test,Vorlage
 
 tar cfvz wikischema$DATE.tar.gz wikischema$DATE/
 rm -rf wikischema$DATE/
