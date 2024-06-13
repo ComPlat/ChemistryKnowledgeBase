@@ -1,0 +1,5 @@
+; Purpose
+* [[Property description::Contains the light intensity in kW/m².@en]]
+
+; Datatype
+* [[Has type::Number]].
