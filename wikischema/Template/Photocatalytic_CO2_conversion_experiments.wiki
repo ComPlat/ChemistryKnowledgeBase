@@ -4,7 +4,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <includeonly><table class="wikitable" title="">
 <tr>
 <th resource="General" title="catalyst">cat</th>
-<th resource="General" title="catalyst concentration">cat conc [mM]</th>
+<th resource="General" title="catalyst concentration">cat conc [µM]</th>
 <th resource="General" title="photosensitizer">PS</th>
 <th resource="General" title="photosensitizer concentration">PS conc [mM]</th>
 <th resource="General" title="electron donor">e-D</th>
