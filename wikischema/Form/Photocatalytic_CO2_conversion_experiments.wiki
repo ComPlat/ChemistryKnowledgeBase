@@ -14,7 +14,7 @@ Experiments:
 ! cat:
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
 |-
-! cat conc [mM]:
+! cat conc [µM]:
 | {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! PS:
