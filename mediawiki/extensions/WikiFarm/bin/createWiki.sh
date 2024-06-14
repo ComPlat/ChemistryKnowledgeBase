@@ -59,5 +59,5 @@ php $MEDIAWIKI/maintenance/update.php --quick >> $BASE/$1/creation.log
 echo 'done.'
 
 echo '#################### Import wiki schema'
-php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiImport.php --directory=$WIKISCHEMA >> $BASE/$1/creation.log
+php $MEDIAWIKI/extensions/PageImport/maintenance/WikiImport.php --directory=$WIKISCHEMA >> $BASE/$1/creation.log
 

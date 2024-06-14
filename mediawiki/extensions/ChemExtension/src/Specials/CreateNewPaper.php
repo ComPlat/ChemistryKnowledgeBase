@@ -3,9 +3,8 @@
 namespace DIQA\ChemExtension\Specials;
 
 use DIQA\ChemExtension\Literature\DOIResolver;
-use DIQA\ChemExtension\Widgets\TagsMultiSelectWidget;
+use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
 use Exception;
-use MediaWiki\Widget\TitlesMultiselectWidget;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
@@ -99,13 +98,14 @@ class CreateNewPaper extends PageCreationSpecial
         );
 
         $topicCategory = new FieldLayout(
-            new TitlesMultiselectWidget(['id' =>
+            new TitleMultiSelectWidget(['id' =>
                 'chemext-topic-super',
                 'infusable' => true,
                 'name' => 'topic-super',
                 'default' => $this->getPresetDataForTitleInput($wgRequest->getText('topic-super', '')),
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
+                'namespace' => NS_CATEGORY
             ]),
             [
                 'align' => 'top',

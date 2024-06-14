@@ -1,10 +1,10 @@
 <?php
 namespace DIQA\ChemExtension\Endpoints;
 
+use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use Wikimedia\ParamValidator\ParamValidator;
 
 class InvalidateExperimentCache extends SimpleHandler {
 
@@ -17,20 +17,24 @@ class InvalidateExperimentCache extends SimpleHandler {
             return $res;
         }
         $body = json_decode($jsonBody);
-        if (!isset($body->cacheKeys)) {
+        if (!isset($body->cacheKey)) {
             $res = new Response("cacheKeys property is missing");
             $res->setStatus(400);
             return $res;
         }
 
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        foreach($body->cacheKeys as $cacheKey) {
-            $cache->delete($cache->makeKey('investigation-link-table-data', $cacheKey));
-        }
+        $cache->delete($cache->makeKey('investigation-link-table-data', $body->cacheKey));
 
-        $res = new Response();
-        $res->setStatus(200);
-        return $res;
+        $result = ExperimentLink::getContentFromCache([
+            'form' => $body->parameters->form,
+            'description' =>$body->parameters->description,
+            'restrictToPages' => $body->parameters->restrictToPages,
+            'sort' => $body->parameters->sort,
+            'order' => $body->parameters->order,
+        ], $body->selectExperimentQuery, \Title::newFromText($body->page));
+
+        return ['html' => $result];
     }
 
     public function needsWriteAccess() {

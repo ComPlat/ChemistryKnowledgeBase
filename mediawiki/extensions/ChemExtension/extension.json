@@ -23,8 +23,8 @@
         "FindMissingItems": "DIQA\\ChemExtension\\Specials\\FindMissingItems",
         "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule",
         "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage",
-        "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog"
-
+        "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog",
+        "ShowPublications": "DIQA\\ChemExtension\\Specials\\ShowPublications"
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",
@@ -151,6 +151,10 @@
             "path": "/ChemExtension/v1/uploadfile",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\UploadFileToWiki"
+        },{
+            "path": "/ChemExtension/v1/titlesearch",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetTitle"
         }
 
     ],
@@ -161,7 +165,8 @@
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Jobs\\LiteratureResolverJob",
         "MoleculePageUpdateJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageUpdateJob",
         "AdjustMoleculeReferencesJob": "DIQA\\ChemExtension\\Jobs\\AdjustMoleculeReferencesJob",
-        "PageImportJob": "DIQA\\ChemExtension\\Jobs\\PageImportJob"
+        "PageImportJob": "DIQA\\ChemExtension\\Jobs\\PageImportJob",
+        "CreateAuthorPageJob": "DIQA\\ChemExtension\\Jobs\\CreateAuthorPageJob"
     },
     "manifest_version": 2
 }

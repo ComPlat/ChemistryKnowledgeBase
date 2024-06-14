@@ -9,15 +9,16 @@
 
     };
 
-    window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (cacheKeys) {
+    window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (data) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/invalidate-inv-cache";
 
         return $.ajax({
             method: "POST",
+            datatype: 'json',
             contentType: "application/json",
             url: url,
-            data: JSON.stringify({cacheKeys: cacheKeys})
+            data: data
 
         });
     }
@@ -197,6 +198,25 @@
         return $.ajax({
             method: "GET",
             url: url
+        });
+    }
+
+    window.ChemExtension.AjaxEndpoints.prototype.searchForTitle = function (searchTerm, namespace, withNsPrefix) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/titlesearch";
+        let data = {
+            searchTerm: searchTerm
+        };
+        if (namespace) {
+            data.namespace = namespace;
+        }
+        if (withNsPrefix) {
+            data.withNsPrefix = withNsPrefix;
+        }
+        return $.ajax({
+            method: "GET",
+            url: url,
+            data: data,
         });
     }
 

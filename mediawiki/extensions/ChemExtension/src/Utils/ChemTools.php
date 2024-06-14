@@ -32,14 +32,14 @@ class ChemTools {
     public static function getNamesOfMolecule($moleculeTitle) {
         $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
         $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
-            SMWDIProperty::newFromUserLabel("Trivialname"));
+            SMWDIProperty::newFromUserLabel("Abbreviation"));
         if (count($res) > 0) {
             $first = reset($res);
             return $first->getString();
         } else {
             $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
             $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
-                SMWDIProperty::newFromUserLabel("Abbreviation"));
+                SMWDIProperty::newFromUserLabel("Trivialname"));
             if (count($res) > 0) {
                 $first = reset($res);
                 return $first->getString();

@@ -22,7 +22,8 @@ This is the Cyclic Voltammetry experiments template.
 <th title="WE surface area [mm²]" property="hidden">WE surface area [mm²]</th>
 <th title="counter electrode" property="hidden">CE</th>
 <th title="reference electrode">RE</th>
-<th property="hidden" title="include">include</th>
+<th title="details" property="hidden">Details</th>
+<th title="include" property="hidden">include</th>
 </tr>
 {{{experiments|}}}
 </table>

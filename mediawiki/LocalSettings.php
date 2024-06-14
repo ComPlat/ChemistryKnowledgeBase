@@ -151,6 +151,11 @@ $wgFooterIcons['poweredby']['github'] = [
     'src' => "$wgScriptPath/extensions/ChemExtension/resources/GitHub_Logo.png",
     'url' => 'https://github.com/ComPlat/ChemistryKnowledgeBase'
 ];
+$wgFooterIcons['poweredby']['flaticon'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/flaticon-512.png",
+    'url' => 'https://www.flaticon.com/free-icons/guide" title="guide icons',
+    'title' => 'Flaticon icons created by Freepik - Flaticon'
+];
 
 #################################################################
 # General settings
@@ -389,9 +394,16 @@ define('NS_REACTION', 3302);
 define('NS_REACTION_TALK', 3303);
 $wgExtraNamespaces[NS_REACTION] = 'Reaction';
 $wgExtraNamespaces[NS_REACTION_TALK] = 'Reaction_talk';
+
+define('NS_AUTHOR', 3304);
+define('NS_AUTHOR_TALK', 3305);
+$wgExtraNamespaces[NS_AUTHOR] = 'Author';
+$wgExtraNamespaces[NS_AUTHOR_TALK] = 'Author_talk';
+
 $smwgNamespacesWithSemanticLinks[NS_MOLECULE] = true;
 $smwgNamespacesWithSemanticLinks[NS_REACTION] = true;
 $smwgNamespacesWithSemanticLinks[NS_TEMPLATE] = true;
+$smwgNamespacesWithSemanticLinks[NS_AUTHOR] = true;
 # Enable subpages in the main namespace
 $wgNamespacesWithSubpages[NS_MAIN] = true;
 wfLoadExtension('ChemExtension');
@@ -427,12 +439,13 @@ $fsgNamespaceBoosts = [
     3302 => 1.5,    // Reaction
 ];
 $fsgCategoryFilter = [
-    '' => 'Alle Seiten',
+    '' => 'All pages',
     'Topic' => 'Topic',
     'Publication' => 'Publication',
     'Molecule' => 'Molecule',
     'Molecule_collection' => 'Molecule collection',
-    'Investigation' => 'Investigation'
+    'Investigation' => 'Investigation',
+    'Author' => 'Author'
 ];
 
 $fsgShownFacets = [
@@ -441,9 +454,11 @@ $fsgShownFacets = [
     ],
     'Molecule' => [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
     'Molecule_collection' =>  [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
-    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal' ],
+    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal', "Publisher" ],
     'Topic' => ['Tag']
 ];
+
+$fsgExtraPropertiesToRequest = ['AuthorPage'];
 
 $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
 $wgExternalLinkTarget = '_blank';

@@ -6,11 +6,6 @@ Industrial production of formic acid is done mainly by carbonylation of methanol
 
 A direct approach of synthesis by hydrogenation of CO<sub>2</sub> and using renewable energy, such as sunlight in photocatalysis, in a homogeneous environment, is the focus of this page.    
 
-== Reaction ==
-CO2 + H2 -> HCOOH
-
-explanation 
-
 == Sacrificial electron donors ==
 <chemform smiles="N(CCO)(CCO)CCO" inchi="1S/C6H15NO3/c8-4-1-7(2-5-9)3-6-10/h8-10H,1-6H2" inchikey="GSEJCLTVZPLZKY-UHFFFAOYSA-N" height="200px" width="300px" float="none">
   -INDIGO-10172210562D
@@ -212,21 +207,6 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 </chemform>
-{| class="wikitable"
-|+
-!BIH
-!BI(OH)H
-!BNAH
-!TEA
-!TEOA
-|-
-|{{#moleculelink:|link=VDFIVJSRRJXMAU-UHFFFAOYSA-N|image=true}}
-|{{#moleculelink:|link=NNENGKYNKIWEEY-UHFFFAOYSA-N|image=true}}
-|{{#moleculelink:|link=CMNUYDSETOTBDE-UHFFFAOYSA-N|image=true}}
-|{{#moleculelink:|link=ZMANZCXQSJIPKH-UHFFFAOYSA-N|image=true}}
-|{{#moleculelink:|link=GSEJCLTVZPLZKY-UHFFFAOYSA-N|image=true}}
-|}
-
 == Ruthenium Catalysts ==
 <chemform smiles="C1C=CN2[Ru]([*])([*])3(N4C=CC=CC=4C4C=CC=CN=43)N3C=CC=CC=3C=2C=1" isreaction="" inchi="" inchikey="" height="200px" width="300px" float="none" r1="Cl,H,Cl,CO,Cl,MECN,DMF,CO,nPropyl" r2="CO,CO,py,CO,Cl,MECN,DMF,H2O,nPropyl">
   -INDIGO-11022212252D

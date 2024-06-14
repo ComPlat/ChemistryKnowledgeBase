@@ -16,8 +16,6 @@ use Title;
 class ExperimentLinkRenderer extends ExperimentRenderer
 {
 
-    static $BUTTON_COUNTER = 0;
-
     public function __construct($context)
     {
         parent::__construct($context);
@@ -108,10 +106,10 @@ TEMPLATE;
                 $htmlTableEditor->shortenTable(25);
             }
 
-            self::$BUTTON_COUNTER++;
+            $uniqueId = uniqid();
             $toggleButton = new ButtonInputWidget([
                 'classes' => ['chemext-button', 'experiment-link-show-button'],
-                'id' => 'ce-show-investigation-'.self::$BUTTON_COUNTER,
+                'id' => 'ce-show-investigation-'.$uniqueId,
                 'type' => 'button',
                 'label' => 'Show table',
                 'flags' => ['primary', 'progressive'],
@@ -121,12 +119,18 @@ TEMPLATE;
 
             $refreshButton = new ButtonInputWidget([
                 'classes' => ['chemext-button', 'experiment-link-refresh-button'],
-                'id' => 'ce-refresh-investigation-'.self::$BUTTON_COUNTER,
+                'id' => 'ce-refresh-investigation-'.$uniqueId,
                 'type' => 'button',
                 'label' => 'Refresh',
                 'flags' => ['primary', 'progressive'],
                 'title' => 'Refresh content investigations',
-                'infusable' => true
+                'infusable' => true,
+                'value' => json_encode([
+                    'parameters' => $this->context['parameters'],
+                    'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                    'page' => $this->context['page']->getPrefixedText(),
+                    'cacheKey' => $this->context['cacheKey']
+                ])
             ]);
 
             global $wgScriptPath;
@@ -135,7 +139,7 @@ TEMPLATE;
                 'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
                 'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
                 'description' => $this->context['description'],
-                'buttonCounter' => self::$BUTTON_COUNTER,
+                'buttonCounter' => $uniqueId,
                 'cacheKey' => $this->context['cacheKey'],
                 'wgScriptPath' => $wgScriptPath
             ])->render ();

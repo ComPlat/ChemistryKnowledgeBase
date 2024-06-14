@@ -23,6 +23,7 @@ This is the Cyclic Voltammetry template.
 <td property="hidden">{{{WE area|}}}</td>
 <td property="hidden">{{{CE|}}}</td>
 <td>{{{RE|}}}</td>
+<td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 </tr>{{#subobject:
  |Analyte={{{anl|}}}
@@ -44,6 +45,7 @@ This is the Cyclic Voltammetry template.
  |Working electrode surface area={{{WE area|}}}
  |Counter electrode={{{CE|}}}
  |Reference electrode={{{RE|}}}
+ |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
 }}</includeonly>

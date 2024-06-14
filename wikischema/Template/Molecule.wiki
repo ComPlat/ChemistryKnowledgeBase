@@ -23,7 +23,9 @@
 |-
 | Has vendors || {{#if: {{{hasVendors|}}} | {{#set: HasVendors={{{hasVendors}}} }} {{{hasVendors}}}|n/a}}
 |-
-| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|,|x| [[Synonym::x]] }} |n/a}}
+| Molecular role || {{#if: {{{molecular_role|}}} | {{#arraymap:{{{molecular_role|}}}|,|x| [[MolecularRole::x]] }}|n/a}}
+|-
+| Synonyms|| {{#if: {{{synonyms|}}} | {{#arraymap:{{{synonyms|}}}|$|x| [[Synonym::x]] }} |n/a}}
 |-
 |}
 
@@ -35,7 +37,7 @@
 {{#arraymap:{{#extractElements:|formula={{{smiles|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
 
 <div>
-<span class="toggle-box" resource="chemdata">Click here to show SMILES and InChi.</span>
+<span class="toggle-box" resource="chemdata">Click here to show SMILES and InChI.</span>
 {| id="chemdata" class="infobox wikitable" style="display:none;"
 |-
 | InChI || {{#if: {{{inchi|}}} | {{#set: InChI={{{inchi}}} }} {{{inchi}}}|}}

@@ -1,0 +1,10 @@
+; Purpose
+* [[Property description::Contains a string describing the molecular role of a molecule.@en]]
+
+; Datatype
+* [[Has type::Text]].
+
+The allowed values for this property are:
+* [[Allows value::catalyst]]
+* [[Allows value::photosensitizer]]
+* [[Allows value::solvent]]

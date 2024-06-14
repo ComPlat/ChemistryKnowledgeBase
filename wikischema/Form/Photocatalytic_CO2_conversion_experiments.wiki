@@ -14,8 +14,8 @@ Experiments:
 ! cat:
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
 |-
-! cat conc [mM]:
-| {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+! cat conc [µM]:
+| {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! PS:
 | {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup_ps}}}
@@ -55,6 +55,12 @@ Experiments:
 |-
 ! feedstock gas:
 | {{{field|feedstock gas|input type=combobox|property=Feedstock gas}}}
+|-
+! feedstock volume [mL]:
+| {{{field|feedstock volume|input type=regexp|property=Feedstock volume|base type=Number|message=Input a positive number [mL]|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! Light intensity [kW/m²]:
+| {{{field|intensity|input type=regexp|property=Intensity|base type=Number|message=Input a positive number [kW/m²]|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! pH:
 | {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14!)$/}}}
@@ -112,6 +118,9 @@ Experiments:
 |-
 ! Φ MeOH [%]:
 | {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! Details:
+| {{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)

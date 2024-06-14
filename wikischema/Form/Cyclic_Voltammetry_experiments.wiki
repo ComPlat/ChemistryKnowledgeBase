@@ -71,6 +71,9 @@ experiments:
 ! reference electrode:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}
 |-
+! Details:
+| {{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
+|-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
 |-

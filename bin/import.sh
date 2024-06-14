@@ -12,8 +12,8 @@ if [ ! -e $WIKISCHEMA/Main ]; then
     exit 1
 fi
 
-php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiImport.php --verbose --directory=$WIKISCHEMA
-#php $MEDIAWIKI/extensions/WikiImportExport/maintenance/WikiImport.php --verbose --directory=$WIKISCHEMA --namespace=Attribut,Vorlage,Formular,Datei,Hilfe,Kategorie,Konzept,MediaWiki,ODB,Test
+php $MEDIAWIKI/extensions/PageImport/maintenance/WikiImport.php --verbose --directory=$WIKISCHEMA
+#php $MEDIAWIKI/extensions/PageImport/maintenance/WikiImport.php --verbose --directory=$WIKISCHEMA --namespace=Attribut,Vorlage,Formular,Datei,Hilfe,Kategorie,Konzept,MediaWiki,ODB,Test
 
 touch $MEDIAWIKI/LocalSettings.php
 

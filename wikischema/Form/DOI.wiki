@@ -1,0 +1,16 @@
+<noinclude>
+Edit a DOI:
+{{#forminput:form=DOI}}
+</noinclude>
+
+<includeonly>
+{{{for template|DOI}}}
+{| class="formtable"
+! DOI:
+| {{{field|doi|input type=string}}}
+|-
+|}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

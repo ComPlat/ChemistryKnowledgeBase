@@ -73,6 +73,7 @@ class ExperimentListRenderer extends ExperimentRenderer {
                 if ($tab !== '') {
                     $htmlTableEditor->removeOtherColumns($tab);
                 }
+                $htmlTableEditor->removeOtherColumns("", "[last()]");
             } else {
                 $htmlTableEditor->addEditButtonsAsFirstColumn();
                 // required because VE can handle only limited amount of HTML

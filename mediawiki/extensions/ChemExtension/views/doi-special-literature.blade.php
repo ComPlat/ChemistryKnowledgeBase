@@ -17,14 +17,14 @@
             @if(count($authors) === 0)
                 -
             @elseif(count($authors) === 1)
-                {{$a['nameAndAfiliation']}}
-                @if($a[orcidUrl] != '')
-                    <a href="{{$a['orcidUrl']}}">ORCID</a>
+                <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($authors[0]['name'])->getFullURL()}}">{{$authors[0]['name']}}</a> {{$authors[0]['afiliation']}}
+                @if($authors[0][orcidUrl] != '')
+                    <a href="{{$authors[0]['orcidUrl']}}">ORCID</a>
                 @endif
             @else
                 <ul>
                 @foreach($authors as $a)
-                    <li>{{$a['nameAndAfiliation']}}
+                    <li> <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($a['name'])->getFullURL()}}">{{$a['name']}}</a> {{$a['afiliation']}}
                         @if($a[orcidUrl] != '')
                             <a href="{{$a['orcidUrl']}}">ORCID</a>
                         @endif
@@ -50,6 +50,10 @@
     <tr>
         <td>Publisher</td>
         <td>{{$publisher}}</td>
+    </tr>
+    <tr>
+        <td>Journal</td>
+        <td>{{$journal}}</td>
     </tr>
     <td>Licenses</td>
     <td>

@@ -37,10 +37,10 @@ class DOIRenderer
                 'index' => DOITools::generateReferenceIndex($doiData),
                 'title' => strip_tags(ArrayTools::getFirstIfArray($doiData->title), "<sub><sup><b><i>"),
                 'authors' => $authors,
-                'journal' => $journal,
-                'volume' => $volume,
-                'pages' => $pages,
-                'year' => $year,
+                'journal' => is_array($journal) ? implode(", ", $journal) : $journal,
+                'volume' => is_array($volume) ? implode(", ", $volume) : $volume,
+                'pages' => is_array($pages) ? implode(", ", $pages) : $pages,
+                'year' => is_array($year) ? implode(", ", $year) : $year,
                 'doi' => $doiData->DOI,
                 'publicationPage' => DOITools::getPageFromDOI($doiData->DOI),
                 'wgScriptPath' => $wgScriptPath,
@@ -57,18 +57,18 @@ class DOIRenderer
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
+        global $wgScriptPath;
 
-        $wikitext = "{{DoiInfo\n";
-
-        $parameters = $blade->view()->make("doi-infobox",
+        $submittedAt = $data->created->timestamp ?? 0;
+        return $blade->view()->make("doi-infobox",
             [
                 'doi' => $data->DOI,
-                'type' => DOITools::getTypeLabel($data->type),
-                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
-                'authors' => DOITools::formatAuthors($data->author),
-                'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
-                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? ''),
-                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? ''),
+                'type' => DOITools::getTypeLabel($data->type ?? ''),
+                'title' => strip_tags(ArrayTools::getFirstIfArray($data->title ?? ''), "<sub><sup><b><i>"),
+                'authors' => DOITools::formatAuthors($data->author ?? ''),
+                'submittedAt' => $submittedAt !== 0 ? date('d.m.Y', ($data->created->timestamp / 1000)) : '-',
+                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '-'),
+                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '-'),
                 'publisher' => $data->publisher ?? '-',
                 'licenses' => DOITools::formatLicenses($data->license ?? ''),
                 'issue' => $data->issue ?? '-',
@@ -80,11 +80,9 @@ class DOIRenderer
                 'funders' => count($data->funder ?? []) === 0 ? [] : array_map(function ($e) {
                     return $e->name;
                 }, $data->funder),
+                'wgScriptPath' => $wgScriptPath
             ]
         )->render();
-        $wikitext .= trim($parameters);
-        $wikitext .= "\n}}";
-        return $wikitext;
     }
 
     public function renderReferenceInText($doiData)

@@ -7,10 +7,13 @@ Edit a Molecule:
 {{{for template|Molecule}}}
 {| class="formtable"
 ! Abbreviation:
-| {{{field|abbrev|input type=sting}}}
+| {{{field|abbrev|input type=string}}}
 |-
 ! Trivial name:
-| {{{field|trivialname|input type=sting}}}
+| {{{field|trivialname|input type=string}}}
+|-
+! Molecular role:
+| {{{field|molecular_role|input type=tokens|property=MolecularRole}}}
 |-
 |}
 {{{end template}}}

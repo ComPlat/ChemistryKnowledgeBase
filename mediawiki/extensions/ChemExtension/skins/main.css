@@ -326,9 +326,20 @@ div.ce-missing-item a.image {
     margin-left: 10px;
 }
 
-span.pf_copy_template {
+div.pf_copy_template {
     cursor: pointer;
+    border: 2px blue solid;
+    padding: 2px;
+    border-radius: 5px;
+    background: lightblue;
+    text-align: center;
+    margin-top: 10px;
 }
+
+div.pf_copy_template:hover {
+    background: #6da9f7;
+}
+
 
 span.ce-type-hint {
     width: 10px;
@@ -517,6 +528,11 @@ table.formtable div.oo-ui-textInputWidget {
     width: 90% !important;
 }
 
+table.formtable input.createboxInput {
+    max-width: 90% !important;
+    width: 90% !important;
+}
+
 table.wikitable td p {
     margin-bottom: 0rem;
 }
@@ -527,6 +543,11 @@ div.navbar-tool {
 
 div.experiment-link-container {
     overflow-x: auto;
+    transform: rotateX(180deg);
+}
+
+div.experiment-link-container table {
+    transform: rotateX(180deg);
 }
 
 div.chemtext-tags-input.oo-ui-pendingElement-pending {

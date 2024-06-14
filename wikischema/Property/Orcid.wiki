@@ -1,0 +1,5 @@
+;Purpose
+* Contains the orcid of an author
+
+;Datatype
+* [[Has type::String]]

@@ -1,0 +1,5 @@
+; Purpose
+* [[Property description::Contains arbitrary text for describing investigations]]
+
+; Datatype
+* [[Has type::Text]].

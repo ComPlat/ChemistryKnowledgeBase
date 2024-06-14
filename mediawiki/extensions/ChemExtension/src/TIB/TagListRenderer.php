@@ -14,7 +14,7 @@ class TagListRenderer {
         $query = <<<QUERY
 == Tags ==
 {{#ask:
-[[-Has subobject::{{FULLPAGENAME}}]] 
+[[-Has subobject::{{FULLPAGENAME}}]][[Tag::+]]
 |?Tag
 |?Ontology
 |?OBOID

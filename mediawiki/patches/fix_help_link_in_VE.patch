@@ -1,0 +1,17 @@
+Index: mediawiki/extensions/VisualEditor/i18n/ve-wmf/en.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/VisualEditor/i18n/ve-wmf/en.json b/mediawiki/extensions/VisualEditor/i18n/ve-wmf/en.json
+--- a/mediawiki/extensions/VisualEditor/i18n/ve-wmf/en.json	(revision 548135c7e3c0f20804458e9283c44526be9091fd)
++++ b/mediawiki/extensions/VisualEditor/i18n/ve-wmf/en.json	(date 1715948815741)
+@@ -28,7 +28,7 @@
+ 	"visualeditor-feedback-source-link": "{{int:visualeditor-feedback-link}}",
+ 	"visualeditor-feedback-tool": "Leave feedback about this software",
+ 	"visualeditor-help-label": "Read the user guide",
+-	"visualeditor-help-link": "mw:Special:MyLanguage/Help:VisualEditor/User guide",
++	"visualeditor-help-link": "Help:VisualEditor/User guide",
+ 	"visualeditor-help-title": "Guide for how to use the editor",
+ 	"visualeditor-welcomedialog-action": "Start editing",
+ 	"visualeditor-welcomedialog-content": "Anyone can edit, and every improvement helps.",

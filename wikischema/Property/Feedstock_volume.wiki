@@ -1,0 +1,5 @@
+; Purpose
+* [[Property description::Contains the volume of the feedstock gas in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Number]].

@@ -43,7 +43,8 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
-                $baseScript . '/special.create-topic.js',
+                $baseScript . '/faceted_search.js',
+                $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
                 $baseScript . '/client-ajax-endpoints.js',
                 $baseScript . '/render-chemform-tooltip.js',
@@ -70,6 +71,7 @@ class Setup {
                 $baseScript . '/breadcrumb.js',
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
+                $baseScript . '/ve.oo-ui.title-multi-select-input.js',
 
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
@@ -141,6 +143,13 @@ class Setup {
             'text' => "Cancel edit",
             'href' => "javascript:ve.init.target.getSurface().emit( 'cancel' );",
             'id'=>'cancelve'
+        ];
+
+        global $wgScriptPath;
+        $links['actions'][] = [
+            'text' => "Edit DOI",
+            'href' => "$wgScriptPath/Special:FormEdit/DOI/{$wgTitle->getPrefixedDBkey()}",
+            'id'=>'editdoi'
         ];
 
     }
@@ -227,7 +236,7 @@ CSS;
     }
 
     public static function categoryViewerInstance(Title $title, & $html) {
-        $html = '';
+        $html = null;
         if (WikiTools::checkIfInTopicCategory($title)) {
             $html = '';
         }

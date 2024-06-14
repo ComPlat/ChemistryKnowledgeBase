@@ -76,7 +76,7 @@ class SpecialLiterature extends SpecialPage
         }
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new LiteratureRepository($dbr);
-
+        global $wgScriptPath;
         $html = $this->blade->view()->make("doi-special-literature",
             [
                 'doi' => $data->DOI,
@@ -84,11 +84,12 @@ class SpecialLiterature extends SpecialPage
                 'title' => strip_tags(ArrayTools::getFirstIfArray($data->title), "<sub><sup><b><i>"),
                 'authors' => DOITools::formatAuthors($data->author),
                 'submittedAt' => date('d.m.Y', ($data->created->timestamp / 1000)),
-                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'}),
-                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'}),
+                'publishedOnlineAt' => DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'}) ?? '-',
+                'publishedPrintAt' => DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'}) ?? '-',
                 'publisher' => $data->publisher,
                 'licenses' => DOITools::formatLicenses($data->license),
                 'issue' => $data->issue,
+                'journal' => $data->{"container-title"} ?? "-",
                 'volume' => $data->volume,
                 'pages' => $data->page,
                 'subjects' => $data->subject,
@@ -96,6 +97,7 @@ class SpecialLiterature extends SpecialPage
                     return $e->name;
                 }, $data->funder),
                 'usedBy' => $repo->getPagesForDOI($data->DOI),
+                'wgScriptPath' => $wgScriptPath
             ]
         )->render();
 

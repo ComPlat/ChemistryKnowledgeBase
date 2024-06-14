@@ -32,24 +32,27 @@ class DOIInfoBox
 
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
             $repo = new LiteratureRepository($dbr);
-            $literature = $repo->getLiterature($doi);
-            if (is_null($literature)) {
-                $doiResolver = new DOIResolver();
-                $data = $doiResolver->resolve($doi);
-            } else {
-                $data = $literature['data'];
-            }
+            if ($doi !== '') {
+                $literature = $repo->getLiterature($doi);
+                if (is_null($literature)) {
+                    $doiResolver = new DOIResolver();
+                    $data = $doiResolver->resolve($doi);
+                } else {
+                    $data = $literature['data'];
+                }
 
-            if ($data === '__placeholder__') {
-                // should not happen
-                return ["$doi was not yet resolved.", 'noparse' => true, 'isHTML' => true];
+                if ($data === '__placeholder__') {
+                    // should not happen
+                    return ["$doi was not yet resolved.", 'noparse' => true, 'isHTML' => true];
+                }
+            } else {
+                $data = new \stdClass();
+                $data->DOI = '';
             }
             $doiRenderer = new DOIRenderer();
-            $templateCall = $doiRenderer->renderDOIInfoTemplate($data);
+            $html = $doiRenderer->renderDOIInfoTemplate($data);
 
-            $parserNew = clone MediaWikiServices::getInstance()->getParser();
-            $parserOutput = $parserNew->parse($templateCall, $parser->getTitle(), new ParserOptions(RequestContext::getMain()->getUser()));
-            $html = $parserOutput->getText(['enableSectionEditLinks' => false, 'unwrap' => true]);
+
             self::$DOI_INFO_BOX[] = $html;
 
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);

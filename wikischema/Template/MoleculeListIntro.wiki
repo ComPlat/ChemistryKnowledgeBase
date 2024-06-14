@@ -1,5 +1,5 @@
 <includeonly>
 {| class="wikitable"
- ! ID !! Molecule !! Trivialname !! IUPACName !! Synonym !! Abbreviation !! CAS !! MolecularFormula !! MolecularMass
+ ! ID !! Molecule !! Abbreviation !! Trivialname !! CAS !! IUPACName !! MolecularFormula
  |-
 </includeonly>

@@ -1,28 +1,30 @@
 * Authoring
-** Import a Paper with ChemScanner|Import a Paper with ChemScanner
+** Import a Paper with ChemScanner|Import a paper with ChemScanner
 ** Special:CreateNewPaper|Create a new publication
-** Special:CreateNewTopic|Create a new Topic Page
+** Special:CreateNewTopic|Create a new topic page
 ** All_publications|All publications
-* Tools
-** Browse Topics|Browse Topics
-** Search for Molecules|Search for Molecules
-** Search for Reactions|Search for Reactions
 * Administration
-** Special:SpecialCreateWiki|Create or manage a new Space
-** Special:SpecialImportPage|Integrate Space in Main Wiki
-** Special:UserRights|User Management
+** Special:SpecialCreateWiki|Create or manage a private space
+** Special:SpecialImportPage|Integrate space in main wiki
+** Special:UserRights|User management
 ** Special:FindMissingItems|Find missing items
 ** Special:FindUnusedMolecules|Find unused molecules
 ** Special:CheckServices|Check services
-** Special:SpecialPages|Special Pages
+** Special:SpecialPages|Special pages
 ** Special:ModifyMolecule|Modify molecules
 * Help
-** Help:Getting Started|Getting Started
+** Help:Getting Started|Getting started
 ** Help:Create new publication|Create new publication
-** Help:Creating a Private Space|Creating a Private Space
-** Special:Version|Wiki Version
+** Help:Creating a Private Space|Create a private space
+** Help:Create new topic|Create a new topic
+** Help:ReplaceMolecule| Replace a molecule
+** Special:Version|Wiki version
 * Tours
 ** {{fullurl:{{FULLPAGENAME}}|tour=newtour}}|Home page tour
 ** {{fullurl:{{FULLPAGENAME}}|tour=searchtour}}|Tour of search features
 ** {{fullurl:{{FULLPAGENAME}}|tour=topic_page}}|Tour of topic page
 ** {{fullurl:{{FULLPAGENAME}}|tour=pub_page}}|Tour of publication page
+* Featured
+** {{fullurl:Special:Ask/-5B-5BCategory:Molecule-5D-5D-20-5B-5BInChIKey::%2B-5D-5D/-3FInChIKey/-3FAbbreviation/-3FTrivialname/-3FCAS/-3FIUPACName/-3FMolecularFormula/-3FTag/mainlabel%3D/limit%3D100/offset%3D100/format%3Dplainlist/searchlabel%3D...-20further-20results/template%3DMoleculeListRow/introtemplate%3DMoleculeListIntro/outrotemplate%3DMoleculeListOutro}}|All molecules
+** {{fullurl:Special:Ask/-5B-5BAuthor:%2B-5D-5D-20-5B-5B-2DAuthorPage::%2B-5D-5D/-3F-2DAuthorPage%3DPublications/-3F-2DAuthorPage.Orcid%3DORCID/mainlabel%3DAuthor-20page/limit%3D100/offset%3D0/format%3Dtable}}|All authors
+** Browse Topics|Browse topics

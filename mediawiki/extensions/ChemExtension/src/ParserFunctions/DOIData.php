@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Jobs\CreateAuthorPageJob;
 use DIQA\ChemExtension\Literature\DOIResolver;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
@@ -43,18 +44,38 @@ class DOIData
                 case 'author':
                 {
                     $authors = DOITools::formatAuthors($data->author);
-                    $result = implode(", ", array_map(fn($e) => $e['name'], $authors));
-                    break;
+                    $result = implode("", array_map(fn($e) => "{{#set: Author={$e['name']} }}", $authors));
+                    return [$result, 'noparse' => false, 'isHTML' => false];
                 }
                 case 'publicationDate':
-                    $result = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '');
-                    if ($result === '') {
-                        $result = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '');
+                    $publicationDate = DOITools::parseDateFromDateParts($data->{'published-print'}->{'date-parts'} ?? '');
+                    if (is_null($publicationDate)) {
+                        $publicationDate = DOITools::parseDateFromDateParts($data->{'published-online'}->{'date-parts'} ?? '');
                     }
-                    break;
+                    if (is_null($publicationDate)) {
+                        $publicationDate = '';
+                    }
+                    $result = "{{#set: Publication date=$publicationDate }}";
+                    return [$result, 'noparse' => false, 'isHTML' => false];
                 case 'publisher':
-                    $result = $data->publisher ?? '';
-                    break;
+                    $publisher = $data->publisher ?? '';
+                    $result = "{{#set: Publisher=$publisher }}";
+                    return [$result, 'noparse' => false, 'isHTML' => false];
+
+                case 'journal':
+                    $journal = $data->{"container-title"} ?? "";
+                    $result = "{{#set: Journal=$journal }}";
+                    return [$result, 'noparse' => false, 'isHTML' => false];
+
+                case 'authorWithOrcid':
+                    $authors = DOITools::formatAuthors($data->author);
+                    $result = implode("", array_map(function($author) {
+                            $orcid = $author['orcidUrl'] != '' ? $author['orcidUrl'] : "-";
+                            $authorPage = CreateAuthorPageJob::getAuthorPageTitle($author['name']);
+                            return "{{#subobject:|Author={$author['name']}|Orcid={$orcid}|AuthorPage={$authorPage->getPrefixedText()} }}";
+                        }, $authors));
+
+                    return [$result, 'noparse' => false, 'isHTML' => false];
                 case 'usedBy':
                 {
                     $titles = $repo->getPagesForDOI($parameters['doi']);
