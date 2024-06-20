@@ -155,6 +155,10 @@
             "path": "/ChemExtension/v1/titlesearch",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetTitle"
+        },{
+            "path": "/ChemExtension/v1/export-investigation",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetExperimentAsXlsx"
         }
 
     ],

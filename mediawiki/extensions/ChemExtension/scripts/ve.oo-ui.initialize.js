@@ -106,6 +106,22 @@
         $('span.experiment-link-refresh-button').off('click');
         $('span.experiment-link-refresh-button').click(refreshExperimentHandler);
 
+
+        let exportExperimentHandler = function(e) {
+            let buttonLabel = $(e.target);
+            buttonLabel.text('Exporting...');
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            ajax.exportExperiment($(e.target).closest('button').attr('value')).done(() => {
+                buttonLabel.text('Export');
+                mw.notify('Export successful.');
+            }).fail((e) => {
+                buttonLabel.text('Export');
+                mw.notify('Export failed');
+            });
+        };
+        $('span.experiment-link-export-button').off('click');
+        $('span.experiment-link-export-button').click(exportExperimentHandler);
+
         $('.experiment-link-help').qtip({
             content: "<ul class='experiment-help-bullets'>" +
                 "<li>double click on table header for showing/hiding columns</li>" +

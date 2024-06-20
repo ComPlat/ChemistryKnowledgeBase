@@ -133,11 +133,28 @@ TEMPLATE;
                 ])
             ]);
 
+            $exportButton = new ButtonInputWidget([
+                'classes' => ['chemext-button', 'experiment-link-export-button'],
+                'id' => 'ce-export-investigation-'.$uniqueId,
+                'type' => 'button',
+                'label' => 'Export',
+                'flags' => ['primary', 'progressive'],
+                'title' => 'Export investigation as excel file',
+                'infusable' => true,
+                'value' => json_encode([
+                    'parameters' => $this->context['parameters'],
+                    'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                    'page' => $this->context['page']->getPrefixedText(),
+                    'cacheKey' => $this->context['cacheKey']
+                ])
+            ]);
+
             global $wgScriptPath;
             $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
                 'htmlTableEditor' => $htmlTableEditor,
                 'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
                 'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
+                'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
                 'description' => $this->context['description'],
                 'buttonCounter' => $uniqueId,
                 'cacheKey' => $this->context['cacheKey'],

@@ -96,7 +96,7 @@ class ExperimentLink
      * @param array $parameters
      * @return array
      */
-    private static function getTemplateData(array $parameters, $selectExperimentQuery): array
+    public static function getTemplateData(array $parameters, $selectExperimentQuery): array
     {
         $restrictToPages = $parameters['restrictToPages'] ?? false;
         $sort = $parameters['sort'] ?? '';
@@ -135,6 +135,8 @@ class ExperimentLink
                     $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
                     $oneRow[$templateParam] = $dataItem->getNumber();
+                } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
+                    $oneRow[$templateParam] = $dataItem->getBoolean();
                 }
 
                 //FIXME: add other types
