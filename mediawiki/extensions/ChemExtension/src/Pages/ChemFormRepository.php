@@ -208,14 +208,7 @@ class ChemFormRepository
 
     public function addConcreteMolecule(Title $publicationPage, Title $moleculeCollectionPage, Title $moleculePage, $moleculeCollectionId, $rGroups)
     {
-        echo print_r([
-            'publication_page_id' => $publicationPage->getArticleID(),
-            'molecule_collection_page_id' => $moleculeCollectionPage->getArticleID(),
-            'molecule_page_id' => $moleculePage->getArticleID(),
-            'molecule_collection_id' => $moleculeCollectionId,
-            'rgroups' => json_encode($rGroups),
 
-        ],true);
         $this->db->insert('molecule_collection',
             [
                 'publication_page_id' => $publicationPage->getArticleID(),
