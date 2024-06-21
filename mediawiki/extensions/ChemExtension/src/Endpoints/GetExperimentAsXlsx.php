@@ -10,7 +10,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use SMW\ApplicationFactory;
 use Title;
-use Wikimedia\ParamValidator\ValidationException;
+
 
 class GetExperimentAsXlsx extends SimpleHandler
 {

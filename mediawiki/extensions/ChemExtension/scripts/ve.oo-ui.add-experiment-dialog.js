@@ -36,6 +36,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         ajax.uploadFile(importFile[0].name, read.result).done(() => {
                             progressDialog.close();
                             this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name);
+                            ajax.importExperiment({
+                                'publicationPage': mw.config.get('wgPageName'),
+                                'filename': importFile[0].name,
+                                'selectedExperiment': selectedExperiment,
+                                'selectedExperimentName': selectedExperimentName
+                            }).done((e) => {
+                                mw.notify('Importjob successfully created.')
+                            })
                         }).fail((e) => {
                             progressDialog.close();
                             mw.notify('Error occured on file upload')

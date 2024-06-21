@@ -61,7 +61,7 @@ class ExperimentXlsExporter
                     if (is_null($molecule)) {
                         $this->workSheet->setCellValue([$column, $rowIndex], $row[$p['templateParam']]);
                     } else {
-                        $cellContent = $molecule['inchikey'] . "\n" . $molecule['molfile'];
+                        $cellContent = "[inchikey] ".$molecule['inchikey'] . "\n" . $molecule['molfile'];
                         $this->workSheet->setCellValueExplicit([$column, $rowIndex], $cellContent, DataType::TYPE_STRING);
                     }
                 } else if ($p['type'] === '_boo') {

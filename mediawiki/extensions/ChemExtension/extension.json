@@ -159,6 +159,10 @@
             "path": "/ChemExtension/v1/export-investigation",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetExperimentAsXlsx"
+        },{
+            "path": "/ChemExtension/v1/import-investigation",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\ImportInvestigation"
         }
 
     ],
@@ -170,7 +174,8 @@
         "MoleculePageUpdateJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageUpdateJob",
         "AdjustMoleculeReferencesJob": "DIQA\\ChemExtension\\Jobs\\AdjustMoleculeReferencesJob",
         "PageImportJob": "DIQA\\ChemExtension\\Jobs\\PageImportJob",
-        "CreateAuthorPageJob": "DIQA\\ChemExtension\\Jobs\\CreateAuthorPageJob"
+        "CreateAuthorPageJob": "DIQA\\ChemExtension\\Jobs\\CreateAuthorPageJob",
+        "ImportInvestigationJob": "DIQA\\ChemExtension\\Jobs\\ImportInvestigationJob"
     },
     "manifest_version": 2
 }
