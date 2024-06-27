@@ -9,6 +9,8 @@ use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Conditional;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ExperimentXlsExporter
@@ -45,9 +47,15 @@ class ExperimentXlsExporter
                 'property' => $p,
                 'type' => $printRequest->getTypeID(),
                 'templateParam' => $templateParam,
-
             ];
             $this->workSheet->setCellValue([$column, 1], $p);
+            $this->setBackgroundColor($column, 'ffff00');
+
+            if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
+                $column++;
+                $this->workSheet->setCellValue([$column, 1], $p."_data");
+                $this->setBackgroundColor($column, 'ffff00');
+            }
             $column++;
         }
 
@@ -56,13 +64,16 @@ class ExperimentXlsExporter
         foreach ($templateData as $row) {
             $column = 1;
             foreach($exportProperties as $p) {
-                if ($p['type'] === '_wpg') {
+                if ($p['type'] === '_wpg' && $p['property'] !== 'BasePageName') {
                     $molecule = $this->exportMolecule($row[$p['templateParam']]);
                     if (is_null($molecule)) {
                         $this->workSheet->setCellValue([$column, $rowIndex], $row[$p['templateParam']]);
+                        $column++;
+                        $this->workSheet->setCellValue([$column, $rowIndex], '');
                     } else {
-                        $cellContent = "[inchikey] ".$molecule['inchikey'] . "\n" . $molecule['molfile'];
-                        $this->workSheet->setCellValueExplicit([$column, $rowIndex], $cellContent, DataType::TYPE_STRING);
+                        $this->workSheet->setCellValueExplicit([$column, $rowIndex], $molecule['inchikey'], DataType::TYPE_STRING);
+                        $column++;
+                        $this->workSheet->setCellValueExplicit([$column, $rowIndex], $molecule['molfile'], DataType::TYPE_STRING);
                     }
                 } else if ($p['type'] === '_boo') {
                     $this->workSheet->setCellValue([$column, $rowIndex], $row[$p['templateParam']] ? 'true' : 'false');
@@ -98,5 +109,17 @@ class ExperimentXlsExporter
         }
         $this->moleculeCache[$title->getPrefixedText()] = $result;
         return $result;
+    }
+
+    /**
+     * @param int $column
+     */
+    private function setBackgroundColor(int $column, $color): void
+    {
+        $this->workSheet->getStyle([$column, 1])
+            ->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()
+            ->setARGB($color);
     }
 }
