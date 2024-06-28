@@ -435,6 +435,9 @@ a.publication-for-investigation {
     margin-left: 5px;
 }
 
+table.ce-center-aligned-table tr {
+    transform: rotateX(180deg);
+}
 
 table.ce-center-aligned-table td {
     width: 100%;
