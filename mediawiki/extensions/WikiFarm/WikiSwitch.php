@@ -29,7 +29,7 @@ if (is_null($wiki)) {
     exit(0);
 }
 
-global $fsgSolrCore;
+global $fsgSolrCore, $wgSharedDB;
 if ($wiki == 'main') {
     $wgDBname = "chemmain_139";
     $wgScriptPath = "/main/mediawiki";
