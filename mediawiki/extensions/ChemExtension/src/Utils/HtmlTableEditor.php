@@ -43,10 +43,7 @@ class HtmlTableEditor
             $innerValue = $span->getAttribute('inner');
             $span->parentNode->replaceChild($this->innerTables[$innerValue], $span);
         }
-        global $wgCEHiddenColumns;
-        if (($wgCEHiddenColumns ?? false) && $collapseColumns) {
-            $this->collapseColumns();
-        }
+        $this->collapseColumns();
     }
 
 
@@ -170,23 +167,6 @@ class HtmlTableEditor
         }
     }
 
-    public function getTabs(): array
-    {
-        $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//td[@resource]');
-        $allTabs = [];
-        foreach ($list as $td) {
-            $resourceAttribute = $td->getAttribute('resource');
-            if ($resourceAttribute == '') {
-                continue;
-            }
-            $tabs = explode(",", $resourceAttribute);
-            $allTabs = array_merge($allTabs, $tabs);
-        }
-        $uniqueTabs = array_unique($allTabs);
-        $uniqueTabs[] = ''; // this is the default tab that contains everything
-        return $uniqueTabs;
-    }
 
     public function addEditButtonsAsFirstColumn()
     {

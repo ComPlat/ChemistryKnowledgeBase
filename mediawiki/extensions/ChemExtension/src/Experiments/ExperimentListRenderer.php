@@ -15,18 +15,18 @@ use ParserOptions;
 use RequestContext;
 use Title;
 
-class ExperimentListRenderer extends ExperimentRenderer {
+class ExperimentListRenderer extends ExperimentRenderer
+{
 
     public function __construct($context)
     {
         parent::__construct($context);
     }
 
-
     /**
      * @throws Exception
      */
-    protected function getTabContent(): array
+    protected function getContent(): string
     {
         $experimentName = $this->context['name'];
         $pageTitle = $this->context['page'];
@@ -39,11 +39,11 @@ class ExperimentListRenderer extends ExperimentRenderer {
         $text = WikiTools::getText($experimentPageTitle);
         $templateParser = new TemplateParser($text);
         $ast = $templateParser->parse();
-        $ast->visitNodes(function($node) {
+        $ast->visitNodes(function ($node) {
             if (!($node instanceof TemplateTextNode)) return;
             $params = explode('|', $node->getText());
             $keyValues = ParserFunctionParser::parseArguments($params);
-            foreach($keyValues as $key => $value) {
+            foreach ($keyValues as $key => $value) {
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
                     Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
@@ -52,47 +52,37 @@ class ExperimentListRenderer extends ExperimentRenderer {
         });
 
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        $html = $cache->getWithSetCallback( $cache->makeKey( 'investigation-table', md5($text)), $cache::TTL_DAY,
-            function() use($text, $pageTitle){
+        $html = $cache->getWithSetCallback($cache->makeKey('investigation-table', md5($text)), $cache::TTL_DAY,
+            function () use ($text, $pageTitle) {
                 $parser = clone MediaWikiServices::getInstance()->getParser();
                 $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions(RequestContext::getMain()->getUser()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
-        });
+            });
+
+
+        $results = [];
 
         $htmlTableEditor = new HtmlTableEditor($html, $this->context);
-        $results = [];
-        global $wgCEHiddenColumns;
-        $tabs = $wgCEHiddenColumns === true ? [''] : $htmlTableEditor->getTabs();
+        $htmlTableEditor->removeEmptyColumns();
 
-        foreach($tabs as $tab) {
-            $htmlTableEditor = new HtmlTableEditor($html, $this->context);
-            $htmlTableEditor->removeEmptyColumns();
-
-            $htmlTableEditor->addIndexAsFirstColumn();
-            if (!WikiTools::isInVisualEditor()) {
-                if ($tab !== '') {
-                    $htmlTableEditor->removeOtherColumns($tab);
-                }
-                $htmlTableEditor->removeOtherColumns("", "[last()]");
-            } else {
-                $htmlTableEditor->addEditButtonsAsFirstColumn();
-                // required because VE can handle only limited amount of HTML
-                $htmlTableEditor->shortenTable(25);
-            }
-
-            global $wgScriptPath;
-            $htmlTableEditor->addTableClass("experiment-list");
-            $results[$tab] = $this->blade->view ()->make ( "experiment-table", [
-                'htmlTableEditor' => $htmlTableEditor,
-                'experimentName' => $experimentName,
-                'experimentPageTitle' => $experimentPageTitle,
-                'inVisualEditor' => WikiTools::isInVisualEditor(),
-                'wgScriptPath' => $wgScriptPath
-            ])->render ();
+        $htmlTableEditor->addIndexAsFirstColumn();
+        if (!WikiTools::isInVisualEditor()) {
+            $htmlTableEditor->removeOtherColumns("", "[last()]");
+        } else {
+            $htmlTableEditor->addEditButtonsAsFirstColumn();
+            // required because VE can handle only limited amount of HTML
+            $htmlTableEditor->shortenTable(25);
         }
 
-
-        return $results;
+        global $wgScriptPath;
+        $htmlTableEditor->addTableClass("experiment-list");
+        return $this->blade->view()->make("experiment-table", [
+            'htmlTableEditor' => $htmlTableEditor,
+            'experimentName' => $experimentName,
+            'experimentPageTitle' => $experimentPageTitle,
+            'inVisualEditor' => WikiTools::isInVisualEditor(),
+            'wgScriptPath' => $wgScriptPath
+        ])->render();
 
     }
 }

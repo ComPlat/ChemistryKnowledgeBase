@@ -46,54 +46,10 @@ abstract class ExperimentRenderer
     {
 
         OutputPage::setupOOUI();
-        global $wgCEHiddenColumns;
-
-        if ($wgCEHiddenColumns ?? false) {
-            return $this->getTabContent()[''];
-        } else {
-            $tabsWithRenderedContent = $this->getTabContent();
-
-            if (count($tabsWithRenderedContent) === 1 || WikiTools::isInVisualEditor()) {
-                return $this->getTabContent()[''];
-            }
-        }
-
-        $tabPanels = [];
-        foreach ($tabsWithRenderedContent as $tabName => $html) {
-            if ($tabName == '') continue;
-            $tabPanels[] = new TabPanelLayout($tabName, [
-                'classes' => [],
-                'label' => $tabName,
-                'content' => new Widget([
-                    'content' => new HtmlSnippet($html)
-                ]),
-                'expanded' => false,
-                'framed' => true,
-            ]);
-
-        }
-
-        $indexLayout = new IndexLayout([
-            'infusable' => true,
-            'expanded' => false,
-            'autoFocus' => false,
-            'classes' => ['experimentlist'],
-        ]);
-        $indexLayout->addTabPanels($tabPanels);
-
-        $form = new PanelLayout([
-            'framed' => true,
-            'expanded' => false,
-            'classes' => ['experimentlist-panel'],
-            'content' => $indexLayout
-        ]);
-
-        return $form;
+        return $this->getContent();
 
     }
 
-    protected abstract function getTabContent(): array;
-
-
+    protected abstract function getContent(): string;
 
 }

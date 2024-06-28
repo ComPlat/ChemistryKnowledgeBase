@@ -24,7 +24,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
     /**
      * @throws Exception
      */
-    protected function getTabContent(): array
+    protected function getContent(): string
     {
 
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
@@ -32,16 +32,16 @@ class ExperimentLinkRenderer extends ExperimentRenderer
         $rowTemplate = $experimentType->getRowTemplate();
         $templateData = $this->context['templateData'];
         $experiments = '';
-        foreach($templateData as $rows) {
+        foreach ($templateData as $rows) {
             $templateParams = '';
-            foreach($rows as $key => $value) {
+            foreach ($rows as $key => $value) {
                 $templateParams .= "\n|$key=$value";
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
                     Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
                 }
             }
-            $experiments .= "{{".$rowTemplate . $templateParams . "\n}}";
+            $experiments .= "{{" . $rowTemplate . $templateParams . "\n}}";
         }
         $templateCall = <<<TEMPLATE
 {{{$mainTemplate}
@@ -54,114 +54,104 @@ TEMPLATE;
         $html = $parserOutput->getText(['enableSectionEditLinks' => false]);
 
         $results = [];
+
         $htmlTableEditor = new HtmlTableEditor($html, null);
-        global $wgCEHiddenColumns;
-        $tabs = $wgCEHiddenColumns === true ? [''] : $htmlTableEditor->getTabs();
+        $htmlTableEditor->removeEmptyColumns();
 
-        foreach($tabs as $tab) {
-            $htmlTableEditor = new HtmlTableEditor($html, null);
-            $htmlTableEditor->removeEmptyColumns();
+        $htmlTableEditor->addIndexAsFirstColumn();
+        if (!WikiTools::isInVisualEditor()) {
 
-            $htmlTableEditor->addIndexAsFirstColumn();
-            if (!WikiTools::isInVisualEditor()) {
-                if ($tab !== '') {
-                    $htmlTableEditor->removeOtherColumns($tab);
-                }
-
-                $links = [];
-                $templateData = $this->context['templateData'];
-                foreach($templateData as $rows) {
-                    $basePageTitle = Title::newFromText($rows['BasePageName']);
-                    $doidata = null;
-                    if (!is_null($basePageTitle)) {
-                        Hooks::run('CollectPublications', [$basePageTitle, & $doidata]);
-                        if (!is_null($doidata)) {
-                            $reference = DOITools::generateReferenceIndex($doidata['data']);
-                            $url = "#literature_$reference";
-                            $fullUrl = $basePageTitle->getFullURL();
-                            $withLiteratureRef = true;
-                        } else {
-                            $url = $basePageTitle->getFullURL();
-                            $fullUrl = $url;
-                            $reference = DOITools::generateReferenceIndexFromTitle($basePageTitle);
-                            $withLiteratureRef = false;
-                        }
-                        $links[] = [
-                            'url' => $url,
-                            'fullUrl' => $fullUrl,
-                            'tooltip' => $basePageTitle->getText(),
-                            'label' => "[". $reference ."]",
-                            'withLiteratureRef' => $withLiteratureRef
-                        ];
+            $links = [];
+            $templateData = $this->context['templateData'];
+            foreach ($templateData as $rows) {
+                $basePageTitle = Title::newFromText($rows['BasePageName']);
+                $doidata = null;
+                if (!is_null($basePageTitle)) {
+                    Hooks::run('CollectPublications', [$basePageTitle, & $doidata]);
+                    if (!is_null($doidata)) {
+                        $reference = DOITools::generateReferenceIndex($doidata['data']);
+                        $url = "#literature_$reference";
+                        $fullUrl = $basePageTitle->getFullURL();
+                        $withLiteratureRef = true;
                     } else {
-                        $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];
+                        $url = $basePageTitle->getFullURL();
+                        $fullUrl = $url;
+                        $reference = DOITools::generateReferenceIndexFromTitle($basePageTitle);
+                        $withLiteratureRef = false;
                     }
+                    $links[] = [
+                        'url' => $url,
+                        'fullUrl' => $fullUrl,
+                        'tooltip' => $basePageTitle->getText(),
+                        'label' => "[" . $reference . "]",
+                        'withLiteratureRef' => $withLiteratureRef
+                    ];
+                } else {
+                    $links[] = ['url' => $this->context['page']->getFullURL(), 'label' => "- no publication page found -"];
                 }
-                $htmlTableEditor->addLinkAsLastColumn($links);
-                //$htmlTableEditor->addPubLinkAsLastColumn($links);
-                $htmlTableEditor->hideTables();
-                $htmlTableEditor->addTableClass("experiment-link");
-            } else {
-                // required because VE can handle only limited amount of HTML
-                $htmlTableEditor->shortenTable(25);
             }
-
-            $uniqueId = uniqid();
-            $toggleButton = new ButtonInputWidget([
-                'classes' => ['chemext-button', 'experiment-link-show-button'],
-                'id' => 'ce-show-investigation-'.$uniqueId,
-                'type' => 'button',
-                'label' => 'Show table',
-                'flags' => ['primary', 'progressive'],
-                'title' => 'Show summary table of investigations',
-                'infusable' => true
-            ]);
-
-            $refreshButton = new ButtonInputWidget([
-                'classes' => ['chemext-button', 'experiment-link-refresh-button'],
-                'id' => 'ce-refresh-investigation-'.$uniqueId,
-                'type' => 'button',
-                'label' => 'Refresh',
-                'flags' => ['primary', 'progressive'],
-                'title' => 'Refresh content investigations',
-                'infusable' => true,
-                'value' => json_encode([
-                    'parameters' => $this->context['parameters'],
-                    'selectExperimentQuery' => $this->context['selectExperimentQuery'],
-                    'page' => $this->context['page']->getPrefixedText(),
-                    'cacheKey' => $this->context['cacheKey']
-                ])
-            ]);
-
-            $exportButton = new ButtonInputWidget([
-                'classes' => ['chemext-button', 'experiment-link-export-button'],
-                'id' => 'ce-export-investigation-'.$uniqueId,
-                'type' => 'button',
-                'label' => 'Export',
-                'flags' => ['primary', 'progressive'],
-                'title' => 'Export investigation as excel file',
-                'infusable' => true,
-                'value' => json_encode([
-                    'parameters' => $this->context['parameters'],
-                    'selectExperimentQuery' => $this->context['selectExperimentQuery'],
-                    'page' => $this->context['page']->getPrefixedText(),
-                    'cacheKey' => $this->context['cacheKey']
-                ])
-            ]);
-
-            global $wgScriptPath;
-            $results[$tab] = $this->blade->view ()->make ( "experiment-link-table", [
-                'htmlTableEditor' => $htmlTableEditor,
-                'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
-                'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
-                'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
-                'description' => $this->context['description'],
-                'buttonCounter' => $uniqueId,
-                'cacheKey' => $this->context['cacheKey'],
-                'wgScriptPath' => $wgScriptPath
-            ])->render ();
+            $htmlTableEditor->addLinkAsLastColumn($links);
+            //$htmlTableEditor->addPubLinkAsLastColumn($links);
+            $htmlTableEditor->hideTables();
+            $htmlTableEditor->addTableClass("experiment-link");
+        } else {
+            // required because VE can handle only limited amount of HTML
+            $htmlTableEditor->shortenTable(25);
         }
 
-        return $results;
+        $uniqueId = uniqid();
+        $toggleButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-link-show-button'],
+            'id' => 'ce-show-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Show table',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Show summary table of investigations',
+            'infusable' => true
+        ]);
+
+        $refreshButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-link-refresh-button'],
+            'id' => 'ce-refresh-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Refresh',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Refresh content investigations',
+            'infusable' => true,
+            'value' => json_encode([
+                'parameters' => $this->context['parameters'],
+                'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                'page' => $this->context['page']->getPrefixedText(),
+                'cacheKey' => $this->context['cacheKey']
+            ])
+        ]);
+
+        $exportButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-link-export-button'],
+            'id' => 'ce-export-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Export',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Export investigation as excel file',
+            'infusable' => true,
+            'value' => json_encode([
+                'parameters' => $this->context['parameters'],
+                'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                'page' => $this->context['page']->getPrefixedText(),
+                'cacheKey' => $this->context['cacheKey']
+            ])
+        ]);
+
+        global $wgScriptPath;
+        return $this->blade->view()->make("experiment-link-table", [
+            'htmlTableEditor' => $htmlTableEditor,
+            'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
+            'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
+            'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
+            'description' => $this->context['description'],
+            'buttonCounter' => $uniqueId,
+            'cacheKey' => $this->context['cacheKey'],
+            'wgScriptPath' => $wgScriptPath
+        ])->render();
     }
 }
