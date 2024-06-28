@@ -474,3 +474,14 @@ wfLoadExtension( 'EnhancedRetrieval' );
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');
 wfLoadExtension('PageImport');
+
+
+$wgGroupPermissions['*']['createaccount']       = false;
+$wgGroupPermissions['*']['edit']                = false;
+$wgGroupPermissions['*']['createpage']          = false;
+$wgGroupPermissions['user']['createaccount']    = false;
+$wgGroupPermissions['user']['createpage']       = true;
+$wgGroupPermissions['user']['edit']             = true;
+$wgGroupPermissions['sysop']['edit']            = true;
+$wgGroupPermissions['sysop']['createaccount']   = true;
+$wgGroupPermissions['sysop']['createpage']      = true;
