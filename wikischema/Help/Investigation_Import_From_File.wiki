@@ -1,0 +1,9 @@
+== What can be imported? ==
+TODO: describe feature
+
+== How it can be imported ==
+TODO: describe workflow
+
+== Templates==
+*[[File:Photocatalytic_CO2_conversion_Template|"Photocatalytic CO2 conversion"-Template]]
+*[[File:Cyclic_Voltammetry_Template|"Cyclic Voltammetry"-Template]]

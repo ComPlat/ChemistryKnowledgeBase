@@ -181,12 +181,13 @@
                 this.setActionsDisabled(['edit', 'insert'], item == '' || !item.match(validNamePattern));
             });
 
+            let scriptPath = mw.config.get('wgScriptPath');
             this.importFile = new OO.ui.SelectFileInputWidget();
             this.importFileField = new OO.ui.FieldLayout(
                 this.importFile,
                 {
-                    label: new OO.ui.HtmlSnippet( 'Investigation file to import (optional)' ),
-                    help: 'ZIP-file to import the investigation data from',
+                    label: new OO.ui.HtmlSnippet( 'Investigation file to import (optional) <a target="_blank" href="'+scriptPath+'/Help:Investigation_Import_From_File">[Help]</a>' ),
+                    help: 'Excel-file (xlsx) to import the investigation data from',
                     helpInline: true,
                     align: 'inline'
                 }
