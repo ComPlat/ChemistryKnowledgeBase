@@ -1,0 +1,15 @@
+== Private Space ==
+
+You can create your own private space, which is a mirror image of the current wiki with all its content. It allows you to create and edit your own topics, publications or any content and save it before you import it to the main wiki. This way if you need more time to finish adding content, it will not be displayed as incomplete data on the main wiki.
+
+== How to create a Private space ==
+
+In order to create your private space, simply go to the menu Administration > Create or manage a private space.
+
+On this page you can enter the name for your new private space, then hit the button "Create new wiki".
+
+Just underneath you can see the list of private spaces you already created. You can access them or delete them from here.
+
+== Using private space ==
+
+Once in your private space, you can edit it like the main wiki. Once you are done with your work, you can mirror your work in the main wiki by using the menu Administration > Integrate space in main wiki.
