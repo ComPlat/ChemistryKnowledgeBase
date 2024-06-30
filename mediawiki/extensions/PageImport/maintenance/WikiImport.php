@@ -56,6 +56,7 @@ class WikiImport extends Maintenance {
 
     private $formatter;
     private $logger;
+    private FileRepo $fileRepo;
 
     public function __construct() {
         parent::__construct();
@@ -70,6 +71,7 @@ class WikiImport extends Maintenance {
     public function execute() {
 
         $this->logger = new LoggerUtils('WikiImporter', 'PageImport', "OFF", false);
+        $this->fileRepo = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo();
         $this->initFormatter();
 
         // Get all namespaces.
@@ -140,11 +142,24 @@ class WikiImport extends Maintenance {
                     continue;
                 }
 
-                $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
-                if ($fileExtension == self::FILE_EXTENSION) {
-                    $imported = $this->importFile($nsID, $nsName, "$namespaceDir/$file");
+                if ($nsID === NS_FILE) {
+                    global $wgFileExtensions;
+                    $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
+                    if (!in_array($fileExtension, $wgFileExtensions)) {
+                        $this->printLine("\tfile type not supported: $fileExtension\n");
+                        continue;
+                    }
+                    $imported = $this->uploadFile("$namespaceDir/$file", $file);
                     if ($imported) {
                         $count++;
+                    }
+                } else {
+                    $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
+                    if ($fileExtension == self::FILE_EXTENSION) {
+                        $imported = $this->importFile($nsID, $nsName, "$namespaceDir/$file");
+                        if ($imported) {
+                            $count++;
+                        }
                     }
                 }
             }
@@ -257,7 +272,11 @@ class WikiImport extends Maintenance {
 
         if ($results->numRows () > 0) {
             foreach ( $results as $row ) {
-                $pageNames [] = urlencode ( $row->page_title ) . '.' . self::FILE_EXTENSION;
+                if ($nsID === NS_FILE) {
+                    $pageNames [] = urlencode($row->page_title);
+                } else {
+                    $pageNames [] = urlencode($row->page_title) . '.' . self::FILE_EXTENSION;
+                }
             }
         }
 
@@ -347,6 +366,32 @@ class WikiImport extends Maintenance {
 
     private function removeEscapeSeqs($s) {
         return preg_replace('/\033\[[^]]+m/', '', $s);
+    }
+
+    private function uploadFile(string $location, string $filename)
+    {
+
+        $decodedFileName = urldecode($filename);
+        $fileTitle = Title::newFromText($decodedFileName, NS_FILE);
+        $fileInRepo = $this->fileRepo->newFile($fileTitle);
+        if ($fileTitle->exists()) {
+            $hashOld = md5(file_get_contents($fileInRepo->getLocalRefPath()));
+            $fileData = file_get_contents($location);
+            $hashNew = md5($fileData);
+            if ($hashOld === $hashNew) {
+                $this->printLine("\tignoring $filename -- same content.\n");
+                return false;
+            }
+        }
+        $status = $fileInRepo->upload(new FSFile($location), "auto-generated", "");
+        if ($status->isOK()) {
+            $this->printLine("\timported file: $filename");
+            return true;
+        } else {
+            $this->printLine("\tupload failed due to errors: $filename");
+            $this->printLine(print_r($status->getErrorsArray(), true));
+            return false;
+        }
     }
 
 } // end of WikiImport class
