@@ -204,6 +204,16 @@ $wgWikiServerPath = __DIR__ ;
 ## this, if it's not already uncommented:
 $wgHashedUploadDirectory = true;
 
+$wgGroupPermissions['*']['createaccount']       = false;
+$wgGroupPermissions['*']['edit']                = false;
+$wgGroupPermissions['*']['createpage']          = false;
+$wgGroupPermissions['user']['createaccount']    = false;
+$wgGroupPermissions['user']['createpage']       = true;
+$wgGroupPermissions['user']['edit']             = true;
+$wgGroupPermissions['sysop']['edit']            = true;
+$wgGroupPermissions['sysop']['createaccount']   = true;
+$wgGroupPermissions['sysop']['createpage']      = true;
+
 #################################################################
 #
 # Include local server settings, if they exist
@@ -474,14 +484,3 @@ wfLoadExtension( 'EnhancedRetrieval' );
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');
 wfLoadExtension('PageImport');
-
-
-$wgGroupPermissions['*']['createaccount']       = false;
-$wgGroupPermissions['*']['edit']                = false;
-$wgGroupPermissions['*']['createpage']          = false;
-$wgGroupPermissions['user']['createaccount']    = false;
-$wgGroupPermissions['user']['createpage']       = true;
-$wgGroupPermissions['user']['edit']             = true;
-$wgGroupPermissions['sysop']['edit']            = true;
-$wgGroupPermissions['sysop']['createaccount']   = true;
-$wgGroupPermissions['sysop']['createpage']      = true;
