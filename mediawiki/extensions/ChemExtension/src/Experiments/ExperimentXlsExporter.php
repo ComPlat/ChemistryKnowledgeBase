@@ -60,7 +60,7 @@ class ExperimentXlsExporter
         }
 
         $rowIndex = 2;
-        $templateData = ExperimentLink::getTemplateData($this->parameters, $this->selectExperimentQuery);
+        $templateData = ExperimentLink::getTemplateData($this->parameters, urldecode($this->selectExperimentQuery));
         foreach ($templateData as $row) {
             $column = 1;
             foreach($exportProperties as $p) {
@@ -73,7 +73,7 @@ class ExperimentXlsExporter
                     } else {
                         $this->workSheet->setCellValueExplicit([$column, $rowIndex], $molecule['inchikey'], DataType::TYPE_STRING);
                         $column++;
-                        $this->workSheet->setCellValueExplicit([$column, $rowIndex], $molecule['molfile'], DataType::TYPE_STRING);
+                        $this->workSheet->setCellValueExplicit([$column, $rowIndex], '"'.$molecule['molfile'].'"', DataType::TYPE_STRING);
                     }
                 } else if ($p['type'] === '_boo') {
                     $this->workSheet->setCellValue([$column, $rowIndex], $row[$p['templateParam']] ? 'true' : 'false');
