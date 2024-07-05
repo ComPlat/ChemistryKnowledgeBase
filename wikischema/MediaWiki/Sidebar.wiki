@@ -18,6 +18,7 @@
 ** Help:Creating a Private Space|Create a private space
 ** Help:Create new topic|Create a new topic
 ** Help:ReplaceMolecule| Replace a molecule
+** Help:Investigation_Import_From_File|Import investigation
 ** Special:Version|Wiki version
 * Tours
 ** {{fullurl:{{FULLPAGENAME}}|tour=newtour}}|Home page tour
