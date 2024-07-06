@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\GeneralTools;
 use MediaWiki\MediaWikiServices;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -155,9 +156,10 @@ class ExperimentXlsImporter
     {
 
         $chemFormId = $this->chemFormRepo->getChemFormId($moleculeKey);
-        $image = $this->chemFormRepo->getChemFormImageByKey($moleculeKey);
-        if (is_null($chemFormId) || is_null($image) || trim($image) === '') {
-            $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn("\n$data", "", "", $moleculeKey);
+        $svg = $this->chemFormRepo->getChemFormImageByKey($moleculeKey);
+        if (is_null($chemFormId) || is_null($svg) || trim($svg) === '' || ChemTools::isEmptySVGImage(base64_decode($svg))) {
+            $unquotedData = trim($data,'"');
+            $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn("\n$unquotedData", "", "", $moleculeKey);
             return $moleculeKey;
         }
         return "Molecule:$chemFormId";

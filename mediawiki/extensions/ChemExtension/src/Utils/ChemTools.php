@@ -56,4 +56,8 @@ class ChemTools {
         return null;
     }
 
+    public static function isEmptySVGImage($svg) {
+        $xml = simplexml_load_string($svg);
+        return $xml->count() === 0;
+    }
 }
