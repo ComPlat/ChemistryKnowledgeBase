@@ -8,6 +8,7 @@ use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientMock;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\MoleculePageComparer;
 use DIQA\ChemExtension\PubChem\PubChemService;
+use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\MolfileProcessor;
@@ -230,7 +231,7 @@ class MoleculePageCreationJob extends Job
 
         $chemFormRepo = new ChemFormRepository($dbr);
         $img = $chemFormRepo->getChemFormImageByKey($this->chemForm->getMoleculeKey());
-        if ($img == '') {
+        if (is_null($img) || $img == '' || ChemTools::isEmptySVGImage(base64_decode($img))) {
             try {
                 $client = new MoleculeRendererClientImpl();
                 $renderedMolecule = $client->render($this->chemForm->getMolOrRxn());
