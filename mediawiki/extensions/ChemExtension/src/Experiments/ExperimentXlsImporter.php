@@ -155,7 +155,8 @@ class ExperimentXlsImporter
     {
 
         $chemFormId = $this->chemFormRepo->getChemFormId($moleculeKey);
-        if (is_null($chemFormId)) {
+        $image = $this->chemFormRepo->getChemFormImageByKey($moleculeKey);
+        if (is_null($chemFormId) || is_null($image) || trim($image) === '') {
             $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn("\n$data", "", "", $moleculeKey);
             return $moleculeKey;
         }
