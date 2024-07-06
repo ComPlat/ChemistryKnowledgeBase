@@ -2,46 +2,46 @@
 This is the Photocatalytic CO2 conversion template.
 </noinclude>
 <includeonly><tr>
-<td resource="General">{{DisplayMolecule|{{{catalyst|}}} }}</td>
-<td resource="General">{{{cat conc|}}}</td>
-<td resource="General">{{DisplayMolecule|{{{PS|}}} }}</td>
-<td resource="General">{{{PS conc|}}}</td>
-<td resource="General">{{DisplayMolecule|{{{e-D|}}} }}</td>
-<td resource="General">{{{e-D conc|}}}</td>
-<td resource="Additives and solvents" property="hidden">{{DisplayMolecule|{{{H-D|}}} }}</td>
-<td resource="Additives and solvents" property="hidden">{{{H-D conc|}}}</td>
-<td resource="General,Additives and solvents">{{DisplayMolecule|{{{solvent A|}}} }}</td>
-<td resource="Additives and solvents" property="hidden">{{DisplayMolecule|{{{solvent B|}}} }}</td>
-<td resource="Additives and solvents" property="hidden">{{DisplayMolecule|{{{solvent C|}}} }}</td>
-<td resource="Additives and solvents" property="hidden">{{{solvent-ratio|}}}</td>
-<td resource="Additives and solvents">{{{additives|}}}</td>
-<td resource="Additives and solvents" property="hidden">{{{additives conc|}}}</td>
-<td resource="Feedstock gas" property="hidden">{{{feedstock gas|}}}</td>
-<td resource="Feedstock volume" property="hidden">{{{feedstock volume|}}}</td>
-<td resource="Intensity" property="hidden">{{{intensity|}}}</td>
-<td resource="Physical data" property="hidden">{{{pH|}}}</td>
-<td resource="Physical data" property="hidden">{{{Temperature|}}}</td>
-<td resource="General,Physical data">{{{λexc|}}}</td>
-<td resource="Physical data" property="hidden">{{{irr time|}}}</td>
-<td resource="General,Products">{{{TON CO|}}}</td>
-<td resource="Products" property="hidden">{{{TOF CO|}}}</td>
-<td resource="Products" property="hidden">{{{Φ CO|}}}</td>
-<td resource="General,Products">{{{TON CH4|}}}</td>
-<td resource="Products" property="hidden">{{{TOF CH4|}}}</td>
-<td resource="Products" property="hidden">{{{Φ CH4|}}}</td>
-<td resource="General,Products">{{{TON H2|}}}</td>
-<td resource="Products" property="hidden">{{{TOF H2|}}}</td>
-<td resource="Products" property="hidden">{{{Φ H2|}}}</td>
-<td resource="General,Products">{{{TON HCOOH|}}}</td>
-<td resource="Products" property="hidden">{{{TOF HCOOH|}}}</td>
-<td resource="Products" property="hidden">{{{Φ HCOOH|}}}</td>
-<td resource="General,Products">{{{TON MeOH|}}}</td>
-<td resource="Products" property="hidden">{{{TOF MeOH|}}}</td>
-<td resource="Products" property="hidden">{{{Φ MeOH|}}}</td>
-<td resource="General,Products" property="hidden">{{Selectivity|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
-<td resource="Products" property="hidden">{{DisplayNumberNotNull|{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }} }}</td>
+<td>{{DisplayMolecule|{{{catalyst|}}} }}</td>
+<td>{{{cat conc|}}}</td>
+<td>{{DisplayMolecule|{{{PS|}}} }}</td>
+<td>{{{PS conc|}}}</td>
+<td>{{DisplayMolecule|{{{e-D|}}} }}</td>
+<td>{{{e-D conc|}}}</td>
+<td property="hidden">{{DisplayMolecule|{{{H-D|}}} }}</td>
+<td property="hidden">{{{H-D conc|}}}</td>
+<td>{{DisplayMolecule|{{{solvent A|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent B|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent C|}}} }}</td>
+<td property="hidden">{{{solvent-ratio|}}}</td>
+<td>{{{additives|}}}</td>
+<td property="hidden">{{{additives conc|}}}</td>
+<td property="hidden">{{{feedstock gas|}}}</td>
+<td property="hidden">{{{feedstock volume|}}}</td>
+<td property="hidden">{{{intensity|}}}</td>
+<td property="hidden">{{{pH|}}}</td>
+<td property="hidden">{{{Temperature|}}}</td>
+<td>{{{λexc|}}}</td>
+<td property="hidden">{{{irr time|}}}</td>
+<td>{{{TON CO|}}}</td>
+<td property="hidden">{{{TOF CO|}}}</td>
+<td property="hidden">{{{Φ CO|}}}</td>
+<td>{{{TON CH4|}}}</td>
+<td property="hidden">{{{TOF CH4|}}}</td>
+<td property="hidden">{{{Φ CH4|}}}</td>
+<td>{{{TON H2|}}}</td>
+<td property="hidden">{{{TOF H2|}}}</td>
+<td property="hidden">{{{Φ H2|}}}</td>
+<td>{{{TON HCOOH|}}}</td>
+<td property="hidden">{{{TOF HCOOH|}}}</td>
+<td property="hidden">{{{Φ HCOOH|}}}</td>
+<td>{{{TON MeOH|}}}</td>
+<td property="hidden">{{{TOF MeOH|}}}</td>
+<td property="hidden">{{{Φ MeOH|}}}</td>
+<td property="hidden">{{Selectivity|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
+<td property="hidden">{{DisplayNumberNotNull|{{#expr: {{{Φ CO|0}}} + {{{Φ CH4|0}}} + {{{Φ H2|0}}} + {{{Φ HCOOH|0}}} + {{{Φ MeOH|0}}} }} }}</td>
 <td property="hidden">{{{details|}}}</td>
-<td resource="General" property="hidden">{{{include|}}}</td>
+<td resource="include" property="hidden">{{{include|}}}</td>
 </tr>{{#subobject:
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}

@@ -40,6 +40,7 @@ class ImportInvestigationJob extends Job
             $spreadsheet = $reader->load($this->filePath);
             $importer = new ExperimentXlsImporter($spreadsheet->getActiveSheet());
             $dataToImport = $importer->getDataToImport($this->investigationType);
+            $this->logger->log(print_r($dataToImport, true));
             $importedMolecules = [];
             foreach ($dataToImport['nonExistingMolecules'] as $chemForm) {
                 $chemFormId = $this->importMolecule($chemForm);
