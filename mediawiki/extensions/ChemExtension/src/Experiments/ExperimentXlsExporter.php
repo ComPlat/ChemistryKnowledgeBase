@@ -60,7 +60,7 @@ class ExperimentXlsExporter
         }
 
         $rowIndex = 2;
-        $templateData = ExperimentLink::getTemplateData($this->parameters, urldecode($this->selectExperimentQuery));
+        $templateData = ExperimentLink::getTemplateData($this->parameters, urldecode($this->selectExperimentQuery), $this->parameters['onlyIncluded'] ?? true);
         foreach ($templateData as $row) {
             $column = 1;
             foreach($exportProperties as $p) {

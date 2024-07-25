@@ -11,6 +11,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Hooks;
 use MediaWiki\MediaWikiServices;
+use OOUI\ButtonInputWidget;
 use ParserOptions;
 use RequestContext;
 use Title;
@@ -74,6 +75,26 @@ class ExperimentListRenderer extends ExperimentRenderer
             $htmlTableEditor->shortenTable(25);
         }
 
+        $uniqueId = uniqid();
+        $exportButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-link-export-button'],
+            'id' => 'ce-export-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Export',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Export investigation as excel file',
+            'infusable' => true,
+            'value' => json_encode([
+                'parameters' => [ 'form' => $this->context['form'],
+                    'restrictToPages' => $this->context['page']->getPrefixedText(),
+                    'onlyIncluded' => false
+                 ],
+                'selectExperimentQuery' => "",
+                'page' => $this->context['page']->getPrefixedText(),
+
+            ])
+        ]);
+
         global $wgScriptPath;
         $htmlTableEditor->addTableClass("experiment-list");
         return $this->blade->view()->make("experiment-table", [
@@ -81,7 +102,8 @@ class ExperimentListRenderer extends ExperimentRenderer
             'experimentName' => $experimentName,
             'experimentPageTitle' => $experimentPageTitle,
             'inVisualEditor' => WikiTools::isInVisualEditor(),
-            'wgScriptPath' => $wgScriptPath
+            'wgScriptPath' => $wgScriptPath,
+            'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
         ])->render();
 
     }

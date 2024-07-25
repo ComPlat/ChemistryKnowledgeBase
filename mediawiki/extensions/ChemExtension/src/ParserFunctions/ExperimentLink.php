@@ -96,7 +96,7 @@ class ExperimentLink
      * @param array $parameters
      * @return array
      */
-    public static function getTemplateData(array $parameters, $selectExperimentQuery): array
+    public static function getTemplateData(array $parameters, $selectExperimentQuery, $onlyIncluded = true): array
     {
         $restrictToPages = $parameters['restrictToPages'] ?? false;
         $sort = $parameters['sort'] ?? '';
@@ -117,7 +117,7 @@ class ExperimentLink
         foreach ($properties as $p => $templateParam) {
             $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
         }
-        $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery);
+        $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
         $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);
         $rows = [];
         while ($row = $results->getNext()) {
@@ -151,12 +151,12 @@ class ExperimentLink
      * @param $queryToSelectExperiments
      * @return string
      */
-    private static function buildQuery($mainTemplate, $queryToSelectExperiments, $restrictQuery): string
+    private static function buildQuery($mainTemplate, $queryToSelectExperiments, $restrictQuery, $onlyIncluded): string
     {
-
-        $orPartQueries = array_map(function ($q) use ($mainTemplate, $restrictQuery) {
+        $onlyIncludedConstraint = $onlyIncluded ? "[[Included::true]]":"";
+        $orPartQueries = array_map(function ($q) use ($mainTemplate, $restrictQuery, $onlyIncludedConstraint) {
             return
-                "[[-Has subobject::<q>[[Category:$mainTemplate]]</q>]] $q $restrictQuery [[Included::true]]";
+                "[[-Has subobject::<q>[[Category:$mainTemplate]]</q>]] $q $restrictQuery $onlyIncludedConstraint";
         }, preg_split('/[\s\n\r]+OR[\s\n\r]+/', $queryToSelectExperiments));
         return implode(" OR ", $orPartQueries);
     }
