@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Experiments\ExperimentListRenderer;
+use DIQA\ChemExtension\Experiments\ExperimentNotExistsException;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Parser;
@@ -44,8 +45,12 @@ class ExperimentList
             $html = $renderer->render();
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
 
+        } catch(ExperimentNotExistsException $e) {
+            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage(),
+                'data' => [ 'experimentName' => $e->getExperimentName(), 'code' => $e->getCode()]])->render();
+            return [$html, 'noparse' => true, 'isHTML' => true];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
+            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage(), 'code' => $e->getCode()])->render();
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
     }

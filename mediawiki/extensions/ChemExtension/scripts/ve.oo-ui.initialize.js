@@ -158,6 +158,8 @@
             target.siblings('a').find('span.ce-moleculelink-image').show();
             target.remove();
         });
+
+        checkErrorsPeriodically();
     }
 
     function whichChild(node) {
@@ -169,6 +171,30 @@
             i++;
         }
         return i;
+    }
+
+    function checkErrorsPeriodically() {
+
+        setTimeout(() => {
+            $('span.error').each((i, e) => {
+                let target = $(e);
+                let dataJson = target.attr('resource');
+                if (!dataJson || dataJson === '') return;
+                let data = JSON.parse(dataJson);
+                switch (data.code) {
+                    case 1001: // experiment not exists
+                        let tools = new OO.VisualEditorTools();
+                        tools.refreshVENode((node) => {
+                            if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
+                                let params = node.model.element.attributes.mw.parts[0].template.params;
+                                return (params.name && params.name.wt == data.experimentName);
+                            }
+                        });
+                        break;
+                }
+            });
+            checkErrorsPeriodically();
+        }, 10 * 1000)
     }
 
     function initializeAnnotationTooltips() {
