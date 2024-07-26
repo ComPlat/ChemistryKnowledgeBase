@@ -25,7 +25,7 @@ class CategoryIndexRepository
                         category_id INT NOT NULL
                     )  ENGINE=INNODB;');
 
-        $this->db->query('CREATE INDEX IF NOT EXISTS category_index_category_id_index ON category_index (category_id);');
+        $this->db->query('CREATE INDEX category_index_category_id_index ON category_index (category_id);');
         return ['category_index'];
     }
 

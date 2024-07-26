@@ -10,20 +10,21 @@ services:
     image: docker-registry.wikimedia.org/dev/buster-php74-fpm:1.0.0-s3
     user: "${MW_DOCKER_UID}:${MW_DOCKER_GID}"
     volumes:
-      - ./:/var/www/html/w:cached
+      - ./:/var/www/html/main/mediawiki:cached
     env_file:
       - '.env'
     environment:
-      COMPOSER_CACHE_DIR: '/var/www/html/w/cache/composer'
+      COMPOSER_CACHE_DIR: '/var/www/html/main/mediawiki/cache/composer'
       MW_SERVER: 'http://localhost:${MW_DOCKER_PORT:-8080}'
-      MW_SCRIPT_PATH: '/w'
-      MW_DBPATH: '/var/www/html/w/cache/sqlite'
-      MW_DBTYPE: 'sqlite'
+      MW_SCRIPT_PATH: '/main/mediawiki'
+      MW_DBUSER: 'root'
+      MW_DBPASS: 'vagrant'
+      MW_DBTYPE: 'mysql'
       MW_LANG: 'en'
       MW_USER: '${MEDIAWIKI_USER:-Admin}'
       MW_PASS: '${MEDIAWIKI_PASSWORD:-dockerpass}'
       MW_SITENAME: 'MediaWiki'
-      MW_LOG_DIR: /var/www/html/w/cache
+      MW_LOG_DIR: /var/www/html/main/mediawiki/cache
       XDEBUG_CONFIG: '${XDEBUG_CONFIG}'
       XDEBUG_ENABLE: '${XDEBUG_ENABLE:-true}'
       XHPROF_ENABLE: '${XHPROF_ENABLE:-true}'
@@ -34,19 +35,32 @@ services:
     ports:
       - "${MW_DOCKER_PORT:-8080}:8080"
     volumes:
-      - ./:/var/www/html/w:cached
+      - ./:/var/www/html/main/mediawiki:cached
     env_file:
       - '.env'
     environment:
-      MW_LOG_DIR: /var/www/html/w/cache
+      MW_LOG_DIR: /var/www/html/main/mediawiki/cache
 
   mediawiki-jobrunner:
     image: docker-registry.wikimedia.org/dev/buster-php74-jobrunner:1.0.0-s2
     user: "${MW_DOCKER_UID}:${MW_DOCKER_GID}"
     volumes:
-      - ./:/var/www/html/w:cached
+      - ./:/var/www/html/main/mediawiki:cached
     env_file:
       - '.env'
     environment:
-      MW_LOG_DIR: /var/www/html/w/cache
-      MW_INSTALL_PATH: /var/www/html/w
+      MW_LOG_DIR: /var/www/html/main/mediawiki/cache
+      MW_INSTALL_PATH: /var/www/html/main/mediawiki
+
+  db:
+    image: mysql:latest
+    container_name: mysql
+    environment:
+      - MYSQL_DATABASE=chemmain
+      - MYSQL_ROOT_PASSWORD=vagrant
+      - MYSQL_USER=wiki
+      - MYSQL_PASSWORD=vagrant
+    volumes:
+      - ./data:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"

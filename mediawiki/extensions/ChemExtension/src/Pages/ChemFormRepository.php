@@ -26,7 +26,8 @@ class ChemFormRepository
                         molecule_key VARCHAR(255) NOT NULL,
                         img_data MEDIUMBLOB NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_molecule_key_unique UNIQUE IF NOT EXISTS (molecule_key)');
+
+        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_molecule_key_unique UNIQUE (molecule_key)');
         $this->db->query('ALTER TABLE chem_form AUTO_INCREMENT=100000');
 
         $this->db->query('CREATE TABLE IF NOT EXISTS chem_form_index (
@@ -34,10 +35,8 @@ class ChemFormRepository
                         page_id INT NOT NULL,
                         chem_form_id INT NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('CREATE INDEX IF NOT EXISTS chem_form_index_chem_form_id_index ON chem_form_index (chem_form_id);');
 
-        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT chem_form_molecule_key_unique UNIQUE IF NOT EXISTS (molecule_key)');
-        $this->db->query('ALTER TABLE chem_form AUTO_INCREMENT=100000');
+        $this->db->query('CREATE INDEX chem_form_index_chem_form_id_index ON chem_form_index (chem_form_id);');
 
         $this->db->query('CREATE TABLE IF NOT EXISTS molecule_collection (
                         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,8 +46,9 @@ class ChemFormRepository
                         molecule_collection_id INT NOT NULL,
                         rgroups MEDIUMTEXT NOT NULL
                     )  ENGINE=INNODB;');
-        $this->db->query('CREATE INDEX IF NOT EXISTS molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
-        $this->db->query('CREATE INDEX IF NOT EXISTS publication_page_id_index ON molecule_collection (publication_page_id);');
+
+        $this->db->query('CREATE INDEX molecule_collection_page_id_index ON molecule_collection (molecule_collection_page_id);');
+        $this->db->query('CREATE INDEX publication_page_id_index ON molecule_collection (publication_page_id);');
         return ['chem_form', 'chem_form_index', 'molecule_collection'];
     }
 

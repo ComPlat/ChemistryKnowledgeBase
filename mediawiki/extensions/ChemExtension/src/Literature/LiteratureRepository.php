@@ -22,7 +22,7 @@ class LiteratureRepository {
                         doi VARCHAR(255) NOT NULL,
                         data MEDIUMTEXT
                     )  ENGINE=INNODB;');
-        $this->db->query('ALTER TABLE literature ADD CONSTRAINT literature_doi_key_unique UNIQUE IF NOT EXISTS (doi)');
+        $this->db->query('ALTER TABLE literature ADD CONSTRAINT literature_doi_key_unique UNIQUE (doi)');
 
         $this->db->query('CREATE TABLE IF NOT EXISTS literature_index (
                         id INT AUTO_INCREMENT PRIMARY KEY,

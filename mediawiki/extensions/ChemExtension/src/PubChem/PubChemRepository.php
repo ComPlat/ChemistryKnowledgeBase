@@ -27,7 +27,7 @@ class PubChemRepository
                         synonyms MEDIUMBLOB,
                         categories MEDIUMBLOB
                     )  ENGINE=INNODB;');
-        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT pub_chem_molecule_key_unique UNIQUE IF NOT EXISTS (molecule_key)');
+        $this->db->query('ALTER TABLE chem_form ADD CONSTRAINT pub_chem_molecule_key_unique UNIQUE (molecule_key)');
 
         return ['pub_chem'];
     }
