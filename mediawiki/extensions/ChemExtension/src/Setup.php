@@ -127,6 +127,16 @@ class Setup {
             'styles' => [],
             'dependencies' => ['ext.diqa.chemextension'],
         );
+
+        $wgResourceModules['ext.diqa.chemextension.redoxinput'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => ['scripts/pf.redox-input.js'],
+            'styles' => [],
+            'dependencies' => ['ext.diqa.chemextension'],
+        );
+
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
@@ -233,6 +243,10 @@ CSS;
         $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
 
         self::registerShowCachedHandler($parser);
+    }
+
+    public static function onFormPrinterSetup( &$pfFormPrinter ) {
+        $pfFormPrinter->registerInputType( 'DIQA\ChemExtension\FormInputs\RedoxFormInput' );
     }
 
     public static function categoryViewerInstance(Title $title, & $html) {

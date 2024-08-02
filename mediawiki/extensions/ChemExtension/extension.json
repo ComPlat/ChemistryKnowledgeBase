@@ -31,6 +31,7 @@
         "DIQA\\ChemExtension\\Maintenance\\": "maintenance/"
     },
     "Hooks": {
+        "PageForms::FormPrinterSetup": "DIQA\\ChemExtension\\Setup::onFormPrinterSetup",
         "ParserFirstCallInit": "DIQA\\ChemExtension\\Setup::onParserFirstCallInit",
         "CleanupChemExtState": "DIQA\\ChemExtension\\Setup::cleanupChemExtState",
         "BeforePageDisplay": "DIQA\\ChemExtension\\Setup::onBeforePageDisplay",
