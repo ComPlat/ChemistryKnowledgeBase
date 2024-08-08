@@ -15,6 +15,10 @@ class FormatAsTable {
             return ['', 'noparse' => true, 'isHTML' => true];
         }
         $rows = explode(";", $parameters['']);
+        if (isset($parameters['row'])) {
+            $content = trim($rows[$parameters['row']]) ?? '';
+            return [$content, 'noparse' => true, 'isHTML' => true];
+        }
         $result = '<table class="ce-center-aligned-table" inner="true">';
         foreach($rows as $row) {
             $result .= '<tr>';

@@ -132,7 +132,7 @@ class Setup {
             'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
-            'scripts' => ['scripts/pf.redox-input.js'],
+            'scripts' => ['scripts/pf.redox-input.js', 'scripts/pf.redox-input-field.js'],
             'styles' => [],
             'dependencies' => ['ext.diqa.chemextension'],
         );

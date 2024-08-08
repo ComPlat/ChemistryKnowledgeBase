@@ -17,17 +17,8 @@ experiments:
 ! analyte concentration [mM]:
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
-! reduction potential:
-| {{{field|reduction potential|input type=regexp|base type=string|message=Input series of numbers according to the format description|regexp=/^[+-]?[0-9]*\.?[0-9]+?\*?(,[+-]?[0-9]*\.?[0-9]+?\*?)*$/}}}
-|-
-|
-| (''Format'': number values separated by a comma. Can be marked with asterisk. ''For example'': 1,2 or 1,3* or 1,-4.5,2)
-|-
-! oxidation potential:
-| {{{field|oxidation potential|input type=regexp|base type=string|message=Input series of numbers according to the format description|regexp=/^[+-]?[0-9]*\.?[0-9]+?\*?(,[+-]?[0-9]*\.?[0-9]+?\*?)*$/}}}
-|-
-|
-| (''Format'': number values separated by a comma. Can be marked with asterisk. ''For example'': 1,2 or 1,3* or 1,-4.5,2)
+! redox potential:
+| {{{field|redox potential|input type=redoxinput}}}
 |-
 ! solvent:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}

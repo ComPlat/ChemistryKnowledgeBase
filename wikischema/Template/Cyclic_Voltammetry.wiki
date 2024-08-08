@@ -4,8 +4,12 @@ This is the Cyclic Voltammetry template.
 <includeonly><tr>
 <td>{{DisplayMolecule|{{{anl|}}} }}</td>
 <td>{{{anl conc|}}}</td>
-<td>{{{reduction potential|}}}</td>
-<td>{{{oxidation potential|}}}</td>
+<td>
+{{#formatAsTable:{{{redox potential|}}}|row=0 }}
+</td>
+<td>
+{{#formatAsTable:{{{redox potential|}}}|row=1 }}
+</td>
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
 <td>{{{electrolyte|}}}</td>
@@ -27,8 +31,7 @@ This is the Cyclic Voltammetry template.
 </tr>{{#subobject:
  |Analyte={{{anl|}}}
  |Analyte concentration={{{anl conc|}}}
- |Reduction potential={{{reduction potential|}}}
- |Oxidation potential={{{oxidation potential|}}}
+ |Reduction potential={{{redox potential|}}}
  |Solvent A={{{solv|}}}
  |Solvent volume={{{solv vol|}}}
  |Electrolyte={{{electrolyte|}}}
