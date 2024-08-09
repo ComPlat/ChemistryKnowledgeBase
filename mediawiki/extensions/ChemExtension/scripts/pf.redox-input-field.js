@@ -69,6 +69,7 @@
         if (tagInfo.label.match(numberPattern)) {
             if ( this.addTag( tagInfo.data, tagInfo.label ) ) {
                 this.clearInput();
+                this.input.$input.focus();
             }
         }
 

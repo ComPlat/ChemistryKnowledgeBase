@@ -69,7 +69,7 @@
     };
 
     ve.ui.ChooseRedoxPotential.prototype.getBodyHeight = function () {
-        return 300;
+        return 250;
     }
 
     /**
@@ -87,7 +87,7 @@
                 let flOxidationPotential = new OO.ui.FieldLayout(
                     this.oxidationPotential,
                     {
-                        label: 'Oxidation potential',
+                        label: 'Oxidation potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
@@ -95,7 +95,7 @@
                 let flReductionPotential = new OO.ui.FieldLayout(
                     this.reductionPotential,
                     {
-                        label: 'Reduction potential',
+                        label: 'Reduction potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
@@ -123,10 +123,14 @@
                     }
                     ve.ui.ChooseRedoxPotential.static.showFormEditor();
                 });
+                let buttonContainer = $('<div>').addClass('ve-ui-redoxDialog-row');
+                buttonContainer.addClass('ce-redox-input-buttons');
+                buttonContainer.append(applyButton.$element);
+                buttonContainer.append(closeButton.$element);
                 $row.append( flOxidationPotential.$element );
                 $row.append( flReductionPotential.$element );
-                $row.append( applyButton.$element );
-                $row.append( closeButton.$element );
+                $row.append( buttonContainer );
+
                 this.text.$element.append($row);
                 this.actions.setMode('default');
 
