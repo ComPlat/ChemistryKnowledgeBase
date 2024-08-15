@@ -10,6 +10,7 @@ This is the Cyclic Voltammetry experiments template.
 <th title="solvent">solvent</th>
 <th title="solvent volume [ml]" property="hidden">solvent vol [ml]</th>
 <th title="electrolyte">electrolyte</th>
+<th title="electrolyte purity">electrolyte purity</th>
 <th title="electrolyte concentration [M]" property="hidden">el conc [M]</th>
 <th title="internal reference compound">int ref comp</th>
 <th title="scan rate [mV s-1]" property="hidden">scan rate [mv s-1]</th>

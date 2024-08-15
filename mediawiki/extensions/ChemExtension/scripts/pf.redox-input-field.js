@@ -65,7 +65,7 @@
             return;
         }
 
-        let numberPattern = /^[+-]?[0-9]*\.?[0-9]+?\*?(,[+-]?[0-9]*\.?[0-9]+?\*?)*$/;
+        let numberPattern = /^[+-]?[0-9]*\.?[0-9]+?\*?(,[+-]?[0-9]*\.?[0-9]+?\*?)*|-$/;
         if (tagInfo.label.match(numberPattern)) {
             if ( this.addTag( tagInfo.data, tagInfo.label ) ) {
                 this.clearInput();

@@ -1,5 +1,5 @@
 This is a property of type [[Has type::Text]].
 
 The allowed values for this property are:
-* [[Allows value::negative to positive]]
-* [[Allows value::positive to negative]]
+* [[Allows value::IUPAC]]
+* [[Allows value::US]]

@@ -13,6 +13,7 @@ This is the Cyclic Voltammetry template.
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
 <td>{{{electrolyte|}}}</td>
+<td>{{{electrolyte purity|}}}</td>
 <td property="hidden">{{{el conc|}}}</td>
 <td>{{{int ref comp|}}}</td>
 <td property="hidden">{{{scan rate|}}}</td>
@@ -35,6 +36,7 @@ This is the Cyclic Voltammetry template.
  |Solvent A={{{solv|}}}
  |Solvent volume={{{solv vol|}}}
  |Electrolyte={{{electrolyte|}}}
+ |Electrolyte purity={{{electrolyte purity|}}}
  |Electrolyte concentration={{{el conc|}}}
  |Internal reference compound={{{int ref comp|}}}
  |Scan rate={{{scan rate|}}}
