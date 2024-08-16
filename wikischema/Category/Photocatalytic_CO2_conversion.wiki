@@ -3,4 +3,14 @@
 
 
 The page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] is an example page in this wiki that contains scientific content
+
+{| class="wikitable"
+|+
+!Useful links
+|-
+|
+* [[Help:Guidelines to photochemical CO2 conversion|Guidelines to photochemical CO2 conversion]]
+* [[Help:Guidelines to cyclic voltammetry|Guidelines to cyclic voltammetry]]
+* [[Help:Create new publication: photocatalytic CO2 conversion|Create new publication: photocatalytic CO2 conversion]]
+|}
 [[Category:CO2 conversion]]
