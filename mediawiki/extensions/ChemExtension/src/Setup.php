@@ -62,6 +62,7 @@ class Setup {
                 $baseScript . '/oo.ui.rgroups-display-widget.js',
                 $baseScript . '/oo.ui.show-rgroups-dialog.js',
                 $baseScript . '/ve.oo-ui.initialize.js',
+                $baseScript . '/ve.oo-ui.experiments.js',
                 $baseScript . '/pf-extensions.js',
                 $baseScript . '/ve.oo-ui.add-experiment-dialog.js',
                 $baseScript . '/ve.oo-ui.add-experiment-widget.js',
