@@ -1,5 +1,8 @@
-This is a property of type [[Has type::Text]].
+; Purpose
+* [[Property description::Please specify my purpose.@en]]
 
-The allowed values for this property are:
-* [[Allows value::Fc+/Fc]]
-* [[Allows value::Me10Fc+/Me10Fc]]
+; Datatype
+* [[Has type::Page]].
+
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].

@@ -12,10 +12,10 @@ This is the Cyclic Voltammetry template.
 </td>
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
-<td>{{{electrolyte|}}}</td>
+<td>{{DisplayMolecule|{{{electrolyte|}}} }}</td>
 <td>{{{electrolyte purity|}}}</td>
 <td property="hidden">{{{el conc|}}}</td>
-<td>{{{int ref comp|}}}</td>
+<td>{{DisplayMolecule|{{{int ref comp|}}} }}</td>
 <td property="hidden">{{{scan rate|}}}</td>
 <td>{{{scan number|}}}</td>
 <td property="hidden">{{{potential window|}}}</td>

@@ -1,15 +1,8 @@
 ; Purpose
-* [[Property description::Contains a string describing the electrolyte used in an experiment or molecular process.@en]]
+* [[Property description::Contains a molecule describing the electrolyte used in an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Text]].
+* [[Has type::Page]].
 
-The allowed values for this property are:
-* [[Allows value::KCl]]
-* [[Allows value::KOH]]
-* [[Allows value::KHCO3]]
-* [[Allows value::TBA(PF6)]]
-* [[Allows value::TMABF4]]
-* [[Allows value::TBABF4]]
-* [[Allows value::TEABF4]]
-* [[Allows value::other]]
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].

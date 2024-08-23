@@ -27,7 +27,7 @@ experiments:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! electrolyte:
-| {{{field|electrolyte|property=Electrolyte|input type=dropdown}}}
+| {{{field|electrolyte|property=Electrolyte|input type=combobox|values from url=molecule_lookup_electrolyte}}}
 |-
 ! electrolyte purity:
 | {{{field|electrolyte purity|property=Electrolyte purity|input type=regexp|regexp=/^([0-9]*\.)?[0-9]*$/}}}
@@ -36,7 +36,7 @@ experiments:
 | {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
 |-
 ! internal reference compound:
-| {{{field|int ref comp|property=Internal reference compound|input type=dropdown}}}
+| {{{field|int ref comp|property=Internal reference compound|input type=combobox|values from url=molecule_lookup_irc}}}
 |-
 ! scan rate [mV s-1]:
 | {{{field|scan rate|input type=regexp|property=Scan rate|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
