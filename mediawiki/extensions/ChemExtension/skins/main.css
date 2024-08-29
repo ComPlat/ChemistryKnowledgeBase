@@ -586,6 +586,10 @@ img.experiment-help {
     margin-left: 10px;
 }
 
+input.ce_redoxinput {
+    width: 60%
+}
+
 div.ce-redox-input-buttons {
     margin-top: 20px;
 }

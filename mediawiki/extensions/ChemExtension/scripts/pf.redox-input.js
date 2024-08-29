@@ -6,8 +6,16 @@
         $('button.ce_redoxinput_button').click((e) => {
             e.preventDefault();
             e.stopPropagation();
-            let formField = $(e.target).siblings('input');
+            let formField = $(e.target).siblings('input.ce_redoxinput');
             openDialog(formField);
+        });
+        $('button.ce_redoxinput_file_button').click((e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            $(e.target).siblings('input.ce_redoxinput_file_input').click();
+        });
+        $('input.ce_redoxinput_file_input').change((e) => {
+            readRedoxFile(e);
         });
     });
 
@@ -16,8 +24,17 @@
         $('button.ce_redoxinput_button').click((e) => {
             e.preventDefault();
             e.stopPropagation();
-            let formField = $(e.target).siblings('input');
+            let formField = $(e.target).siblings('input.ce_redoxinput');
             openDialog(formField);
+        });
+
+        $('button.ce_redoxinput_file_button').click((e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            $(e.target).siblings('input.ce_redoxinput_file_input').click();
+        });
+        $('input.ce_redoxinput_file_input').change((e) => {
+            readRedoxFile(e);
         });
     });
 
@@ -30,7 +47,36 @@
         windowManager.openWindow(dialog);
     }
 
+    function readRedoxFile(e) {
+        let target = $(e.target);
+        const file = target.get(0).files[0], read = new FileReader();
+        let formField = target.siblings('input.ce_redoxinput');
+        read.readAsArrayBuffer(file);
+        read.onloadend = () => {
+            let enc = new TextDecoder("utf-8");
+            let content = enc.decode(read.result);
+            formField.val(new RedoxCSVParser().parseCSV(content));
+            console.log(content);
+        }
+    }
 
+    function RedoxCSVParser() {
+        let that = {};
+
+        that.parseCSV = function(content) {
+            let lines = content.split(/\n|\r\n/);
+            let result = '';
+            if (lines.length > 10) {
+                let columns = lines[9].split(/,/);
+                if (columns.length > 6) result += columns[6];
+                columns = lines[10].split(/,/);
+                if (columns.length > 6) result += '; ' + columns[6];
+            }
+            return result;
+        }
+
+        return that;
+    }
 }(jQuery));
 
 (function (OO) {

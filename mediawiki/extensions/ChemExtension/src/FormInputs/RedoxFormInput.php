@@ -35,8 +35,10 @@ class RedoxFormInput extends \PFFormInput {
             'data-input-type' => 'combobox'
         ];
 
-        $buttonText = Html::rawElement('button', [ 'class' => 'ce_redoxinput_button'], 'Add/remove');
-        return Html::rawElement( 'span', $spanAttrs, $inputText . $buttonText );
+        $addRemoveButton = Html::rawElement('button', [ 'class' => 'ce_redoxinput_button'], 'Add/remove');
+        $importButton = Html::rawElement('button', [ 'class' => 'ce_redoxinput_file_button'], 'Import from file...');
+        $fileInput = Html::rawElement('input', [ 'class' => 'ce_redoxinput_file_input', 'type' => 'file', 'style' => 'display:none;']);
+        return Html::rawElement( 'span', $spanAttrs, $inputText . $addRemoveButton . $importButton . $fileInput );
     }
 
     public function getHtmlText(): string {
