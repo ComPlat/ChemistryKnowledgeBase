@@ -133,7 +133,7 @@
                 let flOxidationPotential = new OO.ui.FieldLayout(
                     this.oxidationPotential,
                     {
-                        label: 'Oxidation potential (decimal number with optional asterisk)',
+                        label: 'Reduction potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
@@ -141,7 +141,7 @@
                 let flReductionPotential = new OO.ui.FieldLayout(
                     this.reductionPotential,
                     {
-                        label: 'Reduction potential (decimal number with optional asterisk)',
+                        label: 'Oxidation potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
