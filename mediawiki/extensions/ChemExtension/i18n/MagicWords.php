@@ -21,6 +21,7 @@ $magicWords['en'] = [
     'counter' => [ 0, 'counter' ],
     'showcache' => [ 0, 'showcache' ],
     'formatAsTable' => [ 0, 'formatAsTable' ],
+    'calculateSelectivity' => [ 0, 'calculateSelectivity' ],
 
 ];
 

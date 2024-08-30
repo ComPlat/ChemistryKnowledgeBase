@@ -15,6 +15,7 @@ use DIQA\ChemExtension\ParserFunctions\FormatAsTable;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
+use DIQA\ChemExtension\ParserFunctions\Selectivity;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\TIB\TagListRenderer;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -242,6 +243,7 @@ CSS;
         $parser->setFunctionHook( 'doiinfobox', [ DOIInfoBox::class, 'renderDOIInfoBox' ] );
         $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
         $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
+        $parser->setFunctionHook( 'calculateSelectivity', [ Selectivity::class, 'calculateSelectivity' ] );
 
         self::registerShowCachedHandler($parser);
     }
