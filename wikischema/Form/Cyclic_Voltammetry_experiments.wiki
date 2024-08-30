@@ -45,7 +45,7 @@ experiments:
 | {{{field|scan number|input type=regexp|property=Scan number|base type=Number|message=Input a positive integer|regexp=/^[0-9]*$/}}}
 |-
 ! potential window [min, max]:
-| {{{field|potential window|property=Potential window|input type=regexp|regexp=/^[0-9](\.[0-9]+)?\s*,\s*[0-9](\.[0-9]+)?$/|message=Input 2 numbers (comma-separated)}}}
+| {{{field|potential window|property=Potential window|input type=regexp|regexp=/^[0-9](\.[0-9]+)?\s*,\s*[0-9](\.[0-9]+)?|$/|message=Input 2 numbers (comma-separated)}}}
 |-
 ! scan direction:
 | {{{field|scan dir|property=Scan direction|input type=dropdown}}}
