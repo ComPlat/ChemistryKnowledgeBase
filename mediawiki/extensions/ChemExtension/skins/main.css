@@ -591,5 +591,19 @@ input.ce_redoxinput {
 }
 
 div.ce-redox-input-buttons {
-    margin-top: 20px;
+    margin-top: 40px;
+}
+
+div.ve-ui-redoxDialog-content {
+    height: 290px;
+}
+
+div.ve-ui-redoxDialog-fieldsContainer {
+    overflow: auto;
+    max-height: 220px;
+}
+
+div.ce-redox-input-buttons {
+    position: absolute;
+    bottom: 15px;
 }

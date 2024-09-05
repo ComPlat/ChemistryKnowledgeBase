@@ -55,8 +55,12 @@
         read.onloadend = () => {
             let enc = new TextDecoder("utf-8");
             let content = enc.decode(read.result);
-            formField.val(new RedoxCSVParser().parseCSV(content));
-            console.log(content);
+            try {
+                formField.val(new RedoxCSVParser().parseCSV(content));
+                openDialog(formField);
+            } catch(e) {
+                mw.notify(e, {type: 'error'});
+            }
         }
     }
 
@@ -65,14 +69,17 @@
 
         that.parseCSV = function(content) {
             let lines = content.split(/\n|\r\n/);
-            let result = '';
+            let result = [];
             if (lines.length > 10) {
-                let columns = lines[9].split(/,/);
-                if (columns.length > 6) result += columns[6];
-                columns = lines[10].split(/,/);
-                if (columns.length > 6) result += '; ' + columns[6];
+                for(let i = 9; i < lines.length; i++) {
+                    let columns = lines[i].split(/,/);
+                    if (columns.length > 6) result.push(columns[6]);
+                }
             }
-            return result;
+            if (result.length === 0) {
+                throw 'Could not import file. File did not match expected CSV format';
+            }
+            return result.join(", ") + "; " + result.join(", ");
         }
 
         return that;
@@ -115,7 +122,7 @@
     };
 
     ve.ui.ChooseRedoxPotential.prototype.getBodyHeight = function () {
-        return 250;
+        return 320;
     }
 
     /**
@@ -128,7 +135,7 @@
         return ve.ui.ChooseRedoxPotential.super.prototype.getSetupProcess.call(this, data)
             .next(() => {
                 this.text.$element.empty();
-                let $row = $('<div>').addClass('ve-ui-redoxDialog-row');
+                let content = $('<div>').addClass('ve-ui-redoxDialog-content');
                 this.oxidationPotential = new OO.ui.RedoxMultiSelectWidget();
                 let flOxidationPotential = new OO.ui.FieldLayout(
                     this.oxidationPotential,
@@ -169,15 +176,17 @@
                     }
                     ve.ui.ChooseRedoxPotential.static.showFormEditor();
                 });
-                let buttonContainer = $('<div>').addClass('ve-ui-redoxDialog-row');
-                buttonContainer.addClass('ce-redox-input-buttons');
+                let buttonContainer = $('<div>').addClass('ce-redox-input-buttons');
                 buttonContainer.append(applyButton.$element);
                 buttonContainer.append(closeButton.$element);
-                $row.append( flOxidationPotential.$element );
-                $row.append( flReductionPotential.$element );
-                $row.append( buttonContainer );
 
-                this.text.$element.append($row);
+                let fieldsContainer = $('<div>').addClass('ve-ui-redoxDialog-fieldsContainer');
+                fieldsContainer.append( flOxidationPotential.$element );
+                fieldsContainer.append( flReductionPotential.$element );
+                content.append( fieldsContainer );
+                content.append( buttonContainer );
+
+                this.text.$element.append(content);
                 this.actions.setMode('default');
 
             }, this);
