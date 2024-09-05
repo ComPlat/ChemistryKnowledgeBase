@@ -130,7 +130,7 @@
                 let flOxidationPotential = new OO.ui.FieldLayout(
                     this.oxidationPotential,
                     {
-                        label: 'Reduction potential (decimal number with optional asterisk)',
+                        label: 'Oxidation potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
@@ -138,13 +138,13 @@
                 let flReductionPotential = new OO.ui.FieldLayout(
                     this.reductionPotential,
                     {
-                        label: 'Oxidation potential (decimal number with optional asterisk)',
+                        label: 'Reduction potential (decimal number with optional asterisk)',
                         align: 'top'
                     }
                 );
                 let formData = this.formField.val().split(';');
-                let oxValues = formData[0].split(",").filter(x => x.trim() !== '');
-                let rdValues = formData.length > 1 ? formData[1].split(",").filter(x => x.trim() !== '') : [];
+                let rdValues = formData[0].split(",").filter(x => x.trim() !== '');
+                let oxValues = formData.length > 1 ? formData[1].split(",").filter(x => x.trim() !== '') : [];
                 this.oxidationPotential.setValue(oxValues);
                 this.reductionPotential.setValue(rdValues);
                 let closeButton = new OO.ui.ButtonWidget({
@@ -160,7 +160,7 @@
                     const oxValue = this.oxidationPotential.getValue();
                     const rdValue = this.reductionPotential.getValue();
                     if (oxValue.length > 0 || rdValue.length > 0) {
-                        this.formField.val(oxValue.join(', ') + " ; " + rdValue.join(', '));
+                        this.formField.val(rdValue.join(', ') + " ; " + oxValue.join(', '));
                     } else {
                         this.formField.val('');
                     }
@@ -171,8 +171,8 @@
                 buttonContainer.append(closeButton.$element);
 
                 let fieldsContainer = $('<div>').addClass('ve-ui-redoxDialog-fieldsContainer');
-                fieldsContainer.append( flOxidationPotential.$element );
                 fieldsContainer.append( flReductionPotential.$element );
+                fieldsContainer.append( flOxidationPotential.$element );
                 content.append( fieldsContainer );
                 content.append( buttonContainer );
 
