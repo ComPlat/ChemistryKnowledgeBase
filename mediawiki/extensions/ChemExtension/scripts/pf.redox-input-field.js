@@ -75,25 +75,5 @@
 
     }
 
-    OO.ui.RedoxMenuOptionWidget = function MwWidgetsNamespacesMenuOptionWidget( config ) {
-        // Parent
-        OO.ui.RedoxMenuOptionWidget.parent.call( this, config );
-        this.data = config.data;
-    };
-
-    /* Setup */
-
-    OO.inheritClass( OO.ui.RedoxMenuOptionWidget, OO.ui.MenuOptionWidget );
-
-    OO.ui.RedoxMenuOptionWidget.prototype.getLabel = function () {
-        return this.data;
-    };
-    /**
-     * @inheritdoc
-     */
-    OO.ui.RedoxMenuOptionWidget.prototype.getMatchText = function () {
-        return this.getLabel();
-    };
-
 
 }() );

@@ -2,24 +2,14 @@
     'use strict';
 
     mw.hook('pf.addTemplateInstance').add(function () {
-        $('button.ce_redoxinput_button').off('click');
-        $('button.ce_redoxinput_button').click((e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            let formField = $(e.target).siblings('input.ce_redoxinput');
-            openDialog(formField);
-        });
-        $('button.ce_redoxinput_file_button').click((e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            $(e.target).siblings('input.ce_redoxinput_file_input').click();
-        });
-        $('input.ce_redoxinput_file_input').change((e) => {
-            readRedoxFile(e);
-        });
+        registerListeners();
     });
 
     mw.hook('pf.formSetupAfter').add(function () {
+        registerListeners();
+    });
+
+    function registerListeners() {
         $('button.ce_redoxinput_button').off('click');
         $('button.ce_redoxinput_button').click((e) => {
             e.preventDefault();
@@ -36,7 +26,7 @@
         $('input.ce_redoxinput_file_input').change((e) => {
             readRedoxFile(e);
         });
-    });
+    }
 
     function openDialog(formField) {
         let windowManager = OO.ui.getWindowManager();
