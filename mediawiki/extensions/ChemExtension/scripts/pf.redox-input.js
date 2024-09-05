@@ -63,7 +63,7 @@
             if (lines.length > 10) {
                 for(let i = 9; i < lines.length; i++) {
                     let columns = lines[i].split(/,/);
-                    if (columns.length > 6) result.push(columns[6]);
+                    if (columns.length > 6) result.push(Math.round(columns[6] * 100) / 100);
                 }
             }
             if (result.length === 0) {
