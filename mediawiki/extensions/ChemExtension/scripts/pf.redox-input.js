@@ -115,6 +115,21 @@
         return 320;
     }
 
+
+    ve.ui.ChooseRedoxPotential.prototype.setDraggedItem = function (item, nameOfTagSelector, currentItems) {
+        this.item = item;
+        this.nameOfTagSelector = nameOfTagSelector;
+        this.currentItems = currentItems;
+    }
+
+    ve.ui.ChooseRedoxPotential.prototype.getDraggedItem = function () {
+        return {
+            item: this.item || null,
+            nameOfTagSelector: this.nameOfTagSelector,
+            currentItems: this.currentItems
+        };
+    }
+
     /**
      * @inheritdoc
      */
@@ -126,7 +141,7 @@
             .next(() => {
                 this.text.$element.empty();
                 let content = $('<div>').addClass('ve-ui-redoxDialog-content');
-                this.oxidationPotential = new OO.ui.RedoxMultiSelectWidget();
+                this.oxidationPotential = new OO.ui.RedoxMultiSelectWidget({dialog: this, name: "oxi"});
                 let flOxidationPotential = new OO.ui.FieldLayout(
                     this.oxidationPotential,
                     {
@@ -134,7 +149,7 @@
                         align: 'top'
                     }
                 );
-                this.reductionPotential = new OO.ui.RedoxMultiSelectWidget();
+                this.reductionPotential = new OO.ui.RedoxMultiSelectWidget({dialog: this, name: "red"});
                 let flReductionPotential = new OO.ui.FieldLayout(
                     this.reductionPotential,
                     {

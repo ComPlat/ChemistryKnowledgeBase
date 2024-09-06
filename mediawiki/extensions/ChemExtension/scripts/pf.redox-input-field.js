@@ -5,7 +5,8 @@
     OO.ui.RedoxMultiSelectWidget = function MwWidgetsRedoxMultiSelectWidget( config ) {
 
         config = config || {};
-
+        this.dialog = config.dialog;
+        this.nameOfTagSelector = config.name;
         // Parent constructor
         OO.ui.RedoxMultiSelectWidget.parent.call( this, $.extend( true,
             {
@@ -57,6 +58,31 @@
     OO.mixinClass( OO.ui.RedoxMultiSelectWidget, OO.ui.mixin.PendingElement );
 
     /* Methods */
+    OO.ui.RedoxMultiSelectWidget.prototype.onItemDragStart = function (draggedItem) {
+        let currentItems = this.items.filter((i) => i != draggedItem );
+        this.dialog.setDraggedItem(draggedItem, this.nameOfTagSelector, currentItems);
+        OO.ui.RedoxMultiSelectWidget.super.prototype.onItemDragStart.call(this, draggedItem);
+    }
+
+    OO.ui.RedoxMultiSelectWidget.prototype.onItemDropOrDragEnd = function (droppedItem) {
+        let draggedItem = this.dialog.getDraggedItem();
+        let item = draggedItem.item;
+        if (this.nameOfTagSelector != draggedItem.nameOfTagSelector) {
+            // DnD between different RedoxMultiSelectWidgets
+            let newItemWidget = this.createTagItemWidget(item.data, item.label);
+            newItemWidget.elementGroup = this;
+            newItemWidget.toggleValid(true);
+            this.addItems([newItemWidget]);
+            this.unsetDragItem();
+
+            OO.ui.RedoxMultiSelectWidget.super.prototype.onItemDropOrDragEnd.call(item.elementGroup, droppedItem);
+            item.elementGroup.clearItems().addItems(draggedItem.currentItems)
+            return false;
+        } else {
+            // Dnd within one RedoxMultiSelectWidget
+            return OO.ui.RedoxMultiSelectWidget.super.prototype.onItemDropOrDragEnd.call(this, droppedItem);
+        }
+    }
 
     OO.ui.RedoxMultiSelectWidget.prototype.addTagFromInput = function () {
         var tagInfo = this.getTagInfoFromInput();
