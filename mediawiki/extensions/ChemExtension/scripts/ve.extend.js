@@ -15,28 +15,39 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             label: 'Open Ketcher'
         });
 
+        function searchInPubChemAndOpenDialog(inchikey) {
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Search in PubChem...' });
+            var windowManager = new OO.ui.WindowManager();
+            $( document.body ).append( windowManager.$element );
+            windowManager.addWindows( [ progressDialog ] );
+            windowManager.openWindow( progressDialog);
+            ajax.getSMILESFromPubChem(inchikey).done((result) => {
+                progressDialog.close();
+                ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                    formula: '',
+                    smiles: result,
+                    inchikey: '',
+                    node: panel.selectedNode
+                });
+            }).fail(() => {
+                progressDialog.close();
+                mw.notify("InchIKey unknown. Will be ignored.", {type: 'error'});
+                ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                    formula: '',
+                    smiles: '',
+                    inchikey: '',
+                    node: panel.selectedNode
+                });
+            });
+        }
+
         button.on('click', function () {
             let formula = panel.input.value;
             let smiles = panel.attributeInputs.smiles.value;
             let inchikey = panel.attributeInputs.inchikey.value;
             if (formula == '' && smiles == '' && inchikey != '') {
-                let ajax = new window.ChemExtension.AjaxEndpoints();
-                ajax.getSMILESFromPubChem(inchikey).done((result) => {
-                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                        formula: formula,
-                        smiles: result,
-                        inchikey: '',
-                        node: panel.selectedNode
-                    });
-                }).catch(() => {
-                    mw.notify("InchIKey unknown. Will be ignored.", {type: 'error'});
-                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                        formula: '',
-                        smiles: '',
-                        inchikey: '',
-                        node: panel.selectedNode
-                    });
-                });
+                searchInPubChemAndOpenDialog(inchikey);
             } else {
                 ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
                     formula: formula,
