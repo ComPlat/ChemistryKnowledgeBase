@@ -1,9 +1,11 @@
 <?php
 namespace DIQA\ChemExtension\Endpoints;
 
+use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Pages\InchIGenerator;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
 use DIQA\ChemExtension\PubChem\PubChemService;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -18,6 +20,13 @@ class GetSMILESFromPubChem extends SimpleHandler {
         $inchikey = $params['inchikey'];
 
         try {
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+            $chemFormRepo = new ChemFormRepository($dbr);
+            if (!is_null($chemFormRepo->getChemFormId($inchikey))) {
+                $res = new Response('-molecule already-exists-');
+                $res->setStatus(409);
+                return $res;
+            }
             $service = new PubChemService();
             $data = $service->getPubChem($inchikey);
 

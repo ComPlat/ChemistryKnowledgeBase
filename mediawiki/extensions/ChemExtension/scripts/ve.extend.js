@@ -30,15 +30,20 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     inchikey: '',
                     node: panel.selectedNode
                 });
-            }).fail(() => {
+            }).catch((result) => {
                 progressDialog.close();
-                mw.notify("InchIKey unknown. Will be ignored.", {type: 'error'});
-                ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                    formula: '',
-                    smiles: '',
-                    inchikey: '',
-                    node: panel.selectedNode
-                });
+                if (result.status === 409) {
+                    OO.ui.alert("The molecule with the InchI-Key '"+inchikey+"' already exist. Please add it as molecule-link.");
+                    return;
+                } else {
+                    mw.notify("InchIKey unknown. Will be ignored.", {type: 'error'});
+                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                        formula: '',
+                        smiles: '',
+                        inchikey: '',
+                        node: panel.selectedNode
+                    });
+                }
             });
         }
 
