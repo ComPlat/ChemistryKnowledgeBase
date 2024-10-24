@@ -1,8 +1,17 @@
 == What can be imported? ==
-TODO: describe feature
+Investigations are basically tables of data describing experiments. The columns represent the properties of the experiments, each row is a new experiment. That means they can be represented as Excel sheets.
+
+Each type of investigation needs a particular set of properties. The Excel templates of these properties for the different types are listed below. Important to note is the handling of molecules. They are represented by their InchI-Key as well as by (one of) their MOLFILE-representation. The latter is necessary to display the molecule. That means that the columns for molecules appear always as 2 columns in the excel file. First the column for the InchI-Key followed by the column of the MOLFILE. The latter has the suffix "_data". For example: The property "Catalyst" of the investigation would appear in the excel sheet with the column "Catalyst" and "Catalyst_data"
+
+;Example:
+{{#experimentlink:%5B%5BTurnover%20number%20CH4%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CH4 < 100}}
 
 == How it can be imported ==
-TODO: describe workflow
+To add a new Investigation, go to the edit mode and select "Investigation" from the "Insert"-menu. You should see this:
+
+[[Image:Investigation_dialog.png]]
+
+You have to select the type of the experiment and the name. At the bottom you can select an Excel file containing the investigation. If you dont select a file, an empty investigation is created. If you click "Insert" with a selected file, it is uploaded to the system and the import process starts in background. This can take several minutes depending on the size of the investigation. Once the import process is finished the page is automatically updated to show the results. Don't forget to save the page afterwards.
 
 == Templates for download==
 *[[Media:Photocatalytic CO2 conversion Template.xlsx|"Photocatalytic CO2 conversion"-Template]]

@@ -1,0 +1,66 @@
+This page will guide you in adding a new publication, set of experiments or dataset to the wiki.
+
+== Guidelines to style pages in this wiki ==
+
+'''Auto generated pages according to templates (no edits possible):'''
+
+-	literature page (generated from DOI),<br>
+-	investigation (generated from investigation template input on publication page),<br>
+-	molecule page (only add abbreviation)
+
+=== Publication pages ===
+How to generate a new publication page: Authoring → Create a new Paper: enter title (default publication title, check formatting in the wiki), DOI, topic(s) it belongs to → Create paper<br>
+This leads to the new publication page with auto-generated infobox (About) from the DOI-generated literature page
+
+Page titles cannot contain brackets [] or slashes /, or hashtags #. For a full list, see:
+https://www.mediawiki.org/wiki/Manual:Page_title
+
+'''Publication pages (and topic pages) are the only ones that can be freely edited! Any changes to molecules or investigations must be made on the publication page. Only exception is adding an abbreviation to a molecule, this happens on the molecule page.'''
+
+Publication pages show the legally available data from published papers. These are:
+
+I)	The investigations: Tables with data<br>
+II)	Molecules used in the publication
+
+Currently, the pages are structured by the headlines:
+
+1)	Catalyst<br>
+2)	Photosensitizer<br>
+3)	Investigation<br>
+4)	Sacrificial electron donor<br>
+5)	Additives (optional)<br>
+
+Each headline is formatted as sub-heading 2
+The investigations are named: currently Table 1, Table 2
+
+The appropriate molecules for 1), 2), 4), 5) are drawn under their respective title. Solvents or gas atmosphere don’t need to be drawn, as do small (inorganic) additives.
+
+=== Molecule Drawings ===
+To draw molecules in Ketcher 2:<br>
+Bonds between ligands and metal are '''hydrogen bonds''' by default, unless this adds surplus hydrogens to the structure and those hydrogens cannot be removed by an appropriate charge. In this case, use an '''any bond'''.
+
+Remember to add charges on the molecule, especially on metal centers in complexes with counter ions.<br>
+Position ligands with aromatic rings correctly around the center metal atom. Try to avoid using the clean-up function, as this distorts the aromatic rings.
+
+Molecule collections with R-groups: Add R-groups when multiple rests are mentioned in literature. Use different (R1, R2, R3…) groups for different positions on the molecule, unless two positions are always substituted with the same rest. Specify the R-groups in the Ketcher “Define R-groups” menu.<br>
+R-groups can also be used for counter ions: add an unconnected R-group on the top right of the molecule drawing and specify one or multiple counter ions in the “Define R-groups” menu.<br>
+Small organic molecule ligands: draw individually instead of abbreviation<br>
+CO: triple bond, negative charge on C, positive charge on O
+(example: https://pubchem.ncbi.nlm.nih.gov/compound/139130150)
+
+'''Drawing molecules correctly is important to generate the right identifiers (InChIKey) and find molecule information in PubChem!'''
+
+=== Investigations ===
+
+Columns with free text but guidelines:
+
+Additives: free text; gases according to list (…)<br>
+Solvent ratio: e. g. 4:1<br>
+Irradiation wavelength: number, “dark” (or empty), description of source<br>
+Columns with numbers: Leave empty when number is not given or zero
+
+=== Comment banner ===
+
+Several comment banners can be found under “Templates”
+[[Test MissingTemplates|MissingTemplates]]
+[[Test MissingItems|MissingItems]]
