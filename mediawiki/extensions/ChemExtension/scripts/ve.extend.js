@@ -16,12 +16,27 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         });
 
         button.on('click', function () {
-            ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
-                formula: panel.input.value,
-                smiles: panel.attributeInputs.smiles.value,
-                inchikey: panel.attributeInputs.inchikey.value,
-                node: panel.selectedNode
-            });
+            let formula = panel.input.value;
+            let smiles = panel.attributeInputs.smiles.value;
+            let inchikey = panel.attributeInputs.inchikey.value;
+            if (formula == '' && smiles == '' && inchikey != '') {
+                let ajax = new window.ChemExtension.AjaxEndpoints();
+                ajax.getSMILESFromPubChem(inchikey).done((result) => {
+                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                        formula: formula,
+                        smiles: result,
+                        inchikey: '',
+                        node: panel.selectedNode
+                    });
+                });
+            } else {
+                ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                    formula: formula,
+                    smiles: smiles,
+                    inchikey: inchikey,
+                    node: panel.selectedNode
+                });
+            }
         });
 
         panel.$attributes.append(button.$element);

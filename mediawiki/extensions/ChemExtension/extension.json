@@ -164,6 +164,10 @@
             "path": "/ChemExtension/v1/import-investigation",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\ImportInvestigation"
+        },{
+            "path": "/ChemExtension/v1/pub-chem",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\GetSMILESFromPubChem"
         }
 
     ],

@@ -32,6 +32,10 @@ class PubChemRecordResult extends PubChemAbstractResult {
         return '';
     }
 
+    public function getSMILES() {
+        return $this->getURNProp('Canonical', 'SMILES');
+    }
+
     public function getIUPACName() {
         return $this->getURNProp('Systematic', 'IUPAC Name');
     }

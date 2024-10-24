@@ -23,6 +23,15 @@
         });
     }
 
+    window.ChemExtension.AjaxEndpoints.prototype.getSMILESFromPubChem  = function (inchikey) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/pub-chem?inchikey=" + encodeURIComponent(inchikey);
+        return $.ajax({
+            method: "GET",
+            url: url
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.exportExperiment = function (data) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/export-investigation";

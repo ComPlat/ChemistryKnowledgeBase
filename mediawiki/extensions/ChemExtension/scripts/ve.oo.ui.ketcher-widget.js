@@ -35,9 +35,6 @@
         let scriptPath = mw.config.get('wgScriptPath');
         let path = scriptPath + "/extensions/ChemExtension/ketcher";
 
-        if (data.formula == '' && data.smiles == '' && data.inchikey != '') {
-            //TODO: read smiles from pubchem
-        }
         this.$element.attr("formula", data.formula);
         this.$element.attr("smiles", data.smiles);
         this.$element.attr("src", path + "/index-editor.html?random="+Math.random());
