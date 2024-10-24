@@ -28,6 +28,14 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         inchikey: '',
                         node: panel.selectedNode
                     });
+                }).catch(() => {
+                    mw.notify("InchIKey unknown. Will be ignored.", {type: 'error'});
+                    ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
+                        formula: '',
+                        smiles: '',
+                        inchikey: '',
+                        node: panel.selectedNode
+                    });
                 });
             } else {
                 ve.init.target.getSurface().execute('window', 'open', 'edit-with-ketcher', {
