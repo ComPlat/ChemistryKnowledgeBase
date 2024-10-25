@@ -37,8 +37,8 @@
     }
 
     function initializeDOIInfoBoxToggle() {
-        $('.infobox th').off('click');
-        $('.infobox th').click((e, action) => {
+        $('.doiinfobox th').off('click');
+        $('.doiinfobox th').click((e, action) => {
             let table = $(e.target).closest('table').next();
             let rows = $('tr', table);
             if (rows.eq(0).is(':visible') || action === 'close') {
@@ -57,6 +57,15 @@
                 });
                 rows.show();
             }
+        });
+    }
+
+    function initializeMoleculeInfoBoxToggle() {
+        $('.molecule-infobox th').off('click');
+        $('.molecule-infobox th').click((e) => {
+            let table = $(e.target).closest('table');
+            let rows = $('tr:not(:first)', table);
+            rows.toggle();
         });
     }
 
@@ -106,6 +115,7 @@
         initializeExpandNavigationButton();
         initializeRGroups();
         initializeAnnotationTooltips();
+        initializeMoleculeInfoBoxToggle();
     });
 
     mw.hook( 've.activationComplete' ).add(function() {

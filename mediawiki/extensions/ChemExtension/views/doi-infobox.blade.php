@@ -1,5 +1,5 @@
 <div>
-    <table class="infobox wikitable" style="font-size:90%; margin-top:0; margin-bottom:0;width:410px; max-width:500px;">
+    <table class="infobox doiinfobox wikitable" style="font-size:90%; margin-top:0; margin-bottom:0;width:410px; max-width:500px;">
         <tr>
             @if($doi !== '')
             <th colspan="2" style="font-size:120%; text-align:center; cursor: pointer;">About</th>

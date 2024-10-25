@@ -1,7 +1,7 @@
 <noinclude>Template for Molecule</noinclude>
 ‎<includeonly>
 
-{| class="float-right infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;"
+{| class="float-right infobox molecule-infobox wikitable" style="font-size:90%; margin-top:0; width:410px; max-width:500px;"
 |-
 !colspan="2" style="font-size:120%; text-align:center; " | Properties
 |-
