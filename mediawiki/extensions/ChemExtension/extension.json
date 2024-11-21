@@ -24,7 +24,8 @@
         "ModifyMolecule": "DIQA\\ChemExtension\\Specials\\ModifyMolecule",
         "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage",
         "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog",
-        "ShowPublications": "DIQA\\ChemExtension\\Specials\\ShowPublications"
+        "ShowPublications": "DIQA\\ChemExtension\\Specials\\ShowPublications",
+        "ImportMolecule": "DIQA\\ChemExtension\\Specials\\ImportMolecule"
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",
