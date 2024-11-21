@@ -164,7 +164,7 @@
             items.push(this.orderField);
 
         } else {
-            let validNamePattern = /^[\w\s_-]+$/;
+            let validNamePattern = /^[\w\s_\-+,.()$&:;]+$/;
             let experimentNameValue = data.template ? data.template.params.name.wt : '';
             this.experimentName = new OO.ui.TextInputWidget({value: experimentNameValue, required: true, validate: validNamePattern});
             this.experimentNameField = new OO.ui.FieldLayout(
