@@ -36,6 +36,17 @@
         });
     }
 
+    function initializeCopyMolfile() {
+        $('.ce-copy-molOrRxn').off('click');
+        $('.ce-copy-molOrRxn').click((e) => {
+
+            let molfile = atob($('.chemform').attr('resource'));
+            navigator.clipboard.writeText(molfile).then(() => {
+                mw.notify("MOL-File copied to clipboard");
+            });
+        });
+    }
+
     function initializeDOIInfoBoxToggle() {
         $('.doiinfobox th').off('click');
         $('.doiinfobox th').click((e, action) => {
@@ -111,6 +122,7 @@
     $(function() {
         initializeMolecules();
         initializeToggleBoxes();
+        initializeCopyMolfile();
         initializeDOIInfoBoxToggle();
         initializeExpandNavigationButton();
         initializeRGroups();

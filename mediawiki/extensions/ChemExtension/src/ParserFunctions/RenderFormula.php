@@ -83,6 +83,7 @@ class RenderFormula
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png",
                 'imageAlreadyRendered' => $attributes['imageAlreadyRendered'],
                 'name' => $namesOfMolecule,
+                'molOrRxn' => $attributes['formula']
             ]
         )->render();
     }

@@ -145,9 +145,10 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
     margin-top: 10px;
 }
 
-.toggle-box {
+.toggle-box, .ce-copy-molOrRxn {
     cursor: pointer;
     text-decoration: underline;
+    margin-bottom: 5px;
 }
 
 .check-service-state {

@@ -37,7 +37,8 @@
 {{#arraymap:{{#extractElements:|formula={{{smiles|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
 
 <div>
-<span class="toggle-box" resource="chemdata">Click here to show SMILES and InChI.</span>
+<div><span class="ce-copy-molOrRxn">Click here to copy MOL-file.</span></div>
+<div><span class="toggle-box" resource="chemdata">Click here to show SMILES and InChI.</span></div>
 {| id="chemdata" class="infobox wikitable" style="display:none;"
 |-
 | InChI || {{#if: {{{inchi|}}} | {{#set: InChI={{{inchi}}} }} {{{inchi}}}|}}
