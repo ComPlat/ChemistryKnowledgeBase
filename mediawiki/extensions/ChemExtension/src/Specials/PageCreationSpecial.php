@@ -2,14 +2,15 @@
 
 namespace DIQA\ChemExtension\Specials;
 
-use DIQA\ChemExtension\Literature\DOIRenderer;
-use DIQA\ChemExtension\Utils\ArrayTools;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
+use Exception;
+use MediaWiki\MediaWikiServices;
 use OOUI\Tag;
 use Philo\Blade\Blade;
+use RequestContext;
 use SpecialPage;
 use Title;
-use Exception;
 
 class PageCreationSpecial extends SpecialPage
 {
@@ -41,6 +42,10 @@ class PageCreationSpecial extends SpecialPage
             if ($pageTitle->exists()) {
                 throw new Exception("Page creation failed because page already exists");
             }
+            $existingPageTitle = $this->doiExists($doiData->DOI ?? '');
+            if(!is_null($existingPageTitle)) {
+                throw new Exception("The specified DOI is already used on a publication: [[{$existingPageTitle}]]");
+            }
 
             global $wgScriptPath;
             $superTopicsAsWikiText = '';
@@ -69,6 +74,19 @@ class PageCreationSpecial extends SpecialPage
 
     }
 
+    private function doiExists($doi) {
+        $results = QueryUtils::executeBasicQuery("[[DOI::$doi]]");
+        $exists = $results->getCount() > 0;
+        $pageTitle = null;
+        if ($exists) {
+            $row = $results->getNext();
+            $column = reset($row);
+            $dataItem = $column->getNextDataItem();
+            $pageTitle = $dataItem->getTitle()->getPrefixedText();
+        }
+        return $pageTitle;
+    }
+
     protected function getPresetDataForTitleInput($paramValue) {
         if ($paramValue == '') {
             return [];
@@ -77,7 +95,9 @@ class PageCreationSpecial extends SpecialPage
     }
 
     protected function showErrorHint($message) {
-        return $this->blade->view()->make("error", ['message' => $message])->render();
+        $parser = clone MediaWikiServices::getInstance()->getParser();
+        $parserOutput = $parser->parse($message, RequestContext::getMain()->getTitle(), new \ParserOptions(RequestContext::getMain()->getUser()));
+        return $this->blade->view()->make("error", ['message' => $parserOutput->getText()])->render();
     }
 
 }

@@ -1,1 +1,1 @@
-<span errorCode="{{$code}}" resource="{{json_encode($data)}}" class="error">{{$message}}</span>
+<span errorCode="{{$code}}" resource="{{json_encode($data)}}" class="error">{!! $message !!}</span>
