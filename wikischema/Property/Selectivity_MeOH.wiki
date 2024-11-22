@@ -6,3 +6,6 @@
 
 ; Values
 * A percentage value between 0 - 100.
+
+; Unit
+* [[Unit::%]]

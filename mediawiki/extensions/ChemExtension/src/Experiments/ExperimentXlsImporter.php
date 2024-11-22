@@ -44,7 +44,9 @@ class ExperimentXlsImporter
 
         for($i = $column; $i < $column + $maxColumn; $i++) {
             $property = $this->workSheet->getCell([$i, $startRow])->getValue();
-            if (trim($property) !== '') {
+            $property = trim($property);
+            if ($property !== '') {
+                $property = $this->normalizeHeaderToProperty($property);
                 $properties[] = $property;
             }
         }
@@ -165,5 +167,11 @@ class ExperimentXlsImporter
         return "Molecule:$chemFormId";
     }
 
-
+    private function normalizeHeaderToProperty($property) {
+        if (GeneralTools::endsWith($property, '_inchikey')) {
+            $property = str_replace("_inchikey", "", $property);
+        }
+        $property = preg_replace('/\[[^]]*\]/', "", $property);
+        return trim($property);
+    }
 }

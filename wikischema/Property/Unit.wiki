@@ -1,0 +1,6 @@
+; Purpose
+* [[Property description::To be used with a property. Contains the unit used for this property. e.g. TON/min @en]]
+
+; Datatype
+* [[Has type::Text]].
+

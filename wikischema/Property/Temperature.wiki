@@ -10,5 +10,7 @@
 ; Label
 * [[Has preferred property label::T [°C]@en]]
 
+; Unit
+* [[Unit::°C]]
 
 [[Imported from::ncit:NCIT_C25206]]

@@ -48,7 +48,14 @@ class ExperimentXlsExporter
                 'type' => $printRequest->getTypeID(),
                 'templateParam' => $templateParam,
             ];
-            $this->workSheet->setCellValue([$column, 1], $p);
+            if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
+                $this->workSheet->setCellValue([$column, 1], $p."_inchikey");
+            } else {
+                $unit = $this->getUnitForProperty($p);
+                $cellValue = $unit === '' ? $p : "$p $unit";
+                $this->workSheet->setCellValue([$column, 1], $cellValue);
+
+            }
             $this->setBackgroundColor($column, 'ffff00');
 
             if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
@@ -121,5 +128,10 @@ class ExperimentXlsExporter
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()
             ->setARGB($color);
+    }
+
+    private function getUnitForProperty($property) {
+        $value = QueryUtils::getPropertyValue(Title::newFromText($property, SMW_NS_PROPERTY), "Unit");
+        return is_null($value) ? "" : "[$value]";
     }
 }
