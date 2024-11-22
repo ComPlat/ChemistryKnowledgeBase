@@ -53,10 +53,10 @@ class ExperimentXlsImporter
 
         $headerData = [];
         foreach($properties as $p) {
-            if (GeneralTools::endsWith($p, '_data')) {
+            if (GeneralTools::endsWith($p, ExperimentXlsExporter::MOLFILE_SUFFIX)) {
                 continue;
             }
-            if (in_array($p.'_data', $properties)) {
+            if (in_array($p.ExperimentXlsExporter::MOLFILE_SUFFIX, $properties)) {
                 $headerData[] = [
                     'type' => 'data-property',
                     'name' => $p,

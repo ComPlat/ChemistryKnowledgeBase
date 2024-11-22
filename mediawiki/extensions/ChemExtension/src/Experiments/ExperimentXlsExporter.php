@@ -9,13 +9,12 @@ use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Conditional;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ExperimentXlsExporter
 {
 
+    public const MOLFILE_SUFFIX = "_molfile";
     private $parameters;
     private $selectExperimentQuery;
     private $workSheet;
@@ -60,7 +59,7 @@ class ExperimentXlsExporter
 
             if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
                 $column++;
-                $this->workSheet->setCellValue([$column, 1], $p."_data");
+                $this->workSheet->setCellValue([$column, 1], $p. self::MOLFILE_SUFFIX);
                 $this->setBackgroundColor($column, 'ffff00');
             }
             $column++;
