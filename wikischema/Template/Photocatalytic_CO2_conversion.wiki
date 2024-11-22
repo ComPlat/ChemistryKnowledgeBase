@@ -69,7 +69,7 @@ This is the Photocatalytic CO2 conversion template.
  |Turnover number H2={{{TON H2|}}}
  |Turnover number HCOOH={{{TON HCOOH|}}}
  |Turnover number MeOH={{{TON MeOH|}}}
- |Turnover frequency C0={{{TOF CO|}}}
+ |Turnover frequency CO={{{TOF CO|}}}
  |Turnover frequency CH4={{{TOF CH4|}}}
  |Turnover frequency H2={{{TOF H2|}}}
  |Turnover frequency HCOOH={{{TOF HCOOH|}}}
