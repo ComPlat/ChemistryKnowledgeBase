@@ -1,0 +1,17 @@
+<noinclude>
+This is the 'Molecule search' form. The form is used via the [[Special:RunQuery/Molecule_search|special 'run query']] page.
+
+</noinclude>
+
+<includeonly>
+{{{info|query form at top}}}
+{{{for template|Molecule search}}}
+Enter values below; this search is case-sensitive.
+
+{| class="formtable"
+! Molecule contains element:
+| {{{field|element|input type=tokens|existing values only|property=ContainsElement}}}
+|}
+{{{end template}}}
+
+</includeonly>

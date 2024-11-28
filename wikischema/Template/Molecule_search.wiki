@@ -1,0 +1,25 @@
+<noinclude>This is the 'Molecule_search' template. It should be called via the [[Form:Molecule search]] form.
+</noinclude><includeonly>
+Molecules that contain "{{{element|}}}":
+
+{{#ask: [[Category:Molecule]] [[InChIKey::+]]
+{{#arraymap:{{{element|}}}|,|x|[[ContainsElement::x]]}}
+ |?InChIKey
+ |?Abbreviation
+ |?Trivialname
+ |?CAS
+ |?IUPACName
+ |?MolecularFormula
+ |?Tag
+ |format=plainlist
+ |limit=100
+ |offset=0
+ |sort=
+ |order=asc
+ |mainlabel=
+ |searchlabel=... further results
+ |template=MoleculeListRow
+ |introtemplate=MoleculeListIntro
+ |outrotemplate=MoleculeListOutro
+}}
+</includeonly>
