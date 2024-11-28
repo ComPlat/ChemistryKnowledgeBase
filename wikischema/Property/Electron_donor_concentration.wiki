@@ -11,4 +11,4 @@
 * Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
 
 ; Unit
-* [[Unit::-to be set-]]
+* [[Unit::M]]

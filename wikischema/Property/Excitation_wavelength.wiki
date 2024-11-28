@@ -8,4 +8,4 @@
 * Input fields should be restricted to positive numbers, and can contain a leading greater/smaller than sign (<nowiki>regexp=/^[<>]?[0-9]+$/</nowiki>).
 
 ; Unit
-* [[Unit::-to be set-]]
+* [[Unit::nm]]

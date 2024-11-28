@@ -14,5 +14,5 @@ To add a new Investigation, go to the edit mode and select "Investigation" from 
 You have to select the type of the experiment and the name. At the bottom you can select an Excel file containing the investigation. If you dont select a file, an empty investigation is created. If you click "Insert" with a selected file, it is uploaded to the system and the import process starts in background. This can take several minutes depending on the size of the investigation. Once the import process is finished the page is automatically updated to show the results. Don't forget to save the page afterwards.
 
 == Templates for download==
-*[[Media:Photocatalytic CO2 conversion Template.xlsx|"Photocatalytic CO2 conversion"-Template]]
+*[[Media:Photocatalytic CO2 conversion Template_New.xlsx|"Photocatalytic CO2 conversion"-Template]]
 *[[Media:Cyclic_Voltammetry_Template.xlsx|"Cyclic Voltammetry"-Template]]
