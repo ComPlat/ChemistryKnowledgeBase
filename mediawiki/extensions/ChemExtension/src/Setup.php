@@ -2,6 +2,7 @@
 namespace DIQA\ChemExtension;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
+use DIQA\ChemExtension\Experiments\MoleculeRoleDetector;
 use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
@@ -174,6 +175,7 @@ class Setup {
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
+        MoleculeRoleDetector::renderMatrix($out);
         InvestigationFinder::renderInvestigationList($out);
         TagListRenderer::renderTagList($out);
 

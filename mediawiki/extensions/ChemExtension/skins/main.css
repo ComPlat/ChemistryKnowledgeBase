@@ -608,3 +608,22 @@ div.ce-redox-input-buttons {
     position: absolute;
     bottom: 15px;
 }
+
+table.ce-molecule-matrix td:not(:first-child), table.ce-molecule-matrix th:not(:first-child) {
+    text-align: center;
+    width: 150px;
+}
+table.ce-molecule-matrix td:first-child {
+    width: 400px;
+}
+
+div.ce-inv-record-content {
+    font-size: medium;
+    overflow-y: auto;
+    height: 480px;
+}
+
+li.ce-inv-record-item {
+    margin-top: 5px;
+    line-height: normal;
+}

@@ -47,7 +47,7 @@ class RenderFormula
         $attributes['imageAlreadyRendered'] = $imageAlreadyRendered;
 
         $hasRGroups = count(MolfileProcessor::getRGroupIds($formula)) > 0;
-        $attributes['showrgroups'] = $hasRGroups && !self::isMoleculeOrReaction($wgTitle);
+        $attributes['showrgroups'] = $hasRGroups && !WikiTools::isMoleculeOrReaction($wgTitle);
 
         $attributes['chemFormPage'] = MoleculePageCreationJob::getPageTitleToCreate($chemFormId, $formula);
         $attributes['moleculeKey'] = $moleculeKey;
@@ -106,22 +106,10 @@ class RenderFormula
         )->render();
     }
 
-    /**
-     * @param \Title $wgTitle
-     * @return bool
-     */
-    private static function isMoleculeOrReaction(?Title $wgTitle): bool
-    {
-        return !is_null($wgTitle) && (
-                $wgTitle->getNamespace() === NS_MOLECULE
-                || $wgTitle->getNamespace() === NS_REACTION
-            );
-    }
-
     public static function outputMoleculeReferences(OutputPage $out): void
     {
         global $wgTitle;
-        if (!self::isMoleculeOrReaction($wgTitle)) {
+        if (!WikiTools::isMoleculeOrReaction($wgTitle)) {
             return;
         }
 

@@ -1,0 +1,36 @@
+<h2>Molecule roles</h2>
+<table class="ce-molecule-matrix">
+    <thead>
+    <tr>
+        <th>Investigation type</th>
+    @foreach($distinctRoles as $column)
+        <th>{{$column}}</th>
+    @endforeach
+    </tr>
+    </thead>
+    <tbody>
+@foreach($matrix as $type => $row)
+    <tr>
+        <td><a href="{{Title::newFromText($type, NS_CATEGORY)->getFullURL()}}">{{Title::newFromText($type, NS_CATEGORY)->getText()}}</a></td>
+        @foreach($distinctRoles as $column)
+            @if(isset($row[$column]))
+                <td>
+                    <img class="ce-inv-record" title="click to see investigation records" src="{{$wgScriptPath."/extensions/ChemExtension/skins/images/check.png"}}"/>
+                    <div class="ce-inv-record-content" style="display: none">
+                        <ul>
+                    @foreach($row[$column] as $title)
+                        <li class="ce-inv-record-item"><a target="_blank" href="{{$title->getFullURL()}}">{{$title->getSubpageText()}}</a></li>
+
+                    @endforeach
+                        </ul>
+                    </div>
+                </td>
+            @else
+                <td><img src="{{$wgScriptPath."/extensions/ChemExtension/skins/images/cross.png"}}"/></td>
+            @endif
+
+        @endforeach
+    </tr>
+@endforeach
+    </tbody>
+</table>

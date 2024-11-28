@@ -85,6 +85,14 @@ class WikiTools {
         }
     }
 
+    public static function isMoleculeOrReaction(?Title $wgTitle): bool
+    {
+        return !is_null($wgTitle) && (
+                $wgTitle->getNamespace() === NS_MOLECULE
+                || $wgTitle->getNamespace() === NS_REACTION
+            );
+    }
+
     public static function getText($title) {
 
         if( ! $title instanceof Title ) {

@@ -28,6 +28,25 @@
         });
     }
 
+    function initializeMoleculeRoleTooltips() {
+        $("img.ce-inv-record").each(function() {
+            $(this).qtip({
+                content: $(this).next('.ce-inv-record-content'),
+                style: {classes: 'chemformula-tooltip'},
+
+                position: {
+                    viewport: $(window)
+                },
+                api: {
+                    beforeHide: function () {
+                        return false;
+                    }
+                },
+                hide: {fixed: true}
+            });
+        });
+    }
+
     function initializeToggleBoxes() {
         $('.toggle-box').off('click');
         $('.toggle-box').click((e) => {
@@ -128,6 +147,7 @@
         initializeRGroups();
         initializeAnnotationTooltips();
         initializeMoleculeInfoBoxToggle();
+        initializeMoleculeRoleTooltips();
     });
 
     mw.hook( 've.activationComplete' ).add(function() {
