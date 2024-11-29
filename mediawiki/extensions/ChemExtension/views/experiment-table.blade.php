@@ -1,3 +1,4 @@
+<div>{{$description}}</div>
 @if($htmlTableEditor->getNumberOfRows() == 1)
     <div>No experiment found</div>
 @else

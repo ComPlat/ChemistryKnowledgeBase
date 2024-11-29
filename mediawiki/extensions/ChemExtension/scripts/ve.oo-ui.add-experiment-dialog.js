@@ -20,9 +20,32 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.ChooseExperimentDialog.prototype.getActionProcess = function (action) {
         if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(() => {
+                if (this.chooseExperimentsWidget.isEditMode()) {
+                    let description = this.chooseExperimentsWidget.getDescription();
+                    let experimentType = this.chooseExperimentsWidget.getSelectedExperiment();
+                    let node = ve.init.target.getSurface().getModel().getSelectedNode();
+                    let params = node.element.attributes.mw.parts[0].template.params;
+                    params.description = params.description || {};
+                    params.description.wt = description;
+                    let tools = new OO.VisualEditorTools();
+                    tools.refreshVENode((node) => {
+                        if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
+                            let params = node.model.element.attributes.mw.parts[0].template.params;
+                            return (params.form && params.form.wt == experimentType);
+                        }
+                        return false;
+                    });
+
+                    ve.init.target.fromEditedState = true;
+                    ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
+
+                    ve.ui.MWMediaDialog.super.prototype.close.call(this);
+                    return;
+                }
                 let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
                 let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
                 let importFile = this.chooseExperimentsWidget.getImportFile();
+                let description = this.chooseExperimentsWidget.getDescription();
                 if (importFile.length > 0) {
                     var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Uploading...' });
                     var windowManager = new OO.ui.WindowManager();
@@ -35,7 +58,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         let ajax = new window.ChemExtension.AjaxEndpoints();
                         ajax.uploadFile(importFile[0].name, read.result).done(() => {
                             progressDialog.close();
-                            this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name);
+                            this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name, description);
                             ajax.importExperiment({
                                 'publicationPage': mw.config.get('wgPageName'),
                                 'filename': importFile[0].name,
@@ -51,7 +74,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                         });
                     }
                 } else {
-                    this.insertExperiment(selectedExperiment, selectedExperimentName, '');
+                    this.insertExperiment(selectedExperiment, selectedExperimentName, '', description);
                 }
 
             }, this);
@@ -59,7 +82,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         return ve.ui.MWMediaDialog.super.prototype.getActionProcess.call(this, action);
     }
 
-    ve.ui.ChooseExperimentDialog.prototype.insertExperiment = function(selectedExperiment, selectedExperimentName, importFileName) {
+    ve.ui.ChooseExperimentDialog.prototype.insertExperiment = function(selectedExperiment, selectedExperimentName, importFileName, description) {
         let toInsert = [ [
             {
                 type: 'mwTransclusionInline',
@@ -72,14 +95,15 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                     params: {
                                         form: { wt: selectedExperiment },
                                         name: { wt: selectedExperimentName },
-                                        importFile: { wt: importFileName }
+                                        importFile: { wt: importFileName },
+                                        description: { wt: description }
                                     },
                                     target: { wt: "#experimentlist:", "function": "experimentlist"}
                                 }
                             }
                         ]
                     },
-                    originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlist:","function":"experimentlist"},"params":{"form":{"wt":""}, "name":{"wt":""}, "importFile":{"wt":""}},"i":0}}]}"'
+                    originalMw: '"{"parts":[{"template":{"target":{"wt":"#experimentlist:","function":"experimentlist"},"params":{"form":{"wt":""}, "name":{"wt":""}, "importFile":{"wt":""}, "description":{"wt":""}},"i":0}}]}"'
                 }
             }
 
@@ -110,7 +134,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     };
 
     ve.ui.ChooseExperimentDialog.prototype.getBodyHeight = function () {
-        return 430;
+        return 530;
     };
 
     /* Static Properties */

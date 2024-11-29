@@ -101,6 +101,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'htmlTableEditor' => $htmlTableEditor,
             'experimentName' => $experimentName,
             'experimentPageTitle' => $experimentPageTitle,
+            'description' => $this->context['description'],
             'inVisualEditor' => WikiTools::isInVisualEditor(),
             'wgScriptPath' => $wgScriptPath,
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),

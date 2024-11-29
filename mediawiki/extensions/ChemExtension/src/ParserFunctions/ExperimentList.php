@@ -40,6 +40,7 @@ class ExperimentList
                 'page' => $title,
                 'form' => $parameters['form'],
                 'name' => $parameters['name'],
+                'description' => $parameters['description'],
                 'index' => null
             ]);
             $html = $renderer->render();

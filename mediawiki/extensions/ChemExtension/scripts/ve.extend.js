@@ -107,7 +107,10 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
     ve.ui.LinearContextItemExtension.extendForExperimentList = function(panel, context, model) {
         let addButton = new OO.ui.ButtonWidget({
-            label: 'Add/edit experiment'
+            label: 'Add/edit experiments'
+        });
+        let editButton = new OO.ui.ButtonWidget({
+            label: 'Edit description'
         });
 
         let refreshButton = new OO.ui.ButtonWidget({
@@ -139,7 +142,18 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             ve.init.target.getActions().getToolGroupByName('save').items[0].onUpdateState();
         });
 
+        editButton.on('click', function () {
+            let template = ve.ui.LinearContextItemExtension.getTemplate(model);
+            ve.init.target.getSurface().execute('window', 'open', 'choose-experiments', {
+                template: template,
+                node: model,
+                editMode: true
+            });
+
+        });
+
         panel.$actions.append(addButton.$element);
+        panel.$actions.append(editButton.$element);
         panel.$actions.append(refreshButton.$element);
         panel.editButton.$element.remove();
     }

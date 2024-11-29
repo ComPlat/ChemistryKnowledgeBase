@@ -31,7 +31,7 @@
     OO.ui.ChooseExperimentsWidget.prototype.setData = function (data) {
         this.$element.empty();
         this.$element.addClass("experiment-dialog")
-
+        this.editMode = data.editMode;
         let experiments = mw.config.get('experiments');
         this.allExperiments = [];
         for (let e in experiments) {
@@ -181,6 +181,20 @@
                 this.setActionsDisabled(['edit', 'insert'], item == '' || !item.match(validNamePattern));
             });
 
+            let descriptionValue = '';
+            if (data.template) {
+                descriptionValue = data.template.params.description ? data.template.params.description.wt : '';
+            }
+            this.descriptionValue = new OO.ui.MultilineTextInputWidget({value: descriptionValue});
+
+            this.descriptionValueField = new OO.ui.FieldLayout(
+                this.descriptionValue,
+                {
+                    label: new OO.ui.HtmlSnippet( 'Description' ),
+                    align: 'inline'
+                }
+            );
+
             let scriptPath = mw.config.get('wgScriptPath');
             this.importFile = new OO.ui.SelectFileInputWidget();
             this.importFileField = new OO.ui.FieldLayout(
@@ -193,6 +207,17 @@
                 }
             );
 
+            if (data.editMode) {
+                this.chooseTypeDropDown.setDisabled(true);
+                this.chooseExperimentDropDown.setDisabled(true);
+                this.experimentName.setReadOnly(true);
+                this.importFile.setDisabled(true);
+                this.descriptionValue.on('change', (item) => {
+                    this.setActionsDisabled(['edit', 'insert'], item == '');
+                });
+            }
+
+            items.push(this.descriptionValueField);
             items.push(this.experimentNameField);
             items.push(this.importFileField);
 
@@ -257,6 +282,10 @@
 
     OO.ui.ChooseExperimentsWidget.prototype.getImportFile = function () {
         return this.importFile.currentFiles;
+    }
+
+    OO.ui.ChooseExperimentsWidget.prototype.isEditMode = function () {
+        return this.editMode;
     }
 
 }(OO));
