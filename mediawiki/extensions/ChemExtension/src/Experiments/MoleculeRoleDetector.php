@@ -32,6 +32,7 @@ QUERY;
                 }
                 $count = $results->getCount();
                 if ($count > 0) {
+                    usort($searchResults, fn($e1, $e2) => strcmp($e1->getSubpageText(), $e2->getSubpageText()));
                     $matrix[$type][$role] = array_unique($searchResults);
                 }
             }
