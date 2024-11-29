@@ -34,7 +34,7 @@
 |smiles={{{smiles|}}}
 |inchikey={{{inchikey|}}}
 }}
-{{#arraymap:{{#extractElements:|formula={{{smiles|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
+{{#arraymap:{{#extractElements:|formula={{{molecularFormula|}}} }}|,|x|[[ContainsElement::x| ]]|\s}}
 
 <div>
 <div><span class="ce-copy-molOrRxn">Click here to copy MOL-file.</span></div>
