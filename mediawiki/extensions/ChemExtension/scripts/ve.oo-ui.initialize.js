@@ -16,6 +16,7 @@
         $('span.ce-annotation').each((i, e) => {
             let annotationEl = $(e);
             let data = annotationEl.attr('resource');
+            data.split(";").map((e) => e.trim()).filter((e) => e !== '').join('; ');
             let html = data.split(',').map((a) => { return '<li>'+a+'</li>'; });
             annotationEl.qtip({
                 content: "<div class='ce-annotation-tooltip'><ul>"+html+"</ul></div>",

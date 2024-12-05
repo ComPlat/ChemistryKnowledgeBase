@@ -217,6 +217,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         let addButton = new OO.ui.ButtonWidget({
             label: 'Change annotations'
         });
+        let removeButton = new OO.ui.ButtonWidget({
+            label: 'Remove annotation'
+        });
         let dialog;
         addButton.on('click', function () {
             let template = ve.ui.LinearContextItemExtension.getTemplate(model);
@@ -228,8 +231,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             windowManager.openWindow( dialog);
 
         });
+        removeButton.on('click', function () {
+            let surface = ve.init.target.getSurface();
+            let selectedNode = surface.getModel().getSelectedNode();
+            let selectedText = selectedNode.getElement().attributes.mw.parts[0].template.params.display.wt;
+            let view = surface.getView();
+            let range = surface.getModel().getSelection().getRange();
+            let documentModel = surface.getModel().getDocument()
+            let txRemove = ve.dm.TransactionBuilder.static.newFromReplacement(documentModel, range, [selectedText]);
+            range = txRemove.translateRange(range);
+
+            view.model.change(txRemove, new ve.dm.LinearSelection(range));
+        });
 
         panel.$actions.append(addButton.$element);
+        panel.$actions.append(removeButton.$element);
         panel.editButton.$element.remove();
 
         window.addEventListener("mouseup", (event) => {
