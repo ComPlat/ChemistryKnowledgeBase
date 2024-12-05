@@ -22,8 +22,8 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\User\UserIdentity;
 use Title;
-use WikiPage;
 use User;
+use WikiPage;
 
 class MultiContentSave
 {
@@ -40,8 +40,8 @@ class MultiContentSave
             return;
         }
         $wikitext = $revisionRecord->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();#
-
         $pageTitle = $revisionRecord->getPageAsLinkTarget();
+        self::removeSubpagesIfNecessary($wikiPage, $wikitext);
         self::parseContentAndUpdateIndex($wikitext, $pageTitle, true);
     }
 
@@ -251,6 +251,23 @@ class MultiContentSave
             self::addMoleculesFromInvestigation($wikitext, $pageTitle);
         }
         Setup::cleanupChemExtState();
+    }
+
+    private static function removeSubpagesIfNecessary(WikiPage $pageTitle, string $wikitext)
+    {
+        $subPages = $pageTitle->getTitle()->getSubpages();
+        $parser = new ParserFunctionParser();
+        $experiments = $parser->parseFunction('experimentlist', $wikitext);
+        $experimentNames = array_map(fn($e) => str_replace('_', ' ', $e['name'] ?? ''), $experiments);
+        foreach($subPages as $subPage) {
+            if (!in_array($subPage->getSubpageText(), $experimentNames)) {
+                $deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()
+                    ->newDeletePage($subPage->toPageIdentity(), \RequestContext::getMain()->getUser());
+                $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
+                $logger->log('Delete unused investigation: ' . $subPage->getSubpageText());
+                //$deletePage->deleteIfAllowed("unused investigation page");
+            }
+        }
     }
 
 }
