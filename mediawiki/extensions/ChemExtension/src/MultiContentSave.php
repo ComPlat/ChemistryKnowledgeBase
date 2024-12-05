@@ -255,15 +255,16 @@ class MultiContentSave
 
     private static function removeSubpagesIfNecessary(WikiPage $pageTitle, string $wikitext)
     {
+        $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $subPages = $pageTitle->getTitle()->getSubpages();
         $parser = new ParserFunctionParser();
         $experiments = $parser->parseFunction('experimentlist', $wikitext);
         $experimentNames = array_map(fn($e) => str_replace('_', ' ', $e['name'] ?? ''), $experiments);
         foreach($subPages as $subPage) {
+            $logger->log('check unused investigation: ' . $subPage->getSubpageText());
             if (!in_array($subPage->getSubpageText(), $experimentNames)) {
                 $deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()
                     ->newDeletePage($subPage->toPageIdentity(), \RequestContext::getMain()->getUser());
-                $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
                 $logger->log('Delete unused investigation: ' . $subPage->getSubpageText());
                 //$deletePage->deleteIfAllowed("unused investigation page");
             }
