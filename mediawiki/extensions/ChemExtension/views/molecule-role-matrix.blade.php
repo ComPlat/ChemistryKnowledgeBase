@@ -3,8 +3,8 @@
     <thead>
     <tr>
         <th>Investigation type</th>
-    @foreach($distinctRoles as $column)
-        <th>{{$column}}</th>
+    @foreach($distinctRoles as $role)
+        <th>{{$role}}</th>
     @endforeach
     </tr>
     </thead>
@@ -12,13 +12,13 @@
 @foreach($matrix as $type => $row)
     <tr>
         <td><a href="{{Title::newFromText($type, NS_CATEGORY)->getFullURL()}}">{{Title::newFromText($type, NS_CATEGORY)->getText()}}</a></td>
-        @foreach($distinctRoles as $column)
-            @if(isset($row[$column]))
+        @foreach($distinctRoles as $role)
+            @if(isset($row[$role]))
                 <td>
-                    <img class="ce-inv-record" title="click to see investigation records" src="{{$wgScriptPath."/extensions/ChemExtension/skins/images/check.png"}}"/>
+                    <img class="ce-inv-record" title="click to see investigation records below" role="{{$role}}" src="{{$wgScriptPath."/extensions/ChemExtension/skins/images/check.png"}}"/>
                     <div class="ce-inv-record-content" style="display: none">
                         <ul>
-                    @foreach($row[$column] as $title)
+                    @foreach($row[$role] as $title)
                         <li class="ce-inv-record-item"><a target="_blank" href="{{$title->getFullURL()}}">{{$title->getSubpageText()}}</a></li>
 
                     @endforeach
@@ -34,3 +34,7 @@
 @endforeach
     </tbody>
 </table>
+<div id="ce-inv-record-view" style="display: none">
+    <h3>Records for role "<span id="ce-inv-record-role"></span>"</h3>
+    <div id="ce-inv-record-view-content"></div>
+</div>

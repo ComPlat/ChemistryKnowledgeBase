@@ -30,21 +30,12 @@
     }
 
     function initializeMoleculeRoleTooltips() {
-        $("img.ce-inv-record").each(function() {
-            $(this).qtip({
-                content: $(this).next('.ce-inv-record-content'),
-                style: {classes: 'chemformula-tooltip'},
-
-                position: {
-                    viewport: $(window)
-                },
-                api: {
-                    beforeHide: function () {
-                        return false;
-                    }
-                },
-                hide: {fixed: true}
-            });
+        $("img.ce-inv-record").click((e) => {
+            let content = $(e.target).next('.ce-inv-record-content');
+            $('#ce-inv-record-view').show();
+            $('#ce-inv-record-role').html($(e.target).attr('role'))
+            $('#ce-inv-record-view-content').empty();
+            $('#ce-inv-record-view-content').append(content.html());
         });
     }
 

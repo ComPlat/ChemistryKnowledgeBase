@@ -627,3 +627,11 @@ li.ce-inv-record-item {
     margin-top: 5px;
     line-height: normal;
 }
+
+#ce-inv-record-view {
+    background: aliceblue;
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 10px;
+    border: 3px solid darkblue;
+}
