@@ -16,27 +16,32 @@ class MoleculeRoleDetector {
         foreach($experimentRepo->getAll() as $type => $exp) {
             $roles = $exp['roleProperties'];
             $matrix[$type] = [];
-            foreach($roles as $role) {
-                $query = <<<QUERY
+            foreach($roles as $display => $roles) {
+                foreach ($roles as $role) {
+                    $query = <<<QUERY
 [[$role::Molecule:$chemFormId]]
 [[-Has subobject::<q>[[Category:$type]]</q>]]
 QUERY;
-                $results = QueryUtils::executeBasicQuery($query);
-                $searchResults = [];
-                while ($row = $results->getNext()) {
+                    $results = QueryUtils::executeBasicQuery($query);
+                    $searchResults = [];
+                    while ($row = $results->getNext()) {
 
-                    $column = reset($row);
-                    $dataItem = $column->getNextDataItem();
-                    if ($dataItem === false) continue;
-                    $searchResults[] = $dataItem->getTitle();
-                }
-                $count = $results->getCount();
-                if ($count > 0) {
-                    usort($searchResults, fn($e1, $e2) => strcmp($e1->getSubpageText(), $e2->getSubpageText()));
-                    $matrix[$type][$role] = array_unique($searchResults);
+                        $column = reset($row);
+                        $dataItem = $column->getNextDataItem();
+                        if ($dataItem === false) continue;
+                        $searchResults[] = $dataItem->getTitle();
+                    }
+                    $count = $results->getCount();
+                    if ($count > 0) {
+                        usort($searchResults, fn($e1, $e2) => strcmp($e1->getSubpageText(), $e2->getSubpageText()));
+                        if (!isset($matrix[$type][$display])) {
+                            $matrix[$type][$display] = [];
+                        }
+                        $matrix[$type][$display] = array_merge($matrix[$type][$display], $searchResults);
+                        $matrix[$type][$display] = array_unique($matrix[$type][$display]);
+                    }
                 }
             }
-
         }
         return $matrix;
     }
