@@ -136,7 +136,7 @@ TEMPLATE;
             'infusable' => true,
             'value' => json_encode([
                 'parameters' => $this->context['parameters'],
-                'selectExperimentQuery' => $this->context['selectExperimentQuery'],
+                'selectExperimentQuery' => urldecode($this->context['selectExperimentQuery']),
                 'page' => $this->context['page']->getPrefixedText(),
                 'cacheKey' => $this->context['cacheKey'],
                 'type' => 'link'

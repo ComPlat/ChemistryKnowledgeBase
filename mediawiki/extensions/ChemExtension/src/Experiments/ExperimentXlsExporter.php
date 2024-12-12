@@ -73,7 +73,7 @@ class ExperimentXlsExporter
         if ($this->type == 'list') {
             $this->selectExperimentQuery = '[[-Has subobject::'.$this->investigationPage.']]';
         }
-        $templateData = ExperimentLink::getTemplateData($this->parameters, urldecode($this->selectExperimentQuery), $this->parameters['onlyIncluded'] ?? true);
+        $templateData = ExperimentLink::getTemplateData($this->parameters, $this->selectExperimentQuery, $this->parameters['onlyIncluded'] ?? true);
         foreach ($templateData as $row) {
             $column = 1;
             foreach($exportProperties as $p) {
