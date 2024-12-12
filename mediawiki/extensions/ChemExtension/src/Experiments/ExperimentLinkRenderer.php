@@ -138,7 +138,8 @@ TEMPLATE;
                 'parameters' => $this->context['parameters'],
                 'selectExperimentQuery' => $this->context['selectExperimentQuery'],
                 'page' => $this->context['page']->getPrefixedText(),
-                'cacheKey' => $this->context['cacheKey']
+                'cacheKey' => $this->context['cacheKey'],
+                'type' => 'link'
             ])
         ]);
 

@@ -91,7 +91,8 @@ class ExperimentListRenderer extends ExperimentRenderer
                  ],
                 'selectExperimentQuery' => "",
                 'page' => $this->context['page']->getPrefixedText(),
-
+                'investigationPage' => $this->context['page']->getPrefixedText() . '/' . $this->context['name'],
+                'type' => 'list'
             ])
         ]);
 

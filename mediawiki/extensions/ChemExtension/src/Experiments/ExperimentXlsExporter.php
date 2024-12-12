@@ -16,6 +16,8 @@ class ExperimentXlsExporter
 
     public const MOLFILE_SUFFIX = "_molfile";
     private $parameters;
+    private $investigationPage;
+    private $type;
     private $selectExperimentQuery;
     private $workSheet;
     private $chemFormRepo;
@@ -25,6 +27,8 @@ class ExperimentXlsExporter
     public function __construct($exportDescriptor, Worksheet $workSheet)
     {
         $this->parameters = ArrayTools::propertiesToArray($exportDescriptor->parameters);
+        $this->investigationPage = $exportDescriptor->investigationPage ?? '';
+        $this->type = $exportDescriptor->type;
         $this->selectExperimentQuery = $exportDescriptor->selectExperimentQuery;
         $this->workSheet = $workSheet;
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
@@ -66,6 +70,9 @@ class ExperimentXlsExporter
         }
 
         $rowIndex = 2;
+        if ($this->type == 'list') {
+            $this->selectExperimentQuery = '[[-Has subobject::'.$this->investigationPage.']]';
+        }
         $templateData = ExperimentLink::getTemplateData($this->parameters, urldecode($this->selectExperimentQuery), $this->parameters['onlyIncluded'] ?? true);
         foreach ($templateData as $row) {
             $column = 1;
