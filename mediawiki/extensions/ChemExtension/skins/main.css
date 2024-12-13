@@ -335,6 +335,7 @@ div.pf_copy_template {
     background: lightblue;
     text-align: center;
     margin-top: 10px;
+    width: 100px;
 }
 
 div.pf_copy_template:hover {
