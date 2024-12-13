@@ -145,6 +145,23 @@
             }
         });
 
+        $('span.experiment-list-rename-button').off('click');
+        $('span.experiment-list-rename-button').click((e) => {
+            let button = $(e.target).closest('button');
+            let request = JSON.parse(button.attr('value'));
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            OO.ui.prompt('Please enter new name of investigation').done((result) => {
+                if (!result) return;
+                ajax.renamePage(request.page+"/"+request.investigationName, request.page+"/"+result)
+                    .done(() => {
+                        mw.notify("Investigation renamed")})
+                    .catch((e) => {
+                        mw.notify("Investigation renaming FAILED! Reason: "+e);
+                    });
+            });
+
+        });
+
         // highlight literature-references
         $('.experiment-link, span.literature-link a').click((e) => {
             let target = $(e.target);

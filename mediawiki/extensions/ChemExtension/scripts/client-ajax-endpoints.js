@@ -9,6 +9,23 @@
 
     };
 
+    window.ChemExtension.AjaxEndpoints.prototype.renamePage = function (oldPageTitle, newPageTitle) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/renamePage";
+        let data = {
+            oldPageTitle: oldPageTitle,
+            newPageTitle: newPageTitle
+        }
+        return $.ajax({
+            method: "POST",
+            datatype: 'json',
+            contentType: "application/json",
+            url: url,
+            data: JSON.stringify(data)
+
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.invalidateInvestigationCache = function (data) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/invalidate-inv-cache";

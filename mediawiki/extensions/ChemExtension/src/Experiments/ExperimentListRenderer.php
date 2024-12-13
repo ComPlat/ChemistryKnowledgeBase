@@ -96,6 +96,20 @@ class ExperimentListRenderer extends ExperimentRenderer
             ])
         ]);
 
+        $renameButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-list-rename-button'],
+            'id' => 'ce-rename-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Rename',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Rename investigation page',
+            'infusable' => true,
+            'value' => json_encode([
+                'page' => $this->context['page']->getPrefixedText(),
+                'investigationName' => $this->context['name'],
+            ])
+        ]);
+
         global $wgScriptPath;
         $htmlTableEditor->addTableClass("experiment-list");
         return $this->blade->view()->make("experiment-table", [
@@ -106,7 +120,12 @@ class ExperimentListRenderer extends ExperimentRenderer
             'inVisualEditor' => WikiTools::isInVisualEditor(),
             'wgScriptPath' => $wgScriptPath,
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
+            'renameButton' => WikiTools::isInVisualEditor() || !$this->userHasMoveRights() ? '' : $renameButton->toString(),
         ])->render();
 
+    }
+
+    function userHasMoveRights() {
+        return RequestContext::getMain()->getUser()->isAllowed('move');
     }
 }

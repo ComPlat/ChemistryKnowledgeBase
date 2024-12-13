@@ -169,6 +169,10 @@
             "path": "/ChemExtension/v1/pub-chem",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\GetSMILESFromPubChem"
+        },{
+            "path": "/ChemExtension/v1/renamePage",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\RenamePage"
         }
 
     ],

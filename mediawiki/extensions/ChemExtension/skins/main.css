@@ -459,7 +459,9 @@ iframe#mp-ketcher-editor {
     margin-top: 15px;
 }
 
-span.experiment-link-show-button, span.experiment-link-refresh-button, span.experiment-link-export-button {
+span.experiment-link-show-button, span.experiment-link-refresh-button, span.experiment-link-export-button,
+span.experiment-list-rename-button
+{
     margin-top: 0px;
     margin-left: 10px;
 }
@@ -480,7 +482,8 @@ div.experiment-link-control-bar div:nth-child(2){
     top: 2px;
 }
 
-span.experiment-link-show-button button, span.experiment-link-refresh-button button, span.experiment-link-export-button button {
+span.experiment-link-show-button button, span.experiment-link-refresh-button button, span.experiment-link-export-button button,
+span.experiment-list-rename-button button {
     min-height: 1.8em !important;
     padding-top: 0px !important;
     padding-bottom: 0px !important;

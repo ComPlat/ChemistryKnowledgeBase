@@ -5,7 +5,7 @@
     {!! $htmlTableEditor->toHtml(!$inVisualEditor) !!}
 @endif
 @if(isset($experimentName))
-<div>Investigation-Name: <a target="_blank" href="{{$experimentPageTitle->getFullURL()}}">{{$experimentName}}</a>{!! $exportButton !!}
+<div>Investigation-Name: <a target="_blank" href="{{$experimentPageTitle->getFullURL()}}">{{$experimentName}}</a>{!! $exportButton !!}{!! $renameButton !!}
 <img class="experiment-help" src="{{$wgScriptPath}}/extensions/ChemExtension/skins/images/question.png" />
 </div>
 @endif
