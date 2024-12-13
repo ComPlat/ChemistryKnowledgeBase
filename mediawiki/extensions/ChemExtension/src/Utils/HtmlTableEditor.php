@@ -111,6 +111,18 @@ class HtmlTableEditor
 
     }
 
+    public function removeTag($tag) {
+        $xpath = new DOMXPath($this->doc);
+
+        $tags = $xpath->query("//$tag");
+        if (count($tags) === 0) {
+            return;
+        }
+        foreach ($tags as $t) {
+            $t->parentNode->removeChild($t);
+        }
+    }
+
     public function removeEmptyColumns()
     {
         $xpath = new DOMXPath($this->doc);

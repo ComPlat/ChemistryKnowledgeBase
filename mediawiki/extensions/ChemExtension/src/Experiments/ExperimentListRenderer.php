@@ -112,6 +112,9 @@ class ExperimentListRenderer extends ExperimentRenderer
 
         global $wgScriptPath;
         $htmlTableEditor->addTableClass("experiment-list");
+        if (WikiTools::isInVisualEditor()) {
+            $htmlTableEditor->removeTag("span[@class='smw-highlighter']");
+        }
         return $this->blade->view()->make("experiment-table", [
             'htmlTableEditor' => $htmlTableEditor,
             'experimentName' => $experimentName,
