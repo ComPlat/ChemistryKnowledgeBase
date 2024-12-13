@@ -29,11 +29,19 @@ class RenamePage extends SimpleHandler
             $res->setStatus(400);
             return $res;
         }
+        $oldTitle = Title::newFromText($body->oldPageTitle);
+        $newTitle = Title::newFromText($body->newPageTitle);
+
+        if ($newTitle->getPrefixedText() !== $body->newPageTitle) {
+            $res = new Response("newTitle is not valid");
+            $res->setStatus(400);
+            return $res;
+        }
         try {
 
             $movePage = MediaWikiServices::getInstance()->getMovePageFactory()->newMovePage(
-                Title::newFromText($body->oldPageTitle),
-                Title::newFromText($body->newPageTitle)
+                $oldTitle,
+                $newTitle
             );
             $movePage->moveIfAllowed(RequestContext::getMain()->getUser());
             $res = new Response();

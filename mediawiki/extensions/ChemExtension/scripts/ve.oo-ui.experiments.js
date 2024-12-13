@@ -156,7 +156,7 @@
                     .done(() => {
                         mw.notify("Investigation renamed")})
                     .catch((e) => {
-                        mw.notify("Investigation renaming FAILED! Reason: "+e);
+                        mw.notify("Investigation renaming FAILED! Reason: "+e.responseText);
                     });
             });
 
