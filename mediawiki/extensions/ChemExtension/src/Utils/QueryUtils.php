@@ -240,16 +240,16 @@ class QueryUtils {
      * @param String $propertyName has the form "path.to.value" or "propertyName"
      * @return PrintRequest object with the given property name and label
      */
-    public static function newPropertyPrintRequest($propertyName) {
+    public static function newPropertyPrintRequest($propertyName, $outputformat = false) {
         if( strpos($propertyName, '.') !== false ) {
             # pattern = "path.to.value"
             $prop = new PropertyChainValue();
             $prop->setUserValue($propertyName);
-            return new PrintRequest(PrintRequest::PRINT_CHAIN, $propertyName, $prop);
+            return new PrintRequest(PrintRequest::PRINT_CHAIN, $propertyName, $prop, $outputformat);
         } else {
             # pattern = "propertyName"
             $prop = DataValueFactory::getInstance()->newPropertyValueByLabel($propertyName);
-            return new PrintRequest(PrintRequest::PRINT_PROP, $propertyName, $prop);
+            return new PrintRequest(PrintRequest::PRINT_PROP, $propertyName, $prop, $outputformat);
         }
     }
 
