@@ -2,10 +2,10 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
+use DIQA\ChemExtension\Indigo\IndigoTool;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\Indigo\IndigoClient;
 use DIQA\ChemExtension\PubChem\PubChemService;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use MediaWiki\MediaWikiServices;
@@ -34,7 +34,7 @@ class ImportFromPubChem extends Job
             $pubChemService = new PubChemService();
             $metadata = $pubChemService->getPubChem($this->inchiKey);
             $smiles = $metadata['record']->getSMILES();
-            $molfile = $this->convertToMolfile($smiles);
+            $molfile = IndigoTool::convertToMolfile($smiles);
 
             $renderService = new MoleculeRendererClientImpl();
             $renderedMolecule = $renderService->render($molfile);
@@ -54,9 +54,4 @@ class ImportFromPubChem extends Job
         }
     }
 
-    private function convertToMolfile($smiles)
-    {
-       $indigoClient = new IndigoClient();
-       return $indigoClient->convertToMolfile($smiles);
-    }
 }

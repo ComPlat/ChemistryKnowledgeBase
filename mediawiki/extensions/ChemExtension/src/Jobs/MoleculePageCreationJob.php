@@ -158,6 +158,7 @@ class MoleculePageCreationJob extends Job
         $pubChemData['synonyms'] = implode('$', array_map(function ($e) {
             return self::sanitize($e);
         }, $pubChemData['synonyms']));
+        $pubChemData['iupacName'] = self::sanitize($pubChemData['iupacName']);
         $pubChemData['hasVendors'] = $pubChemData['hasVendors'] ? 'true' : 'false';
 
         return $pubChemData;
@@ -165,7 +166,11 @@ class MoleculePageCreationJob extends Job
 
     private static function sanitize($s)
     {
-        return str_replace([']]'], '', $s);
+        $s = str_replace(']', ')', $s);
+        $s = str_replace('[', '(', $s);
+        $s = str_replace('}', ')', $s);
+        $s = str_replace('{', '(', $s);
+        return $s;
     }
 
     /**
