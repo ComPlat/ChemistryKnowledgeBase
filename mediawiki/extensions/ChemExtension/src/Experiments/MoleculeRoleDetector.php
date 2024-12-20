@@ -61,6 +61,9 @@ QUERY;
         }
         $distinctRoles = array_unique($m);
 
+        if (count($distinctRoles) === 0) {
+            return;
+        }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $blade = new Blade ($views, $cache);
