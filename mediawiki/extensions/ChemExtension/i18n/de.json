@@ -38,6 +38,7 @@
 	"molecule-id-hint": "Molekül-ID eingeben",
 	"chemext-show-log-button": "Zeige Log",
 	"tags-label": "Tags (noch nicht funktional)",
-	"tags-hint": "Bitte geben Sie Tags ein"
+	"tags-hint": "Bitte geben Sie Tags ein",
+	"importmolecule": "Importiere Moleküle"
 
 }

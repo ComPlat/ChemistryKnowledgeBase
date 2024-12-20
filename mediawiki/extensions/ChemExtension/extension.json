@@ -185,7 +185,8 @@
         "AdjustMoleculeReferencesJob": "DIQA\\ChemExtension\\Jobs\\AdjustMoleculeReferencesJob",
         "PageImportJob": "DIQA\\ChemExtension\\Jobs\\PageImportJob",
         "CreateAuthorPageJob": "DIQA\\ChemExtension\\Jobs\\CreateAuthorPageJob",
-        "ImportInvestigationJob": "DIQA\\ChemExtension\\Jobs\\ImportInvestigationJob"
+        "ImportInvestigationJob": "DIQA\\ChemExtension\\Jobs\\ImportInvestigationJob",
+        "ImportFromPubChem": "DIQA\\ChemExtension\\Jobs\\ImportFromPubChem"
     },
     "manifest_version": 2
 }

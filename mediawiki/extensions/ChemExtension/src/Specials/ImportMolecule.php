@@ -42,6 +42,7 @@ class ImportMolecule extends SpecialPage
             if ($wgRequest->getMethod() == 'POST') {
                 try {
                     $this->processRequest($wgRequest);
+                    $this->getOutput()->addHTML('Import jobs created');
                     return;
                 } catch (Exception $e) {
                     $this->getOutput()->addHTML($this->showErrorHint($e->getMessage()));
@@ -69,7 +70,7 @@ class ImportMolecule extends SpecialPage
             'classes' => ['chemext-button'],
             'id' => 'chemext-import-molecule',
             'type' => 'submit',
-            'label' => $this->msg('chemext-import-molecule')->text(),
+            'label' => 'Create import jobs',
             'flags' => ['primary', 'progressive'],
             'infusable' => true
         ]);
@@ -80,11 +81,11 @@ class ImportMolecule extends SpecialPage
                 'infusable' => true,
                 'name' => 'molecule_inchikeys',
                 'value' => '',
-                'placeholder' => $this->msg('molecule_inchikeys')
+                'placeholder' => 'InChI-Keys...'
             ]),
             [
                 'align' => 'top',
-                'label' => $this->msg('paper-label')->text()
+                'label' => 'InChI-Keys (one per line)'
             ]
         );
 
