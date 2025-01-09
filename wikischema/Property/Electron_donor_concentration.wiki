@@ -2,7 +2,7 @@
 * [[Property description::Contains the concentration of an electron donor of a molecule used in an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]]
 
 ; Subproperty of
 * [[Subproperty of::Concentration]]
@@ -10,5 +10,9 @@
 ; Values
 * Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
 
+* [[Corresponds to::1 M, Mol]]
+* [[Corresponds to::1000 mM]]
+* [[Corresponds to::1000000 µM]]
+
 ; Unit
-* [[Unit::M]]
+* [[Display units::M]]

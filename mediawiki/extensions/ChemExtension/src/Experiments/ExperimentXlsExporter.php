@@ -54,8 +54,8 @@ class ExperimentXlsExporter
             if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
                 $this->workSheet->setCellValue([$column, 1], $p."_inchikey");
             } else {
-                $unit = $this->getUnitForProperty($p);
-                $cellValue = $unit === '' ? $p : "$p $unit";
+                $unit = QueryUtils::getUnitForProperty($p);
+                $cellValue = is_null($unit) ? $p : "$p [$unit]";
                 $this->workSheet->setCellValue([$column, 1], $cellValue);
 
             }
@@ -136,8 +136,4 @@ class ExperimentXlsExporter
             ->setARGB($color);
     }
 
-    private function getUnitForProperty($property) {
-        $value = QueryUtils::getPropertyValue(Title::newFromText($property, SMW_NS_PROPERTY), "Unit");
-        return is_null($value) ? "" : "[$value]";
-    }
 }

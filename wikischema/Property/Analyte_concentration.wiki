@@ -2,7 +2,12 @@
 * Denotes the analyte concentration
 
 ;Datatype
-* [[Has type::Number]]
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 M, Mol]]
+* [[Corresponds to::1000 mM]]
+* [[Corresponds to::1000000 µM]]
 
 ; Unit
-* [[Unit::mM]]
+* [[Display units::M]]

@@ -2,7 +2,7 @@
 * [[Property description::Contains the irradiation time of an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
 
 ; Values
 * Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
@@ -10,5 +10,9 @@
 ; Label
 * [[Has preferred property label::t &#91;h&#93;.@en]]
 
+; Corresponds
+* [[Corresponds to::1 h]]
+* [[Corresponds to::3600 s]]
+
 ; Unit
-* [[Unit::h]]
+* [[Display units::h]]

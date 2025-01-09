@@ -2,10 +2,8 @@
 * [[Property description::Contains the concentration of a molecule used in an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
 
 ; Values
-* Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
+* Input fields should be restricted to positive numbers with a optional M (Mol) unit.
 
-; Unit
-* [[Unit::-to be set-]]

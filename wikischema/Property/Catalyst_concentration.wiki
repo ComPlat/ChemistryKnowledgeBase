@@ -2,7 +2,12 @@
 * Denotes the catalyst concentration
 
 ;Datatype
-* [[Has type::Number]]
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::0.000001 M, Mol]]
+* [[Corresponds to::0.001 mM]]
+* [[Corresponds to::1 µM]]
 
 ; Unit
-* [[Unit::µM]]
+* [[Display units::µM]]

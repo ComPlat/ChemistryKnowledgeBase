@@ -12,6 +12,7 @@ use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
 use Philo\Blade\Blade;
+use SMW\DataValueFactory;
 use Title;
 use SMWDataItem;
 
@@ -126,6 +127,7 @@ class ExperimentLink
             while ($column !== false) {
                 $templateParam = $properties[$column->getPrintRequest()->getLabel()] ?? null;
                 $dataItem = $column->getNextDataItem();
+                $currentColumn = $column;
                 $column = next($row);
                 if (is_null($templateParam)) continue;
                 if ($dataItem === false) continue;
@@ -134,7 +136,15 @@ class ExperimentLink
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
                     $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
-                    $oneRow[$templateParam] = $dataItem->getNumber();
+                    $unit = QueryUtils::getUnitForProperty($currentColumn->getPrintRequest()->getLabel());
+                    if (is_null($unit)) {
+                        $oneRow[$templateParam] = $dataItem->getNumber();
+                    } else {
+                        $dv = DataValueFactory::getInstance()->newDataValueByItem($dataItem, $currentColumn->getPrintRequest()->getData()->getDataItem());
+                        $dv->setOutputFormat($unit);
+                        $oneRow[$templateParam] = $dv->getDataItem()->getNumber();
+                    }
+
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
                     $oneRow[$templateParam] = $dataItem->getBoolean();
                 }

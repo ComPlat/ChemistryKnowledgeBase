@@ -13,6 +13,7 @@ use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\ParserFunctions\ExperimentList;
 use DIQA\ChemExtension\ParserFunctions\ExtractElements;
 use DIQA\ChemExtension\ParserFunctions\FormatAsTable;
+use DIQA\ChemExtension\ParserFunctions\QValue;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
@@ -246,6 +247,7 @@ CSS;
         $parser->setFunctionHook( 'formatAsTable', [ FormatAsTable::class, 'formatAsTable' ] );
         $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
         $parser->setFunctionHook( 'calculateSelectivity', [ Selectivity::class, 'calculateSelectivity' ] );
+        $parser->setFunctionHook( 'qvalue', [ QValue::class, 'quantityValue' ] );
 
         self::registerShowCachedHandler($parser);
     }

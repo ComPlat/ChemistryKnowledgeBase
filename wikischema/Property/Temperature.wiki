@@ -2,7 +2,7 @@
 * [[Property description::Contains the temperature value in ℃ for a an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
 
 ; Values
 * A number.
@@ -10,7 +10,10 @@
 ; Label
 * [[Has preferred property label::T [°C]@en]]
 
+; Corresponds
+* [[Corresponds to::1 °C]]
+
 ; Unit
-* [[Unit::°C]]
+* [[Display units::°C]]
 
 [[Imported from::ncit:NCIT_C25206]]

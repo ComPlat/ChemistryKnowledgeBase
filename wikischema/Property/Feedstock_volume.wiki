@@ -2,7 +2,11 @@
 * [[Property description::Contains the volume of the feedstock gas in an experiment or molecular process.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
+
+; Corresponds
+* [[Corresponds to::1 mL]]
+* [[Corresponds to::0.001 L]]
 
 ; Unit
-* [[Unit::mL]]
+* [[Display units::mL]]

@@ -2,7 +2,10 @@
 * [[Property description::Contains the light intensity in kW/m².@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
+
+; Corresponds
+* [[Corresponds to::1 kW/m²]]
 
 ; Unit
-* [[Unit::kW/m²]]
+* [[Display units::kW/m²]]

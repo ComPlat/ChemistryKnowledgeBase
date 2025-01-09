@@ -4,24 +4,24 @@ This is the Cyclic Voltammetry experiments template.
 <includeonly><table class="wikitable" title="">
 <tr>
 <th title="analyte (catalyst)">analyte</th>
-<th title="analyte concentration [mM]">anl conc [mM]</th>
+<th title="analyte concentration [mM]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
 <th title="Reduction potential">reduction potential</th>
 <th title="Oxidation potential">oxidation potential</th>
 <th title="solvent">solvent</th>
-<th title="solvent volume [ml]" property="hidden">solvent vol [ml]</th>
+<th title="solvent volume [ml]" property="hidden">solvent vol [{{#show: Property:Solvent volume|?Display units}}]</th>
 <th title="electrolyte">electrolyte</th>
 <th title="electrolyte purity">electrolyte purity</th>
-<th title="electrolyte concentration [M]" property="hidden">el conc [M]</th>
+<th title="electrolyte concentration [M]" property="hidden">el conc [{{#show: Property:Electrolyte concentration|?Display units}}]</th>
 <th title="internal reference compound">int ref comp</th>
-<th title="scan rate [mV s-1]" property="hidden">scan rate [mv s-1]</th>
+<th title="scan rate [mV s-1]" property="hidden">scan rate [{{#show: Property:Scan rate|?Display units}}]</th>
 <th title="scan number">scan number</th>
 <th title="potential window" property="hidden">potential window</th>
 <th title="scan direction" property="hidden">scan dir</th>
 <th title="gas (atmosphere)">gas</th>
-<th title="temperature [° C]" property="hidden">T [° C]</th>
+<th title="temperature [° C]" property="hidden">T [{{#show: Property:Temperature|?Display units}}]</th>
 <th title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
 <th title="working electrode (type and material)">WE</th>
-<th title="WE surface area [mm²]" property="hidden">WE surface area [mm²]</th>
+<th title="WE surface area [mm²]" property="hidden">WE surface area [{{#show: Property:Working electrode surface area|?Display units}}]</th>
 <th title="counter electrode" property="hidden">CE</th>
 <th title="reference electrode">RE</th>
 <th title="details" property="hidden">Details</th>

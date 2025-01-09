@@ -2,7 +2,10 @@
 * Contains the molecular mass
 
 ;Datatype
-* [[Has type::Number]]
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 g/mol]]
 
 ; Unit
-* [[Unit::g/mol]]
+* [[Display units::g/mol]]

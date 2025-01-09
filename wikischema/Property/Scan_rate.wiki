@@ -2,10 +2,13 @@
 * [[Property description::Contains the scan rate used in a cyclic voltammetry experiment.@en]]
 
 ; Datatype
-* [[Has type::Number]].
+* [[Has type::Quantity]].
 
 ; Values
 * Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
 
+; Corresponds
+* [[Corresponds to::1 mV/s]]
+
 ; Unit
-* [[Unit::mV/s]]
+* [[Display units::mV/s]]

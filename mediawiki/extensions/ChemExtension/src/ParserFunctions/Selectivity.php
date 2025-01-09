@@ -23,6 +23,7 @@ class Selectivity
 
             $valueIsEmpty = fn($e) => trim($e) === '' || trim($e) === '0';
             $nonEmptyValues = array_filter($parametersAsStringArray, fn($e) => !$valueIsEmpty($e));
+            $nonEmptyValues = array_map(fn($e) => QValue::extractValue($e), $nonEmptyValues);
             $totalSum = array_sum($nonEmptyValues);
 
             if (count($nonEmptyValues) > 1) {
