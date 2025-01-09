@@ -58,7 +58,9 @@ class PageCreationSpecial extends SpecialPage
             $pageContent = "";
 
             $doi = $doiData->DOI ?? '';
-            $pageContent .= "{{DOI|doi=$doi}}\n";
+            if ($pageTitle->getNamespace() === NS_MAIN) {
+                $pageContent .= "{{DOI|doi=$doi}}\n";
+            }
 
             $pageContent .= implode("\n", $superTopicsAsWikiText);
             $pageContent .= "[[Category:Publication]]";
