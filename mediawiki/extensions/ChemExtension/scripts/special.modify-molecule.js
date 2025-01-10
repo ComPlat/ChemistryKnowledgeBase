@@ -50,21 +50,21 @@
                                 this.modifyButton.setDisabled(false);
                                 this.moleculeKeyField.setValue(newMoleculeKey);
                                 $('#mp-ketcher-editor').attr('moleculeKey', newMoleculeKey);
-                                mw.notify('Molecule updated');
+                                OO.ui.alert('Molecule was successfully updated.');
                             })
                             .catch((res) => {
                                 this.modifyButton.setDisabled(false);
                                 if (res.status === 409) {
-                                    mw.notify('Problem occured: ' + res.responseText, {type: 'error'});
+                                    OO.ui.alert('Problem occured: ' + res.responseText, {type: 'error'});
                                 } else {
-                                    mw.notify('Problem occured: ' + res.responseText, {type: 'error'});
+                                    OO.ui.alert('Problem occured: ' + res.responseText, {type: 'error'});
                                 }
                             });
                     });
 
                 });
             }).catch((response) => {
-                mw.notify('Problem updating molecule: ' + response.responseText, {type: 'error'});
+            OO.ui.alert('Problem updating molecule: ' + response.responseText, {type: 'error'});
         });
 
     }
