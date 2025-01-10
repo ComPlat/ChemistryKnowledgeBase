@@ -32,7 +32,7 @@ This is the Cyclic Voltammetry template.
 </tr>{{#subobject:
  |Analyte={{{anl|}}}
  |Analyte concentration={{{anl conc|}}}
- |Reduction potential={{{redox potential|}}}
+ |Redox potential={{{redox potential|}}}
  |Solvent A={{{solv|}}}
  |Solvent volume={{{solv vol|}}}
  |Electrolyte={{{electrolyte|}}}
