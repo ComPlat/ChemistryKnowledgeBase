@@ -11,52 +11,36 @@ Experiments:
 
 {{{for template|Photocatalytic CO2 conversion|multiple|embed in field=Photocatalytic CO2 conversion experiments[experiments]}}}
 {| class="formtable"
-! cat:
-| {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
+! cat / cat conc [µM]:
+| {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat|class=test-xy}}}
+| {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/|class=test-xy}}}
 |-
-! cat conc [µM]:
-| {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
-|-
-! PS:
+! PS / PS conc [mM]:
 | {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup_ps}}}
-|-
-! PS conc [mM]:
 | {{{field|PS conc|input type=regexp|property=Photosensitizer concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! e-D:
+! e-D / e-D conc [M]:
 | {{{field|e-D|input type=combobox|property=Electron donor|values from url=molecule_lookup_ed}}}
-|-
-! e-D conc [M]:
 | {{{field|e-D conc|input type=regexp|property=Electron donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! H-D:
+! H-D / H-D conc [M]:
 | {{{field|H-D|input type=combobox|property=Hydrogen donor|values from url=molecule_lookup_hd}}}
-|-
-! H-D conc [M]:
 | {{{field|H-D conc|input type=regexp|property=Hydrogen donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! solvent A:
+! solvent A / B / C:
 | {{{field|solvent A|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
-|-
-! solvent B:
 | {{{field|solvent B|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
-|-
-! solvent C:
 | {{{field|solvent C|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 |-
 ! solvent-ratio [SolvA/SolvB]:
 | {{{field|solvent-ratio|property=Solvent ratio|input type=string}}}
 |-
-! additives, e.g. for buffer:
+! additives / additives conc [M]:
 | {{{field|additives|input type=string|property=Additives}}}
-|-
-! additives conc [M]:
 | {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! feedstock gas:
+! feedstock gas / feedstock volume [mL]:
 | {{{field|feedstock gas|input type=combobox|property=Feedstock gas}}}
-|-
-! feedstock volume [mL]:
 | {{{field|feedstock volume|input type=regexp|property=Feedstock volume|base type=Number|message=Input a positive number [mL]|regexp=/^([0-9]*\.)?[0-9]*(\s+(mL)?)?$/}}}
 |-
 ! Light intensity [kW/m²]:
@@ -74,58 +58,38 @@ Experiments:
 ! irr time [h]:
 | {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(h)?)?$/}}}
 |-
-! TON CO:
+! TON CO / TOF CO / Φ CO [%]:
 | {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-|-
-! TOF CO:
 | {{{field|TOF CO|input type=regexp|base type=Number|property=Turnover frequency CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
-|-
-! Φ CO [%]:
 | {{{field|Φ CO|input type=regexp|base type=Number|property=Quantum yield CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
-! TON CH4:
+! TON CH4 / TOF CH4 / Φ CH4 [%]:
 | {{{field|TON CH4|input type=regexp|base type=Number|property=Turnover number CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-|-
-! TOF CH4:
 | {{{field|TOF CH4|input type=regexp|base type=Number|property=Turnover frequency CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
-|-
-! Φ CH4 [%]:
 | {{{field|Φ CH4|input type=regexp|base type=Number|property=Quantum yield CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
-! TON H2:
+! TON H2 / TOF H2 / Φ H2 [%]::
 | {{{field|TON H2|input type=regexp|base type=Number|property=Turnover number H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-|-
-! TOF H2:
 | {{{field|TOF H2|input type=regexp|base type=Number|property=Turnover frequency H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
-|-
-! Φ H2 [%]:
 | {{{field|Φ H2|input type=regexp|base type=Number|property=Quantum yield H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
-! TON HCOOH:
+! TON HCOOH / TOF HCOOH / Φ HCOOH [%]:
 | {{{field|TON HCOOH|input type=regexp|base type=Number|property=Turnover number HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-|-
-! TOF HCOOH:
 | {{{field|TOF HCOOH|input type=regexp|base type=Number|property=Turnover frequency HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
-|-
-! Φ HCOOH [%]:
 | {{{field|Φ HCOOH|input type=regexp|base type=Number|property=Quantum yield HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
-! TON MeOH:
+|-
+! TON MeOH / TOF MeOH / Φ MeOH [%]:
 | {{{field|TON MeOH|input type=regexp|base type=Number|property=Turnover number MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-|-
-! TOF MeOH:
 | {{{field|TOF MeOH|input type=regexp|base type=Number|property=Turnover frequency MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
-|-
-! Φ MeOH [%]:
 | {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
-|-
-! Details:
-| {{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
 |-
 |}
+;Details:
+{{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
 {{{end template}}}
 
 {{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}

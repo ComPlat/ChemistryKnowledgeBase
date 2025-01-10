@@ -1,18 +1,8 @@
-#pfForm .select2-container {
+
+#pfForm div.oo-ui-comboBoxInputWidget {
     width: 100% !important;
 }
 
-#pfForm .createboxInput {
-    width: 100%;
-}
-
 #pfForm table.formtable th {
-    width: 300px;
+    width: 380px !important;
 }
-
-@media (min-width: 1200px) {
-    .container, .container-sm, .container-md, .container-lg, .container-cmln, .container-xl {
-        max-width: 100% !important;
-    }
-}
-

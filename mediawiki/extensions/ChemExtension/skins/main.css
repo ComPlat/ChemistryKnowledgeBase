@@ -531,15 +531,7 @@ table.ce-center-aligned-table td:not(:first-child) {
     width: 30%;
 }
 
-table.formtable div.oo-ui-textInputWidget {
-    max-width: 90% !important;
-    width: 90% !important;
-}
 
-table.formtable input.createboxInput {
-    max-width: 90% !important;
-    width: 90% !important;
-}
 
 table.wikitable td p {
     margin-bottom: 0rem;

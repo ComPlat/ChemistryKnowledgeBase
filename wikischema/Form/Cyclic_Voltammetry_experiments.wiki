@@ -11,37 +11,27 @@ experiments:
 
 {{{for template|Cyclic Voltammetry|multiple|embed in field=Cyclic Voltammetry experiments[experiments]}}}
 {| class="formtable"
-! analyte (catalyst):
+! analyte / analyte concentration [mM]:
 | {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
-|-
-! analyte concentration [mM]:
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! redox potential:
 | {{{field|redox potential|input type=redoxinput}}}
 |-
-! solvent:
+! solvent / solvent volume [ml]:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
-|-
-! solvent volume [ml]:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
 |-
-! electrolyte:
+! electrolyte / electrolyte purity [%] / electrolyte concentration [M]:
 | {{{field|electrolyte|property=Electrolyte|input type=combobox|values from url=molecule_lookup_electrolyte}}}
-|-
-! electrolyte purity [%]:
 | {{{field|electrolyte purity|property=Electrolyte purity|input type=regexp|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
-|-
-! electrolyte concentration [M]:
 | {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! internal reference compound:
 | {{{field|int ref comp|property=Internal reference compound|input type=combobox|values from url=molecule_lookup_irc}}}
 |-
-! scan rate [mV/s]:
+! scan rate [mV/s] / scan number:
 | {{{field|scan rate|input type=regexp|property=Scan rate|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(mV\/s)?)?$/}}}
-|-
-! scan number:
 | {{{field|scan number|input type=regexp|property=Scan number|base type=Number|message=Input a positive integer|regexp=/^[0-9]*$/}}}
 |-
 ! potential window [min, max]:
@@ -59,25 +49,20 @@ experiments:
 ! condition (wavelength [nm] or dark):
 | {{{field|cond|property=Condition|input type=string}}}
 |-
-! working electrode:
+! working electrode / counter electrode / reference electrode:
 | {{{field|WE|property=Working electrode|input type=dropdown}}}
+| {{{field|CE|property=Counter electrode|input type=dropdown}}}
+| {{{field|RE|property=Reference electrode|input type=dropdown}}}
 |-
 ! WE surface area [mm²]:
 | {{{field|WE area|property=Working electrode surface area|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(mm²)?)?$/}}}
-|-
-! counter electrode:
-| {{{field|CE|property=Counter electrode|input type=dropdown}}}
-|-
-! reference electrode:
-| {{{field|RE|property=Reference electrode|input type=dropdown}}}
-|-
-! Details:
-| {{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
 |-
 |}
+;Details:
+{{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
 {{{end template}}}
 
 {{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
