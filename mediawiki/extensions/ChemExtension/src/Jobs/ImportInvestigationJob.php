@@ -38,7 +38,12 @@ class ImportInvestigationJob extends Job
         try {
             $reader = new Xlsx();
             $spreadsheet = $reader->load($this->filePath);
-            $importer = new ExperimentXlsImporter($spreadsheet->getActiveSheet());
+            if ($spreadsheet->sheetNameExists('ChemWiki')) {
+                $sheet = $spreadsheet->getSheetByName('ChemWiki');
+            } else {
+                $sheet = $spreadsheet->getActiveSheet();
+            }
+            $importer = new ExperimentXlsImporter($sheet);
             $dataToImport = $importer->getDataToImport($this->investigationType);
             $this->logger->log(print_r($dataToImport, true));
             $importedMolecules = [];
