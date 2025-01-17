@@ -20,6 +20,9 @@ class FormatAsTable {
             if ($content === '') {
                 return ['', 'noparse' => true, 'isHTML' => true];
             }
+            if (isset($parameters['add']) && !is_numeric($parameters['add'])) {
+                return ['', 'noparse' => true, 'isHTML' => true];
+            }
             $add = $parameters['add'] ?? null;
             $parts = explode(',', $content);
             $parts = array_map(fn($e) => is_null($add) ? $e : (float)$e + (float)$add, $parts);

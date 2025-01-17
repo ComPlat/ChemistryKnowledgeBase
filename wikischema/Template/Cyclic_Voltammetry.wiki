@@ -10,7 +10,7 @@ This is the Cyclic Voltammetry template.
 <td>
 {{#formatAsTable:{{{redox potential|}}}|row=1 }}
 </td>
-<td>{{{e0|}}}</td>
+<td>{{#convertQuantity:{{{e0|}}}|property=E0 }}</td>
 <td>
 {{#formatAsTable:{{{redox potential|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0 }}  }}
 </td>
