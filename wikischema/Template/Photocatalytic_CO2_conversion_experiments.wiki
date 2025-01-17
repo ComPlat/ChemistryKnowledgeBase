@@ -8,7 +8,7 @@ This is the Photocatalytic CO2 conversion experiments template.
 <th title="photosensitizer">PS</th>
 <th title="photosensitizer concentration">PS conc [{{#show: Property:Photosensitizer concentration|?Display units}}]</th>
 <th title="electron donor">e-D</th>
-<th title="electron donor concentration">e-D conc [{{#show: Property:Photosensitizer concentration|?Display units}}]</th>
+<th title="electron donor concentration">e-D conc [{{#show: Property:Electron donor concentration|?Display units}}]</th>
 <th property="hidden" title="hydrogen donor">H-D</th>
 <th property="hidden" title="hydrogen donor concentration">H-D conc [{{#show: Property:Hydrogen donor concentration|?Display units}}]</th>
 <th title="solvent A">solvent A</th>
