@@ -136,14 +136,7 @@ class ExperimentLink
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
                     $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
-                    $unit = QueryUtils::getUnitForProperty($currentColumn->getPrintRequest()->getLabel());
-                    if (is_null($unit)) {
-                        $oneRow[$templateParam] = $dataItem->getNumber();
-                    } else {
-                        $dv = DataValueFactory::getInstance()->newDataValueByItem($dataItem, $currentColumn->getPrintRequest()->getData()->getDataItem());
-                        $dv->setOutputFormat($unit);
-                        $oneRow[$templateParam] = $dv->getDataItem()->getNumber();
-                    }
+                    $oneRow[$templateParam] = $dataItem->getNumber();
 
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
                     $oneRow[$templateParam] = $dataItem->getBoolean();

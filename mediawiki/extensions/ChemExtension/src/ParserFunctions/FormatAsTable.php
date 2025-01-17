@@ -14,10 +14,13 @@ class FormatAsTable {
         if (!isset($parameters[''])) {
             return ['', 'noparse' => true, 'isHTML' => true];
         }
+        $add = $parameters['add'] ?? 0;
         $rows = explode(";", $parameters['']);
         if (isset($parameters['row'])) {
             $content = trim($rows[$parameters['row']]) ?? '';
-            return [$content, 'noparse' => true, 'isHTML' => true];
+            $parts = explode(',', $content);
+            $parts = array_map(fn($e) => (float)$e + (float)$add, $parts);
+            return [join(', ', $parts), 'noparse' => true, 'isHTML' => true];
         }
         $result = '<table class="ce-center-aligned-table" inner="true">';
         foreach($rows as $row) {

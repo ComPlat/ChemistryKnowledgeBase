@@ -23,6 +23,7 @@ $magicWords['en'] = [
     'formatAsTable' => [ 0, 'formatAsTable' ],
     'calculateSelectivity' => [ 0, 'calculateSelectivity' ],
     'qvalue' => [ 0, 'qvalue' ],
+    'convertQuantity' => [ 0, 'convertQuantity' ],
 
 ];
 

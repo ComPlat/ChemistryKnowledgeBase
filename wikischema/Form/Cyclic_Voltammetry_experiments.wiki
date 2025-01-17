@@ -15,8 +15,9 @@ experiments:
 | {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! redox potential:
+! redox potential / E0,0 [V]:
 | {{{field|redox potential|input type=redoxinput}}}
+| {{{field|e0|input type=regexp|property=E0|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 |-
 ! solvent / solvent volume [ml]:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}

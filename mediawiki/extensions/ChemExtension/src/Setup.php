@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Literature\DOIRenderer;
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use DIQA\ChemExtension\NavigationBar\NavigationBar;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\ParserFunctions\ConvertQuantity;
 use DIQA\ChemExtension\ParserFunctions\DOIData;
 use DIQA\ChemExtension\ParserFunctions\DOIInfoBox;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
@@ -76,6 +77,7 @@ class Setup {
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
                 $baseScript . '/ve.oo-ui.title-multi-select-input.js',
+                $baseScript . '/ve.oo.ui.molecule-layout-dialog.js',
 
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
@@ -248,6 +250,7 @@ CSS;
         $parser->setFunctionHook( 'doidata', [ DOIData::class, 'renderDOIData' ] );
         $parser->setFunctionHook( 'calculateSelectivity', [ Selectivity::class, 'calculateSelectivity' ] );
         $parser->setFunctionHook( 'qvalue', [ QValue::class, 'quantityValue' ] );
+        $parser->setFunctionHook( 'convertQuantity', [ ConvertQuantity::class, 'convertQuantity' ] );
 
         self::registerShowCachedHandler($parser);
     }

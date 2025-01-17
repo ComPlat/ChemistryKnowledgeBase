@@ -5,8 +5,11 @@ This is the Cyclic Voltammetry experiments template.
 <tr>
 <th title="analyte (catalyst)">analyte</th>
 <th title="analyte concentration [mM]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
-<th title="Reduction potential">reduction potential</th>
-<th title="Oxidation potential">oxidation potential</th>
+<th title="Reduction potential">reduction potential E<sup>Red</sup> [V]</th>
+<th title="Oxidation potential">oxidation potential E<sup>Ox</sup> [V]</th>
+<th title="E0,0 [V]">*E0,0 [V]</th>
+<th title="ERed [V]">*E<sup>Red</sup> [V]</th>
+<th title="EOx [V]">*E<sup>Ox</sup> [V]</th>
 <th title="solvent">solvent</th>
 <th title="solvent volume [ml]" property="hidden">solvent vol [{{#show: Property:Solvent volume|?Display units}}]</th>
 <th title="electrolyte">electrolyte</th>
@@ -21,7 +24,7 @@ This is the Cyclic Voltammetry experiments template.
 <th title="temperature [° C]" property="hidden">T [{{#show: Property:Temperature|?Display units}}]</th>
 <th title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
 <th title="working electrode (type and material)">WE</th>
-<th title="WE surface area [mm²]" property="hidden">WE surface area [{{#show: Property:Working electrode surface area|?Display units}}]</th>
+<th title="WE SA [mm²]" property="hidden">WE SA [{{#show: Property:Working electrode surface area|?Display units}}]</th>
 <th title="counter electrode" property="hidden">CE</th>
 <th title="reference electrode">RE</th>
 <th title="details" property="hidden">Details</th>
