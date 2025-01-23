@@ -1,0 +1,19 @@
+; Purpose
+* [[Property description::Contains the concentration of an Solvent of a molecule used in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Quantity]].
+
+; Subproperty of
+* [[Subproperty of::Concentration]]
+
+; Values
+* Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
+
+; Corresponds
+* [[Corresponds to::1 µM]]
+* [[Corresponds to::0.001 mM]]
+* [[Corresponds to::0.000001 M, Mol]]
+
+; Unit
+* [[Display units::µM]]

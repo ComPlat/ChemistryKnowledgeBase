@@ -1,0 +1,32 @@
+<noinclude>
+This is the Absorption Emission Spectroscopy template.
+</noinclude>
+<includeonly><tr>
+<td>{{DisplayMolecule|{{{molecule|}}} }}</td>
+<td>{{{experiment_type|}}}</td>
+<td>{{{absorption_max|}}}</td>
+<td>{{{absorption_intensity_max|}}}</td>
+<td>{{{emission_max|}}}</td>
+<td>{{{emission_intensity_max|}}}</td>
+<td>{{DisplayMolecule|{{{solvent|}}} }}</td>
+<td>{{{solvent_conc|}}}</td>
+<td>{{{temp|}}}</td>
+<td>{{#expr: 1240 / {{#convertQuantity:{{{emission_intensity_max|}}}|property=Emission Intensity Max }} round 2 }}</td>
+<td>{{{absorption_coefficient|}}}</td>
+<td property="hidden">{{{details|}}}</td>
+<td property="hidden">{{{include|}}}</td>
+</tr>{{#subobject:
+ |Molecule={{{anl|}}}
+ |Experiment Type={{{experiment_type|}}}
+ |Absorption Intensity Max={{{absorption_intensity_max|}}}
+ |Emission Max={{{emission_max|}}}
+ |Emission Intensity Max={{{emission_intensity_max|}}}
+ |Solvent={{{solvent|}}}
+ |Solvent concentration={{{solvent_conc|}}}
+ |Temperature={{{temp|}}}
+ |E0={{#expr: 1240 / {{#convertQuantity:{{{emission_intensity_max|}}}|property=Emission Intensity Max }} round 2 }}
+ |Absorption Coefficient={{{absorption_coefficient|}}}
+ |Details={{{details|}}}
+ |Included={{{include|}}}
+ |BasePageName={{BASEPAGENAME}}
+}}</includeonly>

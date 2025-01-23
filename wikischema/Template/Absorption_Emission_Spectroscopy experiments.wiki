@@ -1,0 +1,25 @@
+<noinclude>
+This is the Absorption Emission Spectroscopy experiments template.
+</noinclude>
+<includeonly><table class="wikitable" title="">
+<tr>
+<th title="molecule">molecule</th>
+<th title="experiment type">experiment type</th>
+<th title="absorption maximum [nm]">absorption maximum [{{#show: Property:Absorption Max|?Display units}}]</th>
+<th title="absorption intensity maximum [??]">absorption intensity maximum [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
+<th title="emission maximum [nm]">emission maximum [{{#show: Property:Emission Max|?Display units}}]</th>
+<th title="emission intensity maximum [??]">emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]</th>
+<th title="solvent">solvent</th>
+<th title="solvent_conc [µM]">solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]</th>
+<th title="temperature [° C]" property="hidden">T [{{#show: Property:Temperature|?Display units}}]</th>
+<th title="E0,0 [V]">*E0,0 [V]</th>
+<th title="absorption coefficient">absorption coefficient</th>
+<th title="details" property="hidden">Details</th>
+<th title="include" property="hidden">include</th>
+</tr>
+{{{experiments|}}}
+</table>
+{{#set: BelongsToPublication={{BASEPAGENAME}} }}
+[[Category:Absorption Emission Spectroscopy experiments]]
+[[Category:Assay]]
+[[Category:Investigation]]</includeonly>

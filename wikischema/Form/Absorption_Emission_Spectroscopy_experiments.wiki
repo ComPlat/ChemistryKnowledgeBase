@@ -1,0 +1,50 @@
+<noinclude>
+Add a new set of Absorption-Emission Spectroscopy experiments (a table in which each row describes one investigation):
+{{#forminput:form=Absorption Emission Spectroscopy experiments}}
+</noinclude>
+
+<includeonly>
+{{{for template|Absorption Emission Spectroscopy experiments}}}
+experiments:
+{{{field|experiments|holds template}}}
+{{{end template}}}
+
+{{{for template|Absorption Emission Spectroscopy|multiple|embed in field=Absorption Emission Spectroscopy experiments[experiments]}}}
+{| class="formtable"
+! Molecule / :
+| {{{field|molecule|input type=combobox|property=Molecule|values from url=molecule_lookup}}}
+|-
+! experimental / calculated:
+| {{{field|experiment_type|input type=dropdown|property=Experiment Type}}}
+|-
+! Absorption maximum given [nm]:
+| {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! Absorption intensity max [??]:
+| {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
+|-
+! Emission maximum given [nm]
+| {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! Emission intensity maximum [??]
+| {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! solvent / solvent concentration [µM]:
+| {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
+| {{{field|solvent_conc|input type=regexp|property=Solvent concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! temperature [°C]:
+| {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
+|-
+! absorption coefficient:
+| {{{field|absorption_coefficient|input type=regexp|property=Absorption Coefficient|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! include:
+| {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
+|}
+;Details:
+{{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>
