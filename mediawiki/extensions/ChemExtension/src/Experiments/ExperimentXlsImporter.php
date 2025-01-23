@@ -2,10 +2,14 @@
 
 namespace DIQA\ChemExtension\Experiments;
 
+use DIQA\ChemExtension\Indigo\IndigoTool;
+use DIQA\ChemExtension\Jobs\ImportFromPubChem;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\GeneralTools;
+use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\MediaWikiServices;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
@@ -16,6 +20,7 @@ class ExperimentXlsImporter
     private $beginCoord;
     private $chemFormRepo;
     private $nonExistingMolecules;
+    private $logger;
 
     public function __construct(Worksheet $workSheet)
     {
@@ -24,25 +29,28 @@ class ExperimentXlsImporter
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $this->chemFormRepo = new ChemFormRepository($dbr);
         $this->nonExistingMolecules = [];
+        $this->logger = new LoggerUtils('ExperimentXlsImporter', 'ChemExtension');
     }
 
-    private function findBegin() {
-        for($row = 1; $row < 100; $row++) {
-            for($column = 1; $column < 100; $column++) {
+    private function findBegin()
+    {
+        for ($row = 1; $row < 100; $row++) {
+            for ($column = 1; $column < 100; $column++) {
 
                 if ($this->workSheet->getCell([$column, $row])->getValue() === '--investigation--') {
-                    return [$column, $row+1];
+                    return [$column, $row + 1];
                 }
             }
         }
-        return [1,1];
+        return [1, 1];
     }
 
-    private function readHeaderData($maxColumn = 100) {
+    private function readHeaderData($maxColumn = 100)
+    {
         $properties = [];
         list($column, $startRow) = $this->beginCoord;
 
-        for($i = $column; $i < $column + $maxColumn; $i++) {
+        for ($i = $column; $i < $column + $maxColumn; $i++) {
             $property = $this->workSheet->getCell([$i, $startRow])->getValue();
             $property = trim($property);
             if ($property !== '') {
@@ -52,11 +60,11 @@ class ExperimentXlsImporter
         }
 
         $headerData = [];
-        foreach($properties as $p) {
+        foreach ($properties as $p) {
             if (GeneralTools::endsWith($p, ExperimentXlsExporter::MOLFILE_SUFFIX)) {
                 continue;
             }
-            if (in_array($p.ExperimentXlsExporter::MOLFILE_SUFFIX, $properties)) {
+            if (in_array($p . ExperimentXlsExporter::MOLFILE_SUFFIX, $properties)) {
                 $headerData[] = [
                     'type' => 'data-property',
                     'name' => $p,
@@ -71,17 +79,19 @@ class ExperimentXlsImporter
         return ['property-data' => $headerData, 'num-columns' => count($properties)];
     }
 
-    private function readLine($row, $numColumns) {
+    private function readLine($row, $numColumns)
+    {
         $cellValues = [];
         list($column, $startRow) = $this->beginCoord;
 
-        for($i = $column; $i <= $column + $numColumns; $i++) {
+        for ($i = $column; $i <= $column + $numColumns; $i++) {
             $cellValues[] = $this->workSheet->getCell([$i, $startRow + $row])->getValue();
         }
         return $cellValues;
     }
 
-    private function aggregateValues($headerData, $values) {
+    private function aggregateValues($headerData, $values)
+    {
         $index = 0;
         $cellValues = [];
         foreach ($headerData as $property) {
@@ -89,7 +99,7 @@ class ExperimentXlsImporter
                 $cellValues[] = [
                     'property' => $property['name'],
                     'value' => trim($values[$index]),
-                    'data' => trim($values[$index+1])
+                    'data' => trim($values[$index + 1])
                 ];
                 $index += 2;
             } else {
@@ -112,7 +122,7 @@ class ExperimentXlsImporter
 
         $mainTemplate = $experimentType->getMainTemplate();
         $rowTemplate = $experimentType->getRowTemplate();
-        $wikitext = "{{".$mainTemplate."|experiments=";
+        $wikitext = "{{" . $mainTemplate . "|experiments=";
         $headerData = $this->readHeaderData();
 
         $row = 1;
@@ -125,7 +135,7 @@ class ExperimentXlsImporter
             $rowNotEmpty = count(array_filter($values, fn($e) => trim($e) !== '')) > 0;
             if ($rowNotEmpty) {
                 $wikitext .= "{{" . $rowTemplate;
-                foreach($aggregatedValues as $value) {
+                foreach ($aggregatedValues as $value) {
                     if ($value['value'] === '') {
                         continue;
                     }
@@ -145,7 +155,7 @@ class ExperimentXlsImporter
             }
 
             $row++;
-        } while($rowNotEmpty);
+        } while ($rowNotEmpty);
 
         $wikitext .= "\n}}";
         return [
@@ -157,21 +167,79 @@ class ExperimentXlsImporter
     private function getChemformIdOrMoleculeKey($moleculeKey, $data)
     {
 
+        if (!ChemTools::isInchIKey($moleculeKey)) {
+            // check if molecule key is (part of) trivialname / abbreviation / synonym
+            $this->logger->log("No inchikey found for '$moleculeKey', try to find molecule by name, synonym or abbreviation");
+            return $this->searchForMolecule($moleculeKey);
+        }
+
         $chemFormId = $this->chemFormRepo->getChemFormId($moleculeKey);
         $svg = $this->chemFormRepo->getChemFormImageByKey($moleculeKey);
-        if (is_null($chemFormId) || is_null($svg) || trim($svg) === '' || ChemTools::isEmptySVGImage(base64_decode($svg))) {
-            $unquotedData = trim($data,'"');
+        if (!is_null($chemFormId) && !is_null($svg) && trim($svg) !== '' && !ChemTools::isEmptySVGImage(base64_decode($svg))) {
+            return "Molecule:$chemFormId";
+        }
+
+        $unquotedData = trim($data, '"');
+        $formatDetection = $this->detectChemFormFormat($unquotedData);
+        if ($formatDetection === 'molfile') {
+            $this->logger->log('Detected data to import as MOLFILE.');
             $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn("\n$unquotedData", "", "", $moleculeKey);
             return $moleculeKey;
+        } else if ($formatDetection === 'smiles') {
+            $this->logger->log('Detected data to import as SMILES, converting to MOLFILE.');
+            $molfile = IndigoTool::convertToMolfile($unquotedData);
+            $this->logger->log('MOLFILE: ' . $molfile);
+            $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn($molfile, $unquotedData, "", $moleculeKey);
+            return $moleculeKey;
+        } else {
+            $this->logger->log("Molecule data is empty. try to import '$moleculeKey' from PubChem");
+            $importJob = new ImportFromPubChem(null, ['inchiKey' => $moleculeKey]);
+            $importJob->run();
+            $chemFormId = $importJob->getChemFormId();
+            return "Molecule:$chemFormId";
         }
-        return "Molecule:$chemFormId";
+
     }
 
-    private function normalizeHeaderToProperty($property) {
+    private function normalizeHeaderToProperty($property)
+    {
         if (GeneralTools::endsWith($property, '_inchikey')) {
             $property = str_replace("_inchikey", "", $property);
         }
         $property = preg_replace('/\[[^]]*\]/', "", $property);
         return trim($property);
+    }
+
+    private function detectChemFormFormat($data)
+    {
+        if (mb_strlen(trim($data)) === 0) {
+            return "empty";
+        }
+        if (count(explode("\n", $data)) > 3) {
+            return 'molfile';
+        }
+        return "smiles";
+    }
+
+    private function searchForMolecule($searchText)
+    {
+        $query = <<<QUERY
+[[Category:Molecule]][[Synonym::~*$searchText*]]
+OR [[Category:Molecule]][[Abbreviation::~*$searchText*]]
+OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
+OR [[Category:Molecule]][[IUPACName::~*$searchText*]]
+QUERY;
+        $results = QueryUtils::executeBasicQuery($query);
+        if ($results->getCount() > 1) {
+            $this->logger->warn('Could not identify molecule uniquely, leaving data unchanged: ' . $searchText);
+            return $searchText;
+        }
+        $row = $results->getNext();
+        $column = reset($row);
+        $dataItem = $column->getNextDataItem();
+        $chemFormId = $dataItem->getTitle()->getText();
+        $this->logger->log("Molecule found: $chemFormId");
+        return $chemFormId;
+
     }
 }

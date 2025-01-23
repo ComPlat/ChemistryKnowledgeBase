@@ -18,6 +18,7 @@ class ImportFromPubChem extends Job
     private $logger;
     private $chemFormRepository;
     private $inchiKey;
+    private $chemFormId;
 
     public function __construct($title, $params)
     {
@@ -47,11 +48,19 @@ class ImportFromPubChem extends Job
             $jobParams['publicationPage'] = null;
             $job = new MoleculePageCreationJob($title, $jobParams);
             $job->run();
-
+            $this->chemFormId = $id;
             $this->logger->log("Imported molecule ($id) with inchikey: " . $this->inchiKey);
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getChemFormId()
+    {
+        return $this->chemFormId;
     }
 
 }

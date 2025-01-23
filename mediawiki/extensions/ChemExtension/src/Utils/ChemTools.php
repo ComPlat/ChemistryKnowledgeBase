@@ -60,4 +60,9 @@ class ChemTools {
         $xml = simplexml_load_string($svg);
         return $xml->count() === 0;
     }
+
+    public static function isInchIKey($key) {
+        return preg_match('/\w{14}-\w{10}-\w/', $key) === 1;
+    }
+
 }
