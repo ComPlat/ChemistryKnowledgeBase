@@ -1,0 +1,8 @@
+; Purpose
+* [[Property description::Contains a molecule serving as absorber or emitter.@en]]
+
+; Datatype
+* [[Has type::Page]].
+
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].

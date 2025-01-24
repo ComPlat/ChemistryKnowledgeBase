@@ -12,22 +12,22 @@ experiments:
 {{{for template|Absorption Emission Spectroscopy|multiple|embed in field=Absorption Emission Spectroscopy experiments[experiments]}}}
 {| class="formtable"
 ! Molecule / :
-| {{{field|molecule|input type=combobox|property=Molecule|values from url=molecule_lookup}}}
+| {{{field|absorber_emitter|input type=combobox|property=Absorber Emitter|values from url=molecule_lookup_abs_em}}}
 |-
 ! experimental / calculated:
 | {{{field|experiment_type|input type=dropdown|property=Experiment Type}}}
 |-
 ! Absorption maximum given [nm]:
-| {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Absorption intensity max [??]:
-| {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
+! Absorption intensity max [nm]:
+| {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
 ! Emission maximum given [nm]
-| {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+| {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Emission intensity maximum [??]
-| {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+! Emission intensity maximum [nm]
+| {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
 ! solvent / solvent concentration [µM]:
 | {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
@@ -36,8 +36,8 @@ experiments:
 ! temperature [°C]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
 |-
-! absorption coefficient:
-| {{{field|absorption_coefficient|input type=regexp|property=Absorption Coefficient|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+! absorption coefficient [L/mol⋅cm]:
+| {{{field|absorption_coefficient|input type=regexp|property=Absorption Coefficient|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(L\/mol⋅cm)?)?$/}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)

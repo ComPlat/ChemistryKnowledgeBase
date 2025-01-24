@@ -2,4 +2,10 @@
 * Denotes the absorption coefficient
 
 ;Datatype
-* [[Has type::Number]]
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 L/mol⋅cm]]
+
+; Unit
+* [[Display units::L/mol⋅cm]]

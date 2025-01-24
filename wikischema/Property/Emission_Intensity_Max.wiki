@@ -5,7 +5,7 @@
 * [[Has type::Quantity]]
 
 ; Corresponds
-* [[Corresponds to::1 kW/m²]]
+* [[Corresponds to::1 nm]]
 
 ; Unit
-* [[Display units::kW/m²]]
+* [[Display units::nm]]

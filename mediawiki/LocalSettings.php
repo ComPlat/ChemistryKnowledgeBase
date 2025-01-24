@@ -384,6 +384,7 @@ $sfgRenameEditTabs = true;
 
 
 $wgPageFormsAutocompletionURLs['molecule_lookup'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>';
+$wgPageFormsAutocompletionURLs['molecule_lookup_abs_em'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Absorber_Emitter';
 $wgPageFormsAutocompletionURLs['molecule_lookup_cat'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Catalyst';
 $wgPageFormsAutocompletionURLs['molecule_lookup_ps'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Photosensitizer';
 $wgPageFormsAutocompletionURLs['molecule_lookup_ed'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Electron_donor';
