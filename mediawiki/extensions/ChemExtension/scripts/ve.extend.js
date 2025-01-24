@@ -12,7 +12,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         var smiles = panel.originalMwData.attrs.smiles;
 
         var button = new OO.ui.ButtonWidget({
-            label: 'Open Ketcher'
+            label: 'Ketcher'
         });
 
         function searchInPubChemAndOpenDialog(inchikey) {
@@ -65,8 +65,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
 
         panel.$attributes.append(button.$element);
 
+        // R-Groups
         button = new OO.ui.ButtonWidget({
-            label: 'Define R-Groups',
+            label: 'R-Groups',
             disabled: tools.getNumberOfMoleculeRGroups(molfile) === 0
         });
 
@@ -76,6 +77,21 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 numberOfMoleculeRGroups: tools.getNumberOfMoleculeRGroups(molfile),
                 rGroupIds: tools.getRGroupIds(molfile),
                 node: panel.selectedNode
+            });
+        });
+
+        panel.$attributes.append(button.$element);
+
+        // layout
+        button = new OO.ui.ButtonWidget({
+            label: 'Layout'
+        });
+
+        button.on('click', function () {
+            ve.init.target.getSurface().execute('window', 'open', 'edit-molecule-layout', {
+                attrs: panel.originalMwData.attrs,
+                node: panel.selectedNode,
+
             });
         });
 

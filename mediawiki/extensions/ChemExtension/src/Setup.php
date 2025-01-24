@@ -77,7 +77,7 @@ class Setup {
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
                 $baseScript . '/ve.oo-ui.title-multi-select-input.js',
-                //$baseScript . '/ve.oo.ui.molecule-layout-dialog.js',
+                $baseScript . '/ve.oo.ui.molecule-layout-dialog.js',
 
             ],
             'styles' => [ 'skins/main.css', 'skins/skin-modifications.css' ],
