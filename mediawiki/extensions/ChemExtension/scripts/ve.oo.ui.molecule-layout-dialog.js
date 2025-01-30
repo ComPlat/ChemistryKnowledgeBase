@@ -24,8 +24,11 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                 let params = this.attrs;
                 let width = this.width.getValue();
                 let height = this.height.getValue();
+                let marginLeft = this.marginLeft.getValue();
+                let marginRight = this.marginRight.getValue();
                 params.width = width;
                 params.height = height;
+                params.margin = "0px "+marginRight+"px 0px "+marginLeft+"px";
 
                 let tools = new OO.VisualEditorTools();
                 tools.refreshVENode((node) => {
@@ -49,12 +52,16 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         this.attrs = data.attrs;
         this.width.setValue(this.attrs.width);
         this.height.setValue(this.attrs.height);
-
+        let margin = this.attrs.margin || '0px 0px 0px 0px';
+        margin = margin.replaceAll('px', '');
+        let parts = margin.split(' ');
+        this.marginLeft.setValue(parts[3]);
+        this.marginRight.setValue(parts[1]);
         return ve.ui.MoleculeLayoutDialog.super.prototype.setup.call(this, data);
     };
 
     ve.ui.MoleculeLayoutDialog.prototype.getBodyHeight = function () {
-        return 250;
+        return 380;
     };
 
     /* Static Properties */
@@ -100,9 +107,26 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         let formLayout2 = new OO.ui.FormLayout({
             items: [labelHeight, this.height]
         });
+        let labelMarginLeft = new OO.ui.LabelWidget({label: "Margin left in px"});
+        this.marginLeft = new OO.ui.TextInputWidget();
+        this.marginLeft.setValue('');
+
+        let formLayout3 = new OO.ui.FormLayout({
+            items: [labelMarginLeft, this.marginLeft]
+        });
+        let labelMarginRight = new OO.ui.LabelWidget({label: "Margin right in px"});
+        this.marginRight = new OO.ui.TextInputWidget();
+        this.marginRight.setValue('');
+
+        let formLayout4 = new OO.ui.FormLayout({
+            items: [labelMarginRight, this.marginRight]
+        });
+
 
         this.panel.$element.append(formLayout1.$element);
         this.panel.$element.append(formLayout2.$element);
+        this.panel.$element.append(formLayout3.$element);
+        this.panel.$element.append(formLayout4.$element);
 
         this.$body.append(this.panel.$element);
 

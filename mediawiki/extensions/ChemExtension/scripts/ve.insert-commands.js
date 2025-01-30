@@ -36,7 +36,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                                         'inchikey': '',
                                         'height': "200px",
                                         'width': "300px",
-                                        'float': 'none'
+                                        'float': 'none',
+                                        'margin': '0px 0px 0px 0px'
                                     },
                                     body: {
                                         extsrc: ''

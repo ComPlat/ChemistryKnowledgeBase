@@ -26,6 +26,7 @@ class RenderFormula
         $attributes['width'] = $arguments['width'] ?? "300px";
         $attributes['height'] = $arguments['height'] ?? "200px";
         $attributes['smiles'] = $arguments['smiles'] ?? '';
+        $attributes['margin'] = $arguments['margin'] ?? '0px 0px 0px 0px';
         $attributes['formula'] = $formula;
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
@@ -79,6 +80,7 @@ class RenderFormula
                 'imageURL' => $wgScriptPath . "/rest.php/ChemExtension/v1/chemform?moleculeKey=" . urlencode($attributes['moleculeKey']),
                 'width' => $attributes['width'],
                 'height' => $attributes['height'],
+                'margin' => $attributes['margin'],
                 'showrgroups' => $attributes['showrgroups'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png",
                 'imageAlreadyRendered' => $attributes['imageAlreadyRendered'],
@@ -101,6 +103,7 @@ class RenderFormula
                 'moleculeKey' => '',
                 'width' => $attributes['width'],
                 'height' => $attributes['height'],
+                'margin' => $attributes['margin'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png"
             ]
         )->render();
