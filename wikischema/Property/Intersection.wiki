@@ -1,0 +1,14 @@
+; Purpose
+* [[Property description::Contains the intersection of an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Quantity]].
+
+; Values
+* Input fields should be restricted to positive numbers (<nowiki>regexp=/^([0-9]*\.)?[0-9]*$/</nowiki>).
+
+; Corresponds
+* [[Corresponds to::1 nm]]
+
+; Unit
+* [[Display units::nm]]

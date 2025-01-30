@@ -8,23 +8,25 @@ This is the Absorption Emission Spectroscopy template.
 <td>{{{absorption_intensity_max|}}}</td>
 <td>{{{emission_max|}}}</td>
 <td>{{{emission_intensity_max|}}}</td>
+<td>{{{intersection|}}}</td>
 <td>{{DisplayMolecule|{{{solvent|}}} }}</td>
 <td>{{{solvent_conc|}}}</td>
-<td>{{{temp|}}}</td>
-<td>{{#expr: 1240 / {{#convertQuantity:{{{emission_intensity_max|}}}|property=Emission Intensity Max }} round 2 }}</td>
+<td property="hidden">{{{temp|}}}</td>
+<td>{{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection }} round 2 }}</td>
 <td>{{{absorption_coefficient|}}}</td>
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 </tr>{{#subobject:
- |Molecule={{{absorber_emitter|}}}
+ |Absorber Emitter={{{absorber_emitter|}}}
  |Experiment Type={{{experiment_type|}}}
  |Absorption Intensity Max={{{absorption_intensity_max|}}}
  |Emission Max={{{emission_max|}}}
  |Emission Intensity Max={{{emission_intensity_max|}}}
+ |Intersection={{{intersection|}}}
  |Solvent={{{solvent|}}}
  |Solvent concentration={{{solvent_conc|}}}
  |Temperature={{{temp|}}}
- |E0={{#expr: 1240 / {{#convertQuantity:{{{emission_intensity_max|}}}|property=Emission Intensity Max }} round 2 }}
+ |E0={{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection }} round 2 }}
  |Absorption Coefficient={{{absorption_coefficient|}}}
  |Details={{{details|}}}
  |Included={{{include|}}}

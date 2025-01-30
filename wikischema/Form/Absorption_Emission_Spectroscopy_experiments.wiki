@@ -29,6 +29,9 @@ experiments:
 ! Emission intensity maximum [nm]
 | {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
+! Intersection [nm]
+| {{{field|intersection|property=Intersection|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
 ! solvent / solvent concentration [µM]:
 | {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 | {{{field|solvent_conc|input type=regexp|property=Solvent concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}

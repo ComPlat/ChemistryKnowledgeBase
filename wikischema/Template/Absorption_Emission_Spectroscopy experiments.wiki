@@ -6,9 +6,10 @@ This is the Absorption Emission Spectroscopy experiments template.
 <th title="absorber/emitter">Absorber/Emitter</th>
 <th title="experiment type">experiment type</th>
 <th title="absorption maximum [nm]">absorption maximum [{{#show: Property:Absorption Max|?Display units}}]</th>
-<th title="absorption intensity maximum [??]">absorption intensity maximum [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
+<th title="absorption intensity maximum [nm]">absorption intensity maximum [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
 <th title="emission maximum [nm]">emission maximum [{{#show: Property:Emission Max|?Display units}}]</th>
-<th title="emission intensity maximum [??]">emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]</th>
+<th title="emission intensity maximum [nm]">emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]</th>
+<th title="intersection [nm]">intersection [{{#show: Property:Intersection|?Display units}}]</th>
 <th title="solvent">solvent</th>
 <th title="solvent_conc [µM]">solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]</th>
 <th title="temperature [° C]" property="hidden">T [{{#show: Property:Temperature|?Display units}}]</th>
