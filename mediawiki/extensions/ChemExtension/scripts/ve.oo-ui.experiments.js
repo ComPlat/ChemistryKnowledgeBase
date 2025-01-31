@@ -81,11 +81,11 @@
         $('span.experiment-link-show-button').off('click');
         $('span.experiment-link-show-button').click(toggleExperimentHandler);
 
-        let refreshExperimentHandler = function(e) {
+        let refreshExperimentLinkHandler = function(e) {
             let buttonLabel = $(e.target);
             buttonLabel.text('Refreshing...');
             let ajax = new window.ChemExtension.AjaxEndpoints();
-            ajax.invalidateInvestigationCache($(e.target).closest('button').attr('value')).done((response) => {
+            ajax.invalidateInvestigationLinkCache($(e.target).closest('button').attr('value')).done((response) => {
                 mw.notify('Cache invalidated');
 
                 let experimentContainer = $(e.target).closest('.experiment-link-border');
@@ -95,7 +95,7 @@
                 let newNode = $(response.html);
                 experimentContainer.replaceWith(newNode);
                 newNode.find('span.experiment-link-show-button').click(toggleExperimentHandler);
-                newNode.find('span.experiment-link-refresh-button').click(refreshExperimentHandler);
+                newNode.find('span.experiment-link-refresh-button').click(refreshExperimentLinkHandler);
                 if (visible) {
                     newNode.find('table').show();
                 }
@@ -104,7 +104,22 @@
             });
         };
         $('span.experiment-link-refresh-button').off('click');
-        $('span.experiment-link-refresh-button').click(refreshExperimentHandler);
+        $('span.experiment-link-refresh-button').click(refreshExperimentLinkHandler);
+
+        let refreshExperimentListHandler = function(e) {
+            let buttonLabel = $(e.target);
+            buttonLabel.text('Refreshing...');
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            ajax.invalidateInvestigationListCache($(e.target).closest('button').attr('value')).done((response) => {
+                mw.notify('Cache invalidated');
+
+                window.location.reload();
+            }).fail((e) => {
+                mw.notify('Cache invalidation failed');
+            });
+        };
+        $('span.experiment-list-refresh-button').off('click');
+        $('span.experiment-list-refresh-button').click(refreshExperimentListHandler);
 
 
         let exportExperimentHandler = function(e) {

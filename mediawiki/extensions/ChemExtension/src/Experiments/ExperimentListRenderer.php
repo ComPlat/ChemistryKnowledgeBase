@@ -53,15 +53,14 @@ class ExperimentListRenderer extends ExperimentRenderer
         });
 
         $cache = MediaWikiServices::getInstance()->getMainObjectStash();
-        $html = $cache->getWithSetCallback($cache->makeKey('investigation-table', md5($text)), $cache::TTL_DAY,
+        $cacheKey = $cache->makeKey('investigation-table', md5($text));
+        $html = $cache->getWithSetCallback($cacheKey, $cache::TTL_DAY,
             function () use ($text, $pageTitle) {
                 $parser = clone MediaWikiServices::getInstance()->getParser();
                 $parserOutput = $parser->parse($text, $pageTitle, new ParserOptions(RequestContext::getMain()->getUser()));
                 return $parserOutput->getText(['enableSectionEditLinks' => false]);
             });
 
-
-        $results = [];
 
         $htmlTableEditor = new HtmlTableEditor($html, $this->context);
         $htmlTableEditor->removeEmptyColumns();
@@ -110,6 +109,21 @@ class ExperimentListRenderer extends ExperimentRenderer
             ])
         ]);
 
+        $refreshButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-list-refresh-button'],
+            'id' => 'ce-refresh-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Refresh',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Refresh content investigations',
+            'infusable' => true,
+            'value' => json_encode([
+                'parameters' => $this->context['parameters'],
+                'page' => $this->context['page']->getPrefixedText(),
+                'cacheKey' => md5($text)
+            ])
+        ]);
+
         global $wgScriptPath;
         $htmlTableEditor->addTableClass("experiment-list");
         if (WikiTools::isInVisualEditor()) {
@@ -123,6 +137,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'inVisualEditor' => WikiTools::isInVisualEditor(),
             'wgScriptPath' => $wgScriptPath,
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
+            'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
             'renameButton' => WikiTools::isInVisualEditor() || !$this->userHasMoveRights() ? '' : $renameButton->toString(),
         ])->render();
 

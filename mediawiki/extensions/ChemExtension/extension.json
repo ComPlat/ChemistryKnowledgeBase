@@ -66,7 +66,12 @@
         {
             "path": "/ChemExtension/v1/invalidate-inv-cache",
             "method": "POST",
-            "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentCache"
+            "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentLinkCache"
+        },
+        {
+            "path": "/ChemExtension/v1/invalidate-inv-list-cache",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentListCache"
         },
         {
             "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",

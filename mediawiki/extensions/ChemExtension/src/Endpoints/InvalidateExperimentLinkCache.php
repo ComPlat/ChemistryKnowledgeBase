@@ -6,7 +6,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 
-class InvalidateExperimentCache extends SimpleHandler {
+class InvalidateExperimentLinkCache extends SimpleHandler {
 
     public function run() {
 
