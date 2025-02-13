@@ -25,7 +25,7 @@ class ConvertQuantity
             array_shift($parametersAsStringArray); // get rid of Parser
             $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
-            $value = $parameters[''];
+            $value = $parameters[''] ?? '';
             if (!isset($parameters['property'])) {
                 return [$value, 'noparse' => true, 'isHTML' => false];
             }
