@@ -66,7 +66,10 @@ class ModifyMolecule extends SpecialPage
             throw new Exception("Cannot find molecule with molecule key: $moleculeKey");
         }
         $molfile = NULL;
-        $queryResults = QueryUtils::executeBasicQuery("[[Molecule:$chemFormId]]", [QueryUtils::newPropertyPrintRequest("Molfile")]);
+        $queryResults = QueryUtils::executeBasicQuery("[[Molecule:$chemFormId]]", [
+            QueryUtils::newPropertyPrintRequest("Molfile"),
+            QueryUtils::newPropertyPrintRequest("BelongsToCollection")
+        ]);
         if ($row = $queryResults->getNext()) {
             $molfile = $this->getMolfile($row, $moleculeKey);
         }
@@ -155,6 +158,11 @@ class ModifyMolecule extends SpecialPage
         }
         if ($dataItem->getDIType() == \SMWDataItem::TYPE_BLOB) {
             $smiles = $dataItem->getString();
+        }
+        $column = next($row);
+        $dataItem = $column->getNextDataItem();
+        if ($dataItem !== false) {
+            throw new Exception("Molecule is part of a collection and cannot be changed. Please change the collection itself");
         }
         return $smiles;
     }

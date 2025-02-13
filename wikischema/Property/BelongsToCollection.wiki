@@ -1,0 +1,5 @@
+; Purpose
+* Refers to the molecule collection
+
+; Datatype
+* [[Has type::Page]].
