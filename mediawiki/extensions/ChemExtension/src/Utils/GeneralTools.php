@@ -11,4 +11,11 @@ class GeneralTools {
         }
         return substr( $haystack, -$length ) === $needle;
     }
+
+    public static function startsWith ($string, $startString)
+    {
+        $len = strlen($startString);
+        return (substr($string, 0, $len) === $startString);
+    }
+
 }

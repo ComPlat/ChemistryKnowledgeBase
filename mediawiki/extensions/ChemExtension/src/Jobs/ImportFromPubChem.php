@@ -35,7 +35,7 @@ class ImportFromPubChem extends Job
             $pubChemService = new PubChemService();
             $metadata = $pubChemService->getPubChem($this->inchiKey);
             $smiles = $metadata['record']->getSMILES();
-            $molfile = IndigoTool::convertToMolfile($smiles);
+            $molfile = IndigoTool::convertSmilesToMolfile($smiles);
 
             $renderService = new MoleculeRendererClientImpl();
             $renderedMolecule = $renderService->render($molfile);

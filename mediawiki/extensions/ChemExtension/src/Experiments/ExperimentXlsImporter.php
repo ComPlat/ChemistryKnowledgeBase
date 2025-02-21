@@ -187,7 +187,7 @@ class ExperimentXlsImporter
             return $moleculeKey;
         } else if ($formatDetection === 'smiles') {
             $this->logger->log('Detected data to import as SMILES, converting to MOLFILE.');
-            $molfile = IndigoTool::convertToMolfile($unquotedData);
+            $molfile = IndigoTool::convertSmilesToMolfile($unquotedData);
             $this->logger->log('MOLFILE: ' . $molfile);
             $this->nonExistingMolecules[] = ChemForm::fromMolOrRxn($molfile, $unquotedData, "", $moleculeKey);
             return $moleculeKey;

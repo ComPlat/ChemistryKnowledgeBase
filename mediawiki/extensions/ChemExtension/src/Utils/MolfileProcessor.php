@@ -45,9 +45,9 @@ class MolfileProcessor
         }
 
         // adjust COUNT line
-        preg_match('/^(M\s+V30\s+COUNTS\s+\d+\s+)(\d+)(\s+.)*/', $lines[$countIndex], $matches);
+        preg_match('/^(M\s+V30\s+COUNTS\s+\d+\s+)(\d+)(.+)/', $lines[$countIndex], $matches);
         $newCount = ((int)$matches[2]) - count($linesToRemove);
-        $lines[$countIndex] = preg_replace('/^(M\s+V30\s+COUNTS\s+\d+)\s+(\d+)\s+(.)*/', '$1 '.$newCount.' $3', $lines[$countIndex]);
+        $lines[$countIndex] = preg_replace('/^(M\s+V30\s+COUNTS\s+\d+)\s+(\d+)\s+(.+)/', '$1 '.$newCount.' $3', $lines[$countIndex]);
 
         $result = [];
         for($i = 0; $i < count($lines); $i++) {
