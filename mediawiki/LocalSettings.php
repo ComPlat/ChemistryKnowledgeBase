@@ -52,7 +52,7 @@ $wgEmailAuthentication = true;
 
 ## Database settings
 $wgDBtype = "mysql";
-$wgDBserver = "localhost";
+$wgDBserver = "127.0.0.1";
 $wgDBname = "chemwiki";
 $wgDBuser = "admin";
 $wgDBpassword = "vagrant";
