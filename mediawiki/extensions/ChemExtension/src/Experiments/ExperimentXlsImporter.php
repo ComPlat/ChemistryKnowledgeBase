@@ -170,7 +170,12 @@ class ExperimentXlsImporter
         if (!ChemTools::isInchIKey($moleculeKey)) {
             // check if molecule key is (part of) trivialname / abbreviation / synonym
             $this->logger->log("No inchikey found for '$moleculeKey', try to find molecule by name, synonym or abbreviation");
-            return $this->searchForMolecule($moleculeKey);
+            $searchResult = $this->searchForMolecule($moleculeKey);
+            if ($searchResult['type'] === 'chemformid') {
+                return "Molecule:".$searchResult['value'];
+            } else {
+                return $searchResult['value'];
+            }
         }
 
         $chemFormId = $this->chemFormRepo->getChemFormId($moleculeKey);
@@ -230,16 +235,23 @@ OR [[Category:Molecule]][[Trivialname::~*$searchText*]]
 OR [[Category:Molecule]][[IUPACName::~*$searchText*]]
 QUERY;
         $results = QueryUtils::executeBasicQuery($query);
-        if ($results->getCount() > 1) {
-            $this->logger->warn('Could not identify molecule uniquely, leaving data unchanged: ' . $searchText);
-            return $searchText;
+
+        if ($results->getCount() === 0) {
+            $this->logger->warn('Molecule could not be found, leaving data unchanged: ' . $searchText);
+            return [
+                'value' => $searchText,
+                'type' => 'plain'
+            ];
         }
         $row = $results->getNext();
         $column = reset($row);
         $dataItem = $column->getNextDataItem();
         $chemFormId = $dataItem->getTitle()->getText();
         $this->logger->log("Molecule found: $chemFormId");
-        return $chemFormId;
+        return [
+            'value' => $chemFormId,
+            'type' => 'chemformid'
+        ];
 
     }
 }

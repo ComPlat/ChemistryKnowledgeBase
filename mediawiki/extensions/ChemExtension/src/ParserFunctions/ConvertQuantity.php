@@ -26,7 +26,7 @@ class ConvertQuantity
             $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
             $value = $parameters[''] ?? '';
-            if (!isset($parameters['property'])) {
+            if (!isset($parameters['property']) || $value === '') {
                 return [$value, 'noparse' => true, 'isHTML' => false];
             }
 
