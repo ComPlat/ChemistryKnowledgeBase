@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Utils\GeneralTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Parser;
@@ -27,12 +28,12 @@ class ConvertQuantity
 
             $value = $parameters[''] ?? '';
             if (!isset($parameters['property']) || $value === '') {
-                return [$value, 'noparse' => true, 'isHTML' => false];
+                return [GeneralTools::toZeroIfVerySmall($value), 'noparse' => true, 'isHTML' => false];
             }
 
             $unit = QueryUtils::getUnitForProperty($parameters['property']);
             if (is_null($unit)) {
-                return [$value, 'noparse' => true, 'isHTML' => false];
+                return [GeneralTools::toZeroIfVerySmall($value), 'noparse' => true, 'isHTML' => false];
             }
 
             $propertyDI = SMWDIProperty::newFromUserLabel($parameters['property']);
@@ -41,12 +42,13 @@ class ConvertQuantity
 
             $num->setDataValueServiceFactory($applicationFactory->create( 'DataValueServiceFactory' ));
             $num->setProperty($propertyDI);
-            $num->setUserValue($value);
+            $num->setUserValue(GeneralTools::toZeroIfVerySmall($value));
 
             return [$num->getConvertedUnitValues()[$unit->getString()], 'noparse' => true, 'isHTML' => false];
         } catch (Exception $e) {
             return ['-error on calculation-', 'noparse' => true, 'isHTML' => false];
         }
     }
+
 
 }

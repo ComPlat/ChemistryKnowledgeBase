@@ -437,13 +437,6 @@ a.publication-for-investigation {
     margin-left: 5px;
 }
 
-table.ce-center-aligned-table tr {
-    transform: rotateX(180deg);
-}
-
-table.ce-center-aligned-table td {
-    width: 100%;
-}
 
 table.wikitable th {
     cursor: pointer;
@@ -510,18 +503,6 @@ p.added-jobs-success {
     text-align: center;
 }
 
-table.ce-center-aligned-table {
-    width: 100%;
-}
-
-table.ce-center-aligned-table td {
-    width: 50%;
-    text-align: center;
-}
-
-table.ce-center-aligned-table td:not(:first-child) {
-    border-left: 1px solid;
-}
 
 #molecule-log-table {
     width: 90%;

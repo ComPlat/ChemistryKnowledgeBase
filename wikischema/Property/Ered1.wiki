@@ -1,0 +1,12 @@
+; Purpose
+* [[Property description::Contains the Ered1 potential.]]
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 V]]
+* [[Corresponds to::1000 mV]]
+
+; Unit
+* [[Display units::V]]

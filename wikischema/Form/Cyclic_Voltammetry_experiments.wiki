@@ -15,9 +15,31 @@ experiments:
 | {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! redox potential / E0,0 [V]:
-| {{{field|redox potential|input type=redoxinput}}}
+! E0,0 [V] / E0,0 type:
 | {{{field|e0|input type=regexp|property=E0|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|e0_type|input type=dropdown|property=E0 type}}}
+|-
+! E1,2 [V]:
+| {{{field|redox potential|input type=redoxinput}}}
+|-
+! *E<sub>red</sub> [V] / *E<sub>ox</sub> [V]:
+| {{{field|e_red_ast|input type=regexp|property=Ered1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|e_ox_ast|input type=regexp|property=Eox1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! E<sub>red1</sub> [V] / E<sub>ox1</sub> [V]:
+| {{{field|e_red1|input type=regexp|property=Ered1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|e_ox1|input type=regexp|property=Eox1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! E<sub>red2</sub> [V] / E<sub>ox2</sub> [V]:
+| {{{field|e_red2|input type=regexp|property=Ered2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|e_ox2|input type=regexp|property=Eox2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! E<sub>red3</sub> [V] / E<sub>ox3</sub> [V]:
+| {{{field|e_red3|input type=regexp|property=Ered3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| {{{field|e_ox3|input type=regexp|property=Eox3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! *Redox type:
+| {{{field|redox_type|input type=dropdown|property=Redox type}}}
 |-
 ! solvent / solvent volume [{{#show: Property:Solvent volume|?Display units}}]:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}

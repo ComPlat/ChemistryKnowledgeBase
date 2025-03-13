@@ -1,0 +1,9 @@
+; Purpose
+* [[Property description::Contains a string describing if experiment was measured or calculated.@en]]
+
+; Datatype
+* [[Has type::Text]].
+
+The allowed values for this property are:
+* [[Allows value::experimental]]
+* [[Allows value::calculated]]
