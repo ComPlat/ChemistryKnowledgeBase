@@ -52,7 +52,7 @@ This is the Cyclic Voltammetry template.
  |Potential window={{{potential window|}}}
  |Scan direction={{{scan dir|}}}
  |Gas={{{gas|}}}
- |Temperature={{{temp|}}}
+ |TemperatureP={{{temp|}}}
  |Condition={{{cond|}}}
  |Working electrode={{{WE|}}}
  |Working electrode surface area={{{WE area|}}}

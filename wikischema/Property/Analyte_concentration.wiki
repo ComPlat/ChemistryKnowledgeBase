@@ -5,9 +5,9 @@
 * [[Has type::Quantity]]
 
 ; Corresponds
-* [[Corresponds to::1 M, Mol]]
-* [[Corresponds to::1000 mM]]
-* [[Corresponds to::1000000 µM]]
+* [[Corresponds to::0.001 M, Mol]]
+* [[Corresponds to::1 mM]]
+* [[Corresponds to::1000 µM]]
 
 ; Unit
-* [[Display units::M]]
+* [[Display units::mM]]

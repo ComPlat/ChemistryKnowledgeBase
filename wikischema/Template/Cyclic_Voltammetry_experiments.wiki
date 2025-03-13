@@ -4,27 +4,27 @@ This is the Cyclic Voltammetry experiments template.
 <includeonly><table class="wikitable" title="">
 <tr>
 <th title="analyte (catalyst)">analyte</th>
-<th title="analyte concentration [mM]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
+<th title="analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
 <th title="Reduction potential">reduction potential E<sup>Red</sup> [V]</th>
 <th title="Oxidation potential">oxidation potential E<sup>Ox</sup> [V]</th>
 <th title="E0,0 [V]">*E0,0 [V]</th>
 <th title="ERed [V]">*E<sup>Red</sup> [V]</th>
 <th title="EOx [V]">*E<sup>Ox</sup> [V]</th>
 <th title="solvent">solvent</th>
-<th title="solvent volume [ml]" property="hidden">solvent vol [{{#show: Property:Solvent volume|?Display units}}]</th>
+<th title="solvent volume [{{#show: Property:Solvent volume|?Display units}}]" property="hidden">solvent vol [{{#show: Property:Solvent volume|?Display units}}]</th>
 <th title="electrolyte">electrolyte</th>
 <th title="electrolyte purity">electrolyte purity</th>
-<th title="electrolyte concentration [M]" property="hidden">el conc [{{#show: Property:Electrolyte concentration|?Display units}}]</th>
+<th title="electrolyte concentration [{{#show: Property:Electrolyte concentration|?Display units}}]" property="hidden">el conc [{{#show: Property:Electrolyte concentration|?Display units}}]</th>
 <th title="internal reference compound">int ref comp</th>
-<th title="scan rate [mV s-1]" property="hidden">scan rate [{{#show: Property:Scan rate|?Display units}}]</th>
+<th title="scan rate [{{#show: Property:Scan rate|?Display units}}]" property="hidden">scan rate [{{#show: Property:Scan rate|?Display units}}]</th>
 <th title="scan number">scan number</th>
 <th title="potential window" property="hidden">potential window</th>
 <th title="scan direction" property="hidden">scan dir</th>
 <th title="gas (atmosphere)">gas</th>
-<th title="temperature [° C]" property="hidden">T [{{#show: Property:Temperature|?Display units}}]</th>
+<th title="temperature [{{#show: Property:TemperatureP|?Display units}}]" property="hidden">T [{{#show: Property:TemperatureP|?Display units}}]</th>
 <th title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
 <th title="working electrode (type and material)">WE</th>
-<th title="WE SA [mm²]" property="hidden">WE SA [{{#show: Property:Working electrode surface area|?Display units}}]</th>
+<th title="WE SA [{{#show: Property:Working electrode surface area|?Display units}}]" property="hidden">WE SA [{{#show: Property:Working electrode surface area|?Display units}}]</th>
 <th title="counter electrode" property="hidden">CE</th>
 <th title="reference electrode">RE</th>
 <th title="details" property="hidden">Details</th>

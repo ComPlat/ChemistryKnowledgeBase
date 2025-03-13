@@ -17,29 +17,29 @@ experiments:
 ! experimental / calculated:
 | {{{field|experiment_type|input type=dropdown|property=Experiment Type}}}
 |-
-! Absorption maximum given [nm]:
+! Absorption maximum given [{{#show: Property:Absorption Max|?Display units}}]:
 | {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Absorption intensity max [nm]:
+! Absorption intensity max [{{#show: Property:Absorption Intensity Max|?Display units}}]:
 | {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Emission maximum given [nm]
+! Emission maximum given [{{#show: Property:Emission Max|?Display units}}]
 | {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Emission intensity maximum [nm]
+! Emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]
 | {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Intersection [nm]
+! Intersection [{{#show: Property:Intersection|?Display units}}]
 | {{{field|intersection|property=Intersection|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! solvent / solvent concentration [µM]:
+! solvent / solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]:
 | {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
 | {{{field|solvent_conc|input type=regexp|property=Solvent concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! temperature [°C]:
+! temperature [{{#show: Property:TemperatureP|?Display units}}]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
 |-
-! absorption coefficient [L/mol⋅cm]:
+! absorption coefficient [{{#show: Property:Absorption Coefficient|?Display units}}]:
 | {{{field|absorption_coefficient|input type=regexp|property=Absorption Coefficient|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(L\/mol⋅cm)?)?$/}}}
 |-
 ! include:

@@ -4,40 +4,40 @@ This is the Photocatalytic CO2 conversion experiments template.
 <includeonly><table class="wikitable" title="">
 <tr>
 <th title="catalyst">cat</th>
-<th title="catalyst concentration">cat conc [{{#show: Property:Catalyst concentration|?Display units}}]</th>
+<th title="catalyst concentration [{{#show: Property:Catalyst concentration|?Display units}}]">cat conc [{{#show: Property:Catalyst concentration|?Display units}}]</th>
 <th title="photosensitizer">PS</th>
-<th title="photosensitizer concentration">PS conc [{{#show: Property:Photosensitizer concentration|?Display units}}]</th>
+<th title="photosensitizer concentration [{{#show: Property:Photosensitizer concentration|?Display units}}]">PS conc [{{#show: Property:Photosensitizer concentration|?Display units}}]</th>
 <th title="electron donor">e-D</th>
-<th title="electron donor concentration">e-D conc [{{#show: Property:Electron donor concentration|?Display units}}]</th>
+<th title="electron donor concentration [{{#show: Property:Electron donor concentration|?Display units}}]">e-D conc [{{#show: Property:Electron donor concentration|?Display units}}]</th>
 <th property="hidden" title="hydrogen donor">H-D</th>
-<th property="hidden" title="hydrogen donor concentration">H-D conc [{{#show: Property:Hydrogen donor concentration|?Display units}}]</th>
+<th property="hidden" title="hydrogen donor concentration [{{#show: Property:Hydrogen donor concentration|?Display units}}]">H-D conc [{{#show: Property:Hydrogen donor concentration|?Display units}}]</th>
 <th title="solvent A">solvent A</th>
 <th property="hidden" title="solvent B">solvent B</th>
 <th property="hidden" title="solvent C">solvent C</th>
 <th property="hidden" title="solvent ratio">solv A/B/C</th>
 <th title="additives">additives</th>
-<th property="hidden" title="additives concentration">additives conc [{{#show: Property:Additives concentration|?Display units}}]</th>
+<th property="hidden" title="additives concentration [{{#show: Property:Additives concentration|?Display units}}]">additives conc [{{#show: Property:Additives concentration|?Display units}}]</th>
 <th property="hidden" title="feedstock gas">feedstock gas</th>
-<th property="hidden" title="volume of feedstock gas">feedstock volume [{{#show: Property:Feedstock volume|?Display units}}]</th>
-<th property="hidden" title="light intensity">intensity [{{#show: Property:Intensity|?Display units}}]</th>
+<th property="hidden" title="volume of feedstock gas [{{#show: Property:Feedstock volume|?Display units}}]">feedstock volume [{{#show: Property:Feedstock volume|?Display units}}]</th>
+<th property="hidden" title="light intensity [{{#show: Property:Intensity|?Display units}}]">intensity [{{#show: Property:Intensity|?Display units}}]</th>
 <th property="hidden" title="pH">pH</th>
-<th property="hidden" title="temperature">T [{{#show: Property:Temperature|?Display units}}]</th>
-<th title="irradiation wavelength">λexc [{{#show: Property:Excitation wavelength|?Display units}}]</th>
-<th property="hidden" title="irradiation time">t [{{#show: Property:Irradiation_time|?Display units}}]</th>
+<th property="hidden" title="temperature [{{#show: Property:TemperatureP|?Display units}}]">T [{{#show: Property:TemperatureP|?Display units}}]</th>
+<th title="irradiation wavelength [{{#show: Property:Excitation wavelength|?Display units}}]">λexc [{{#show: Property:Excitation wavelength|?Display units}}]</th>
+<th property="hidden" title="irradiation time [{{#show: Property:Irradiation_time|?Display units}}]">t [{{#show: Property:Irradiation_time|?Display units}}]</th>
 <th title="turnover number CO">TON CO</th>
-<th property="hidden" title="turnover frequency CO">TOF CO [{{#show: Property:Turnover frequency CO|?Display units}}]</th>
+<th property="hidden" title="turnover frequency CO [{{#show: Property:Turnover frequency CO|?Display units}}]">TOF CO [{{#show: Property:Turnover frequency CO|?Display units}}]</th>
 <th property="hidden" title="quantum yield CO">Φ CO [%]</th>
 <th title="turnover number CH4">TON CH4</th>
-<th property="hidden" title="turnover frequency CH4">TOF CH4 [{{#show: Property:Turnover frequency CH4|?Display units}}]</th>
+<th property="hidden" title="turnover frequency CH4 [{{#show: Property:Turnover frequency CH4|?Display units}}]">TOF CH4 [{{#show: Property:Turnover frequency CH4|?Display units}}]</th>
 <th property="hidden" title="quantum yield CH4">Φ CH4 [%]</th>
 <th title="turnover number H2">TON H2</th>
-<th property="hidden" title="turnover frequency H2">TOF H2 [{{#show: Property:Turnover frequency H2|?Display units}}]</th>
+<th property="hidden" title="turnover frequency H2 [{{#show: Property:Turnover frequency H2|?Display units}}]">TOF H2 [{{#show: Property:Turnover frequency H2|?Display units}}]</th>
 <th property="hidden" title="quantum yield H2">Φ H2 [%]</th>
 <th title="turnover number HCOOH">TON HCOOH</th>
-<th property="hidden" title="turnover frequency HCOOH">TOF HCOOH [{{#show: Property:Turnover frequency HCOOH|?Display units}}]</th>
+<th property="hidden" title="turnover frequency HCOOH [{{#show: Property:Turnover frequency HCOOH|?Display units}}]">TOF HCOOH [{{#show: Property:Turnover frequency HCOOH|?Display units}}]</th>
 <th property="hidden" title="quantum yield HCOOH">Φ HCOOH [%]</th>
 <th title="turnover number MeOH">TON MeOH</th>
-<th property="hidden" title="turnover frequency MeOH">TOF MeOH [{{#show: Property:Turnover frequency MeOH|?Display units}}]</th>
+<th property="hidden" title="turnover frequency MeOH [{{#show: Property:Turnover frequency MeOH|?Display units}}]">TOF MeOH [{{#show: Property:Turnover frequency MeOH|?Display units}}]</th>
 <th property="hidden" title="quantum yield MeOH">Φ MeOH [%]</th>
 <th property="hidden" title="selectivity">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
 <th property="hidden" title="total quantum yield">Φ all [%]</th>

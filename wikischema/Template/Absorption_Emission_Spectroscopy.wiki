@@ -25,7 +25,7 @@ This is the Absorption Emission Spectroscopy template.
  |Intersection={{{intersection|}}}
  |Solvent={{{solvent|}}}
  |Solvent concentration={{{solvent_conc|}}}
- |Temperature={{{temp|}}}
+ |TemperatureP={{{temp|}}}
  |E0={{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection }} round 2 }}
  |Absorption Coefficient={{{absorption_coefficient|}}}
  |Details={{{details|}}}

@@ -61,7 +61,7 @@ This is the Photocatalytic CO2 conversion template.
  |Feedstock volume={{{feedstock volume|}}}
  |Intensity={{{intensity|}}}
  |PH value={{{pH|}}}
- |Temperature={{{Temperature|}}}
+ |TemperatureP={{{Temperature|}}}
  |Excitation wavelength={{{λexc|}}}
  |Irradiation time={{{irr time|}}}
  |Turnover number CO={{{TON CO|}}}
