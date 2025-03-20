@@ -9,7 +9,7 @@ This page will guide you in adding a new publication, set of experiments or data
 -	molecule page (only add abbreviation)
 
 === Publication pages ===
-How to generate a new publication page: Authoring → Create a new Paper: enter title (default publication title, check formatting in the wiki), DOI, topic(s) it belongs to → Create paper<br>
+How to generate a new publication page: Authoring → Create a new Publication: enter title (default publication title, check formatting in the wiki), DOI, topic(s) it belongs to → Create publiction<br>
 This leads to the new publication page with auto-generated infobox (About) from the DOI-generated literature page
 
 Page titles cannot contain brackets [] or slashes /, or hashtags #. For a full list, see:
@@ -17,10 +17,14 @@ https://www.mediawiki.org/wiki/Manual:Page_title
 
 '''Publication pages (and topic pages) are the only ones that can be freely edited! Any changes to molecules or investigations must be made on the publication page. Only exception is adding an abbreviation to a molecule, this happens on the molecule page.'''
 
-Publication pages show the legally available data from published papers. These are:
+'''How to select suitable publications/papers that are added to the Wiki?'''<br>
+The most important point for a selection of a publication to be represented in the Wiki as a novel article is that the publication deals with the scientific content of one of the (sub)topics. Further, the publication needs to contain data to be used for filling the investigation tables. This data can be given in the manuscript or the SI but it needs to be given with the original publication. If a publication does not contain data (or insufficient data) for the required information in the investigation, the publication would be out of scope for the Wiki.
+
+Publication pages show legally available data and information from published papers, e.g.
 
 I)	The investigations: Tables with data<br>
 II)	Molecules used in the publication
+III) Key findings of the original publication in brief
 
 Currently, the pages are structured by the headlines:
 

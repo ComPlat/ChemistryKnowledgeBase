@@ -1,9 +1,9 @@
 {{BaseTemplate}}
 Table of all the experiments that have a turnover number for CO greater than 100, sorted by catalyst and in descending order. 
 
-{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Turnover number CH4, Catalyst|order=descending|description=TON CO > 100}} 
+{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Turnover number CO, Catalyst|order=descending|description=TON CO > 100}}
 
 Table of all the experiments that have a turnover number for CO less than 100, sorted by catalyst.
 
-{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CO < 100}} 
+{{#experimentlink:%5B%5BTurnover%20number%20CO%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CO < 100}}
 [[Category:Homogeneous photocatalytic CO2 conversion]]
