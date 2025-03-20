@@ -5,18 +5,18 @@ This is the Cyclic Voltammetry experiments template.
 <tr>
 <th title="analyte (catalyst)">analyte</th>
 <th title="analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
-<th title="E0,0 [V]">E0,0 [V]</th>
-<th title="E0,0 Type [V]">E0,0 type</th>
+<th title="E0,0 [{{#show: Property:E0|?Display units}}]">E0,0 [{{#show: Property:E0|?Display units}}]</th>
+<th title="E0,0 Type">E0,0 type</th>
 <th title="E1,2 [V]">E1,2 [V]</th>
-<th title="*ERed [V]">*E<sup>red</sup> [V]</th>
-<th title="*EOx [V]">*E<sup>ox</sup> [V]</th>
+<th title="*ERed [{{#show: Property:Ered1|?Display units}}]">*E<sup>red</sup> [{{#show: Property:Ered1|?Display units}}]</th>
+<th title="*EOx [{{#show: Property:Eox1|?Display units}}]">*E<sup>ox</sup> [{{#show: Property:Eox1|?Display units}}]</th>
 <th title="*Redox type">*Redox type</th>
-<th title="ERed1 [V]">E<sup>red1</sup> [V]</th>
-<th title="EOx1 [V]">E<sup>ox1</sup> [V]</th>
-<th title="ERed2 [V]">E<sup>red2</sup> [V]</th>
-<th title="EOx2 [V]">E<sup>ox2</sup> [V]</th>
-<th title="ERed3 [V]">E<sup>red3</sup> [V]</th>
-<th title="EOx3 [V]">E<sup>ox3</sup> [V]</th>
+<th title="ERed1 [{{#show: Property:Ered1|?Display units}}]">E<sup>red1</sup> [{{#show: Property:Ered1|?Display units}}]</th>
+<th title="EOx1 [{{#show: Property:Eox1|?Display units}}]">E<sup>ox1</sup> [{{#show: Property:Eox1|?Display units}}]</th>
+<th title="ERed2 [{{#show: Property:Ered2|?Display units}}]">E<sup>red2</sup> [{{#show: Property:Ered2|?Display units}}]</th>
+<th title="EOx2 [{{#show: Property:Eox2|?Display units}}]">E<sup>ox2</sup> [{{#show: Property:Eox1|?Display units}}]</th>
+<th title="ERed3 [{{#show: Property:Ered3|?Display units}}]">E<sup>red3</sup> [{{#show: Property:Ered3|?Display units}}]</th>
+<th title="EOx3 [{{#show: Property:Eox3|?Display units}}]">E<sup>ox3</sup> [{{#show: Property:Eox3|?Display units}}]</th>
 <th title="solvent">solvent</th>
 <th title="solvent volume [{{#show: Property:Solvent volume|?Display units}}]" property="hidden">solvent vol [{{#show: Property:Solvent volume|?Display units}}]</th>
 <th title="electrolyte">electrolyte</th>
