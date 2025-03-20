@@ -28,12 +28,12 @@ class ConvertQuantity
 
             $value = $parameters[''] ?? '';
             if (!isset($parameters['property']) || $value === '') {
-                return [GeneralTools::toZeroIfVerySmall($value), 'noparse' => true, 'isHTML' => false];
+                return [GeneralTools::roundNumber($value), 'noparse' => true, 'isHTML' => false];
             }
 
             $unit = QueryUtils::getUnitForProperty($parameters['property']);
             if (is_null($unit)) {
-                return [GeneralTools::toZeroIfVerySmall($value), 'noparse' => true, 'isHTML' => false];
+                return [GeneralTools::roundNumber($value), 'noparse' => true, 'isHTML' => false];
             }
 
             $propertyDI = SMWDIProperty::newFromUserLabel($parameters['property']);
@@ -42,7 +42,7 @@ class ConvertQuantity
 
             $num->setDataValueServiceFactory($applicationFactory->create( 'DataValueServiceFactory' ));
             $num->setProperty($propertyDI);
-            $num->setUserValue(GeneralTools::toZeroIfVerySmall($value));
+            $num->setUserValue(GeneralTools::roundNumber($value));
 
             return [$num->getConvertedUnitValues()[$unit->getString()], 'noparse' => true, 'isHTML' => false];
         } catch (Exception $e) {

@@ -37,7 +37,7 @@ class ExtractFromTable {
         }
         $add = $parameters['add'] ?? null;
         $parts = explode(',', $content);
-        $parts = array_map(fn($e) => GeneralTools::toZeroIfVerySmall(is_null($add) ? $e : (float)$e + (float)$add), $parts);
+        $parts = array_map(fn($e) => GeneralTools::roundNumber(is_null($add) ? $e : (float)$e + (float)$add), $parts);
         return [join(', ', $parts), 'noparse' => true, 'isHTML' => true];
 
 

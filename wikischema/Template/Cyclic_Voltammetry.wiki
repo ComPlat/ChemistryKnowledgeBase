@@ -6,7 +6,7 @@ This is the Cyclic Voltammetry template.
 <td>{{{anl conc|}}}</td>
 <td>{{#convertQuantity:{{{e0|}}}|property=E0 }}</td>
 <td>{{{e0_type|}}}</td>
-<td>{{{redox potential|}}}</td>
+<td>{{#extractFromTable:{{{redox potential|}}}|row=0}}; {{#extractFromTable:{{{redox potential|}}}|row=1}}</td>
 <td>
 {{#if: {{{e_red_ast|}}}| {{#convertQuantity: {{{e_red_ast|}}}|property=E0 }} | {{#extractFromTable:{{{e_red1|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0 }}  }} }}
 </td>

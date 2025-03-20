@@ -18,11 +18,11 @@ class GeneralTools {
         return (substr($string, 0, $len) === $startString);
     }
 
-    public static function toZeroIfVerySmall($number) {
-        if ($number < 0.00000000001) {
+    public static function roundNumber($number, $digits = 3) {
+        if (abs($number) < 0.00000000001) {
             return 0;
         }
-        return $number;
+        return round($number, $digits);
     }
 
 }
