@@ -157,6 +157,16 @@ $wgFooterIcons['poweredby']['flaticon'] = [
     'title' => 'Flaticon icons created by Freepik - Flaticon'
 ];
 
+$wgHooks['SkinAddFooterLinks'][] = function ( Skin $skin, string $key, array &$footerlinks ) {
+    if ( $key === 'places' ) {
+        $footerlinks['licenses'] = Html::rawElement( 'a', [
+            'href' => Title::newFromText(
+                $skin->msg( 'licenses-page' )->inContentLanguage()->text()
+            )->getFullURL()
+        ], $skin->msg( 'licenses-page' )->escaped() );
+    };
+};
+
 #################################################################
 # General settings
 #################################################################

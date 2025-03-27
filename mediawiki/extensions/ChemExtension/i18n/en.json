@@ -47,5 +47,6 @@
 	"tags-label": "Tags (not yet functional)",
 	"tags-hint": "Enter tags",
 
-	"importmolecule": "Import Molecules"
+	"importmolecule": "Import Molecules",
+	"licenses-page": "Licenses"
 }

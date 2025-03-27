@@ -1,0 +1,4 @@
+The software used for running this service is an extension to Semantic Media Wiki and provided under the license GPLv2.
+
+All content provided in this wiki is licensed under cc-by. Please ensure that content retrieved from the publication
+pages is used with citation of the original authors of the linked literature.

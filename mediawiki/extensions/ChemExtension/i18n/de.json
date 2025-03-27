@@ -39,6 +39,7 @@
 	"chemext-show-log-button": "Zeige Log",
 	"tags-label": "Tags (noch nicht funktional)",
 	"tags-hint": "Bitte geben Sie Tags ein",
-	"importmolecule": "Importiere Moleküle"
+	"importmolecule": "Importiere Moleküle",
+	"licenses-page": "Lizenzen"
 
 }
