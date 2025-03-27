@@ -6,6 +6,7 @@ use DIQA\ChemExtension\Experiments\ExperimentXlsImporter;
 use DIQA\ChemExtension\Pages\ChemForm;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
@@ -54,8 +55,16 @@ class ImportInvestigationJob extends Job
             foreach($importedMolecules as $inchikey => $moleculeTitle) {
                 $dataToImport['wikitext'] = str_replace($inchikey, $moleculeTitle, $dataToImport['wikitext']);
             }
-            WikiTools::doEditContent($this->investigationTitle, $dataToImport['wikitext'], "auto-generated",
+            $rowsContent = $dataToImport['rowsContent'];
+
+            if ($this->investigationTitle->exists()) {
+                $currentText = WikiTools::getText($this->investigationTitle);
+                $rowsContent = $this->mergeContent($currentText, $rowsContent);
+            }
+            $wikitext = str_replace('__ROWS_CONTENT__', $rowsContent, $dataToImport['wikitext']);
+            WikiTools::doEditContent($this->investigationTitle, $wikitext, "auto-generated",
                 $this->investigationTitle->exists() ? EDIT_UPDATE : EDIT_NEW);
+
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }
@@ -73,5 +82,14 @@ class ImportInvestigationJob extends Job
         $job->run();
         $this->logger->log('Imported molecule with inchikey: ' . $chemForm->getMoleculeKey());
         return $id;
+    }
+
+    private function mergeContent(string $currentText, string $rowsContent)
+    {
+        $tp = new TemplateParser($currentText);
+        $root = $tp->parse();
+        $rowNodes = $root->getFirstChild()->getNonTextNodes();
+        $currentRowsText = join("\n", array_map(fn($n) => $n->serialize(), $rowNodes));
+        return "$currentRowsText\n$rowsContent";
     }
 }

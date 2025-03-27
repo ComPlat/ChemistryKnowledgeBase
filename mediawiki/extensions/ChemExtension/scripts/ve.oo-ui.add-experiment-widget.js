@@ -211,7 +211,10 @@
                 this.chooseTypeDropDown.setDisabled(true);
                 this.chooseExperimentDropDown.setDisabled(true);
                 this.experimentName.setReadOnly(true);
-                this.importFile.setDisabled(true);
+                this.importFile.setDisabled(false);
+                this.importFile.on('change', (item) => {
+                    this.setActionsDisabled(['edit', 'insert'], item == '');
+                });
                 this.descriptionValue.on('change', (item) => {
                     this.setActionsDisabled(['edit', 'insert'], item == '');
                 });

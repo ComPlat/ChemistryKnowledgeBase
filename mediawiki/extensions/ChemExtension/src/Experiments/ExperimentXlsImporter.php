@@ -122,7 +122,8 @@ class ExperimentXlsImporter
 
         $mainTemplate = $experimentType->getMainTemplate();
         $rowTemplate = $experimentType->getRowTemplate();
-        $wikitext = "{{" . $mainTemplate . "|experiments=";
+
+        $rowsContent = '';
         $headerData = $this->readHeaderData();
 
         $row = 1;
@@ -134,7 +135,7 @@ class ExperimentXlsImporter
 
             $rowNotEmpty = count(array_filter($values, fn($e) => trim($e) !== '')) > 0;
             if ($rowNotEmpty) {
-                $wikitext .= "{{" . $rowTemplate;
+                $rowsContent .= "{{" . $rowTemplate;
                 foreach ($aggregatedValues as $value) {
                     if ($value['value'] === '') {
                         continue;
@@ -148,19 +149,20 @@ class ExperimentXlsImporter
                         $templateValue = $value['value'];
                     }
 
-                    $wikitext .= "\n|{$properties[$value['property']]}={$templateValue}";
+                    $rowsContent .= "\n|{$properties[$value['property']]}={$templateValue}";
 
                 }
-                $wikitext .= "\n}}";
+                $rowsContent .= "\n}}";
             }
 
             $row++;
         } while ($rowNotEmpty);
 
-        $wikitext .= "\n}}";
+        $wikitext = "{{" . $mainTemplate . "|experiments=__ROWS_CONTENT__\n}}";
         return [
             'nonExistingMolecules' => $this->nonExistingMolecules,
-            'wikitext' => $wikitext
+            'wikitext' => $wikitext,
+            'rowsContent' => $rowsContent
         ];
     }
 

@@ -59,4 +59,8 @@ abstract class AbstractTemplateNode
         }
         return null;
     }
+
+    public function getNonTextNodes() {
+        return array_filter($this->childNodes, fn($n) => !($n instanceof TemplateTextNode));
+    }
 }
