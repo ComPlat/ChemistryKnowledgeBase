@@ -503,6 +503,17 @@ p.added-jobs-success {
     text-align: center;
 }
 
+table.formtable td:nth-child(5) {
+    text-align: right;
+    min-width: 150px;
+    padding-right: 10px;
+}
+
+table.formtable td:nth-child(3) {
+    text-align: right;
+    min-width: 200px;
+    padding-right: 10px;
+}
 
 #molecule-log-table {
     width: 90%;

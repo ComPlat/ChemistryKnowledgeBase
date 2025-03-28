@@ -32,8 +32,9 @@ experiments:
 ! Intersection [{{#show: Property:Intersection|?Display units}}]
 | {{{field|intersection|property=Intersection|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! solvent / solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]:
+! solvent:
 | {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
+| solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]:
 | {{{field|solvent_conc|input type=regexp|property=Solvent concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! temperature [{{#show: Property:TemperatureP|?Display units}}]:
