@@ -5,9 +5,9 @@ This is the Cyclic Voltammetry experiments template.
 <tr>
 <th title="analyte (catalyst)">analyte</th>
 <th title="analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]">anl conc [{{#show: Property:Analyte concentration|?Display units}}]</th>
-<th title="E0,0 [{{#show: Property:E0|?Display units}}]">E<sub>0,0</sub> [{{#show: Property:E0|?Display units}}]</th>
-<th title="E0,0 Type">E<sub>0,0</sub> type</th>
-<th title="E1,2 [V]">E<sub>1,2</sub> [V]</th>
+<th title="E0,0 [{{#show: Property:E0|?Display units}}]">E<sub>0/0</sub> [{{#show: Property:E0|?Display units}}]</th>
+<th title="E0,0 Type">E<sub>0/0</sub> type</th>
+<th title="E1,2 [V]">E<sub>1/2</sub> [V]</th>
 <th title="*ERed [{{#show: Property:Ered1|?Display units}}]">*E<sup>red</sup> [{{#show: Property:Ered1|?Display units}}]</th>
 <th title="*EOx [{{#show: Property:Eox1|?Display units}}]">*E<sup>ox</sup> [{{#show: Property:Eox1|?Display units}}]</th>
 <th title="*Redox type">*Redox type</th>
