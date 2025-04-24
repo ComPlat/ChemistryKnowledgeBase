@@ -214,6 +214,10 @@ class ExperimentXlsImporter
             $property = str_replace("_inchikey", "", $property);
         }
         $property = preg_replace('/\[[^]]*\]/', "", $property);
+        $property = trim($property);
+        if ($property === 'Temperature') {
+            $property = 'TemperatureP'; // hack because Property:Temperature is predefined but we dont use it
+        }
         return trim($property);
     }
 
