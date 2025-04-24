@@ -42,7 +42,7 @@ This is the Photocatalytic CO2 conversion template.
 <td property="hidden">{{DisplayNumberNotNull|{{#expr: {{#qvalue:{{{Φ CO|0}}} }} + {{#qvalue:{{{Φ CH4|0}}} }} + {{#qvalue:{{{Φ H2|0}}} }} + {{#qvalue:{{{Φ HCOOH|0}}} }} + {{#qvalue:{{{Φ MeOH|0}}} }} }} }}</td>
 <td property="hidden">{{{details|}}}</td>
 <td resource="include" property="hidden">{{{include|}}}</td>
-</tr>{{#subobject:
+<td>{{#subobject:
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}
  |Photosensitizer={{{PS|}}}
@@ -89,4 +89,4 @@ This is the Photocatalytic CO2 conversion template.
  |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
-}}</includeonly>
+}}</td></tr></includeonly>

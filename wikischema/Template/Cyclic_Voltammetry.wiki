@@ -51,7 +51,7 @@ This is the Cyclic Voltammetry template.
 <td>{{{RE|}}}</td>
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
-</tr>{{#subobject:
+<td>{{#subobject:
  |Analyte={{{anl|}}}
  |Analyte concentration={{{anl conc|}}}
  |Redox potential={{{redox potential|}}}
@@ -82,4 +82,4 @@ This is the Cyclic Voltammetry template.
  |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
-}}</includeonly>
+}}</td></tr></includeonly>

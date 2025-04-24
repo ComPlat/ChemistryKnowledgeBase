@@ -16,7 +16,7 @@ This is the Absorption Emission Spectroscopy template.
 <td>{{{absorption_coefficient|}}}</td>
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
-</tr>{{#subobject:
+<td>{{#subobject:
  |Absorber Emitter={{{absorber_emitter|}}}
  |Experiment Type={{{experiment_type|}}}
  |Absorption Intensity Max={{{absorption_intensity_max|}}}
@@ -31,4 +31,4 @@ This is the Absorption Emission Spectroscopy template.
  |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
-}}</includeonly>
+}}</td></tr></includeonly>
