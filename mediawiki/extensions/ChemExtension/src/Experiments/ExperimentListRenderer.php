@@ -34,7 +34,7 @@ class ExperimentListRenderer extends ExperimentRenderer
         $experimentPage = $pageTitle->getText() . '/' . $experimentName;
         $experimentPageTitle = Title::newFromText($experimentPage);
         if (!$experimentPageTitle->exists()) {
-            throw new ExperimentNotExistsException("Experiment '$experimentPage' does not exist.", $experimentName);
+            throw new ExperimentNotExistsException("Experiment '$experimentPage' does not yet exist. Please click, and select 'Add/edit experiments' from the popup menu.", $experimentName);
         }
 
         $text = WikiTools::getText($experimentPageTitle);
