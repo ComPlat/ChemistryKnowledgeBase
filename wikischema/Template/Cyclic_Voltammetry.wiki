@@ -18,16 +18,16 @@ This is the Cyclic Voltammetry template.
 {{#convertQuantity: {{{e_red1|}}}|property=Ered1 }}
 </td>
 <td>
-{{#convertQuantity: {{{e_ox1|}}}|property=Eox1 }}
-</td>
-<td>
 {{#convertQuantity: {{{e_red2|}}}|property=Ered2 }}
 </td>
 <td>
-{{#convertQuantity: {{{e_ox2|}}}|property=Eox2 }}
+{{#convertQuantity: {{{e_red3|}}}|property=Ered3 }}
 </td>
 <td>
-{{#convertQuantity: {{{e_red3|}}}|property=Ered3 }}
+{{#convertQuantity: {{{e_ox1|}}}|property=Eox1 }}
+</td>
+<td>
+{{#convertQuantity: {{{e_ox2|}}}|property=Eox2 }}
 </td>
 <td>
 {{#convertQuantity: {{{e_ox3|}}}|property=Eox3 }}
