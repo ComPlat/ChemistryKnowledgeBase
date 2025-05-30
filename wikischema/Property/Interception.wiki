@@ -1,0 +1,11 @@
+; Purpose
+* [[Property description::interception identified for the relevant pair of absorption and emission in nm.@en]]
+
+; Datatype
+* [[Has type::Quantity]].
+
+; Corresponds
+* [[Corresponds to::1 nm]]
+
+; Unit
+* [[Display units::nm]]

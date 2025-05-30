@@ -1,0 +1,71 @@
+<noinclude>
+This is the Ultraviolett Visuell template.
+</noinclude>
+<includeonly><tr>
+<td>{{DisplayMolecule|{{{anl|}}} }}</td>
+<td>{{{anl conc|}}}</td>
+<td>{{DisplayMolecule|{{{solv|}}} }}</td>
+<td property="hidden">{{{solv vol|}}}</td>
+<td>{{{additives|}}}</td>
+<td property="hidden">{{{additives conc|}}}</td>
+<td>{{{absorption_max|}}}</td>
+<td>{{{absorption_intensity_max|}}}</td>
+<td>{{{emission_max|}}}</td>
+<td>{{{emission_intensity_max|}}}</td>
+
+<td property="hidden">{{{absorption_max_2|}}}</td>
+<td property="hidden">{{{absorption_intensity_max_2|}}}</td>
+<td property="hidden">{{{emission_max_2|}}}</td>
+<td property="hidden">{{{emission_intensity_max_2|}}}</td>
+
+<td property="hidden">{{{absorption_max_3|}}}</td>
+<td property="hidden">{{{absorption_intensity_max_3|}}}</td>
+<td property="hidden">{{{emission_max_3|}}}</td>
+<td property="hidden">{{{emission_intensity_max_3|}}}</td>
+
+<td>{{{interception_number|}}}</td>
+<td>{{{interception|}}}</td>
+
+<td>{{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception }} round 2 }}</td>
+
+<td>{{{additives_absorption|}}}</td>
+<td>{{{intensity_absorption|}}}</td>
+
+<td>{{{gas|}}}</td>
+<td property="hidden">{{{temp|}}}</td>
+
+<td property="hidden">{{{condition|}}}</td>
+<td property="hidden">{{{details|}}}</td>
+<td property="hidden">{{{include|}}}</td>
+
+<td>{{#subobject:
+ |Analyte={{{anl|}}}
+ |Analyte concentration={{{anl conc|}}}
+ |Solvent A={{{solv|}}}
+ |Solvent volume={{{solv vol|}}}
+ |Additives={{{additives|}}}
+ |Additives concentration={{{additives conc|}}}
+ |Absorption Max={{{absorption_max|}}}
+ |Absorption Intensity Max={{{absorption_intensity_max|}}}
+ |Emission Max={{{emission_max|}}}
+ |Emission Intensity Max={{{emission_intensity_max|}}}
+ |Absorption Max={{{absorption_max_2|}}}
+ |Absorption Intensity Max={{{absorption_intensity_max_2|}}}
+ |Emission Max={{{emission_max_2|}}}
+ |Emission Intensity Max={{{emission_intensity_max_2|}}}
+ |Absorption Max={{{absorption_max_3|}}}
+ |Absorption Intensity Max={{{absorption_intensity_max_3|}}}
+ |Emission Max={{{emission_max_3|}}}
+ |Emission Intensity Max={{{emission_intensity_max_3|}}}
+ |Interception number={{{interception_number|}}}
+ |Interception={{{interception|}}}
+ |Additives absorption={{{additives_absorption|}}}
+ |Intensity Additives absorption={{{intensity_absorption|}}}
+ |Gas={{{gas|}}}
+ |TemperatureP={{{temp|}}}
+ |E0={{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception }} round 2 }}
+ |Condition={{{condition|}}}
+ |Details={{{details|}}}
+ |Included={{{include|}}}
+ |BasePageName={{BASEPAGENAME}}
+}}</td></tr></includeonly>

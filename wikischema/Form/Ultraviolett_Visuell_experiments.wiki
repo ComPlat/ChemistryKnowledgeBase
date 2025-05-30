@@ -1,0 +1,88 @@
+<noinclude>
+Add a new set of Ultraviolett Visuell experiments (a table in which each row describes one investigation):
+{{#forminput:form=Ultraviolett Visuell experiments}}
+</noinclude>
+
+<includeonly>
+{{{for template|Ultraviolett Visuell experiments}}}
+experiments:
+{{{field|experiments|holds template}}}
+{{{end template}}}
+
+{{{for template|Ultraviolett Visuell|multiple|embed in field=Ultraviolett Visuell experiments[experiments]}}}
+{| class="formtable"
+! analyte:
+| {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
+| analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]:
+| {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! solvent:
+| {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
+| solvent volume [{{#show: Property:Solvent volume|?Display units}}]:
+| {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
+|-
+! additives
+| {{{field|additives|input type=string|property=Additives}}}
+| additives conc [{{#show: Property:Additives concentration|?Display units}}]:
+| {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! Absorption maximum given [{{#show: Property:Absorption Max|?Display units}}]:
+| {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Absorption intensity max [{{#show: Property:Absorption Intensity Max|?Display units}}]:
+| {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Emission maximum given [{{#show: Property:Emission Max|?Display units}}]
+| {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]
+| {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Absorption maximum given 2 [{{#show: Property:Absorption Max 2|?Display units}}]:
+| {{{field|absorption_max_2|input type=regexp|property=Absorption Max 2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Absorption intensity max 2 [{{#show: Property:Absorption Intensity Max 2|?Display units}}]:
+| {{{field|absorption_intensity_max_2|input type=regexp|property=Absorption Intensity Max 2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Emission maximum given 2 [{{#show: Property:Emission Max 2|?Display units}}]
+| {{{field|emission_max_2|input type=regexp|property=Emission Max 2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Emission intensity maximum 2 [{{#show: Property:Emission Intensity Max 2|?Display units}}]
+| {{{field|emission_intensity_max_2|property=Emission Intensity Max 2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Absorption maximum given 3 [{{#show: Property:Absorption Max 3|?Display units}}]:
+| {{{field|absorption_max_3|input type=regexp|property=Absorption Max 3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Absorption intensity max 3 [{{#show: Property:Absorption Intensity Max 3|?Display units}}]:
+| {{{field|absorption_intensity_max_3|input type=regexp|property=Absorption Intensity Max 3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Emission maximum given 3 [{{#show: Property:Emission Max 3|?Display units}}]
+| {{{field|emission_max_3|input type=regexp|property=Emission Max 3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+| Emission intensity maximum 3 [{{#show: Property:Emission Intensity Max 3|?Display units}}]
+| {{{field|emission_intensity_max_3|property=Emission Intensity Max 3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Interception number:
+| {{{field|interception_number|input type=regexp|property=Interception number|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*$/}}}
+|-
+! Interception [{{#show: Property:Interception|?Display units}}]:
+| {{{field|interception|input type=regexp|property=Interception|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Additives absorption [{{#show: Property:Additives absorption|?Display units}}]:
+| {{{field|additives_absorption|input type=regexp|property=Additives absorption|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! Intensity Abs. Add [{{#show: Property:Intensity Additives absorption|?Display units}}]:
+| {{{field|intensity_absorption|input type=regexp|property=Intensity Additives absorption|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
+|-
+! gas (atmosphere):
+| {{{field|gas|property=Gas|input type=combobox}}}
+|-
+! temperature [{{#show: Property:TemperatureP|?Display units}}]:
+| {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
+|-
+! include:
+| {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
+|-
+|}
+;Conditions:
+{{{field|condition|input type=textarea|property=Conditions|message=Arbitrary extra conditions}}}
+;Details:
+{{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

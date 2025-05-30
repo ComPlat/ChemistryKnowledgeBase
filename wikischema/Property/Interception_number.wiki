@@ -1,0 +1,6 @@
+; Purpose
+* [[Property description::number of the feature used to define the interception.@en]]
+
+; Datatype
+* [[Has type::Number]].
+

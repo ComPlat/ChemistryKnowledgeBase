@@ -1,0 +1,11 @@
+;Purpose
+* Denotes the absorption intensity maximum
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 nm]]
+
+; Unit
+* [[Display units::nm]]

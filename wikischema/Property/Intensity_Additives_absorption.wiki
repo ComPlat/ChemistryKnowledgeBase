@@ -1,0 +1,11 @@
+; Purpose
+* [[Property description::intensity of the absorption of the additive in nm.@en]]
+
+; Datatype
+* [[Has type::Quantity]].
+
+; Corresponds
+* [[Corresponds to::1 nm]]
+
+; Unit
+* [[Display units::nm]]
