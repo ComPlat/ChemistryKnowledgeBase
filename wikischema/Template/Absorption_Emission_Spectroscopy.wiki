@@ -19,6 +19,7 @@ This is the Absorption Emission Spectroscopy template.
 <td>{{#subobject:
  |Absorber Emitter={{{absorber_emitter|}}}
  |Experiment Type={{{experiment_type|}}}
+ |Absorption Max={{{absorption_max|}}}
  |Absorption Intensity Max={{{absorption_intensity_max|}}}
  |Emission Max={{{emission_max|}}}
  |Emission Intensity Max={{{emission_intensity_max|}}}
