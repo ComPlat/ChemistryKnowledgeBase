@@ -24,6 +24,7 @@ $magicWords['en'] = [
     'calculateSelectivity' => [ 0, 'calculateSelectivity' ],
     'qvalue' => [ 0, 'qvalue' ],
     'convertQuantity' => [ 0, 'convertQuantity' ],
+    'convertQuantityByFactor' => [ 0, 'convertQuantityByFactor' ],
 
 ];
 

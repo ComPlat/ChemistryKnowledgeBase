@@ -16,32 +16,32 @@ experiments:
 | analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]:
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! E0,0 [V]:
+! E0,0 [eV]:
 | {{{field|e0|input type=regexp|property=E0|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 | E0,0 type:
 | {{{field|e0_type|input type=dropdown|property=E0 type}}}
 |-
-! E1,2 [V]:
+! E1,2 [eV]:
 | {{{field|redox potential|input type=redoxinput}}}
 |-
-! *E<sub>red</sub> [V]:
+! *E<sub>red</sub> [eV]:
 | {{{field|e_red_ast|input type=regexp|property=Ered1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
-| *E<sub>ox</sub> [V]
+| *E<sub>ox</sub> [eV]
 | {{{field|e_ox_ast|input type=regexp|property=Eox1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 |-
-! E<sub>red1</sub> [V]:
+! E<sub>red1</sub> [eV]:
 | {{{field|e_red1|input type=regexp|property=Ered1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
-| E<sub>ox1</sub> [V]:
+| E<sub>ox1</sub> [eV]:
 | {{{field|e_ox1|input type=regexp|property=Eox1|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 |-
-! E<sub>red2</sub> [V]:
+! E<sub>red2</sub> [eV]:
 | {{{field|e_red2|input type=regexp|property=Ered2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
-| E<sub>ox2</sub> [V]:
+| E<sub>ox2</sub> [eV]:
 | {{{field|e_ox2|input type=regexp|property=Eox2|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 |-
-! E<sub>red3</sub> [V]:
+! E<sub>red3</sub> [eV]:
 | {{{field|e_red3|input type=regexp|property=Ered3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
-| E<sub>ox3</sub> [V]:
+| E<sub>ox3</sub> [eV]:
 | {{{field|e_ox3|input type=regexp|property=Eox3|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
 |-
 ! *Redox type:

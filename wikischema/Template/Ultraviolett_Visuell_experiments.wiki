@@ -8,7 +8,7 @@ This is the Ultraviolett-visuell (UV-vis) experiments template.
 <th title="solvent">solvent</th>
 <th property="hidden" title="solvent volume [{{#show: Property:Solvent volume|?Display units}}]">Volume Solvent [{{#show: Property:Solvent volume|?Display units}}]</th>
 <th title="additives">additives</th>
-<th property="hidden" title="additives concentration [{{#show: Property:Additives concentration|?Display units}}]">Concentration Additives [{{#show: Property:Additives concentration|?Display units}}]</th>
+<th property="hidden" title="additives concentration [mM]">Concentration Additives [mM]</th>
 
 <th title="absorption maximum [{{#show: Property:Absorption Max|?Display units}}]">Abs. 1 Analyte [{{#show: Property:Absorption Max|?Display units}}]</th>
 <th title="absorption intensity maximum [{{#show: Property:Absorption Intensity Max|?Display units}}]">Int. Abs. 1 Analyte [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
@@ -39,6 +39,6 @@ This is the Ultraviolett-visuell (UV-vis) experiments template.
 {{{experiments|}}}
 </table>
 {{#set: BelongsToPublication={{BASEPAGENAME}} }}
-[[Category:Ultraviolett-visuell experiments]]
+[[Category:Ultraviolett Visuell experiments]]
 [[Category:Assay]]
 [[Category:Investigation]]</includeonly>

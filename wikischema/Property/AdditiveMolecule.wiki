@@ -1,0 +1,9 @@
+; Purpose
+* [[Property description::Contains a molecule describing the additives used in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Page]].
+
+; Values
+* Input fields should be restricted to pages from the category [[:Category:Molecule|Molecule]].
+[[Imported from::chmo:CHMO_0002740]]

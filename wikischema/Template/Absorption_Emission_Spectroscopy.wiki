@@ -12,7 +12,7 @@ This is the Absorption Emission Spectroscopy template.
 <td>{{DisplayMolecule|{{{solvent|}}} }}</td>
 <td>{{{solvent_conc|}}}</td>
 <td property="hidden">{{{temp|}}}</td>
-<td>{{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection }} round 2 }}</td>
+<td>{{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection|form=Absorption_Emission_Spectroscopy_experiments }} round 2 }}</td>
 <td>{{{absorption_coefficient|}}}</td>
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
@@ -27,7 +27,7 @@ This is the Absorption Emission Spectroscopy template.
  |Solvent={{{solvent|}}}
  |Solvent concentration={{{solvent_conc|}}}
  |TemperatureP={{{temp|}}}
- |E0={{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection }} round 2 }}
+ |E0={{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection|form=Absorption_Emission_Spectroscopy_experiments }} round 2 }}
  |Absorption Coefficient={{{absorption_coefficient|}}}
  |Details={{{details|}}}
  |Included={{{include|}}}

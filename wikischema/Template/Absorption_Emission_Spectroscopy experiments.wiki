@@ -13,7 +13,7 @@ This is the Absorption Emission Spectroscopy experiments template.
 <th title="solvent">solvent</th>
 <th title="solvent_conc [{{#show: Property:Solvent concentration|?Display units}}]">solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]</th>
 <th title="temperature [{{#show: Property:TemperatureP|?Display units}}]" property="hidden">T [{{#show: Property:TemperatureP|?Display units}}]</th>
-<th title="E0,0 [V]">*E0,0 [V]</th>
+<th title="E0,0 [{{#show: Property:E0|?Display units}}]">*E0,0 [{{#show: Property:E0|?Display units}}]</th>
 <th title="absorption coefficient [{{#show: Property:Absorption Coefficient|?Display units}}]">absorption coefficient [{{#show: Property:Absorption Coefficient|?Display units}}]</th>
 <th title="details" property="hidden">Details</th>
 <th title="include" property="hidden">include</th>

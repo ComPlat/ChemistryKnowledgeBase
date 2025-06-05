@@ -251,6 +251,7 @@ CSS;
         $parser->setFunctionHook( 'calculateSelectivity', [ Selectivity::class, 'calculateSelectivity' ] );
         $parser->setFunctionHook( 'qvalue', [ QValue::class, 'quantityValue' ] );
         $parser->setFunctionHook( 'convertQuantity', [ ConvertQuantity::class, 'convertQuantity' ] );
+        $parser->setFunctionHook( 'convertQuantityByFactor', [ ConvertQuantity::class, 'convertQuantityByFactor' ] );
 
         self::registerShowCachedHandler($parser);
     }

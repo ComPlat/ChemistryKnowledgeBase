@@ -22,8 +22,8 @@ experiments:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
 |-
 ! additives
-| {{{field|additives|input type=string|property=Additives}}}
-| additives conc [{{#show: Property:Additives concentration|?Display units}}]:
+| {{{field|additives|input type=combobox|property=AdditiveMolecule|values from url=molecule_lookup_additive}}}
+| additives conc [mM]:
 | {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! Absorption maximum given [{{#show: Property:Absorption Max|?Display units}}]:

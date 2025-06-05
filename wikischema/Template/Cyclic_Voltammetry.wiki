@@ -4,33 +4,33 @@ This is the Cyclic Voltammetry template.
 <includeonly><tr>
 <td>{{DisplayMolecule|{{{anl|}}} }}</td>
 <td>{{{anl conc|}}}</td>
-<td>{{#convertQuantity:{{{e0|}}}|property=E0 }}</td>
+<td>{{#convertQuantity:{{{e0|}}}|property=E0|form=Cyclic_Voltammetry_experiments }}</td>
 <td>{{{e0_type|}}}</td>
 <td>{{#extractFromTable:{{{redox potential|}}}|row=0}}; {{#extractFromTable:{{{redox potential|}}}|row=1}}</td>
 <td>
-{{#if: {{{e_red_ast|}}}| {{#convertQuantity: {{{e_red_ast|}}}|property=E0 }} | {{#extractFromTable:{{{e_red1|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0 }}  }} }}
+{{#if: {{{e_red_ast|}}}| {{#convertQuantity: {{{e_red_ast|}}}|property=E0|form=Cyclic_Voltammetry_experiments }} | {{#extractFromTable:{{{e_red1|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0|form=Cyclic_Voltammetry_experiments }}  }} }}
 </td>
 <td>
-{{#if: {{{e_ox_ast|}}}| {{#convertQuantity: {{{e_ox_ast|}}}|property=E0 }} | {{#extractFromTable:{{{e_ox1|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0 }}  }} }}
+{{#if: {{{e_ox_ast|}}}| {{#convertQuantity: {{{e_ox_ast|}}}|property=E0|form=Cyclic_Voltammetry_experiments }} | {{#extractFromTable:{{{e_ox1|}}}|row=0|add={{#convertQuantity: {{{e0|}}}|property=E0|form=Cyclic_Voltammetry_experiments }}  }} }}
 </td>
 <td>{{{redox_type|}}}</td>
 <td>
-{{#convertQuantity: {{{e_red1|}}}|property=Ered1 }}
+{{#convertQuantity: {{{e_red1|}}}|property=Ered1|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>
-{{#convertQuantity: {{{e_red2|}}}|property=Ered2 }}
+{{#convertQuantity: {{{e_red2|}}}|property=Ered2|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>
-{{#convertQuantity: {{{e_red3|}}}|property=Ered3 }}
+{{#convertQuantity: {{{e_red3|}}}|property=Ered3|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>
-{{#convertQuantity: {{{e_ox1|}}}|property=Eox1 }}
+{{#convertQuantity: {{{e_ox1|}}}|property=Eox1|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>
-{{#convertQuantity: {{{e_ox2|}}}|property=Eox2 }}
+{{#convertQuantity: {{{e_ox2|}}}|property=Eox2|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>
-{{#convertQuantity: {{{e_ox3|}}}|property=Eox3 }}
+{{#convertQuantity: {{{e_ox3|}}}|property=Eox3|form=Cyclic_Voltammetry_experiments }}
 </td>
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>

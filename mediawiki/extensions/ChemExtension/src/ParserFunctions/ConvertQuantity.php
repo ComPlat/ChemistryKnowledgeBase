@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\ParserFunctions;
 
+use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\Utils\GeneralTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
@@ -27,28 +28,56 @@ class ConvertQuantity
             $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
             $value = $parameters[''] ?? '';
+            $form = $parameters['form'] ?? '';
             if (!isset($parameters['property']) || $value === '') {
                 return [GeneralTools::roundNumber($value), 'noparse' => true, 'isHTML' => false];
             }
 
-            $unit = QueryUtils::getUnitForProperty($parameters['property']);
+            $experimentType = ExperimentRepository::getInstance()->getExperimentType($form);
+            $unit = $experimentType->getDefaultUnits()[$parameters['property']]
+                ?? QueryUtils::getUnitForProperty($parameters['property']);
+
             if (is_null($unit)) {
                 return [GeneralTools::roundNumber($value), 'noparse' => true, 'isHTML' => false];
             }
 
-            $propertyDI = SMWDIProperty::newFromUserLabel($parameters['property']);
-            $num = new \SMWQuantityValue(\SMWQuantityValue::TYPE_ID);
-            $applicationFactory = ServicesFactory::getInstance();
-
-            $num->setDataValueServiceFactory($applicationFactory->create( 'DataValueServiceFactory' ));
-            $num->setProperty($propertyDI);
-            $num->setUserValue(GeneralTools::roundNumber($value));
-
-            return [$num->getConvertedUnitValues()[$unit->getString()], 'noparse' => true, 'isHTML' => false];
+            $convertedValue = self::convert($parameters['property'], $value, $unit->getString());
+            return [$convertedValue, 'noparse' => true, 'isHTML' => false];
         } catch (Exception $e) {
             return ['-error on calculation-', 'noparse' => true, 'isHTML' => false];
         }
     }
 
+    public static function convertQuantityByFactor(Parser $parser): array
+    {
+        try {
+            $parametersAsStringArray = func_get_args();
+            array_shift($parametersAsStringArray); // get rid of Parser
+            $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
 
+            $value = $parameters[''] ?? '';
+            $factor = $parameters['factor'] ?? 1.0;
+            if ($value === '' || !is_numeric($value)) {
+                return [$value, 'noparse' => true, 'isHTML' => false];
+            }
+
+
+            return [$value * $factor, 'noparse' => true, 'isHTML' => false];
+
+        } catch (Exception $e) {
+            return ['-error on calculation-', 'noparse' => true, 'isHTML' => false];
+        }
+    }
+
+    public static function convert($property, $value, $unit) {
+        $propertyDI = SMWDIProperty::newFromUserLabel($property);
+        $num = new \SMWQuantityValue(\SMWQuantityValue::TYPE_ID);
+        $applicationFactory = ServicesFactory::getInstance();
+
+        $num->setDataValueServiceFactory($applicationFactory->create( 'DataValueServiceFactory' ));
+        $num->setProperty($propertyDI);
+        $num->setUserValue(GeneralTools::roundNumber($value));
+
+        return $num->getConvertedUnitValues()[$unit];
+    }
 }

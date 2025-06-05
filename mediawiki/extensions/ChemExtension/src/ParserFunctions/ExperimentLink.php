@@ -115,8 +115,12 @@ class ExperimentLink
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($parameters['form']);
         $printRequests = [];
         $properties = $experimentType->getProperties();
+        $convertedUnits = [];
         foreach ($properties as $p => $templateParam) {
-            $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
+            $printRequests[] = QueryUtils::newPropertyPrintRequest($p,  $experimentType->getDefaultUnits()[$p] ?? null);
+            if (isset($experimentType->getDefaultUnits()[$p])) {
+                $convertedUnits[$templateParam] = $experimentType->getDefaultUnits()[$p];
+            }
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
         $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);
@@ -125,7 +129,8 @@ class ExperimentLink
             $column = reset($row);
             $oneRow = [];
             while ($column !== false) {
-                $templateParam = $properties[$column->getPrintRequest()->getLabel()] ?? null;
+                $property = $column->getPrintRequest()->getLabel();
+                $templateParam = $properties[$property] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $currentColumn = $column;
                 $column = next($row);
@@ -136,7 +141,11 @@ class ExperimentLink
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
                     $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
-                    $oneRow[$templateParam] = $dataItem->getNumber();
+                    if (isset($convertedUnits[$templateParam])) {
+                        $oneRow[$templateParam] = ConvertQuantity::convert($property, $dataItem->getNumber(),$convertedUnits[$templateParam]);
+                    } else {
+                        $oneRow[$templateParam] = $dataItem->getNumber();
+                    }
 
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
                     $oneRow[$templateParam] = $dataItem->getBoolean();

@@ -401,6 +401,7 @@ $wgPageFormsAutocompletionURLs['molecule_lookup_ed'] = $wgServer . $wgScriptPath
 $wgPageFormsAutocompletionURLs['molecule_lookup_hd'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Hydrogen_donor';
 $wgPageFormsAutocompletionURLs['molecule_lookup_solvent'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Solvent';
 $wgPageFormsAutocompletionURLs['molecule_lookup_analyte'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Analyte';
+$wgPageFormsAutocompletionURLs['molecule_lookup_additive'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=AdditiveMolecule';
 $wgPageFormsAutocompletionURLs['molecule_lookup_electrolyte'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Electrolyte';
 $wgPageFormsAutocompletionURLs['molecule_lookup_irc'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=IRC';
 

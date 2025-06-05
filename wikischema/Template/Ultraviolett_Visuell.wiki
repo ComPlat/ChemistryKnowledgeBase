@@ -6,7 +6,7 @@ This is the Ultraviolett Visuell template.
 <td>{{{anl conc|}}}</td>
 <td>{{DisplayMolecule|{{{solv|}}} }}</td>
 <td property="hidden">{{{solv vol|}}}</td>
-<td>{{{additives|}}}</td>
+<td>{{DisplayMolecule|{{{additives|}}} }}</td>
 <td property="hidden">{{{additives conc|}}}</td>
 <td>{{{absorption_max|}}}</td>
 <td>{{{absorption_intensity_max|}}}</td>
@@ -26,7 +26,7 @@ This is the Ultraviolett Visuell template.
 <td>{{{interception_number|}}}</td>
 <td>{{{interception|}}}</td>
 
-<td>{{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception }} round 2 }}</td>
+<td>{{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception|form=Ultraviolett_Visuell_experiments }} round 2 }}</td>
 
 <td>{{{additives_absorption|}}}</td>
 <td>{{{intensity_absorption|}}}</td>
@@ -44,7 +44,7 @@ This is the Ultraviolett Visuell template.
  |Solvent A={{{solv|}}}
  |Solvent volume={{{solv vol|}}}
  |Additives={{{additives|}}}
- |Additives concentration={{{additives conc|}}}
+ |Additives concentration={{#convertQuantityByFactor:{{{additives conc|}}}|factor=0.001 }}
  |Absorption Max={{{absorption_max|}}}
  |Absorption Intensity Max={{{absorption_intensity_max|}}}
  |Emission Max={{{emission_max|}}}
@@ -63,7 +63,7 @@ This is the Ultraviolett Visuell template.
  |Intensity Additives absorption={{{intensity_absorption|}}}
  |Gas={{{gas|}}}
  |TemperatureP={{{temp|}}}
- |E0={{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception }} round 2 }}
+ |E0={{#expr: 1240 / {{#convertQuantity:{{{interception|}}}|property=Interception|form=Ultraviolett_Visuell_experiments }} round 2 }}
  |Condition={{{condition|}}}
  |Details={{{details|}}}
  |Included={{{include|}}}
