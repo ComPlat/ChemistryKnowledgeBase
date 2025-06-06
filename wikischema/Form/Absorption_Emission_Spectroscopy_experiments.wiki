@@ -17,30 +17,30 @@ experiments:
 ! experimental / calculated:
 | {{{field|experiment_type|input type=dropdown|property=Experiment Type}}}
 |-
-! Absorption maximum given [{{#show: Property:Absorption Max|?Display units}}]:
+! Absorption maximum given [{{#defaultQuantity:property=Absorption Max|form=Absorption_Emission_Spectroscopy_experiments}}]:
 | {{{field|absorption_max|input type=regexp|property=Absorption Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Absorption intensity max [{{#show: Property:Absorption Intensity Max|?Display units}}]:
+! Absorption intensity max [{{#defaultQuantity:property=Absorption Intensity Max|form=Absorption_Emission_Spectroscopy_experiments}}]:
 | {{{field|absorption_intensity_max|input type=regexp|property=Absorption Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Emission maximum given [{{#show: Property:Emission Max|?Display units}}]
+! Emission maximum given [{{#defaultQuantity:property=Emission Max|form=Absorption_Emission_Spectroscopy_experiments}}]
 | {{{field|emission_max|input type=regexp|property=Emission Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]
+! Emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Absorption_Emission_Spectroscopy_experiments}}]
 | {{{field|emission_intensity_max|property=Emission Intensity Max|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! Intersection [{{#show: Property:Intersection|?Display units}}]
+! Intersection [{{#defaultQuantity:property=Intersection|form=Absorption_Emission_Spectroscopy_experiments}}]
 | {{{field|intersection|property=Intersection|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
 ! solvent:
 | {{{field|solvent|input type=combobox|property=Solvent|values from url=molecule_lookup_solvent}}}
-| solvent concentration [{{#show: Property:Solvent concentration|?Display units}}]:
+| solvent concentration [{{#defaultQuantity:property=Solvent concentration|form=Absorption_Emission_Spectroscopy_experiments}}]:
 | {{{field|solvent_conc|input type=regexp|property=Solvent concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
-! temperature [{{#show: Property:TemperatureP|?Display units}}]:
+! temperature [{{#defaultQuantity:property=TemperatureP|form=Absorption_Emission_Spectroscopy_experiments}}]:
 | {{{field|temp|input type=regexp|property=Temperature|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
 |-
-! absorption coefficient [{{#show: Property:Absorption Coefficient|?Display units}}]:
+! absorption coefficient [{{#defaultQuantity:property=Absorption Coefficient|form=Absorption_Emission_Spectroscopy_experiments}}]:
 | {{{field|absorption_coefficient|input type=regexp|property=Absorption Coefficient|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(L\/mol⋅cm)?)?$/}}}
 |-
 ! include:

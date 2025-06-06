@@ -13,7 +13,7 @@ experiments:
 {| class="formtable"
 ! analyte:
 | {{{field|anl|input type=combobox|property=Analyte|values from url=molecule_lookup_analyte}}}
-| analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]:
+| analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|anl conc|input type=regexp|property=Analyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! E0,0 [eV]:
@@ -49,20 +49,20 @@ experiments:
 |-
 ! solvent:
 | {{{field|solv|input type=combobox|property=Solvent A|values from url=molecule_lookup_solvent}}}
-| solvent volume [{{#show: Property:Solvent volume|?Display units}}]:
+| solvent volume [{{#defaultQuantity:property=Solvent volume|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|solv vol|input type=regexp|property=Solvent volume|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(ml|l)?)?$/}}}
 |-
 ! electrolyte:
 | {{{field|electrolyte|property=Electrolyte|input type=combobox|values from url=molecule_lookup_electrolyte}}}
 | electrolyte purity [%]:
 | {{{field|electrolyte purity|property=Electrolyte purity|input type=regexp|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
-| electrolyte concentration [{{#show: Property:Electrolyte concentration|?Display units}}]:
+| electrolyte concentration [{{#defaultQuantity:property=Electrolyte concentration|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|el conc|input type=regexp|property=Electrolyte concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! internal reference compound:
 | {{{field|int ref comp|property=Internal reference compound|input type=combobox|values from url=molecule_lookup_irc}}}
 |-
-! scan rate [{{#show: Property:Scan rate|?Display units}}]:
+! scan rate [{{#defaultQuantity:property=Scan rate|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|scan rate|input type=regexp|property=Scan rate|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(mV\/s)?)?$/}}}
 | scan number:
 | {{{field|scan number|input type=regexp|property=Scan number|base type=Number|message=Input a positive integer|regexp=/^[0-9]*$/}}}
@@ -76,7 +76,7 @@ experiments:
 ! gas (atmosphere):
 | {{{field|gas|property=Gas|input type=combobox}}}
 |-
-! temperature [{{#show: Property:TemperatureP|?Display units}}]:
+! temperature [{{#defaultQuantity:property=TemperatureP|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|temp|input type=regexp|property=TemperatureP|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
 |-
 ! condition (wavelength [nm] or dark):
@@ -89,7 +89,7 @@ experiments:
 | reference electrode:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}
 |-
-! WE surface area [{{#show: Property:Working electrode surface area|?Display units}}]:
+! WE surface area [{{#defaultQuantity:property=Working electrode surface area|form=Cyclic_Voltammetry_experiments}}]:
 | {{{field|WE area|property=Working electrode surface area|input type=regexp|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(mm²)?)?$/}}}
 |-
 ! include:

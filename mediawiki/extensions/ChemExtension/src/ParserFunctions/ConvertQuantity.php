@@ -69,6 +69,36 @@ class ConvertQuantity
         }
     }
 
+    public static function defaultQuantity(Parser $parser): array
+    {
+        try {
+            $parametersAsStringArray = func_get_args();
+            array_shift($parametersAsStringArray); // get rid of Parser
+            $parameters = ParserFunctionParser::parseArguments($parametersAsStringArray);
+
+            if (!isset($parameters['property']) || !isset($parameters['form'])) {
+                return ['"property" or "form" parameter missing', 'noparse' => true, 'isHTML' => false];
+            }
+
+            $unit = self::getDefaultUnit($parameters['property'], $parameters['form']);
+
+            if (is_null($unit)) {
+                return ['-no unit found-', 'noparse' => true, 'isHTML' => false];
+            }
+
+            return [$unit, 'noparse' => true, 'isHTML' => false];
+        } catch (Exception $e) {
+            return ['-error on calculation-', 'noparse' => true, 'isHTML' => false];
+        }
+    }
+
+    public static function getDefaultUnit($property, $form) {
+        $experimentType = ExperimentRepository::getInstance()->getExperimentType($form);
+        return $experimentType->getDefaultUnits()[$property]
+            ?? QueryUtils::getUnitForProperty($property);
+    }
+
+
     public static function convert($property, $value, $unit) {
         $propertyDI = SMWDIProperty::newFromUserLabel($property);
         $num = new \SMWQuantityValue(\SMWQuantityValue::TYPE_ID);

@@ -25,6 +25,7 @@ $magicWords['en'] = [
     'qvalue' => [ 0, 'qvalue' ],
     'convertQuantity' => [ 0, 'convertQuantity' ],
     'convertQuantityByFactor' => [ 0, 'convertQuantityByFactor' ],
+    'defaultQuantity' => [ 0, 'defaultQuantity' ],
 
 ];
 

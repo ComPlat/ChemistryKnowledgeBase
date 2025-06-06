@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\ParserFunctions\ConvertQuantity;
 use DIQA\ChemExtension\ParserFunctions\ExperimentLink;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
@@ -54,7 +55,7 @@ class ExperimentXlsExporter
             if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
                 $this->workSheet->setCellValue([$column, 1], $p."_inchikey");
             } else {
-                $unit = QueryUtils::getUnitForProperty($p);
+                $unit = ConvertQuantity::getDefaultUnit($p, $this->parameters['form']);
                 $cellValue = is_null($unit) ? $p : "$p [$unit]";
                 $this->workSheet->setCellValue([$column, 1], $cellValue);
 

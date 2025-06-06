@@ -4,34 +4,34 @@ This is the Ultraviolett-visuell (UV-vis) experiments template.
 <includeonly><table class="wikitable" title="">
 <tr>
 <th title="analyte (catalyst)">analyte</th>
-<th title="analyte concentration [{{#show: Property:Analyte concentration|?Display units}}]">Concentration Analyte [{{#show: Property:Analyte concentration|?Display units}}]</th>
+<th title="analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]">Concentration Analyte [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="solvent">solvent</th>
-<th property="hidden" title="solvent volume [{{#show: Property:Solvent volume|?Display units}}]">Volume Solvent [{{#show: Property:Solvent volume|?Display units}}]</th>
+<th property="hidden" title="solvent volume [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]">Volume Solvent [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="additives">additives</th>
 <th property="hidden" title="additives concentration [mM]">Concentration Additives [mM]</th>
 
-<th title="absorption maximum [{{#show: Property:Absorption Max|?Display units}}]">Abs. 1 Analyte [{{#show: Property:Absorption Max|?Display units}}]</th>
-<th title="absorption intensity maximum [{{#show: Property:Absorption Intensity Max|?Display units}}]">Int. Abs. 1 Analyte [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
-<th title="emission maximum [{{#show: Property:Emission Max|?Display units}}]">Rel. Emission 1 [{{#show: Property:Emission Max|?Display units}}]</th>
-<th title="emission intensity maximum [{{#show: Property:Emission Intensity Max|?Display units}}]">Intensity Rel. Em. 1 [{{#show: Property:Emission Intensity Max|?Display units}}]</th>
+<th title="absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]">Abs. 1 Analyte [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 1 Analyte [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="emission maximum [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 1 [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 1 [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
 
-<th property="hidden" title="absorption maximum 2 [{{#show: Property:Absorption Max 2|?Display units}}]">Abs. 2 Analyte [{{#show: Property:Absorption Max 2|?Display units}}]</th>
-<th property="hidden" title="absorption intensity maximum 2 [{{#show: Property:Absorption Intensity Max 2|?Display units}}]">Int. Abs. 2 Analyte [{{#show: Property:Absorption Intensity Max 2|?Display units}}]</th>
-<th property="hidden" title="emission maximum 2 [{{#show: Property:Emission Max 2|?Display units}}]">Rel. Emission 2 [{{#show: Property:Emission Max 2|?Display units}}]</th>
-<th property="hidden" title="emission intensity maximum 2 [{{#show: Property:Emission Intensity Max 2|?Display units}}]">Intensity Rel. Em. 2 [{{#show: Property:Emission Intensity Max 2|?Display units}}]</th>
+<th property="hidden" title="absorption maximum 2 [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]">Abs. 2 Analyte [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption intensity maximum 2 [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 2 Analyte [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission maximum 2 [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 2 [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission intensity maximum 2 [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 2 [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
 
-<th property="hidden" title="absorption maximum 3 [{{#show: Property:Absorption Max 3|?Display units}}]">Abs. 3 Analyte [{{#show: Property:Absorption Max 3|?Display units}}]</th>
-<th property="hidden" title="absorption intensity maximum 3[{{#show: Property:Absorption Intensity Max 3|?Display units}}]">Int. Abs. 3 Analyte [{{#show: Property:Absorption Intensity Max|?Display units}}]</th>
-<th property="hidden" title="emission maximum 3 [{{#show: Property:Emission Max 3|?Display units}}]">Rel. Emission 3 [{{#show: Property:Emission Max 3|?Display units}}]</th>
-<th property="hidden" title="emission intensity maximum 3 [{{#show: Property:Emission Intensity Max 3|?Display units}}]">Intensity Rel. Em. 3 [{{#show: Property:Emission Intensity Max 3|?Display units}}]</th>
+<th property="hidden" title="absorption maximum 3 [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]">Abs. 3 Analyte [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption intensity maximum 3[{{#defaultQuantity:property=Absorption Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 3 Analyte [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission maximum 3 [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 3 [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission intensity maximum 3 [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 3 [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
 
 <th title="Interception number">Interception number</th>
-<th title="Interception [{{#show: Property:Interception|?Display units}}]">Interception [{{#show: Property:Interception|?Display units}}]</th>
-<th title="E0,0 [{{#show: Property:E0|?Display units}}]">E<sub>0/0</sub> [{{#show: Property:E0|?Display units}}]</th>
-<th title="Additives absorption [{{#show: Property:Additives absorption|?Display units}}]">Abs. Additive [{{#show: Property:Additives absorption|?Display units}}]</th>
-<th title="Intensity Additives absorption [{{#show: Property:Intensity Additives absorption|?Display units}}]">Intensity Abs. Add [{{#show: Property:Intensity Additives absorption|?Display units}}]</th>
+<th title="Interception [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]">Interception [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="E0,0 [{{#defaultQuantity:property=E0|form=Ultraviolett_Visuell_experiments}}]">E<sub>0/0</sub> [{{#defaultQuantity:property=E0|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="Additives absorption [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]">Abs. Additive [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="Intensity Additives absorption [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]">Intensity Abs. Add [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="gas (atmosphere)">Atmosphere, Gas</th>
-<th title="temperature [{{#show: Property:TemperatureP|?Display units}}]" property="hidden">T [{{#show: Property:TemperatureP|?Display units}}]</th>
+<th title="temperature [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="condition" property="hidden">Condition</th>
 <th title="details" property="hidden">Details</th>
 <th title="include" property="hidden">include</th>

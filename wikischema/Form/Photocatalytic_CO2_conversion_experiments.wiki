@@ -13,22 +13,22 @@ Experiments:
 {| class="formtable"
 ! cat:
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat|class=test-xy}}}
-| cat conc [{{#show: Property:Catalyst concentration|?Display units}}]:
+| cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/|class=test-xy}}}
 |-
 ! PS:
 | {{{field|PS|input type=combobox|property=Photosensitizer|values from url=molecule_lookup_ps}}}
-| PS conc [{{#show: Property:Photosensitizer concentration|?Display units}}]:
+| PS conc [{{#defaultQuantity:property=Photosensitizer concentration|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|PS conc|input type=regexp|property=Photosensitizer concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! e-D
 | {{{field|e-D|input type=combobox|property=Electron donor|values from url=molecule_lookup_ed}}}
-| e-D conc [{{#show: Property:Electron donor concentration|?Display units}}]:
+| e-D conc [{{#defaultQuantity:property=Electron donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|e-D conc|input type=regexp|property=Electron donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! H-D
 | {{{field|H-D|input type=combobox|property=Hydrogen donor|values from url=molecule_lookup_hd}}}
-| H-D conc [{{#show: Property:Hydrogen donor concentration|?Display units}}]:
+| H-D conc [{{#defaultQuantity:property=Hydrogen donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|H-D conc|input type=regexp|property=Hydrogen donor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! solvent A:
@@ -43,53 +43,53 @@ Experiments:
 |-
 ! additives
 | {{{field|additives|input type=string|property=Additives}}}
-| additives conc [{{#show: Property:Additives concentration|?Display units}}]:
+| additives conc [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|additives conc|input type=regexp|property=Additives concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
 |-
 ! feedstock gas
 | {{{field|feedstock gas|input type=combobox|property=Feedstock gas}}}
-| feedstock volume [{{#show: Property:Feedstock volume|?Display units}}]:
+| feedstock volume [{{#defaultQuantity:property=Feedstock volume|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|feedstock volume|input type=regexp|property=Feedstock volume|base type=Number|message=Input a positive number [mL]|regexp=/^([0-9]*\.)?[0-9]*(\s+(mL)?)?$/}}}
 |-
-! Light intensity [{{#show: Property:Intensity|?Display units}}]:
+! Light intensity [{{#defaultQuantity:property=Intensity|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|intensity|input type=regexp|property=Intensity|base type=Number|message=Input a positive number [kW/m²]|regexp=/^([0-9]*\.)?[0-9]*(\s+(kW\/m²)?)?$/}}}
 |-
 ! pH:
 | {{{field|pH|input type=regexp|base type=Number|property=PH value|message=Input a value between 0 and 14|regexp=/^([0-9](\.[0-9]+)?!1[0-3](\.[0-9]+)?!14!)$/}}}
 |-
-! Temperature [{{#show: Property:TemperatureP|?Display units}}] (can be range):
+! Temperature [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}] (can be range):
 | {{{field|Temperature|input type=Number|property=Temperature|regexp=/^-?([0-9]*\.)?[0-9]*(\s+(°C)?)?$/}}}
 |-
-! λexc [{{#show: Property:Excitation wavelength|?Display units}}] <br>(qualifier, range, light type/source):
+! λexc [{{#defaultQuantity:property=Excitation wavelength|form=Photocatalytic_CO2_conversion_experiments}}] <br>(qualifier, range, light type/source):
 | {{{field|λexc|input type=string|property=Excitation wavelength|regexp=/^([0-9]*\.)?[0-9]*(\s+(nm)?)?$/}}}
 |-
-! irr time [{{#show: Property:Irradiation_time|?Display units}}]:
+! irr time [{{#defaultQuantity:property=Irradiation_time|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(h)?)?$/}}}
 |-
 ! TON CO:
 | {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-| TOF CO [{{#show: Property:Turnover frequency CO|?Display units}}]:
+| TOF CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|TOF CO|input type=regexp|base type=Number|property=Turnover frequency CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ CO [%]:
 | {{{field|Φ CO|input type=regexp|base type=Number|property=Quantum yield CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON CH4
 | {{{field|TON CH4|input type=regexp|base type=Number|property=Turnover number CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-| TOF CH4 [{{#show: Property:Turnover frequency CH4|?Display units}}]:
+| TOF CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|TOF CH4|input type=regexp|base type=Number|property=Turnover frequency CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ CH4 [%]:
 | {{{field|Φ CH4|input type=regexp|base type=Number|property=Quantum yield CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON H2
 | {{{field|TON H2|input type=regexp|base type=Number|property=Turnover number H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-| TOF H2 [{{#show: Property:Turnover frequency H2|?Display units}}]:
+| TOF H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|TOF H2|input type=regexp|base type=Number|property=Turnover frequency H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ H2 [%]:
 | {{{field|Φ H2|input type=regexp|base type=Number|property=Quantum yield H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON HCOOH
 | {{{field|TON HCOOH|input type=regexp|base type=Number|property=Turnover number HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-| TOF HCOOH [{{#show: Property:Turnover frequency HCOOH|?Display units}}]:
+| TOF HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|TOF HCOOH|input type=regexp|base type=Number|property=Turnover frequency HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ HCOOH [%]:
 | {{{field|Φ HCOOH|input type=regexp|base type=Number|property=Quantum yield HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
@@ -97,7 +97,7 @@ Experiments:
 |-
 ! TON MeOH
 | {{{field|TON MeOH|input type=regexp|base type=Number|property=Turnover number MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
-| TOF MeOH [{{#show: Property:Turnover frequency MeOH|?Display units}}]:
+| TOF MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]:
 | {{{field|TOF MeOH|input type=regexp|base type=Number|property=Turnover frequency MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ MeOH [%]:
 | {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
