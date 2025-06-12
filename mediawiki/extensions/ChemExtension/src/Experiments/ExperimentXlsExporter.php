@@ -56,7 +56,9 @@ class ExperimentXlsExporter
                 $this->workSheet->setCellValue([$column, 1], $p."_inchikey");
             } else {
                 $unit = ConvertQuantity::getDefaultUnit($p, $this->parameters['form']);
-                $cellValue = is_null($unit) ? $p : "$p [$unit]";
+                $propertyTitle = Title::newFromText($p, SMW_NS_PROPERTY);
+                $displayTitle = QueryUtils::getDisplayTitle($propertyTitle);
+                $cellValue = is_null($unit) ? $displayTitle : "$displayTitle [$unit]";
                 $this->workSheet->setCellValue([$column, 1], $cellValue);
 
             }

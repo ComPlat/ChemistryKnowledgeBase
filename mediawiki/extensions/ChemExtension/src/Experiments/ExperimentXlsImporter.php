@@ -47,36 +47,24 @@ class ExperimentXlsImporter
 
     private function readHeaderData($maxColumn = 100)
     {
-        $properties = [];
-        list($column, $startRow) = $this->beginCoord;
 
+        list($column, $startRow) = $this->beginCoord;
+        $columnCount = 0;
+        $headerData = [];
         for ($i = $column; $i < $column + $maxColumn; $i++) {
             $property = $this->workSheet->getCell([$i, $startRow])->getValue();
             $property = trim($property);
-            if ($property !== '') {
-                $property = $this->normalizeHeaderToProperty($property);
-                $properties[] = $property;
+            if ($property === '') {
+                continue;
+            }
+            $columnCount++;
+            $hd = $this->createHeaderData($property);
+            if (!is_null($hd)) {
+                $headerData[] = $hd;
             }
         }
 
-        $headerData = [];
-        foreach ($properties as $p) {
-            if (GeneralTools::endsWith($p, ExperimentXlsExporter::MOLFILE_SUFFIX)) {
-                continue;
-            }
-            if (in_array($p . ExperimentXlsExporter::MOLFILE_SUFFIX, $properties)) {
-                $headerData[] = [
-                    'type' => 'data-property',
-                    'name' => $p,
-                ];
-            } else {
-                $headerData[] = [
-                    'type' => 'string-property',
-                    'name' => $p,
-                ];
-            }
-        }
-        return ['property-data' => $headerData, 'num-columns' => count($properties)];
+        return ['property-data' => $headerData, 'num-columns' => $columnCount];
     }
 
     private function readLine($row, $numColumns)
@@ -92,6 +80,7 @@ class ExperimentXlsImporter
 
     private function aggregateValues($headerData, $values)
     {
+
         $index = 0;
         $cellValues = [];
         foreach ($headerData as $property) {
@@ -125,7 +114,6 @@ class ExperimentXlsImporter
 
         $rowsContent = '';
         $headerData = $this->readHeaderData();
-
         $row = 1;
         do {
             $values = $this->readLine($row, $headerData['num-columns']);
@@ -174,7 +162,7 @@ class ExperimentXlsImporter
             $this->logger->log("No inchikey found for '$moleculeKey', try to find molecule by name, synonym or abbreviation");
             $searchResult = $this->searchForMolecule($moleculeKey);
             if ($searchResult['type'] === 'chemformid') {
-                return "Molecule:".$searchResult['value'];
+                return "Molecule:" . $searchResult['value'];
             } else {
                 return $searchResult['value'];
             }
@@ -208,17 +196,30 @@ class ExperimentXlsImporter
 
     }
 
-    private function normalizeHeaderToProperty($property)
+    private function createHeaderData($property)
     {
-        if (GeneralTools::endsWith($property, '_inchikey')) {
+        if (GeneralTools::endsWith($property, ExperimentXlsExporter::MOLFILE_SUFFIX)) {
+            return null;
+        } else if (GeneralTools::endsWith($property, '_inchikey')) {
             $property = str_replace("_inchikey", "", $property);
+            $property = trim($property);
+            $headerData = [
+                'type' => 'data-property',
+                'name' => $property,
+            ];
+        } else {
+            $property = preg_replace('/\[[^]]*\]/', "", $property);
+            $property = trim($property);
+            if ($property === 'Temperature') {
+                $property = 'TemperatureP'; // hack because Property:Temperature is predefined but we dont use it
+            }
+            $property = QueryUtils::getTitleFromDisplayTitle($property);
+            $headerData = [
+                'type' => 'string-property',
+                'name' => $property,
+            ];
         }
-        $property = preg_replace('/\[[^]]*\]/', "", $property);
-        $property = trim($property);
-        if ($property === 'Temperature') {
-            $property = 'TemperatureP'; // hack because Property:Temperature is predefined but we dont use it
-        }
-        return trim($property);
+        return $headerData;
     }
 
     private function detectChemFormFormat($data)

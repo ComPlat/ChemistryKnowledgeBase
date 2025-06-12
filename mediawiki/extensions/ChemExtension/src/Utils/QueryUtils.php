@@ -258,6 +258,24 @@ class QueryUtils {
         return is_null($value) ? null : $value;
     }
 
+
+    public static function getTitleFromDisplayTitle($displayTitle) {
+        $store = StoreFactory::getStore ();
+
+        $property = new DIProperty( "_DTITLE" );
+        $values = $store->getPropertySubjects( $property,  new \SMWDIBlob($displayTitle));
+
+        if(! $values) {
+            return $displayTitle;
+        } else if(count($values) > 0) {
+            foreach ($values as $subj) {
+                return $subj->getTitle()->getText();
+            }
+
+        }
+        return $displayTitle;
+    }
+
     /**
      * Get the value of a query constraint
      *
@@ -311,11 +329,10 @@ class QueryUtils {
 
     /**
      * 
-     * @param String|Title $page
+     * @param Title $page
      * @return string the page's displayTitle
      */
-    public static function getDisplayTitle( $page ) {
-        $title = self::getTitle($page);
+    public static function getDisplayTitle( Title $title ) {
 
         $titleProperty = new DIProperty( DIProperty::TYPE_DISPLAYTITLE );
         $store = StoreFactory::getStore();
@@ -326,7 +343,7 @@ class QueryUtils {
         if ($first !== false) {
             return  $first->getString();
         } else {
-            return $page;
+            return $title->getText();
         }
     }
 }
