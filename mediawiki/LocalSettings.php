@@ -43,8 +43,8 @@ $wgLogos = [ '1x' => "$wgResourceBasePath/resources/assets/wiki.png" ];
 $wgEnableEmail = true;
 $wgEnableUserEmail = true; # UPO
 
-$wgEmergencyContact = "apache@chemwiki.local";
-$wgPasswordSender = "apache@chemwiki.local";
+$wgEmergencyContact = "ckb@diqa.de";
+$wgPasswordSender = "ckb@diqa.de";
 
 $wgEnotifUserTalk = false; # UPO
 $wgEnotifWatchlist = false; # UPO
