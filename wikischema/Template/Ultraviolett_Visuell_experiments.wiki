@@ -3,35 +3,35 @@ This is the Ultraviolett-visuell (UV-vis) experiments template.
 </noinclude>
 <includeonly><table class="wikitable" title="">
 <tr>
-<th title="analyte (catalyst)">analyte</th>
-<th title="analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]">Concentration Analyte [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="solvent">solvent</th>
-<th property="hidden" title="solvent volume [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]">Volume Solvent [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="additives">additives</th>
-<th property="hidden" title="additives concentration [mM]">Concentration Additives [mM]</th>
+<th title="analyte (catalyst)">{{ShowDisplayTitle|Property:Analyte|analyte}}</th>
+<th title="analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Analyte concentration|Concentration Analyte}} [{{#defaultQuantity:property=Analyte concentration|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="solvent">{{ShowDisplayTitle|Property:Solvent|solvent}}</th>
+<th property="hidden" title="solvent volume [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Solvent volume|Volume Solvent}} [{{#defaultQuantity:property=Solvent volume|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="additives">{{ShowDisplayTitle|Property:Additives|additives}}</th>
+<th property="hidden" title="additives concentration [mM]">{{ShowDisplayTitle|Property:Additives concentration|Concentration Additives}} [mM]</th>
 
-<th title="absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]">Abs. 1 Analyte [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 1 Analyte [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="emission maximum [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 1 [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 1 [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Max|Abs. 1 Analyte}} [{{#defaultQuantity:property=Absorption Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Intensity Max|Int. Abs. 1 Analyte}} [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="emission maximum [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Max|Rel. Emission 1}} [{{#defaultQuantity:property=Emission Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Intensity Max|Intensity Rel. Em. 1}} [{{#defaultQuantity:property=Emission Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
 
-<th property="hidden" title="absorption maximum 2 [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]">Abs. 2 Analyte [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="absorption intensity maximum 2 [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 2 Analyte [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="emission maximum 2 [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 2 [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="emission intensity maximum 2 [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 2 [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption maximum 2 [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Max 2|Abs. 2 Analyte}} [{{#defaultQuantity:property=Absorption Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption intensity maximum 2 [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Intensity Max 2|Int. Abs. 2 Analyte}} [{{#defaultQuantity:property=Absorption Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission maximum 2 [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Max 2|Rel. Emission 2}} [{{#defaultQuantity:property=Emission Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission intensity maximum 2 [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Intensity Max 2|Intensity Rel. Em. 2}} [{{#defaultQuantity:property=Emission Intensity Max 2|form=Ultraviolett_Visuell_experiments}}]</th>
 
-<th property="hidden" title="absorption maximum 3 [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]">Abs. 3 Analyte [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="absorption intensity maximum 3[{{#defaultQuantity:property=Absorption Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">Int. Abs. 3 Analyte [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="emission maximum 3 [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]">Rel. Emission 3 [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
-<th property="hidden" title="emission intensity maximum 3 [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">Intensity Rel. Em. 3 [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption maximum 3 [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Max 3|Abs. 3 Analyte}} [{{#defaultQuantity:property=Absorption Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="absorption intensity maximum 3[{{#defaultQuantity:property=Absorption Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Absorption Intensity Max 3|Int. Abs. 3 Analyte}} [{{#defaultQuantity:property=Absorption Intensity Max|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission maximum 3 [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Max 3|Rel. Emission 3}} [{{#defaultQuantity:property=Emission Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
+<th property="hidden" title="emission intensity maximum 3 [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Emission Intensity Max 3|Intensity Rel. Em. 3}} [{{#defaultQuantity:property=Emission Intensity Max 3|form=Ultraviolett_Visuell_experiments}}]</th>
 
-<th title="Interception number">Interception number</th>
-<th title="Interception [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]">Interception [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="Interception number">{{ShowDisplayTitle|Property:Interception number|Interception number}}</th>
+<th title="Interception [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Interception|Interception}} [{{#defaultQuantity:property=Interception|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="E0,0 [{{#defaultQuantity:property=E0|form=Ultraviolett_Visuell_experiments}}]">E<sub>0/0</sub> [{{#defaultQuantity:property=E0|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="Additives absorption [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]">Abs. Additive [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="Intensity Additives absorption [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]">Intensity Abs. Add [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
-<th title="gas (atmosphere)">Atmosphere, Gas</th>
-<th title="temperature [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="Additives absorption [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Additives absorption|Abs. Additive}} [{{#defaultQuantity:property=Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="Intensity Additives absorption [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]">{{ShowDisplayTitle|Property:Intensity Additives absorption|Intensity Abs. Add}} [{{#defaultQuantity:property=Intensity Additives absorption|form=Ultraviolett_Visuell_experiments}}]</th>
+<th title="gas (atmosphere)">{{ShowDisplayTitle|Property:Gas|Atmosphere, Gas}}</th>
+<th title="temperature [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]" property="hidden">{{ShowDisplayTitle|Property:TemperatureP|T}} [{{#defaultQuantity:property=TemperatureP|form=Ultraviolett_Visuell_experiments}}]</th>
 <th title="condition" property="hidden">Condition</th>
 <th title="details" property="hidden">Details</th>
 <th title="include" property="hidden">include</th>
