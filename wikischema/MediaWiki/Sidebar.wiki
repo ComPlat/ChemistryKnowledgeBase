@@ -12,6 +12,7 @@
 ** Special:CheckServices|Check services
 ** Special:SpecialPages|Special pages
 ** Special:ModifyMolecule|Modify molecules
+** Special:PublicationImportSpecialpage|Import by AI (experimental)
 * Help
 ** Help:Getting Started|Getting started
 ** Help:Create new publication|Create new publication

@@ -12,6 +12,7 @@ use RecentChange;
 use EmailNotification;
 use User;
 use Parser;
+use RequestContext;
 
 class WikiTools {
 
@@ -110,13 +111,16 @@ class WikiTools {
 
     public static function createNotificationJobs($title)
     {
-        $wikiSysop = User::newFromName("WikiSysop");
+        $user = RequestContext::getMain()->getUser();
+        if (is_null($user)) {
+            $user = User::newFromName("WikiSysop");
+        }
         $emailNotification = new EmailNotification();
         return $emailNotification->notifyOnPageChange(
-            $wikiSysop,
+            $user,
             $title,
             wfTimestampNow(),
-            "Die Seite wurde vom ChemScanner importiert",
+            "Die Seite wurde vom automatisch importiert",
             false
         );
     }

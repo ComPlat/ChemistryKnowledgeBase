@@ -47,7 +47,7 @@ $wgEmergencyContact = "ckb@diqa.de";
 $wgPasswordSender = "ckb@diqa.de";
 
 $wgEnotifUserTalk = false; # UPO
-$wgEnotifWatchlist = false; # UPO
+$wgEnotifWatchlist = true; # UPO
 $wgEmailAuthentication = true;
 
 ## Database settings
