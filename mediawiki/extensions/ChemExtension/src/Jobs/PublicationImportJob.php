@@ -10,12 +10,14 @@ use Hooks;
 
 class PublicationImportJob extends Job {
 
-    private $path;
+    private $paths;
+    private $doi;
     private $logger;
 
     public function __construct( $title, $params ) {
         parent::__construct( 'PublicationImportJob', $title, $params );
-        $this->path = $params['path'];
+        $this->paths = $params['paths'];
+        $this->doi = $params['doi'];
         $this->logger = new LoggerUtils('PublicationImportJob', 'ChemExtension');
     }
 
@@ -38,10 +40,13 @@ class PublicationImportJob extends Job {
     }
 
     private function importPublicationPage() {
-        $wikitext = "Imported from: " . $this->path;
+        $wikitext = "Imported from: " . join(', ', $this->paths);
         $wikitext .= "\n\n";
 
-        $fileContent = file_get_contents($this->path);
+        $fileContent = '';
+        foreach($this->paths as $path) {
+            $fileContent .= file_get_contents($path);
+        }
         $wikitext .= $this->callAI($fileContent);
 
         $oldText = WikiTools::getText($this->getTitle());
@@ -52,7 +57,9 @@ class PublicationImportJob extends Job {
     private function callAI(string $fileContent): string
     {
         // TODO: call AI
-        return '- This is created by AI -';
+        $result = "\nDOI: " . $this->doi;
+        $result .= "- This is created by AI -";
+        return $result;
     }
 
 

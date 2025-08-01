@@ -10,6 +10,7 @@ use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\SelectFileInputWidget;
+use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
 use RequestContext;
@@ -21,6 +22,7 @@ class PublicationImportSpecialpage extends SpecialPage
 
     private $blade;
     private $logger;
+
     function __construct()
     {
         parent::__construct('PublicationImportSpecialpage', 'edit');
@@ -54,9 +56,12 @@ class PublicationImportSpecialpage extends SpecialPage
 
             if (isset($_FILES["chemfile"]["name"])) {
                 try {
+                    global $wgRequest;
+                    $pageTitle = $wgRequest->getText('page-title', '');
+                    $doi = $wgRequest->getText('doi', '');
                     $uploadedFiles = $this->processUpload($tmpFolder);
-                    $titles = $this->createImportJobs($uploadedFiles);
-                    $this->putTitlesOnWatchlist($titles);
+                    $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi);
+                    $this->putTitleOnWatchlist($title);
                     $output->addHTML($this->renderUploadResult($uploadedFiles));
                 } catch (Exception $e) {
                     $output->addHTML($e->getMessage());
@@ -94,6 +99,33 @@ class PublicationImportSpecialpage extends SpecialPage
     private function createUploadForm(): FormLayout
     {
         global $wgScriptPath;
+        $pageTitle = new FieldLayout(
+            new TextInputWidget([
+                'id' => 'chemext-page-title',
+                'infusable' => true,
+                'name' => 'page-title',
+                'value' => '',
+                'placeholder' => 'Page title'
+            ]),
+            [
+                'align' => 'top',
+                'label' => 'Page title'
+            ]
+        );
+
+        $doi = new FieldLayout(
+            new TextInputWidget([
+                'id' => 'chemext-doi',
+                'infusable' => true,
+                'name' => 'doi',
+                'value' => '',
+                'placeholder' => 'DOI'
+            ]),
+            [
+                'align' => 'top',
+                'label' => 'DOI'
+            ]
+        );
         $fileWidget = new SelectFileInputWidget(['name' => 'chemfile[]', 'multiple' => true]);
         $uploadWidget = new FieldLayout(
             $fileWidget,
@@ -108,7 +140,7 @@ class PublicationImportSpecialpage extends SpecialPage
             'label' => $this->msg('ce-upload-to-chemscanner')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true]);
-        $form = new FormLayout(['items' => [$uploadWidget, $submitButton],
+        $form = new FormLayout(['items' => [$pageTitle, $doi, $uploadWidget, $submitButton],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:PublicationImportSpecialpage",
             'enctype' => 'multipart/form-data',
@@ -157,30 +189,28 @@ class PublicationImportSpecialpage extends SpecialPage
         return $tmpFolder;
     }
 
-    private function createImportJobs(array $uploadedFiles): array
+    private function createImportJobs(array $uploadedFiles, $pageTitle, $doi): Title
     {
-        $titles = [];
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        foreach ($uploadedFiles as $name => $path) {
-            $title = Title::newFromText($name);
-            $job = new PublicationImportJob($title, ['path' => $path]);
-            $jobQueue->push($job);
-            $titles[] = $title;
-        }
-        return $titles;
+        $paths = array_values($uploadedFiles);
+        $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
+        $title = Title::newFromText($pageTitle);
+        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi]);
+        $jobQueue->push($job);
+        return $title;
     }
 
-    private function putTitlesOnWatchlist(array $titles): void
+    private function putTitleOnWatchlist(Title $title): void
     {
         $store = MediaWikiServices::getInstance()->getWatchedItemStore();
         $user = RequestContext::getMain()->getUser();
         if ($user->getEmail() === '' || !$user->canSendEmail()) {
             $this->logger->warn("User does not have email set or cannot send emails: " . $user->getName());
         }
-        foreach ($titles as $title) {
-            $store->removeWatch($user, $title);
-            $store->addWatch($user, $title);
-        }
+
+        $store->removeWatch($user, $title);
+        $store->addWatch($user, $title);
+
     }
 
     private function renderImportJobsList(): string
