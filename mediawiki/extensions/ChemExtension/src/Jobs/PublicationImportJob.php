@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
+use DIQA\ChemExtension\PublicationImport\AIClient;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
@@ -56,9 +57,18 @@ class PublicationImportJob extends Job {
 
     private function callAI(string $fileContent): string
     {
-        // TODO: call AI
-        $result = "\nDOI: " . $this->doi;
-        $result .= "- This is created by AI -";
+        $result = "";
+        try {
+            $aiClient = new AIClient();
+            // TODO: call AI
+            //$wikitext = $aiClient->getData($fileContent);
+            $wikitext = "\n- This is created by AI -";
+            $result .= "\nDOI: " . $this->doi;
+            $result .= $wikitext;
+            return $result;
+        } catch (Exception $e) {
+            $result .= "Error on import: " . $e->getMessage();
+        }
         return $result;
     }
 

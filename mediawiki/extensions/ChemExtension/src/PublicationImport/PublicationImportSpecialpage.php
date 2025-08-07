@@ -65,6 +65,7 @@ class PublicationImportSpecialpage extends SpecialPage
                     $output->addHTML($this->renderUploadResult($uploadedFiles));
                 } catch (Exception $e) {
                     $output->addHTML($e->getMessage());
+                    $output->addHTML(sprintf('<br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
                 }
                 return;
             }
@@ -105,11 +106,11 @@ class PublicationImportSpecialpage extends SpecialPage
                 'infusable' => true,
                 'name' => 'page-title',
                 'value' => '',
-                'placeholder' => 'Page title'
+                'placeholder' => 'Publication title'
             ]),
             [
                 'align' => 'top',
-                'label' => 'Page title'
+                'label' => 'Publication title (optional)'
             ]
         );
 
@@ -123,7 +124,7 @@ class PublicationImportSpecialpage extends SpecialPage
             ]),
             [
                 'align' => 'top',
-                'label' => 'DOI'
+                'label' => 'DOI (optional)'
             ]
         );
         $fileWidget = new SelectFileInputWidget(['name' => 'chemfile[]', 'multiple' => true]);
@@ -140,7 +141,7 @@ class PublicationImportSpecialpage extends SpecialPage
             'label' => $this->msg('ce-upload-to-chemscanner')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true]);
-        $form = new FormLayout(['items' => [$pageTitle, $doi, $uploadWidget, $submitButton],
+        $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $doi, $submitButton],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:PublicationImportSpecialpage",
             'enctype' => 'multipart/form-data',
@@ -158,6 +159,9 @@ class PublicationImportSpecialpage extends SpecialPage
         $uploadedFiles = [];
         for ($i = 0; $i < count($_FILES["chemfile"]["name"]); $i++) {
             $name = $_FILES["chemfile"]["name"][$i];
+            if ($name === '') {
+                throw new Exception("No file(s) selected.");
+            }
             $tmpName = $_FILES["chemfile"]["tmp_name"][$i];
             $pathInfo = pathinfo($name);
             $filename = $pathInfo['filename'] . "_" . uniqid() . "." . $pathInfo['extension'];
