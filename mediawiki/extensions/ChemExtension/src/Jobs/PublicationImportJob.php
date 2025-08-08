@@ -13,12 +13,14 @@ class PublicationImportJob extends Job {
 
     private $paths;
     private $doi;
+    private $topics;
     private $logger;
 
     public function __construct( $title, $params ) {
         parent::__construct( 'PublicationImportJob', $title, $params );
         $this->paths = $params['paths'];
         $this->doi = $params['doi'];
+        $this->topics = $params['topics'];
         $this->logger = new LoggerUtils('PublicationImportJob', 'ChemExtension');
     }
 
@@ -64,6 +66,7 @@ class PublicationImportJob extends Job {
             //$wikitext = $aiClient->getData($fileContent);
             $wikitext = "\n- This is created by AI -";
             $result .= "\nDOI: " . $this->doi;
+            $result .= "\nTopcis: " . join(',', $this->topics);
             $result .= $wikitext;
             return $result;
         } catch (Exception $e) {

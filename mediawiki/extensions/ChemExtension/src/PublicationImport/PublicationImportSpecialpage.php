@@ -3,7 +3,10 @@
 namespace DIQA\ChemExtension\PublicationImport;
 
 use DIQA\ChemExtension\Jobs\PublicationImportJob;
+use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\QueryUtils;
+use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
@@ -58,14 +61,17 @@ class PublicationImportSpecialpage extends SpecialPage
                 try {
                     global $wgRequest;
                     $pageTitle = $wgRequest->getText('page-title', '');
+                    $topics = $wgRequest->getText('topic', '');
+                    if ($topics === '') $topics = "Topic";
                     $doi = $wgRequest->getText('doi', '');
+                    $this->checkIfDOIAlreadyExists($doi);
                     $uploadedFiles = $this->processUpload($tmpFolder);
-                    $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi);
+                    $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
                     $this->putTitleOnWatchlist($title);
                     $output->addHTML($this->renderUploadResult($uploadedFiles));
                 } catch (Exception $e) {
                     $output->addHTML($e->getMessage());
-                    $output->addHTML(sprintf('<br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
+                    $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
                 }
                 return;
             }
@@ -127,6 +133,23 @@ class PublicationImportSpecialpage extends SpecialPage
                 'label' => 'DOI (optional)'
             ]
         );
+
+        $topicCategory = new FieldLayout(
+            new TitleMultiSelectWidget(['id' =>
+                'chemext-topic',
+                'infusable' => true,
+                'name' => 'topic',
+                'default' => '',
+                'placeholder' => $this->msg('topic-super-hint')->plain(),
+                'classes' => ['chemtext-topic-input'],
+                'namespace' => NS_CATEGORY
+            ]),
+            [
+                'align' => 'top',
+                'label' => $this->msg('topic-super-label')->text()
+            ]
+        );
+
         $fileWidget = new SelectFileInputWidget(['name' => 'chemfile[]', 'multiple' => true]);
         $uploadWidget = new FieldLayout(
             $fileWidget,
@@ -141,7 +164,7 @@ class PublicationImportSpecialpage extends SpecialPage
             'label' => $this->msg('ce-upload-to-chemscanner')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true]);
-        $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $doi, $submitButton],
+        $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $topicCategory, $doi, $submitButton],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:PublicationImportSpecialpage",
             'enctype' => 'multipart/form-data',
@@ -193,13 +216,13 @@ class PublicationImportSpecialpage extends SpecialPage
         return $tmpFolder;
     }
 
-    private function createImportJobs(array $uploadedFiles, $pageTitle, $doi): Title
+    private function createImportJobs(array $uploadedFiles, $pageTitle, $doi, array $topics): Title
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $paths = array_values($uploadedFiles);
         $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
         $title = Title::newFromText($pageTitle);
-        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi]);
+        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics]);
         $jobQueue->push($job);
         return $title;
     }
@@ -237,5 +260,20 @@ by email when the page is ready (if you specified one in your profile).
 </div>  
 HTML;
         return $html;
+    }
+
+    private function checkIfDOIAlreadyExists($doi): void
+    {
+        $results = QueryUtils::executeBasicQuery("[[DOI::$doi]]");
+        $exists = $results->getCount() > 0;
+        $pageTitle = null;
+        if ($exists) {
+            $row = $results->getNext();
+            $column = reset($row);
+            $dataItem = $column->getNextDataItem();
+            $pageTitle = $dataItem->getTitle();
+            $link = sprintf('<a href="%s">%s</a>', $pageTitle->getFullURL(), $pageTitle->getText());
+            throw new Exception("Page for this DOI '$doi' already exists: $link");
+        }
     }
 }
