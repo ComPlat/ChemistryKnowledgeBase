@@ -5,6 +5,7 @@ date
 
 # Repo
 sudo add-apt-repository multiverse
+sudo add-apt-repository ppa:ondrej/php
 sudo apt update
 
 # Guest extensions
@@ -43,8 +44,9 @@ lessc --version
 
 printf "\n\n\n#################### Install PHP\n"
 date
-sudo apt -y install php libapache2-mod-php php-mysql php-xml php-mbstring php-curl php-gd php-zip php-intl
-
+sudo apt -y install php8.3 php8.3-cli php8.3-{bz2,curl,mbstring,intl,gd,zip,xml,mysql}
+sudo apt -y install php8.3-fpm
+sudo a2enconf php8.3-fpm
 
 printf "\n\n\n#################### Install composer\n"
 date
