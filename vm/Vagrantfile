@@ -4,10 +4,6 @@
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
-#@@@ change this
-HYPER_V_DOMAIN = 'domain=HANSCH-DIQA'
-HYPER_V_USER = 'username=daniel'
-
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # Create a forwarded port mapping which allows access to a specific port
@@ -48,14 +44,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # VirtualBox
     config.vm.provider "virtualbox" do |v, override|
-        v.name = "Chemwiki-Ubuntu"
+        v.name = "Chemwiki 1.43 PHP8"
         v.memory = 2024
         v.cpus = 2
         override.vm.provision "shell", path: "bootstrap-ubuntu.sh", privileged: false
 
         # Every Vagrant virtual environment requires a box to build off of.
         # this is a VirtualBox machine: https://atlas.hashicorp.com/nrel/boxes/CentOS-6.6-x86_64
-        override.vm.box = "ubuntu/focal64"
+        config.vm.box = "ubuntu/jammy64"
+
 
         # Share an additional folder to the guest VM. The first argument is
         # the path on the host to the actual folder. The second argument is
@@ -66,29 +63,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         override.vm.synced_folder "../wikiimages", "/home/vagrant/wikiimages"
         override.vm.synced_folder "../bin", "/home/vagrant/bin"
         override.vm.synced_folder "../vm", "/vagrant"
-    end
-
-    # Hyper-V
-    config.vm.provider "hyperv" do |v, override|
-        v.name = "Chemwiki-Ubuntu"
-        v.memory = 2024
-        v.cpus = 2
-
-        override.vm.provision "shell", path: "hyper-v/bootstrap-ubuntu.sh", privileged: false
-
-        # Every Vagrant virtual environment requires a box to build off of.
-        # this is the HyperV machine: https://atlas.hashicorp.com/pyranja/boxes/centos-6
-        override.vm.box = "ubuntu/focal64"
-        
-        # Share an additional folder to the guest VM. The first argument is
-        # the path on the host to the actual folder. The second argument is
-        # the path on the guest to mount the folder. And the optional third
-        # argument is a set of non-required options.
-        override.vm.synced_folder "../mediawiki", "/var/www/html/mediawiki", :owner=> 'apache', :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
-        override.vm.synced_folder "../wikischema", "/home/vagrant/wikischema", :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
-        override.vm.synced_folder "../wikiimages", "/home/vagrant/wikiimages", :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
-        override.vm.synced_folder "../bin", "/home/vagrant/bin", :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
-        override.vm.synced_folder "../vm", "/vagrant", :mount_options => [HYPER_V_DOMAIN,HYPER_V_USER]
     end
 
 end
