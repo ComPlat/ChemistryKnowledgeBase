@@ -294,3 +294,4 @@ class FormatJson {
 		return $buffer . substr( $str, $mark, $maxLen - $mark );
 	}
 }
+

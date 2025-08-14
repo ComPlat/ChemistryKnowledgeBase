@@ -375,6 +375,10 @@ class WikiImport extends Maintenance {
         $fileTitle = Title::newFromText($decodedFileName, NS_FILE);
         $fileInRepo = $this->fileRepo->newFile($fileTitle);
         if ($fileTitle->exists()) {
+            if ($fileInRepo->getLocalRefPath() == '' || is_null($fileInRepo->getLocalRefPath())) {
+                $this->printLine("\tignoring $filename -- no file found.\n");
+                return false;
+            }
             $hashOld = md5(file_get_contents($fileInRepo->getLocalRefPath()));
             $fileData = file_get_contents($location);
             $hashNew = md5($fileData);
