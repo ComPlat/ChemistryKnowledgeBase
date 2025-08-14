@@ -129,7 +129,7 @@ class ExperimentListRenderer extends ExperimentRenderer
         if (WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeTag("span[@class='smw-highlighter']");
         }
-        return $this->blade->view()->make("experiment-table", [
+        return $this->blade->run("experiment-table", [
             'htmlTableEditor' => $htmlTableEditor,
             'experimentName' => $experimentName,
             'experimentPageTitle' => $experimentPageTitle,
@@ -139,7 +139,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
             'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
             'renameButton' => WikiTools::isInVisualEditor() || !$this->userHasMoveRights() ? '' : $renameButton->toString(),
-        ])->render();
+        ]);
 
     }
 

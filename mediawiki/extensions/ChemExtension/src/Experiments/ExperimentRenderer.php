@@ -16,7 +16,7 @@ use OOUI\Widget;
 use OutputPage;
 use Parser;
 use ParserOptions;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 abstract class ExperimentRenderer
@@ -34,7 +34,7 @@ abstract class ExperimentRenderer
         $this->context = $context;
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ( $views, $cache );
+        $this->blade = new BladeOne ( $views, $cache );
     }
 
     /**

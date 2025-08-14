@@ -9,7 +9,7 @@ use DIQA\ChemExtension\Literature\LiteratureRepository;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 
 class DOIData
 {
@@ -115,6 +115,6 @@ class DOIData
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ( $views, $cache );
+        return new BladeOne ( $views, $cache );
     }
 }

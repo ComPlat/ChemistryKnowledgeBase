@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\Specials;
 
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 use Title;
 
@@ -17,7 +17,7 @@ class FindMissingItems extends SpecialPage
         parent::__construct('FindMissingItems');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 
@@ -65,12 +65,12 @@ class FindMissingItems extends SpecialPage
             ];
         }
 
-        $output->addHTML($this->blade->view()->make("findMissingItems.results", [
+        $output->addHTML($this->blade->run("findMissingItems.results", [
 
             'results' => $results,
             'startIndex' => $offset
         ])
-            ->render());
+            );
 
         $this->addPagination($output, $offset, $limit);
     }
@@ -83,13 +83,13 @@ class FindMissingItems extends SpecialPage
     private function addPagination(\OutputPage $output, ?string $offset, ?string $limit): void
     {
         global $wgScriptPath;
-        $output->addHTML($this->blade->view()->make("findUnusedMolecules.pagination", [
+        $output->addHTML($this->blade->run("findUnusedMolecules.pagination", [
             'wgScriptPath' => $wgScriptPath,
             'limits' => self::$AVAILABLE_LIMITS,
             'offset' => $offset,
             'limit' => $limit
         ])
-            ->render());
+            );
     }
 
 }

@@ -9,7 +9,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 class CreateNewTopic extends PageCreationSpecial
@@ -26,7 +26,7 @@ class CreateNewTopic extends PageCreationSpecial
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 

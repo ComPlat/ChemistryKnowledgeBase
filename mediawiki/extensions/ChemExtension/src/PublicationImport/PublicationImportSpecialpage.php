@@ -15,7 +15,7 @@ use OOUI\FormLayout;
 use OOUI\SelectFileInputWidget;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use RequestContext;
 use SpecialPage;
 use Title;
@@ -35,7 +35,7 @@ class PublicationImportSpecialpage extends SpecialPage
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->logger = new LoggerUtils('PublicationImportSpecialpage', 'ChemExtension');
     }
 
@@ -91,12 +91,12 @@ class PublicationImportSpecialpage extends SpecialPage
     {
         global $wgServer, $wgScriptPath;
 
-        return $this->blade->view()->make("publication-upload",
+        return $this->blade->run("publication-upload",
             [
                 'wikiUrl' => "$wgServer$wgScriptPath/index.php",
                 'uploadedFiles' => $uploadedFiles
             ]
-        )->render();
+        );
     }
 
     /**
@@ -244,11 +244,11 @@ class PublicationImportSpecialpage extends SpecialPage
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroup()->get('PublicationImportJob');
         $jobs = iterator_to_array($jobQueue->getAllQueuedJobs());
-        return $this->blade->view()->make("publication-job-list",
+        return $this->blade->run("publication-job-list",
             [
                 'jobs' => $jobs
             ]
-        )->render();
+        );
     }
 
     private function createHeader()

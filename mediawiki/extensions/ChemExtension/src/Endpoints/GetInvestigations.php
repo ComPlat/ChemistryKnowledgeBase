@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\NavigationBar\InvestigationFinder;
 use MediaWiki\Rest\SimpleHandler;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Wikimedia\ParamValidator\ParamValidator;
 use Title;
 
@@ -19,7 +19,7 @@ class GetInvestigations extends SimpleHandler
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
     }
 
     public function run()
@@ -37,12 +37,12 @@ class GetInvestigations extends SimpleHandler
             $list = $investigationFinder->getInvestigationsForPublication($title, $searchTerm);
             $type = "publication";
         }
-        $investigationList = $this->blade->view()->make("navigation.investigation-list",
+        $investigationList = $this->blade->run("navigation.investigation-list",
             [
                 'list' => $list,
                 'type' => $type,
             ]
-        )->render();
+        );
         return ['html' => $investigationList];
     }
 

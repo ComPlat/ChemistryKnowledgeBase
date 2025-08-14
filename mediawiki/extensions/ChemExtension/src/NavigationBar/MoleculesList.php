@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\NavigationBar;
 
 use OOUI\FieldLayout;
 use OOUI\TextInputWidget;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 
 class MoleculesList
 {
@@ -19,17 +19,17 @@ class MoleculesList
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->type = $type;
     }
 
     public function getMolecules()
     {
-        return $this->blade->view()->make("navigation.molecule-list",
+        return $this->blade->run("navigation.molecule-list",
             [
                 'moleculesList' => []
             ]
-        )->render();
+        );
     }
 
     public function createGUIForMoleculeFilter()

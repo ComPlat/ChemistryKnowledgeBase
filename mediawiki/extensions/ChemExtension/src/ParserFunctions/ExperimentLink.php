@@ -11,7 +11,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SMW\DataValueFactory;
 use Title;
 use SMWDataItem;
@@ -47,7 +47,7 @@ class ExperimentLink
 
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
+            $html = self::getBlade()->run("error", ['message' => $e->getMessage()]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
     }
@@ -90,7 +90,7 @@ class ExperimentLink
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ($views, $cache);
+        return new BladeOne ($views, $cache);
     }
 
     /**
@@ -192,7 +192,7 @@ class ExperimentLink
             'parameters' => $parameters,
             'selectExperimentQuery' => $selectExperimentQuery,
         ]);
-        $html = $renderer->render();
+        $html = $renderer;
         return [
             'table' => $html,
             'refs' => RenderLiterature::$LITERATURE_REFS,

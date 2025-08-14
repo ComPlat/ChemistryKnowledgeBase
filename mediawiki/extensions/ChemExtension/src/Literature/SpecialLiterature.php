@@ -10,7 +10,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class SpecialLiterature extends SpecialPage
@@ -32,7 +32,7 @@ class SpecialLiterature extends SpecialPage
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
         $this->repo = new LiteratureRepository($dbr);
@@ -77,7 +77,7 @@ class SpecialLiterature extends SpecialPage
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new LiteratureRepository($dbr);
         global $wgScriptPath;
-        $html = $this->blade->view()->make("doi-special-literature",
+        $html = $this->blade->run("doi-special-literature",
             [
                 'doi' => $data->DOI,
                 'type' => DOITools::getTypeLabel($data->type),
@@ -99,7 +99,7 @@ class SpecialLiterature extends SpecialPage
                 'usedBy' => $repo->getPagesForDOI($data->DOI),
                 'wgScriptPath' => $wgScriptPath
             ]
-        )->render();
+        );
 
         $html = str_replace("\n", "", $html);
         $this->getOutput()->addHTML($html);

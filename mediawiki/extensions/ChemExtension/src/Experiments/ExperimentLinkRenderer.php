@@ -144,7 +144,7 @@ TEMPLATE;
         ]);
 
         global $wgScriptPath;
-        return $this->blade->view()->make("experiment-link-table", [
+        return $this->blade->run("experiment-link-table", [
             'htmlTableEditor' => $htmlTableEditor,
             'button' => WikiTools::isInVisualEditor() ? '' : $toggleButton->toString(),
             'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
@@ -153,6 +153,6 @@ TEMPLATE;
             'buttonCounter' => $uniqueId,
             'cacheKey' => $this->context['cacheKey'],
             'wgScriptPath' => $wgScriptPath
-        ])->render();
+        ]);
     }
 }

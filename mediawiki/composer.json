@@ -81,8 +81,10 @@
 		"wikimedia/xmp-reader": "0.8.6",
 		"zordius/lightncandy": "1.2.6",
 		"ml/json-ld": "^1.2",
-		"phpoffice/phpspreadsheet": "^1.29",
-		"diqa/page-import": "dev-main"
+		"diqa/page-import": "dev-main",
+		"openai-php/client": "^0.4.1",
+		"phpoffice/phpspreadsheet": "^5.0",
+		"eftec/bladeone": "^4.19"
 	},
 	"require-dev": {
 		"composer/spdx-licenses": "1.5.7",
@@ -172,7 +174,8 @@
 		"allow-plugins": {
 			"composer/package-versions-deprecated": true,
 			"wikimedia/composer-merge-plugin": true,
-			"composer/installers": true
+			"composer/installers": true,
+			"php-http/discovery": true
 		}
 	},
 	"extra": {

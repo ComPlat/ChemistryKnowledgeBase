@@ -25,7 +25,7 @@ class GetWikisEndpoint extends SimpleHandler {
 
         global $wgServer;
         $allWikiCreated = $repository->getAllWikisCreatedById($wgUser->getId());
-        $html = $blade->view ()->make ( "wiki-created-by",
+        $html = $blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer ]
         )->render ();

@@ -6,7 +6,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use MediaWiki\MediaWikiServices;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 
 class DOIRenderer
 {
@@ -20,7 +20,7 @@ class DOIRenderer
         }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
         $authors = array_map(function ($e) {
             return "{$e->given} {$e->family}";
@@ -32,7 +32,7 @@ class DOIRenderer
         $pages = $doiData->page ?? "";
         global $wgScriptPath;
 
-        $html = $blade->view()->make("doi-rendered",
+        $html = $blade->run("doi-rendered",
             [
                 'index' => DOITools::generateReferenceIndex($doiData),
                 'title' => strip_tags(ArrayTools::getFirstIfArray($doiData->title), "<sub><sup><b><i>"),
@@ -45,7 +45,7 @@ class DOIRenderer
                 'publicationPage' => DOITools::getPageFromDOI($doiData->DOI),
                 'wgScriptPath' => $wgScriptPath,
             ]
-        )->render();
+        );
 
         return str_replace("\n", "", $html);
     }
@@ -56,11 +56,11 @@ class DOIRenderer
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
         global $wgScriptPath;
 
         $submittedAt = $data->created->timestamp ?? 0;
-        return $blade->view()->make("doi-infobox",
+        return $blade->run("doi-infobox",
             [
                 'doi' => $data->DOI,
                 'type' => DOITools::getTypeLabel($data->type ?? ''),
@@ -82,20 +82,20 @@ class DOIRenderer
                 }, $data->funder),
                 'wgScriptPath' => $wgScriptPath
             ]
-        )->render();
+        );
     }
 
     public function renderReferenceInText($doiData)
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
-        $html = $blade->view()->make("doi-reference",
+        $html = $blade->run("doi-reference",
             [
                 'index' => DOITools::generateReferenceIndex($doiData),
             ]
-        )->render();
+        );
 
         return str_replace("\n", "", $html);
     }

@@ -9,7 +9,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use ParserOptions;
 use RequestContext;
 
@@ -58,7 +58,7 @@ class DOIInfoBox
             \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);
             return ['', 'noparse' => true, 'isHTML' => true];
         } catch(Exception $e) {
-            $html = self::getBlade()->view ()->make ( "error", ['message' => $e->getMessage()])->render ();
+            $html = self::getBlade()->run ( "error", ['message' => $e->getMessage()]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
     }
@@ -82,7 +82,7 @@ class DOIInfoBox
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ( $views, $cache );
+        return new BladeOne ( $views, $cache );
     }
 
 

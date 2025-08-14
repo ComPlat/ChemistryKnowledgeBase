@@ -3,6 +3,8 @@ namespace DIQA\WikiFarm\Special;
 
 use DateTime;
 use DIQA\WikiFarm\WikiRepository;
+use eftec\bladeone\BladeOne;
+use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FieldLayout;
@@ -12,7 +14,6 @@ use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
 use Philo\Blade\Blade;
-use Exception;
 
 class SpecialCreateWiki extends \SpecialPage {
 
@@ -27,7 +28,7 @@ class SpecialCreateWiki extends \SpecialPage {
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ( $views, $cache );
+        $this->blade = new BladeOne( $views, $cache );
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -114,10 +115,10 @@ class SpecialCreateWiki extends \SpecialPage {
         global $wgServer;
         global $wgUser;
         $allWikiCreated = $this->repository->getAllWikisCreatedById($wgUser->getId());
-        return $this->blade->view ()->make ( "wiki-created-by",
+        return $this->blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer
                 ]
-        )->render ();
+        );
     }
 }

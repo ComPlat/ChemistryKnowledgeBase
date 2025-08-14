@@ -10,7 +10,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use OutputPage;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use PPFrame;
 use Title;
 
@@ -63,14 +63,14 @@ class RenderFormula
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
         global $wgScriptPath, $wgTitle;
         $namesOfMolecule = ChemTools::getNamesOfMolecule($attributes['chemFormPage']);
         if (WikiTools::isInVisualEditor()) {
             $namesOfMolecule .= " ({$attributes['chemFormPage']->getText()})";
         }
-        return $blade->view()->make("molecule",
+        return $blade->run("molecule",
             [
                 'url' => $attributes['chemFormPage']->getFullURL(),
                 'label' => $attributes['chemFormPage']->getText(),
@@ -87,7 +87,7 @@ class RenderFormula
                 'name' => $namesOfMolecule,
                 'molOrRxn' => $attributes['formula']
             ]
-        )->render();
+        );
     }
 
     private static function renderEmptyMolecule($attributes): string
@@ -95,10 +95,10 @@ class RenderFormula
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
         global $wgScriptPath, $wgTitle;
-        return $blade->view()->make("molecule",
+        return $blade->run("molecule",
             [
                 'moleculeKey' => '',
                 'width' => $attributes['width'],
@@ -106,7 +106,7 @@ class RenderFormula
                 'margin' => $attributes['margin'],
                 'placeHolderImg' => "$wgScriptPath/extensions/ChemExtension/skins/images/formula-placeholder.png"
             ]
-        )->render();
+        );
     }
 
     public static function outputMoleculeReferences(OutputPage $out): void
@@ -140,11 +140,11 @@ class RenderFormula
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
         $publicationPageForConcreteMolecule = $repo->getPublicationPageForConcreteMolecule($wgTitle);
 
-        $html = $blade->view()->make("molecule-list",
+        $html = $blade->run("molecule-list",
             [
                 'topicPages' => $topicPages,
                 'publicationPages' => $publicationPages,
@@ -152,7 +152,7 @@ class RenderFormula
                 'otherPages' => $otherPages,
                 'publicationPageForConcreteMolecule' => $publicationPageForConcreteMolecule,
             ]
-        )->render();
+        );
         $out->addHTML($html);
 
     }

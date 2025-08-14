@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\NavigationBar;
 
 use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 use OutputPage;
 
@@ -95,13 +95,13 @@ SQL;
         }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
-        $html = $blade->view()->make("investigation-list",
+        $html = $blade->run("investigation-list",
             [
                 'list' => $investigations,
             ]
-        )->render();
+        );
         $out->addHTML($html);
     }
 }

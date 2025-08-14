@@ -3,7 +3,7 @@
         "mediawiki/semantic-media-wiki": "~4.1.2",
         "mediawiki/semantic-compound-queries" : "~2.2.0",
         "mediawiki/semantic-result-formats": "~4.0.2",
-        "philo/laravel-blade": "3.1",
+
         "mikehaertl/phpwkhtmltopdf": "2.5",
         "easyrdf/easyrdf": "1.1.1",
 
@@ -15,7 +15,7 @@
     "extra": {
         "merge-plugin": {
             "include": [
-                "extensions/EnhancedRetrieval/composer.json"
+
             ]
         }
     }

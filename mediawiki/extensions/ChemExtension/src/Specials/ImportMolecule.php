@@ -10,7 +10,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\MultilineTextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 use WebRequest;
 
@@ -24,7 +24,7 @@ class ImportMolecule extends SpecialPage
         parent::__construct('ImportMolecule');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 
@@ -116,7 +116,7 @@ class ImportMolecule extends SpecialPage
 
     private function showErrorHint(string $message)
     {
-        return $this->blade->view()->make("error", ['message' => $message])->render();
+        return $this->blade->run("error", ['message' => $message]);
     }
 
 

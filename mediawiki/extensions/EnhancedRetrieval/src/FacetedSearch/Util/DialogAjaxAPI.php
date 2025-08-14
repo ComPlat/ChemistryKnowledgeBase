@@ -39,7 +39,7 @@ class DialogAjaxAPI extends ApiBase {
 
 		$facetValues = new FacetValueGenerator($params ['property']);
 
-		$html = $this->blade->view ()->make ( "dialogs.facet-value-dialog",
+		$html = $this->blade->run ( "dialogs.facet-value-dialog",
 				array ('values' => $facetValues->getFacetData(),
 					   'toRemove' => json_encode($facetValues->getFacetsToRemove()),
 					   'facetName' => $params ['property'])
@@ -57,7 +57,7 @@ class DialogAjaxAPI extends ApiBase {
         $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
         $hookContainer->run('fsgCustomFacetDialogContent', [ $params ['property'], & $content ]);
 
-        $html = $this->blade->view ()->make ( "dialogs.facet-custom-dialog",
+        $html = $this->blade->run ( "dialogs.facet-custom-dialog",
             [
                 'content' => $content[$params ['property']] ?? '',
                 'facetName' => $params ['property']

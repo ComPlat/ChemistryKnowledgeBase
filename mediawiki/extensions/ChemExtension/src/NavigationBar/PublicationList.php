@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\NavigationBar;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use OOUI\FieldLayout;
 use OOUI\TextInputWidget;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 class PublicationList {
@@ -20,7 +20,7 @@ class PublicationList {
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->title = $title;
     }
 

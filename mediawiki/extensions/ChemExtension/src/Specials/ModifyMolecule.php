@@ -12,7 +12,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\Tag;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class ModifyMolecule extends SpecialPage
@@ -24,7 +24,7 @@ class ModifyMolecule extends SpecialPage
         parent::__construct('ModifyMolecule', 'modifyMolecule');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 
@@ -43,10 +43,10 @@ class ModifyMolecule extends SpecialPage
         try {
             $form = $this->createGUI($wgScriptPath);
 
-            $output->addHTML($this->blade->view()->make("modifyMolecule.page", [
+            $output->addHTML($this->blade->run("modifyMolecule.page", [
 
             ])
-                ->render());
+                );
             $output->addHTML($form);
         } catch(Exception $e) {
             $output->addHTML($e->getMessage());
