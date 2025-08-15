@@ -2,58 +2,77 @@
 
 namespace DIQA\ChemExtension\PublicationImport;
 
-use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
+use OpenAI;
 
-class AIClient {
+class AIClient
+{
 
-    private $aiServiceUrl;
+    private $client;
     private $logger;
 
     public function __construct()
     {
-        $this->logger = new LoggerUtils('AIClient', 'ChemExtension');
-        $this->aiServiceUrl = '..default...';
-    }
-
-
-    /**
-     * @throws Exception
-     */
-    public function getData(string $payload)
-    {
-        try {
-            $headerFields = [];
-            $headerFields[] = "Expect:"; // disables 100 CONTINUE
-            $ch = curl_init();
-            $url = $this->aiServiceUrl;
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 20); //timeout in seconds
-
-            $response = curl_exec($ch);
-            if (curl_errno($ch)) {
-                $error_msg = curl_error($ch);
-                throw new Exception("Error on request: $error_msg for $url");
-            }
-            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            list($header, $body) = CurlUtil::splitResponse($response);
-            if ($httpcode >= 200 && $httpcode <= 299) {
-                return $body;
-            }
-
-            throw new Exception("Error on PubChem request. HTTP status: $httpcode. Message: $body for $url");
-
-        } finally {
-            curl_close($ch);
+        global $wgOpenAIKey;
+        if (!isset($wgOpenAIKey)) {
+            throw new Exception('OpenAI-Key is missing. please configure $wgOpenAIKey');
         }
+        $yourApiKey = $wgOpenAIKey;
+        $this->logger = new LoggerUtils('AIClient', 'ChemExtension');
+        $this->client = OpenAI::factory()
+            ->withApiKey($yourApiKey)
+            ->make();
     }
 
+
+    public function uploadFiles(array $files)
+    {
+        $ids = [];
+
+        foreach ($files as $file) {
+            try {
+                $fileHandle = fopen($file, 'r');
+                $response = $this->client->files()->upload([
+                    'purpose' => 'user_data',
+                    'file' => $fileHandle,
+                ]);
+                if (!isset($response->id) || $response->status !== 'processed') {
+                    $this->logger->error("Could not upload file to OpenAI: $file\n". print_r($response, true));
+                    continue;
+                }
+                $ids[] = $response->id;
+                $this->logger->log(sprintf("Uploaded file: %s, id: %s", $response->filename, $response->id));
+            } catch(Exception $e) {
+                $this->logger->error("Could not upload file to OpenAI: $file");
+                $this->logger->error($e->getMessage());
+            }
+        }
+        return $ids;
+    }
+
+    public function callAI(array $fileIds, string $prompt) {
+        $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($fileIds) . "]");
+        $content = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        $content[] = [
+            "type" => "input_text",
+            "text" => $prompt,
+        ];
+
+        global $wgOpenAIModel;
+        $response = $this->client->responses()->create([
+                "model" => $wgOpenAIModel ?? "o3",
+                "input" => [
+                    [
+                        "role" => "user",
+                        "content" => $content,
+                    ]
+                ],
+
+            ]
+        );
+        $result = $response->outputText ?? 'no output generated';
+        $this->logger->log("Response from AI: " . $result);
+        return $result;
+    }
 }

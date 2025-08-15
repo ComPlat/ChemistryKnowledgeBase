@@ -9,15 +9,17 @@ use Exception;
 use Job;
 use Hooks;
 
-class PublicationImportJob extends Job {
+class PublicationImportJob extends Job
+{
 
     private $paths;
     private $doi;
     private $topics;
     private $logger;
 
-    public function __construct( $title, $params ) {
-        parent::__construct( 'PublicationImportJob', $title, $params );
+    public function __construct($title, $params)
+    {
+        parent::__construct('PublicationImportJob', $title, $params);
         $this->paths = $params['paths'];
         $this->doi = $params['doi'];
         $this->topics = $params['topics'];
@@ -32,7 +34,7 @@ class PublicationImportJob extends Job {
         try {
 
             if (!WikiTools::createNotificationJobs($this->getTitle())) {
-                $this->logger->warn("Notification job was not created for page: " .$this->getTitle()->getPrefixedText());
+                $this->logger->warn("Notification job was not created for page: " . $this->getTitle()->getPrefixedText());
             }
             $this->importPublicationPage();
             Hooks::run('CleanupChemExtState');
@@ -42,38 +44,43 @@ class PublicationImportJob extends Job {
         }
     }
 
-    private function importPublicationPage() {
-        $wikitext = "Imported from: " . join(', ', $this->paths);
-        $wikitext .= "\n\n";
+    private function importPublicationPage()
+    {
+        $doi = $this->doi;
+        $importNotice = "Imported from: " . join(', ', $this->paths);
 
-        $fileContent = '';
-        foreach($this->paths as $path) {
-            $fileContent .= file_get_contents($path);
-        }
-        $wikitext .= $this->callAI($fileContent);
+        $topicsCategoryAnnotations = join("\n", array_map(function ($topic) {
+            return "[[Category:$topic]]";
+        }, $this->topics));
 
+
+        global $wgOpenAIPrompt;
+        $promptDir = __DIR__ . "/../../resources/ai-prompts/";
+        $prompt = file_get_contents($promptDir . $wgOpenAIPrompt ?? "resume.txt");
+
+        $aiClient = new AIClient();
+        $fileIds = $aiClient->uploadFiles($this->paths);
+
+        $aiText = $aiClient->callAI($fileIds, $prompt);
+
+        $wikitext = <<<WIKITEXT
+$importNotice
+
+{{BaseTemplate}}
+{{DOI|doi=$doi}}
+
+$aiText
+
+$topicsCategoryAnnotations
+WIKITEXT;
+
+        print "\nimportnotice:".$importNotice;
+        print "\naitext:".$aiText;
+        print "\ntopics:".$topicsCategoryAnnotations;
+        print_r($wikitext);
         $oldText = WikiTools::getText($this->getTitle());
         WikiTools::doEditContent($this->getTitle(), "$wikitext\n\n$oldText",
-            "auto-generated",$this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
+            "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
     }
-
-    private function callAI(string $fileContent): string
-    {
-        $result = "";
-        try {
-            $aiClient = new AIClient();
-            // TODO: call AI
-            //$wikitext = $aiClient->getData($fileContent);
-            $wikitext = "\n- This is created by AI -";
-            $result .= "\nDOI: " . $this->doi;
-            $result .= "\nTopcis: " . join(',', $this->topics);
-            $result .= $wikitext;
-            return $result;
-        } catch (Exception $e) {
-            $result .= "Error on import: " . $e->getMessage();
-        }
-        return $result;
-    }
-
 
 }
