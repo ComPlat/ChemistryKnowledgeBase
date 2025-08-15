@@ -35,7 +35,7 @@ class ExtractElements
     /**
      * @throws Exception
      */
-    private static function getBlade(): Blade
+    private static function getBlade(): BladeOne
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
