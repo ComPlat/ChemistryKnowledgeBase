@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OpenAI\Responses\FineTunes;
 
-use OpenAI\Contracts\Response;
+use OpenAI\Contracts\ResponseContract;
 use OpenAI\Responses\Concerns\ArrayAccessible;
 
 /**
- * @implements Response<array{id: string, object: string, created_at: int, bytes: int, filename: string, purpose: string, status: string, status_details: array<array-key, mixed>|string|null}>
+ * @implements ResponseContract<array{id: string, object: string, created_at: int, bytes: int, filename: string, purpose: string, status: string, status_details: array<array-key, mixed>|string|null}>
  */
-final class RetrieveResponseFile implements Response
+final class RetrieveResponseFile implements ResponseContract
 {
     /**
      * @use ArrayAccessible<array{id: string, object: string, created_at: int, bytes: int, filename: string, purpose: string, status: string, status_details: array<array-key, mixed>|string|null}>
@@ -29,8 +29,7 @@ final class RetrieveResponseFile implements Response
         public readonly string $purpose,
         public readonly string $status,
         public readonly array|string|null $statusDetails,
-    ) {
-    }
+    ) {}
 
     /**
      * Acts as static factory, and returns a new Response instance.
@@ -47,7 +46,7 @@ final class RetrieveResponseFile implements Response
             $attributes['filename'],
             $attributes['purpose'],
             $attributes['status'],
-            $attributes['status_details'],
+            $attributes['status_details'] ?? null,
         );
     }
 

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OpenAI\ValueObjects;
 
-use OpenAI\Contracts\Stringable;
+use OpenAI\Contracts\StringableContract;
 
 /**
  * @internal
  */
-final class ResourceUri implements Stringable
+final class ResourceUri implements StringableContract
 {
     /**
      * Creates a new ResourceUri value object.
@@ -49,6 +49,14 @@ final class ResourceUri implements Stringable
     public static function retrieve(string $resource, string $id, string $suffix): self
     {
         return new self("{$resource}/{$id}{$suffix}");
+    }
+
+    /**
+     * Creates a new ResourceUri value object that modifies the given resource.
+     */
+    public static function modify(string $resource, string $id): self
+    {
+        return new self("{$resource}/{$id}");
     }
 
     /**

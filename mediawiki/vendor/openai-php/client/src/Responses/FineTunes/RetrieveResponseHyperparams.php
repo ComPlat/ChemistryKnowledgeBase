@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OpenAI\Responses\FineTunes;
 
-use OpenAI\Contracts\Response;
+use OpenAI\Contracts\ResponseContract;
 use OpenAI\Responses\Concerns\ArrayAccessible;
 
 /**
- * @implements Response<array{batch_size: ?int, learning_rate_multiplier: ?float, n_epochs: int, prompt_loss_weight: float}>
+ * @implements ResponseContract<array{batch_size: ?int, learning_rate_multiplier: ?float, n_epochs: int, prompt_loss_weight: float}>
  */
-final class RetrieveResponseHyperparams implements Response
+final class RetrieveResponseHyperparams implements ResponseContract
 {
     /**
      * @use ArrayAccessible<array{batch_size: ?int, learning_rate_multiplier: ?float, n_epochs: int, prompt_loss_weight: float}>
@@ -22,8 +22,7 @@ final class RetrieveResponseHyperparams implements Response
         public readonly ?float $learningRateMultiplier,
         public readonly int $nEpochs,
         public readonly float $promptLossWeight,
-    ) {
-    }
+    ) {}
 
     /**
      * Acts as static factory, and returns a new Response instance.

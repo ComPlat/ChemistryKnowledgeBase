@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace OpenAI\Transporters;
 
 use Closure;
+use GuzzleHttp\Exception\ClientException;
 use JsonException;
-use OpenAI\Contracts\Transporter;
+use OpenAI\Contracts\TransporterContract;
+use OpenAI\Enums\Transporter\ContentType;
 use OpenAI\Exceptions\ErrorException;
 use OpenAI\Exceptions\TransporterException;
 use OpenAI\Exceptions\UnserializableResponse;
@@ -14,6 +16,7 @@ use OpenAI\ValueObjects\Transporter\BaseUri;
 use OpenAI\ValueObjects\Transporter\Headers;
 use OpenAI\ValueObjects\Transporter\Payload;
 use OpenAI\ValueObjects\Transporter\QueryParams;
+use OpenAI\ValueObjects\Transporter\Response;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -21,7 +24,7 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * @internal
  */
-final class HttpTransporter implements Transporter
+final class HttpTransporter implements TransporterContract
 {
     /**
      * Creates a new Http Transporter instance.
@@ -39,34 +42,28 @@ final class HttpTransporter implements Transporter
     /**
      * {@inheritDoc}
      */
-    public function requestObject(Payload $payload): array|string
+    public function requestObject(Payload $payload): Response
     {
         $request = $payload->toRequest($this->baseUri, $this->headers, $this->queryParams);
 
-        try {
-            $response = $this->client->sendRequest($request);
-        } catch (ClientExceptionInterface $clientException) {
-            throw new TransporterException($clientException);
-        }
+        $response = $this->sendRequest(fn (): \Psr\Http\Message\ResponseInterface => $this->client->sendRequest($request));
 
         $contents = (string) $response->getBody();
 
-        if ($response->getHeader('Content-Type')[0] === 'text/plain; charset=utf-8') {
-            return $contents;
+        if (str_contains($response->getHeaderLine('Content-Type'), ContentType::TEXT_PLAIN->value)) {
+            return Response::from($contents, $response->getHeaders());
         }
 
+        $this->throwIfJsonError($response, $contents);
+
         try {
-            /** @var array{error?: array{message: string, type: string, code: string}} $response */
-            $response = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+            /** @var array{error?: array{message: string, type: string, code: string}} $data */
+            $data = json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $jsonException) {
             throw new UnserializableResponse($jsonException);
         }
 
-        if (isset($response['error'])) {
-            throw new ErrorException($response['error']);
-        }
-
-        return $response;
+        return Response::from($data, $response->getHeaders());
     }
 
     /**
@@ -76,24 +73,11 @@ final class HttpTransporter implements Transporter
     {
         $request = $payload->toRequest($this->baseUri, $this->headers, $this->queryParams);
 
-        try {
-            $response = $this->client->sendRequest($request);
-        } catch (ClientExceptionInterface $clientException) {
-            throw new TransporterException($clientException);
-        }
+        $response = $this->sendRequest(fn (): \Psr\Http\Message\ResponseInterface => $this->client->sendRequest($request));
 
-        $contents = $response->getBody()->getContents();
+        $contents = (string) $response->getBody();
 
-        try {
-            /** @var array{error?: array{message: string, type: string, code: string}} $response */
-            $response = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-
-            if (isset($response['error'])) {
-                throw new ErrorException($response['error']);
-            }
-        } catch (JsonException) {
-            // ..
-        }
+        $this->throwIfJsonError($response, $contents);
 
         return $contents;
     }
@@ -105,12 +89,51 @@ final class HttpTransporter implements Transporter
     {
         $request = $payload->toRequest($this->baseUri, $this->headers, $this->queryParams);
 
-        try {
-            $response = ($this->streamHandler)($request);
-        } catch (ClientExceptionInterface $clientException) {
-            throw new TransporterException($clientException);
-        }
+        $response = $this->sendRequest(fn () => ($this->streamHandler)($request));
+
+        $this->throwIfJsonError($response, $response);
 
         return $response;
+    }
+
+    private function sendRequest(Closure $callable): ResponseInterface
+    {
+        try {
+            return $callable();
+        } catch (ClientExceptionInterface $clientException) {
+            if ($clientException instanceof ClientException) {
+                $this->throwIfJsonError($clientException->getResponse(), (string) $clientException->getResponse()->getBody());
+            }
+
+            throw new TransporterException($clientException);
+        }
+    }
+
+    private function throwIfJsonError(ResponseInterface $response, string|ResponseInterface $contents): void
+    {
+        if ($response->getStatusCode() < 400) {
+            return;
+        }
+
+        if (! str_contains($response->getHeaderLine('Content-Type'), ContentType::JSON->value)) {
+            return;
+        }
+
+        $statusCode = $response->getStatusCode();
+
+        if ($contents instanceof ResponseInterface) {
+            $contents = (string) $contents->getBody();
+        }
+
+        try {
+            /** @var array{error?: array{message: string|array<int, string>, type: string, code: string}} $response */
+            $response = json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
+
+            if (isset($response['error'])) {
+                throw new ErrorException($response['error'], $statusCode);
+            }
+        } catch (JsonException $jsonException) {
+            throw new UnserializableResponse($jsonException);
+        }
     }
 }

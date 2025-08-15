@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace OpenAI\Responses\Concerns;
 
 use BadMethodCallException;
-use OpenAI\Contracts\Response;
 
 /**
  * @template TArray of array
@@ -27,7 +26,7 @@ trait ArrayAccessible
      */
     public function offsetGet(mixed $offset): mixed
     {
-        return $this->toArray()[$offset];
+        return $this->toArray()[$offset]; // @phpstan-ignore-line
     }
 
     /**
