@@ -51,6 +51,17 @@ class AIClient
         return $ids;
     }
 
+    public function deleteFiles(array $files) {
+        foreach($files as $fileId) {
+            $response = $this->client->files()->delete($fileId);
+            if (!$response->deleted) {
+                $this->logger->warn("File could not be deleted in OpenAI repo: $fileId");
+            } else {
+                $this->logger->log("File deleted from OpenAI repo: $fileId");
+            }
+        }
+    }
+
     public function callAI(array $fileIds, string $prompt) {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($fileIds) . "]");
         $content = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
