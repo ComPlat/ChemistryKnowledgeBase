@@ -8,6 +8,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
 use Hooks;
+use MediaWiki\Title\Title;
 
 class PublicationImportJob extends Job
 {
@@ -54,9 +55,16 @@ class PublicationImportJob extends Job
         }, $this->topics));
 
 
-        global $wgOpenAIPrompt;
-        $promptDir = __DIR__ . "/../../resources/ai-prompts/";
-        $prompt = file_get_contents($promptDir . $wgOpenAIPrompt ?? "resume.txt");
+        global $wgOpenAIPromptPages;
+        $promptPage = $wgOpenAIPromptPages['publicationImport'] ?? 'Publication import prompt';
+        $promptTitle = Title::newFromText($promptPage, NS_MEDIAWIKI);
+        if (!$promptTitle->exists()) {
+            // fallback
+            $prompt = "Can you tell me what the document is about?";
+        } else {
+            $prompt = WikiTools::getText($promptTitle);
+        }
+        $this->logger->log("prompt for AI: " . $prompt);
 
         $aiClient = new AIClient();
         $fileIds = $aiClient->uploadFiles($this->paths);
@@ -74,10 +82,7 @@ $aiText
 $topicsCategoryAnnotations
 WIKITEXT;
 
-        print "\nimportnotice:".$importNotice;
-        print "\naitext:".$aiText;
-        print "\ntopics:".$topicsCategoryAnnotations;
-        print_r($wikitext);
+        $this->logger->log("generated text from AI: " . $wikitext);
         $oldText = WikiTools::getText($this->getTitle());
         WikiTools::doEditContent($this->getTitle(), "$wikitext\n\n$oldText",
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
