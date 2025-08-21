@@ -2,7 +2,8 @@
 
 namespace DIQA\InvestigationImport\Specials;
 
-use Philo\Blade\Blade;
+
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class SpecialInvestigationImport extends SpecialPage
@@ -15,7 +16,7 @@ class SpecialInvestigationImport extends SpecialPage
         parent::__construct('InvestigationImport');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne($views, $cache);
 
     }
 

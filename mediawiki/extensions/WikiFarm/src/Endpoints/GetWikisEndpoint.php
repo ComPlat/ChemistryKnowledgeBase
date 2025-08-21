@@ -2,9 +2,9 @@
 namespace DIQA\WikiFarm\Endpoints;
 
 use DIQA\WikiFarm\WikiRepository;
+use eftec\bladeone\BladeOne;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
-use Philo\Blade\Blade;
 use OutputPage;
 
 class GetWikisEndpoint extends SimpleHandler {
@@ -14,7 +14,7 @@ class GetWikisEndpoint extends SimpleHandler {
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new BladeOne( $views, $cache );
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA

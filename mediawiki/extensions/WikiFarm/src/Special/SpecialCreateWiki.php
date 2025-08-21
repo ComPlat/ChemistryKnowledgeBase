@@ -13,7 +13,6 @@ use OOUI\LabelWidget;
 use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
 
 class SpecialCreateWiki extends \SpecialPage {
 

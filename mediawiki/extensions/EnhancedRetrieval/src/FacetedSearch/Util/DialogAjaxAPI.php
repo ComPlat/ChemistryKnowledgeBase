@@ -2,9 +2,8 @@
 namespace DIQA\FacetedSearch\Util;
 
 use ApiBase;
+use eftec\bladeone\BladeOne;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
-use Title;
 
 class DialogAjaxAPI extends ApiBase {
 
@@ -15,7 +14,7 @@ class DialogAjaxAPI extends ApiBase {
 		$views = __DIR__ . '/../../../views';
 		$cache = __DIR__ . '/../../../cache';
 
-		$this->blade = new Blade ( $views, $cache );
+		$this->blade = new BladeOne( $views, $cache );
 	}
 
 	public function execute() {
