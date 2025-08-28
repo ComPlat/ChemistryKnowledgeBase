@@ -1,0 +1,20 @@
+Index: mediawiki/extensions/VisualEditor/lib/ve/src/ui/contextitems/ve.ui.LinearContextItem.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contextitems/ve.ui.LinearContextItem.js b/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contextitems/ve.ui.LinearContextItem.js
+--- a/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contextitems/ve.ui.LinearContextItem.js	(revision c598282825b68a317024cfd1361a82501cc80b58)
++++ b/mediawiki/extensions/VisualEditor/lib/ve/src/ui/contextitems/ve.ui.LinearContextItem.js	(date 1656177805482)
+@@ -89,6 +89,11 @@
+ 		this.actionButtons.addItems( [ this.editButton ] );
+ 	}
+ 
++	// Patch: KK to extend edit panel
++	if (ve.ui.LinearContextItemExtension) {
++		ve.ui.LinearContextItemExtension.extend(this, context, model);
++	}
++
+ 	// Events
+ 	this.editButton.connect( this, { click: 'onEditButtonClick' } );
+ 	this.deleteButton.connect( this, { click: 'onDeleteButtonClick' } );

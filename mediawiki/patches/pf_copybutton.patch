@@ -1,0 +1,32 @@
+Index: mediawiki/extensions/PageForms/includes/PF_FormPrinter.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php b/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php
+--- a/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php	(revision b58f4e1544700c4689d13bb3d909f6f94bcdf733)
++++ b/mediawiki/extensions/PageForms/includes/PF_FormPrinter.php	(date 1677252332410)
+@@ -338,6 +338,7 @@
+ 			<td class="instanceRemove">$removeButton</td>
+ 			</tr>
+ 			</table>
++            <div class="pf_copy_template">copy</div>
+ END;
+ 
+ 		return $text;
+Index: mediawiki/extensions/PageForms/libs/PageForms.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/PageForms.js b/mediawiki/extensions/PageForms/libs/PageForms.js
+--- a/mediawiki/extensions/PageForms/libs/PageForms.js	(revision 55ff84c242f6365fb88bb4b267aad70ae5942a84)
++++ b/mediawiki/extensions/PageForms/libs/PageForms.js	(date 1678471922340)
+@@ -1211,6 +1211,7 @@
+ 	// Hook that fires each time a new template instance is added.
+ 	// The first parameter is a jQuery selection of the newly created instance div.
+ 	mw.hook('pf.addTemplateInstance').fire(new_div);
++	return $new_div;
+ };
+
+ // The first argument is needed, even though it's an attribute of the element

@@ -1,0 +1,17 @@
+Index: mediawiki/extensions/CategoryTree/i18n/en.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/CategoryTree/i18n/en.json b/mediawiki/extensions/CategoryTree/i18n/en.json
+--- a/mediawiki/extensions/CategoryTree/i18n/en.json	(revision 2d47a12a4690f46837a7d72323457e2bfad8dd87)
++++ b/mediawiki/extensions/CategoryTree/i18n/en.json	(date 1704476898522)
+@@ -21,7 +21,7 @@
+ 	"categorytree-member-counts": "Contains {{PLURAL:$1|1 subcategory|$1 subcategories}}, {{PLURAL:$2|1 page|$2 pages}}, and {{PLURAL:$3|1 file|$3 files}}",
+ 	"categorytree-member-num": "($5)",
+ 	"categorytree-num-categories": "{{PLURAL:$1|1 subcategory|$1 subcategories}}",
+-	"categorytree-num-pages": "{{PLURAL:$1|1 page|$1 pages}}",
++	"categorytree-num-pages": "{{PLURAL:$1|1 publication|$1 publications}}",
+ 	"categorytree-num-files": "$1 F",
+ 	"categorytree-num-empty": "empty",
+ 	"categorytree-load": "load",

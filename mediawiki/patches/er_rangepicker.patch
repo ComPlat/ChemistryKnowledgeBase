@@ -1,0 +1,142 @@
+Index: mediawiki/extensions/EnhancedRetrieval/skin/faceted_search.css
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/EnhancedRetrieval/skin/faceted_search.css b/mediawiki/extensions/EnhancedRetrieval/skin/faceted_search.css
+--- a/mediawiki/extensions/EnhancedRetrieval/skin/faceted_search.css	(revision d9785b6346d4d24b7e4427e4af865db11d330548)
++++ b/mediawiki/extensions/EnhancedRetrieval/skin/faceted_search.css	(date 1712913327409)
+@@ -10,13 +10,13 @@
+ }
+ 
+ @media (min-width: 1101px) and (max-width: 1920px) {
+-	div.facets { width:25%; }
+-	div#results { width:70%; }  
++	div.facets { width:30%; }
++	div#results { width:65%; }
+ }
+ 
+ @media (min-width: 1921px) {
+-	div.facets { width:15%; }
+-	div#results { width:80%; }  
++	div.facets { width:20%; }
++	div#results { width:75%; }
+ }
+ 
+ #fs_query_button, .fs_category_filter, .fs_sort_order {
+Index: mediawiki/extensions/EnhancedRetrieval/extension.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/EnhancedRetrieval/extension.json b/mediawiki/extensions/EnhancedRetrieval/extension.json
+--- a/mediawiki/extensions/EnhancedRetrieval/extension.json	(revision d9785b6346d4d24b7e4427e4af865db11d330548)
++++ b/mediawiki/extensions/EnhancedRetrieval/extension.json	(date 1712835243316)
+@@ -267,7 +267,8 @@
+ 				"skin/faceted_search.css"
+ 			],
+ 			"dependencies": [
+-				"ext.facetedSearch.ajaxSolr"
++				"ext.facetedSearch.ajaxSolr",
++				"jquery.ui"
+ 			],
+ 			"messages": [
+ 				"solrNotFound",
+Index: mediawiki/extensions/EnhancedRetrieval/scripts/FacetedSearch/FS_ClusterWidget.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/EnhancedRetrieval/scripts/FacetedSearch/FS_ClusterWidget.js b/mediawiki/extensions/EnhancedRetrieval/scripts/FacetedSearch/FS_ClusterWidget.js
+--- a/mediawiki/extensions/EnhancedRetrieval/scripts/FacetedSearch/FS_ClusterWidget.js	(revision d9785b6346d4d24b7e4427e4af865db11d330548)
++++ b/mediawiki/extensions/EnhancedRetrieval/scripts/FacetedSearch/FS_ClusterWidget.js	(date 1712922562403)
+@@ -105,6 +105,8 @@
+ 		
+ 		var target = $(this.target);
+ 		target.empty();
++		target.append("<div><span class=\"xfsClusterTitle\"> from: <input style='width: 90px' class='xfsClusterRangepicker xfsClusterRangepickerFrom' type='text'/> to: <input style='width: 90px' class='xfsClusterRangepicker xfsClusterRangepickerTo' type='text'/>"
++			+" <a class='xfsClusterRangepicker-apply'>(apply)</a></span></div>")
+ 		for (var range in ranges) {
+ 			var matches = range.match(regex);
+ 			if (matches) {
+@@ -119,8 +121,8 @@
+ 				var count = ranges[range];
+ 				if (count > 0) {
+ 					// Create the HTML for the cluster
+-					target.append(AjaxSolr.theme('cluster', 
+-						displayFrom, displayTo, count, 
++					target.append(AjaxSolr.theme('cluster',
++						displayFrom, displayTo, count,
+ 						self.clickClusterHandler({
+ 							from: from,
+ 							to: to,
+@@ -134,6 +136,29 @@
+ 			}
+ 		}
+ 
++		if (self.getType(this.facetName) === 'date') {
++			target.find('.xfsClusterRangepicker').datepicker({dateFormat: 'yy/mm/dd',});
++		}
++		target.find('.xfsClusterRangepicker-apply').click((e) => {
++			let target = $(e.target);
++			let datepickerFrom = target.closest('.xfsClusterTitle').find('.xfsClusterRangepickerFrom').val();
++			let datepickerTo = target.closest('.xfsClusterTitle').find('.xfsClusterRangepickerTo').val();
++			let from, to;
++			if (self.getType(this.facetName) === 'date') {
++				from = datepickerFrom.replaceAll('/','')+"000000";
++				to = datepickerTo.replaceAll('/','')+"235959";
++			} else {
++				from = datepickerFrom;
++				to = datepickerTo;
++			}
++			self.clickClusterHandler({
++				from: from,
++				to: to,
++				count: 0,
++				facetStatisticField: this.statisticsFieldName,
++				facet: this.facetName
++			})();
++		});
+ 		// Check if the range is already restricted
+ 		var rangeRestricted = false;
+ 		var fq = this.manager.store.values('fq');
+@@ -179,6 +204,34 @@
+ 			fsm.doRequest(0);
+ 			return false;
+ 		};
++	},
++
++	getType: function(facetName) {
++		var ATTRIBUTE_REGEX = /smwh_(.*)_xsdvalue_(.*)/;
++		var RELATION_REGEX  = /smwh_(.*)_(.*)/;
++
++		var nameType = facetName.match(ATTRIBUTE_REGEX);
++		if (!nameType) {
++			// maybe a relation facet
++			nameType = facetName.match(RELATION_REGEX);
++			if (!nameType) {
++				return null;
++			}
++		}
++		var type = nameType[2];
++		switch (type) {
++			case 'd':
++			case 'i':
++				// numeric
++				return 'numeric'
++			case 'dt':
++				// date
++				return 'date'
++			case 'b':
++				return 'boolean'
++			default:
++				return 'string';
++		}
+ 	}
+ });
+ 
+@@ -192,3 +245,4 @@
+ 	var clusterer = FacetedSearch.factories.FacetClustererFactory(facet);
+ 	clusterer.retrieveClusters();
+ };
++

@@ -1,0 +1,18 @@
+Index: mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode.js b/mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode.js
+--- a/mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode.js	(revision 92a17de35c76a939dc9904241d73bb6f40c0a485)
++++ b/mediawiki/extensions/VisualEditor/lib/ve/src/ce/ve.ce.FocusableNode.js	(date 1664805518732)
+@@ -439,6 +439,9 @@
+ 		selection = surfaceModel.getSelection(),
+ 		nodeRange = this.model.getOuterRange();
+ 
++	if (ve.ce.FocusableNodeExtension) {
++		ve.ce.FocusableNodeExtension.extend(this, e.target);
++	}
+ 	if ( e.type === 'touchend' && this.touchMoved ) {
+ 		return;
+ 	}

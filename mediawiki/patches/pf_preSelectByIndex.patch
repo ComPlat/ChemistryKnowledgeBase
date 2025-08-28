@@ -1,0 +1,39 @@
+Index: mediawiki/extensions/PageForms/libs/PageForms.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/PageForms.js b/mediawiki/extensions/PageForms/libs/PageForms.js
+--- a/mediawiki/extensions/PageForms/libs/PageForms.js	(revision 92a17de35c76a939dc9904241d73bb6f40c0a485)
++++ b/mediawiki/extensions/PageForms/libs/PageForms.js	(date 1665148081993)
+@@ -1623,11 +1623,30 @@
+ 
+ 		// We are all done - remove the loading spinner.
+ 		$('.loadingImage').remove();
++		preSelectByIndex();
++
+ 	}, 0 );
+ 
+ 	mw.hook('pf.formSetupAfter').fire();
+ });
+ 
++function preSelectByIndex() {
++	let queryParams = {};
++	let search = window.location.search;
++	search = search.length > 0 ? search.substring(1) : '';
++	let params = search.split("&");
++	for(let i = 0; i < params.length;i++) {
++		let keyValue = params[i].split("=");
++		if (keyValue.length != 2) {
++			continue;
++		}
++		queryParams[keyValue[0]] = decodeURIComponent(keyValue[1]);
++	}
++	if (queryParams['expand']) {
++		$('.multipleTemplateInstance').eq(queryParams['expand']).trigger('click');
++	}
++}
++
+ // If some part of the form is clicked, minimize any multiple-instance
+ // template instances that need minimizing, and move the "focus" to the current
+ // instance list, if one is being clicked and it's different from the

@@ -1,0 +1,40 @@
+Index: mediawiki/extensions/PageForms/libs/PF_popupform.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/PF_popupform.js b/mediawiki/extensions/PageForms/libs/PF_popupform.js
+--- a/mediawiki/extensions/PageForms/libs/PF_popupform.js	(revision 400dbc1330c86f11fdd2189a9b2754759d5110b0)
++++ b/mediawiki/extensions/PageForms/libs/PF_popupform.js	(date 1669971214519)
+@@ -683,8 +683,21 @@
+ 				return false;
+ 			});
+ 
++			var f = function() {
++				if (!innerwdw.jQuery) {
++					setTimeout(f, 100);
++				} else {
++					innerwdw.jQuery($form[0])
++						.bind("submit", function (event) {
++							submitok =  innerwdw.validateAll();
++							innersubmitprocessed = true;
++							return false;
++						});
++				}
++			}
++			setTimeout(f, 100);
+ 			// catch inner form submit event
+-			if ( innerJ ) {
++			/*if ( innerJ ) {
+ 				innerwdw.jQuery($form[0])
+ 				.bind( "submit", function( event ) {
+ 						submitok = ( event.result === undefined ) ? true : event.result;
+@@ -694,7 +707,7 @@
+ 			} else {
+ 				submitok = true;
+ 				innersubmitprocessed = true;
+-			}
++			}*/
+ 		}
+ 
+ 		if (innerJ) {

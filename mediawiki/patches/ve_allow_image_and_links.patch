@@ -1,0 +1,17 @@
+Index: mediawiki/vendor/wikimedia/parsoid/src/Config/WikitextConstants.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/vendor/wikimedia/parsoid/src/Config/WikitextConstants.php b/mediawiki/vendor/wikimedia/parsoid/src/Config/WikitextConstants.php
+--- a/mediawiki/vendor/wikimedia/parsoid/src/Wikitext/Consts.php	(revision 94bc4a52b5595dc4a8848320a3ae853de97c2e95)
++++ b/mediawiki/vendor/wikimedia/parsoid/src/Wikitext/Consts.php	(date 1685179181320)
+@@ -107,7 +107,7 @@
+ 				'table', 'td', 'th', 'time', 'tr', 'tt',
+ 				'u', 'ul',
+ 				'var',
+-				'wbr',
++				'wbr','img','a'
+ 			] ),
+ 		];
+ 
