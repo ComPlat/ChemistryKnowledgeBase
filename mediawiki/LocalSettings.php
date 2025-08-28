@@ -60,7 +60,7 @@ $wgEmailAuthentication = true;
 ## Database settings
 $wgDBtype = "mysql";
 $wgDBserver = "localhost";
-$wgDBname = "wikidb";
+$wgDBname = "chemmain";
 $wgDBuser = "root";
 $wgDBpassword = "vagrant";
 
