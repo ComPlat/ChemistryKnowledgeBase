@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf8a1b52c21a74d1de3a55ffe487c561",
+    "content-hash": "5048d98bdf51a4bc8d38dba3c5eaa1e4",
     "packages": [
         {
             "name": "composer/installers",
@@ -617,6 +617,68 @@
                 "source": "https://github.com/DataValues/Validators/tree/1.0.0"
             },
             "time": "2021-01-22T19:14:47+00:00"
+        },
+        {
+            "name": "diqa/enhanced-retrieval",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kkthek/enhanced-retrieval.git",
+                "reference": "cbc2d477ee220d154b0fc3461b79309985572d73"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kkthek/enhanced-retrieval/zipball/cbc2d477ee220d154b0fc3461b79309985572d73",
+                "reference": "cbc2d477ee220d154b0fc3461b79309985572d73",
+                "shasum": ""
+            },
+            "require": {
+                "composer/installers": "1.*,>=1.0.1|2.*",
+                "eftec/bladeone": "~4.0",
+                "mediawiki/bootstrap": "~4.5|~5.0",
+                "mediawiki/semantic-media-wiki": "~3.0|~4.0|~5.0|dev-master",
+                "php": ">=7.4.0"
+            },
+            "replace": {
+                "mediawiki/enhanced-retrieval": "*"
+            },
+            "default-branch": true,
+            "type": "mediawiki-extension",
+            "autoload": {
+                "files": [
+                    "EnhancedRetrieval.php"
+                ],
+                "psr-4": {
+                    "DIQA\\FacetedSearch\\": "src/FacetedSearch/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Kai Kühn",
+                    "homepage": "https://diqa.de",
+                    "role": "Core developer"
+                }
+            ],
+            "description": "Enhanced retrieval provides a faceted search for Mediawiki and SMW. It requires a SOLR server as backend.",
+            "homepage": "https://www.semantic-mediawiki.org/wiki/Enhanced_Retrieval",
+            "keywords": [
+                "Drilldown",
+                "Enhanced retrieval",
+                "faceted search",
+                "mediawiki",
+                "solr",
+                "wiki"
+            ],
+            "support": {
+                "email": "kuehn@diqa-pm.com",
+                "issues": "https://bugs.diqa-pm.com/",
+                "source": "https://github.com/kkthek/enhanced-retrieval/tree/master"
+            },
+            "time": "2025-08-28T15:28:16+00:00"
         },
         {
             "name": "diqa/formatter",
@@ -10998,7 +11060,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "diqa/enhanced-retrieval": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

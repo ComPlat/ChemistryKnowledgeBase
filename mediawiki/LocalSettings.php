@@ -353,7 +353,7 @@ $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION 
 $fsgShowNamespaces=false;
 $fsgShowArticleProperties=false;
 $fsgCreateNewPageLink = "/{article}?veaction=edit";
-//wfLoadExtension( 'EnhancedRetrieval' );
+wfLoadExtension( 'EnhancedRetrieval' );
 
 #################################################################
 # PageForms

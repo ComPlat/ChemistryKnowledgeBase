@@ -121,6 +121,17 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'diqa/enhanced-retrieval' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => 'cbc2d477ee220d154b0fc3461b79309985572d73',
+            'type' => 'mediawiki-extension',
+            'install_path' => __DIR__ . '/../../extensions/EnhancedRetrieval',
+            'aliases' => array(
+                0 => '9999999-dev',
+            ),
+            'dev_requirement' => false,
+        ),
         'diqa/formatter' => array(
             'pretty_version' => '1.2',
             'version' => '1.2.0.0',
@@ -399,6 +410,12 @@
             'install_path' => __DIR__ . '/../../extensions/DisplayTitle',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'mediawiki/enhanced-retrieval' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
         'mediawiki/http-request' => array(
             'pretty_version' => '2.0.0',

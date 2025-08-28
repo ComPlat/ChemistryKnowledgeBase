@@ -1,0 +1,37 @@
+@media screen and (min-width: 768px) and (max-width: 991px) {
+	.modal-dialog-fs {
+		width: 750px;
+		max-width: 90%;
+	}
+}
+
+@media screen and (min-width: 992px) {
+	.modal-dialog-fs {
+		width: 900px;
+		max-width: 90%;
+	}
+}
+
+#fs-facet-value-dialog div.facet {
+	margin-left: 5px;
+	padding: 5px;
+	float: left;
+	width: 30%;
+}
+
+ul.fs-custom-root-node {
+	overflow: auto;
+	height: 400px;
+}
+
+#fs-facet-value-dialog ul {
+	list-style: none; /* Remove bullets */
+}
+
+#fs-facet-value-dialog input {
+	margin-right: 5px;
+}
+
+ ul.fs-custom-root-node > li {
+	margin-top: 15px;
+}

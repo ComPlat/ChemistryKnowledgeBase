@@ -113,6 +113,7 @@ return array(
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
     'DataValues\\' => array($vendorDir . '/data-values/common/src/DataValues', $vendorDir . '/data-values/data-values/src'),
     'DIQA\\Formatter\\' => array($vendorDir . '/diqa/formatter/src', $vendorDir . '/diqa/formatter/test'),
+    'DIQA\\FacetedSearch\\' => array($baseDir . '/extensions/EnhancedRetrieval/src/FacetedSearch'),
     'DIQA\\' => array($baseDir . '/extensions/PageImport/src', $baseDir . '/extensions/PageImport/test'),
     'Composer\\XdebugHandler\\' => array($vendorDir . '/composer/xdebug-handler/src'),
     'Composer\\Spdx\\' => array($vendorDir . '/composer/spdx-licenses/src'),
