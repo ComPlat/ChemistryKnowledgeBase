@@ -1,11 +1,16 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Query;
+
+use MediaWiki\Tests\Api\ApiTestCase;
+use MediaWiki\Title\Title;
+
 /**
  * @group API
  * @group Database
  * @group medium
  *
- * @covers ApiQueryAllPages
+ * @covers MediaWiki\Api\ApiQueryAllPages
  */
 class ApiQueryAllPagesTest extends ApiTestCase {
 	/**

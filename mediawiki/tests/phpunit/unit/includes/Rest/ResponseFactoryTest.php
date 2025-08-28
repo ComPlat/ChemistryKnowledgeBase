@@ -3,17 +3,21 @@
 namespace MediaWiki\Tests\Rest;
 
 use ArrayIterator;
+use Exception;
 use InvalidArgumentException;
 use MediaWiki\Rest\HttpException;
+use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RedirectException;
 use MediaWiki\Rest\ResponseException;
 use MediaWiki\Rest\ResponseFactory;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
 use MediaWikiUnitTestCase;
-use Wikimedia\Message\ITextFormatter;
 use Wikimedia\Message\MessageValue;
 
 /** @covers \MediaWiki\Rest\ResponseFactory */
 class ResponseFactoryTest extends MediaWikiUnitTestCase {
+	use DummyServicesTrait;
+
 	public static function provideEncodeJson() {
 		return [
 			[ (object)[], '{}' ],
@@ -25,16 +29,7 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	private function createResponseFactory() {
-		$fakeTextFormatter = new class implements ITextFormatter {
-			public function getLangCode() {
-				return 'qqx';
-			}
-
-			public function format( MessageValue $message ) {
-				return $message->getKey();
-			}
-		};
-		return new ResponseFactory( [ $fakeTextFormatter ] );
+		return new ResponseFactory( [ $this->getDummyTextFormatter() ] );
 	}
 
 	/** @dataProvider provideEncodeJson */
@@ -53,7 +48,7 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 		$this->assertSame( 2, $response->getBody()->getSize() );
 	}
 
-	public function provideUseException() {
+	public static function provideUseException() {
 		return [ [ false ], [ true ] ];
 	}
 
@@ -90,6 +85,18 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 			$rf->createLegacyTemporaryRedirect( 'http://www.example.com/' );
 		$this->assertSame( [ 'http://www.example.com/' ], $response->getHeader( 'Location' ) );
 		$this->assertSame( 302, $response->getStatusCode() );
+	}
+
+	/** @dataProvider provideUseException */
+	public function testCreateRedirect( $useException ) {
+		$rf = $this->createResponseFactory();
+		$response = $useException ?
+			$rf->createFromException( new RedirectException(
+				333, 'http://www.example.com/'
+			) ) :
+			$rf->createRedirect( 'http://www.example.com/', 333 );
+		$this->assertSame( [ 'http://www.example.com/' ], $response->getHeader( 'Location' ) );
+		$this->assertSame( 333, $response->getStatusCode() );
 	}
 
 	/** @dataProvider provideUseException */
@@ -156,7 +163,7 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 
 	public function testCreateFromExceptionLogged() {
 		$rf = $this->createResponseFactory();
-		$response = $rf->createFromException( new \Exception( "hello", 415 ) );
+		$response = $rf->createFromException( new Exception( "hello", 415 ) );
 		$this->assertSame( 500, $response->getStatusCode() );
 		$body = $response->getBody();
 		$body->rewind();
@@ -170,6 +177,17 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 		$wrapped = $rf->create();
 		$response = $rf->createFromException( new ResponseException( $wrapped ) );
 		$this->assertSame( $wrapped, $response );
+	}
+
+	public function testCreateFromExceptionWithExtraData() {
+		$rf = $this->createResponseFactory();
+		$e = new LocalizedHttpException( new MessageValue( 'rftest' ), 404 );
+		$response = $rf->createFromException( $e, [ 'foo' => 'bar' ] );
+		$body = $response->getBody();
+		$body->rewind();
+		$data = json_decode( $body->getContents(), true );
+		$this->assertArrayHasKey( 'foo', $data );
+		$this->assertSame( 'bar', $data['foo'] );
 	}
 
 	public static function provideCreateFromReturnValue() {
@@ -208,5 +226,29 @@ class ResponseFactoryTest extends MediaWikiUnitTestCase {
 		$this->assertSame(
 			'{"messageTranslations":{"qqx":"rftest"},"httpCode":404,"httpReason":"Not Found"}',
 			$body->getContents() );
+	}
+
+	public function testFormatMessage() {
+		$rf = $this->createResponseFactory();
+		$mv = new MessageValue( 'rftest' );
+		$ret = $rf->formatMessage( $mv );
+		$this->assertIsArray( $ret );
+		$this->assertArrayHasKey( 'messageTranslations', $ret );
+		$this->assertIsArray( $ret['messageTranslations'] );
+		$this->assertArrayHasKey( 'qqx', $ret['messageTranslations'] );
+		$this->assertSame( 'rftest', $ret['messageTranslations']['qqx'] );
+	}
+
+	public function testGetFormattedMessage() {
+		$rf = $this->createResponseFactory();
+		$mv = new MessageValue( 'rftest' );
+
+		$ret = $rf->getFormattedMessage( $mv );
+		$this->assertIsString( $ret );
+		$this->assertSame( 'rftest', $ret );
+
+		$ret = $rf->getFormattedMessage( $mv, 'doesnotexist' );
+		$this->assertIsString( $ret );
+		$this->assertSame( 'rftest', $ret );
 	}
 }

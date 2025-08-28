@@ -1,28 +1,35 @@
 <?php
 
+namespace Wikimedia\Tests\Rdbms;
+
+use InvalidArgumentException;
 use MediaWiki\Tests\Unit\Libs\Rdbms\AddQuoterMock;
+use MediaWikiCoversValidator;
+use PHPUnit\Framework\TestCase;
 use Wikimedia\Rdbms\DatabaseDomain;
+use Wikimedia\Rdbms\DBLanguageError;
 use Wikimedia\Rdbms\Platform\SqlitePlatform;
 
 /**
- * @covers Wikimedia\Rdbms\Platform\SqlitePlatform
+ * @covers \Wikimedia\Rdbms\Platform\SqlitePlatform
  */
-class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
+class SqlitePlatformTest extends TestCase {
 
 	use MediaWikiCoversValidator;
 
-	/**
-	 * @return SqlitePlatform
-	 */
-	private function getPlatform() {
-		return new SqlitePlatform(
+	/** @var SqlitePlatform */
+	private $platform;
+
+	protected function setUp(): void {
+		parent::setUp();
+		$this->platform = new SqlitePlatform(
 			new AddQuoterMock(),
 			null,
 			new DatabaseDomain( null, null, '' )
 		);
 	}
 
-	public function provideBuildSubstring() {
+	public static function provideBuildSubstring() {
 		yield [ 'someField', 1, 2, 'SUBSTR(someField,1,2)' ];
 		yield [ 'someField', 1, null, 'SUBSTR(someField,1)' ];
 	}
@@ -31,11 +38,11 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 	 * @dataProvider provideBuildSubstring
 	 */
 	public function testBuildSubstring( $input, $start, $length, $expected ) {
-		$output = $this->getPlatform()->buildSubstring( $input, $start, $length );
+		$output = $this->platform->buildSubstring( $input, $start, $length );
 		$this->assertSame( $expected, $output );
 	}
 
-	public function provideBuildSubstring_invalidParams() {
+	public static function provideBuildSubstring_invalidParams() {
 		yield [ -1, 1 ];
 		yield [ 1, -1 ];
 		yield [ 1, 'foo' ];
@@ -49,7 +56,7 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 	 */
 	public function testBuildSubstring_invalidParams( $start, $length ) {
 		$this->expectException( InvalidArgumentException::class );
-		$this->getPlatform()->buildSubstring( 'foo', $start, $length );
+		$this->platform->buildSubstring( 'foo', $start, $length );
 	}
 
 	/**
@@ -58,7 +65,7 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 	public function testBuildGreatest( $fields, $values, $sqlText ) {
 		$this->assertEquals(
 			$sqlText,
-			trim( $this->getPlatform()->buildGreatest( $fields, $values ) )
+			trim( $this->platform->buildGreatest( $fields, $values ) )
 		);
 	}
 
@@ -93,7 +100,7 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 	public function testBuildLeast( $fields, $values, $sqlText ) {
 		$this->assertEquals(
 			$sqlText,
-			trim( $this->getPlatform()->buildLeast( $fields, $values ) )
+			trim( $this->platform->buildLeast( $fields, $values ) )
 		);
 	}
 
@@ -122,80 +129,9 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 		];
 	}
 
-	public static function provideReplaceVars() {
-		return [
-			[ 'foo', 'foo' ],
-			[
-				"CREATE TABLE /**/foo (foo_key INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " .
-				"foo_bar TEXT, foo_name TEXT NOT NULL DEFAULT '', foo_int INTEGER, foo_int2 INTEGER );",
-				"CREATE TABLE /**/foo (foo_key int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT, " .
-				"foo_bar char(13), foo_name varchar(255) binary NOT NULL DEFAULT '', " .
-				"foo_int tinyint ( 8 ), foo_int2 int(16) ) ENGINE=MyISAM;"
-			],
-			[
-				"CREATE TABLE foo ( foo1 REAL, foo2 REAL, foo3 REAL );",
-				"CREATE TABLE foo ( foo1 FLOAT, foo2 DOUBLE( 1,10), foo3 DOUBLE PRECISION );"
-			],
-			[
-				"CREATE TABLE foo ( foo_binary1 BLOB, foo_binary2 BLOB );",
-				"CREATE TABLE foo ( foo_binary1 binary(16), foo_binary2 varbinary(32) );"
-			],
-			[
-				"CREATE TABLE text ( text_foo TEXT );",
-				"CREATE TABLE text ( text_foo tinytext );"
-			],
-			[
-				"CREATE TABLE foo ( foobar INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL );",
-				"CREATE TABLE foo ( foobar INT PRIMARY KEY NOT NULL AUTO_INCREMENT );"
-			],
-			[
-				"CREATE TABLE foo ( foobar INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL );",
-				"CREATE TABLE foo ( foobar INT PRIMARY KEY AUTO_INCREMENT NOT NULL );"
-			],
-			[
-				"CREATE TABLE enums( enum1 TEXT, myenum TEXT)",
-				"CREATE TABLE enums( enum1 ENUM('A', 'B'), myenum ENUM ('X', 'Y'))"
-			],
-			[
-				"ALTER TABLE foo ADD COLUMN foo_bar INTEGER DEFAULT 42",
-				"ALTER TABLE foo\nADD COLUMN foo_bar int(10) unsigned DEFAULT 42"
-			],
-			[
-				"DROP INDEX foo",
-				"DROP INDEX /*i*/foo ON /*_*/bar"
-			],
-			[
-				"DROP INDEX foo -- dropping index",
-				"DROP INDEX /*i*/foo ON /*_*/bar -- dropping index"
-			],
-			[
-				"INSERT OR IGNORE INTO foo VALUES ('bar')",
-				"INSERT OR IGNORE INTO foo VALUES ('bar')"
-			]
-		];
-	}
-
-	/**
-	 * @param string $sql
-	 * @return string
-	 */
-	private function replaceVars( $sql ) {
-		/** @var Database $wrapper */
-		$platform = new SqlitePlatform( new AddQuoterMock() );
-		// normalize spacing to hide implementation details
-		return preg_replace( '/\s+/', ' ', $platform->replaceVars( $sql ) );
-	}
-
-	/**
-	 * @dataProvider provideReplaceVars
-	 */
-	public function testReplaceVars( $expected, $sql ) {
-		$this->assertEquals( $expected,  $this->replaceVars( $sql ) );
-	}
-
 	public function testTableName() {
 		// @todo Moar!
-		$platform = $this->getPlatform();
+		$platform = $this->platform;
 		$this->assertEquals( '"foo"', $platform->tableName( 'foo' ) );
 		$this->assertEquals( 'sqlite_master', $platform->tableName( 'sqlite_master' ) );
 		$platform->setPrefix( 'foo_' );
@@ -203,4 +139,90 @@ class SqlitePlatformTest extends PHPUnit\Framework\TestCase {
 		$this->assertEquals( '"foo_bar"', $platform->tableName( 'bar' ) );
 	}
 
+	public static function provideTableIdentifiers() {
+		// No DB name set
+		yield [
+			'table',
+			new DatabaseDomain( null, null, '' ),
+			[ null, 'table' ],
+			null
+		];
+		yield [
+			'database.table',
+			new DatabaseDomain( null, null, '' ),
+			[ 'database', 'table' ],
+			null
+		];
+		yield [
+			'database.schema.table',
+			new DatabaseDomain( null, null, '' ),
+			[ 'database', 'table' ],
+			DBLanguageError::class
+		];
+		yield [
+			'"database"."schema"."table"',
+			new DatabaseDomain( null, null, '' ),
+			[ 'database', 'table' ],
+			DBLanguageError::class
+		];
+		yield [
+			'"database"."table"',
+			new DatabaseDomain( null, null, '' ),
+			[ 'database', 'table' ],
+			null
+		];
+		// DB name set
+		yield [
+			'table',
+			new DatabaseDomain( 'database', null, '' ),
+			[ 'database', 'table' ],
+			null
+		];
+		yield [
+			'database.table',
+			new DatabaseDomain( 'database', null, '' ),
+			[ 'database', 'table' ],
+			null
+		];
+		yield [
+			'database.schema.table',
+			new DatabaseDomain( 'database', null, '' ),
+			[ 'database', 'table' ],
+			DBLanguageError::class
+		];
+		yield [
+			'"database"."schema"."table"',
+			new DatabaseDomain( 'database', null, '' ),
+			[ 'database', 'table' ],
+			DBLanguageError::class
+		];
+		yield [
+			'"database"."table"',
+			new DatabaseDomain( 'database', null, '' ),
+			[ 'database', 'table' ],
+			null
+		];
+	}
+
+	/**
+	 * @dataProvider provideTableIdentifiers
+	 */
+	public function testGetDatabaseAndTableIdentifiers(
+		$tableName,
+		$domain,
+		$expectedIdentifiers,
+		$expectedException
+	) {
+		$platform = new SqlitePlatform( new AddQuoterMock(), null, $domain );
+
+		if ( $expectedException !== null ) {
+			$this->expectException( DBLanguageError::class );
+			$platform->getDatabaseAndTableIdentifier( $tableName );
+		} else {
+			$this->assertSame(
+				$expectedIdentifiers,
+				$platform->getDatabaseAndTableIdentifier( $tableName )
+			);
+		}
+	}
 }

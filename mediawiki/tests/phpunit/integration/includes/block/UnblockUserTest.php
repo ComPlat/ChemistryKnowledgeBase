@@ -5,8 +5,8 @@ namespace MediaWiki\Tests\Block;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\UnblockUserFactory;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
-use User;
 
 /**
  * @group Blocking
@@ -15,15 +15,8 @@ use User;
 class UnblockUserTest extends MediaWikiIntegrationTestCase {
 	use MockAuthorityTrait;
 
-	/**
-	 * @var User
-	 */
-	private $user;
-
-	/**
-	 * @var UnblockUserFactory
-	 */
-	private $unblockUserFactory;
+	private User $user;
+	private UnblockUserFactory $unblockUserFactory;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -39,7 +32,7 @@ class UnblockUserTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Block\UnblockUser::unblock
 	 */
 	public function testValidUnblock() {
-		$performer = $this->mockAnonUltimateAuthority();
+		$performer = $this->mockRegisteredUltimateAuthority();
 		$block = new DatabaseBlock( [
 			'address' => $this->user->getName(),
 			'by' => $performer->getUser()
@@ -72,10 +65,6 @@ class UnblockUserTest extends MediaWikiIntegrationTestCase {
 			$this->mockRegisteredUltimateAuthority(),
 			'test'
 		)->unblock();
-		$this->assertStatusNotOK( $status );
-		$this->assertContains(
-			'ipb_cant_unblock',
-			array_column( $status->getErrorsArray(), 0 )
-		);
+		$this->assertStatusError( 'ipb_cant_unblock', $status );
 	}
 }

@@ -16,14 +16,14 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 class PrefixedGlobalFunctionsSniff implements Sniff {
 
 	/** @var string[] */
-	public $ignoreList = [];
+	public array $ignoreList = [];
 
 	/**
 	 * A list of global function prefixes allowed.
 	 *
 	 * @var string[]
 	 */
-	public $allowedPrefixes = [ 'wf' ];
+	public array $allowedPrefixes = [ 'wf' ];
 
 	/**
 	 * @inheritDoc
@@ -35,7 +35,7 @@ class PrefixedGlobalFunctionsSniff implements Sniff {
 	/**
 	 * @var int[] array containing the first locations of namespaces in files that we have seen so far.
 	 */
-	private $firstNamespaceLocations = [];
+	private array $firstNamespaceLocations = [];
 
 	/**
 	 * @param File $phpcsFile
@@ -57,7 +57,9 @@ class PrefixedGlobalFunctionsSniff implements Sniff {
 					// In the format of "namespace Foo;", which applies to everything below
 					$this->firstNamespaceLocations[$fileName] = $tokenIndex;
 					break;
-				} elseif ( isset( $token['scope_closer'] ) ) {
+				}
+
+				if ( isset( $token['scope_closer'] ) ) {
 					// Skip any non-zero level code as it can not contain a relevant namespace
 					$tokenIndex = $token['scope_closer'];
 					continue;
@@ -100,7 +102,7 @@ class PrefixedGlobalFunctionsSniff implements Sniff {
 		}
 
 		foreach ( $this->allowedPrefixes as $allowedPrefix ) {
-			if ( substr( $name, 0, strlen( $allowedPrefix ) ) === $allowedPrefix ) {
+			if ( str_starts_with( $name, $allowedPrefix ) ) {
 				return;
 			}
 		}

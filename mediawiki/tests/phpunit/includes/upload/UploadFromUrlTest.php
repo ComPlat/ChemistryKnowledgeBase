@@ -1,6 +1,11 @@
 <?php
 
+use MediaWiki\Api\ApiUsageException;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Page\File\FileDeleteForm;
+use MediaWiki\Tests\Api\ApiTestCase;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -8,16 +13,17 @@ use Wikimedia\TestingAccessWrapper;
  * @group Upload
  * @group Database
  *
- * @covers UploadFromUrl
+ * @covers \UploadFromUrl
  */
 class UploadFromUrlTest extends ApiTestCase {
 	use MockHttpTrait;
 
+	/** @var User */
 	private $user;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->user = self::$users['sysop']->getUser();
+		$this->user = $this->getTestSysop()->getUser();
 
 		$this->overrideConfigValues( [
 			MainConfigNames::EnableUploads => true,
@@ -160,7 +166,7 @@ class UploadFromUrlTest extends ApiTestCase {
 			] );
 		} catch ( ApiUsageException $e ) {
 			$exception = true;
-			$this->assertEquals( 'The "token" parameter must be set.', $e->getMessage() );
+			$this->assertApiErrorCode( 'missingparam', $e );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 
@@ -172,8 +178,7 @@ class UploadFromUrlTest extends ApiTestCase {
 			], $data );
 		} catch ( ApiUsageException $e ) {
 			$exception = true;
-			$this->assertEquals( 'One of the parameters "filekey", "file" and "url" is required.',
-				$e->getMessage() );
+			$this->assertApiErrorCode( 'missingparam', $e );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 
@@ -186,7 +191,7 @@ class UploadFromUrlTest extends ApiTestCase {
 			], $data );
 		} catch ( ApiUsageException $e ) {
 			$exception = true;
-			$this->assertEquals( 'The "filename" parameter must be set.', $e->getMessage() );
+			$this->assertApiErrorCode( 'nofilename', $e );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 
@@ -200,12 +205,8 @@ class UploadFromUrlTest extends ApiTestCase {
 				'token' => $token,
 			], $data );
 		} catch ( ApiUsageException $e ) {
+			$this->assertApiErrorCode( 'permissiondenied', $e );
 			$exception = true;
-			// Two error messages are possible depending on the number of groups in the wiki with upload rights:
-			// - The action you have requested is limited to users in the group:
-			// - The action you have requested is limited to users in one of the groups:
-			$this->assertStringStartsWith( "The action you have requested is limited to users in",
-				$e->getMessage() );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 	}
@@ -293,6 +294,17 @@ class UploadFromUrlTest extends ApiTestCase {
 
 		$this->assertStatusOK( $status );
 		$this->assertUploadOk( $upload );
+	}
+
+	public function testUploadFromUrlCacheKey() {
+		// Test we get back a properly formatted sha1 key out
+		$key = UploadFromUrl::getCacheKey( [ 'filename' => 'test.png', 'url' => 'https://example.com/example.png' ] );
+		$this->assertNotEmpty( $key );
+		$this->assertMatchesRegularExpression( "/^[0-9a-f]{40}$/", $key );
+	}
+
+	public function testUploadFromUrlCacheKeyMissingParam() {
+		$this->assertSame( "", UploadFromUrl::getCacheKey( [] ) );
 	}
 
 }

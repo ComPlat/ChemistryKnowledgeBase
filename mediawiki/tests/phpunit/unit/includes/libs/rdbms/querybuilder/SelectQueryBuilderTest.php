@@ -1,14 +1,20 @@
 <?php
 
+namespace Wikimedia\Tests\Rdbms;
+
+use DatabaseTestHelper;
+use LogicException;
+use MediaWikiUnitTestCase;
 use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\SelectQueryBuilder;
+use Wikimedia\Rdbms\Subquery;
+use Wikimedia\TestingAccessWrapper;
 
 /**
  * @covers \Wikimedia\Rdbms\SelectQueryBuilder
  * @covers \Wikimedia\Rdbms\JoinGroup
  */
-class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
-	use MediaWikiCoversValidator;
+class SelectQueryBuilderTest extends MediaWikiUnitTestCase {
 
 	/** @var DatabaseTestHelper */
 	private $db;
@@ -24,7 +30,7 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 	private function assertSQL( $expected ) {
 		$actual = $this->sqb->getSQL();
 		$actual = preg_replace( '/ +/', ' ', $actual );
-		$actual = preg_replace( '/ +$/', '', $actual );
+		$actual = rtrim( $actual, " " );
 		$this->assertEquals( $expected, $actual );
 	}
 
@@ -96,6 +102,20 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 			)
 			->field( 'sq.f' );
 		$this->assertSQL( 'SELECT sq.f FROM (SELECT f FROM t FORCE INDEX (i) ) sq' );
+	}
+
+	public function testSubqueryAsObject() {
+		$this->sqb
+			->table(
+				new Subquery( $this->sqb->newSubquery()
+					->field( 'f' )
+					->from( 'ta' )
+					->useIndex( 'i' )
+				->getSQL() ),
+				'sq'
+			)
+			->field( 'sq.f' );
+		$this->assertSQL( 'SELECT sq.f FROM (SELECT f FROM ta FORCE INDEX (i) ) sq' );
 	}
 
 	public function testTablesFields() {
@@ -516,18 +536,6 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 			$this->db->getLastSqls() );
 	}
 
-	public function testLockForUpdate() {
-		$this->sqb
-			->table( 't' )
-			->conds( [ 'a' => 'b' ] )
-			->caller( __METHOD__ );
-		$this->db->begin( __METHOD__ );
-		$this->sqb->lockForUpdate();
-		$this->db->rollback( __METHOD__ );
-		$this->assertEquals( 'BEGIN; SELECT COUNT(*) AS rowcount FROM (SELECT 1 FROM t WHERE a = \'b\'   FOR UPDATE) tmp_count; ROLLBACK',
-			$this->db->getLastSqls() );
-	}
-
 	public function testBuildGroupConcatField() {
 		$this->sqb
 			->select( 'f' )
@@ -553,14 +561,16 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 			->from( 't' )
 			->conds( [ 'a' => 'b' ] )
 			->join( 'u', 'u', 'tt=uu' )
-			->limit( 1 );
+			->limit( 1 )
+			->caller( 'foo' );
 		$this->assertEquals(
 			[
 				'tables' => [ 't', 'u' => 'u' ],
 				'fields' => [ 'f' ],
 				'conds' => [ 'a' => 'b' ],
 				'options' => [ 'LIMIT' => 1 ],
-				'join_conds' => [ 'u' => [ 'JOIN', 'tt=uu' ] ]
+				'join_conds' => [ 'u' => [ 'JOIN', 'tt=uu' ] ],
+				'caller' => 'foo',
 			],
 			$this->sqb->getQueryInfo() );
 	}
@@ -584,14 +594,16 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 			->from( 't' )
 			->conds( [ 'a' => 'b' ] )
 			->join( 'u', 'u', 'tt=uu' )
-			->limit( 1 );
+			->limit( 1 )
+			->caller( 'foo' );
 		$this->assertEquals(
 			[
 				'tables' => [ 't', 'u' => 'u' ],
 				'fields' => [ 'f' ],
 				'conds' => [ 'a' => 'b' ],
 				'options' => [ 'LIMIT' => 1 ],
-				'joins' => [ 'u' => [ 'JOIN', 'tt=uu' ] ]
+				'joins' => [ 'u' => [ 'JOIN', 'tt=uu' ] ],
+				'caller' => 'foo',
 			],
 			$this->sqb->getQueryInfo( 'joins' ) );
 	}
@@ -607,5 +619,77 @@ class SelectQueryBuilderTest extends PHPUnit\Framework\TestCase {
 			]
 		);
 		$this->assertSQL( "SELECT f FROM t JOIN u ON ((tt=uu)) WHERE a = 'b' LIMIT 1" );
+	}
+
+	public function testQueryInfoMerge() {
+		$this->sqb
+			->select( [ 'a', 'b' => 'c' ] )
+			->from( 't' )
+			->where( [ 'a' => '1' ] )
+			->orderBy( 'a' )
+			->queryInfo( [
+				'tables' => [ 'u' => 'u' ],
+				'fields' => [ 'd' ],
+				'conds' => [ 'a' => '2' ],
+				'options' => [ 'LIMIT' => 1 ],
+				'joins' => [ 'u' => [ 'JOIN', 'tt=uu' ] ]
+			] );
+		$this->assertSQL( "SELECT a,c AS b,d FROM t JOIN u ON ((tt=uu)) WHERE a = '1' AND (a = '2') ORDER BY a LIMIT 1" );
+	}
+
+	public function testMerge() {
+		$this->sqb
+			->select( [ 'a', 'b' => 'c' ] )
+			->from( 't' )
+			->where( [ 'a' => '1' ] )
+			->orderBy( 'a' )
+			->merge(
+				( new SelectQueryBuilder( $this->db ) )
+					->select( 'd' )
+					->from( 'u' )
+					->join( 'v', 'v', 'uu=vv' )
+					->where( [ 'a' => '2' ] )
+					->limit( 1 )
+			);
+		$this->assertSQL( "SELECT a,c AS b,d FROM t,u JOIN v ON ((uu=vv)) WHERE a = '1' AND (a = '2') ORDER BY a LIMIT 1" );
+	}
+
+	public function testMergeCaller() {
+		$tsqb = TestingAccessWrapper::newFromObject( $this->sqb );
+		$this->sqb->caller( 'A' );
+		$this->assertSame( 'A', $tsqb->caller );
+
+		// Merging a builder which has the default caller of __CLASS__
+		// should not overwrite an explicit caller in the destination.
+		$this->sqb->merge( new SelectQueryBuilder( $this->db ) );
+		$this->assertSame( 'A', $tsqb->caller );
+
+		// However, by analogy with option merging, an explicitly set caller
+		// should be copied into the merge destination even when the destination
+		// already had a caller.
+		$this->sqb->merge(
+			( new SelectQueryBuilder( $this->db ) )
+				->caller( 'B' )
+		);
+		$this->assertSame( 'B', $tsqb->caller );
+	}
+
+	public function testAcquireRowLocks() {
+		$this->sqb
+			->table( 't' )
+			->conds( [ 'a' => 'b' ] )
+			->forUpdate()
+			->caller( __METHOD__ )
+			->acquireRowLocks();
+		$this->assertEquals( 'SELECT 1 FROM t WHERE a = \'b\'   FOR UPDATE',
+			$this->db->getLastSqls() );
+	}
+
+	public function testClearFields() {
+		$this->sqb
+			->fields( [ 'a', 'b' ] )
+			->clearFields()
+			->fields( [ 'c', 'd' ] );
+		$this->assertSQL( "SELECT c,d" );
 	}
 }

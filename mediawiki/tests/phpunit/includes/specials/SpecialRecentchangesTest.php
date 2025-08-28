@@ -1,7 +1,14 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Specials\SpecialRecentChanges;
+use MediaWiki\Tests\SpecialPage\AbstractChangesListSpecialPageTestCase;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\Watchlist\WatchedItemStoreInterface;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -9,18 +16,21 @@ use Wikimedia\TestingAccessWrapper;
  *
  * @group Database
  *
- * @covers SpecialRecentChanges
- * @covers ChangesListSpecialPage
+ * @covers \MediaWiki\Specials\SpecialRecentChanges
+ * @covers \MediaWiki\SpecialPage\ChangesListSpecialPage
  */
-class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
+class SpecialRecentChangesTest extends AbstractChangesListSpecialPageTestCase {
 	use MockAuthorityTrait;
+	use TempUserTestTrait;
 
 	protected function getPage(): SpecialRecentChanges {
 		return new SpecialRecentChanges(
 			$this->getServiceContainer()->getWatchedItemStore(),
 			$this->getServiceContainer()->getMessageCache(),
-			$this->getServiceContainer()->getDBLoadBalancer(),
-			$this->getServiceContainer()->getUserOptionsLookup()
+			$this->getServiceContainer()->getUserOptionsLookup(),
+			$this->getServiceContainer()->getChangeTagsStore(),
+			$this->getServiceContainer()->getUserIdentityUtils(),
+			$this->getServiceContainer()->getTempUserConfig()
 		);
 	}
 
@@ -94,15 +104,17 @@ class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
 		$this->assertStringContainsString( 'mw-changeslist-line-watched', $rc2->getOutput()->getHTML() );
 
 		// Force a past expiry date on the watchlist item.
-		$db = wfGetDB( DB_PRIMARY );
-		$queryConds = [ 'wl_namespace' => $testPage->getNamespace(), 'wl_title' => $testPage->getDBkey() ];
-		$watchedItemId = $db->selectField( 'watchlist', 'wl_id', $queryConds, __METHOD__ );
-		$db->update(
-			'watchlist_expiry',
-			[ 'we_expiry' => $db->timestamp( '20200101000000' ) ],
-			[ 'we_item' => $watchedItemId ],
-			__METHOD__
-		);
+		$db = $this->getDb();
+		$watchedItemId = $db->newSelectQueryBuilder()
+			->select( 'wl_id' )
+			->from( 'watchlist' )
+			->where( [ 'wl_namespace' => $testPage->getNamespace(), 'wl_title' => $testPage->getDBkey() ] )
+			->caller( __METHOD__ )->fetchField();
+		$db->newUpdateQueryBuilder()
+			->update( 'watchlist_expiry' )
+			->set( [ 'we_expiry' => $db->timestamp( '20200101000000' ) ] )
+			->where( [ 'we_item' => $watchedItemId ] )
+			->caller( __METHOD__ )->execute();
 
 		// Check that the page is still in RC, but that it's no longer watched.
 		$rc3 = $this->getPage();
@@ -113,6 +125,8 @@ class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
 	}
 
 	public function testExperienceLevelFilter() {
+		$this->disableAutoCreateTempUser();
+
 		// Edit a test page so that it shows up in RC.
 		$testPage = $this->getExistingTestPage( 'Experience page' );
 		$this->editPage( $testPage, 'Registered content',
@@ -172,9 +186,7 @@ class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
 	 * check for syntax errors etc. It doesn't verify the logic.
 	 */
 	public function testIsDenseTagFilter() {
-		$this->tablesUsed[] = 'change_tag_def';
-		$this->tablesUsed[] = 'change_tag';
-		ChangeTags::defineTag( 'rc-test-tag' );
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'rc-test-tag' );
 		$req = new FauxRequest();
 		$req->setVal( 'tagfilter', 'rc-test-tag' );
 		$page = $this->getPage();
@@ -201,9 +213,7 @@ class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
 	 * @dataProvider provideDenseTagFilter
 	 */
 	public function testDenseTagFilter( $dense ) {
-		$this->tablesUsed[] = 'change_tag_def';
-		$this->tablesUsed[] = 'change_tag';
-		ChangeTags::defineTag( 'rc-test-tag' );
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'rc-test-tag' );
 		$req = new FauxRequest();
 		$req->setVal( 'tagfilter', 'rc-test-tag' );
 
@@ -211,19 +221,17 @@ class SpecialRecentchangesTest extends AbstractChangesListSpecialPageTestCase {
 			$dense,
 			$this->getServiceContainer()->getWatchedItemStore(),
 			$this->getServiceContainer()->getMessageCache(),
-			$this->getServiceContainer()->getDBLoadBalancer(),
 			$this->getServiceContainer()->getUserOptionsLookup()
 		)  extends SpecialRecentChanges {
 			private $dense;
 
 			public function __construct(
 				$dense,
-				WatchedItemStoreInterface $watchedItemStore = null,
-				MessageCache $messageCache = null, \Wikimedia\Rdbms\ILoadBalancer $loadBalancer = null,
-				\MediaWiki\User\UserOptionsLookup $userOptionsLookup = null
+				?WatchedItemStoreInterface $watchedItemStore = null,
+				?MessageCache $messageCache = null,
+				?\MediaWiki\User\Options\UserOptionsLookup $userOptionsLookup = null
 			) {
-				parent::__construct( $watchedItemStore, $messageCache, $loadBalancer,
-					$userOptionsLookup );
+				parent::__construct( $watchedItemStore, $messageCache, $userOptionsLookup );
 				$this->dense = $dense;
 			}
 

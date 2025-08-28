@@ -7,6 +7,7 @@ use Exception;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use RecentChange;
+use RequestContext;
 use Title;
 use User;
 use WikiPage;
@@ -22,7 +23,7 @@ class EditWikiPage {
     public const ERROR = 4;
 
     /**
-     * Replaces the content of the given page with the provide newContentsText.
+     * Replaces the content of the given page with the provided newContentsText.
      * If the old and the new text are equal, no update will be done.
      *
      * @param String|Title $page            title of the wiki page that should be changed
@@ -48,8 +49,7 @@ class EditWikiPage {
      */
     public static function doEditContent( $title, $newContentsText, $editMessageText, $flags=EDIT_UPDATE | EDIT_MINOR, $user=null) {
         if( $user==null ) {
-            global $wgUser;
-            $user = $wgUser;
+            $user = RequestContext::getMain()->getUser();
         }
 
         if( ! $title instanceof Title ) {
@@ -72,7 +72,7 @@ class EditWikiPage {
         } else {
             $comment = CommentStoreComment::newUnsavedComment( $editMessageText );
 
-            $updater = WikiPage::factory( $title )->newPageUpdater( $user->getUser() );
+            $updater = (new WikiPage( $title ))->newPageUpdater( $user );
             $updater->setContent( SlotRecord::MAIN, $newContent );
             $updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
             $updater->saveRevision( $comment , $flags );
@@ -100,7 +100,7 @@ class EditWikiPage {
      * Replaces the content of the given page with the provide newContentsText.
      * If the old and the new text are equal, no update will be done.
      *
-     * @param String|Title $page            title of the wiki page that should be changed
+     * @param String|Title $title           title of the wiki page that should be changed
      * @param String       $editMessageText the text that should be used as the comment of the edit
      *
      * @return boolean whether or not the update has succeeded
@@ -124,9 +124,7 @@ class EditWikiPage {
         $newContent = ContentHandler::makeContent( $oldContent, $title );
         $comment = CommentStoreComment::newUnsavedComment( $editMessageText );
 
-        global $wgUser;
-
-        $updater = WikiPage::factory( $title )->newPageUpdater( $wgUser->getUser() );
+        $updater = (new WikiPage( $title ))->newPageUpdater( RequestContext::getMain()->getUser() );
         $updater->setContent( SlotRecord::MAIN, $newContent );
         $updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
         $updater->saveRevision( $comment , EDIT_UPDATE | EDIT_MINOR | EDIT_SUPPRESS_RC | EDIT_FORCE_BOT );

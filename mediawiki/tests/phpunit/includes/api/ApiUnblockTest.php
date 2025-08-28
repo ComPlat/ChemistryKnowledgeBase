@@ -1,13 +1,18 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Block\DatabaseBlock;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
 /**
  * @group API
  * @group Database
  * @group medium
  *
- * @covers ApiUnblock
+ * @covers MediaWiki\Api\ApiUnblock
  */
 class ApiUnblockTest extends ApiTestCase {
 	/** @var User */
@@ -19,11 +24,6 @@ class ApiUnblockTest extends ApiTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->tablesUsed = array_merge(
-			$this->tablesUsed,
-			[ 'ipblocks', 'change_tag', 'change_tag_def', 'logging' ]
-		);
-
 		$this->blocker = $this->getTestSysop()->getUser();
 		$this->blockee = $this->getMutableTestUser()->getUser();
 
@@ -32,20 +32,24 @@ class ApiUnblockTest extends ApiTestCase {
 			'address' => $this->blockee->getName(),
 			'by' => $this->blocker,
 		] );
-		$result = $this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( $block );
+		$blockStore = $this->getServiceContainer()->getDatabaseBlockStore();
+		$result = $blockStore->insertBlock( $block );
 		$this->assertNotFalse( $result, 'Could not insert block' );
-		$blockFromDB = DatabaseBlock::newFromID( $result['id'] );
-		$this->assertTrue( $blockFromDB !== null, 'Could not retrieve block' );
+		$blockFromDB = $blockStore->newFromID( $result['id'] );
+		$this->assertInstanceOf( DatabaseBlock::class, $blockFromDB, 'Could not retrieve block' );
 	}
 
 	private function getBlockFromParams( array $params ) {
+		$blockStore = $this->getServiceContainer()->getDatabaseBlockStore();
 		if ( array_key_exists( 'user', $params ) ) {
-			return DatabaseBlock::newFromTarget( $params['user'] );
+			return $blockStore->newFromTarget( $params['user'] );
 		}
 		if ( array_key_exists( 'userid', $params ) ) {
-			return DatabaseBlock::newFromTarget( User::newFromId( $params['userid'] ) );
+			return $blockStore->newFromTarget(
+				$this->getServiceContainer()->getUserFactory()->newFromId( $params['userid'] )
+			);
 		}
-		return DatabaseBlock::newFromID( $params['id'] );
+		return $blockStore->newFromID( $params['id'] );
 	}
 
 	/**
@@ -84,7 +88,7 @@ class ApiUnblockTest extends ApiTestCase {
 	}
 
 	public function testUnblockNoPermission() {
-		$this->setExpectedApiException( 'apierror-permissiondenied-unblock' );
+		$this->expectApiErrorCode( 'permissiondenied' );
 
 		$this->setGroupPermissions( 'sysop', 'block', false );
 
@@ -92,7 +96,7 @@ class ApiUnblockTest extends ApiTestCase {
 	}
 
 	public function testUnblockWhenBlocked() {
-		$this->setExpectedApiException( 'ipbblocked' );
+		$this->expectApiErrorCode( 'ipbblocked' );
 
 		$block = new DatabaseBlock( [
 			'address' => $this->blocker->getName(),
@@ -115,28 +119,23 @@ class ApiUnblockTest extends ApiTestCase {
 	}
 
 	public function testUnblockWithTagNewBackend() {
-		ChangeTags::defineTag( 'custom tag' );
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'custom tag' );
 
 		$this->doUnblock( [ 'tags' => 'custom tag' ] );
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		$this->assertSame( 1, (int)$dbw->selectField(
-			[ 'change_tag', 'logging', 'change_tag_def' ],
-			'COUNT(*)',
-			[ 'log_type' => 'block', 'ctd_name' => 'custom tag' ],
-			__METHOD__,
-			[],
-			[
-				'change_tag' => [ 'JOIN', 'ct_log_id = log_id' ],
-				'change_tag_def' => [ 'JOIN', 'ctd_id = ct_tag_id' ],
-			]
-		) );
+		$this->assertSame( 1, (int)$this->getDb()->newSelectQueryBuilder()
+			->select( 'COUNT(*)' )
+			->from( 'logging' )
+			->join( 'change_tag', null, 'ct_log_id = log_id' )
+			->join( 'change_tag_def', null, 'ctd_id = ct_tag_id' )
+			->where( [ 'log_type' => 'block', 'ctd_name' => 'custom tag' ] )
+			->caller( __METHOD__ )->fetchField() );
 	}
 
 	public function testUnblockWithProhibitedTag() {
-		$this->setExpectedApiException( 'tags-apply-no-permission' );
+		$this->expectApiErrorCode( 'tags-apply-no-permission' );
 
-		ChangeTags::defineTag( 'custom tag' );
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'custom tag' );
 
 		$this->setGroupPermissions( 'user', 'applychangetags', false );
 
@@ -148,14 +147,21 @@ class ApiUnblockTest extends ApiTestCase {
 	}
 
 	public function testUnblockByInvalidId() {
-		$this->setExpectedApiException( [ 'apierror-nosuchuserid', 1234567890 ] );
+		$this->expectApiErrorCode( 'nosuchuserid' );
 
 		$this->doUnblock( [ 'userid' => 1234567890 ] );
 	}
 
 	public function testUnblockNonexistentBlock() {
-		$this->setExpectedApiException( [ 'ipb_cant_unblock', $this->blocker->getName() ] );
+		$this->expectApiErrorCode( 'cantunblock' );
 
 		$this->doUnblock( [ 'user' => $this->blocker ] );
+	}
+
+	public function testWatched() {
+		$userPage = Title::makeTitle( NS_USER, $this->blockee->getName() );
+		$this->doUnblock( [ 'watchuser' => true ] );
+		$this->assertTrue( $this->getServiceContainer()->getWatchlistManager()
+			->isWatched( $this->blocker, $userPage ) );
 	}
 }

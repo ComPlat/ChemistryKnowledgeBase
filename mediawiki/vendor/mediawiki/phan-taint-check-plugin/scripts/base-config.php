@@ -60,7 +60,6 @@ return [
 	 * will be emitted by Phan.
 	 */
 	'whitelist_issue_types' => [
-		'SecurityCheckMulti',
 		'SecurityCheck-XSS',
 		'SecurityCheck-SQLInjection',
 		'SecurityCheck-ShellInjection',
@@ -70,7 +69,6 @@ return [
 		'SecurityCheck-RCE',
 		'SecurityCheck-PathTraversal',
 		'SecurityCheck-ReDoS',
-		'SecurityCheck-OTHER',
 		// Rely on severity setting to prevent false positive.
 		'SecurityCheck-LikelyFalsePositive',
 		'PhanSyntaxError',

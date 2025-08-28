@@ -1,8 +1,5 @@
 <?php
-
 /**
- * Holds tests for LoadBalancer MediaWiki class.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,16 +17,17 @@
  *
  * @file
  */
-use PHPUnit\Framework\Constraint\StringContains;
+
+use Wikimedia\Rdbms\ChronologyProtector;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\DatabaseDomain;
 use Wikimedia\Rdbms\DBConnRef;
-use Wikimedia\Rdbms\DBError;
 use Wikimedia\Rdbms\DBReadOnlyRoleError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IMaintainableDatabase;
 use Wikimedia\Rdbms\LoadBalancer;
 use Wikimedia\Rdbms\LoadMonitorNull;
+use Wikimedia\Rdbms\ServerInfo;
 use Wikimedia\Rdbms\TransactionManager;
 use Wikimedia\TestingAccessWrapper;
 
@@ -37,16 +35,19 @@ use Wikimedia\TestingAccessWrapper;
  * @group Database
  * @group medium
  * @covers \Wikimedia\Rdbms\LoadBalancer
+ * @covers \Wikimedia\Rdbms\ServerInfo
  */
 class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 	private function makeServerConfig( $flags = DBO_DEFAULT ) {
-		global $wgDBserver, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype, $wgSQLiteDataDir;
+		global $wgDBserver, $wgDBport, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype;
+		global $wgSQLiteDataDir;
 
 		return [
 			'host' => $wgDBserver,
+			'port' => $wgDBport,
 			'serverName' => 'testhost',
 			'dbname' => $wgDBname,
-			'tablePrefix' => $this->dbPrefix(),
+			'tablePrefix' => self::dbPrefix(),
 			'user' => $wgDBuser,
 			'password' => $wgDBpassword,
 			'type' => $wgDBtype,
@@ -56,27 +57,23 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getLocalDomainID()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::resolveDomainID()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::haveIndex()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::isNonZeroLoad()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::setDomainAliases()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getClusterName()
-	 */
 	public function testWithoutReplica() {
 		global $wgDBname;
 
 		$called = false;
+		$chronologyProtector = $this->createMock( ChronologyProtector::class );
+		$chronologyProtector->method( 'getSessionPrimaryPos' )
+			->willReturnCallback(
+				static function () use ( &$called ) {
+					$called = true;
+				}
+			);
 		$lb = new LoadBalancer( [
 			// Simulate web request with DBO_TRX
 			'servers' => [ $this->makeServerConfig( DBO_TRX ) ],
-			'queryLogger' => MediaWiki\Logger\LoggerFactory::getInstance( 'DBQuery' ),
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() ),
-			'chronologyCallback' => static function () use ( &$called ) {
-				$called = true;
-			},
+			'logger' => MediaWiki\Logger\LoggerFactory::getInstance( 'rdbms' ),
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() ),
+			'chronologyProtector' => $chronologyProtector,
 			'clusterName' => 'xyz'
 		] );
 
@@ -85,14 +82,9 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $lb->hasStreamingReplicaServers() );
 		$this->assertSame( 'xyz', $lb->getClusterName() );
 
-		$this->assertTrue( $lb->haveIndex( 0 ) );
-		$this->assertFalse( $lb->haveIndex( 1 ) );
-		$this->assertFalse( $lb->isNonZeroLoad( 0 ) );
-		$this->assertFalse( $lb->isNonZeroLoad( 1 ) );
-
 		$ld = DatabaseDomain::newFromId( $lb->getLocalDomainID() );
 		$this->assertSame( $wgDBname, $ld->getDatabase(), 'local domain DB set' );
-		$this->assertSame( $this->dbPrefix(), $ld->getTablePrefix(), 'local domain prefix set' );
+		$this->assertSame( self::dbPrefix(), $ld->getTablePrefix(), 'local domain prefix set' );
 		$this->assertSame( 'my_test_wiki', $lb->resolveDomainID( 'my_test_wiki' ) );
 		$this->assertSame( $ld->getId(), $lb->resolveDomainID( false ) );
 		$this->assertSame( $ld->getId(), $lb->resolveDomainID( $ld ) );
@@ -103,19 +95,14 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $called, "getServerName() optimized for DB_PRIMARY" );
 
 		$dbw->ensureConnection();
-		$this->assertTrue( $called );
-		$this->assertSame(
-			$dbw::ROLE_STREAMING_MASTER, $dbw->getTopologyRole(), 'master shows as master'
-		);
+		$this->assertFalse( $called, "Session replication pos not used with single server" );
 		$this->assertTrue( $dbw->getFlag( $dbw::DBO_TRX ), "DBO_TRX set on master" );
 		$this->assertWriteAllowed( $dbw );
 
 		$dbr = $lb->getConnection( DB_REPLICA );
-		$this->assertSame(
-			$dbr::ROLE_STREAMING_MASTER, $dbr->getTopologyRole(), 'DB_REPLICA also gets the master' );
 		$this->assertTrue( $dbr->getFlag( $dbw::DBO_TRX ), "DBO_TRX set on replica" );
 
-		if ( !$lb->getServerAttributes( $lb->getWriterIndex() )[Database::ATTR_DB_LEVEL_LOCKING] ) {
+		if ( !$lb->getServerAttributes( ServerInfo::WRITER_INDEX )[Database::ATTR_DB_LEVEL_LOCKING] ) {
 			$dbwAC1 = $lb->getConnection( DB_PRIMARY, [], false, $lb::CONN_TRX_AUTOCOMMIT );
 			$this->assertFalse(
 				$dbwAC1->getFlag( $dbw::DBO_TRX ),
@@ -144,21 +131,7 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$lb->closeAll( __METHOD__ );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getReaderIndex()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getWriterIndex()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::haveIndex()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::isNonZeroLoad()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getServerName()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getServerInfo()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getServerType()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getServerAttributes()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getClusterName()
-	 */
 	public function testWithReplica() {
-		global $wgDBserver;
-
 		// Simulate web request with DBO_TRX
 		$lb = $this->newMultiServerLocalLoadBalancer( [], [ 'flags' => DBO_TRX ] );
 
@@ -166,11 +139,6 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $lb->hasReplicaServers() );
 		$this->assertTrue( $lb->hasStreamingReplicaServers() );
 		$this->assertSame( 'main-test-cluster', $lb->getClusterName() );
-
-		$this->assertTrue( $lb->haveIndex( 0 ) );
-		$this->assertTrue( $lb->haveIndex( 1 ) );
-		$this->assertFalse( $lb->isNonZeroLoad( 0 ) );
-		$this->assertTrue( $lb->isNonZeroLoad( 1 ) );
 
 		for ( $i = 0; $i < $lb->getServerCount(); ++$i ) {
 			$this->assertIsString( $lb->getServerName( $i ) );
@@ -184,13 +152,6 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$wConn = TestingAccessWrapper::newFromObject( $dbw )->conn;
 		$wConnWrap = TestingAccessWrapper::newFromObject( $wConn );
 
-		$this->assertSame(
-			$dbw::ROLE_STREAMING_MASTER, $dbw->getTopologyRole(), 'primary shows as primary' );
-		$this->assertSame(
-			( $wgDBserver != '' ) ? $wgDBserver : 'localhost',
-			$wConnWrap->topologicalPrimaryConnRef->getServerName(),
-			'cluster primary is set'
-		);
 		$this->assertTrue( $dbw->getFlag( $dbw::DBO_TRX ), "DBO_TRX set on primary" );
 		$this->assertWriteAllowed( $dbw );
 
@@ -199,18 +160,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$rConn = TestingAccessWrapper::newFromObject( $dbr )->conn;
 		$rConnWrap = TestingAccessWrapper::newFromObject( $rConn );
 
-		$this->assertSame(
-			$dbr::ROLE_STREAMING_REPLICA, $dbr->getTopologyRole(), 'replica shows as replica' );
 		$this->assertTrue( $dbr->isReadOnly(), 'replica shows as replica' );
-		$this->assertSame(
-			( $wgDBserver != '' ) ? $wgDBserver : 'localhost',
-			$rConnWrap->topologicalPrimaryConnRef->getServerName(),
-			'cluster master is set'
-		);
 		$this->assertTrue( $dbr->getFlag( $dbw::DBO_TRX ), "DBO_TRX set on replica" );
 		$this->assertSame( $dbr->getLBInfo( 'serverIndex' ), $lb->getReaderIndex() );
 
-		if ( !$lb->getServerAttributes( $lb->getWriterIndex() )[Database::ATTR_DB_LEVEL_LOCKING] ) {
+		if ( !$lb->getServerAttributes( ServerInfo::WRITER_INDEX )[Database::ATTR_DB_LEVEL_LOCKING] ) {
 			$dbwAC1 = $lb->getConnection( DB_PRIMARY, [], false, $lb::CONN_TRX_AUTOCOMMIT );
 			$this->assertFalse(
 				$dbwAC1->getFlag( $dbw::DBO_TRX ),
@@ -256,21 +210,25 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 
 		return new LoadBalancer( [
 			'servers' => [ $this->makeServerConfig() ],
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() )
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() ),
+			'cliMode' => false
 		] );
 	}
 
 	private function newMultiServerLocalLoadBalancer(
 		$lbExtra = [], $srvExtra = [], $masterOnly = false
 	) {
-		global $wgDBserver, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype, $wgSQLiteDataDir;
+		global $wgDBserver, $wgDBport, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype;
+		global $wgSQLiteDataDir;
 
 		$servers = [
 			// Primary DB
 			0 => $srvExtra + [
+					'serverName' => 'db0',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -279,9 +237,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				],
 			// Main replica DBs
 			1 => $srvExtra + [
+					'serverName' => 'db1',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -289,9 +249,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 					'load' => $masterOnly ? 0 : 100,
 				],
 			2 => $srvExtra + [
+					'serverName' => 'db2',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -300,9 +262,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				],
 			// RC replica DBs
 			3 => $srvExtra + [
+					'serverName' => 'db3',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -315,9 +279,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				],
 			// Logging replica DBs
 			4 => $srvExtra + [
+					'serverName' => 'db4',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -328,9 +294,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 					],
 				],
 			5 => $srvExtra + [
+					'serverName' => 'db5',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -342,9 +310,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				],
 			// Maintenance query replica DBs
 			6 => $srvExtra + [
+					'serverName' => 'db6',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -356,9 +326,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				],
 			// Replica DB that only has a copy of some static tables
 			7 => $srvExtra + [
+					'serverName' => 'db7',
 					'host' => $wgDBserver,
+					'port' => $wgDBport,
 					'dbname' => $wgDBname,
-					'tablePrefix' => $this->dbPrefix(),
+					'tablePrefix' => self::dbPrefix(),
 					'user' => $wgDBuser,
 					'password' => $wgDBpassword,
 					'type' => $wgDBtype,
@@ -373,26 +345,11 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 
 		return new LoadBalancer( $lbExtra + [
 			'servers' => $servers,
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() ),
-			'queryLogger' => MediaWiki\Logger\LoggerFactory::getInstance( 'DBQuery' ),
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() ),
+			'logger' => MediaWiki\Logger\LoggerFactory::getInstance( 'rdbms' ),
 			'loadMonitor' => [ 'class' => LoadMonitorNull::class ],
 			'clusterName' => 'main-test-cluster'
 		] );
-	}
-
-	private function assertWriteForbidden( Database $db ) {
-		try {
-			$db->delete( 'some_table', [ 'id' => 57634126 ], __METHOD__ );
-			$this->fail( 'Write operation should have failed!' );
-		} catch ( DBError $ex ) {
-			// check that the exception message contains "Write operation"
-			$constraint = new StringContains( 'Write operation' );
-
-			if ( !$constraint->evaluate( $ex->getMessage(), '', true ) ) {
-				// re-throw original error, to preserve stack trace
-				throw $ex;
-			}
-		}
 	}
 
 	private function assertWriteAllowed( IMaintainableDatabase $db ) {
@@ -431,9 +388,6 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getServerAttributes
-	 */
 	public function testServerAttributes() {
 		$servers = [
 			[ // master
@@ -455,6 +409,7 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 
 		$servers = [
 			[ // master
+				'serverName' => 'db1',
 				'host' => 'db1001',
 				'user' => 'wikiuser',
 				'password' => 'none',
@@ -464,6 +419,7 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 				'load' => 100
 			],
 			[ // emulated replica
+				'serverName' => 'db2',
 				'host' => 'db1002',
 				'user' => 'wikiuser',
 				'password' => 'none',
@@ -483,45 +439,55 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $lb->getServerAttributes( 1 )[Database::ATTR_DB_LEVEL_LOCKING] );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionInternal()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getWriterIndex()
-	 */
 	public function testOpenConnection() {
 		$lb = $this->newSingleServerLocalLoadBalancer();
+		$i = ServerInfo::WRITER_INDEX;
 
-		$i = $lb->getWriterIndex();
 		$this->assertFalse( $lb->getAnyOpenConnection( $i ) );
+		$this->assertFalse( $lb->getAnyOpenConnection( $i, $lb::CONN_TRX_AUTOCOMMIT ) );
 
-		$conn1 = $lb->getConnectionInternal( $i );
-		$conn1->getServerName();
-		$this->assertNotEquals( null, $conn1 );
-		$this->assertFalse( $conn1->getFlag( DBO_TRX ) );
+		// Get two live round-aware handles
+		$raConnRef1 = $lb->getConnection( $i );
+		$raConnRef1->ensureConnection();
+		$raConnRef1Wrapper = TestingAccessWrapper::newFromObject( $raConnRef1 );
+		$raConnRef2 = $lb->getConnection( $i );
+		$raConnRef2->ensureConnection();
+		$raConnRef2Wrapper = TestingAccessWrapper::newFromObject( $raConnRef2 );
 
-		$conn2 = $lb->getConnectionInternal( $i, [], false, $lb::CONN_TRX_AUTOCOMMIT );
-		$this->assertNotEquals( null, $conn2 );
-		$this->assertFalse( $conn2->getFlag( DBO_TRX ) );
+		$this->assertNotNull( $raConnRef1Wrapper->conn );
+		$this->assertSame( $raConnRef1Wrapper->conn, $raConnRef2Wrapper->conn );
+		$this->assertTrue( $raConnRef1Wrapper->conn->getFlag( DBO_TRX ) );
 
-		if ( $lb->getServerAttributes( $i )[Database::ATTR_DB_LEVEL_LOCKING] ) {
-			$this->assertFalse(
-				$lb->getAnyOpenConnection( $i, $lb::CONN_TRX_AUTOCOMMIT ) );
-			$this->assertSame( $conn1,
-				$lb->getConnectionInternal(
-					$i, [], false, $lb::CONN_TRX_AUTOCOMMIT ), $lb::CONN_TRX_AUTOCOMMIT );
-		}
+		// Get two live autocommit handles
+		$acConnRef1 = $lb->getConnection( $i, [], false, $lb::CONN_TRX_AUTOCOMMIT );
+		$acConnRef1->ensureConnection();
+		$acConnRef1Wrapper = TestingAccessWrapper::newFromObject( $acConnRef1 );
+		$acConnRef2 = $lb->getConnection( $i, [], false, $lb::CONN_TRX_AUTOCOMMIT );
+		$acConnRef2->ensureConnection();
+		$acConnRef2Wrapper = TestingAccessWrapper::newFromObject( $acConnRef2 );
+
+		$this->assertNotNull( $acConnRef1Wrapper->conn );
+		$this->assertSame( $acConnRef1Wrapper->conn, $acConnRef2Wrapper->conn );
+
+		$this->assertNotFalse( $lb->getAnyOpenConnection( $i ) );
 
 		$lb->closeAll( __METHOD__ );
 	}
 
 	public function testReconfigure() {
+		$serverA = $this->makeServerConfig();
+		$serverA['serverName'] = 'test_one';
+
+		$serverB = $this->makeServerConfig();
+		$serverB['serverName'] = 'test_two';
 		$conf = [
-			'servers' => [ $this->makeServerConfig() ],
+			'servers' => [ $serverA, $serverB ],
 			'clusterName' => 'A',
-			'localDomain' => $this->db->getDomainID()
+			'localDomain' => $this->getDb()->getDomainID()
 		];
 
 		$lb = new LoadBalancer( $conf );
-		$this->assertSame( 'A', $lb->getClusterName() );
+		$this->assertSame( 2, $lb->getServerCount() );
 
 		$con = $lb->getConnectionInternal( DB_PRIMARY );
 		$ref = $lb->getConnection( DB_PRIMARY );
@@ -529,10 +495,10 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $con->isOpen() );
 		$this->assertTrue( $ref->isOpen() );
 
-		// Reconfigure the LoadBalancer
-		$conf['clusterName'] = 'X';
+		// Depool the second server
+		$conf['servers'] = [ $serverA ];
 		$lb->reconfigure( $conf );
-		$this->assertSame( 'X', $lb->getClusterName() );
+		$this->assertSame( 1, $lb->getServerCount() );
 
 		// Reconfiguring should not close connections immediately.
 		$this->assertTrue( $con->isOpen() );
@@ -545,26 +511,16 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $con->isOpen() );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getWriterIndex()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getOpenPrimaryConnections()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::setTransactionListener()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::beginPrimaryChanges()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::finalizePrimaryChanges()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::approvePrimaryChanges()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::commitPrimaryChanges()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::flushPrimarySessions()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::runPrimaryTransactionIdleCallbacks()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::runPrimaryTransactionListenerCallbacks()
-	 */
 	public function testTransactionCallbackChains() {
-		global $wgDBserver, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype, $wgSQLiteDataDir;
+		global $wgDBserver, $wgDBport, $wgDBname, $wgDBuser, $wgDBpassword, $wgDBtype;
+		global $wgSQLiteDataDir;
 
 		$servers = [
 			[
 				'host' => $wgDBserver,
+				'port' => $wgDBport,
 				'dbname' => $wgDBname,
-				'tablePrefix' => $this->dbPrefix(),
+				'tablePrefix' => self::dbPrefix(),
 				'user' => $wgDBuser,
 				'password' => $wgDBpassword,
 				'type' => $wgDBtype,
@@ -576,12 +532,12 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 
 		$lb = new LoadBalancer( [
 			'servers' => $servers,
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() )
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() )
 		] );
 		/** @var LoadBalancer $lbWrapper */
 		$lbWrapper = TestingAccessWrapper::newFromObject( $lb );
 
-		$conn1 = $lb->getConnection( $lb->getWriterIndex(), [], false );
+		$conn1 = $lb->getConnection( ServerInfo::WRITER_INDEX, [], false );
 		$count = iterator_count( $lbWrapper->getOpenPrimaryConnections() );
 		$this->assertSame( 0, $count, 'Connection handle count' );
 		$conn1->getServerName();
@@ -589,7 +545,7 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 0, $count, 'Connection handle count' );
 		$conn1->ensureConnection();
 
-		$conn2 = $lb->getConnection( $lb->getWriterIndex(), [], '' );
+		$conn2 = $lb->getConnection( ServerInfo::WRITER_INDEX, [], '' );
 		$count = iterator_count( $lbWrapper->getOpenPrimaryConnections() );
 		$this->assertSame( 1, $count, 'Connection handle count' );
 		$conn2->getServerName();
@@ -598,7 +554,7 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$conn2->ensureConnection();
 
 		$count = iterator_count( $lbWrapper->getOpenPrimaryConnections() );
-		$this->assertSame( 2, $count, 'Connection handle count' );
+		$this->assertSame( 1, $count, 'Connection handle count' );
 
 		$tlCalls = 0;
 		$lb->setTransactionListener( 'test-listener', static function () use ( &$tlCalls ) {
@@ -620,13 +576,13 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 			} );
 		} );
 		$lb->finalizePrimaryChanges();
-		$lb->approvePrimaryChanges( [] );
+		$lb->approvePrimaryChanges( 0 );
 		$lb->commitPrimaryChanges( __METHOD__ );
 		$lb->runPrimaryTransactionIdleCallbacks();
 		$lb->runPrimaryTransactionListenerCallbacks();
 
 		$this->assertSame( array_fill_keys( [ 'a', 'b', 'c', 'd' ], 1 ), $bc );
-		$this->assertSame( 2, $tlCalls );
+		$this->assertSame( 1, $tlCalls );
 
 		$tlCalls = 0;
 		$lb->beginPrimaryChanges( __METHOD__ );
@@ -644,13 +600,13 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 			} );
 		} );
 		$lb->finalizePrimaryChanges();
-		$lb->approvePrimaryChanges( [] );
+		$lb->approvePrimaryChanges( 0 );
 		$lb->commitPrimaryChanges( __METHOD__ );
 		$lb->runPrimaryTransactionIdleCallbacks();
 		$lb->runPrimaryTransactionListenerCallbacks();
 
 		$this->assertSame( array_fill_keys( [ 'a', 'b', 'c', 'd' ], 1 ), $ac );
-		$this->assertSame( 2, $tlCalls );
+		$this->assertSame( 1, $tlCalls );
 
 		$conn1->lock( 'test_lock_' . mt_rand(), __METHOD__, 0 );
 		$lb->flushPrimarySessions( __METHOD__ );
@@ -658,10 +614,6 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( TransactionManager::STATUS_TRX_NONE, $conn2->trxStatus() );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 */
 	public function testForbiddenWritesNoRef() {
 		// Simulate web request with DBO_TRX
 		$lb = $this->newMultiServerLocalLoadBalancer( [], [ 'flags' => DBO_TRX ] );
@@ -669,23 +621,22 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$dbr = $lb->getConnection( DB_REPLICA );
 		$this->assertTrue( $dbr->isReadOnly(), 'replica shows as replica' );
 		$this->expectException( DBReadOnlyRoleError::class );
-		$dbr->delete( 'some_table', [ 'id' => 57634126 ], __METHOD__ );
+		$dbr->newDeleteQueryBuilder()
+			->deleteFrom( 'some_table' )
+			->where( [ 'id' => 57634126 ] )
+			->caller( __METHOD__ )
+			->execute();
 
 		// FIXME: not needed?
 		$lb->closeAll( __METHOD__ );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 */
 	public function testDBConnRefReadsMasterAndReplicaRoles() {
 		$lb = $this->newSingleServerLocalLoadBalancer();
 
-		$rConn = $lb->getConnectionRef( DB_REPLICA );
-		$wConn = $lb->getConnectionRef( DB_PRIMARY );
-		$wConn2 = $lb->getConnectionRef( 0 );
+		$rConn = $lb->getConnection( DB_REPLICA );
+		$wConn = $lb->getConnection( DB_PRIMARY );
+		$wConn2 = $lb->getConnection( 0 );
 
 		$v = [ 'value' => '1', '1' ];
 		$sql = 'SELECT MAX(1) AS value';
@@ -703,77 +654,58 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$wConn2->getScopedLockAndFlush( 'key2', __METHOD__, 1 );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 */
 	public function testDBConnRefWritesReplicaRole() {
 		$lb = $this->newSingleServerLocalLoadBalancer();
 
-		$rConn = $lb->getConnectionRef( DB_REPLICA );
+		$rConn = $lb->getConnection( DB_REPLICA );
 
 		$this->expectException( DBReadOnlyRoleError::class );
 		$rConn->query( 'DELETE FROM sometesttable WHERE 1=0' );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 */
 	public function testDBConnRefWritesReplicaRoleIndex() {
 		$lb = $this->newMultiServerLocalLoadBalancer();
 
-		$rConn = $lb->getConnectionRef( 1 );
+		$rConn = $lb->getConnection( 1 );
 
 		$this->expectException( DBReadOnlyRoleError::class );
 		$rConn->query( 'DELETE FROM sometesttable WHERE 1=0' );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnectionRef()
-	 */
 	public function testDBConnRefWritesReplicaRoleInsert() {
 		$lb = $this->newMultiServerLocalLoadBalancer();
 
-		$rConn = $lb->getConnectionRef( DB_REPLICA );
+		$rConn = $lb->getConnection( DB_REPLICA );
 
 		$this->expectException( DBReadOnlyRoleError::class );
 		$rConn->insert( 'test', [ 't' => 1 ], __METHOD__ );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 */
 	public function testGetConnectionRefDefaultGroup() {
 		$lb = $this->newMultiServerLocalLoadBalancer( [ 'defaultGroup' => 'vslow' ] );
 		$lbWrapper = TestingAccessWrapper::newFromObject( $lb );
 
-		$rVslow = $lb->getConnectionRef( DB_REPLICA );
+		$rVslow = $lb->getConnection( DB_REPLICA );
 		$vslowIndexPicked = $rVslow->getLBInfo( 'serverIndex' );
 
 		$this->assertSame( $vslowIndexPicked, $lbWrapper->getExistingReaderIndex( 'vslow' ) );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 */
 	public function testGetConnectionRefUnknownDefaultGroup() {
 		$lb = $this->newMultiServerLocalLoadBalancer( [ 'defaultGroup' => 'invalid' ] );
 
 		$this->assertInstanceOf(
 			IDatabase::class,
-			$lb->getConnectionRef( DB_REPLICA )
+			$lb->getConnection( DB_REPLICA )
 		);
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getConnection()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getMaintenanceConnectionRef()
-	 */
 	public function testQueryGroupIndex() {
 		$lb = $this->newMultiServerLocalLoadBalancer( [ 'defaultGroup' => false ] );
 		/** @var LoadBalancer $lbWrapper */
 		$lbWrapper = TestingAccessWrapper::newFromObject( $lb );
 
-		$rGeneric = $lb->getConnectionRef( DB_REPLICA );
+		$rGeneric = $lb->getConnection( DB_REPLICA );
 		$mainIndexPicked = $rGeneric->getLBInfo( 'serverIndex' );
 
 		$this->assertSame(
@@ -782,15 +714,15 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		);
 		$this->assertContains( $mainIndexPicked, [ 1, 2 ] );
 		for ( $i = 0; $i < 300; ++$i ) {
-			$rLog = $lb->getConnectionRef( DB_REPLICA, [] );
+			$rLog = $lb->getConnection( DB_REPLICA, [] );
 			$this->assertSame(
 				$mainIndexPicked,
 				$rLog->getLBInfo( 'serverIndex' ),
 				"Main index unchanged" );
 		}
 
-		$rRC = $lb->getConnectionRef( DB_REPLICA, [ 'foo' ] );
-		$rWL = $lb->getConnectionRef( DB_REPLICA, [ 'bar' ] );
+		$rRC = $lb->getConnection( DB_REPLICA, [ 'foo' ] );
+		$rWL = $lb->getConnection( DB_REPLICA, [ 'bar' ] );
 		$rRCMaint = $lb->getMaintenanceConnectionRef( DB_REPLICA, [ 'foo' ] );
 		$rWLMaint = $lb->getMaintenanceConnectionRef( DB_REPLICA, [ 'bar' ] );
 
@@ -799,19 +731,19 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 3, $rRCMaint->getLBInfo( 'serverIndex' ) );
 		$this->assertSame( 3, $rWLMaint->getLBInfo( 'serverIndex' ) );
 
-		$rLog = $lb->getConnectionRef( DB_REPLICA, [ 'baz', 'bar' ] );
+		$rLog = $lb->getConnection( DB_REPLICA, [ 'baz', 'bar' ] );
 		$logIndexPicked = $rLog->getLBInfo( 'serverIndex' );
 
 		$this->assertSame( $logIndexPicked, $lbWrapper->getExistingReaderIndex( 'baz' ) );
 		$this->assertContains( $logIndexPicked, [ 4, 5 ] );
 
 		for ( $i = 0; $i < 300; ++$i ) {
-			$rLog = $lb->getConnectionRef( DB_REPLICA, [ 'baz', 'bar' ] );
+			$rLog = $lb->getConnection( DB_REPLICA, [ 'baz', 'bar' ] );
 			$this->assertSame(
 				$logIndexPicked, $rLog->getLBInfo( 'serverIndex' ), "Index unchanged" );
 		}
 
-		$rVslow = $lb->getConnectionRef( DB_REPLICA, [ 'vslow', 'baz' ] );
+		$rVslow = $lb->getConnection( DB_REPLICA, [ 'vslow', 'baz' ] );
 		$vslowIndexPicked = $rVslow->getLBInfo( 'serverIndex' );
 
 		$this->assertSame( $vslowIndexPicked, $lbWrapper->getExistingReaderIndex( 'vslow' ) );
@@ -821,14 +753,10 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 	public function testNonZeroMasterLoad() {
 		$lb = $this->newMultiServerLocalLoadBalancer( [], [ 'flags' => DBO_DEFAULT ], true );
 		// Make sure that no infinite loop occurs (T226678)
-		$rGeneric = $lb->getConnectionRef( DB_REPLICA );
-		$this->assertSame( $lb->getWriterIndex(), $rGeneric->getLBInfo( 'serverIndex' ) );
+		$rGeneric = $lb->getConnection( DB_REPLICA );
+		$this->assertSame( ServerInfo::WRITER_INDEX, $rGeneric->getLBInfo( 'serverIndex' ) );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::setDomainAliases()
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::resolveDomainID()
-	 */
 	public function testSetDomainAliases() {
 		$lb = $this->newMultiServerLocalLoadBalancer();
 		$origDomain = $lb->getLocalDomainID();
@@ -845,30 +773,23 @@ class LoadBalancerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( "realdb-realprefix_", $lb->resolveDomainID( "alias-db-prefix_" ) );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\LoadBalancer::getClusterName()
-	 */
 	public function testClusterName() {
 		global $wgDBname;
-
+		$chronologyProtector = $this->createMock( ChronologyProtector::class );
 		$lb1 = new LoadBalancer( [
 			'servers' => [ $this->makeServerConfig() ],
-			'queryLogger' => MediaWiki\Logger\LoggerFactory::getInstance( 'DBQuery' ),
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() ),
-			'chronologyCallback' => static function () use ( &$called ) {
-				$called = true;
-			},
+			'logger' => MediaWiki\Logger\LoggerFactory::getInstance( 'rdbms' ),
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() ),
+			'chronologyProtector' => $chronologyProtector,
 			'clusterName' => 'xx'
 		] );
 		$this->assertSame( 'xx', $lb1->getClusterName() );
 
 		$lb2 = new LoadBalancer( [
 			'servers' => [ $this->makeServerConfig() ],
-			'queryLogger' => MediaWiki\Logger\LoggerFactory::getInstance( 'DBQuery' ),
-			'localDomain' => new DatabaseDomain( $wgDBname, null, $this->dbPrefix() ),
-			'chronologyCallback' => static function () use ( &$called ) {
-				$called = true;
-			},
+			'logger' => MediaWiki\Logger\LoggerFactory::getInstance( 'rdbms' ),
+			'localDomain' => new DatabaseDomain( $wgDBname, null, self::dbPrefix() ),
+			'chronologyProtector' => $chronologyProtector,
 			'clusterName' => null
 		] );
 		$this->assertSame( 'testhost', $lb2->getClusterName() );

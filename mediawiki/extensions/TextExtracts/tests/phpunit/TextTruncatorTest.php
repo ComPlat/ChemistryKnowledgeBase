@@ -1,11 +1,11 @@
 <?php
 
-namespace TextExtracts\Test;
+namespace MediaWiki\Extension\TextExtracts\Test;
 
-use TextExtracts\TextTruncator;
+use MediaWiki\Extension\TextExtracts\TextTruncator;
 
 /**
- * @covers \TextExtracts\TextTruncator
+ * @covers MediaWiki\Extension\TextExtracts\TextTruncator
  * @group TextExtracts
  *
  * @license GPL-2.0-or-later
@@ -22,7 +22,7 @@ class TextTruncatorTest extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( $expected, $truncator->getFirstSentences( $text, $sentences ) );
 	}
 
-	public function provideGetFirstSentences() {
+	public static function provideGetFirstSentences() {
 		$longLine = str_repeat( 'word ', 1000000 );
 		return [
 			[
@@ -139,7 +139,7 @@ class TextTruncatorTest extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( $expected, $truncator->getFirstChars( $text, $chars ) );
 	}
 
-	public function provideGetFirstChars() {
+	public static function provideGetFirstChars() {
 		$text = 'Lullzy lulz are lullzy!';
 		$html = 'foo<tag>bar</tag>';
 		$longText = str_repeat( 'тест ', 50000 );

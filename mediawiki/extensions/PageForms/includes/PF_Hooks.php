@@ -8,7 +8,12 @@
  * @ingroup PF
  */
 
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\StubObject\StubObject;
+use MediaWiki\Title\Title;
 
 class PFHooks {
 
@@ -23,7 +28,7 @@ class PFHooks {
 			return 1;
 		}
 
-		define( 'PF_VERSION', '5.6.1' );
+		define( 'PF_VERSION', '6.0.1' );
 
 		$GLOBALS['wgPageFormsIP'] = dirname( __DIR__ ) . '/../';
 
@@ -38,35 +43,35 @@ class PFHooks {
 			$GLOBALS['smwgEnabledSpecialPage'][] = 'RunQuery';
 		}
 
+		// @TODO - rename this variable to something like $wgPageFormsEDValues.
+		// (This was formerly an External Data global variable.)
+		if ( method_exists( 'EDParserFunctions', 'getAllValues' ) ) {
+			$GLOBALS['edgValues'] = EDParserFunctions::getAllValues();
+		} else {
+			$GLOBALS['edgValues'] = [];
+		}
+
 		// Allow for popup windows for file upload
 		$GLOBALS['wgEditPageFrameOptions'] = 'SAMEORIGIN';
 	}
 
 	public static function initialize() {
-		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-
 		$GLOBALS['wgPageFormsScriptPath'] = $GLOBALS['wgExtensionAssetsPath'] . '/PageForms';
-
-		// Admin Links hook needs to be called in a delayed way so that it
-		// will always be called after SMW's Admin Links addition; as of
-		// SMW 1.9, SMW delays calling all its hook functions.
-		$hookContainer->register( 'AdminLinks', 'PFHooks::addToAdminLinks' );
 
 		// This global variable is needed so that other
 		// extensions can hook into it to add their own
 		// input types.
-		// @phan-suppress-next-line PhanUndeclaredFunctionInCallable
 		$GLOBALS['wgPageFormsFormPrinter'] = new StubObject( 'wgPageFormsFormPrinter', 'PFFormPrinter' );
 	}
 
 	/**
-	 * ResourceLoaderRegisterModules hook handler
+	 * Called by ResourceLoaderRegisterModules hook.
 	 *
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderRegisterModules
 	 *
-	 * @param ResourceLoader &$resourceLoader The ResourceLoader object
+	 * @param ResourceLoader $resourceLoader The ResourceLoader object
 	 */
-	public static function registerModules( ResourceLoader &$resourceLoader ) {
+	public static function registerModules( ResourceLoader $resourceLoader ) {
 		// These used to use a value of __DIR__ for 'localBasePath',
 		// but apparently in some installations that had a value of
 		// /PageForms/libs and in others just /PageForms, so we'll set
@@ -112,6 +117,11 @@ class PFHooks {
 		$wgNamespacesWithSubpages[PF_NS_FORM_TALK] = true;
 	}
 
+	/**
+	 * Called by the ParserFirstCallInit hook.
+	 *
+	 * @param Parser $parser
+	 */
 	static function registerFunctions( Parser $parser ) {
 		$parser->setFunctionHook( 'default_form', [ 'PFDefaultForm', 'run' ] );
 		$parser->setFunctionHook( 'forminput', [ 'PFFormInputParserFunction', 'run' ] );
@@ -127,6 +137,11 @@ class PFHooks {
 		$parser->setFunctionHook( 'template_display', [ 'PFTemplateDisplay', 'run' ], Parser::SFH_OBJECT_ARGS );
 	}
 
+	/**
+	 * Called by the MakeGlobalVariablesScript hook.
+	 *
+	 * @param array &$vars
+	 */
 	static function setGlobalJSVariables( &$vars ) {
 		global $wgPageFormsTargetName;
 		global $wgPageFormsAutocompleteValues, $wgPageFormsAutocompleteOnAllChars;
@@ -134,7 +149,7 @@ class PFHooks {
 		global $wgPageFormsGridValues, $wgPageFormsGridParams;
 		global $wgPageFormsCalendarValues, $wgPageFormsCalendarParams, $wgPageFormsCalendarHTML;
 		global $wgPageFormsContLangYes, $wgPageFormsContLangNo, $wgPageFormsContLangMonths;
-		global $wgPageFormsHeightForMinimizingInstances;
+		global $wgPageFormsHeightForMinimizingInstances, $wgPageFormsDelayReload;
 		global $wgPageFormsShowOnSelect, $wgPageFormsScriptPath;
 		global $edgValues, $wgPageFormsEDSettings;
 		global $wgAmericanDates;
@@ -154,62 +169,60 @@ class PFHooks {
 		$vars['wgPageFormsContLangNo'] = $wgPageFormsContLangNo;
 		$vars['wgPageFormsContLangMonths'] = $wgPageFormsContLangMonths;
 		$vars['wgPageFormsHeightForMinimizingInstances'] = $wgPageFormsHeightForMinimizingInstances;
+		$vars['wgPageFormsDelayReload'] = $wgPageFormsDelayReload;
 		$vars['wgPageFormsShowOnSelect'] = $wgPageFormsShowOnSelect;
 		$vars['wgPageFormsScriptPath'] = $wgPageFormsScriptPath;
-		if ( method_exists( 'EDParserFunctions', 'getAllValues' ) ) {
-			// External Data 2.3+
-			$vars['edgValues'] = EDParserFunctions::getAllValues();
-		} else {
-			$vars['edgValues'] = $edgValues;
-		}
+		$vars['edgValues'] = $edgValues;
 		$vars['wgPageFormsEDSettings'] = $wgPageFormsEDSettings;
 		$vars['wgAmericanDates'] = $wgAmericanDates;
 	}
 
-	public static function addToAdminLinks( &$admin_links_tree ) {
-		$data_structure_label = wfMessage( 'smw_adminlinks_datastructure' )->text();
-		$data_structure_section = $admin_links_tree->getSection( $data_structure_label );
-		if ( $data_structure_section === null ) {
-			$data_structure_section = new ALSection( wfMessage( 'pf-adminlinks-datastructure' )->text() );
-
-			// If we are here, it most likely means that SMW is
-			// not installed. Still, we'll refer to everything as
-			// SMW, to make the rest of the code more
-			// straightforward.
-			$smw_row = new ALRow( 'smw' );
-			$smw_row->addItem( ALItem::newFromSpecialPage( 'Categories' ) );
-			$data_structure_section->addRow( $smw_row );
-			$smw_admin_row = new ALRow( 'smw_admin' );
-			$data_structure_section->addRow( $smw_admin_row );
-
-			// If SMW is not installed, don't bother with a "links
-			// to the documentation" row - it would only have one
-			// link.
-			// $smw_docu_row = new ALRow( 'smw_docu' );
-			// $data_structure_section->addRow( $smw_docu_row );
-			$admin_links_tree->addSection( $data_structure_section, wfMessage( 'adminlinks_browsesearch' )->text() );
-		} else {
-			$smw_row = $data_structure_section->getRow( 'smw' );
-			$smw_admin_row = $data_structure_section->getRow( 'smw_admin' );
-			$smw_docu_row = $data_structure_section->getRow( 'smw_docu' );
-		}
-		$smw_row->addItem( ALItem::newFromSpecialPage( 'Templates' ), 'Properties' );
-		$smw_row->addItem( ALItem::newFromSpecialPage( 'Forms' ), 'SemanticStatistics' );
-		$smw_row->addItem( ALItem::newFromSpecialPage( 'MultiPageEdit' ) );
-		$smw_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateClass' ), 'SMWAdmin' );
-		if ( class_exists( 'PFCreateProperty' ) ) {
-			$smw_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateProperty' ), 'SMWAdmin' );
-		}
-		$smw_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateTemplate' ), 'SMWAdmin' );
-		$smw_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateForm' ), 'SMWAdmin' );
-		$smw_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateCategory' ), 'SMWAdmin' );
-		if ( isset( $smw_docu_row ) ) {
-			$pf_name = wfMessage( 'specialpages-group-pf_group' )->text();
-			$pf_docu_label = wfMessage( 'adminlinks_documentation', $pf_name )->text();
-			$smw_docu_row->addItem( ALItem::newFromExternalLink( "https://www.mediawiki.org/wiki/Extension:Page_Forms", $pf_docu_label ) );
-		}
+	/**
+	 * Called by the PageSchemasRegisterHandlers hook.
+	 */
+	public static function registerPageSchemasClass() {
+		global $wgPageSchemasHandlerClasses;
+		$wgPageSchemasHandlerClasses[] = 'PFPageSchemas';
 	}
 
+	/**
+	 * Called by the AdminLinks hook.
+	 *
+	 * @param ALTree &$admin_links_tree
+	 */
+	public static function addToAdminLinks( &$admin_links_tree ) {
+		$data_structure_label = wfMessage( 'pf-adminlinks-datastructure' )->escaped();
+		$data_structure_section = $admin_links_tree->getSection( $data_structure_label );
+		if ( $data_structure_section === null ) {
+			$data_structure_section = new ALSection( wfMessage( 'pf-adminlinks-datastructure' )->escaped() );
+		}
+
+		$pf_row = new ALRow( 'pageforms' );
+		$pf_row->addItem( ALItem::newFromSpecialPage( 'Categories' ) );
+		$data_structure_section->addRow( $pf_row );
+		$pf_admin_row = new ALRow( 'pageforms_admin' );
+		$data_structure_section->addRow( $pf_admin_row );
+
+		$admin_links_tree->addSection( $data_structure_section, wfMessage( 'adminlinks_browsesearch' )->escaped() );
+
+		$pf_row->addItem( ALItem::newFromSpecialPage( 'Templates' ), 'Properties' );
+		$pf_row->addItem( ALItem::newFromSpecialPage( 'Forms' ), 'SemanticStatistics' );
+		$pf_row->addItem( ALItem::newFromSpecialPage( 'MultiPageEdit' ) );
+		$pf_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateClass' ), 'SMWAdmin' );
+		if ( class_exists( 'PFCreateProperty' ) ) {
+			$pf_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateProperty' ), 'SMWAdmin' );
+		}
+		$pf_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateTemplate' ), 'SMWAdmin' );
+		$pf_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateForm' ), 'SMWAdmin' );
+		$pf_admin_row->addItem( ALItem::newFromSpecialPage( 'CreateCategory' ), 'SMWAdmin' );
+	}
+
+	/**
+	 * Called by the CargoTablesSetAllowedActions hook.
+	 *
+	 * @param SpecialPage $cargoTablesPage
+	 * @param array &$allowedActions
+	 */
 	public static function addToCargoTablesColumns( $cargoTablesPage, &$allowedActions ) {
 		if ( !$cargoTablesPage->getUser()->isAllowed( 'multipageedit' ) ) {
 			return;
@@ -323,6 +336,8 @@ class PFHooks {
 	}
 
 	/**
+	 * Called by the TinyMCEDisable hook.
+	 *
 	 * Disable TinyMCE if this is a form definition page, or a form-editable page.
 	 *
 	 * @param Title $title The page Title object
@@ -341,6 +356,12 @@ class PFHooks {
 		return true;
 	}
 
+	/**
+	 * Called by the EditPage::importFormData hook.
+	 *
+	 * @param EditPage $editpage
+	 * @param WebRequest $request
+	 */
 	public static function showFormPreview( EditPage $editpage, WebRequest $request ) {
 		global $wgOut, $wgPageFormsFormPrinter;
 
@@ -364,15 +385,11 @@ class PFHooks {
 			'<div id="pfForm" class="previewnote" style="font-weight: bold">' . $previewNote . "</div>\n<hr />\n";
 
 		$form_definition = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $editpage->textbox1 );
-		list( $form_text, $data_text, $form_page_title, $generated_page_name ) =
+		[ $form_text, $data_text, $form_page_title, $generated_page_name ] =
 			$wgPageFormsFormPrinter->formHTML( $form_definition, null, false, null, null, "Page Forms form preview dummy title", null );
 
 		$parserOutput = PFUtils::getParser()->getOutput();
-		if ( method_exists( $wgOut, 'addParserOutputMetadata' ) ) {
-			$wgOut->addParserOutputMetadata( $parserOutput );
-		} else {
-			$wgOut->addParserOutputNoText( $parserOutput );
-		}
+		$wgOut->addParserOutputMetadata( $parserOutput );
 
 		PFUtils::addFormRLModules();
 		$editpage->previewTextAfterContent .=
@@ -410,6 +427,36 @@ class PFHooks {
 		$postEditKey = EditPage::POST_EDIT_COOKIE_KEY_PREFIX . $revisionRecord->getID();
 		$response = RequestContext::getMain()->getRequest()->response();
 		$response->setCookie( $postEditKey, 'saved', time() + EditPage::POST_EDIT_COOKIE_DURATION );
+	}
+
+	/**
+	 * Called by the BeforePageDisplay hook.
+	 *
+	 * Reload the page if "forceReload=true" exists in the URL query string.
+	 * This is a @hack done so that the $wgPageFormsDelayReload setting
+	 * (itself a hack) can take effect - in some cases, having a #formlink
+	 * call with "returnto=" and "reload" both set does not actually
+	 * refresh the queries on the original page in time, so we use this to
+	 * then reload the original page, which does seem to work. There may
+	 * well be a better solution for this, though.
+	 *
+	 * @param MediaWiki\Output\OutputPage $out
+	 * @param Skin $skin
+	 */
+	public static function handleForceReload( $out, Skin $skin ) {
+		global $wgRequest, $wgPageFormsScriptPath;
+
+		if ( $wgRequest->getVal( 'forceReload' ) !== 'true' ) {
+			return;
+		}
+
+		$out->clearHTML();
+		$loadingImage = Html::element( 'img', [ 'src' => "$wgPageFormsScriptPath/skins/loading.gif" ] );
+		$text = "\t" . Html::rawElement( 'p', [ 'style' => "position: absolute; left: 45%; top: 45%;" ], $loadingImage );
+		$reloadURL = $out->getTitle()->getFullURL();
+		$text .= Html::element( 'meta', [ 'http-equiv' => 'refresh', 'content' => "0; url=$reloadURL" ] );
+
+		$out->addHTML( $text );
 	}
 
 }

@@ -1,8 +1,9 @@
 <?php
 
-namespace MediaWiki\ParamValidator\TypeDef;
+namespace MediaWiki\Tests\ParamValidator\TypeDef;
 
-use ChangeTags;
+use MediaWiki\ChangeTags\ChangeTagsStore;
+use MediaWiki\ParamValidator\TypeDef\TagsDef;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\Message\DataMessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -11,19 +12,15 @@ use Wikimedia\ParamValidator\ValidationException;
 
 /**
  * @group Database
- * @covers MediaWiki\ParamValidator\TypeDef\TagsDef
+ * @covers \MediaWiki\ParamValidator\TypeDef\TagsDef
  */
 class TagsDefTest extends MediaWikiIntegrationTestCase {
-
-	protected static $testClass = TagsDef::class;
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		ChangeTags::defineTag( 'tag1' );
-		ChangeTags::defineTag( 'tag2' );
-
-		$this->tablesUsed[] = 'change_tag_def';
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'tag1' );
+		$this->getServiceContainer()->getChangeTagsStore()->defineTag( 'tag2' );
 
 		// Since the type def shouldn't care about the specific user,
 		// remove the right from relevant groups to ensure that it's not
@@ -49,7 +46,10 @@ class TagsDefTest extends MediaWikiIntegrationTestCase {
 		$value, $expect, array $settings = [], array $options = [], array $expectConds = []
 	) {
 		$callbacks = new SimpleCallbacks( [ 'test' => $value ] );
-		$typeDef = new TagsDef( $callbacks );
+		$typeDef = new TagsDef(
+			$callbacks,
+			$this->getServiceContainer()->getChangeTagsStore()
+		);
 		$settings = $typeDef->normalizeSettings( $settings );
 
 		if ( $expect instanceof ValidationException ) {
@@ -79,7 +79,7 @@ class TagsDefTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $expectConds, $conditions );
 	}
 
-	public function provideValidate() {
+	public static function provideValidate() {
 		$settings = [
 			ParamValidator::PARAM_TYPE => 'tags',
 			ParamValidator::PARAM_ISMULTI => true,
@@ -111,13 +111,28 @@ class TagsDefTest extends MediaWikiIntegrationTestCase {
 				),
 				$settings, $valuesList
 			],
+			'Not a string' => [
+				[ 1, 2, 3 ],
+				new ValidationException(
+					DataMessageValue::new( 'paramvalidator-needstring', [], 'needstring' ),
+					'test', '', []
+				)
+			],
 		];
 	}
 
 	public function testGetEnumValues() {
-		$typeDef = new TagsDef( new SimpleCallbacks( [] ) );
+		$explicitlyDefinedTags = [ 'foo', 'bar', 'baz' ];
+		$changeTagsStore = $this->createNoOpMock(
+			ChangeTagsStore::class,
+			[ 'listExplicitlyDefinedTags' ]
+		);
+		$changeTagsStore->method( 'listExplicitlyDefinedTags' )
+			->willReturn( $explicitlyDefinedTags );
+
+		$typeDef = new TagsDef( new SimpleCallbacks( [] ), $changeTagsStore );
 		$this->assertSame(
-			ChangeTags::listExplicitlyDefinedTags(),
+			$explicitlyDefinedTags,
 			$typeDef->getEnumValues( 'test', [], [] )
 		);
 	}

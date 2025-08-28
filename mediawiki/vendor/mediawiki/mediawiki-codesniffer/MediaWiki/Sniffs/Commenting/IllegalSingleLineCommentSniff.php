@@ -31,16 +31,16 @@ class IllegalSingleLineCommentSniff implements Sniff {
 		$tokens = $phpcsFile->getTokens();
 		$currentToken = $tokens[$stackPtr];
 
-		if ( substr( $currentToken['content'], 0, 2 ) === '/*' ) {
+		if ( str_starts_with( $currentToken['content'], '/*' ) ) {
 			// Possible inline comment
-			if ( substr( $currentToken['content'], -2 ) !== '*/' ) {
+			if ( !str_ends_with( $currentToken['content'], '*/' ) ) {
 				// Whether it's a comment across multiple lines
 				$numOfTokens = $phpcsFile->numTokens;
 				for ( $i = $stackPtr + 1; $i < $numOfTokens; $i++ ) {
 					$token = $tokens[$i];
 					if ( ( $token['code'] !== T_COMMENT && $token['code'] !== T_WHITESPACE ) || (
-						substr( $token['content'], 0, 2 ) !== '/*' &&
-						substr( $token['content'], -2 ) === '*/'
+						!str_starts_with( $token['content'], '/*' ) &&
+						str_ends_with( $token['content'], '*/' )
 					) ) {
 						return;
 					}
@@ -58,7 +58,7 @@ class IllegalSingleLineCommentSniff implements Sniff {
 				}
 			} else {
 				// Determine whether multiple "*" appears right before the "*/"
-				if ( preg_match( '/(\*){2,}\//', $currentToken['content'] ) !== 0 ) {
+				if ( preg_match( '/[^\/*](\*){2,}\//', $currentToken['content'] ) !== 0 ) {
 					$fix = $phpcsFile->addFixableWarning(
 						'Invalid end of a single line comment',
 						$stackPtr,

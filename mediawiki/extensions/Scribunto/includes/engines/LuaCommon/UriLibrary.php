@@ -1,6 +1,11 @@
 <?php
 
-class Scribunto_LuaUriLibrary extends Scribunto_LuaLibraryBase {
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
+
+use MediaWiki\Parser\CoreParserFunctions;
+use MediaWiki\Title\Title;
+
+class UriLibrary extends LibraryBase {
 	public function register() {
 		$lib = [
 			'anchorEncode' => [ $this, 'anchorEncode' ],
@@ -9,8 +14,9 @@ class Scribunto_LuaUriLibrary extends Scribunto_LuaLibraryBase {
 			'canonicalUrl' => [ $this, 'canonicalUrl' ],
 		];
 
+		$title = $this->getTitle();
 		return $this->getEngine()->registerInterface( 'mw.uri.lua', $lib, [
-			'defaultUrl' => $this->getTitle()->getFullUrl(),
+			'defaultUrl' => $title ? $title->getFullUrl() : null,
 		] );
 	}
 

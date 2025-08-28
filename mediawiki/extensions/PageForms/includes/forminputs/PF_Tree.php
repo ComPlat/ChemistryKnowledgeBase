@@ -1,4 +1,7 @@
 <?php
+
+use MediaWiki\Title\Title;
+
 /**
  * A class that defines a tree - and can populate it based on either
  * wikitext or a category structure.
@@ -225,7 +228,7 @@ class PFTree {
 	 * @return array
 	 */
 	private static function getSubcategories( $categoryName ) {
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = PFUtils::getReadDB();
 
 		$tables = [ 'page', 'categorylinks' ];
 		$fields = [ 'page_id', 'page_namespace', 'page_title',

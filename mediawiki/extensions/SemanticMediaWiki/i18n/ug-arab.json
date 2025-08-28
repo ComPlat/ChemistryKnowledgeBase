@@ -2,9 +2,12 @@
 	"@metadata": {
 		"authors": [
 			"Alfredie",
+			"Sahran",
+			"Tel'et",
 			"Uzdil"
 		]
 	},
+	"smw-categories": "تۈرلەر",
 	"smw-special-property-searchform-options": "تاللانما",
 	"smw-special-wantedproperties-filter-label": "سۈزگۈچ:",
 	"smw-special-wantedproperties-filter-none": "يوق",
@@ -14,7 +17,7 @@
 	"smw-ask-result": "نەتىجە",
 	"smw-ask-empty": "بوش",
 	"smw-ask-format": "فورمات",
-	"browse": "ۋىكىنى زىيارەت قىلىش",
+	"browse": "ۋىكى زىيارەت",
 	"smw_browse_go": "كۆچۈش",
 	"smw-livepreview-loading": "يۈكلەۋاتىدۇ…",
 	"smw-listingcontinuesabbrev": "داۋاملاشتۇر",

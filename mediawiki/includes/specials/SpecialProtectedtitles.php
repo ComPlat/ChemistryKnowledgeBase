@@ -1,7 +1,5 @@
 <?php
 /**
- * Implements Special:Protectedtitles
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -18,39 +16,38 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @ingroup SpecialPage
  */
 
+namespace MediaWiki\Specials;
+
 use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\HTMLForm\Field\HTMLSelectNamespace;
+use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\MainConfigNames;
-use Wikimedia\Rdbms\ILoadBalancer;
+use MediaWiki\Pager\ProtectedTitlesPager;
+use MediaWiki\SpecialPage\SpecialPage;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * A special page that list protected titles from creation
  *
  * @ingroup SpecialPage
  */
-class SpecialProtectedtitles extends SpecialPage {
-	protected $IdLevel = 'level';
-	protected $IdType = 'type';
-
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+class SpecialProtectedTitles extends SpecialPage {
+	private LinkBatchFactory $linkBatchFactory;
+	private IConnectionProvider $dbProvider;
 
 	/**
 	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
+	 * @param IConnectionProvider $dbProvider
 	 */
 	public function __construct(
 		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer
+		IConnectionProvider $dbProvider
 	) {
 		parent::__construct( 'Protectedtitles' );
 		$this->linkBatchFactory = $linkBatchFactory;
-		$this->loadBalancer = $loadBalancer;
+		$this->dbProvider = $dbProvider;
 	}
 
 	public function execute( $par ) {
@@ -59,25 +56,19 @@ class SpecialProtectedtitles extends SpecialPage {
 		$this->addHelpLink( 'Help:Protected_pages' );
 
 		$request = $this->getRequest();
-		$type = $request->getVal( $this->IdType );
-		$level = $request->getVal( $this->IdLevel );
-		$sizetype = $request->getVal( 'sizetype' );
-		$size = $request->getIntOrNull( 'size' );
+		$level = $request->getVal( 'level' );
 		$NS = $request->getIntOrNull( 'namespace' );
 
 		$pager = new ProtectedTitlesPager(
-			$this,
+			$this->getContext(),
+			$this->getLinkRenderer(),
 			$this->linkBatchFactory,
-			$this->loadBalancer,
-			[],
-			$type,
+			$this->dbProvider,
 			$level,
-			$NS,
-			$sizetype,
-			$size
+			$NS
 		);
 
-		$this->getOutput()->addHTML( $this->showOptions( $NS, $type, $level ) );
+		$this->getOutput()->addHTML( $this->showOptions() );
 
 		if ( $pager->getNumRows() ) {
 			$this->getOutput()->addHTML(
@@ -91,58 +82,9 @@ class SpecialProtectedtitles extends SpecialPage {
 	}
 
 	/**
-	 * Callback function to output a restriction
-	 *
-	 * @param stdClass $row Database row
 	 * @return string
 	 */
-	public function formatRow( $row ) {
-		$title = Title::makeTitleSafe( $row->pt_namespace, $row->pt_title );
-		if ( !$title ) {
-			return Html::rawElement(
-				'li',
-				[],
-				Html::element(
-					'span',
-					[ 'class' => 'mw-invalidtitle' ],
-					Linker::getInvalidTitleDescription(
-						$this->getContext(),
-						$row->pt_namespace,
-						$row->pt_title
-					)
-				)
-			) . "\n";
-		}
-
-		$link = $this->getLinkRenderer()->makeLink( $title );
-		// Messages: restriction-level-sysop, restriction-level-autoconfirmed
-		$description = $this->msg( 'restriction-level-' . $row->pt_create_perm )->escaped();
-		$lang = $this->getLanguage();
-		$expiry = strlen( $row->pt_expiry ) ?
-			$lang->formatExpiry( $row->pt_expiry, TS_MW ) :
-			'infinity';
-
-		if ( $expiry !== 'infinity' ) {
-			$user = $this->getUser();
-			$description .= $this->msg( 'comma-separator' )->escaped() . $this->msg(
-				'protect-expiring-local',
-				$lang->userTimeAndDate( $expiry, $user ),
-				$lang->userDate( $expiry, $user ),
-				$lang->userTime( $expiry, $user )
-			)->escaped();
-		}
-
-		return '<li>' . $lang->specialList( $link, $description ) . "</li>\n";
-	}
-
-	/**
-	 * @param int $namespace
-	 * @param string $type
-	 * @param string $level
-	 * @return string
-	 * @internal
-	 */
-	private function showOptions( $namespace, $type, $level ) {
+	private function showOptions() {
 		$formDescriptor = [
 			'namespace' => [
 				'class' => HTMLSelectNamespace::class,
@@ -152,7 +94,7 @@ class SpecialProtectedtitles extends SpecialPage {
 				'all' => '',
 				'label' => $this->msg( 'namespace' )->text()
 			],
-			'levelmenu' => $this->getLevelMenu( $level )
+			'levelmenu' => $this->getLevelMenu()
 		];
 
 		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() )
@@ -164,39 +106,30 @@ class SpecialProtectedtitles extends SpecialPage {
 	}
 
 	/**
-	 * @param string $pr_level Determines which option is selected as default
 	 * @return string|array
-	 * @internal
 	 */
-	private function getLevelMenu( $pr_level ) {
-		// Temporary array
-		$m = [ $this->msg( 'restriction-level-all' )->text() => 0 ];
-		$options = [];
+	private function getLevelMenu() {
+		$options = [ 'restriction-level-all' => 0 ];
 
-		// First pass to load the log names
+		// Load the log names as options
 		foreach ( $this->getConfig()->get( MainConfigNames::RestrictionLevels ) as $type ) {
 			if ( $type != '' && $type != '*' ) {
 				// Messages: restriction-level-sysop, restriction-level-autoconfirmed
-				$text = $this->msg( "restriction-level-$type" )->text();
-				$m[$text] = $type;
+				$options["restriction-level-$type"] = $type;
 			}
 		}
 
 		// Is there only one level (aside from "all")?
-		if ( count( $m ) <= 2 ) {
+		if ( count( $options ) <= 2 ) {
 			return '';
-		}
-		// Third pass generates sorted XHTML content
-		foreach ( $m as $text => $type ) {
-			$options[ $text ] = $type;
 		}
 
 		return [
 			'type' => 'select',
-			'options' => $options,
-			'label' => $this->msg( 'restriction-level' )->text(),
-			'name' => $this->IdLevel,
-			'id' => $this->IdLevel
+			'options-messages' => $options,
+			'label-message' => 'restriction-level',
+			'name' => 'level',
+			'id' => 'level',
 		];
 	}
 
@@ -204,3 +137,9 @@ class SpecialProtectedtitles extends SpecialPage {
 		return 'maintenance';
 	}
 }
+
+/**
+ * Retain the old class name for backwards compatibility.
+ * @deprecated since 1.41
+ */
+class_alias( SpecialProtectedTitles::class, 'SpecialProtectedtitles' );

@@ -2,9 +2,13 @@
 
 namespace MediaWiki\Tests\Rest\Handler;
 
-use HashConfig;
 use InvalidArgumentException;
-use Language;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Config\ServiceOptions;
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
@@ -17,30 +21,32 @@ use MediaWiki\Rest\Handler\SearchHandler;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Search\Entity\SearchResultThumbnail;
+use MediaWiki\Search\SearchResultThumbnailProvider;
+use MediaWiki\Status\Status;
+use MediaWiki\Status\StatusFormatter;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
-use MediaWiki\User\UserOptionsLookup;
+use MediaWiki\Title\TitleFormatter;
+use MediaWiki\Title\TitleValue;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWikiUnitTestCase;
 use MockSearchResultSet;
-use MockTitleTrait;
 use PHPUnit\Framework\MockObject\MockObject;
 use SearchEngine;
+use SearchEngineConfig;
 use SearchEngineFactory;
 use SearchResult;
 use SearchResultSet;
 use SearchSuggestion;
 use SearchSuggestionSet;
-use Status;
-use TitleFormatter;
-use TitleValue;
 use Wikimedia\Message\MessageValue;
 
 /**
  * @covers \MediaWiki\Rest\Handler\SearchHandler
  */
-class SearchHandlerTest extends \MediaWikiUnitTestCase {
+class SearchHandlerTest extends MediaWikiUnitTestCase {
 
 	use DummyServicesTrait;
-	use HandlerTestTrait;
-	use MockTitleTrait;
+	use MediaTestTrait;
 
 	/**
 	 * @var SearchEngine|MockObject|null
@@ -56,6 +62,7 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 	 * @param RedirectLookup|null $redirectLookup
 	 * @param PageStore|null $pageStore
 	 * @param TitleFormatter|null $mockTitleFormatter
+	 * @param HookContainer|null $hookContainer
 	 *
 	 * @return SearchHandler
 	 */
@@ -67,22 +74,27 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$permissionManager = null,
 		$redirectLookup = null,
 		$pageStore = null,
-		$mockTitleFormatter = null
+		$mockTitleFormatter = null,
+		?HookContainer $hookContainer = null
 	) {
-		$config = new HashConfig( [
+		$sources = [
 			MainConfigNames::SearchType => 'test',
 			MainConfigNames::SearchTypeAlternatives => [],
 			MainConfigNames::NamespacesToBeSearchedDefault => [ NS_MAIN => true ],
 			MainConfigNames::SearchSuggestCacheExpiry => 1200,
-		] );
+		];
+		$config = new HashConfig( $sources );
 
 		/** @var Language|MockObject $language */
 		$language = $this->createNoOpMock( Language::class );
-		$hookContainer = $this->createHookContainer();
+		$hookContainer ??= $this->createHookContainer();
 		/** @var UserOptionsLookup|MockObject $userOptionsLookup */
 		$userOptionsLookup = $this->createMock( UserOptionsLookup::class );
-		$searchEngineConfig = new \SearchEngineConfig(
-			$config,
+		$searchEngineConfig = new SearchEngineConfig(
+			new ServiceOptions(
+				SearchEngineConfig::CONSTRUCTOR_OPTIONS,
+				$sources
+			),
 			$language,
 			$hookContainer,
 			[],
@@ -130,14 +142,29 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$searchEngineFactory->method( 'create' )
 			->willReturn( $this->searchEngine );
 
+		$searchResultThumbnailProvider = new SearchResultThumbnailProvider(
+			$this->makeMockRepoGroup( [] ),
+			$hookContainer
+		);
+
+		$mockStatusFormatter = $this->createNoOpMock( StatusFormatter::class, [ 'getMessage' ] );
+		$mockStatusFormatter->method( 'getMessage' )->willReturn(
+			new RawMessage( 'testing' )
+		);
+
+		$mockFormatterFactory = $this->createNoOpMock( FormatterFactory::class, [ 'getStatusFormatter' ] );
+		$mockFormatterFactory->method( 'getStatusFormatter' )->willReturn( $mockStatusFormatter );
+
 		return new SearchHandler(
 			$config,
 			$searchEngineFactory,
 			$searchEngineConfig,
+			$searchResultThumbnailProvider,
 			$permissionManager,
 			$redirectLookup,
 			$pageStore,
-			$mockTitleFormatter
+			$mockTitleFormatter,
+			$mockFormatterFactory,
 		);
 	}
 
@@ -325,7 +352,7 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$this->executeHandler( $handler, $request );
 	}
 
-	public function provideExecute_limit_error() {
+	public static function provideExecute_limit_error() {
 		yield [ 0, 'paramvalidator-outofrange-minmax' ];
 		yield [ 123, 'paramvalidator-outofrange-minmax' ];
 		yield [ 'xyz', 'paramvalidator-badinteger' ];
@@ -457,9 +484,7 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$query = 'foo';
 		$request = new RequestData( [ 'queryParams' => [ 'q' => $query ] ] );
 
-		$handler = $this->newHandler( $query, $titleResults, $textResults );
-
-		$data = $this->executeHandlerAndGetBodyData( $handler, $request, [], [
+		$hookContainer = $this->createHookContainer( [
 			'SearchResultProvideDescription' =>
 				static function ( array $pageIdentities, array &$result ) {
 					foreach ( $pageIdentities as $pageId => $pageIdentity ) {
@@ -471,7 +496,7 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 					foreach ( $pageIdentities as $pageId => $pageIdentity ) {
 						$result[ $pageId ] = new SearchResultThumbnail(
 							'image/png',
-							2250,
+							null,
 							100,
 							125,
 							500,
@@ -482,6 +507,12 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 				}
 		] );
 
+		$handler = $this->newHandler(
+			$query, $titleResults, $textResults, null, null, null, null, null, $hookContainer
+		);
+
+		$data = $this->executeHandlerAndGetBodyData( $handler, $request, [], $hookContainer );
+
 		$this->assertArrayHasKey( 'pages', $data );
 		$this->assertCount( 2, $data['pages'] );
 		$this->assertArrayHasKey( 'thumbnail', $data['pages'][0] );
@@ -490,7 +521,6 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$this->assertSame( 125, $data['pages'][0][ 'thumbnail' ]['height'] );
 		$this->assertSame( 100, $data['pages'][0][ 'thumbnail' ]['width'] );
 		$this->assertSame( 'image/png', $data['pages'][0][ 'thumbnail' ]['mimetype'] );
-		$this->assertSame( 2250, $data['pages'][0][ 'thumbnail' ]['size'] );
 		$this->assertSame( 500, $data['pages'][0][ 'thumbnail' ]['duration'] );
 		$this->assertArrayHasKey( 'description', $data['pages'][0] );
 		$this->assertSame( 'Description_1', $data['pages'][0][ 'description' ] );
@@ -512,12 +542,10 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$mockPageStore->method( 'getPageForLink' )->willReturn( $pageTarget );
 		$mockRedirectLookup = $this->createMock( RedirectLookup::class );
 
-		$mockRedirectLookup->expects( $this->at( 0 ) ) // first call has a redirect,
-		->method( 'getRedirectTarget' )
-			->willReturn( $mockRedirectLinkTarget );
-		$mockRedirectLookup->expects( $this->at( 1 ) ) // second call does not
-		->method( 'getRedirectTarget' )
-			->willReturn( null );
+		// first call has a redirect, second call does not
+		$mockRedirectLookup
+			->method( 'getRedirectTarget' )
+			->willReturnOnConsecutiveCalls( $mockRedirectLinkTarget, null );
 
 		$query = 'foo';
 		$request = new RequestData( [ 'queryParams' => [ 'q' => $query ] ] );
@@ -552,12 +580,10 @@ class SearchHandlerTest extends \MediaWikiUnitTestCase {
 		$mockPageStore->method( 'getPageForLink' )->willReturn( $pageTarget );
 		$mockRedirectLookup = $this->createMock( RedirectLookup::class );
 
-		$mockRedirectLookup->expects( $this->at( 0 ) ) // first call has a redirect,
-		->method( 'getRedirectTarget' )
-			->willReturn( $mockRedirectLinkTarget );
-		$mockRedirectLookup->expects( $this->at( 1 ) ) // second call does not
-		->method( 'getRedirectTarget' )
-			->willReturn( null );
+		// first call has a redirect, second call does not
+		$mockRedirectLookup
+			->method( 'getRedirectTarget' )
+			->willReturnOnConsecutiveCalls( $mockRedirectLinkTarget, null );
 
 		$mockTitle = $this->makeMockTitle( 'Foo Redirect Target', [ 'id' => 10 ] );
 		$completionConfig = [ 'mode' => SearchHandler::COMPLETION_MODE ];

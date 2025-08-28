@@ -2,6 +2,8 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * Generates character in the ASCII 0-127 range.
@@ -12,7 +14,7 @@ use Eris\Generator;
  */
 function char(array $characterSets = ['basic-latin'], $encoding = 'utf-8')
 {
-    return CharacterGenerator::ascii();
+    return Generators::char($characterSets, $encoding);
 }
 
 /**
@@ -23,9 +25,12 @@ function char(array $characterSets = ['basic-latin'], $encoding = 'utf-8')
  */
 function charPrintableAscii()
 {
-    return CharacterGenerator::printableAscii();
+    return Generators::charPrintableAscii();
 }
 
+/**
+ * @template-implements Generator<string>
+ */
 class CharacterGenerator implements Generator
 {
     private $lowerLimit;
@@ -49,14 +54,13 @@ class CharacterGenerator implements Generator
         $this->shrinkingProgression = ArithmeticProgression::discrete($this->lowerLimit);
     }
 
-    public function __invoke($_size, $rand)
+    public function __invoke($_size, RandomRange $rand)
     {
-        return GeneratedValueSingle::fromJustValue(chr($rand($this->lowerLimit, $this->upperLimit)), 'character');
+        return GeneratedValueSingle::fromJustValue(chr($rand->rand($this->lowerLimit, $this->upperLimit)), 'character');
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
-        $codePoint = ord($element->unbox());
         $shrinkedValue = chr($this->shrinkingProgression->next(ord($element->unbox())));
         return GeneratedValueSingle::fromJustValue($shrinkedValue, 'character');
     }

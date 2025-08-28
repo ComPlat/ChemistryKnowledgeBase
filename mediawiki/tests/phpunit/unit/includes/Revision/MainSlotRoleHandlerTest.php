@@ -2,18 +2,20 @@
 
 namespace MediaWiki\Tests\Unit\Revision;
 
-use ContentHandler;
-use MediaWiki\Content\IContentHandlerFactory;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Revision\MainSlotRoleHandler;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWikiUnitTestCase;
 use MockTitleTrait;
-use Title;
-use TitleFactory;
 
 /**
  * @covers \MediaWiki\Revision\MainSlotRoleHandler
  */
 class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
+	use DummyServicesTrait;
 	use MockTitleTrait;
 
 	/**
@@ -33,18 +35,20 @@ class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
 		// handler that returns true directly
 		$contentHandler = $this->createMock( ContentHandler::class );
 		$contentHandler->method( 'canBeUsedOn' )->willReturn( true );
-		$contentHandlerFactory = $this->createMock( IContentHandlerFactory::class );
-		$contentHandlerFactory->method( 'getContentHandler' )->willReturn( $contentHandler );
+		$contentHandlerFactory = $this->getDummyContentHandlerFactory( [
+			CONTENT_MODEL_WIKITEXT => $contentHandler,
+			CONTENT_MODEL_TEXT => $contentHandler,
+		] );
 
 		// TitleFactory that for these tests is only called with Title objects, so just
 		// return them
 		$titleFactory = $this->createMock( TitleFactory::class );
 		$titleFactory->method( 'newFromLinkTarget' )
 			->with( $this->isInstanceOf( Title::class ) )
-			->will( $this->returnArgument( 0 ) );
-		$titleFactory->method( 'castFromPageIdentity' )
+			->willReturnArgument( 0 );
+		$titleFactory->method( 'newFromPageIdentity' )
 			->with( $this->isInstanceOf( Title::class ) )
-			->will( $this->returnArgument( 0 ) );
+			->willReturnArgument( 0 );
 
 		return new MainSlotRoleHandler(
 			$namespaceContentModels,
@@ -54,15 +58,9 @@ class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::__construct
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::getRole()
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::getNameMessageKey()
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::getOutputLayoutHints()
-	 */
 	public function testConstruction() {
 		$handler = $this->getRoleHandler( [] );
-		$this->assertSame( 'main', $handler->getRole() );
+		$this->assertSame( SlotRecord::MAIN, $handler->getRole() );
 		$this->assertSame( 'slot-name-main', $handler->getNameMessageKey() );
 
 		$hints = $handler->getOutputLayoutHints();
@@ -71,9 +69,6 @@ class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
 		$this->assertArrayHasKey( 'placement', $hints );
 	}
 
-	/**
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::getDefaultModel()
-	 */
 	public function testGetDefaultModel() {
 		$handler = $this->getRoleHandler(
 			[ 100 => CONTENT_MODEL_TEXT ]
@@ -93,9 +88,6 @@ class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
 		$this->assertSame( CONTENT_MODEL_TEXT, $handler->getDefaultModel( $title100 ) );
 	}
 
-	/**
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::isAllowedModel()
-	 */
 	public function testIsAllowedModel() {
 		$handler = $this->getRoleHandler( [] );
 
@@ -108,9 +100,6 @@ class MainSlotRoleHandlerTest extends MediaWikiUnitTestCase {
 		$this->assertTrue( $handler->isAllowedModel( CONTENT_MODEL_TEXT, $title ) );
 	}
 
-	/**
-	 * @covers \MediaWiki\Revision\MainSlotRoleHandler::supportsArticleCount()
-	 */
 	public function testSupportsArticleCount() {
 		$handler = $this->getRoleHandler( [] );
 

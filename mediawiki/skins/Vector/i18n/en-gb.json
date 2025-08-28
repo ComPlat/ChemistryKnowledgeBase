@@ -1,14 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Andibing",
-			"Chase me ladies, I'm the Cavalry"
+			"Reedy"
 		]
 	},
-	"vector-action-addsection": "Add topic",
-	"vector-view-create": "Create",
-	"vector-view-edit": "Edit",
-	"vector-view-history": "View history",
-	"vector-view-view": "Read",
-	"vector-more-actions": "More"
+	"vector-appearance-tooltip": "Change the appearance of the page's font size, width, and colour",
+	"skin-theme-name": "Colour",
+	"vector-night-mode-issue-reporting-notice-tooltip": "Report when dark mode colours make things difficult to read.",
+	"vector-night-mode-issue-reporting-preload-content": "<!--\nInstructions\nPlease describe how the dark mode colours are making Wikipedia difficult to read.\nPlease include the section of the article where you found the issue.\n-->\n'''Issue Description'''"
 }

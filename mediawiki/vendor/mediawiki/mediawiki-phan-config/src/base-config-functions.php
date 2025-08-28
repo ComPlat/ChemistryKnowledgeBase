@@ -21,18 +21,6 @@ function setBaseOptions( string $curDir, ConfigBuilder $configBuilder ): void {
 		'whitelist_issue_types' => [],
 		'markdown_issue_messages' => false,
 		'generic_types_enabled' => true,
-		'plugins' => [
-			'PregRegexCheckerPlugin',
-			'UnusedSuppressionPlugin',
-			'DuplicateExpressionPlugin',
-			'LoopVariableReusePlugin',
-			'RedundantAssignmentPlugin',
-			'UnreachableCodePlugin',
-			'SimplifyExpressionPlugin',
-			'DuplicateArrayKeyPlugin',
-			'UseReturnValuePlugin',
-			'AddNeverReturnTypePlugin',
-		],
 		'plugin_config' => [],
 		// BC for repos not checking whether these are set
 		'file_list' => [],
@@ -76,7 +64,23 @@ function setBaseOptions( string $curDir, ConfigBuilder $configBuilder ): void {
 		->readClassAliases( true )
 		->enableRedundantConditionDetection( true )
 		->setMinimumPHPVersion( '7.4' )
-		->setTargetPHPVersion( '8.1' );
+		->setTargetPHPVersion( '8.1' )
+		->addPlugins( [
+			'PregRegexCheckerPlugin',
+			'UnusedSuppressionPlugin',
+			'DuplicateExpressionPlugin',
+			'LoopVariableReusePlugin',
+			'RedundantAssignmentPlugin',
+			'UnreachableCodePlugin',
+			'SimplifyExpressionPlugin',
+			'DuplicateArrayKeyPlugin',
+			'UseReturnValuePlugin',
+			'AddNeverReturnTypePlugin',
+		] )
+		->addCustomPlugins( [
+			'NoEmptyIfDefinedPlugin',
+			'NoBaseExceptionPlugin',
+		] );
 
 	if ( !defined( 'MSG_EOR' ) ) {
 		$configBuilder->addFiles( $curDir . '/stubs/sockets.windows.php' );

@@ -2,19 +2,19 @@
 
 namespace MediaWiki\Tests\Storage;
 
-use ContentHandler;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
-use TextContent;
 
 /**
- * @covers MediaWiki\Storage\PageUpdaterFactory
+ * @covers \MediaWiki\Storage\PageUpdaterFactory
  * @group Database
  */
 class PageUpdaterFactoryIntegrationTest extends MediaWikiIntegrationTestCase {
 
 	/**
-	 * @covers WikiPage::newPageUpdater
+	 * @covers \WikiPage::newPageUpdater
 	 */
 	public function testNewPageUpdater() {
 		$page = $this->getExistingTestPage();
@@ -40,7 +40,7 @@ class PageUpdaterFactoryIntegrationTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $content->getText(), $pstContent->getText() );
 
 		$pout = $update->getCanonicalParserOutput();
-		$this->assertStringContainsString( 'dolor sit amet', $pout->getText() );
+		$this->assertStringContainsString( 'dolor sit amet', $pout->getRawText() );
 	}
 
 }

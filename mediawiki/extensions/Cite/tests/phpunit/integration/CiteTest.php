@@ -5,310 +5,21 @@ namespace Cite\Tests\Integration;
 use Cite\Cite;
 use Cite\ErrorReporter;
 use Cite\FootnoteMarkFormatter;
-use Cite\ReferencesFormatter;
+use Cite\ReferenceListFormatter;
 use Cite\ReferenceStack;
-use Language;
+use Cite\Tests\TestUtils;
 use LogicException;
-use Parser;
-use ParserOptions;
-use ParserOutput;
-use StripState;
+use MediaWiki\Language\Language;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\StripState;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @coversDefaultClass \Cite\Cite
- *
  * @license GPL-2.0-or-later
  */
 class CiteTest extends \MediaWikiIntegrationTestCase {
-
-	/**
-	 * @covers ::validateRef
-	 * @covers ::validateRefOutsideOfReferences
-	 * @covers ::validateRefInReferences
-	 * @dataProvider provideValidateRef
-	 */
-	public function testValidateRef(
-		array $referencesStack,
-		?string $inReferencesGroup,
-		bool $isSectionPreview,
-		?string $text,
-		?string $group,
-		?string $name,
-		?string $extends,
-		?string $follow,
-		?string $dir,
-		$expected
-	) {
-		/** @var ErrorReporter $errorReporter */
-		$errorReporter = $this->createMock( ErrorReporter::class );
-		/** @var ReferenceStack $stack */
-		$stack = TestingAccessWrapper::newFromObject( new ReferenceStack( $errorReporter ) );
-		$stack->refs = $referencesStack;
-
-		/** @var Cite $cite */
-		$cite = TestingAccessWrapper::newFromObject( $this->newCite() );
-		$cite->referenceStack = $stack;
-		$cite->inReferencesGroup = $inReferencesGroup;
-		$cite->isSectionPreview = $isSectionPreview;
-
-		$status = $cite->validateRef( $text, $group, $name, $extends, $follow, $dir );
-		if ( is_string( $expected ) ) {
-			$this->assertSame( $expected, $status->getErrors()[0]['message'] );
-		} else {
-			$this->assertSame( $expected, $status->isGood(), $status->getErrors()[0]['message'] ?? '' );
-		}
-	}
-
-	public function provideValidateRef() {
-		return [
-			// Shared <ref> validations regardless of context
-			'Numeric name' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => null,
-				'group' => '',
-				'name' => '1',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_ref_numeric_key',
-			],
-			'Numeric follow' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => null,
-				'extends' => null,
-				'follow' => '1',
-				'dir' => null,
-				'expected' => 'cite_error_ref_numeric_key',
-			],
-			'Numeric extends' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => null,
-				'extends' => '1',
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_ref_numeric_key',
-			],
-			'Follow with name' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => 'f',
-				'dir' => null,
-				'expected' => 'cite_error_ref_too_many_keys',
-			],
-			'Follow with extends' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => null,
-				'extends' => 'e',
-				'follow' => 'f',
-				'dir' => null,
-				'expected' => 'cite_error_ref_too_many_keys',
-			],
-			// Validating <ref> outside of <references>
-			'text-only <ref>' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => null,
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => true,
-			],
-			'Whitespace or empty text' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => '',
-				'group' => '',
-				'name' => null,
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_ref_no_input',
-			],
-			'totally empty <ref>' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => null,
-				'group' => '',
-				'name' => null,
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_ref_no_key',
-			],
-			'empty-name <ref>' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => '',
-				'name' => '',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => true,
-			],
-			'contains <ref>-like text' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 'Foo <ref name="bar">',
-				'group' => '',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_included_ref',
-			],
-
-			// Validating a <ref> in <references>
-			'most trivial <ref> in <references>' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => 'not empty',
-				'group' => 'g',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => true,
-			],
-			'Different group than <references>' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g1',
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => 'g2',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_references_group_mismatch',
-			],
-			'Unnamed in <references>' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => 'g',
-				'name' => null,
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_references_no_key',
-			],
-			'Empty name in <references>' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => 't',
-				'group' => 'g',
-				'name' => '',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_references_no_key',
-			],
-			'Empty text in <references>' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => '',
-				'group' => 'g',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_empty_references_define',
-			],
-			'Group never used' => [
-				'referencesStack' => [ 'g2' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => 'not empty',
-				'group' => 'g',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_references_missing_group',
-			],
-			'Ref never used' => [
-				'referencesStack' => [ 'g' => [ 'n' => [] ] ],
-				'inReferencesGroup' => 'g',
-				'isSectionPreview' => false,
-				'text' => 'not empty',
-				'group' => 'g',
-				'name' => 'n2',
-				'extends' => null,
-				'follow' => null,
-				'dir' => null,
-				'expected' => 'cite_error_references_missing_key',
-			],
-			'Good dir' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 'not empty',
-				'group' => '',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => 'RTL',
-				'expected' => true,
-			],
-			'Bad dir' => [
-				'referencesStack' => [],
-				'inReferencesGroup' => null,
-				'isSectionPreview' => false,
-				'text' => 'not empty',
-				'group' => '',
-				'name' => 'n',
-				'extends' => null,
-				'follow' => null,
-				'dir' => 'foobar',
-				'expected' => 'cite_error_ref_invalid_dir',
-			],
-		];
-	}
-
-	/**
-	 * @covers ::validateRef
-	 */
-	public function testValidateRef_noExtends() {
-		global $wgCiteBookReferencing;
-		$wgCiteBookReferencing = false;
-
-		/** @var Cite $cite */
-		$cite = TestingAccessWrapper::newFromObject( $this->newCite() );
-		$status = $cite->validateRef( 'text', '', 'name', 'a', null, null );
-		$this->assertSame( 'cite_error_ref_too_many_keys', $status->getErrors()[0]['message'] );
-	}
 
 	/**
 	 * @covers ::parseArguments
@@ -317,7 +28,7 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 	public function testParseArguments(
 		array $attributes,
 		array $expectedValue,
-		string $expectedError = null
+		?string $expectedError = null
 	) {
 		/** @var Cite $cite */
 		$cite = TestingAccessWrapper::newFromObject( $this->newCite() );
@@ -326,53 +37,86 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 			[ 'dir', 'extends', 'follow', 'group', 'name' ]
 		);
 		$this->assertSame( $expectedValue, array_values( $status->getValue() ) );
-		$this->assertSame( !$expectedError, $status->isGood() );
 		if ( $expectedError ) {
-			$this->assertSame( $expectedError, $status->getErrors()[0]['message'] );
+			$this->assertStatusError( $expectedError, $status );
+		} else {
+			$this->assertStatusGood( $status );
 		}
 	}
 
-	public function provideParseArguments() {
+	public static function provideParseArguments() {
 		// Note: Values are guaranteed to be trimmed by the parser, see
 		// Sanitizer::decodeTagAttributes()
 		return [
-			[ [], [ null, null, null, null, null ] ],
+			[
+				'attributes' => [],
+				'expectedValue' => [ null, null, null, null, null ],
+			],
 
 			// One attribute only
-			[ [ 'dir' => 'invalid' ], [ 'invalid', null, null, null, null ] ],
-			[ [ 'dir' => 'rtl' ], [ 'rtl', null, null, null, null ] ],
-			[ [ 'follow' => 'f' ], [ null, null, 'f', null, null ] ],
-			[ [ 'group' => 'g' ], [ null, null, null, 'g', null ] ],
 			[
-				[ 'invalid' => 'i' ],
-				[ null, null, null, null, null ],
-				'cite_error_ref_too_many_keys'
+				'attributes' => [ 'dir' => 'invalid' ],
+				'expectedValue' => [ 'invalid', null, null, null, null ] ],
+			[
+				'attributes' => [ 'dir' => 'RTL' ],
+				'expectedValue' => [ 'rtl', null, null, null, null ] ],
+			[
+				'attributes' => [ 'follow' => 'f' ],
+				'expectedValue' => [ null, null, 'f', null, null ] ],
+			[
+				'attributes' => [ 'group' => 'g' ],
+				'expectedValue' => [ null, null, null, 'g', null ] ],
+			[
+				'attributes' => [ 'invalid' => 'i' ],
+				'expectedValue' => [ null, null, null, null, null ],
+				'expectedError' => 'cite_error_ref_too_many_keys'
 			],
 			[
-				[ 'invalid' => null ],
-				[ null, null, null, null, null ],
-				'cite_error_ref_too_many_keys'
+				'attributes' => [ 'invalid' => null ],
+				'expectedValue' => [ null, null, null, null, null ],
+				'expectedError' => 'cite_error_ref_too_many_keys'
 			],
-			[ [ 'name' => 'n' ], [ null, null, null, null, 'n' ] ],
-			[ [ 'name' => null ], [ null, null, null, null, null ] ],
-			[ [ 'extends' => 'e' ], [ null, 'e', null, null, null ] ],
+			[
+				'attributes' => [ 'name' => 'n' ],
+				'expectedValue' => [ null, null, null, null, 'n' ]
+			],
+			[
+				'attributes' => [ 'name' => null ],
+				'expectedValue' => [ null, null, null, null, null ]
+			],
+			[
+				'attributes' => [ 'extends' => 'e' ],
+				'expectedValue' => [ null, 'e', null, null, null ]
+			],
 
 			// Pairs
-			[ [ 'follow' => 'f', 'name' => 'n' ], [ null, null, 'f', null, 'n' ] ],
-			[ [ 'follow' => null, 'name' => null ], [ null, null, null, null, null ] ],
-			[ [ 'follow' => 'f', 'extends' => 'e' ], [ null, 'e', 'f', null, null ] ],
-			[ [ 'group' => 'g', 'name' => 'n' ], [ null, null, null, 'g', 'n' ] ],
+			[
+				'attributes' => [ 'follow' => 'f', 'name' => 'n' ],
+				'expectedValue' => [ null, null, 'f', null, 'n' ]
+			],
+			[
+				'attributes' => [ 'follow' => null, 'name' => null ],
+				'expectedValue' => [ null, null, null, null, null ]
+			],
+			[
+				'attributes' => [ 'follow' => 'f', 'extends' => 'e' ],
+				'expectedValue' => [ null, 'e', 'f', null, null ]
+			],
+			[
+				'attributes' => [ 'group' => 'g', 'name' => 'n' ],
+				'expectedValue' => [ null, null, null, 'g', 'n' ]
+			],
 
 			// Combinations of 3 or more attributes
 			[
-				[ 'group' => 'g', 'name' => 'n', 'extends' => 'e', 'dir' => 'rtl' ],
-				[ 'rtl', 'e', null, 'g', 'n' ]
+				'attributes' => [ 'group' => 'g', 'name' => 'n', 'extends' => 'e', 'dir' => 'rtl' ],
+				'expectedValue' => [ 'rtl', 'e', null, 'g', 'n' ]
 			],
 		];
 	}
 
 	/**
-	 * @covers ::guardedReferences
+	 * @covers ::references
 	 * @dataProvider provideGuardedReferences
 	 */
 	public function testGuardedReferences(
@@ -383,23 +127,17 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 		bool $expectedResponsive,
 		string $expectedOutput
 	) {
-		global $wgCiteResponsiveReferences;
-		$wgCiteResponsiveReferences = false;
+		$this->overrideConfigValue( 'CiteResponsiveReferences', false );
 
-		/** @var Parser $parser */
-		$parser = $this->createMock( Parser::class );
+		$parser = $this->createNoOpMock( Parser::class, [ 'recursiveTagParse' ] );
 
 		$cite = $this->newCite();
 		/** @var Cite $spy */
 		$spy = TestingAccessWrapper::newFromObject( $cite );
-		$spy->errorReporter = $this->createMock( ErrorReporter::class );
-		$spy->errorReporter->method( 'halfParsed' )->willReturnCallback(
-			static function ( Parser $parser, ...$args ) {
-				return '(' . implode( '|', $args ) . ')';
-			}
-		);
-		$spy->referencesFormatter = $this->createMock( ReferencesFormatter::class );
-		$spy->referencesFormatter->method( 'formatReferences' )
+		$spy->errorReporter = $this->createPartialMock( ErrorReporter::class, [ 'halfParsed' ] );
+		$spy->errorReporter->method( 'halfParsed' )->willReturnArgument( 1 );
+		$spy->referenceListFormatter = $this->createMock( ReferenceListFormatter::class );
+		$spy->referenceListFormatter->method( 'formatReferences' )
 			->with( $parser, [], $expectedResponsive, false )
 			->willReturn( 'references!' );
 		$spy->isSectionPreview = false;
@@ -411,59 +149,59 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 			->with( $expectedRollbackCount )
 			->willReturn( [ [ 't', [] ] ] );
 
-		$output = $spy->guardedReferences( $parser, $text, $argv );
+		$output = $cite->references( $parser, $text, $argv );
 		$this->assertSame( $expectedOutput, $output );
 	}
 
-	public function provideGuardedReferences() {
+	public static function provideGuardedReferences() {
 		return [
 			'Bare references tag' => [
-				null,
-				[],
-				0,
-				'',
-				false,
-				'references!'
+				'text' => null,
+				'argv' => [],
+				'expectedRollbackCount' => 0,
+				'expectedInReferencesGroup' => '',
+				'expectedResponsive' => false,
+				'expectedOutput' => 'references!'
 			],
 			'References with group' => [
-				null,
-				[ 'group' => 'g' ],
-				0,
-				'g',
-				false,
-				'references!'
+				'text' => null,
+				'argv' => [ 'group' => 'g' ],
+				'expectedRollbackCount' => 0,
+				'expectedInReferencesGroup' => 'g',
+				'expectedResponsive' => false,
+				'expectedOutput' => 'references!'
 			],
 			'Empty references tag' => [
-				'',
-				[],
-				0,
-				'',
-				false,
-				'references!'
+				'text' => '',
+				'argv' => [],
+				'expectedRollbackCount' => 0,
+				'expectedInReferencesGroup' => '',
+				'expectedResponsive' => false,
+				'expectedOutput' => 'references!'
 			],
 			'Set responsive' => [
-				'',
-				[ 'responsive' => '1' ],
-				0,
-				'',
-				true,
-				'references!'
+				'text' => '',
+				'argv' => [ 'responsive' => '1' ],
+				'expectedRollbackCount' => 0,
+				'expectedInReferencesGroup' => '',
+				'expectedResponsive' => true,
+				'expectedOutput' => 'references!'
 			],
 			'Unknown attribute' => [
-				'',
-				[ 'blargh' => '0' ],
-				0,
-				'',
-				false,
-				'(cite_error_references_invalid_parameters)',
+				'text' => '',
+				'argv' => [ 'blargh' => '0' ],
+				'expectedRollbackCount' => 0,
+				'expectedInReferencesGroup' => '',
+				'expectedResponsive' => false,
+				'expectedOutput' => 'cite_error_references_invalid_parameters',
 			],
 			'Contains refs (which are broken)' => [
-				Parser::MARKER_PREFIX . '-ref- and ' . Parser::MARKER_PREFIX . '-notref-',
-				[],
-				1,
-				'',
-				false,
-				'references!' . "\n" . '(cite_error_references_no_key)'
+				'text' => Parser::MARKER_PREFIX . '-ref- and ' . Parser::MARKER_PREFIX . '-notref-',
+				'argv' => [],
+				'expectedRollbackCount' => 1,
+				'expectedInReferencesGroup' => '',
+				'expectedResponsive' => false,
+				'expectedOutput' => "references!\ncite_error_references_no_key"
 			],
 		];
 	}
@@ -478,29 +216,21 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 		?string $inReferencesGroup,
 		array $initialRefs,
 		string $expectOutput,
-		array $expectedErrors,
+		?string $expectedError,
 		array $expectedRefs,
 		bool $isSectionPreview = false
 	) {
-		$mockParser = $this->createMock( Parser::class );
+		$mockParser = $this->createNoOpMock( Parser::class, [ 'getStripState' ] );
 		$mockParser->method( 'getStripState' )
 			->willReturn( $this->createMock( StripState::class ) );
 
-		$mockErrorReporter = $this->createMock( ErrorReporter::class );
-		$mockErrorReporter->method( 'halfParsed' )->willReturnCallback(
-			static function ( $parser, ...$args ) {
-				return '(' . implode( '|', $args ) . ')';
-			}
-		);
-		$mockErrorReporter->method( 'plain' )->willReturnCallback(
-			static function ( $parser, ...$args ) {
-				return '(' . implode( '|', $args ) . ')';
-			}
-		);
+		$errorReporter = $this->createPartialMock( ErrorReporter::class, [ 'halfParsed' ] );
+		$errorReporter->method( 'halfParsed' )->willReturnArgument( 1 );
 
-		/** @var ReferenceStack $referenceStack */
-		$referenceStack = TestingAccessWrapper::newFromObject( new ReferenceStack( $mockErrorReporter ) );
-		$referenceStack->refs = $initialRefs;
+		$referenceStack = new ReferenceStack();
+		/** @var ReferenceStack $stackSpy */
+		$stackSpy = TestingAccessWrapper::newFromObject( $referenceStack );
+		$stackSpy->refs = TestUtils::refGroupsFromArray( $initialRefs );
 
 		$mockFootnoteMarkFormatter = $this->createMock( FootnoteMarkFormatter::class );
 		$mockFootnoteMarkFormatter->method( 'linkRef' )->willReturn( '<foot />' );
@@ -508,32 +238,38 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 		$cite = $this->newCite( $isSectionPreview );
 		/** @var Cite $spy */
 		$spy = TestingAccessWrapper::newFromObject( $cite );
-		$spy->errorReporter = $mockErrorReporter;
+		$spy->errorReporter = $errorReporter;
 		$spy->footnoteMarkFormatter = $mockFootnoteMarkFormatter;
 		$spy->inReferencesGroup = $inReferencesGroup;
 		$spy->referenceStack = $referenceStack;
 
 		$result = $spy->guardedRef( $mockParser, $text, $argv );
 		$this->assertSame( $expectOutput, $result );
-		$this->assertSame( $expectedErrors, $spy->mReferencesErrors );
-		$this->assertSame( $expectedRefs, $referenceStack->refs );
+		if ( $expectedError ) {
+			$this->assertStatusError( $expectedError, $spy->mReferencesErrors );
+		} else {
+			$this->assertStatusGood( $spy->mReferencesErrors );
+		}
+		$expectedRefs = TestUtils::refGroupsFromArray( $expectedRefs );
+		$this->assertEquals( $expectedRefs, $stackSpy->refs );
 	}
 
-	public function provideGuardedRef() {
+	public static function provideGuardedRef() {
 		return [
 			'Whitespace text' => [
-				' ',
-				[ 'name' => 'a' ],
-				null,
-				[],
-				'<foot />',
-				[],
-				[
+				'text' => ' ',
+				'argv' => [ 'name' => 'a' ],
+				'inReferencesGroup' => null,
+				'initialRefs' => [],
+				'expectedOutput' => '<foot />',
+				'expectedError' => null,
+				'expectedRefs' => [
 					'' => [
 						'a' => [
-							'count' => 0,
+							'count' => 1,
 							'dir' => null,
 							'key' => 1,
+							'group' => '',
 							'name' => 'a',
 							'text' => null,
 							'number' => 1,
@@ -542,44 +278,46 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 				]
 			],
 			'Empty in default references' => [
-				'',
-				[],
-				'',
-				[ '' => [] ],
-				'',
-				[ '(cite_error_references_no_key)' ],
-				[ '' => [] ]
+				'text' => '',
+				'argv' => [],
+				'inReferencesGroup' => '',
+				'initialRefs' => [ '' => [] ],
+				'expectedOutput' => '',
+				'expectedError' => 'cite_error_references_no_key',
+				'expectedRefs' => [ '' => [] ]
 			],
 			'Fallback to references group' => [
-				'text',
-				[ 'name' => 'a' ],
-				'foo',
-				[
-					'foo' => [
-						'a' => []
-					]
+				'text' => 'text',
+				'argv' => [ 'name' => 'a' ],
+				'inReferencesGroup' => 'foo',
+				'initialRefs' => [
+					'foo' => [ 'a' => [] ],
 				],
-				'',
-				[],
-				[
+				'expectedOutput' => '',
+				'expectedError' => null,
+				'expectedRefs' => [
 					'foo' => [
-						'a' => [ 'text' => 'text' ],
+						'a' => [
+							'text' => 'text',
+							'count' => 0,
+						],
 					],
 				]
 			],
 			'Successful ref' => [
-				'text',
-				[ 'name' => 'a' ],
-				null,
-				[],
-				'<foot />',
-				[],
-				[
+				'text' => 'text',
+				'argv' => [ 'name' => 'a' ],
+				'inReferencesGroup' => null,
+				'initialRefs' => [],
+				'expectedOutput' => '<foot />',
+				'expectedError' => null,
+				'expectedRefs' => [
 					'' => [
 						'a' => [
-							'count' => 0,
+							'count' => 1,
 							'dir' => null,
 							'key' => 1,
+							'group' => '',
 							'name' => 'a',
 							'text' => 'text',
 							'number' => 1,
@@ -588,31 +326,34 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 				]
 			],
 			'Invalid ref' => [
-				'text',
-				[
+				'text' => 'text',
+				'argv' => [
 					'name' => 'a',
 					'badkey' => 'b',
 				],
-				null,
-				[],
-				'(cite_error_ref_too_many_keys)',
-				[],
-				[]
+				'inReferencesGroup' => null,
+				'initialRefs' => [],
+				'expectedOutput' => 'cite_error_ref_too_many_keys',
+				'expectedError' => null,
+				'expectedRefs' => []
 			],
 			'Successful references ref' => [
-				'text',
-				[ 'name' => 'a' ],
-				'',
-				[
+				'text' => 'text',
+				'argv' => [ 'name' => 'a' ],
+				'inReferencesGroup' => '',
+				'initialRefs' => [
 					'' => [
 						'a' => []
 					]
 				],
-				'',
-				[],
-				[
+				'expectedOutput' => '',
+				'expectedError' => null,
+				'expectedRefs' => [
 					'' => [
-						'a' => [ 'text' => 'text' ],
+						'a' => [
+							'text' => 'text',
+							'count' => 0,
+						],
 					],
 				]
 			],
@@ -622,28 +363,38 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 				'inReferencesGroup' => '',
 				'initialRefs' => [],
 				'expectOutput' => '',
-				'expectedErrors' => [],
+				'expectedError' => null,
 				'expectedRefs' => [
 					'' => [
-						'a' => [ 'text' => 'T245376' ],
+						'a' => [
+							'text' => 'T245376',
+							'count' => 0,
+						],
 					],
 				],
 				'isSectionPreview' => true,
 			],
 			'Mismatched text in references' => [
-				'text-2',
-				[ 'name' => 'a' ],
-				'',
-				[
+				'text' => 'text-2',
+				'argv' => [ 'name' => 'a' ],
+				'inReferencesGroup' => '',
+				'initialRefs' => [
 					'' => [
-						'a' => [ 'text' => 'text-1' ],
+						'a' => [
+							'text' => 'text-1',
+							'count' => 1,
+						],
 					]
 				],
-				'',
-				[],
-				[
+				'expectedOutput' => '',
+				'expectedError' => null,
+				'expectedRefs' => [
 					'' => [
-						'a' => [ 'text' => 'text-1 (cite_error_references_duplicate_key|a)' ],
+						'a' => [
+							'text' => 'text-1',
+							'count' => 1,
+							'warnings' => [ [ 'cite_error_references_duplicate_key', 'a' ] ],
+						],
 					],
 				]
 			],
@@ -653,40 +404,39 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 	/**
 	 * @covers ::guardedRef
 	 */
-	public function testGuardedRef_extendsProperty() {
-		$mockOutput = $this->createMock( ParserOutput::class );
-		// This will be our most important assertion.
-		$mockOutput->expects( $this->once() )
-			->method( 'setPageProperty' )
-			->with( Cite::BOOK_REF_PROPERTY, '' );
+	public function testGuardedRef_extendsUsageTracking() {
+		$this->overrideConfigValue( 'CiteBookReferencing', false );
 
-		$mockParser = $this->createMock( Parser::class );
-		$mockParser->method( 'getOutput' )->willReturn( $mockOutput );
-		$mockParser->method( 'getStripState' )
-			->willReturn( $this->createMock( StripState::class ) );
-		/** @var Parser $mockParser */
+		$mockParser = $this->createNoOpMock( Parser::class, [ 'addTrackingCategory' ] );
+		// This will be our most important assertion.
+		$mockParser->expects( $this->once() )
+			->method( 'addTrackingCategory' )
+			->with( Cite::EXTENDS_TRACKING_CATEGORY );
 
 		$cite = $this->newCite();
 		/** @var Cite $spy */
 		$spy = TestingAccessWrapper::newFromObject( $cite );
 		$spy->errorReporter = $this->createMock( ErrorReporter::class );
 
-		$spy->guardedRef( $mockParser, 'text', [ Cite::BOOK_REF_ATTRIBUTE => 'a' ] );
+		$spy->guardedRef( $mockParser, 'text', [ Cite::SUBREF_ATTRIBUTE => 'a' ] );
 	}
 
 	/**
 	 * @coversNothing
 	 */
 	public function testReferencesSectionPreview() {
+		$language = $this->createNoOpMock( Language::class );
+
 		$parserOptions = $this->createMock( ParserOptions::class );
 		$parserOptions->method( 'getIsSectionPreview' )->willReturn( true );
 
-		$parser = $this->createMock( Parser::class );
+		$parser = $this->createNoOpMock( Parser::class, [ 'getOptions', 'getContentLanguage' ] );
 		$parser->method( 'getOptions' )->willReturn( $parserOptions );
-		$parser->method( 'getContentLanguage' )->willReturn( $this->createMock( Language::class ) );
+		$parser->method( 'getContentLanguage' )->willReturn( $language );
 
+		$config = $this->getServiceContainer()->getMainConfig();
 		/** @var Cite $cite */
-		$cite = TestingAccessWrapper::newFromObject( new Cite( $parser ) );
+		$cite = TestingAccessWrapper::newFromObject( new Cite( $parser, $config ) );
 		// Assume the currently parsed <ref> is wrapped in <references>
 		$cite->inReferencesGroup = '';
 
@@ -706,17 +456,16 @@ class CiteTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	private function newCite( bool $isSectionPreview = false ): Cite {
+		$language = $this->createNoOpMock( Language::class, [ '__debugInfo' ] );
+
 		$mockOptions = $this->createMock( ParserOptions::class );
-		$mockOptions->method( 'getIsPreview' )->willReturn( false );
 		$mockOptions->method( 'getIsSectionPreview' )->willReturn( $isSectionPreview );
-		$mockOptions->method( 'getUserLangObj' )->willReturn(
-			$this->createMock( Language::class ) );
-		$mockParser = $this->createMock( Parser::class );
+
+		$mockParser = $this->createNoOpMock( Parser::class, [ 'getOptions', 'getContentLanguage' ] );
 		$mockParser->method( 'getOptions' )->willReturn( $mockOptions );
-		$mockParser->method( 'getContentLanguage' )->willReturn(
-			$this->createMock( Language::class ) );
-		/** @var Parser $mockParser */
-		return new Cite( $mockParser );
+		$mockParser->method( 'getContentLanguage' )->willReturn( $language );
+		$config = $this->getServiceContainer()->getMainConfig();
+		return new Cite( $mockParser, $config );
 	}
 
 }

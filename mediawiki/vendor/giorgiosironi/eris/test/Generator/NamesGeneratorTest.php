@@ -1,14 +1,22 @@
 <?php
 namespace Eris\Generator;
 
-class NamesGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class NamesGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    public function setUp()
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    public function setUp(): void
     {
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
     
-    public function testItRespectsTheGenerationSize()
+    public function testItRespectsTheGenerationSize(): void
     {
         $generator = NamesGenerator::defaultDataSet();
         for ($i = 5; $i < 50; $i++) {
@@ -20,16 +28,16 @@ class NamesGeneratorTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testGeneratesANameFromAFixedDataset()
+    public function testGeneratesANameFromAFixedDataset(): void
     {
         $generator = NamesGenerator::defaultDataSet();
         for ($i = 0; $i < 50; $i++) {
             $value = $generator($_size = 10, $this->rand);
-            $this->assertInternalType('string', $value->unbox());
+            \Eris\PHPUnitDeprecationHelper::assertIsString($value->unbox());
         }
     }
 
-    public static function namesToShrink()
+    public static function namesToShrink(): array
     {
         return [
             ["Malene", "Maxence"],
@@ -49,7 +57,7 @@ class NamesGeneratorTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider namesToShrink
      */
-    public function testShrinksToTheNameWithTheImmediatelyLowerLengthWhichHasTheMinimumDistance($shrunk, $original)
+    public function testShrinksToTheNameWithTheImmediatelyLowerLengthWhichHasTheMinimumDistance($shrunk, $original): void
     {
         $generator = NamesGenerator::defaultDataSet();
         $this->assertEquals(

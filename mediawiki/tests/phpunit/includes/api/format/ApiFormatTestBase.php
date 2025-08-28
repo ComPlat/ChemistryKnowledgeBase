@@ -1,6 +1,22 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Format;
+
+use BadMethodCallException;
+use Exception;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Request\FauxRequest;
+use MediaWikiIntegrationTestCase;
+
 abstract class ApiFormatTestBase extends MediaWikiIntegrationTestCase {
+
+	protected function setUp(): void {
+		parent::setUp();
+		// These tests cover page rendering end-to-end, and run lots of extension hooks
+		// that don't expect to be executed in tests.
+		$this->clearHooks();
+	}
 
 	/**
 	 * Name of the formatter being tested
@@ -11,7 +27,6 @@ abstract class ApiFormatTestBase extends MediaWikiIntegrationTestCase {
 	/**
 	 * Return general data to be encoded for testing
 	 * @return array See self::testGeneralEncoding
-	 * @throws BadMethodCallException
 	 */
 	public static function provideGeneralEncoding() {
 		throw new BadMethodCallException( static::class . ' must implement ' . __METHOD__ );
@@ -85,7 +100,7 @@ abstract class ApiFormatTestBase extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideGeneralEncoding
 	 * @param array $data Data to be encoded
 	 * @param string|Exception $expect String to expect, or exception expected to be thrown
-	 * @param array $params Query parameters to set in the FauxRequest
+	 * @param array $params Query parameters to set in the MediaWiki\Request\FauxRequest
 	 * @param array $options Options to pass to self::encodeData()
 	 */
 	public function testGeneralEncoding(

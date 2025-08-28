@@ -1,5 +1,45 @@
 Phan NEWS
 
+Dec 26 2023, Phan 5.4.3
+-----------------------
+
+New Features(Analysis):
+- Automatically inherit `@throws` types from parent methods if `enable_phpdoc_types` is true (which it is by default). (#4757)
+
+Miscellaneous:
+- Fix ldap function signatures
+- Fix a couple of array spread crash bugs
+- Extend supported dependency versions of symfony/console to also allow 7.x (#4822)
+- Require php-ast 1.1.1 or newer in PHP 8.3+ if php-ast is installed.
+
+Bug fixes:
+- Fix interfaces can extend BackedEnum and UnitEnum (#4782)
+- Fix ini_set() signature to take any scalar since PHP 8.1 (#4806)
+- Fix RedisCluster setOption/getOption signatures (#4790)
+- Don't emit `PhanTypeMismatchUnpackKeyArraySpread` when `minimum_target_php_version` is `'8.1'` or newer. (#4788)
+- Fix a couple of array spread crash bugs (#4780)
+- Fix crash if match is used inside for-loop (#4767)
+- Fix DateTime::getTimestamp return type (#4731)
+- Avoid deprecation warning for ASSERT constants in php 8.3+ (#4808)
+- Use `ini_set()` instead of `assert_options()` when Phan's assertion options match PHP's assert ini setting defaults to keep those values and avoid deprecation warnings in php 8.3+.
+- Fix crash in AST fallback parser when parsing invalid ArgumentExpression in php 8.0+
+- Fix false positive warnings and skipping internal constants declared by PECLs prefixed with `\x00` (`APCu`, `immutable_cache`)
+
+Mar 03 2023, Phan 5.4.2
+-----------------------
+
+Miscellaneous:
+- Fix wording in EmptyStatementListPlugin issue messages.
+- Add a few more functions where the return value should be used.
+- Fix signature of exif_read_data() #4759
+- Make allow_missing_properties setting aware of AllowDynamicProperties attribute for PHP 8.2
+
+Maintenance:
+- Require php-ast 1.1.0 or newer in PHP 8.2+ if php-ast is installed.
+  This release of php-ast makes the parsing of `AST_ARROW_FUNC` in php 8.2 match older php versions.
+- Support parsing of PHP 8.2 syntax such as disjunctive normal form types and `readonly` classes in the polyfill/fallback parser.
+- Fix bugs parsing `__halt_compiler()` in the polyfill/fallback parser.
+
 Aug 25 2022, Phan 5.4.1
 -----------------------
 
@@ -13,6 +53,11 @@ New Features(Analysis):
 
 Miscellaneous:
 - Allow `array_filter` `$callback` to be null (#4715)
+
+Bug fixes:
+- Fix false positive warning in PHP < 8.0 for inferring the method signature of `new SoapFault`. (#4724)
+  (The constructor was internally declared in reflection as `SoapFault::SoapFault` until php 8.0)
+  Adjust the method signature of `SoapFault::__construct` to match the documentation/implementation.
 
 Aug 08 2022, Phan 5.4.0
 -----------------------

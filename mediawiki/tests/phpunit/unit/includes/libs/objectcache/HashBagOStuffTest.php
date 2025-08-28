@@ -1,16 +1,30 @@
 <?php
 
+namespace Wikimedia\Tests\ObjectCache;
+
+use InvalidArgumentException;
+use MediaWikiCoversValidator;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
+use UDPTransport;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\Stats\Metrics\MetricInterface;
+use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\OutputFormats;
+use Wikimedia\Stats\StatsCache;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\TestingAccessWrapper;
 
 /**
+ * @covers \Wikimedia\ObjectCache\HashBagOStuff
+ * @covers \Wikimedia\ObjectCache\MediumSpecificBagOStuff
+ * @covers \Wikimedia\ObjectCache\BagOStuff
  * @group BagOStuff
  */
-class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
+class HashBagOStuffTest extends TestCase {
 	use MediaWikiCoversValidator;
 
-	/**
-	 * @covers HashBagOStuff::__construct
-	 */
 	public function testConstruct() {
 		$this->assertInstanceOf(
 			HashBagOStuff::class,
@@ -18,9 +32,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 		);
 	}
 
-	/**
-	 * @covers HashBagOStuff::__construct
-	 */
 	public function testQoS() {
 		$bag = new HashBagOStuff();
 
@@ -30,33 +41,21 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 		);
 	}
 
-	/**
-	 * @covers HashBagOStuff::__construct
-	 */
 	public function testConstructBadZero() {
 		$this->expectException( InvalidArgumentException::class );
 		$cache = new HashBagOStuff( [ 'maxKeys' => 0 ] );
 	}
 
-	/**
-	 * @covers HashBagOStuff::__construct
-	 */
 	public function testConstructBadNeg() {
 		$this->expectException( InvalidArgumentException::class );
 		$cache = new HashBagOStuff( [ 'maxKeys' => -1 ] );
 	}
 
-	/**
-	 * @covers HashBagOStuff::__construct
-	 */
 	public function testConstructBadType() {
 		$this->expectException( InvalidArgumentException::class );
 		$cache = new HashBagOStuff( [ 'maxKeys' => 'x' ] );
 	}
 
-	/**
-	 * @covers HashBagOStuff::delete
-	 */
 	public function testDelete() {
 		$cache = new HashBagOStuff();
 		for ( $i = 0; $i < 10; $i++ ) {
@@ -67,9 +66,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 		}
 	}
 
-	/**
-	 * @covers HashBagOStuff::clear
-	 */
 	public function testClear() {
 		$cache = new HashBagOStuff();
 		for ( $i = 0; $i < 10; $i++ ) {
@@ -82,10 +78,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 		}
 	}
 
-	/**
-	 * @covers HashBagOStuff::doGet
-	 * @covers HashBagOStuff::expire
-	 */
 	public function testExpire() {
 		$cache = new HashBagOStuff();
 		$cacheInternal = TestingAccessWrapper::newFromObject( $cache );
@@ -114,8 +106,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 
 	/**
 	 * Ensure maxKeys eviction prefers keeping new keys.
-	 *
-	 * @covers HashBagOStuff::set
 	 */
 	public function testEvictionAdd() {
 		$cache = new HashBagOStuff( [ 'maxKeys' => 10 ] );
@@ -133,8 +123,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 	/**
 	 * Ensure maxKeys eviction prefers recently set keys
 	 * even if the keys pre-exist.
-	 *
-	 * @covers HashBagOStuff::set
 	 */
 	public function testEvictionSet() {
 		$cache = new HashBagOStuff( [ 'maxKeys' => 3 ] );
@@ -158,9 +146,6 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 
 	/**
 	 * Ensure maxKeys eviction prefers recently retrieved keys (LRU).
-	 *
-	 * @covers HashBagOStuff::doGet
-	 * @covers HashBagOStuff::hasKey
 	 */
 	public function testEvictionGet() {
 		$cache = new HashBagOStuff( [ 'maxKeys' => 3 ] );
@@ -180,5 +165,59 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 			$this->assertSame( 1, $cache->get( $key ), "Kept $key" );
 		}
 		$this->assertFalse( $cache->get( 'bar' ), 'Evicted bar' );
+	}
+
+	/**
+	 * Ensure updateOpStats doesn't get confused.
+	 */
+	public function testUpdateOpStats() {
+		$statsCache = new StatsCache();
+		$emitter = OutputFormats::getNewEmitter(
+			'mediawiki',
+			$statsCache,
+			OutputFormats::getNewFormatter( OutputFormats::DOGSTATSD )
+		);
+
+		$transport = $this->createMock( UDPTransport::class );
+		$transport->expects( $this->once() )->method( "emit" )
+			->with(
+				"mediawiki.bagostuff_call_total:1|c|#keygroup:Foo,operation:frob
+mediawiki.bagostuff_call_total:1|c|#keygroup:Bar,operation:frob
+mediawiki.bagostuff_call_total:1|c|#keygroup:UNKNOWN,operation:frob
+mediawiki.bagostuff_bytes_sent_total:5|c|#keygroup:Bar,operation:frob
+mediawiki.bagostuff_bytes_sent_total:5|c|#keygroup:UNKNOWN,operation:frob
+mediawiki.bagostuff_bytes_read_total:3|c|#keygroup:Bar,operation:frob
+mediawiki.bagostuff_bytes_read_total:3|c|#keygroup:UNKNOWN,operation:frob
+mediawiki.stats_buffered_total:7|c\n"
+			);
+		$emitter = $emitter->withTransport( $transport );
+		$stats = new StatsFactory( $statsCache, $emitter, new NullLogger );
+
+		$stats->withStatsdDataFactory( new NullStatsdDataFactory() );
+		$cache = new HashBagOStuff( [
+			'stats' => $stats
+		] );
+
+		$cache = TestingAccessWrapper::newFromObject( $cache );
+		$cache->updateOpStats(
+			'frob',
+			[
+				// The value is the key
+				$cache->makeKey( 'Foo', '123456' ),
+
+				// The value is a tuble of ( bytes sent, bytes received )
+				$cache->makeGlobalKey( 'Bar', '123456' ) => [ 5, 3 ],
+
+				// The key is not a proper key
+				'1337BABE-123456' => [ 5, 3 ],
+			]
+		);
+
+		/** @var MetricInterface[] $metrics */
+		$metrics = ( TestingAccessWrapper::newFromObject( $stats ) )->cache->getAllMetrics();
+		$this->assertCount( 3, $metrics );
+
+		// send metrics
+		$stats->flush();
 	}
 }

@@ -4,14 +4,14 @@ namespace SMW\Exporter\ResourceBuilders;
 
 use SMW\DataValueFactory;
 use SMW\DIProperty;
+use SMW\Exporter\Element\ExpLiteral;
 use SMWDataItem as DataItem;
 use SMWExpData as ExpData;
-use SMWExpLiteral as ExpLiteral;
 
 /**
  * @private
  *
- * @license GNU GPL v2+
+ * @license GPL-2.0-or-later
  * @since 2.5
  *
  * @author mwjames
@@ -33,9 +33,9 @@ class PropertyDescriptionValueResourceBuilder extends PropertyValueResourceBuild
 	 * {@inheritDoc}
 	 */
 	public function addResourceValue( ExpData $expData, DIProperty $property, DataItem $dataItem ) {
-
 		parent::addResourceValue( $expData, $property, $dataItem );
 
+		/** @var \SMW\DataValues\MonolingualTextValue $dataValue */
 		$dataValue = DataValueFactory::getInstance()->newDataValueByItem(
 			$dataItem,
 			$property
@@ -59,7 +59,7 @@ class PropertyDescriptionValueResourceBuilder extends PropertyValueResourceBuild
 		// According to https://www.w3.org/TR/2009/NOTE-skos-primer-20090818/#secdocumentation
 
 		$expData->addPropertyObjectValue(
-			$this->exporter->getSpecialNsResource( 'skos', 'scopeNote' ),
+			$this->exporter->newExpNsResourceById( 'skos', 'scopeNote' ),
 			new ExpLiteral(
 				(string)$list['_TEXT'],
 				'http://www.w3.org/2001/XMLSchema#string',

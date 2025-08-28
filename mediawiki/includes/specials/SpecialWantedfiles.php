@@ -1,7 +1,5 @@
 <?php
 /**
- * Implements Special:Wantedfiles
- *
  * Copyright © 2008 Soxred93
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,43 +18,41 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
+ */
+
+namespace MediaWiki\Specials;
+
+use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\PageReferenceValue;
+use MediaWiki\SpecialPage\WantedQueryPage;
+use MediaWiki\Title\Title;
+use RepoGroup;
+use Wikimedia\Rdbms\IConnectionProvider;
+
+/**
+ * List of the most linked non-existent files.
+ *
  * @ingroup SpecialPage
  * @author Soxred93 <soxred93@gmail.com>
  */
+class SpecialWantedFiles extends WantedQueryPage {
 
-use MediaWiki\Cache\LinkBatchFactory;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Page\PageReferenceValue;
-use Wikimedia\Rdbms\ILoadBalancer;
-
-/**
- * Querypage that lists the most wanted files
- *
- * @ingroup SpecialPage
- */
-class WantedFilesPage extends WantedQueryPage {
-
-	/** @var RepoGroup */
-	private $repoGroup;
+	private RepoGroup $repoGroup;
 
 	/**
-	 * @param RepoGroup|string $repoGroup
-	 * @param ILoadBalancer|null $loadBalancer
-	 * @param LinkBatchFactory|null $linkBatchFactory
+	 * @param RepoGroup $repoGroup
+	 * @param IConnectionProvider $dbProvider
+	 * @param LinkBatchFactory $linkBatchFactory
 	 */
 	public function __construct(
-		$repoGroup,
-		ILoadBalancer $loadBalancer = null,
-		LinkBatchFactory $linkBatchFactory = null
+		RepoGroup $repoGroup,
+		IConnectionProvider $dbProvider,
+		LinkBatchFactory $linkBatchFactory
 	) {
-		parent::__construct( is_string( $repoGroup ) ? $repoGroup : 'Wantedfiles' );
-		// This class is extended and therefor fallback to global state - T265301
-		$services = MediaWikiServices::getInstance();
-		$this->repoGroup = $repoGroup instanceof RepoGroup
-			? $repoGroup
-			: $services->getRepoGroup();
-		$this->setDBLoadBalancer( $loadBalancer ?? $services->getDBLoadBalancer() );
-		$this->setLinkBatchFactory( $linkBatchFactory ?? $services->getLinkBatchFactory() );
+		parent::__construct( 'Wantedfiles' );
+		$this->repoGroup = $repoGroup;
+		$this->setDatabaseProvider( $dbProvider );
+		$this->setLinkBatchFactory( $linkBatchFactory );
 	}
 
 	protected function getPageHeader() {
@@ -175,3 +171,9 @@ class WantedFilesPage extends WantedQueryPage {
 		return 'maintenance';
 	}
 }
+
+/**
+ * Retain the old class name for backwards compatibility.
+ * @deprecated since 1.40
+ */
+class_alias( SpecialWantedFiles::class, 'WantedFilesPage' );

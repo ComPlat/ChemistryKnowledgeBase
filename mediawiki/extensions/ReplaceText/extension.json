@@ -1,6 +1,6 @@
 {
 	"name": "Replace Text",
-	"version": "1.7",
+	"version": "1.8",
 	"author": [
 		"Yaron Koren",
 		"Niklas Laxström",
@@ -10,7 +10,7 @@
 	"descriptionmsg": "replacetext-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"type": "specialpage",
 	"GroupPermissions": {
@@ -22,10 +22,38 @@
 		"replacetext"
 	],
 	"SpecialPages": {
-		"ReplaceText": "MediaWiki\\Extension\\ReplaceText\\SpecialReplaceText"
+		"ReplaceText": {
+			"class": "MediaWiki\\Extension\\ReplaceText\\SpecialReplaceText",
+			"services": [
+				"HookContainer",
+				"DBLoadBalancerFactory",
+				"ContentLanguage",
+				"JobQueueGroup",
+				"LinkRenderer",
+				"MovePageFactory",
+				"NamespaceInfo",
+				"PermissionManager",
+				"ReadOnlyMode",
+				"SearchEngineConfig",
+				"SlotRoleStore",
+				"UserFactory",
+				"UserOptionsLookup",
+				"WatchlistManager",
+				"WikiPageFactory"
+			]
+		}
 	},
 	"JobClasses": {
-		"replaceText": "MediaWiki\\Extension\\ReplaceText\\Job"
+		"replaceText": {
+			"class": "MediaWiki\\Extension\\ReplaceText\\Job",
+			"services": [
+				"MovePageFactory",
+				"PermissionManager",
+				"UserFactory",
+				"WatchlistManager",
+				"WikiPageFactory"
+			]
+		}
 	},
 	"MessagesDirs": {
 		"ReplaceText": [
@@ -55,15 +83,21 @@
 		"MediaWiki\\Extension\\ReplaceText\\": "src/"
 	},
 	"Hooks": {
-		"AdminLinks": [
-			"MediaWiki\\Extension\\ReplaceText\\Hooks::addToAdminLinks"
-		],
-		"SpecialMovepageAfterMove": [
-			"MediaWiki\\Extension\\ReplaceText\\Hooks::replaceTextReminder"
-		],
-		"UserGetReservedNames": [
-			"MediaWiki\\Extension\\ReplaceText\\Hooks::getReservedNames"
-		]
+		"AdminLinks": "adminlinks",
+		"SpecialMovepageAfterMove": "main",
+		"UserGetReservedNames": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\ReplaceText\\Hooks",
+			"services": [
+				"MainConfig",
+				"SpecialPageFactory"
+			]
+		},
+		"adminlinks": {
+			"class": "MediaWiki\\Extension\\ReplaceText\\AdminLinksHooks"
+		}
 	},
 	"config": {
 		"ReplaceTextResultsLimit": 250,

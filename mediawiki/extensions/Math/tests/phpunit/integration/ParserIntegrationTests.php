@@ -7,8 +7,8 @@ use MediaWiki\Extension\Math\MathConfig;
 use MediaWiki\Extension\Math\MathRenderer;
 use MediaWiki\Extension\Math\Render\RendererFactory;
 use MediaWiki\Page\PageReferenceValue;
+use MediaWiki\Parser\ParserOptions;
 use MediaWikiIntegrationTestCase;
-use ParserOptions;
 use Psr\Log\NullLogger;
 
 /**
@@ -19,7 +19,7 @@ use Psr\Log\NullLogger;
 class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 
 	private function setupDummyRendering() {
-		$this->setMwGlobals( 'wgMathValidModes', [ MathConfig::MODE_SOURCE, MathConfig::MODE_LATEXML ] );
+		$this->overrideConfigValue( 'MathValidModes', [ MathConfig::MODE_SOURCE, MathConfig::MODE_LATEXML ] );
 		$this->mergeMwGlobalArrayValue( 'wgDefaultUserOptions', [ 'math' => MathConfig::MODE_SOURCE ] );
 		$this->setService( 'Math.RendererFactory', new class(
 			new ServiceOptions( RendererFactory::CONSTRUCTOR_OPTIONS, [
@@ -49,7 +49,7 @@ class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 						return true;
 					}
 
-					public function getHtmlOutput() {
+					public function getHtmlOutput( bool $svg = true ): string {
 						return "<render>$this->mode:$this->tex</render>";
 					}
 
@@ -77,8 +77,8 @@ class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 		$this->setupDummyRendering();
 
 		$page = $this->getExistingTestPage( __METHOD__ );
-		$this->assertTrue(
-			$this->editPage( $page, '<math>TEST_FORMULA</math>' )->isGood(),
+		$this->assertStatusGood(
+			$this->editPage( $page, '<math>TEST_FORMULA</math>' ),
 			'Sanity: edited page'
 		);
 
@@ -92,14 +92,14 @@ class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 		$this->assertNotNull( $render );
 		$this->assertStringContainsString( "<render>source:TEST_FORMULA</render>", $render->getText() );
 
-		// Now render with 'png' and make sure we didn't get the cached output
+		// Now render with 'mathml' and make sure we didn't get the cached output
 		$parserOptions2 = ParserOptions::newCanonical( 'canonical' );
 		$parserOptions2->setOption( 'math', MathConfig::MODE_MATHML );
 		$this->assertNull( $parserOutputAccess->getCachedParserOutput( $page, $parserOptions2 ) );
 		$renderStatus = $parserOutputAccess->getParserOutput( $page, $parserOptions2 );
-		$this->assertTrue( $renderStatus->isGood() );
+		$this->assertStatusGood( $renderStatus );
 		$this->assertStringContainsString(
-			"<render>png:TEST_FORMULA</render>",
+			"<render>mathml:TEST_FORMULA</render>",
 			$renderStatus->getValue()->getText()
 		);
 
@@ -111,11 +111,11 @@ class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 			$cachedWithDummy1->getText()
 		);
 
-		// Fetch from cache with png
+		// Fetch from cache with mathml
 		$cachedWithDummy2 = $parserOutputAccess->getCachedParserOutput( $page, $parserOptions2 );
 		$this->assertNotNull( $cachedWithDummy2 );
 		$this->assertStringContainsString(
-			"<render>png:TEST_FORMULA</render>",
+			"<render>mathml:TEST_FORMULA</render>",
 			$cachedWithDummy2->getText()
 		);
 	}
@@ -132,6 +132,6 @@ class ParserIntegrationTests extends MediaWikiIntegrationTestCase {
 				$po
 			)
 			->getText();
-		$this->assertStringMatchesFormat( '%A<a%S><render>png:formula</render></a>%A', $res );
+		$this->assertStringMatchesFormat( '%A<a%S><render>mathml:formula</render></a>%A', $res );
 	}
 }

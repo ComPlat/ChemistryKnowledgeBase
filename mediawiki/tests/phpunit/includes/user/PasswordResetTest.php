@@ -6,19 +6,24 @@ use MediaWiki\Block\CompositeBlock;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\SystemBlock;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\Status\Status;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
-use MediaWiki\User\StaticUserOptionsLookup;
+use MediaWiki\User\Options\StaticUserOptionsLookup;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\PasswordReset;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserNameUtils;
-use MediaWiki\User\UserOptionsLookup;
 use Psr\Log\NullLogger;
-use Wikimedia\Rdbms\ILoadBalancer;
 
 /**
  * TODO make this a unit test, all dependencies are injected, but DatabaseBlock::__construct()
  * can't be used in unit tests.
  *
- * @covers PasswordReset
+ * @covers \MediaWiki\User\PasswordReset
  * @group Database
  */
 class PasswordResetTest extends MediaWikiIntegrationTestCase {
@@ -31,9 +36,9 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideIsAllowed
 	 */
 	public function testIsAllowed( $passwordResetRoutes, $enableEmail,
-		$allowsAuthenticationDataChange, $canEditPrivate, $block, $globalBlock, $isAllowed
+		$allowsAuthenticationDataChange, $canEditPrivate, $block, $isAllowed
 	) {
-		$config = $this->makeConfig( $enableEmail, $passwordResetRoutes, false );
+		$config = $this->makeConfig( $enableEmail, $passwordResetRoutes );
 
 		$authManager = $this->createMock( AuthManager::class );
 		$authManager->method( 'allowsAuthenticationDataChange' )
@@ -42,7 +47,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 		$user = $this->createMock( User::class );
 		$user->method( 'getName' )->willReturn( 'Foo' );
 		$user->method( 'getBlock' )->willReturn( $block );
-		$user->method( 'getGlobalBlock' )->willReturn( $globalBlock );
 		$user->method( 'isAllowed' )->with( 'editmyprivateinfo' )->willReturn( $canEditPrivate );
 
 		$passwordReset = new PasswordReset(
@@ -50,7 +54,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			new NullLogger(),
 			$authManager,
 			$this->createHookContainer(),
-			$this->createNoOpMock( ILoadBalancer::class ),
+			$this->createNoOpMock( UserIdentityLookup::class ),
 			$this->createNoOpMock( UserFactory::class ),
 			$this->createNoOpMock( UserNameUtils::class ),
 			$this->createNoOpMock( UserOptionsLookup::class )
@@ -59,7 +63,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $isAllowed, $passwordReset->isAllowed( $user )->isGood() );
 	}
 
-	public function provideIsAllowed() {
+	public static function provideIsAllowed() {
 		return [
 			'no routes' => [
 				'passwordResetRoutes' => [],
@@ -67,7 +71,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => null,
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'email disabled' => [
@@ -76,7 +79,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => null,
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'auth data change disabled' => [
@@ -85,7 +87,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => false,
 				'canEditPrivate' => true,
 				'block' => null,
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'cannot edit private data' => [
@@ -94,7 +95,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => false,
 				'block' => null,
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'blocked with account creation disabled' => [
@@ -103,7 +103,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => new DatabaseBlock( [ 'createAccount' => true ] ),
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'blocked w/o account creation disabled' => [
@@ -112,7 +111,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => new DatabaseBlock( [] ),
-				'globalBlock' => null,
 				'isAllowed' => true,
 			],
 			'using blocked proxy' => [
@@ -123,7 +121,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'block' => new SystemBlock(
 					[ 'systemBlock' => 'proxy' ]
 				),
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'globally blocked with account creation not disabled' => [
@@ -132,9 +129,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => null,
-				'globalBlock' => new SystemBlock(
-					[ 'systemBlock' => 'global-block' ]
-				),
 				'isAllowed' => true,
 			],
 			'blocked via wgSoftBlockRanges' => [
@@ -145,7 +139,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'block' => new SystemBlock(
 					[ 'systemBlock' => 'wgSoftBlockRanges', 'anonOnly' => true ]
 				),
-				'globalBlock' => null,
 				'isAllowed' => true,
 			],
 			'blocked with an unknown system block type' => [
@@ -154,7 +147,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => new SystemBlock( [ 'systemBlock' => 'unknown' ] ),
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'blocked with multiple blocks, all allowing password reset' => [
@@ -168,7 +160,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 						new DatabaseBlock( [] ),
 					]
 				] ),
-				'globalBlock' => null,
 				'isAllowed' => true,
 			],
 			'blocked with multiple blocks, not all allowing password reset' => [
@@ -182,7 +173,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 						new SystemBlock( [ 'systemBlock' => 'proxy' ] ),
 					]
 				] ),
-				'globalBlock' => null,
 				'isAllowed' => false,
 			],
 			'all OK' => [
@@ -191,7 +181,6 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'allowsAuthenticationDataChange' => true,
 				'canEditPrivate' => true,
 				'block' => null,
-				'globalBlock' => null,
 				'isAllowed' => true,
 			],
 		];
@@ -223,7 +212,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 	 * @param string|null $username
 	 * @param string|null $email
 	 * @param User[] $usersWithEmail
-	 * @covers SendPasswordResetEmailUpdate
+	 * @covers \MediaWiki\Deferred\SendPasswordResetEmailUpdate
 	 */
 	public function testExecute(
 		$expectedError,
@@ -251,6 +240,10 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				}
 			);
 
+		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
+		$userFactory->method( 'newFromUserIdentity' )
+			->willReturnArgument( 0 );
+
 		$lookupUser = static function ( $username ) use ( $users ) {
 			return $users[ $username ] ?? false;
 		};
@@ -262,7 +255,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				new NullLogger(),
 				$authManager,
 				$this->createHookContainer(),
-				$this->createNoOpMock( ILoadBalancer::class ),
+				$userIdentityLookup,
 				$userFactory,
 				$this->getDummyUserNameUtils(),
 				$userOptionsLookup
@@ -275,12 +268,19 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 
 		/** @var PasswordReset $passwordReset */
 		$status = $passwordReset->execute( $performingUser, $username, $email );
-		$this->assertStatus( $status, $expectedError );
+
+		if ( is_string( $expectedError ) ) {
+			$this->assertStatusError( $expectedError, $status );
+		} elseif ( $expectedError ) {
+			$this->assertStatusNotOk( $status );
+		} else {
+			$this->assertStatusGood( $status );
+		}
 	}
 
 	public function provideExecute() {
-		$defaultConfig = $this->makeConfig( true, [ 'username' => true, 'email' => true ], false );
-		$emailRequiredConfig = $this->makeConfig( true, [ 'username' => true, 'email' => true ], true );
+		// 'User1' has the 'requireemail' preference set (see testExecute()). Other users do not.
+		$defaultConfig = $this->makeConfig( true, [ 'username' => true, 'email' => true ] );
 		$performingUser = $this->makePerformingUser( self::VALID_IP, false );
 		$throttledUser = $this->makePerformingUser( self::VALID_IP, true );
 
@@ -296,15 +296,15 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Throttled, email required for resets, is invalid, pretend everything is ok' => [
 				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+				'config' => $defaultConfig,
 				'performingUser' => $throttledUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
 				'email' => '[invalid email]',
 				'usersWithEmail' => [],
 			],
-			'Invalid email, pretend everything is OK' => [
-				'expectedError' => false,
+			'Invalid email' => [
+				'expectedError' => 'passwordreset-invalidemail',
 				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
@@ -323,7 +323,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Email route not enabled' => [
 				'expectedError' => 'passwordreset-nodata',
-				'config' => $this->makeConfig( true, [ 'username' => true ], false ),
+				'config' => $this->makeConfig( true, [ 'username' => true ] ),
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => '',
@@ -332,7 +332,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Username route not enabled' => [
 				'expectedError' => 'passwordreset-nodata',
-				'config' => $this->makeConfig( true, [ 'email' => true ], false ),
+				'config' => $this->makeConfig( true, [ 'email' => true ] ),
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
@@ -341,7 +341,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'No routes enabled' => [
 				'expectedError' => 'passwordreset-nodata',
-				'config' => $this->makeConfig( true, [], false ),
+				'config' => $this->makeConfig( true, [] ),
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
@@ -350,16 +350,16 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Email required for resets but is empty, pretend everything is OK' => [
 				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
 				'email' => '',
 				'usersWithEmail' => [],
 			],
-			'Email required for resets but is invalid, pretend everything is OK' => [
-				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+			'Email required for resets but is invalid' => [
+				'expectedError' => 'passwordreset-invalidemail',
+				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
@@ -413,7 +413,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Email required for resets, no match' => [
 				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
@@ -423,7 +423,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			"Couldn't determine the performing user's IP" => [
 				'expectedError' => 'badipaddress',
 				'config' => $defaultConfig,
-				'performingUser' => $this->makePerformingUser( null, false ),
+				'performingUser' => $this->makePerformingUser( '', false ),
 				'authManager' => $this->makeAuthManager(),
 				'username' => 'User1',
 				'email' => '',
@@ -433,8 +433,8 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'expectedError' => 'passwordreset-ignored',
 				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
-				'authManager' => $this->makeAuthManager( [ 'User1' ], 0, [ 'User1' ] ),
-				'username' => 'User1',
+				'authManager' => $this->makeAuthManager( [ 'User2' ], 0, [ 'User2' ] ),
+				'username' => 'User2',
 				'email' => '',
 				'usersWithEmail' => [],
 			],
@@ -452,7 +452,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager(),
-				'username' => 'User1',
+				'username' => 'User2',
 				'email' => '',
 				'usersWithEmail' => [],
 			],
@@ -479,23 +479,23 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 				'expectedError' => false,
 				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
-				'authManager' => $this->makeAuthManager( [ 'User1' ], 1 ),
+				'authManager' => $this->makeAuthManager( [ 'User2' ], 1 ),
 				'username' => '',
 				'email' => self::VALID_EMAIL,
-				'usersWithEmail' => [ 'User1' ],
+				'usersWithEmail' => [ 'User2' ],
 			],
 			'Reset multiple users via email' => [
 				'expectedError' => false,
 				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
-				'authManager' => $this->makeAuthManager( [ 'User1', 'User2' ], 2 ),
+				'authManager' => $this->makeAuthManager( [ 'User2', 'User3' ], 2 ),
 				'username' => '',
 				'email' => self::VALID_EMAIL,
-				'usersWithEmail' => [ 'User1', 'User2' ],
+				'usersWithEmail' => [ 'User2', 'User3' ],
 			],
-			"Email is required for resets, user didn't opt in" => [
+			"Email is not required for resets, this user didn't opt in" => [
 				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager( [ 'User2' ], 1 ),
 				'username' => 'User2',
@@ -504,7 +504,7 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 			],
 			'Reset three users via email that did not opt in, multiple users with same email' => [
 				'expectedError' => false,
-				'config' => $emailRequiredConfig,
+				'config' => $defaultConfig,
 				'performingUser' => $performingUser,
 				'authManager' => $this->makeAuthManager( [ 'User2', 'User3', 'User4' ], 3, [ 'User1' ] ),
 				'username' => '',
@@ -514,41 +514,21 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	private function assertStatus( StatusValue $status, $error = false ) {
-		if ( $error === false ) {
-			$this->assertTrue(
-				$status->isGood(),
-				'Expected status to be good, result was: ' . $status->__toString()
-			);
-		} else {
-			$this->assertStatusNotGood( $status, 'Expected status to not be good' );
-			if ( is_string( $error ) ) {
-				$this->assertNotEmpty( $status->getErrors() );
-				$message = $status->getErrors()[0]['message'];
-				if ( $message instanceof MessageSpecifier ) {
-					$message = $message->getKey();
-				}
-				$this->assertSame( $error, $message );
-			}
-		}
-	}
-
-	private function makeConfig( $enableEmail, array $passwordResetRoutes, $emailForResets ) {
+	private function makeConfig( $enableEmail, array $passwordResetRoutes ) {
 		$hash = [
-			'AllowRequiringEmailForResets' => $emailForResets,
-			'EnableEmail' => $enableEmail,
-			'PasswordResetRoutes' => $passwordResetRoutes,
+			MainConfigNames::EnableEmail => $enableEmail,
+			MainConfigNames::PasswordResetRoutes => $passwordResetRoutes,
 		];
 
 		return new ServiceOptions( PasswordReset::CONSTRUCTOR_OPTIONS, $hash );
 	}
 
 	/**
-	 * @param string|null $ip
+	 * @param string $ip
 	 * @param bool $pingLimited
 	 * @return User
 	 */
-	private function makePerformingUser( $ip, $pingLimited ): User {
+	private function makePerformingUser( string $ip, $pingLimited ): User {
 		$request = $this->createMock( WebRequest::class );
 		$request->method( 'getIP' )
 			->willReturn( $ip );
@@ -639,12 +619,19 @@ class PasswordResetTest extends MediaWikiIntegrationTestCase {
 		$badUser->method( 'isRegistered' )->willReturn( true );
 		$badUser->method( 'getEmail' )->willReturn( '' );
 
+		$nonexistUser = $this->createMock( User::class );
+		$nonexistUser->method( 'getName' )->willReturn( 'Nonexistent user' );
+		$nonexistUser->method( 'getId' )->willReturn( 0 );
+		$nonexistUser->method( 'isRegistered' )->willReturn( false );
+		$nonexistUser->method( 'getEmail' )->willReturn( '' );
+
 		return [
 			'User1' => $user1,
 			'User2' => $user2,
 			'User3' => $user3,
 			'User4' => $user4,
 			'BadUser' => $badUser,
+			'Nonexistent user' => $nonexistUser,
 		];
 	}
 }

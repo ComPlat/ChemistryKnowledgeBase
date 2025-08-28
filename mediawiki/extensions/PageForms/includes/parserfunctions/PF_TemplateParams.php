@@ -33,19 +33,14 @@ class PFTemplateParams {
 
 		$fieldData = [];
 		foreach ( $params as $param ) {
-			list( $fieldName, $fieldParams ) = self::parseWikitextString( $param );
+			[ $fieldName, $fieldParams ] = self::parseWikitextString( $param );
 			if ( $fieldName !== '' ) {
 				$fieldData[$fieldName] = $fieldParams;
 			}
 		}
 
 		$parserOutput = $parser->getOutput();
-		if ( method_exists( $parserOutput, 'setPageProperty' ) ) {
-			// MW 1.38+
-			$parserOutput->setPageProperty( 'PageFormsTemplateParams', serialize( $fieldData ) );
-		} else {
-			$parserOutput->setProperty( 'PageFormsTemplateParams', serialize( $fieldData ) );
-		}
+		$parserOutput->setPageProperty( 'PageFormsTemplateParams', serialize( $fieldData ) );
 
 		$text = wfMessage( "pf_template_docu", $title->getText() )->escaped();
 		$text .= "<pre>\n{{" . $title->getText() . "\n";

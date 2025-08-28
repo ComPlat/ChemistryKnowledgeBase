@@ -11,7 +11,7 @@ use MediaWiki\User\UserIdentityValue;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers MediaWiki\Block\BlockUtils
+ * @covers \MediaWiki\Block\BlockUtils
  * @group Blocking
  * @author DannyS712
  */
@@ -26,7 +26,7 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 	 */
 	private function getUtils(
 		array $options = [],
-		UserIdentityLookup $userIdentityLookup = null
+		?UserIdentityLookup $userIdentityLookup = null
 	) {
 		$baseOptions = [
 			MainConfigNames::BlockCIDRLimit => [
@@ -34,23 +34,16 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 				'IPv6' => 19
 			]
 		];
-		$config = $options + $baseOptions;
 		$serviceOptions = new ServiceOptions(
 			BlockUtils::CONSTRUCTOR_OPTIONS,
-			$config
+			$options + $baseOptions
 		);
 
-		if ( $userIdentityLookup === null ) {
-			$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
-		}
-
-		$utils = new BlockUtils(
+		return TestingAccessWrapper::newFromObject( new BlockUtils(
 			$serviceOptions,
-			$userIdentityLookup,
+			$userIdentityLookup ?? $this->createMock( UserIdentityLookup::class ),
 			$this->getDummyUserNameUtils()
-		);
-		$wrapper = TestingAccessWrapper::newFromObject( $utils );
-		return $wrapper;
+		) );
 	}
 
 	/**
@@ -70,7 +63,7 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideTestParseBlockTargetUserIdentity() {
+	public static function provideTestParseBlockTargetUserIdentity() {
 		return [
 			'Valid IP #1' => [ '1.2.3.4', AbstractBlock::TYPE_IP ],
 			'Invalid IP #1' => [ 'DannyS712', AbstractBlock::TYPE_USER ],
@@ -93,9 +86,9 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 		$userIdentity = UserIdentityValue::newAnonymous( $ip );
 
 		$blockUtils = $this->getUtils();
-		list( $target, $type ) = $blockUtils->parseBlockTarget( $ip );
+		[ $target, $type ] = $blockUtils->parseBlockTarget( $ip );
 		$this->assertTrue( $userIdentity->equals( $target ) );
-		$this->assertSame( $type, AbstractBlock::TYPE_IP );
+		$this->assertSame( AbstractBlock::TYPE_IP, $type );
 
 		// - valid IP range
 		$ipRange = '127.111.113.151/24';
@@ -109,14 +102,12 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideTestParseBlockTargetNonIpString
 	 * @param string $inputTarget
-	 * @param string $baseName if it was a subpage
 	 * @param ?UserIdentity $userIdentityLookupResult
 	 * @param UserIdentity|string|null $outputTarget
 	 * @param ?int $targetType
 	 */
 	public function testParseBlockTargetNonIpString(
 		string $inputTarget,
-		string $baseName,
 		?UserIdentity $userIdentityLookupResult,
 		$outputTarget,
 		?int $targetType
@@ -130,7 +121,7 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
 		$userIdentityLookup
 			->method( 'getUserIdentityByName' )
-			->with( $baseName )
+			->with( $inputTarget )
 			->willReturn( $userIdentityLookupResult );
 		$blockUtils = $this->getUtils(
 			[],
@@ -146,14 +137,12 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 		$userIdentity = $this->createMock( UserIdentity::class );
 		yield 'Name returns a valid user' => [
 			'DannyS712',
-			'DannyS712',
 			$userIdentity,
 			$userIdentity,
 			AbstractBlock::TYPE_USER
 		];
 
 		yield 'Auto block id' => [
-			'#123',
 			'#123',
 			null,
 			'123',
@@ -162,7 +151,6 @@ class BlockUtilsTest extends MediaWikiUnitTestCase {
 
 		yield 'Invalid user name, with subpage' => [
 			'SomeInvalid#UserName/WithASubpage',
-			'SomeInvalid#UserName',
 			null,
 			null,
 			null

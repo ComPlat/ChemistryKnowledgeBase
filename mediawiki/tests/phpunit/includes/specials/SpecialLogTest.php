@@ -4,8 +4,16 @@
  * @author Legoktm
  */
 
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\SpecialLog;
+
 /**
- * @covers SpecialLog
+ * @group Database
+ * @covers \MediaWiki\Specials\SpecialLog
  */
 class SpecialLogTest extends SpecialPageTestBase {
 
@@ -18,9 +26,11 @@ class SpecialLogTest extends SpecialPageTestBase {
 		$services = $this->getServiceContainer();
 		return new SpecialLog(
 			$services->getLinkBatchFactory(),
-			$services->getDBLoadBalancer(),
+			$services->getConnectionProvider(),
 			$services->getActorNormalization(),
-			$services->getUserIdentityLookup()
+			$services->getUserIdentityLookup(),
+			$services->getUserNameUtils(),
+			$services->getLogFormatterFactory()
 		);
 	}
 
@@ -29,13 +39,68 @@ class SpecialLogTest extends SpecialPageTestBase {
 	 * @see T201411
 	 */
 	public function testInvalidDate() {
-		list( $html, ) = $this->executeSpecialPage(
+		[ $html, ] = $this->executeSpecialPage(
 			'',
 			// There is no 13th month
 			new FauxRequest( [ 'wpdate' => '2018-13-01' ] ),
 			'qqx'
 		);
 		$this->assertStringContainsString( '(log-summary)', $html );
+	}
+
+	public function testSuppressionLog() {
+		// Have "BadGuy" create a revision
+		$user = ( new TestUser( 'BadGuy' ) )->getUser();
+		$title = $this->insertPage( 'Foo', 'Bar', null, $user )['title'];
+		$revId = $title->getLatestRevID();
+
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setUser( $this->getTestUser( [ 'sysop', 'suppress' ] )->getUser() );
+		// Hide our revision's comment
+		$list = RevisionDeleter::createList( 'revision', $context, $title, [ $revId ] );
+		$status = $list->setVisibility( [
+			'value' => [
+				RevisionRecord::DELETED_RESTRICTED => 1,
+				RevisionRecord::DELETED_COMMENT => 1
+			],
+			'comment' => 'SpecialLogTest'
+		] );
+		$this->assertStatusGood( $status );
+
+		// Allow everyone to read the suppression log
+		$this->mergeMwGlobalArrayValue(
+			'wgGroupPermissions', [
+				'*' => [
+					'suppressionlog' => true
+				]
+			]
+		);
+
+		[ $html, ] = $this->executeSpecialPage(
+			'suppress',
+			new FauxRequest( [ 'offender' => 'BadGuy' ] ),
+			'qqx'
+		);
+		$this->assertStringNotContainsString( '(logempty)', $html );
+		$this->assertStringContainsString( '(logentry-suppress-revision', $html );
+
+		// Full suppression log
+		[ $html, ] = $this->executeSpecialPage(
+			'suppress',
+			new FauxRequest(),
+			'qqx'
+		);
+		$this->assertStringNotContainsString( '(logempty)', $html );
+		$this->assertStringContainsString( '(logentry-suppress-revision', $html );
+
+		// Suppression log for unknown user should be empty
+		[ $html, ] = $this->executeSpecialPage(
+			'suppress',
+			new FauxRequest( [ 'offender' => 'GoodGuy' ] ),
+			'qqx'
+		);
+		$this->assertStringContainsString( '(logempty)', $html );
+		$this->assertStringNotContainsString( '(logentry-suppress-revision', $html );
 	}
 
 }

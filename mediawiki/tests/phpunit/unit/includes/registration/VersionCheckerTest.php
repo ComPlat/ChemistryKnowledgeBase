@@ -1,7 +1,9 @@
 <?php
 
+use MediaWiki\Registration\VersionChecker;
+
 /**
- * @covers VersionChecker
+ * @covers \MediaWiki\Registration\VersionChecker
  */
 class VersionCheckerTest extends MediaWikiUnitTestCase {
 
@@ -335,7 +337,7 @@ class VersionCheckerTest extends MediaWikiUnitTestCase {
 		] );
 	}
 
-	public function provideInvalidDependency() {
+	public static function provideInvalidDependency() {
 		return [
 			[
 				[
@@ -448,7 +450,7 @@ class VersionCheckerTest extends MediaWikiUnitTestCase {
 		] );
 	}
 
-	public function provideInvalidAbilityType() {
+	public static function provideInvalidAbilityType() {
 		return [
 			[ null ],
 			[ 1 ],

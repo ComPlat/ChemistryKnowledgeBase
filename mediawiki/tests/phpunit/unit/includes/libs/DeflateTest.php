@@ -18,13 +18,19 @@
  *
  */
 
+namespace Wikimedia\Tests;
+
+use Deflate;
+use MediaWikiTestCaseTrait;
+use PHPUnit\Framework\TestCase;
+
 /**
- * @covers Deflate
+ * @covers \Deflate
  */
-class DeflateTest extends PHPUnit\Framework\TestCase {
+class DeflateTest extends TestCase {
 	use MediaWikiTestCaseTrait;
 
-	public function provideIsDeflated() {
+	public static function provideIsDeflated() {
 		return [
 			// mw.deflate('foobar')
 			[ 'rawdeflate,S8vPT0osAgA=', true ],
@@ -40,7 +46,7 @@ class DeflateTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame( $expected, $actual );
 	}
 
-	public function provideInflate() {
+	public static function provideInflate() {
 		return [
 			[ 'rawdeflate,S8vPT0osAgA=', true, 'foobar' ],
 			// Fails base64_decode

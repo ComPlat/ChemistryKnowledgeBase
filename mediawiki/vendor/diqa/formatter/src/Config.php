@@ -56,8 +56,10 @@ class Config
      * @param Color $color color to use
      * @param mixed $column column where to highlight only (optional)
      */
-    public function highlightWord(string $word, Color $color, $column = NULL) {
+    public function highlightWord(string $word, Color $color, $column = NULL): Config
+    {
         $this->highlights[$word] = [ 'color' => $color, 'column' => $column ];
+        return $this;
     }
 
     /**
@@ -75,9 +77,10 @@ class Config
      *
      * @param $sequencesToIgnore
      */
-    public function setSequencesToIgnore($sequencesToIgnore): void
+    public function setSequencesToIgnore($sequencesToIgnore): Config
     {
         $this->sequencesToIgnore = $sequencesToIgnore;
+        return $this;
     }
 
     /**
@@ -151,9 +154,11 @@ class Config
         return $this->options['wrapColumns'] ?? true;
     }
 
-    public function setLeftColumnPadding(int $column, int $leftPadding) {
+    public function setLeftColumnPadding(int $column, int $leftPadding): Config
+    {
         $this->leftColumnPaddings[$column] = $leftPadding;
         $this->recalculateColumnWidths();
+        return $this;
     }
 
     public function getLeftColumnPadding($column): int {

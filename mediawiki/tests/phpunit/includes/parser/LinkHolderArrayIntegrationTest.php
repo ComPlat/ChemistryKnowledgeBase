@@ -2,16 +2,24 @@
 
 declare( strict_types = 1 );
 
+namespace MediaWiki\Tests\Parser;
+
+use MediaWiki\Language\ILanguageConverter;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\LinkHolderArray;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Title\Title;
+use MediaWikiLangTestCase;
+use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers LinkHolderArray
+ * @covers \MediaWiki\Parser\LinkHolderArray
  */
 class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideIsBig
-	 * @covers LinkHolderArray::isBig
+	 * @covers \MediaWiki\Parser\LinkHolderArray::isBig
 	 *
 	 * @param int $size
 	 * @param int $global
@@ -24,12 +32,14 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 			$this->createMock( ILanguageConverter::class ),
 			$this->createHookContainer()
 		);
+		/** @var LinkHolderArray $linkHolderArray */
+		$linkHolderArray = TestingAccessWrapper::newFromObject( $linkHolderArray );
 		$linkHolderArray->size = $size;
 
 		$this->assertSame( $expected, $linkHolderArray->isBig() );
 	}
 
-	public function provideIsBig() {
+	public static function provideIsBig() {
 		yield [ 0, 0, false ];
 		yield [ 0, 1, false ];
 		yield [ 1, 0, true ];
@@ -38,14 +48,12 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideMakeHolder_withNsText
-	 * @covers LinkHolderArray::makeHolder
+	 * @covers \MediaWiki\Parser\LinkHolderArray::makeHolder
 	 *
-	 * @param string $nsText
 	 * @param bool $isExternal
 	 * @param string $expected
 	 */
 	public function testMakeHolder_withNsText(
-		string $nsText,
 		bool $isExternal,
 		string $expected
 	) {
@@ -54,11 +62,13 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 			$this->createMock( ILanguageConverter::class ),
 			$this->createHookContainer()
 		);
+		/** @var LinkHolderArray $link */
+		$link = TestingAccessWrapper::newFromObject( $link );
 		$parser = $this->createMock( Parser::class );
-		$parser->method( 'nextLinkID' )->willReturn( 'dummy link' );
+		$parser->method( 'nextLinkID' )->willReturn( 9 );
 		$link->parent = $parser;
 		$title = $this->createMock( Title::class );
-		$title->method( 'getPrefixedDBkey' )->willReturn( $nsText );
+		$title->method( 'getPrefixedDBkey' )->willReturn( 'Talk:Dummy' );
 		$title->method( 'getNamespace' )->willReturn( 1234 );
 		$title->method( 'isExternal' )->willReturn( $isExternal );
 
@@ -75,10 +85,10 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 		if ( $isExternal ) {
 			$this->assertArrayEquals(
 				[
-					'dummy link' => [
+					9 => [
 						'title' => $title,
 						'text' => 'test3 prefixtest1 texttest',
-						'pdbk' => $nsText,
+						'pdbk' => 'Talk:Dummy',
 					],
 				],
 				$link->interwikis
@@ -88,10 +98,10 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 			$this->assertArrayEquals(
 				[
 					1234 => [
-						'dummy link' => [
+						9 => [
 							'title' => $title,
 							'text' => 'test3 prefixtest1 texttest',
-							'pdbk' => $nsText,
+							'pdbk' => 'Talk:Dummy',
 						],
 					],
 				],
@@ -101,26 +111,14 @@ class LinkHolderArrayIntegrationTest extends MediaWikiLangTestCase {
 		}
 	}
 
-	public function provideMakeHolder_withNsText() {
+	public static function provideMakeHolder_withNsText() {
 		yield [
-			'dummy string',
 			false,
-			'<!--LINK\'" 1234:dummy link-->2 trail',
+			'<!--LINK\'" 1234:9-->2 trail',
 		];
 		yield [
-			'<!--LINK\'" q:w:e-->',
-			false,
-			'<!--LINK\'" 1234:dummy link-->2 trail',
-		];
-		yield [
-			'dummy string',
 			true,
-			'<!--IWLINK\'" dummy link-->2 trail',
-		];
-		yield [
-			'<!--LINK\'" q:w:e-->',
-			true,
-			'<!--IWLINK\'" dummy link-->2 trail',
+			'<!--IWLINK\'" 9-->2 trail',
 		];
 	}
 }

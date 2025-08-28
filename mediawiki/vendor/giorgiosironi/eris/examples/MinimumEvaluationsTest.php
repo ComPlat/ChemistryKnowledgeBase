@@ -1,7 +1,8 @@
 <?php
-use Eris\Generator;
 
-class MinimumEvaluationsTest extends PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class MinimumEvaluationsTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
@@ -9,7 +10,7 @@ class MinimumEvaluationsTest extends PHPUnit_Framework_TestCase
     {
         $this
             ->forAll(
-                Generator\choose(0, 100)
+                Generators::choose(0, 100)
             )
             ->when(function ($n) {
                 return $n > 90;
@@ -24,7 +25,24 @@ class MinimumEvaluationsTest extends PHPUnit_Framework_TestCase
         $this
             ->minimumEvaluationRatio(0.01)
             ->forAll(
-                Generator\choose(0, 100)
+                Generators::choose(0, 100)
+            )
+            ->when(function ($n) {
+                return $n > 90;
+            })
+            ->then(function ($number) {
+                $this->assertTrue($number * 2 > 90 * 2);
+            });
+    }
+
+    /**
+     * @eris-ratio 1
+     */
+    public function testPassesBecauseOfTheArtificiallyLowMinimumEvaluationRatioFromAnnotation()
+    {
+        $this
+            ->forAll(
+                Generators::choose(0, 100)
             )
             ->when(function ($n) {
                 return $n > 90;

@@ -6,15 +6,13 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
-	},
-	"ConfigRegistry": {
-		"categorytree": "GlobalVarConfig::newInstance"
+		"MediaWiki": ">= 1.43"
 	},
 	"SpecialPages": {
 		"CategoryTree": {
 			"class": "MediaWiki\\Extension\\CategoryTree\\CategoryTreePage",
 			"services": [
+				"DBLoadBalancerFactory",
 				"SearchEngineFactory"
 			]
 		}
@@ -23,8 +21,9 @@
 		"categorytree": {
 			"class": "MediaWiki\\Extension\\CategoryTree\\ApiCategoryTree",
 			"services": [
-				"ConfigFactory",
+				"DBLoadBalancerFactory",
 				"LanguageConverterFactory",
+				"LinkRenderer",
 				"MainWANObjectCache"
 			]
 		}
@@ -49,17 +48,12 @@
 		"ext.categoryTree": {
 			"localBasePath": "modules/ext.categoryTree",
 			"remoteExtPath": "CategoryTree/modules/ext.categoryTree",
-			"styles": "ext.categoryTree.css",
 			"packageFiles": [
 				"ext.categoryTree.js",
 				{
 					"name": "data.json",
 					"callback": "MediaWiki\\Extension\\CategoryTree\\Hooks::getDataForJs"
 				}
-			],
-			"targets": [
-				"desktop",
-				"mobile"
 			],
 			"messages": [
 				"categorytree-collapse",
@@ -78,11 +72,7 @@
 			]
 		},
 		"ext.categoryTree.styles": {
-			"targets": [
-				"desktop",
-				"mobile"
-			],
-			"styles": "ext.categoryTree.styles.css"
+			"styles": "ext.categoryTree.styles.less"
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -94,7 +84,10 @@
 			"class": "MediaWiki\\Extension\\CategoryTree\\Hooks",
 			"services": [
 				"CategoryTree.CategoryCache",
-				"MainConfig"
+				"MainConfig",
+				"DBLoadBalancerFactory",
+				"LinkRenderer",
+				"TitleFormatter"
 			]
 		},
 		"config": {
@@ -103,14 +96,14 @@
 	},
 	"Hooks": {
 		"MediaWikiServices": "config",
-		"ArticleFromTitle": "default",
 		"SpecialTrackingCategories::preprocess": "default",
 		"SpecialTrackingCategories::generateCatLink": "default",
 		"SkinAfterPortlet": "default",
 		"SkinBuildSidebar": "default",
 		"ParserFirstCallInit": "default",
-		"OutputPageMakeCategoryLinks": "default",
-		"OutputPageParserOutput": "default"
+		"OutputPageRenderCategoryLink": "default",
+		"CategoryViewer::doCategoryQuery": "default",
+		"CategoryViewer::generateLink": "default"
 	},
 	"config": {
 		"CategoryTreeMaxChildren": {
@@ -189,6 +182,9 @@
 			}
 		}
 	},
+	"TrackingCategories": [
+		"categorytree-deprecation-category"
+	],
 	"ServiceWiringFiles": [
 		"includes/ServiceWiring.php"
 	],

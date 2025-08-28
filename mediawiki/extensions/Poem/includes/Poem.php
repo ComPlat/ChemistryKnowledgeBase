@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Extension\Poem;
 
-use Html;
 use MediaWiki\Hook\ParserFirstCallInitHook;
-use Parser;
-use PPFrame;
-use Sanitizer;
+use MediaWiki\Html\Html;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\Parser\Sanitizer;
 
 /**
  * This class handles formatting poems in WikiText, specifically anything within

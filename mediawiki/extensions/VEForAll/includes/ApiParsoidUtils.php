@@ -4,20 +4,18 @@ namespace VEForAll;
 
 use ApiBase;
 use ApiMessage;
-use ApiParsoidTrait;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MWException;
 use ParserOptions;
-use ParsoidVirtualRESTService;
-use Title;
-use VirtualRESTServiceClient;
+use WikitextContent;
 
 /**
  * Heavily based on the ApiParsoidUtils and Utils classes from the
  * StructuredDiscussions extension.
  */
 class ApiParsoidUtils extends ApiBase {
-	use ApiParsoidTrait;
 
 	public function execute() {
 		$params = $this->extractRequestParams();
@@ -31,6 +29,9 @@ class ApiParsoidUtils extends ApiBase {
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function getAllowedParams() {
 		return [
 			'from' => [
@@ -84,107 +85,67 @@ class ApiParsoidUtils extends ApiBase {
 			return null;
 		}
 
-		$convertedContent = '';
-		$vrsObject = $this->getVRSObject();
-		if ( $vrsObject === null ) {
-			if ( $from !== 'wikitext' || $to !== 'html' ) {
-				$this->dieCustomUsageMessage(
-					'veforall-api-error-unsupported-parser-conversion', [ $from, $to ] );
-				return null;
-			}
-			$convertedContent = $this->parser( $content, $title );
+		if ( $from == 'wikitext' ) {
+			return $this->wikitextToHTML( $content, $title );
 		} else {
-			$convertedContent = $this->parsoid( $from, $to, $content, $title,
-				$vrsObject );
+			return $this->htmlToWikitext( $content, $title );
 		}
-
-		return $convertedContent;
 	}
 
 	/**
-	 * Convert from/to wikitext/html via Parsoid. This will assume Parsoid is
-	 * installed and configured.
-	 * @param string $from Format of content to convert: html|wikitext
-	 * @param string $to Format to convert to: html|wikitext
-	 * @param string $content
+	 * @param string $wikitext
 	 * @param Title $title
-	 * @param ParsoidVirtualRESTService $vrsObject
-	 * @return string Returns the converted content
+	 *
+	 * @return string The converted wikitext to HTML
+	 *
+	 * Copied from StructuredDiscussions' Utils::wikitextToHTML().
 	 */
-	private function parsoid( $from, $to, $content, Title $title,
-		$vrsObject ) {
-		global $wgVersion;
+	private static function wikitextToHTML( string $wikitext, Title $title ) {
+		$parserOptions = ParserOptions::newFromAnon();
+		$parserOptions->setRenderReason( __METHOD__ );
 
-		$serviceClient = new VirtualRESTServiceClient(
-			MediaWikiServices::getInstance()->getHttpRequestFactory()->createMultiClient() );
-		$serviceClient->mount( '/restbase/', $vrsObject );
-
-		$prefixedDbTitle = $title->getPrefixedDBkey();
-		$params = [
-			$from => $content,
-			'body_only' => 'true',
-		];
-		if ( $from === 'html' ) {
-			$params['scrub_wikitext'] = 'true';
-		}
-		$url = '/restbase/local/v1/transform/' . $from . '/to/' . $to . '/' .
-			urlencode( $prefixedDbTitle );
-		$request = [
-			'method' => 'POST',
-			'url' => $url,
-			'body' => $params,
-			'headers' => [
-				'Accept' => 'text/html; charset=utf-8;',
-				'User-Agent' => "VEForAll-MediaWiki/$wgVersion",
-			],
-		];
-		$response = $serviceClient->run( $request );
-		if ( $response['code'] !== 200 ) {
-			if ( $response['error'] !== '' ) {
-				$statusMsg = $response['error'];
-			} else {
-				$statusMsg = $response['code'];
-			}
-			$vrsInfo = $serviceClient->getMountAndService( '/restbase/' );
-			$serviceName = $vrsInfo[1] ? $vrsInfo[1]->getName() : 'VRS service';
-			$this->dieCustomUsageMessage( 'veforall-api-error-parsoid-error',
-				[ $serviceName, $from, $to, $prefixedDbTitle, $statusMsg ] );
-			return null;
-		}
-
-		$content = $response['body'];
-		// HACK remove trailing newline inserted by Parsoid (T106925)
-		if ( $to === 'wikitext' ) {
-			$content = preg_replace( '/\\n$/', '', $content );
-		}
-		return $content;
+		$parserFactory = MediaWikiServices::getInstance()->getParsoidParserFactory()->create();
+		$parserOutput = $parserFactory->parse( $wikitext, $title, $parserOptions );
+		return $parserOutput->getRawText();
 	}
 
 	/**
-	 * Convert from wikitext to html using core's parser.
-	 * @param string $content The content to be converted from wikitext to html
-	 * @param Title $title The title of the page containing the content
-	 * @return string Returns the parsed string
+	 * @param string $html
+	 * @param Title $title
+	 *
+	 * @return string The converted HTML to wikitext
+	 * @throws MWException When the conversion is unsupported
+	 *
+	 * Based on StructuredDiscussions' Utils::htmlToWikitext().
 	 */
-	private function parser( $content, Title $title ) {
-		$parser = MediaWikiServices::getInstance()->getParser();
-		$options = new ParserOptions( $this->getUser() );
-		$output = $parser->parse( $content, $title, $options );
-		return $output->getText( [ 'enableSectionEditLinks' => false ] );
+	private static function htmlToWikitext( string $html, Title $title ) {
+		$transform = MediaWikiServices::getInstance()->getHtmlTransformFactory()
+			->getHtmlToContentTransform( $html, $title );
+
+		$transform->setOptions( [
+			'contentmodel' => CONTENT_MODEL_WIKITEXT,
+			'offsetType' => 'byte'
+		] );
+
+		/** @var TextContent $content */
+		$content = $transform->htmlToContent();
+
+		if ( !$content instanceof WikitextContent ) {
+			throw new MWException( 'Conversion to wikitext failed.' );
+		}
+
+		return trim( $content->getTextForSearchIndex() );
 	}
 
 	/**
 	 * Die with a custom usage message.
 	 * @param string $message_name the name of the custom message
-	 * @param params $params parameters to the custom message
+	 * @param array $params parameters to the custom message
 	 */
 	private function dieCustomUsageMessage( $message_name, $params = [] ) {
-		$errorMessage = wfMessage( $message_name, $params );
+		$errorMessage = $this->msg( $message_name, $params );
 		LoggerFactory::getInstance( 'VEForAll' )->error( $errorMessage );
-		$this->dieWithError(
-			[
-				ApiMessage::create( $errorMessage )
-			]
-		);
+		$this->dieWithError( [ ApiMessage::create( $errorMessage ) ] );
 	}
+
 }

@@ -2,15 +2,24 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * @return OneOfGenerator
  */
 function oneOf(/*$a, $b, ...*/)
 {
-    return new OneOfGenerator(func_get_args());
+    return call_user_func_array(
+        [Generators::class, 'oneOf'],
+        func_get_args()
+    );
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<Generator<T>>
+ */
 class OneOfGenerator implements Generator
 {
     private $generator;
@@ -20,12 +29,12 @@ class OneOfGenerator implements Generator
         $this->generator = new FrequencyGenerator($this->allWithSameFrequency($generators));
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         return $this->generator->__invoke($size, $rand);
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         return $this->generator->shrink($element);
     }

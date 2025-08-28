@@ -4,17 +4,19 @@ namespace MediaWiki\Tests\HookContainer;
 
 use MediaWiki\Api\ApiHookRunner;
 use MediaWiki\HookContainer\HookRunner;
+use MediaWiki\ResourceLoader as RL;
 
 /**
  * Tests that all arguments passed into HookRunner are passed along to HookContainer.
  * @covers \MediaWiki\HookContainer\HookRunner
  * @covers \MediaWiki\Api\ApiHookRunner
- * @package MediaWiki\Tests\HookContainer
+ * @covers \MediaWiki\ResourceLoader\HookRunner
  */
 class HookRunnerTest extends HookRunnerTestBase {
 
-	public function provideHookRunners() {
+	public static function provideHookRunners() {
 		yield ApiHookRunner::class => [ ApiHookRunner::class ];
 		yield HookRunner::class => [ HookRunner::class ];
+		yield RL\HookRunner::class => [ RL\HookRunner::class ];
 	}
 }

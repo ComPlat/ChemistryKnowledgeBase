@@ -208,6 +208,13 @@ class SetupAfterCache {
 			'skinScripts'    =>
 				[ 'chameleon' => [ 'hc-sticky/hc-sticky.js', 'Components/Modifications/sticky.js' ] ]
 		];
+
+		$GLOBALS[ 'wgResourceModules' ][ 'skin.chameleon.toc' ] = [
+			'localBasePath'  => $GLOBALS[ 'chameleonLocalPath' ] . '/resources',
+			'remoteBasePath' => $GLOBALS[ 'chameleonRemotePath' ] . '/resources',
+			'group'          => 'skin.chameleon',
+			'skinScripts'    => [ 'chameleon' => [ 'js/Components/toc.js' ] ]
+		];
 	}
 
 	protected function setLayoutFile(): void {
@@ -225,20 +232,14 @@ class SetupAfterCache {
 		MediaWikiServices::getInstance()->getSkinFactory()->register( 'chameleon', 'Chameleon',
 			function () {
 				$styles = [
-					'mediawiki.ui.button',
 					'skins.chameleon',
 					'zzz.ext.bootstrap.styles',
 				];
 
-				if ( $this->configuration[ 'egChameleonEnableExternalLinkIcons' ] === true &&
-					version_compare( $this->configuration['wgVersion'], '1.39', '<' ) ) {
-					array_unshift( $styles, 'mediawiki.skinning.content.externallinks' );
-				}
-
 				return new Chameleon( [
 					'name' => 'chameleon',
 					'styles' => $styles,
-					'bodyOnly' => version_compare( $this->configuration['wgVersion'], '1.39', '>=' ),
+					'bodyOnly' => true
 				] );
 			} );
 	}

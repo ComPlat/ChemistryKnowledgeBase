@@ -1,22 +1,9 @@
 {
-    "require": {
-        "mediawiki/semantic-media-wiki": "~4.1.2",
-        "mediawiki/semantic-compound-queries" : "~2.2.0",
-        "mediawiki/semantic-result-formats": "~4.0.2",
+	"extra": {
+		"merge-plugin": {
+			"include": [
 
-        "mikehaertl/phpwkhtmltopdf": "2.5",
-        "easyrdf/easyrdf": "1.1.1",
-
-        "mediawiki/page-forms": "~5.6.1",
-
-        "mediawiki/chameleon-skin": "~4.2.1"
-    },
-
-    "extra": {
-        "merge-plugin": {
-            "include": [
-
-            ]
-        }
-    }
+			]
+		}
+	}
 }

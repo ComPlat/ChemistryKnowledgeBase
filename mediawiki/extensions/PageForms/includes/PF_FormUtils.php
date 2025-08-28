@@ -1,7 +1,10 @@
 <?php
 
+use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RenderedRevision;
+use MediaWiki\Title\Title;
 use OOUI\ButtonInputWidget;
 
 /**
@@ -21,9 +24,10 @@ class PFFormUtils {
 	 * Add a hidden input for each field in the template call that's
 	 * not handled by the form itself
 	 * @param PFTemplateInForm|null $template_in_form
+	 * @param bool $is_autoedit
 	 * @return string
 	 */
-	static function unhandledFieldsHTML( $template_in_form ) {
+	static function unhandledFieldsHTML( $template_in_form, $is_autoedit = false ) {
 		// This shouldn't happen, but sometimes this value is null.
 		// @TODO - fix the code that calls this function so the
 		// value is never null.
@@ -35,10 +39,20 @@ class PFFormUtils {
 		$templateName = str_replace( ' ', '_', $template_in_form->getTemplateName() );
 		$text = "";
 		foreach ( $template_in_form->getValuesFromPage() as $key => $value ) {
-			if ( $key !== null && !is_numeric( $key ) ) {
-				$key = urlencode( $key );
-				$text .= Html::hidden( '_unhandled_' . $templateName . '_' . $key, $value );
+			if ( $key === null || is_numeric( $key ) ) {
+				continue;
 			}
+			// Handle the special case of #autoedit - we ignore
+			// blank values, because we don't want a case like
+			// {{#autoedit:...|City={{{City|}}}...}} (within a
+			// template) to blank the value of "City", if the user
+			// didn't enter anything.
+			if ( $is_autoedit && $value === '' ) {
+				continue;
+			}
+
+			$key = urlencode( $key );
+			$text .= Html::hidden( '_unhandled_' . $templateName . '_' . $key, $value );
 		}
 		return $text;
 	}
@@ -47,7 +61,7 @@ class PFFormUtils {
 		global $wgPageFormsTabIndex;
 
 		if ( $label == null ) {
-			$label = wfMessage( 'summary' )->text();
+			$label = wfMessage( 'summary' )->parse();
 		}
 
 		$wgPageFormsTabIndex++;
@@ -71,7 +85,7 @@ class PFFormUtils {
 			new OOUI\TextInputWidget( $attr ),
 			[
 				'align' => 'top',
-				'label' => $label
+				'label' => new OOUI\HtmlSnippet( $label )
 			]
 		);
 
@@ -104,7 +118,6 @@ class PFFormUtils {
 		if ( $is_disabled ) {
 			$attrs['disabled'] = true;
 		}
-		// @phan-suppress-next-line PhanImpossibleTypeComparison
 		if ( array_key_exists( 'class', $attrs ) ) {
 			$attrs['classes'] = [ $attrs['class'] ];
 		}
@@ -133,32 +146,17 @@ class PFFormUtils {
 			$user = RequestContext::getMain()->getUser();
 			$services = MediaWikiServices::getInstance();
 			$userOptionsLookup = $services->getUserOptionsLookup();
-			if ( method_exists( \MediaWiki\Watchlist\WatchlistManager::class, 'isWatched' ) ) {
-				// MediaWiki 1.37+
-				$watchlistManager = $services->getWatchlistManager();
-				if ( $userOptionsLookup->getOption( $user, 'watchdefault' ) ) {
-					# Watch all edits
-					$is_checked = true;
-				} elseif ( $userOptionsLookup->getOption( $user, 'watchcreations' ) &&
-					!$wgTitle->exists() ) {
-					# Watch creations
-					$is_checked = true;
-				} elseif ( $watchlistManager->isWatched( $user, $wgTitle ) ) {
-					# Already watched
-					$is_checked = true;
-				}
-			} else {
-				if ( $userOptionsLookup->getOption( $user, 'watchdefault' ) ) {
-					# Watch all edits
-					$is_checked = true;
-				} elseif ( $userOptionsLookup->getOption( $user, 'watchcreations' ) &&
-					!$wgTitle->exists() ) {
-					# Watch creations
-					$is_checked = true;
-				} elseif ( $user->isWatched( $wgTitle ) ) {
-					# Already watched
-					$is_checked = true;
-				}
+			$watchlistManager = $services->getWatchlistManager();
+			if ( $userOptionsLookup->getOption( $user, 'watchdefault' ) ) {
+				# Watch all edits
+				$is_checked = true;
+			} elseif ( $userOptionsLookup->getOption( $user, 'watchcreations' ) &&
+				!$wgTitle->exists() ) {
+				# Watch creations
+				$is_checked = true;
+			} elseif ( $watchlistManager->isWatched( $user, $wgTitle ) ) {
+				# Already watched
+				$is_checked = true;
 			}
 		}
 		if ( $label == null ) {
@@ -176,7 +174,6 @@ class PFFormUtils {
 		if ( $is_disabled ) {
 			$attrs['disabled'] = true;
 		}
-		// @phan-suppress-next-line PhanImpossibleTypeComparison
 		if ( array_key_exists( 'class', $attrs ) ) {
 			$attrs['classes'] = [ $attrs['class'] ];
 		}
@@ -476,12 +473,13 @@ END;
 			}
 		}
 
-		if ( $form_id !== null ) {
+		if ( $form_def !== null ) {
+			// Do nothing.
+		} elseif ( $form_id !== null ) {
 			$form_title = Title::newFromID( $form_id );
 			$form_def = PFUtils::getPageText( $form_title );
-		} elseif ( $form_def == null ) {
-			// No id, no text -> nothing to do
-
+		} else {
+			// No text, no ID -> no form definition.
 			return '';
 		}
 
@@ -524,7 +522,7 @@ END;
 		// We need to pass "false" in to the parse() $clearState param so that
 		// embedding Special:RunQuery will work.
 		$output = $parser->parse( $form_def, $title, $parser->getOptions(), true, false );
-		$form_def = $output->getText();
+		$form_def = $output->runOutputPipeline( $parser->getOptions() )->getContentHolderText();
 		$form_def = preg_replace_callback(
 			"/{$rnd}-item-(\d+)-{$rnd}/",
 			static function ( array $matches ) use ( $items ) {
@@ -535,8 +533,8 @@ END;
 		);
 
 		if ( $output->getCacheTime() == -1 ) {
-			$form_article = Article::newFromID( $form_id );
-			self::purgeCache( $form_article );
+			$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $form_id );
+			self::purgeCache( $wikiPage );
 			wfDebug( "Caching disabled for form definition $form_id\n" );
 		} elseif ( $form_id !== null ) {
 			self::cacheFormDefinition( $form_id, $form_def, $parser );
@@ -598,6 +596,9 @@ END;
 
 		// Update list of form definitions
 		$listOfFormKeys = $cache->get( $cacheKeyForList );
+		if ( !is_array( $listOfFormKeys ) ) {
+			$listOfFormKeys = [];
+		}
 		// The list of values is used by self::purge, keys are ignored.
 		// This way we automatically override duplicates.
 		$listOfFormKeys[$cacheKeyForForm] = $cacheKeyForForm;
@@ -664,13 +665,7 @@ END;
 	 */
 	public static function purgeCacheOnSave( RenderedRevision $renderedRevision ) {
 		$articleID = $renderedRevision->getRevision()->getPageId();
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			// MW 1.36+
-			$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $articleID );
-		} else {
-			// MW 1.35
-			$wikiPage = WikiPage::newFromID( $articleID );
-		}
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $articleID );
 		if ( $wikiPage == null ) {
 			// @TODO - should this ever happen?
 			return true;

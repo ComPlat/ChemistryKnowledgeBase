@@ -1,11 +1,13 @@
 <?php
 
 /**
- * @covers LCStoreStaticArray
+ * @covers \LCStoreStaticArray
  * @group Language
  */
 class LCStoreStaticArrayTest extends MediaWikiUnitTestCase {
+	/** @var string */
 	private $dir;
+	/** @var string */
 	private $file;
 
 	protected function setUp(): void {

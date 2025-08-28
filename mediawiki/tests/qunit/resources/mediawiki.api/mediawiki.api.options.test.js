@@ -1,31 +1,30 @@
-( function () {
-	QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment( {
-		config: {
-			wgUserName: 'Foo'
-		},
-		beforeEach: function () {
-			this.server = this.sandbox.useFakeServer();
-			this.server.respondImmediately = true;
-		}
-	} ) );
+QUnit.module( 'mediawiki.api.options', QUnit.newMwEnvironment(), ( hooks ) => {
+	mw.config.set( {
+		wgUserName: 'Foo'
+	} );
+
+	hooks.beforeEach( function () {
+		this.server = this.sandbox.useFakeServer();
+		this.server.respondImmediately = true;
+	} );
 
 	QUnit.test( 'saveOption', function ( assert ) {
-		var api = new mw.Api(),
+		const api = new mw.Api(),
 			stub = this.sandbox.stub( mw.Api.prototype, 'saveOptions' );
 
 		api.saveOption( 'foo', 'bar' );
 
 		assert.true( stub.calledOnce, '#saveOptions called once' );
-		assert.deepEqual( stub.getCall( 0 ).args, [ { foo: 'bar' } ], '#saveOptions called correctly' );
+		assert.deepEqual( stub.getCall( 0 ).args, [ { foo: 'bar' }, undefined ], '#saveOptions called correctly' );
 	} );
 
-	QUnit.test( 'saveOptions without Unit Separator', function ( assert ) {
-		var api = new mw.Api( { useUS: false } );
+	QUnit.test( 'saveOptions without Unit Separator', async function ( assert ) {
+		const api = new mw.Api( { useUS: false } );
 
 		// We need to respond to the request for token first, otherwise the other requests won't be sent
 		// until after the server.respond call, which confuses sinon terribly. This sucks a lot.
-		api.badToken( 'options' );
-		api.getToken( 'options' );
+		api.badToken( 'csrf' );
+		api.getToken( 'csrf' );
 		this.server.respond(
 			/meta=tokens&type=csrf/,
 			[ 200, { 'Content-Type': 'application/json' },
@@ -33,7 +32,7 @@
 		);
 
 		// Requests are POST, match requestBody instead of url
-		this.server.respond( function ( request ) {
+		this.server.respond( ( request ) => {
 			if ( !request.requestBody ) {
 				// GET request for the token, already responded above
 			} else if ( [
@@ -49,7 +48,7 @@
 				'action=options&format=json&formatversion=2&change=foo&token=%2B%5C',
 				// reset an option, not bundleable
 				'action=options&format=json&formatversion=2&optionname=foo%7Cbar%3Dquux&token=%2B%5C'
-			].indexOf( request.requestBody ) !== -1 ) {
+			].includes( request.requestBody ) ) {
 				assert.true( true, 'Repond to ' + request.requestBody );
 				request.respond( 200, { 'Content-Type': 'application/json' },
 					'{ "options": "success" }' );
@@ -58,35 +57,27 @@
 			}
 		} );
 
-		return QUnit.whenPromisesComplete(
-			api.saveOptions( {} ).then( function () {
-				assert.true( true, 'Request completed: empty case' );
-			} ),
-			api.saveOptions( { foo: 'bar' } ).then( function () {
-				assert.true( true, 'Request completed: simple' );
-			} ),
-			api.saveOptions( { foo: 'bar', baz: 'quux' } ).then( function () {
-				assert.true( true, 'Request completed: two options' );
-			} ),
-			api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', baz: 'quux' } ).then( function () {
-				assert.true( true, 'Request completed: not bundleable' );
-			} ),
-			api.saveOptions( { foo: null } ).then( function () {
-				assert.true( true, 'Request completed: reset an option' );
-			} ),
-			api.saveOptions( { 'foo|bar=quux': null } ).then( function () {
-				assert.true( true, 'Request completed: reset an option, not bundleable' );
-			} )
-		);
+		// empty case
+		await api.saveOptions( {} );
+		// simple
+		await api.saveOptions( { foo: 'bar' } );
+		// two options
+		await api.saveOptions( { foo: 'bar', baz: 'quux' } );
+		// not bundleable
+		await api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', baz: 'quux' } );
+		// reset an option
+		await api.saveOptions( { foo: null } );
+		// reset an option, not bundleable
+		await api.saveOptions( { 'foo|bar=quux': null } );
 	} );
 
-	QUnit.test( 'saveOptions with Unit Separator', function ( assert ) {
-		var api = new mw.Api( { useUS: true } );
+	QUnit.test( 'saveOptions with Unit Separator', async function ( assert ) {
+		const api = new mw.Api( { useUS: true } );
 
 		// We need to respond to the request for token first, otherwise the other requests won't be sent
 		// until after the server.respond call, which confuses sinon terribly. This sucks a lot.
-		api.badToken( 'options' );
-		api.getToken( 'options' );
+		api.badToken( 'csrf' );
+		api.getToken( 'csrf' );
 		this.server.respond(
 			/meta=tokens&type=csrf/,
 			[ 200, { 'Content-Type': 'application/json' },
@@ -94,7 +85,7 @@
 		);
 
 		// Requests are POST, match requestBody instead of url
-		this.server.respond( function ( request ) {
+		this.server.respond( ( request ) => {
 			if ( !request.requestBody ) {
 				// GET request for the token, already responded above
 			} else if ( [
@@ -111,7 +102,7 @@
 				'action=options&format=json&formatversion=2&change=foo&token=%2B%5C',
 				// reset an option, not bundleable
 				'action=options&format=json&formatversion=2&optionname=foo%7Cbar%3Dquux&token=%2B%5C'
-			].indexOf( request.requestBody ) !== -1 ) {
+			].includes( request.requestBody ) ) {
 				assert.true( true, 'Repond to ' + request.requestBody );
 				request.respond(
 					200,
@@ -123,45 +114,31 @@
 			}
 		} );
 
-		return QUnit.whenPromisesComplete(
-			api.saveOptions( {} ).done( function () {
-				assert.true( true, 'Request completed: empty case' );
-			} ),
-			api.saveOptions( { foo: 'bar' } ).done( function () {
-				assert.true( true, 'Request completed: simple' );
-			} ),
-			api.saveOptions( { foo: 'bar', baz: 'quux' } ).done( function () {
-				assert.true( true, 'Request completed: two options' );
-			} ),
-			api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', baz: 'quux' } ).done( function () {
-				assert.true( true, 'Request completed: bundleable with unit separator' );
-			} ),
-			api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', 'baz=baz': 'quux' } ).done( function () {
-				assert.true( true, 'Request completed: not bundleable with unit separator' );
-			} ),
-			api.saveOptions( { foo: null } ).done( function () {
-				assert.true( true, 'Request completed: reset an option' );
-			} ),
-			api.saveOptions( { 'foo|bar=quux': null } ).done( function () {
-				assert.true( true, 'Request completed: reset an option, not bundleable' );
-			} )
-		);
+		// empty case
+		await api.saveOptions( {} );
+		// simple
+		await api.saveOptions( { foo: 'bar' } );
+		// two options
+		await api.saveOptions( { foo: 'bar', baz: 'quux' } );
+		// bundleable with unit separator
+		await api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', baz: 'quux' } );
+		// not bundleable with unit separator
+		await api.saveOptions( { foo: 'bar|quux', bar: 'a|b|c', 'baz=baz': 'quux' } );
+		// reset an option
+		await api.saveOptions( { foo: null } );
+		// reset an option, not bundleable
+		await api.saveOptions( { 'foo|bar=quux': null } );
 	} );
 
-	QUnit.test( 'saveOptions (anonymous)', function ( assert ) {
-		var promise, test = this;
-
+	QUnit.test( 'saveOptions (anonymous)', async function ( assert ) {
 		mw.config.set( 'wgUserName', null );
-		promise = new mw.Api().saveOptions( { foo: 'bar' } );
 
-		assert.rejects( promise, /notloggedin/, 'Can not save options while not logged in' );
+		await assert.rejects(
+			new mw.Api().saveOptions( { foo: 'bar' } ),
+			/notloggedin/,
+			'Can not save options while not logged in'
+		);
 
-		return promise
-			.catch( function () {
-				return $.Deferred().resolve();
-			} )
-			.then( function () {
-				assert.strictEqual( test.server.requests.length, 0, 'No requests made' );
-			} );
+		assert.strictEqual( this.server.requests.length, 0, 'No requests made' );
 	} );
-}() );
+} );

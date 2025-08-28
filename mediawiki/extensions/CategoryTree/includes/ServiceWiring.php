@@ -31,9 +31,9 @@ use MediaWiki\MediaWikiServices;
  * CategoryTree wiring for MediaWiki services.
  */
 return [
-	'CategoryTree.CategoryCache' => static function ( MediaWikiServices $services ) {
+	'CategoryTree.CategoryCache' => static function ( MediaWikiServices $services ): CategoryCache {
 		return new CategoryCache(
-			$services->getDBLoadBalancer()
+			$services->getConnectionProvider()
 		);
 	},
 ];

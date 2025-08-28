@@ -8,6 +8,9 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -40,7 +43,7 @@ class PFCreateForm extends SpecialPage {
 	function doSpecialCreateForm( $query ) {
 		$out = $this->getOutput();
 		$req = $this->getRequest();
-		$db = wfGetDB( DB_REPLICA );
+		$db = PFUtils::getReadDB();
 
 		if ( $query !== null ) {
 			$presetFormName = str_replace( '_', ' ', $query );
@@ -78,7 +81,7 @@ class PFCreateForm extends SpecialPage {
 			# ignore variables that are not of the right form
 			if ( strpos( $var, "_" ) != false ) {
 				# get the template declarations and work from there
-				list( $action, $id ) = explode( "_", $var, 2 );
+				[ $action, $id ] = explode( "_", $var, 2 );
 				if ( $action == "template" ) {
 					// If the button was pressed to remove
 					// this template, just don't add it to
@@ -620,13 +623,7 @@ END;
 			if ( $smwContLang != null ) {
 				$datatypeLabels = $smwContLang->getDatatypeLabels();
 				$datatypeLabels['enumeration'] = 'enumeration';
-
 				$propTypeID = $template_field->getPropertyType();
-
-				// Special handling for SMW 1.9
-				if ( $propTypeID == '_str' && !array_key_exists( '_str', $datatypeLabels ) ) {
-					$propTypeID = '_txt';
-				}
 				$propertyTypeStr = $datatypeLabels[$propTypeID];
 			}
 			$text .= Html::rawElement( 'p', null, $this->msg( $propDisplayMsg, $prop_link_text, $propertyTypeStr )->parse() ) . "\n";
@@ -717,7 +714,10 @@ END;
 		$dropdownAttrs = [];
 		foreach ( $possible_input_types as $i => $input_type ) {
 			if ( $i == 0 ) {
-				array_push( $dropdownAttrs, [ 'data' => '', 'label' => $input_type . ' ' . $this->msg( 'pf_createform_inputtypedefault' )->escaped() ] );
+				// The actual input type value has to start with a "."
+				// for the default input type, to enable special handling
+				// by both the PHP (on submit) and the JS (on select).
+				array_push( $dropdownAttrs, [ 'data' => ".$input_type", 'label' => $input_type . ' ' . $this->msg( 'pf_createform_inputtypedefault' )->escaped() ] );
 			} else {
 				array_push( $dropdownAttrs, [ 'data' => $input_type, 'label' => $input_type ] );
 			}
@@ -782,7 +782,7 @@ END;
 			foreach ( $param['values'] as $val ) {
 				$checkboxHTML = new OOUI\CheckboxInputWidget( [
 					'name' => 'p[' . $paramName . '][' . $val . ']',
-					'selected' => in_array( $val, $cur_values ) ? true : false,
+					'selected' => in_array( $val, $cur_values ),
 					'value' => in_array( $val, $cur_values ) ? 'on' : ''
 				] );
 				$text .= Html::rawElement( 'span', [
@@ -871,7 +871,11 @@ END;
 		foreach ( $params as $param ) {
 			$paramName = $param['name'];
 			$type = $param['type'];
-			$desc = PFUtils::getParser()->parse( $param['description'], $this->getPageTitle(), ParserOptions::newFromUser( $this->getUser() ) )->getText();
+			$parser = PFUtils::getParser();
+			$parser->setOptions( ParserOptions::newFromUser( $this->getUser() ) );
+			$parserOptions = $parser->getOptions();
+			$parserOutput = $parser->parse( $param['description'], $this->getPageTitle(), $parserOptions );
+			$desc = $parserOutput->runOutputPipeline( $parserOptions )->getContentHolderText();
 
 			if ( array_key_exists( $paramName, $paramValues ) ) {
 				$cur_value = $paramValues[$paramName];

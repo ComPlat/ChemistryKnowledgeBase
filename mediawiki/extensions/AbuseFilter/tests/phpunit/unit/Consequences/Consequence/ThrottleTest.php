@@ -2,45 +2,52 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Consequences\Consequence;
 
-use BagOStuff;
 use Generator;
-use HashBagOStuff;
 use InvalidArgumentException;
+use MediaWiki\Extension\AbuseFilter\ActionSpecifier;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Throttle;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequenceNotPrecheckedException;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
+use MediaWiki\Extension\AbuseFilter\Filter\ExistingFilter;
+use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserEditTracker;
 use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserIdentity;
+use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\NullLogger;
-use Title;
-use User;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Throttle
- * @covers ::__construct
+ * @covers \MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Throttle
  */
 class ThrottleTest extends MediaWikiUnitTestCase {
 
 	private function getThrottle(
 		array $throttleParams = [],
-		BagOStuff $cache = null,
+		?BagOStuff $cache = null,
 		bool $globalFilter = false,
-		User $user = null,
-		Title $title = null,
-		UserEditTracker $editTracker = null,
-		string $ip = null
+		?UserIdentity $user = null,
+		?Title $title = null,
+		?UserEditTracker $editTracker = null,
+		?string $ip = null
 	) {
-		$params = $this->createMock( Parameters::class );
-		$params->method( 'getIsGlobalFilter' )->willReturn( $globalFilter );
-		if ( $user ) {
-			$params->method( 'getUser' )->willReturn( $user );
-		}
-		if ( $title ) {
-			$params->method( 'getTarget' )->willReturn( $title );
-		}
+		$specifier = new ActionSpecifier(
+			'some-action',
+			$title ?? $this->createMock( LinkTarget::class ),
+			$user ?? $this->createMock( UserIdentity::class ),
+			$ip ?? '1.2.3.4',
+			null
+		);
+		$params = new Parameters(
+			$this->createMock( ExistingFilter::class ),
+			$globalFilter,
+			$specifier
+		);
 		return new Throttle(
 			$params,
 			$throttleParams + [ 'groups' => [ 'user' ], 'count' => 3, 'period' => 60, 'id' => 1 ],
@@ -48,15 +55,11 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 			$editTracker ?? $this->createMock( UserEditTracker::class ),
 			$this->createMock( UserFactory::class ),
 			new NullLogger(),
-			$ip ?? '1.2.3.4',
 			false,
 			$globalFilter ? 'foo-db' : null
 		);
 	}
 
-	/**
-	 * @covers ::execute
-	 */
 	public function testExecute_notPrechecked() {
 		$throttle = $this->getThrottle();
 		$this->expectException( ConsequenceNotPrecheckedException::class );
@@ -74,6 +77,7 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 			$groups = [ 'ip', 'user', 'range', 'creationdate', 'editcount', 'site', 'page' ];
 			foreach ( $groups as $group ) {
 				$throttle = $this->getThrottle( [ 'groups' => [ $group ], 'count' => 0 ], null, $global );
+				/** @var Throttle $throttleWr */
 				$throttleWr = TestingAccessWrapper::newFromObject( $throttle );
 				$throttleWr->setThrottled( $group );
 				yield "$group set, $globalStr" => [ $throttle, false ];
@@ -82,10 +86,6 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::shouldDisableOtherConsequences
-	 * @covers ::isThrottled
-	 * @covers ::throttleKey
-	 * @covers ::throttleIdentifier
 	 * @dataProvider provideThrottle
 	 */
 	public function testShouldDisableOtherConsequences( Throttle $throttle, bool $shouldDisable ) {
@@ -93,15 +93,13 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::execute
-	 * @covers ::setThrottled
-	 * @covers ::throttleKey
-	 * @covers ::throttleIdentifier
 	 * @dataProvider provideThrottle
 	 */
-	public function testExecute( Throttle $throttle, bool $shouldDisable, MockObject $cache = null ) {
+	public function testExecute( Throttle $throttle, bool $shouldDisable, ?MockObject $cache = null ) {
 		if ( $cache ) {
-			$groupCount = count( TestingAccessWrapper::newFromObject( $throttle )->throttleParams['groups'] );
+			/** @var Throttle $wrapper */
+			$wrapper = TestingAccessWrapper::newFromObject( $throttle );
+			$groupCount = count( $wrapper->throttleParams['groups'] );
 			$cache->expects( $this->exactly( $groupCount ) )->method( 'incrWithInit' );
 		}
 		$throttle->shouldDisableOtherConsequences();
@@ -109,7 +107,6 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::throttleIdentifier
 	 * @dataProvider provideThrottleDataForIdentifiers
 	 */
 	public function testThrottleIdentifier(
@@ -117,8 +114,8 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 		?string $expected,
 		string $ip,
 		Title $title,
-		User $user,
-		UserEditTracker $editTracker = null
+		UserIdentity $user,
+		?UserEditTracker $editTracker = null
 	) {
 		$throttle = $this->getThrottle( [], null, false, $user, $title, $editTracker, $ip );
 		/** @var Throttle $throttleWrapper */
@@ -135,20 +132,15 @@ class ThrottleTest extends MediaWikiUnitTestCase {
 		$pageName = 'AbuseFilter test throttle identifiers';
 		$title = $this->createMock( Title::class );
 		$title->method( 'getPrefixedText' )->willReturn( $pageName );
-		$user = $this->createMock( User::class );
 		$ip = '42.42.42.42';
+		$anon = new UserIdentityValue( 0, $ip );
 
-		yield 'IP, simple' => [ 'ip', "ip-$ip", $ip, $title, $user ];
+		yield 'IP, simple' => [ 'ip', "ip-$ip", $ip, $title, $anon ];
+		yield 'user, anonymous' => [ 'user', 'user-0', $ip, $title, $anon ];
 
 		$userID = 123;
-		$user->method( 'isAnon' )->willReturn( false );
-		$user->method( 'getId' )->willReturn( $userID );
+		$user = new UserIdentityValue( $userID, 'Username' );
 		yield 'user, registered' => [ 'user', "user-$userID", $ip, $title, $user ];
-
-		$anonID = 0;
-		$anon = $this->createMock( User::class );
-		$anon->method( 'getId' )->willReturn( $anonID );
-		yield 'user, anonymous' => [ 'user', "user-$anonID", $ip, $title, $anon ];
 
 		$editcount = 5;
 		$uet = $this->createMock( UserEditTracker::class );

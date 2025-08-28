@@ -1,17 +1,13 @@
 <?php
 
 /**
- * @covers ZipDirectoryReader
+ * @covers \ZipDirectoryReader
  */
 class ZipDirectoryReaderTest extends MediaWikiIntegrationTestCase {
+	private const ZIP_DIR = __DIR__ . '/../../data/zip';
 
-	protected $zipDir;
+	/** @var array[] */
 	protected $entries;
-
-	protected function setUp(): void {
-		parent::setUp();
-		$this->zipDir = __DIR__ . '/../../data/zip';
-	}
 
 	public function zipCallback( $entry ) {
 		$this->entries[] = $entry;
@@ -19,13 +15,13 @@ class ZipDirectoryReaderTest extends MediaWikiIntegrationTestCase {
 
 	public function readZipAssertError( $file, $error, $assertMessage ) {
 		$this->entries = [];
-		$status = ZipDirectoryReader::read( "{$this->zipDir}/$file", [ $this, 'zipCallback' ] );
+		$status = ZipDirectoryReader::read( self::ZIP_DIR . "/$file", [ $this, 'zipCallback' ] );
 		$this->assertStatusError( $error, $status, $assertMessage );
 	}
 
 	public function readZipAssertSuccess( $file, $assertMessage ) {
 		$this->entries = [];
-		$status = ZipDirectoryReader::read( "{$this->zipDir}/$file", [ $this, 'zipCallback' ] );
+		$status = ZipDirectoryReader::read( self::ZIP_DIR . "/$file", [ $this, 'zipCallback' ] );
 		$this->assertStatusOK( $status, $assertMessage );
 	}
 
@@ -45,11 +41,11 @@ class ZipDirectoryReaderTest extends MediaWikiIntegrationTestCase {
 
 	public function testSimple() {
 		$this->readZipAssertSuccess( 'class.zip', 'Simple ZIP' );
-		$this->assertEquals( $this->entries, [ [
+		$this->assertEquals( [ [
 			'name' => 'Class.class',
 			'mtime' => '20010115000000',
 			'size' => 1,
-		] ] );
+		] ], $this->entries );
 	}
 
 	public function testBadCentralEntrySignature() {

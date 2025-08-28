@@ -1,9 +1,11 @@
 <?php
 
+use MediaWiki\Message\Message;
 use MediaWiki\Permissions\PermissionStatus;
+use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers PermissionsError
+ * @covers \PermissionsError
  */
 class PermissionsErrorTest extends MediaWikiIntegrationTestCase {
 
@@ -12,15 +14,18 @@ class PermissionsErrorTest extends MediaWikiIntegrationTestCase {
 		$this->setGroupPermissions( '*', 'testpermission', true );
 	}
 
-	public function provideConstruction() {
+	public static function provideConstruction() {
 		$status = new PermissionStatus();
 		$status->error( 'cat', 1, 2 );
-		$status->warning( 'dog', 3, 4 );
-		$expected = [ [ 'cat', 1, 2 ], [ 'dog', 3, 4 ] ];
-		yield [ null, $status, $expected ];
-		yield [ 'testpermission', $status, $expected ];
+		$status->error( 'dog', 3, 4 );
+		$array = [ [ 'cat', 1, 2 ], [ 'dog', 3, 4 ] ];
+		yield [ null, $status, $status ];
+		yield [ null, $array, $status ];
+		yield [ 'testpermission', $status, $status ];
+		yield [ 'testpermission', $array, $status ];
 
-		yield [ 'testpermission', [], [ [ 'badaccess-groups', '*', 1 ] ] ];
+		yield [ 'testpermission', [],
+			PermissionStatus::newEmpty()->fatal( 'badaccess-groups', Message::listParam( [ '*' ], 'comma' ), 1 ) ];
 	}
 
 	/**
@@ -28,11 +33,22 @@ class PermissionsErrorTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testConstruction( $permission, $errors, $expected ) {
 		$e = new PermissionsError( $permission, $errors );
+		$et = TestingAccessWrapper::newFromObject( $e );
+
+		$this->expectDeprecationAndContinue( '/Use of PermissionsError::\\$permission/' );
 		$this->assertEquals( $permission, $e->permission );
-		$this->assertArrayEquals( $expected, $e->errors );
+
+		$this->assertStatusMessagesExactly( $expected, $et->status );
+
+		$this->expectDeprecationAndContinue( '/Use of PermissionsError::\\$errors/' );
+		$this->assertArrayEquals( $expected->toLegacyErrorArray(), $e->errors );
+
+		// Test the deprecated public property setter
+		$e->errors = $e->errors;
+		$this->assertStatusMessagesExactly( $expected, $et->status );
 	}
 
-	public function provideInvalidConstruction() {
+	public static function provideInvalidConstruction() {
 		yield [ null, null ];
 		yield [ null, [] ];
 		yield [ null, new PermissionStatus() ];

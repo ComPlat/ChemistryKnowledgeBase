@@ -1,9 +1,16 @@
 <?php
 
+namespace Wikimedia\Tests;
+
+use DnsSrvDiscoverer;
+use MediaWikiCoversValidator;
+use PHPUnit\Framework\TestCase;
+use stdClass;
+
 /**
- * @covers DnsSrvDiscoverer
+ * @covers \DnsSrvDiscoverer
  */
-class DnsSrvDiscovererTest extends PHPUnit\Framework\TestCase {
+class DnsSrvDiscovererTest extends TestCase {
 
 	use MediaWikiCoversValidator;
 
@@ -100,12 +107,12 @@ class DnsSrvDiscovererTest extends PHPUnit\Framework\TestCase {
 				[ 'target' => '.', 'port' => '1', 'pri' => '1', 'weight' => '1' ],
 			] );
 
-		$this->assertEmpty( $dsd->getServers() );
+		$this->assertSame( [], $dsd->getServers() );
 	}
 
 	private function mockResolver() {
 		return $this
-			->getMockBuilder( \stdClass::class )
+			->getMockBuilder( stdClass::class )
 			->addMethods( [ '__invoke' ] )
 			->getMock();
 	}

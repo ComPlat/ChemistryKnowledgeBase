@@ -1,7 +1,13 @@
 <?php
 
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\UserEditCountUpdate;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use MediaWiki\User\UserRigorOptions;
@@ -11,18 +17,20 @@ use MediaWiki\User\UserRigorOptions;
  * @group Database
  */
 class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
+
+	use TempUserTestTrait;
+
 	/**
 	 * Do an edit
 	 *
 	 * @param UserIdentity $user
 	 * @param string $timestamp
-	 * @param bool $create
 	 */
-	private function editTrackerDoEdit( $user, $timestamp, $create ) {
+	private function editTrackerDoEdit( $user, $timestamp ) {
 		$title = Title::newFromText( __FUNCTION__ );
 		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
-		if ( $create ) {
-			$page->insertOn( $this->db );
+		if ( !$page->exists() ) {
+			$page->insertOn( $this->getDb() );
 		}
 
 		$rev = new MutableRevisionRecord( $title );
@@ -31,7 +39,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 		$rev->setTimestamp( $timestamp );
 		$rev->setUser( $user );
 		$rev->setPageId( $page->getId() );
-		$this->getServiceContainer()->getRevisionStore()->insertRevisionOn( $rev, $this->db );
+		$this->getServiceContainer()->getRevisionStore()->insertRevisionOn( $rev, $this->getDb() );
 	}
 
 	/**
@@ -41,12 +49,12 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 	 * @param int|null $count
 	 */
 	private function setDbEditCount( $user, $count ) {
-		$this->db->update(
-			'user',
-			[ 'user_editcount' => $count ],
-			[ 'user_id' => $user->getId() ],
-			__METHOD__
-		);
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'user' )
+			->set( [ 'user_editcount' => $count ] )
+			->where( [ 'user_id' => $user->getId() ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	public function testGetUserEditCount() {
@@ -80,7 +88,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 
 	public function testInitializeUserEditCount() {
 		$user = $this->getMutableTestUser()->getUser();
-		$this->editTrackerDoEdit( $user, '20200101000000', true );
+		$this->editTrackerDoEdit( $user, '20200101000000' );
 		$tracker = $this->getServiceContainer()->getUserEditTracker();
 		$tracker->initializeUserEditCount( $user );
 		$this->runJobs();
@@ -96,19 +104,20 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 		$ts1 = '20010101000000';
 		$ts2 = '20020101000000';
 		$ts3 = '20030101000000';
-		$this->editTrackerDoEdit( $user, $ts3, false );
-		$this->editTrackerDoEdit( $user, $ts2, false );
-		$this->editTrackerDoEdit( $user, $ts1, true );
+		$this->editTrackerDoEdit( $user, $ts3 );
+		$this->editTrackerDoEdit( $user, $ts2 );
+		$this->editTrackerDoEdit( $user, $ts1 );
 
 		$this->assertSame( $ts1, $tracker->getFirstEditTimestamp( $user ) );
 		$this->assertSame( $ts3, $tracker->getLatestEditTimestamp( $user ) );
 	}
 
 	public function testGetEditTimestamp_anon() {
+		$this->disableAutoCreateTempUser();
 		$user = $this->getServiceContainer()->getUserFactory()
 			->newFromName( '127.0.0.1', UserRigorOptions::RIGOR_NONE );
 		$tracker = $this->getServiceContainer()->getUserEditTracker();
-		$this->editTrackerDoEdit( $user, '20200101000000', true );
+		$this->editTrackerDoEdit( $user, '20200101000000' );
 		$this->assertFalse( $tracker->getFirstEditTimestamp( $user ) );
 		$this->assertFalse( $tracker->getLatestEditTimestamp( $user ) );
 	}
@@ -129,7 +138,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 
 		$editCountStart = $tracker->getUserEditCount( $user );
 
-		$this->db->startAtomic( __METHOD__ ); // let deferred updates queue up
+		$this->getDb()->startAtomic( __METHOD__ ); // let deferred updates queue up
 
 		$tracker->incrementUserEditCount( $user );
 		$this->assertSame(
@@ -145,7 +154,7 @@ class UserEditTrackerTest extends MediaWikiIntegrationTestCase {
 			'No update queued for anonymous user'
 		);
 
-		$this->db->endAtomic( __METHOD__ ); // run deferred updates
+		$this->getDb()->endAtomic( __METHOD__ ); // run deferred updates
 		$this->assertSame(
 			0,
 			DeferredUpdates::pendingUpdatesCount(),

@@ -21,34 +21,46 @@
 
 namespace MediaWiki\Tests\Unit;
 
-use CommentStore;
-use ConfiguredReadOnlyMode;
-use GenderCache;
 use Interwiki;
 use InvalidArgumentException;
-use Language;
-use MalformedTitleException;
 use MediaWiki\Cache\CacheKeyHelper;
+use MediaWiki\Cache\GenderCache;
+use MediaWiki\CommentFormatter\CommentParser;
+use MediaWiki\CommentFormatter\CommentParserFactory;
+use MediaWiki\CommentStore\CommentStore;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Interwiki\InterwikiLookup;
+use MediaWiki\Language\Language;
+use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigSchema;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Tests\MockDatabase;
+use MediaWiki\Title\MalformedTitleException;
+use MediaWiki\Title\MediaWikiTitleCodec;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\TitleFormatter;
+use MediaWiki\Title\TitleParser;
 use MediaWiki\User\TempUser\RealTempUserConfig;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserNameUtils;
-use MediaWikiTitleCodec;
-use NamespaceInfo;
+use MediaWiki\Watchlist\WatchedItem;
+use MediaWiki\Watchlist\WatchedItemStore;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
-use ReadOnlyMode;
-use TitleFormatter;
-use TitleParser;
-use WatchedItem;
-use WatchedItemStore;
 use Wikimedia\Message\ITextFormatter;
+use Wikimedia\Message\MessageSpecifier;
 use Wikimedia\Message\MessageValue;
+use Wikimedia\ObjectFactory\ObjectFactory;
+use Wikimedia\Rdbms\ConfiguredReadOnlyMode;
+use Wikimedia\Rdbms\ILBFactory;
 use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\LBFactory;
+use Wikimedia\Rdbms\LBFactorySingle;
+use Wikimedia\Rdbms\ReadOnlyMode;
+use Wikimedia\Services\NoSuchServiceException;
 
 /**
  * Trait to get helper services that can be used in unit tests
@@ -83,6 +95,69 @@ trait DummyServicesTrait {
 		}
 		$defaultSettings = iterator_to_array( MainConfigSchema::listDefaultValues() );
 		return $defaultSettings;
+	}
+
+	/**
+	 * @param CommentParser $parser to always return
+	 * @return CommentParserFactory
+	 */
+	private function getDummyCommentParserFactory(
+		CommentParser $parser
+	): CommentParserFactory {
+		return new class( $parser ) extends CommentParserFactory {
+			private $parser;
+
+			public function __construct( $parser ) {
+				$this->parser = $parser;
+			}
+
+			public function create() {
+				return $this->parser;
+			}
+		};
+	}
+
+	/**
+	 * @param array $contentHandlers map of content model to a ContentHandler object to
+	 *   return (or to `true` for a content model to be defined but not actually have any
+	 *   content handlers).
+	 * @param string[] $allContentFormats specific content formats to claim support for,
+	 *   by default none
+	 * @return IContentHandlerFactory
+	 */
+	private function getDummyContentHandlerFactory(
+		array $contentHandlers = [],
+		array $allContentFormats = []
+	): IContentHandlerFactory {
+		$contentHandlerFactory = $this->createMock( IContentHandlerFactory::class );
+		$contentHandlerFactory->method( 'getContentHandler' )
+			->willReturnCallback(
+				static function ( string $modelId ) use ( $contentHandlers ) {
+					// interface has a return typehint, if $contentHandlers
+					// doesn't have that key or the value isn't an instance of
+					// ContentHandler will throw exception
+					return $contentHandlers[ $modelId ];
+				}
+			);
+		$contentHandlerFactory->method( 'getContentModels' )
+			->willReturn( array_keys( $contentHandlers ) );
+		$contentHandlerFactory->method( 'getAllContentFormats' )
+			->willReturn( $allContentFormats );
+		$contentHandlerFactory->method( 'isDefinedModel' )
+			->willReturnCallback(
+				static function ( string $modelId ) use ( $contentHandlers ) {
+					return array_key_exists( $modelId, $contentHandlers );
+				}
+			);
+		return $contentHandlerFactory;
+	}
+
+	/**
+	 * @param array $dbOptions Options for the Database constructor
+	 * @return LBFactory
+	 */
+	private function getDummyDBLoadBalancerFactory( $dbOptions = [] ): LBFactory {
+		return LBFactorySingle::newFromConnection( new MockDatabase( $dbOptions ) );
 	}
 
 	/**
@@ -181,6 +256,27 @@ trait DummyServicesTrait {
 				// Nothing to do
 			}
 		};
+	}
+
+	/**
+	 * @param array $options keys are
+	 *   - anything in LanguageNameUtils::CONSTRUCTOR_OPTIONS, any missing options will default
+	 *     to the MainConfigSchema defaults
+	 *   - 'hookContainer' if specific hooks need to be registered, otherwise an empty
+	 *     container will be used
+	 * @return LanguageNameUtils
+	 */
+	private function getDummyLanguageNameUtils( array $options = [] ): LanguageNameUtils {
+		// configuration is based on the defaults in MainConfigSchema
+		$serviceOptions = new ServiceOptions(
+			LanguageNameUtils::CONSTRUCTOR_OPTIONS,
+			$options, // caller can override the default config by specifying it here
+			self::getDefaultSettings()
+		);
+		return new LanguageNameUtils(
+			$serviceOptions,
+			$options['hookContainer'] ?? $this->createHookContainer()
+		);
 	}
 
 	/**
@@ -305,18 +401,6 @@ trait DummyServicesTrait {
 	 * @return NamespaceInfo
 	 */
 	private function getDummyNamespaceInfo( array $options = [] ): NamespaceInfo {
-		// Rather than trying to use a complicated mock, it turns out that almost
-		// all of the NamespaceInfo service works fine in unit tests. The only issues:
-		//   - in two places, NamespaceInfo tries to read extension attributes through
-		//     ExtensionRegistry::getInstance()->getAttribute() - this should work fine
-		//     in unit tests, it just won't include any extension info since those are
-		//     not loaded
-		//   - ::getRestrictionLevels() is a deprecated wrapper that calls
-		//     PermissionManager::getNamespaceRestrictionLevels() - the PermissionManager
-		//     is retrieved from MediaWikiServices, which doesn't work in unit tests.
-		//     This shouldn't be an issue though, since it should only be called in
-		//     the dedicated tests for that deprecation method, which use the real service
-
 		// configuration is based on the defaults in MainConfigSchema
 		$serviceOptions = new ServiceOptions(
 			NamespaceInfo::CONSTRUCTOR_OPTIONS,
@@ -325,8 +409,34 @@ trait DummyServicesTrait {
 		);
 		return new NamespaceInfo(
 			$serviceOptions,
-			$options['hookContainer'] ?? $this->createHookContainer()
+			$options['hookContainer'] ?? $this->createHookContainer(),
+			[],
+			[]
 		);
+	}
+
+	/**
+	 * @param array<string,mixed> $services services that exist, keys are service names,
+	 *   values are the service to return. Any service not in this array does not exist.
+	 * @return ObjectFactory
+	 */
+	private function getDummyObjectFactory( array $services = [] ): ObjectFactory {
+		$container = $this->createMock( ContainerInterface::class );
+		$container->method( 'has' )
+			->willReturnCallback( static function ( $serviceName ) use ( $services ) {
+				return array_key_exists( $serviceName, $services );
+			} );
+		$container->method( 'get' )
+			->willReturnCallback( static function ( $serviceName ) use ( $services ) {
+				if ( array_key_exists( $serviceName, $services ) ) {
+					return $services[$serviceName];
+				}
+				// Need to throw some exception that implements the PSR
+				// NotFoundExceptionInterface, use the exception from the Services
+				// library which implements it and has a helpful message
+				throw new NoSuchServiceException( $serviceName );
+			} );
+		return new ObjectFactory( $container );
 	}
 
 	/**
@@ -340,10 +450,38 @@ trait DummyServicesTrait {
 		}
 		$loadBalancer = $this->createMock( ILoadBalancer::class );
 		$loadBalancer->method( 'getReadOnlyReason' )->willReturn( false );
+		$lbFactory = $this->createMock( ILBFactory::class );
+		$lbFactory->method( 'getMainLB' )->willReturn( $loadBalancer );
 		return new ReadOnlyMode(
 			new ConfiguredReadOnlyMode( $startingReason, null ),
-			$loadBalancer
+			$lbFactory
 		);
+	}
+
+	/**
+	 * @param bool $dumpMessages Whether MessageValue objects should be formatted by dumping
+	 *   them rather than just returning the key
+	 * @return ITextFormatter
+	 */
+	private function getDummyTextFormatter( bool $dumpMessages = false ): ITextFormatter {
+		return new class( $dumpMessages ) implements ITextFormatter {
+			private bool $dumpMessages;
+
+			public function __construct( bool $dumpMessages ) {
+				$this->dumpMessages = $dumpMessages;
+			}
+
+			public function getLangCode() {
+				return 'qqx';
+			}
+
+			public function format( MessageSpecifier $message ): string {
+				if ( $this->dumpMessages && $message instanceof MessageValue ) {
+					return $message->dump();
+				}
+				return $message->getKey();
+			}
+		};
 	}
 
 	/**
@@ -379,15 +517,7 @@ trait DummyServicesTrait {
 
 		$logger = $options['logger'] ?? new NullLogger();
 
-		$textFormatter = $options['textFormatter'] ?? new class implements ITextFormatter {
-			public function getLangCode() {
-				return 'qqx';
-			}
-
-			public function format( MessageValue $message ) {
-				return $message->getKey();
-			}
-		};
+		$textFormatter = $options['textFormatter'] ?? $this->getDummyTextFormatter();
 
 		$titleParser = $options['titleParser'] ?? false;
 		if ( !$titleParser ) {
@@ -412,11 +542,13 @@ trait DummyServicesTrait {
 			$titleParser,
 			$textFormatter,
 			$options['hookContainer'] ?? $this->createHookContainer(),
-			new RealTempUserConfig( [
+			$options['tempUserConfig'] ?? new RealTempUserConfig( [
 				'enabled' => true,
+				'expireAfterDays' => null,
 				'actions' => [ 'edit' ],
 				'serialProvider' => [ 'type' => 'local' ],
 				'serialMapping' => [ 'type' => 'plain-numeric' ],
+				'reservedPattern' => '!$1',
 				'matchPattern' => '*$1',
 				'genPattern' => '*Unregistered $1'
 			] )
@@ -485,7 +617,7 @@ trait DummyServicesTrait {
 			$dataKey = $this->getWatchedItemStoreKey( $user, $target );
 			return isset( $this->watchedItemStoreData[ $dataKey ] );
 		} );
-		$mock->method( 'isTempWatched' )->willreturnCallback( function ( $user, $target ) {
+		$mock->method( 'isTempWatched' )->willReturnCallback( function ( $user, $target ) {
 			$dataKey = $this->getWatchedItemStoreKey( $user, $target );
 			return isset( $this->watchedItemStoreData[ $dataKey ] ) &&
 				$this->watchedItemStoreData[ $dataKey ] !== true;
@@ -505,6 +637,6 @@ trait DummyServicesTrait {
 					return $text;
 				}
 			);
-		return new CommentStore( $mockLang, MIGRATION_NEW );
+		return new CommentStore( $mockLang );
 	}
 }

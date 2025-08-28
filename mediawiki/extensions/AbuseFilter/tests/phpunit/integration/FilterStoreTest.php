@@ -8,6 +8,7 @@ use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
 use MediaWiki\Extension\AbuseFilter\Filter\MutableFilter;
 use MediaWiki\Extension\AbuseFilter\Filter\Specs;
+use MediaWiki\Extension\AbuseFilter\FilterStore;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\TestingAccessWrapper;
 
@@ -27,7 +28,7 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 		'enabled' => 1,
 		'comments' => '',
 		'name' => 'Mock filter',
-		'hidden' => 0,
+		'privacy' => Flags::FILTER_PUBLIC,
 		'hit_count' => 0,
 		'throttled' => 0,
 		'deleted' => 0,
@@ -36,23 +37,27 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 		'group' => 'default'
 	];
 
-	/** @inheritDoc */
-	protected $tablesUsed = [ 'abuse_filter' ];
-
 	/**
 	 * @param int $id
 	 */
 	private function createFilter( int $id ): void {
 		$row = self::DEFAULT_VALUES;
-		$row['timestamp'] = $this->db->timestamp( $row['timestamp'] );
+		$row['timestamp'] = $this->getDb()->timestamp( $row['timestamp'] );
 		$filter = $this->getFilterFromSpecs( [ 'id' => $id ] + $row );
+		$oldFilter = MutableFilter::newDefault();
 		// Use some black magic to bypass checks
+		/** @var FilterStore $filterStore */
 		$filterStore = TestingAccessWrapper::newFromObject( AbuseFilterServices::getFilterStore() );
-		wfGetDB( DB_PRIMARY )->insert(
-			'abuse_filter',
-			$filterStore->filterToDatabaseRow( $filter ),
-			__METHOD__
+		$row = $filterStore->filterToDatabaseRow( $filter, $oldFilter );
+		$row['af_actor'] = $this->getServiceContainer()->getActorNormalization()->acquireActorId(
+			$this->getTestUser()->getUserIdentity(),
+			$this->getDb()
 		);
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'abuse_filter' )
+			->row( $row )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	/**
@@ -73,7 +78,7 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 			new Flags(
 				$filterSpecs['enabled'],
 				$filterSpecs['deleted'],
-				$filterSpecs['hidden'],
+				$filterSpecs['privacy'],
 				$filterSpecs['global']
 			),
 			$actions,
@@ -104,7 +109,7 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 			$this->getTestSysop()->getUser(), $row['id'], $newFilter, $origFilter
 		);
 
-		$this->assertTrue( $status->isGood(), "Save failed with status: $status" );
+		$this->assertStatusGood( $status );
 		$value = $status->getValue();
 		$this->assertIsArray( $value );
 		$this->assertCount( 2, $value );
@@ -132,9 +137,7 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 		$this->overrideUserPermissions( $user, [ 'abusefilter-modify' ] );
 		$status = AbuseFilterServices::getFilterStore()->saveFilter( $user, $row['id'], $newFilter, $origFilter );
 
-		$this->assertFalse( $status->isGood(), 'The filter validation returned a valid status.' );
-		$actual = $status->getErrors()[0]['message'];
-		$this->assertSame( $expectedError, $actual );
+		$this->assertStatusWarning( $expectedError, $status );
 	}
 
 	public function testSaveFilter_noChange() {
@@ -153,7 +156,67 @@ class FilterStoreTest extends MediaWikiIntegrationTestCase {
 			$this->getTestSysop()->getUser(), $filter, $newFilter, $origFilter
 		);
 
-		$this->assertTrue( $status->isGood(), "Got a non-good status: $status" );
+		$this->assertStatusGood( $status );
 		$this->assertFalse( $status->getValue(), 'Status value should be false' );
+	}
+
+	public function testSaveFilter_usesProtectedVars() {
+		$row = [
+			'id' => '2',
+			'rules' => "ip_in_range( user_unnamed_ip, '1.2.3.4' )",
+			'name' => 'Mock filter with protected variable used'
+		];
+
+		$origFilter = MutableFilter::newDefault();
+		$newFilter = $this->getFilterFromSpecs( $row );
+
+		// Try to save filter without right to use protected variables
+		$user = $this->getTestUser()->getUser();
+		$status = AbuseFilterServices::getFilterStore()->saveFilter( $user, $row['id'], $newFilter, $origFilter );
+		$expectedError = 'abusefilter-edit-protected-variable';
+		$this->assertStatusWarning( $expectedError, $status );
+
+		// Add right and try to save filter without setting the 'protected' flag
+		$this->overrideUserPermissions( $user, [ 'abusefilter-access-protected-vars', 'abusefilter-modify' ] );
+		$status = AbuseFilterServices::getFilterStore()->saveFilter( $user, $row['id'], $newFilter, $origFilter );
+		$expectedError = 'abusefilter-edit-protected-variable-not-protected';
+		$this->assertStatusWarning( $expectedError, $status );
+
+		// Save filter with right, with 'protected' flag enabled
+		$row = [
+			'id' => '3',
+			'rules' => "ip_in_range( user_unnamed_ip, '1.2.3.4' )",
+			'name' => 'Mock filter with protected variable used',
+			'privacy' => Flags::FILTER_USES_PROTECTED_VARS,
+		];
+		$newFilter = $this->getFilterFromSpecs( $row );
+		$status = AbuseFilterServices::getFilterStore()->saveFilter(
+			$user, $row['id'], $newFilter, $origFilter
+		);
+		$this->assertStatusGood( $status );
+	}
+
+	public function testSaveFilter__cannotRemoveProtectedFlag() {
+		$row = [
+			'id' => null,
+			'rules' => "ip_in_range( user_unnamed_ip, '1.2.3.4' )",
+			'name' => 'Uses protected variable',
+			'enabled' => true,
+			'privacy' => Flags::FILTER_USES_PROTECTED_VARS,
+		];
+
+		$origFilter = $this->getFilterFromSpecs( $row );
+		$newFilter = MutableFilter::newFromParentFilter( $origFilter );
+		$newFilter->setRules( '1 + 1 === 2' );
+		$newFilter->setProtected( false );
+
+		$status = AbuseFilterServices::getFilterStore()->saveFilter(
+			$this->getTestSysop()->getUser(), null, $newFilter, $origFilter
+		);
+
+		$this->assertStatusGood( $status );
+		$filterID = $status->getValue()[0];
+		$storedFilter = AbuseFilterServices::getFilterLookup()->getFilter( $filterID, false );
+		$this->assertTrue( $storedFilter->isProtected() );
 	}
 }

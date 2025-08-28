@@ -3,25 +3,25 @@
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Consequences\Consequence;
 
 use ConsequenceGetMessageTestTrait;
+use MediaWiki\Extension\AbuseFilter\ActionSpecifier;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Warn;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequenceNotPrecheckedException;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\Filter\ExistingFilter;
 use MediaWiki\Session\Session;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use TitleValue;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Warn
- * @covers ::__construct
+ * @covers \MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Warn
  */
 class WarnTest extends MediaWikiUnitTestCase {
 	use ConsequenceGetMessageTestTrait;
 
-	private function getWarn( Parameters $params = null ): Warn {
+	private function getWarn( ?Parameters $params = null ): Warn {
 		return new Warn(
 			$params ?? $this->createMock( Parameters::class ),
 			'foo-bar-message',
@@ -35,17 +35,19 @@ class WarnTest extends MediaWikiUnitTestCase {
 		$params = new Parameters(
 			$filter,
 			false,
-			new UserIdentityValue( 1, 'Warned user' ),
-			new TitleValue( NS_HELP, 'Some title' ),
-			'edit'
+			new ActionSpecifier(
+				'edit',
+				new TitleValue( NS_HELP, 'Some title' ),
+				new UserIdentityValue( 1, 'Warned user' ),
+				'1.2.3.4',
+				null
+			)
 		);
+		/** @var Warn $warnWrap */
 		$warnWrap = TestingAccessWrapper::newFromObject( $this->getWarn( $params ) );
 		return [ $params, $warnWrap->getWarnKey() ];
 	}
 
-	/**
-	 * @covers ::execute
-	 */
 	public function testExecute_notPrechecked() {
 		$warn = $this->getWarn();
 		$this->expectException( ConsequenceNotPrecheckedException::class );
@@ -75,9 +77,6 @@ class WarnTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::shouldDisableOtherConsequences
-	 * @covers ::shouldBeWarned
-	 * @covers ::getWarnKey
 	 * @dataProvider provideWarnsAndSuccess
 	 */
 	public function testShouldDisableOtherConsequences( Warn $warn, bool $shouldDisable ) {
@@ -85,9 +84,6 @@ class WarnTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::execute
-	 * @covers ::setWarn
-	 * @covers ::getWarnKey
 	 * @dataProvider provideWarnsAndSuccess
 	 */
 	public function testExecute( Warn $warn, bool $shouldDisable, MockObject $session ) {
@@ -99,7 +95,6 @@ class WarnTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::getMessage
 	 * @dataProvider provideGetMessageParameters
 	 */
 	public function testGetMessage( Parameters $params ) {

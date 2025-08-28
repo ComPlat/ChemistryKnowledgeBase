@@ -2,7 +2,7 @@
 
 const { action, assert } = require( 'api-testing' );
 
-describe( 'Testing a new talk page notification', function () {
+describe( 'Testing a new talk page notification', () => {
 	let kam = action.getAnon();
 	let alice;
 
@@ -14,7 +14,7 @@ describe( 'Testing a new talk page notification', function () {
 	} );
 
 	it( 'should edit a user\'s talk page', async () => {
-		await alice.edit( `User_talk:${kam.username}`, { text: 'Hi, Kam! ~~~~', summary: 'saying hello', createonly: true } );
+		await alice.edit( `User_talk:${ kam.username }`, { text: 'Hi, Kam! ~~~~', summary: 'saying hello', createonly: true } );
 	} );
 
 	it( 'user should have a new message notification', async () => {

@@ -2,25 +2,29 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function bool()
 {
-    return new BooleanGenerator();
+    return Generators::bool();
 }
 
+/**
+ * @template-implements Generator<bool>
+ */
 class BooleanGenerator implements Generator
 {
-    public function __invoke($_size, $rand)
+    public function __invoke($_size, RandomRange $rand)
     {
         $booleanValues = [true, false];
-        $randomIndex = $rand(0, count($booleanValues) - 1);
+        $randomIndex = $rand->rand(0, count($booleanValues) - 1);
 
         return GeneratedValueSingle::fromJustValue($booleanValues[$randomIndex], 'boolean');
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
-        return false;
+        return GeneratedValueSingle::fromJustValue(false);
     }
 }

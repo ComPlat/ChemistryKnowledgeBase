@@ -27,6 +27,7 @@ namespace Skins\Chameleon\Tests\Util;
 use Config;
 use FauxRequest;
 use Message;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Skins\Chameleon\Chameleon;
 use Skins\Chameleon\ChameleonTemplate;
@@ -85,16 +86,14 @@ class MockupFactory {
 	}
 
 	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|ChameleonTemplate
 	 * @throws \MWException
 	 */
-	public function getChameleonSkinTemplateStub() {
+	public function getChameleonSkinTemplateStub(): MockObject|ChameleonTemplate {
 		$chameleonTemplate = $this->testCase->getMockBuilder( ChameleonTemplate::class )
 			->disableOriginalConstructor()
 			->getMock();
 
 		$chameleonTemplate->data = $this->getSkinTemplateDummyDataSetForMainNamespace();
-		$chameleonTemplate->translator = $this->getTranslatorStub();
 
 		$dataMap = array_map(
 			function ( $key, $value ) {
@@ -124,9 +123,12 @@ class MockupFactory {
 			->method( 'getSidebar' )
 			->will( $this->testCase->returnValue( [] ) );
 
-		$chameleonTemplate->expects( $this->testCase->any() )
-			->method( 'getToolbox' )
-			->will( $this->testCase->returnValue( [] ) );
+
+		if ( version_compare( MW_VERSION, '1.41', '<' ) ) {
+			$chameleonTemplate->expects( $this->testCase->any() )
+				->method( 'getToolbox' )
+				->will( $this->testCase->returnValue( [] ) );
+		}
 
 		$chameleonTemplate->expects( $this->testCase->any() )
 			->method( 'getPersonalTools' )
@@ -228,25 +230,7 @@ class MockupFactory {
 		];
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getTranslatorStub() {
-		$translator = $this->testCase->getMockBuilder( stdClass::class )
-			->setMethods( [ 'translate' ] )
-			->getMock();
-
-		$translator->expects( $this->testCase->any() )
-			->method( 'translate' )
-			->will( $this->testCase->returnValue( 'translate' ) );
-
-		return $translator;
-	}
-
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getMessageStub() {
+	protected function getMessageStub(): MockObject {
 		$message = $this->testCase->getMockBuilder( Message::class )
 			->disableOriginalConstructor()
 			->getMock();
@@ -259,10 +243,9 @@ class MockupFactory {
 	}
 
 	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
 	 * @throws \MWException
 	 */
-	protected function getSkinStub() {
+	protected function getSkinStub(): MockObject {
 		$title = Title::newFromText( 'FOO' );
 		$request = new FauxRequest();
 
@@ -297,10 +280,7 @@ class MockupFactory {
 		return $skin;
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getConfigStub() {
+	protected function getConfigStub(): MockObject{
 		$config = $this->testCase->getMockBuilder( Config::class )
 			->disableOriginalConstructor()
 			->getMock();
@@ -308,10 +288,7 @@ class MockupFactory {
 		return $config;
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getComponentStub() {
+	protected function getComponentStub(): MockObject {
 		$component = $this->testCase->getMockBuilder( Component::class )
 			->disableOriginalConstructor()
 			->getMock();
@@ -323,10 +300,7 @@ class MockupFactory {
 		return $component;
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getUserStub() {
+	protected function getUserStub(): MockObject {
 		$request = new FauxRequest();
 
 		$user = $this->testCase->getMockBuilder( User::class )
@@ -336,12 +310,6 @@ class MockupFactory {
 		$user->expects( $this->testCase->any() )
 			->method( 'isRegistered' )
 			->will( $this->testCase->returnValue( $this->get( 'UserIsRegistered', true ) ) );
-
-		if ( version_compare( MW_VERSION, '1.38', '<' ) ) {
-			$user->expects( $this->testCase->any() )
-				->method( 'getEffectiveGroups' )
-				->will( $this->testCase->returnValue( $this->get( 'UserEffectiveGroups', 0 ) ) );
-		}
 
 		$user->expects( $this->testCase->any() )
 			->method( 'getTalkPage' )
@@ -376,10 +344,7 @@ class MockupFactory {
 		}
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getTitleStub() {
+	protected function getTitleStub(): MockObject {
 		$title = $this->testCase->getMockBuilder( Title::class )
 			->disableOriginalConstructor()
 			->getMock();
@@ -391,10 +356,7 @@ class MockupFactory {
 		return $title;
 	}
 
-	/**
-	 * @return \PHPUnit\Framework\MockObject\MockObject|\PHPUnit_Framework_MockObject_MockObject
-	 */
-	protected function getComponentFactoryStub() {
+	protected function getComponentFactoryStub(): MockObject {
 		$factory = $this->testCase->getMockBuilder( ComponentFactory::class )
 			->disableOriginalConstructor()
 			->getMock();

@@ -488,6 +488,10 @@ class Clazz extends AddressableElement
             foreach ($method_list as $method) {
                 $clazz->addMethod($code_base, $method, None::instance());
             }
+            if (\PHP_VERSION_ID < 80000 && $reflection_method->isConstructor()  && \strcasecmp($reflection_method->name, '__construct') !== 0) {
+                // E.g. SoapFault::SoapFault and other soap classes before PHP 8.0
+                $clazz->addMethod($code_base, Method::defaultConstructorForClass($clazz, $code_base), None::instance());
+            }
         }
 
         return $clazz;
@@ -2298,6 +2302,11 @@ class Clazz extends AddressableElement
      */
     public function hasDynamicProperties(CodeBase $code_base): bool
     {
+        foreach($this->attribute_list as $attr) {
+            if ((string)$attr === '\AllowDynamicProperties') {
+                return true;
+            }
+        }
         return $this->hasFlagsRecursive($code_base, Flags::CLASS_HAS_DYNAMIC_PROPERTIES);
     }
 
@@ -2979,6 +2988,16 @@ class Clazz extends AddressableElement
             $this->warnAboutAmbiguousInheritance($code_base, $class, $next_class_fqsen);
         }
 
+        if ($attribute_list = $class->getAttributeList()) {
+            foreach($attribute_list as $attr) {
+                if ((string)$attr === "\AllowDynamicProperties") {
+                    $new_attribute_list = $this->getAttributeList();
+                    $new_attribute_list[] = $attr;
+                    $this->setAttributeList($new_attribute_list);
+                    break;
+                }
+            }
+        }
         // Constants should have been imported earlier, but call it again just in case
         $this->importConstantsFromAncestorClass($code_base, $class);
 

@@ -1,1 +1,0 @@
-* change cronjob for create_dump.sh -> add DB name parameter

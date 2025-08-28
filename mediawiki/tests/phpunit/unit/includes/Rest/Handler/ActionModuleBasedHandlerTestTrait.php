@@ -2,14 +2,14 @@
 
 namespace MediaWiki\Tests\Rest\Handler;
 
-use ApiBase;
-use ApiMain;
 use Exception;
-use FauxRequest;
-use Language;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Language\Language;
+use MediaWiki\Request\FauxRequest;
 use PHPUnit\Framework\MockObject\MockBuilder;
 use PHPUnit\Framework\MockObject\MockObject;
-use RequestContext;
 
 /**
  * A trait providing utility functions for testing Handler classes
@@ -17,20 +17,11 @@ use RequestContext;
  * This trait is intended to be used on subclasses of MediaWikiUnitTestCase
  * or MediaWikiIntegrationTestCase.
  *
- * @package MediaWiki\Tests\Rest\Handler
+ * @method MockBuilder getMockBuilder(string $className)
  */
 trait ActionModuleBasedHandlerTestTrait {
 
 	use HandlerTestTrait;
-
-	/**
-	 * Expected to be provided by the class, probably inherited from TestCase.
-	 *
-	 * @param string $className
-	 *
-	 * @return MockBuilder
-	 */
-	abstract protected function getMockBuilder( $className ): MockBuilder;
 
 	/**
 	 * @param ApiMain $main
@@ -44,7 +35,7 @@ trait ActionModuleBasedHandlerTestTrait {
 		ApiMain $main,
 		$name,
 		$resultData,
-		Exception $throwException = null
+		?Exception $throwException = null
 	) {
 		/** @var ApiBase|MockObject $module */
 		$module = $this->getMockBuilder( ApiBase::class )
@@ -76,7 +67,7 @@ trait ActionModuleBasedHandlerTestTrait {
 	private function getApiMain( $csrfSafe = false ) {
 		$session = $this->getSession( $csrfSafe );
 
-		// NOTE: This being a FauxRequest instance triggers special case behavior
+		// NOTE: This being a MediaWiki\Request\FauxRequest instance triggers special case behavior
 		// in ApiMain, causing ApiMain::isInternalMode() to return true. Among other things,
 		// this causes ApiMain to throw errors rather than encode them in the result data.
 		/** @var MockObject|FauxRequest $fauxRequest */

@@ -1,29 +1,35 @@
 <?php
 namespace MediaWiki\Skins\Vector\Tests\Integration;
 
-use Exception;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Skins\Vector\SkinVector22;
+use MediaWiki\Cache\LinkCache;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Skins\Vector\SkinVectorLegacy;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\User\TalkPageNotificationManager;
 use MediaWikiIntegrationTestCase;
-use ReflectionMethod;
-use RequestContext;
-use Title;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * Class VectorTemplateTest
- * @package MediaWiki\Skins\Vector\Tests\Unit
  * @group Vector
  * @group Skins
  */
 class SkinVectorTest extends MediaWikiIntegrationTestCase {
+	use MockAuthorityTrait;
+
+	protected function setUp(): void {
+		parent::setUp();
+		// Mock TalkPageNotificationManager to avoid DB queries
+		$this->setService( 'TalkPageNotificationManager', $this->createMock( TalkPageNotificationManager::class ) );
+		$this->clearHooks();
+	}
 
 	/**
 	 * @return SkinVectorLegacy
 	 */
 	private function provideVectorTemplateObject() {
-		$skinFactory = MediaWikiServices::getInstance()->getSkinFactory();
+		$skinFactory = $this->getServiceContainer()->getSkinFactory();
 		$template = $skinFactory->makeSkin( 'vector' );
 		return $template;
 	}
@@ -47,162 +53,21 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 		return in_array( $search, $values );
 	}
 
-	public function provideGetTocData() {
-		$config = [
-			'VectorTableOfContentsBeginning' => true,
-			'VectorTableOfContentsCollapseAtCount' => 1
-		];
-		$tocData = [
-			'number-section-count' => 2,
-			'array-sections' => [
-				[
-					'toclevel' => 1,
-					'level' => '2',
-					'line' => 'A',
-					'number' => '1',
-					'index' => '1',
-					'fromtitle' => 'Test',
-					'byteoffset' => 231,
-					'anchor' => 'A',
-					'array-sections' =>	[],
-					'is-top-level-section' => true,
-					'is-parent-section' => false,
-				],
-				[
-					'toclevel' => 1,
-					'level' => '4',
-					'line' => 'B',
-					'number' => '2',
-					'index' => '2',
-					'fromtitle' => 'Test',
-					'byteoffset' => 245,
-					'anchor' => 'B',
-					'array-sections' =>	[],
-					'is-top-level-section' => true,
-					'is-parent-section' => false,
-				]
-			]
-		];
-		$nestedTocData = [
-			'number-section-count' => 2,
-			'array-sections' => [
-				[
-					'toclevel' => 1,
-					'level' => '2',
-					'line' => 'A',
-					'number' => '1',
-					'index' => '1',
-					'fromtitle' => 'Test',
-					'byteoffset' => 231,
-					'anchor' => 'A',
-					'array-sections' => [
-						'toclevel' => 2,
-						'level' => '4',
-						'line' => 'A1',
-						'number' => '1.1',
-						'index' => '2',
-						'fromtitle' => 'Test',
-						'byteoffset' => 245,
-						'anchor' => 'A1',
-						'array-sections' => [],
-						'is-top-level-section' => false,
-						'is-parent-section' => false,
-					],
-					'is-top-level-section' => true,
-					'is-parent-section' => true,
-				],
-			]
-		];
-
-		$expectedConfigData = [
-			'is-vector-toc-beginning-enabled' => $config[ 'VectorTableOfContentsBeginning' ],
-			'vector-is-collapse-sections-enabled' =>
-				$tocData[ 'number-section-count' ] >= $config[ 'VectorTableOfContentsCollapseAtCount' ]
-		];
-		$expectedNestedTocData = array_merge( $nestedTocData, $expectedConfigData );
-
-		// qqx output
-		$buttonLabel = '(vector-toc-toggle-button-label: A)';
-		$expectedNestedTocData[ 'array-sections' ][ 0 ][ 'vector-button-label' ] = $buttonLabel;
-
-		return [
-			// When zero sections
-			[
-				[],
-				$config,
-				// TOC data is empty when given an empty array
-				[]
-			],
-			// When number of multiple sections is lower than configured value
-			[
-				$tocData,
-				array_merge( $config, [ 'VectorTableOfContentsCollapseAtCount' => 3 ] ),
-				// 'vector-is-collapse-sections-enabled' value is false
-				array_merge( $tocData, $expectedConfigData, [
-					'vector-is-collapse-sections-enabled' => false
-				] )
-			],
-			// When number of multiple sections is equal to the configured value
-			[
-				$tocData,
-				array_merge( $config, [ 'VectorTableOfContentsCollapseAtCount' => 2 ] ),
-				// 'vector-is-collapse-sections-enabled' value is true
-				array_merge( $tocData, $expectedConfigData )
-			],
-			// When number of multiple sections is higher than configured value
-			[
-				$tocData,
-				array_merge( $config, [ 'VectorTableOfContentsCollapseAtCount' => 1 ] ),
-				// 'vector-is-collapse-sections-enabled' value is true
-				array_merge( $tocData, $expectedConfigData )
-			],
-			// When "Beginning" TOC section is configured to be turned off
-			[
-				$tocData,
-				array_merge( $config, [ 'VectorTableOfContentsBeginning' => false ] ),
-				// 'is-vector-toc-beginning-enabled' value is false
-				array_merge( $tocData, $expectedConfigData, [
-					'is-vector-toc-beginning-enabled' => false
-				] )
-			],
-			// When TOC has sections with top level parent sections
-			[
-				$nestedTocData,
-				$config,
-				// 'vector-button-label' is provided for top level parent sections
-				$expectedNestedTocData
-			],
-		];
-	}
-
 	/**
-	 * @covers \MediaWiki\Skins\Vector\SkinVector22::getTocData
-	 * @dataProvider provideGetTOCData
-	 */
-	public function testGetTocData(
-		array $tocData,
-		array $config,
-		array $expected
-	) {
-		$this->overrideConfigValues( $config );
-		$this->setUserLang( 'qqx' );
-
-		$skinVector = new SkinVector22( [ 'name' => 'vector-2022' ] );
-		$openSkinVector = TestingAccessWrapper::newFromObject( $skinVector );
-		$data = $openSkinVector->getTocData( $tocData );
-		$this->assertEquals( $expected, $data );
-	}
-
-	/**
-	 * @covers \MediaWiki\Skins\Vector\SkinVector::getTemplateData
+	 * @covers \MediaWiki\Skins\Vector\SkinVectorLegacy::getTemplateData
 	 */
 	public function testGetTemplateData() {
-		$title = Title::newFromText( 'SkinVector' );
-		$context = RequestContext::newExtraneousContext( $title );
+		$this->setService( 'LinkCache', $this->createMock( LinkCache::class ) );
+		$title = Title::makeTitle( NS_MAIN, 'SkinVector' );
+		$title->resetArticleID( 0 );
+		$context = new RequestContext();
+		$context->setTitle( $title );
+		$context->setAuthority( $this->mockAnonNullAuthority() );
 		$context->setLanguage( 'fr' );
+		$context->setActionName( 'view' );
 		$vectorTemplate = $this->provideVectorTemplateObject();
 		$vectorTemplate->setContext( $context );
-		$this->setTemporaryHook( 'SkinTemplateNavigation::Universal', [
+		$this->setTemporaryHook( 'SkinTemplateNavigation::Universal',
 			static function ( &$skinTemplate, &$content_navigation ) {
 				$content_navigation['actions'] = [
 					'action-1' => []
@@ -224,7 +89,7 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 					'pt-1' => [ 'text' => 'pt1' ],
 				];
 			}
-		] );
+		);
 		$openVectorTemplate = TestingAccessWrapper::newFromObject( $vectorTemplate );
 
 		$props = $openVectorTemplate->getTemplateData()['data-portlets'];
@@ -284,7 +149,7 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 	 * Standard config for Language Alert in Sidebar
 	 * @return array
 	 */
-	private function enableLanguageAlertFeatureConfig(): array {
+	private static function enableLanguageInHeaderFeatureConfig(): array {
 		return [
 			'VectorLanguageInHeader' => [
 				'logged_in' => true,
@@ -294,14 +159,10 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 				'logged_in' => false,
 				'logged_out' => false
 			],
-			'VectorLanguageAlertInSidebar' => [
-				'logged_in' => true,
-				'logged_out' => true
-			],
 		];
 	}
 
-	public function providerLanguageAlertRequirements() {
+	public static function providerLanguageAlertRequirements() {
 		$testTitle = Title::makeTitle( NS_MAIN, 'Test' );
 		$testTitleMainPage = Title::makeTitle( NS_MAIN, 'MAIN_PAGE' );
 		return [
@@ -320,23 +181,9 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 				false
 			],
 			'When the feature is enabled and languages should be hidden, do not show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitle,
 				[], true, true, false
-			],
-			'When the language alert feature is disabled, do not show alert' => [
-				[
-					'VectorLanguageInHeader' => [
-						'logged_in' => true,
-						'logged_out' => true
-					],
-					'VectorLanguageAlertInSidebar' => [
-						'logged_in' => false,
-						'logged_out' => false
-					]
-				],
-				$testTitle,
-				[ 'fr', 'en', 'ko' ], true, false, false
 			],
 			'When the language in header feature is disabled, do not show alert' => [
 				[
@@ -344,21 +191,17 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 						'logged_in' => false,
 						'logged_out' => false
 					],
-					'VectorLanguageAlertInSidebar' => [
-						'logged_in' => true,
-						'logged_out' => true
-					]
 				],
 				$testTitle,
 				[ 'fr', 'en', 'ko' ], true, false, false
 			],
 			'When it is a main page, feature is enabled, and there are no languages, do not show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitleMainPage,
 				[], true, true, false
 			],
 			'When it is a non-main page, feature is enabled, and there are no languages, do not show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitle,
 				[], true, true, false
 			],
@@ -368,98 +211,30 @@ class SkinVectorTest extends MediaWikiIntegrationTestCase {
 						'logged_in' => false,
 						'logged_out' => false
 					],
-					'VectorLanguageAlertInSidebar' => [
-						'logged_in' => true,
-						'logged_out' => true
-					]
 				],
 				$testTitleMainPage,
 				[ 'fr', 'en', 'ko' ], true, true, false
 			],
-			'When it is a non-main page, alert feature is disabled, there are languages, do not show alert' => [
-				[
-					'VectorLanguageInHeader' => [
-						'logged_in' => true,
-						'logged_out' => true
-					],
-					'VectorLanguageAlertInSidebar' => [
-						'logged_in' => false,
-						'logged_out' => false
-					]
-				],
-				$testTitle,
-				[ 'fr', 'en', 'ko' ], true, true, false
-			],
 			'When most requirements are present but languages are not at the top, do not show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitle,
 				[ 'fr', 'en', 'ko' ], false, false, false
 			],
 			'When most requirements are present but languages should be hidden, do not show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitle,
 				[ 'fr', 'en', 'ko' ], true, true, false
 			],
 			'When it is a main page, features are enabled, and there are languages, show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitleMainPage,
 				[ 'fr', 'en', 'ko' ], true, false, true
 			],
 			'When all the requirements are present on a non-main page, show alert' => [
-				$this->enableLanguageAlertFeatureConfig(),
+				self::enableLanguageInHeaderFeatureConfig(),
 				$testTitle,
 				[ 'fr', 'en', 'ko' ], true, false, true
 			],
 		];
-	}
-
-	/**
-	 * @dataProvider providerLanguageAlertRequirements
-	 * @covers \MediaWiki\Skins\Vector\SkinVector::shouldLanguageAlertBeInSidebar
-	 * @param array $requirements
-	 * @param Title $title
-	 * @param array $getLanguagesCached
-	 * @param bool $isLanguagesInContentAt
-	 * @param bool $shouldHideLanguages
-	 * @param bool $expected
-	 * @throws Exception
-	 */
-	public function testShouldLanguageAlertBeInSidebar(
-		array $requirements,
-		Title $title,
-		array $getLanguagesCached,
-		bool $isLanguagesInContentAt,
-		bool $shouldHideLanguages,
-		bool $expected
-	) {
-		$this->overrideConfigValues( array_merge( $requirements, [
-			'DefaultSkin' => 'vector-2022',
-			'VectorDefaultSkinVersion' => '2',
-			'VectorSkinMigrationMode' => true,
-		] ) );
-
-		$mockSkinVector = $this->getMockBuilder( SkinVector22::class )
-			->disableOriginalConstructor()
-			->onlyMethods( [ 'getTitle', 'getLanguagesCached','isLanguagesInContentAt', 'shouldHideLanguages' ] )
-			->getMock();
-		$mockSkinVector->method( 'getTitle' )
-			->willReturn( $title );
-		$mockSkinVector->method( 'getLanguagesCached' )
-			->willReturn( $getLanguagesCached );
-		$mockSkinVector->method( 'isLanguagesInContentAt' )->with( 'top' )
-			->willReturn( $isLanguagesInContentAt );
-		$mockSkinVector->method( 'shouldHideLanguages' )
-			->willReturn( $shouldHideLanguages );
-
-		$shouldLanguageAlertBeInSidebarMethod = new ReflectionMethod(
-			SkinVector22::class,
-			'shouldLanguageAlertBeInSidebar'
-		);
-		$shouldLanguageAlertBeInSidebarMethod->setAccessible( true );
-
-		$this->assertSame(
-			$expected,
-			$shouldLanguageAlertBeInSidebarMethod->invoke( $mockSkinVector )
-		);
 	}
 }

@@ -1,7 +1,19 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Query;
+
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\LanguageConverter;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MainConfigSchema;
+use MediaWiki\Message\Message;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SiteStats\SiteStats;
+use MediaWiki\Tests\Api\ApiTestCase;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\Title;
+use Skin;
+use Wikimedia\Composer\ComposerInstalled;
 use Wikimedia\Rdbms\LoadBalancer;
 use Wikimedia\TestingAccessWrapper;
 
@@ -10,9 +22,12 @@ use Wikimedia\TestingAccessWrapper;
  * @group medium
  * @group Database
  *
- * @covers ApiQuerySiteinfo
+ * @covers MediaWiki\Api\ApiQuerySiteinfo
  */
 class ApiQuerySiteinfoTest extends ApiTestCase {
+	use TempUserTestTrait;
+
+	/** @var array[]|null */
 	private $originalRegistryLoaded = null;
 
 	protected function tearDown(): void {
@@ -66,8 +81,9 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 
 	public function testVariants() {
 		$contLang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'zh' );
+		$converter = $this->getServiceContainer()->getLanguageConverterFactory()->getLanguageConverter( $contLang );
 		$this->setContentLang( $contLang );
-		$this->assertTrue( $contLang->hasVariants() );
+		$this->assertTrue( $converter->hasVariants() );
 
 		$data = $this->doQuery();
 
@@ -75,13 +91,15 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 			static function ( $code ) use ( $contLang ) {
 				return [ 'code' => $code, 'name' => $contLang->getVariantname( $code ) ];
 			},
-			$contLang->getVariants()
+			$converter->getVariants()
 		);
 
 		$this->assertSame( $expected, $data['variants'] );
 	}
 
 	public function testReadOnly() {
+		// Create the test user before making the DB readonly
+		$this->getTestSysop()->getUser();
 		$svc = $this->getServiceContainer()->getReadOnlyMode();
 		$svc->setReason( 'Need more donations' );
 		try {
@@ -135,6 +153,9 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	}
 
 	public function testNamespaceAliases() {
+		// XXX: why does this fail when the en-x-piglatin variant is enabled?
+		$this->overrideConfigValue( MainConfigNames::UsePigLatinVariant, false );
+
 		$expected = $this->getServiceContainer()->getContentLanguage()->getNamespaceAliases();
 		$expected = array_map(
 			static function ( $key, $val ) {
@@ -148,15 +169,15 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	}
 
 	public function testSpecialPageAliases() {
-		$this->assertCount(
-			count( $this->getServiceContainer()->getSpecialPageFactory()->getNames() ),
+		$this->assertSameSize(
+			$this->getServiceContainer()->getSpecialPageFactory()->getNames(),
 			$this->doQuery( 'specialpagealiases' )
 		);
 	}
 
 	public function testMagicWords() {
-		$this->assertCount(
-			count( $this->getServiceContainer()->getContentLanguage()->getMagicWords() ),
+		$this->assertSameSize(
+			$this->getServiceContainer()->getContentLanguage()->getMagicWords(),
 			$this->doQuery( 'magicwords' )
 		);
 	}
@@ -166,41 +187,34 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	 */
 	public function testInterwikiMap( $filter ) {
 		$this->overrideConfigValues( [
+			MainConfigNames::ExtraInterlanguageLinkPrefixes => [ 'self' ],
+			MainConfigNames::ExtraLanguageNames => [ 'self' => 'Recursion' ],
+			MainConfigNames::LocalInterwikis => [ 'self' ],
 			MainConfigNames::Server => 'https://local.example',
 			MainConfigNames::ScriptPath => '/w',
 		] );
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->insert(
-			'interwiki',
-			[
-				[
-					'iw_prefix' => 'self',
-					'iw_url' => 'https://local.example/w/index.php?title=$1',
-					'iw_api' => 'https://local.example/w/api.php',
-					'iw_wikiid' => 'somedbname',
-					'iw_local' => true,
-					'iw_trans' => true,
-				],
-				[
-					'iw_prefix' => 'foreign',
-					'iw_url' => '//foreign.example/wiki/$1',
-					'iw_api' => '',
-					'iw_wikiid' => '',
-					'iw_local' => false,
-					'iw_trans' => false,
-				],
-			],
-			__METHOD__,
-			'IGNORE'
-		);
-		$this->tablesUsed[] = 'interwiki';
-
-		$this->overrideConfigValues( [
-			MainConfigNames::LocalInterwikis => [ 'self' ],
-			MainConfigNames::ExtraInterlanguageLinkPrefixes => [ 'self' ],
-			MainConfigNames::ExtraLanguageNames => [ 'self' => 'Recursion' ],
-		] );
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'interwiki' )
+			->ignore()
+			->row( [
+				'iw_prefix' => 'self',
+				'iw_url' => 'https://local.example/w/index.php?title=$1',
+				'iw_api' => 'https://local.example/w/api.php',
+				'iw_wikiid' => 'somedbname',
+				'iw_local' => true,
+				'iw_trans' => true,
+			] )
+			->row( [
+				'iw_prefix' => 'foreign',
+				'iw_url' => '//foreign.example/wiki/$1',
+				'iw_api' => '',
+				'iw_wikiid' => '',
+				'iw_local' => false,
+				'iw_trans' => false,
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
 		$this->getServiceContainer()->getMessageCache()->enable();
 
@@ -222,8 +236,10 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 				'local' => true,
 				'trans' => true,
 				'language' => 'Recursion',
+				'bcp47' => 'self',
 				'localinterwiki' => true,
 				'extralanglink' => true,
+				'code' => 'self',
 				'linktext' => 'Self!',
 				'sitename' => 'Circular logic',
 				'url' => 'https://local.example/w/index.php?title=$1',
@@ -239,7 +255,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$this->assertSame( $expected, $data );
 	}
 
-	public function interwikiMapProvider() {
+	public static function interwikiMapProvider() {
 		return [ [ 'local' ], [ '!local' ], [ null ] ];
 	}
 
@@ -248,8 +264,11 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	 */
 	public function testDbReplLagInfo( $showHostnames, $includeAll ) {
 		if ( !$showHostnames && $includeAll ) {
-			$this->setExpectedApiException( 'apierror-siteinfo-includealldenied' );
+			$this->expectApiErrorCode( 'includeAllDenied' );
 		}
+
+		// Force creation of the test user before mocking the database.
+		$this->getTestSysop()->getUser();
 
 		$mockLB = $this->createNoOpMock( LoadBalancer::class, [ 'getMaxLag', 'getLagTimes',
 			'getServerName', 'getLocalDomainID' ] );
@@ -275,7 +294,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$this->assertSame( $expected, $data );
 	}
 
-	public function dbReplLagProvider() {
+	public static function dbReplLagProvider() {
 		return [
 			'no hostnames, no showalldb' => [ false, false ],
 			'no hostnames, showalldb' => [ false, true ],
@@ -326,6 +345,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$names = array_column( $data, 'name' );
 
 		$this->assertSame( array_keys( $wgGroupPermissions ), $names );
+		$userAllGroups = $this->getServiceContainer()->getUserGroupManager()->listAllGroups();
 
 		foreach ( $data as $val ) {
 			if ( !$numInGroup ) {
@@ -345,9 +365,8 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 			}
 
 			if ( $val['name'] === 'viscount' ) {
-				$viscountFound = true;
 				$this->assertSame( [ 'perambulate' ], $val['rights'] );
-				$this->assertSame( User::getAllGroups(), $val['add'] );
+				$this->assertSame( $userAllGroups, $val['add'] );
 			} elseif ( $val['name'] === 'bot' ) {
 				$this->assertArrayNotHasKey( 'add', $val );
 				$this->assertArrayNotHasKey( 'remove', $val );
@@ -355,6 +374,29 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 				$this->assertSame( [ 'bot' ], $val['remove-self'] );
 			}
 		}
+	}
+
+	public function testAutoCreateTempUser() {
+		$this->disableAutoCreateTempUser( [ 'reservedPattern' => null ] );
+		$this->assertSame(
+			[ 'enabled' => false ],
+			$this->doQuery( 'autocreatetempuser' ),
+			'When disabled, no other properties are present'
+		);
+
+		$this->enableAutoCreateTempUser( [
+			'reservedPattern' => null,
+		] );
+		$this->assertArrayEquals(
+			[
+				'enabled' => true,
+				'matchPatterns' => [ '~$1' ],
+			],
+			$this->doQuery( 'autocreatetempuser' ),
+			false,
+			true,
+			'When enabled, some properties are filled in or cleaned up'
+		);
 	}
 
 	public function testFileExtensions() {
@@ -366,7 +408,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$this->assertSame( $expected, $this->doQuery( 'fileextensions' ) );
 	}
 
-	public function groupsProvider() {
+	public static function groupsProvider() {
 		return [
 			'numingroup' => [ true ],
 			'nonumingroup' => [ false ],
@@ -389,7 +431,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 
 		$expected = array_filter( $expected,
 			static function ( $info ) {
-				return strpos( $info['type'], 'mediawiki-' ) !== 0;
+				return !str_starts_with( $info['type'], 'mediawiki-' );
 			}
 		);
 
@@ -449,12 +491,12 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		// @todo Test git info
 
 		$this->assertSame(
-			Title::newFromText( 'Special:Version/License/Ersatz Extension' )->getLinkURL(),
+			Title::makeTitle( NS_SPECIAL, 'Version/License/Ersatz Extension' )->getLinkURL(),
 			$data[0]['license']
 		);
 
 		$this->assertSame(
-			Title::newFromText( 'Special:Version/Credits/Ersatz Extension' )->getLinkURL(),
+			Title::makeTitle( NS_SPECIAL, 'Version/Credits/Ersatz Extension' )->getLinkURL(),
 			$data[0]['credits']
 		);
 
@@ -466,12 +508,9 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	/**
 	 * @dataProvider rightsInfoProvider
 	 */
-	public function testRightsInfo( $page, $url, $text, $expectedUrlOrTitle, $expectedText ) {
-		$expectedUrl = ( $expectedUrlOrTitle instanceof Title )
-			? wfExpandUrl( $expectedUrlOrTitle->getLinkURL(), PROTO_CURRENT )
-			: $expectedUrlOrTitle;
-
+	public function testRightsInfo( $page, $url, $text, $expectedUrl, $expectedText ) {
 		$this->overrideConfigValues( [
+			MainConfigNames::Server => 'https://local.example',
 			MainConfigNames::RightsPage => $page,
 			MainConfigNames::RightsUrl => $url,
 			MainConfigNames::RightsText => $text,
@@ -495,21 +534,21 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		);
 	}
 
-	public function rightsInfoProvider() {
-		$licenseTitle = Title::makeTitle( 0, 'License' );
+	public static function rightsInfoProvider() {
+		$licenseTitleUrl = 'https://local.example/wiki/License';
 		$licenseUrl = 'http://license.example/';
 
 		return [
 			'No rights info' => [ null, null, null, '', '' ],
-			'Only page' => [ 'License', null, null, $licenseTitle, 'License' ],
+			'Only page' => [ 'License', null, null, $licenseTitleUrl, 'License' ],
 			'Only URL' => [ null, $licenseUrl, null, $licenseUrl, '' ],
 			'Only text' => [ null, null, '!!!', '', '!!!' ],
 			// URL is ignored if page is specified
-			'Page and URL' => [ 'License', $licenseUrl, null, $licenseTitle, 'License' ],
+			'Page and URL' => [ 'License', $licenseUrl, null, $licenseTitleUrl, 'License' ],
 			'URL and text' => [ null, $licenseUrl, '!!!', $licenseUrl, '!!!' ],
-			'Page and text' => [ 'License', null, '!!!', $licenseTitle, '!!!' ],
-			'Page and URL and text' => [ 'License', $licenseUrl, '!!!', $licenseTitle, '!!!' ],
-			'Pagename "0"' => [ '0', null, null, Title::makeTitle( 0, '0' ), '0' ],
+			'Page and text' => [ 'License', null, '!!!', $licenseTitleUrl, '!!!' ],
+			'Page and URL and text' => [ 'License', $licenseUrl, '!!!', $licenseTitleUrl, '!!!' ],
+			'Pagename "0"' => [ '0', null, null, 'https://local.example/wiki/0', '0' ],
 			'URL "0"' => [ null, '0', null, '0', '' ],
 			'Text "0"' => [ null, null, '0', '', '0' ],
 		];
@@ -553,7 +592,7 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$this->assertSame( $expected, $data );
 	}
 
-	public function languagesProvider() {
+	public static function languagesProvider() {
 		return [ [ null ], [ 'fr' ] ];
 	}
 
@@ -672,21 +711,17 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 	}
 
 	public function testGetHooks() {
-		global $wgHooks;
-
 		// Make sure there's something to report on
 		$this->setTemporaryHook( 'somehook',
 			static function () {
-				return;
 			}
 		);
 
-		$expectedNames = $wgHooks;
-		ksort( $expectedNames );
-
+		$hookContainer = $this->getServiceContainer()->getHookContainer();
+		$expectedNames = $hookContainer->getHookNames();
 		$actualNames = array_column( $this->doQuery( 'showhooks' ), 'name' );
 
-		$this->assertSame( array_keys( $expectedNames ), $actualNames );
+		$this->assertArrayEquals( $expectedNames, $actualNames );
 	}
 
 	public function testContinuation() {
@@ -717,5 +752,302 @@ class ApiQuerySiteinfoTest extends ApiTestCase {
 		$this->assertArrayNotHasKey( 'languages', $res[0] );
 		$this->assertTrue( $res[0]['batchcomplete'], 'batchcomplete should be true' );
 		$this->assertSame( [ 'siprop' => 'languages', 'continue' => '-||' ], $res[0]['continue'] );
+	}
+
+	/**
+	 * @dataProvider provideAutopromote
+	 */
+	public function testAutopromote( $config, $expected ) {
+		$this->overrideConfigValues( [
+			MainConfigNames::Autopromote => $config,
+			MainConfigNames::AutoConfirmCount => 10,
+			MainConfigNames::AutoConfirmAge => 345600,
+		] );
+		$this->assertSame( $expected, $this->doQuery( 'autopromote' ) );
+	}
+
+	public static function provideAutopromote() {
+		yield 'simple' => [
+			[
+				// edit count >= 10 and age >= 4 days
+				'simple' => [ '&',
+					[ APCOND_EDITCOUNT, 10 ],
+					[ APCOND_AGE, 345600 ],
+				],
+			],
+			[
+				'simple' => [
+					'operand' => '&',
+					0 => [
+						'condname' => 'APCOND_EDITCOUNT',
+						'params' => [ 10 ]
+					],
+					1 => [
+						'condname' => 'APCOND_AGE',
+						'params' => [ 345600 ]
+					]
+				]
+			]
+		];
+
+		// Test case to check default of null is replaced with value of appropriate $wg
+		yield 'simple-use-wg' => [
+			[
+				'simple-use-wg' => [ '&',
+					[ APCOND_EDITCOUNT, null ],
+					[ APCOND_AGE, null ],
+				],
+			],
+			[
+				'simple-use-wg' => [
+					'operand' => '&',
+					0 => [
+						'condname' => 'APCOND_EDITCOUNT',
+						'params' => [ 10 ]
+					],
+					1 => [
+						'condname' => 'APCOND_AGE',
+						'params' => [ 345600 ]
+					]
+				]
+			]
+		];
+
+		yield 'trivial' => [
+			[
+				'trivial' => APCOND_EMAILCONFIRMED,
+			],
+			[
+				'trivial' => [
+					0 => [
+						'condname' => 'APCOND_EMAILCONFIRMED',
+						'params' => []
+					]
+				],
+			]
+		];
+
+		yield 'multiple-copies-of-condition' => [
+			[
+				// In both groups 'foo' and 'bar', or in group 'baz'
+				'multiple-copies-of-condition' => [ '|',
+					[ APCOND_INGROUPS, 'foo', 'bar' ],
+					[ APCOND_INGROUPS, 'baz' ],
+				],
+			],
+			[
+				'multiple-copies-of-condition' => [
+					'operand' => '|',
+					0 => [
+						'condname' => 'APCOND_INGROUPS',
+						'params' => [ 'foo', 'bar' ]
+					],
+					1 => [
+						'condname' => 'APCOND_INGROUPS',
+						'params' => [ 'baz' ]
+					]
+				]
+			]
+		];
+
+		yield 'complicated' => [
+			[
+				// confirmed email, or their edit count >= 100 and either they
+				// created their account a year ago or it has been 10 days since
+				// their first edit, or if they're in both groups 'group1' and
+				// 'group2'. Except for users in the 'bad' group.
+				'complicated' => [ '&',
+					[ '|',
+						APCOND_EMAILCONFIRMED,
+						[ '&',
+							[ APCOND_EDITCOUNT, 100 ],
+							[ '|',
+								[ APCOND_AGE, 525600 * 60 ],
+								[ APCOND_AGE_FROM_EDIT, 864000 ],
+							],
+						],
+						[ APCOND_INGROUPS, 'group1', 'group2' ],
+					],
+					[ '!', [ APCOND_INGROUPS, 'bad' ] ],
+				],
+			],
+			[
+				'complicated' => [
+					'operand' => '&',
+					0 => [
+						'operand' => '|',
+						0 => [
+							'condname' => 'APCOND_EMAILCONFIRMED',
+							'params' => []
+						],
+						1 => [
+							'operand' => '&',
+							0 => [
+								'condname' => 'APCOND_EDITCOUNT',
+								'params' => [ 100 ]
+							],
+							1 => [
+								'operand' => '|',
+								0 => [
+									'condname' => 'APCOND_AGE',
+									'params' => [ 31536000 ]
+								],
+								1 => [
+									'condname' => 'APCOND_AGE_FROM_EDIT',
+									'params' => [ 864000 ]
+								]
+							]
+						],
+						2 => [
+							'condname' => 'APCOND_INGROUPS',
+							'params' => [ 'group1', 'group2' ]
+						]
+					],
+					1 => [
+						'operand' => '!',
+						0 => [
+							'condname' => 'APCOND_INGROUPS',
+							'params' => [ 'bad' ]
+						]
+					]
+				]
+			]
+		];
+
+		// Find an undefined APCOND integer
+		$constants = [];
+		foreach ( get_defined_constants() as $k => $v ) {
+			if ( strpos( $k, 'APCOND_' ) !== false ) {
+				$constants[$v] = $k;
+			}
+		}
+		$bogusCond = 9000;
+		while ( isset( $constants[$bogusCond] ) ) {
+			$bogusCond++;
+		}
+		$bogusCond2 = $bogusCond + 1;
+		while ( isset( $constants[$bogusCond2] ) ) {
+			$bogusCond2++;
+		}
+
+		yield 'bad-cond-1' => [
+			[
+				// unknown APCOND constant. Might be handled by an extension that
+				// didn't define a constant with the expected name.
+				'bad-cond' => 'bogus',
+			],
+			[
+				'bad-cond' => [
+					'bogus'
+				],
+			]
+		];
+		yield 'bad-cond-2' => [
+			[
+				'bad-cond' => $bogusCond,
+			],
+			[
+				'bad-cond' => [
+					0 => [
+						'condname' => false,
+						'params' => []
+					]
+				],
+			]
+		];
+		yield 'bad-cond-3' => [
+			[
+				'bad-cond' => [ 'bogus', 'bogus?', APCOND_EMAILCONFIRMED, $bogusCond, $bogusCond2 ],
+			],
+			[
+				'bad-cond' => [
+					'bogus',
+					'bogus?',
+					APCOND_EMAILCONFIRMED,
+					$bogusCond,
+					$bogusCond2
+				],
+			]
+		];
+		yield 'bad-cond-4' => [
+			[
+				'bad-cond' => [ '&',
+					'bogus1',
+					'bogus2',
+					APCOND_EMAILCONFIRMED,
+					$bogusCond,
+					$bogusCond2,
+				],
+			],
+			[
+				'bad-cond' => [
+					'operand' => '&',
+					0 => 'bogus1',
+					1 => 'bogus2',
+					2 => [
+						'condname' => 'APCOND_EMAILCONFIRMED',
+						'params' => []
+					],
+					3 => [
+						'condname' => false,
+						'params' => []
+					],
+					4 => [
+						'condname' => false,
+						'params' => []
+					]
+				]
+			]
+		];
+	}
+
+	public function testAutopromoteOnceDefault() {
+		// PHP doesn't like empty nested arrays nested in arrays...
+		$value = [
+			'onEdit' => [],
+			'onView' => [],
+		];
+		$this->testAutopromoteOnce( $value, $value );
+	}
+
+	/**
+	 * @dataProvider provideAutopromoteOnce
+	 */
+	public function testAutopromoteOnce( $config, $expected ) {
+		$this->overrideConfigValues( [
+			MainConfigNames::AutopromoteOnce => $config,
+			MainConfigNames::AutoConfirmCount => 10,
+			MainConfigNames::AutoConfirmAge => 345600,
+		] );
+		$this->assertSame( $expected, $this->doQuery( 'autopromoteonce' ) );
+	}
+
+	public static function provideAutopromoteOnce() {
+		yield 'simple' => [
+			[
+				'onEdit' => [
+					// edit count >= 10 and age >= 4 days
+					'simple' => [ '&',
+						[ APCOND_EDITCOUNT, 10 ],
+						[ APCOND_AGE, 345600 ],
+					],
+				],
+			],
+			[
+				'onEdit' => [
+					'simple' => [
+						'operand' => '&',
+						0 => [
+							'condname' => 'APCOND_EDITCOUNT',
+							'params' => [ 10 ]
+						],
+						1 => [
+							'condname' => 'APCOND_AGE',
+							'params' => [ 345600 ]
+						]
+					]
+				]
+			]
+		];
 	}
 }

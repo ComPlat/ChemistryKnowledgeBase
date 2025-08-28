@@ -2,29 +2,23 @@
 
 namespace Cite\Tests;
 
-use Cite\Cite;
-use Language;
-use MediaWiki\MediaWikiServices;
-use Parser;
-use ParserOptions;
-use Title;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Title\Title;
 
 /**
  * @group Database
- *
+ * @covers \Cite\ReferenceStack
  * @license GPL-2.0-or-later
  */
 class CiteDbTest extends \MediaWikiIntegrationTestCase {
-
 	/**
-	 * Edge case where a parser call within `<ref>` parse clears the original parser state.
+	 * Parser call within `<ref>` parse clears the original parser state.
 	 * @see https://phabricator.wikimedia.org/T240248
-	 * @covers \Cite\ReferenceStack::pushRef
 	 */
 	public function testReferenceStackError() {
 		$this->insertPage( 'Cite-tracking-category-cite-error', '{{PAGENAME}}', NS_MEDIAWIKI );
 
-		$services = MediaWikiServices::getInstance();
+		$services = $this->getServiceContainer();
 		// Reset the MessageCache in order to force it to clone a new parser.
 		$services->resetServiceForTesting( 'MessageCache' );
 		$services->getMessageCache()->enable();
@@ -44,20 +38,6 @@ class CiteDbTest extends \MediaWikiIntegrationTestCase {
 			$parserOutput->getText(),
 			'Internal counter should not reset to 1 for text #3'
 		);
-	}
-
-	private function newCite(): Cite {
-		$mockOptions = $this->createMock( ParserOptions::class );
-		$mockOptions->method( 'getIsPreview' )->willReturn( false );
-		$mockOptions->method( 'getIsSectionPreview' )->willReturn( false );
-		$mockOptions->method( 'getUserLangObj' )->willReturn(
-			$this->createMock( Language::class ) );
-		$mockParser = $this->createMock( Parser::class );
-		$mockParser->method( 'getOptions' )->willReturn( $mockOptions );
-		$mockParser->method( 'getContentLanguage' )->willReturn(
-			$this->createMock( Language::class ) );
-		/** @var Parser $mockParser */
-		return new Cite( $mockParser );
 	}
 
 }

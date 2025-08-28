@@ -1,15 +1,16 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class BooleanTest extends PHPUnit_Framework_TestCase
+class BooleanTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
 
     public function testBooleanValueIsTrueOrFalse()
     {
         $this->forAll(
-            Generator\bool()
+            Generators::bool()
         )
             ->then(function ($boolValue) {
                 $this->assertTrue(

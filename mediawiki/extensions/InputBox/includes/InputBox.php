@@ -8,12 +8,13 @@
 
 namespace MediaWiki\Extension\InputBox;
 
-use ExtensionRegistry;
-use Html;
-use Parser;
-use Sanitizer;
-use SpecialPage;
-use Xml;
+use MediaWiki\Config\Config;
+use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\SpecialPage;
 
 /**
  * InputBox class
@@ -22,42 +23,78 @@ class InputBox {
 
 	/* Fields */
 
+	/** @var Config */
+	private $config;
 	/** @var Parser */
 	private $mParser;
+	/** @var string */
 	private $mType = '';
+	/** @var int */
 	private $mWidth = 50;
+	/** @var ?string */
 	private $mPreload = null;
+	/** @var ?array */
 	private $mPreloadparams = null;
+	/** @var ?string */
 	private $mEditIntro = null;
+	/** @var ?string */
 	private $mUseVE = null;
+	/** @var ?string */
+	private $mUseDT = null;
+	/** @var ?string */
 	private $mSummary = null;
+	/** @var ?string */
 	private $mNosummary = null;
+	/** @var ?string */
 	private $mMinor = null;
+	/** @var string */
 	private $mPage = '';
+	/** @var string */
 	private $mBR = 'yes';
+	/** @var string */
 	private $mDefaultText = '';
+	/** @var string */
 	private $mPlaceholderText = '';
+	/** @var string */
 	private $mBGColor = 'transparent';
+	/** @var string */
 	private $mButtonLabel = '';
+	/** @var string */
 	private $mSearchButtonLabel = '';
+	/** @var string */
 	private $mFullTextButton = '';
+	/** @var string */
 	private $mLabelText = '';
+	/** @var ?string */
 	private $mHidden = '';
+	/** @var string */
 	private $mNamespaces = '';
+	/** @var string */
 	private $mID = '';
-	private $mInline = false;
+	/** @var ?string */
+	private $mInline = null;
+	/** @var string */
 	private $mPrefix = '';
+	/** @var string */
 	private $mDir = '';
+	/** @var string */
 	private $mSearchFilter = '';
+	/** @var string */
 	private $mTour = '';
+	/** @var string */
 	private $mTextBoxAriaLabel = '';
 
 	/* Functions */
 
 	/**
+	 * @param Config $config
 	 * @param Parser $parser
 	 */
-	public function __construct( $parser ) {
+	public function __construct(
+		Config $config,
+		$parser
+	) {
+		$this->config = $config;
 		$this->mParser = $parser;
 		// Default value for dir taken from the page language (bug 37018)
 		$this->mDir = $this->mParser->getTargetLanguage()->getDir();
@@ -66,8 +103,6 @@ class InputBox {
 		$this->mParser->getOptions()->getUserLangObj();
 		$this->mParser->getOutput()->addModuleStyles( [
 			'ext.inputBox.styles',
-			'mediawiki.ui.input',
-			'mediawiki.ui.checkbox',
 		] );
 	}
 
@@ -89,8 +124,8 @@ class InputBox {
 				return $this->getSearchForm2();
 			default:
 				$key = $this->mType === '' ? 'inputbox-error-no-type' : 'inputbox-error-bad-type';
-				return Xml::tags( 'div', null,
-					Xml::element( 'strong',
+				return Html::rawElement( 'div', [],
+					Html::element( 'strong',
 						[ 'class' => 'error' ],
 						wfMessage( $key, $this->mType )->text()
 					)
@@ -127,6 +162,16 @@ class InputBox {
 	 *
 	 * @return string
 	 */
+	private function getFormLinebreakClasses() {
+		return strtolower( $this->mBR ) === '<br />' ? ' mw-inputbox-form' : ' mw-inputbox-form-inline';
+	}
+
+	/**
+	 * Get common classes, that could be added and depend on, if
+	 * a line break between a button and an input field is added or not.
+	 *
+	 * @return string
+	 */
 	private function getLinebreakClasses() {
 		return strtolower( $this->mBR ) === '<br />' ? 'mw-inputbox-input ' : '';
 	}
@@ -137,8 +182,6 @@ class InputBox {
 	 * @return string HTML
 	 */
 	public function getSearchForm( $type ) {
-		global $wgNamespaceAliases;
-
 		// Use button label fallbacks
 		if ( !$this->mButtonLabel ) {
 			$this->mButtonLabel = wfMessage( 'inputbox-tryexact' )->text();
@@ -156,23 +199,23 @@ class InputBox {
 		$idRandStr = Sanitizer::escapeIdForAttribute( '-' . $this->mID . wfRandom() );
 
 		// Build HTML
-		$htmlOut = Xml::openElement( 'div',
+		$htmlOut = Html::openElement( 'div',
 			[
 				'class' => 'mw-inputbox-centered',
 				'style' => $this->bgColorStyle(),
 			]
 		);
-		$htmlOut .= Xml::openElement( 'form',
+		$htmlOut .= Html::openElement( 'form',
 			[
 				'name' => 'searchbox',
-				'class' => 'searchbox',
+				'class' => 'searchbox' . $this->getFormLinebreakClasses(),
 				'action' => SpecialPage::getTitleFor( 'Search' )->getLocalUrl(),
 			] + $idArray
 		);
 
 		$htmlOut .= $this->buildTextBox( [
 			// enable SearchSuggest with mw-searchInput class
-			'class' => $this->getLinebreakClasses() . 'mw-searchInput searchboxInput mw-ui-input mw-ui-input-inline',
+			'class' => $this->getLinebreakClasses() . 'mw-searchInput searchboxInput',
 			'name' => 'search',
 			'type' => $this->mHidden ? 'hidden' : 'text',
 			'value' => $this->mDefaultText,
@@ -200,12 +243,16 @@ class InputBox {
 		if ( $this->mNamespaces ) {
 			$contLang = $this->mParser->getContentLanguage();
 			$namespaces = $contLang->getNamespaces();
-			$nsAliases = array_merge( $contLang->getNamespaceAliases(), $wgNamespaceAliases );
+			$nsAliases = array_merge(
+				$contLang->getNamespaceAliases(),
+				$this->config->get( MainConfigNames::NamespaceAliases )
+			);
 			$showNamespaces = [];
 			$checkedNS = [];
 			// Check for valid namespaces
 			foreach ( $namespacesArray as $userNS ) {
-				$userNS = trim( $userNS ); // no whitespace
+				// no whitespace
+				$userNS = trim( $userNS );
 
 				// Namespace needs to be checked if flagged with "**"
 				if ( strpos( $userNS, '**' ) ) {
@@ -221,7 +268,8 @@ class InputBox {
 				} elseif ( isset( $nsAliases[$userNS] ) ) {
 					$i = $nsAliases[$userNS];
 				} else {
-					continue; // Namespace not recognized, skip
+					// Namespace not recognized, skip
+					continue;
 				}
 				$showNamespaces[$i] = $userNS;
 				if ( isset( $checkedNS[$userNS] ) && $checkedNS[$userNS] ) {
@@ -239,7 +287,7 @@ class InputBox {
 
 				if ( count( $showNamespaces ) === 1 ) {
 					// Checkbox
-					$htmlOut .= Xml::element( 'input',
+					$htmlOut .= Html::element( 'input',
 						[
 							'type' => 'hidden',
 							'name' => 'ns' . $i,
@@ -249,18 +297,9 @@ class InputBox {
 					);
 				} else {
 					// Checkbox
-					$htmlOut .= ' <div class="mw-inputbox-element mw-ui-checkbox">';
-					$htmlOut .= Xml::element( 'input',
-						[
-							'type' => 'checkbox',
-							'name' => 'ns' . $i,
-							'value' => 1,
-							'id' => 'mw-inputbox-ns' . $i . $idRandStr
-						] + $checked
+					$htmlOut .= $this->buildCheckboxInput(
+						$name, 'ns' . $i, 'mw-inputbox-ns' . $i . $idRandStr, "1", $checked
 					);
-					// Label
-					$htmlOut .= Xml::label( $name, 'mw-inputbox-ns' . $i . $idRandStr );
-					$htmlOut .= '</div> ';
 				}
 			}
 
@@ -268,11 +307,10 @@ class InputBox {
 			$htmlOut .= $this->mBR;
 		} elseif ( $type === 'search' ) {
 			// Go button
-			$htmlOut .= Xml::element( 'input',
+			$htmlOut .= $this->buildSubmitInput(
 				[
 					'type' => 'submit',
 					'name' => 'go',
-					'class' => 'mw-ui-button',
 					'value' => $this->mButtonLabel
 				]
 			);
@@ -280,11 +318,10 @@ class InputBox {
 		}
 
 		// Search button
-		$htmlOut .= Xml::element( 'input',
+		$htmlOut .= $this->buildSubmitInput(
 			[
 				'type' => 'submit',
 				'name' => 'fulltext',
-				'class' => 'mw-ui-button',
 				'value' => $this->mSearchButtonLabel
 			]
 		);
@@ -294,8 +331,8 @@ class InputBox {
 			$htmlOut .= Html::hidden( 'fulltext', 'Search' );
 		}
 
-		$htmlOut .= Xml::closeElement( 'form' );
-		$htmlOut .= Xml::closeElement( 'div' );
+		$htmlOut .= Html::closeElement( 'form' );
+		$htmlOut .= Html::closeElement( 'div' );
 
 		// Return HTML
 		return $htmlOut;
@@ -321,20 +358,23 @@ class InputBox {
 		}
 		$id = Sanitizer::escapeIdForAttribute( $unescapedID );
 		$htmlLabel = '';
-		if ( isset( $this->mLabelText ) && strlen( trim( $this->mLabelText ) ) ) {
-			$htmlLabel = Xml::openElement( 'label', [ 'for' => 'bodySearchInput' . $id ] );
+		if ( strlen( trim( $this->mLabelText ) ) ) {
+			$htmlLabel = Html::openElement( 'label', [ 'for' => 'bodySearchInput' . $id,
+				'class' => 'mw-inputbox-label'
+			] );
 			$htmlLabel .= $this->mParser->recursiveTagParse( $this->mLabelText );
-			$htmlLabel .= Xml::closeElement( 'label' );
+			$htmlLabel .= Html::closeElement( 'label' );
 		}
-		$htmlOut = Xml::openElement( 'form',
+		$htmlOut = Html::openElement( 'form',
 			[
 				'name' => 'bodySearch' . $id,
 				'id' => 'bodySearch' . $id,
-				'class' => 'bodySearch' . ( $this->mInline ? ' mw-inputbox-inline' : '' ),
+				'class' => 'bodySearch' .
+					( $this->mInline ? ' mw-inputbox-inline' : '' ) . $this->getFormLinebreakClasses(),
 				'action' => SpecialPage::getTitleFor( 'Search' )->getLocalUrl(),
 			]
 		);
-		$htmlOut .= Xml::openElement( 'div',
+		$htmlOut .= Html::openElement( 'div',
 			[
 				'class' => 'bodySearchWrap' . ( $this->mInline ? ' mw-inputbox-inline' : '' ),
 				'style' => $this->bgColorStyle(),
@@ -346,36 +386,34 @@ class InputBox {
 			'type' => $this->mHidden ? 'hidden' : 'text',
 			'name' => 'search',
 			// enable SearchSuggest with mw-searchInput class
-			'class' => 'mw-searchInput mw-ui-input mw-ui-input-inline',
+			'class' => 'mw-searchInput',
 			'size' => $this->mWidth,
 			'id' => 'bodySearchInput' . $id,
 			'dir' => $this->mDir,
 			'placeholder' => $this->mPlaceholderText
 		] );
 
-		$htmlOut .= "\u{00A0}" . Xml::element( 'input',
+		$htmlOut .= "\u{00A0}" . $this->buildSubmitInput(
 			[
 				'type' => 'submit',
 				'name' => 'go',
 				'value' => $this->mButtonLabel,
-				'class' => 'mw-ui-button',
 			]
 		);
 
 		// Better testing needed here!
-		if ( !empty( $this->mFullTextButton ) ) {
-			$htmlOut .= Xml::element( 'input',
+		if ( $this->mFullTextButton !== '' ) {
+			$htmlOut .= $this->buildSubmitInput(
 				[
 					'type' => 'submit',
 					'name' => 'fulltext',
-					'class' => 'mw-ui-button',
 					'value' => $this->mSearchButtonLabel
 				]
 			);
 		}
 
-		$htmlOut .= Xml::closeElement( 'div' );
-		$htmlOut .= Xml::closeElement( 'form' );
+		$htmlOut .= Html::closeElement( 'div' );
+		$htmlOut .= Html::closeElement( 'form' );
 
 		// Return HTML
 		return $htmlOut;
@@ -386,8 +424,6 @@ class InputBox {
 	 * @return string
 	 */
 	public function getCreateForm() {
-		global $wgScript;
-
 		if ( $this->mType === 'comment' ) {
 			if ( !$this->mButtonLabel ) {
 				$this->mButtonLabel = wfMessage( 'inputbox-postcomment' )->text();
@@ -398,7 +434,7 @@ class InputBox {
 			}
 		}
 
-		$htmlOut = Xml::openElement( 'div',
+		$htmlOut = Html::openElement( 'div',
 			[
 				'class' => 'mw-inputbox-centered',
 				'style' => $this->bgColorStyle(),
@@ -406,14 +442,14 @@ class InputBox {
 		);
 		$createBoxParams = [
 			'name' => 'createbox',
-			'class' => 'createbox',
-			'action' => $wgScript,
+			'class' => 'createbox' . $this->getFormLinebreakClasses(),
+			'action' => $this->config->get( MainConfigNames::Script ),
 			'method' => 'get'
 		];
 		if ( $this->mID !== '' ) {
 			$createBoxParams['id'] = Sanitizer::escapeIdForAttribute( $this->mID );
 		}
-		$htmlOut .= Xml::openElement( 'form', $createBoxParams );
+		$htmlOut .= Html::openElement( 'form', $createBoxParams );
 		$editArgs = $this->getEditActionArgs();
 		$htmlOut .= Html::hidden( $editArgs['name'], $editArgs['value'] );
 		if ( $this->mPreload !== null ) {
@@ -439,15 +475,19 @@ class InputBox {
 		if ( $this->mMinor !== null ) {
 			$htmlOut .= Html::hidden( 'minor', $this->mMinor );
 		}
+		// @phan-suppress-next-line PhanSuspiciousValueComparison False positive
 		if ( $this->mType === 'comment' ) {
 			$htmlOut .= Html::hidden( 'section', 'new' );
+			if ( $this->mUseDT ) {
+				$htmlOut .= Html::hidden( 'dtpreload', '1' );
+			}
 		}
 
 		$htmlOut .= $this->buildTextBox( [
 			'type' => $this->mHidden ? 'hidden' : 'text',
 			'name' => 'title',
 			'class' => $this->getLinebreakClasses() .
-				'mw-ui-input mw-ui-input-inline mw-inputbox-createbox',
+				'mw-inputbox-createbox',
 			'value' => $this->mDefaultText,
 			'placeholder' => $this->mPlaceholderText,
 			// For visible input fields, use required so that the form will not
@@ -458,16 +498,16 @@ class InputBox {
 		] );
 
 		$htmlOut .= $this->mBR;
-		$htmlOut .= Xml::openElement( 'input',
+		$htmlOut .= $this->buildSubmitInput(
 			[
 				'type' => 'submit',
 				'name' => 'create',
-				'class' => 'mw-ui-button mw-ui-progressive',
 				'value' => $this->mButtonLabel
-			]
+			],
+			true
 		);
-		$htmlOut .= Xml::closeElement( 'form' );
-		$htmlOut .= Xml::closeElement( 'div' );
+		$htmlOut .= Html::closeElement( 'form' );
+		$htmlOut .= Html::closeElement( 'div' );
 
 		// Return HTML
 		return $htmlOut;
@@ -478,13 +518,11 @@ class InputBox {
 	 * @return string
 	 */
 	public function getMoveForm() {
-		global $wgScript;
-
 		if ( !$this->mButtonLabel ) {
 			$this->mButtonLabel = wfMessage( 'inputbox-movearticle' )->text();
 		}
 
-		$htmlOut = Xml::openElement( 'div',
+		$htmlOut = Html::openElement( 'div',
 			[
 				'class' => 'mw-inputbox-centered',
 				'style' => $this->bgColorStyle(),
@@ -492,14 +530,14 @@ class InputBox {
 		);
 		$moveBoxParams = [
 			'name' => 'movebox',
-			'class' => 'mw-movebox',
-			'action' => $wgScript,
+			'class' => 'mw-movebox' . $this->getFormLinebreakClasses(),
+			'action' => $this->config->get( MainConfigNames::Script ),
 			'method' => 'get'
 		];
 		if ( $this->mID !== '' ) {
 			$moveBoxParams['id'] = Sanitizer::escapeIdForAttribute( $this->mID );
 		}
-		$htmlOut .= Xml::openElement( 'form', $moveBoxParams );
+		$htmlOut .= Html::openElement( 'form', $moveBoxParams );
 		$htmlOut .= Html::hidden( 'title',
 			SpecialPage::getTitleFor( 'Movepage', $this->mPage )->getPrefixedText() );
 		$htmlOut .= Html::hidden( 'wpReason', $this->mSummary );
@@ -508,7 +546,7 @@ class InputBox {
 		$htmlOut .= $this->buildTextBox( [
 			'type' => $this->mHidden ? 'hidden' : 'text',
 			'name' => 'wpNewTitle',
-			'class' => $this->getLinebreakClasses() . 'mw-moveboxInput mw-ui-input mw-ui-input-inline',
+			'class' => $this->getLinebreakClasses() . 'mw-moveboxInput',
 			'value' => $this->mDefaultText,
 			'placeholder' => $this->mPlaceholderText,
 			'size' => $this->mWidth,
@@ -516,15 +554,15 @@ class InputBox {
 		] );
 
 		$htmlOut .= $this->mBR;
-		$htmlOut .= Xml::openElement( 'input',
+		$htmlOut .= $this->buildSubmitInput(
 			[
 				'type' => 'submit',
-				'class' => 'mw-ui-button mw-ui-progressive',
 				'value' => $this->mButtonLabel
-			]
+			],
+			true
 		);
-		$htmlOut .= Xml::closeElement( 'form' );
-		$htmlOut .= Xml::closeElement( 'div' );
+		$htmlOut .= Html::closeElement( 'form' );
+		$htmlOut .= Html::closeElement( 'div' );
 
 		// Return HTML
 		return $htmlOut;
@@ -535,13 +573,11 @@ class InputBox {
 	 * @return string
 	 */
 	public function getCommentForm() {
-		global $wgScript;
-
 		if ( !$this->mButtonLabel ) {
 				$this->mButtonLabel = wfMessage( 'inputbox-postcommenttitle' )->text();
 		}
 
-		$htmlOut = Xml::openElement( 'div',
+		$htmlOut = Html::openElement( 'div',
 			[
 				'class' => 'mw-inputbox-centered',
 				'style' => $this->bgColorStyle(),
@@ -549,14 +585,14 @@ class InputBox {
 		);
 		$commentFormParams = [
 			'name' => 'commentbox',
-			'class' => 'commentbox',
-			'action' => $wgScript,
+			'class' => 'commentbox' . $this->getFormLinebreakClasses(),
+			'action' => $this->config->get( MainConfigNames::Script ),
 			'method' => 'get'
 		];
 		if ( $this->mID !== '' ) {
 			$commentFormParams['id'] = Sanitizer::escapeIdForAttribute( $this->mID );
 		}
-		$htmlOut .= Xml::openElement( 'form', $commentFormParams );
+		$htmlOut .= Html::openElement( 'form', $commentFormParams );
 		$editArgs = $this->getEditActionArgs();
 		$htmlOut .= Html::hidden( $editArgs['name'], $editArgs['value'] );
 		if ( $this->mPreload !== null ) {
@@ -574,7 +610,7 @@ class InputBox {
 		$htmlOut .= $this->buildTextBox( [
 			'type' => $this->mHidden ? 'hidden' : 'text',
 			'name' => 'preloadtitle',
-			'class' => $this->getLinebreakClasses() . 'commentboxInput mw-ui-input mw-ui-input-inline',
+			'class' => $this->getLinebreakClasses() . 'commentboxInput',
 			'value' => $this->mDefaultText,
 			'placeholder' => $this->mPlaceholderText,
 			'size' => $this->mWidth,
@@ -582,18 +618,21 @@ class InputBox {
 		] );
 
 		$htmlOut .= Html::hidden( 'section', 'new' );
+		if ( $this->mUseDT ) {
+			$htmlOut .= Html::hidden( 'dtpreload', '1' );
+		}
 		$htmlOut .= Html::hidden( 'title', $this->mPage );
 		$htmlOut .= $this->mBR;
-		$htmlOut .= Xml::openElement( 'input',
+		$htmlOut .= $this->buildSubmitInput(
 			[
 				'type' => 'submit',
 				'name' => 'create',
-				'class' => 'mw-ui-button mw-ui-progressive',
 				'value' => $this->mButtonLabel
-			]
+			],
+			true
 		);
-		$htmlOut .= Xml::closeElement( 'form' );
-		$htmlOut .= Xml::closeElement( 'div' );
+		$htmlOut .= Html::closeElement( 'form' );
+		$htmlOut .= Html::closeElement( 'div' );
 
 		// Return HTML
 		return $htmlOut;
@@ -611,7 +650,7 @@ class InputBox {
 			if ( strpos( $line, '=' ) === false ) {
 				continue;
 			}
-			list( $name, $value ) = explode( '=', $line, 2 );
+			[ $name, $value ] = explode( '=', $line, 2 );
 			$name = strtolower( trim( $name ) );
 			$value = Sanitizer::decodeCharReferences( trim( $value ) );
 			if ( $name === 'preloadparams[]' ) {
@@ -635,6 +674,7 @@ class InputBox {
 			'page' => 'mPage',
 			'editintro' => 'mEditIntro',
 			'useve' => 'mUseVE',
+			'usedt' => 'mUseDT',
 			'summary' => 'mSummary',
 			'nosummary' => 'mNosummary',
 			'minor' => 'mMinor',
@@ -687,7 +727,7 @@ class InputBox {
 		// T297725: De-obfuscate attempts to trick people into making edits to .js pages
 		$target = $this->mType === 'commenttitle' ? $this->mPage : $this->mDefaultText;
 		if ( $this->mHidden && $this->mPreload && substr( $target, -3 ) === '.js' ) {
-			$this->mHidden = false;
+			$this->mHidden = null;
 		}
 	}
 
@@ -712,7 +752,8 @@ REGEX;
 	}
 
 	/**
-	 * Factory method to help build the textbox widget
+	 * Factory method to help build the textbox widget.
+	 *
 	 * @param array $defaultAttr
 	 * @return string
 	 */
@@ -721,12 +762,70 @@ REGEX;
 			$defaultAttr[ 'aria-label' ] = $this->mTextBoxAriaLabel;
 		}
 
-		return Html::openElement( 'input', $defaultAttr );
+		$class = $defaultAttr[ 'class' ] ?? '';
+		$class .= ' cdx-text-input__input';
+		$defaultAttr[ 'class' ] = $class;
+		return Html::openElement( 'div', [
+			'class' => 'cdx-text-input',
+		] )
+			. Html::element( 'input', $defaultAttr )
+			. Html::closeElement( 'div' );
+	}
+
+	/**
+	 * Factory method to help build checkbox input.
+	 *
+	 * @param string $label text displayed next to checkbox (label)
+	 * @param string $name name of input
+	 * @param string $id id of input
+	 * @param string $value value of input
+	 * @param array $defaultAttr (optional)
+	 * @return string
+	 */
+	private function buildCheckboxInput( $label, $name, $id, $value, $defaultAttr = [] ) {
+		$htmlOut = ' <span class="cdx-checkbox cdx-checkbox--inline">';
+		$htmlOut .= Html::element( 'input',
+			[
+				'type' => 'checkbox',
+				'name' => $name,
+				'value' => $value,
+				'id' => $id,
+				'class' => 'cdx-checkbox__input',
+			] + $defaultAttr
+		);
+		$htmlOut .= '<span class="cdx-checkbox__icon"></span>';
+		// Label
+		$htmlOut .= Html::label( $label, $id, [
+			'class' => 'cdx-checkbox__label',
+		] );
+		$htmlOut .= '</span> ';
+		return $htmlOut;
+	}
+
+	/**
+	 * Factory method to help build submit button.
+	 *
+	 * @param array $defaultAttr
+	 * @param bool $isProgressive (optional)
+	 * @return string
+	 */
+	private function buildSubmitInput( $defaultAttr, $isProgressive = false ) {
+		$defaultAttr[ 'class' ] ??= '';
+		$defaultAttr[ 'class' ] .= ' cdx-button';
+		if ( $isProgressive ) {
+			$defaultAttr[ 'class' ] .= ' cdx-button--action-progressive cdx-button--weight-primary';
+		}
+		$defaultAttr[ 'class' ] = trim( $defaultAttr[ 'class' ] );
+		return Html::element( 'input', $defaultAttr );
 	}
 
 	private function bgColorStyle() {
 		if ( $this->mBGColor !== 'transparent' ) {
-			return 'background-color: ' . $this->mBGColor . ';';
+			// Define color to avoid flagging linting warnings.
+			// https://phabricator.wikimedia.org/T369619
+			// Editor is assumed to know what they are doing here,
+			// and choosing a color compatible with dark and light themes...
+			return 'background-color: ' . $this->mBGColor . '; color: inherit;';
 		}
 		return '';
 	}

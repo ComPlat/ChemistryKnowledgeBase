@@ -53,6 +53,17 @@ class SingleMethodLinks {
 	}
 
 	/**
+	 * @return self
+	 */
+	public function asAllParamsMovedToKeys(): self {
+		$ret = new self;
+		foreach ( $this->params as $i => $offsets ) {
+			$ret->params[$i] = $offsets->asMovedToKeys();
+		}
+		return $ret;
+	}
+
+	/**
 	 * @todo Try to avoid this method
 	 * @return ParamLinksOffsets[]
 	 */
@@ -81,20 +92,7 @@ class SingleMethodLinks {
 	 * @param int[] $params
 	 */
 	public function keepOnlyParams( array $params ): void {
-		$this->params = array_diff_key( $this->params, array_fill_keys( $params, 1 ) );
-	}
-
-	/**
-	 * @param int $taint
-	 * @return bool
-	 */
-	public function canPreserveTaintFlags( int $taint ): bool {
-		foreach ( $this->params as $offsets ) {
-			if ( $offsets->hasTaintRecursively( $taint ) ) {
-				return true;
-			}
-		}
-		return false;
+		$this->params = array_intersect_key( $this->params, array_fill_keys( $params, 1 ) );
 	}
 
 	/**

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright © 2013 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
@@ -20,10 +21,15 @@
  * @file
  */
 
+namespace MediaWiki\Tests\Api\Query;
+
+use MediaWiki\Tests\Api\ApiTestCase;
+use MediaWiki\User\User;
 use PHPUnit\Framework\ExpectationFailedException;
 use SebastianBergmann\Comparator\ComparisonFailure;
 
-/** This class has some common functionality for testing query module
+/**
+ * This class has some common functionality for testing query module
  */
 abstract class ApiQueryTestBase extends ApiTestCase {
 
@@ -35,14 +41,14 @@ STR;
 
 	/**
 	 * Merges all requests parameter + expected values into one
-	 * @param array ...$arrays List of arrays, each of which contains exactly two
+	 * @param array ...$arrays List of arrays, each of which contains exactly two elements
 	 * @return array
 	 */
 	protected function merge( ...$arrays ) {
 		$request = [];
 		$expected = [];
 		foreach ( $arrays as $array ) {
-			list( $req, $exp ) = $this->validateRequestExpectedPair( $array );
+			[ $req, $exp ] = $this->validateRequestExpectedPair( $array );
 			$request = array_merge_recursive( $request, $req );
 			$this->mergeExpected( $expected, $exp );
 		}
@@ -89,18 +95,16 @@ STR;
 	/**
 	 * Checks that the request's result matches the expected results.
 	 * Assumes no rawcontinue and a complete batch.
-	 * @param array $values Array is a two element [ request, expected_results ]
+	 * @param array $values Array containing two elements: [ request, expected_results ]
 	 * @param array|null $session
 	 * @param bool $appendModule
 	 * @param User|null $user
 	 */
-	protected function check( $values, array $session = null,
-		$appendModule = false, User $user = null
+	protected function check( $values, ?array $session = null,
+		$appendModule = false, ?User $user = null
 	) {
-		list( $req, $exp ) = $this->validateRequestExpectedPair( $values );
-		if ( !array_key_exists( 'action', $req ) ) {
-			$req['action'] = 'query';
-		}
+		[ $req, $exp ] = $this->validateRequestExpectedPair( $values );
+		$req['action'] ??= 'query';
 		foreach ( $req as &$val ) {
 			if ( is_array( $val ) ) {
 				$val = implode( '|', array_unique( $val ) );
@@ -153,3 +157,6 @@ STR;
 		return array_merge( $result );
 	}
 }
+
+/** @deprecated class alias since 1.42 */
+class_alias( ApiQueryTestBase::class, 'ApiQueryTestBase' );

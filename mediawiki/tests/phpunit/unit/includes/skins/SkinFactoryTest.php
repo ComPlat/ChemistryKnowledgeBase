@@ -1,17 +1,15 @@
 <?php
 
-use Psr\Container\ContainerInterface;
-use Wikimedia\ObjectFactory\ObjectFactory;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
 
 /**
- * @covers SkinFactory
+ * @covers \SkinFactory
  */
 class SkinFactoryTest extends \MediaWikiUnitTestCase {
+	use DummyServicesTrait;
 
-	private function createSkinFactory( $service = null, $options = [] ): SkinFactory {
-		$objectFactory = $service
-			? new ObjectFactory( $service )
-			: new ObjectFactory( $this->createMock( ContainerInterface::class ) );
+	private function createSkinFactory( $services = [], $options = [] ): SkinFactory {
+		$objectFactory = $this->getDummyObjectFactory( $services );
 
 		return new SkinFactory( $objectFactory, $options );
 	}
@@ -72,13 +70,10 @@ class SkinFactoryTest extends \MediaWikiUnitTestCase {
 
 	public function testMakeSkinWithValidSpec() {
 		$serviceInstance = (object)[];
-
-		$serviceContainer = $this->createMock( ContainerInterface::class );
-		$serviceContainer->method( 'has' )->willReturn( true );
-		$serviceContainer->method( 'get' )->willReturn( $serviceInstance );
+		$services = [ 'testservice' => $serviceInstance ];
 
 		$args = [];
-		$factory = $this->createSkinFactory( $serviceContainer );
+		$factory = $this->createSkinFactory( $services );
 		$factory->register( 'testfallback', 'TestFallback', [
 			'factory' => static function ( $service, $options ) use ( &$args ) {
 				$args = [ $service, $options ];
@@ -106,7 +101,7 @@ class SkinFactoryTest extends \MediaWikiUnitTestCase {
 			},
 			true
 		);
-		$this->assertEquals( [ 'foo'  => 'Skin 1' ], $factory->getSkinNames() );
+		$this->assertEquals( [ 'foo'  => 'Skin 1' ], $factory->getInstalledSkins() );
 		$this->assertSame( $s1, $factory->makeSkin( 'foo' ) );
 		$this->assertSame( [], $factory->getAllowedSkins(), 'skipped' );
 
@@ -117,23 +112,13 @@ class SkinFactoryTest extends \MediaWikiUnitTestCase {
 				return $s2;
 			}
 		);
-		$this->assertEquals( [ 'foo'  => 'Skin 2' ], $factory->getSkinNames() );
+		$this->assertEquals( [ 'foo'  => 'Skin 2' ], $factory->getInstalledSkins() );
 		$this->assertSame( $s2, $factory->makeSkin( 'foo' ) );
 		$this->assertSame( [ 'foo'  => 'Skin 2' ], $factory->getAllowedSkins(), 'not skipped' );
 	}
 
-	public function testGetSkinNames() {
-		$factory = $this->createSkinFactory();
-		$factory->register( 'skin1', 'Skin1', [] );
-		$factory->register( 'skin2', 'Skin2', [] );
-
-		$names = $factory->getSkinNames();
-		$this->assertEquals( 'Skin1', $names['skin1'] );
-		$this->assertEquals( 'Skin2', $names['skin2'] );
-	}
-
 	public function testGetAllowedSkins() {
-		$sf = $this->createSkinFactory( null, [ 'quux' ] );
+		$sf = $this->createSkinFactory( [], [ 'quux' ] );
 		$sf->register( 'foo', 'Foo', [] );
 		$sf->register( 'apioutput', 'ApiOutput', [], true );
 

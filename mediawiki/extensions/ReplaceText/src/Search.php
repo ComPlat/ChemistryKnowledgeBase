@@ -13,105 +13,116 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * https://www.gnu.org/copyleft/gpl.html
  *
  * @file
  */
 namespace MediaWiki\Extension\ReplaceText;
 
-use Title;
-use Wikimedia\Rdbms\IDatabase;
+use MediaWiki\Config\Config;
+use MediaWiki\Title\Title;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IExpression;
+use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
+use Wikimedia\Rdbms\LikeValue;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class Search {
+	private Config $config;
+	private IConnectionProvider $loadBalancer;
+
+	public function __construct(
+		Config $config,
+		IConnectionProvider $loadBalancer
+	) {
+		$this->config = $config;
+		$this->loadBalancer = $loadBalancer;
+	}
 
 	/**
 	 * @param string $search
 	 * @param array $namespaces
 	 * @param string|null $category
 	 * @param string|null $prefix
+	 * @param int|null $pageLimit
 	 * @param bool $use_regex
 	 * @return IResultWrapper Resulting rows
 	 */
-	public static function doSearchQuery(
-		$search, $namespaces, $category, $prefix, $use_regex = false
+	public function doSearchQuery(
+		$search, $namespaces, $category, $prefix, $pageLimit, $use_regex = false
 	) {
-		global $wgReplaceTextResultsLimit;
-
-		$dbr = wfGetDB( DB_REPLICA );
-		$tables = [ 'page', 'revision', 'text', 'slots', 'content' ];
-		$vars = [ 'page_id', 'page_namespace', 'page_title', 'old_text', 'slot_role_id' ];
+		$dbr = $this->loadBalancer->getReplicaDatabase();
+		$queryBuilder = $dbr->newSelectQueryBuilder()
+			->select( [ 'page_id', 'page_namespace', 'page_title', 'old_text', 'slot_role_id' ] )
+			->from( 'page' )
+			->join( 'revision', null, 'rev_id = page_latest' )
+			->join( 'slots', null, 'rev_id = slot_revision_id' )
+			->join( 'content', null, 'slot_content_id = content_id' )
+			->join( 'text', null, $dbr->buildIntegerCast( 'SUBSTR(content_address, 4)' ) . ' = old_id' );
 		if ( $use_regex ) {
-			$comparisonCond = self::regexCond( $dbr, 'old_text', $search );
+			$queryBuilder->where( self::regexCond( $dbr, 'old_text', $search ) );
 		} else {
 			$any = $dbr->anyString();
-			$comparisonCond = 'old_text ' . $dbr->buildLike( $any, $search, $any );
+			$queryBuilder->where( $dbr->expr( 'old_text', IExpression::LIKE, new LikeValue( $any, $search, $any ) ) );
 		}
-		$conds = [
-			$comparisonCond,
-			'page_namespace' => $namespaces,
-			'rev_id = page_latest',
-			'rev_id = slot_revision_id',
-			'slot_content_id = content_id',
-			$dbr->buildIntegerCast( 'SUBSTR(content_address, 4)' ) . ' = old_id'
-		];
-
-		self::categoryCondition( $category, $tables, $conds );
-		self::prefixCondition( $prefix, $conds );
-		$options = [
-			'ORDER BY' => 'page_namespace, page_title',
-			'LIMIT' => $wgReplaceTextResultsLimit
-		];
-
-		return $dbr->select( $tables, $vars, $conds, __METHOD__, $options );
+		$queryBuilder->andWhere( [ 'page_namespace' => $namespaces ] );
+		if ( $pageLimit === null || $pageLimit === '' ) {
+			$pageLimit = $this->config->get( 'ReplaceTextResultsLimit' );
+		}
+		self::categoryCondition( $category, $queryBuilder );
+		$this->prefixCondition( $prefix, $dbr, $queryBuilder );
+		return $queryBuilder->orderBy( [ 'page_namespace', 'page_title' ] )
+			->limit( $pageLimit )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 	}
 
 	/**
 	 * @param string|null $category
-	 * @param array &$tables
-	 * @param array &$conds
+	 * @param SelectQueryBuilder $queryBuilder
 	 */
-	public static function categoryCondition( $category, &$tables, &$conds ) {
+	public static function categoryCondition( $category, SelectQueryBuilder $queryBuilder ) {
 		if ( strval( $category ) !== '' ) {
 			$category = Title::newFromText( $category )->getDbKey();
-			$tables[] = 'categorylinks';
-			$conds[] = 'page_id = cl_from';
-			$conds['cl_to'] = $category;
+			$queryBuilder->join( 'categorylinks', null, 'page_id = cl_from' )
+				->where( [ 'cl_to' => $category ] );
 		}
 	}
 
 	/**
 	 * @param string|null $prefix
-	 * @param array &$conds
+	 * @param IReadableDatabase $dbr
+	 * @param SelectQueryBuilder $queryBuilder
 	 */
-	public static function prefixCondition( $prefix, &$conds ) {
+	private function prefixCondition( $prefix, IReadableDatabase $dbr, SelectQueryBuilder $queryBuilder ) {
 		if ( strval( $prefix ) === '' ) {
 			return;
 		}
 
-		$dbr = wfGetDB( DB_REPLICA );
 		$title = Title::newFromText( $prefix );
 		if ( $title !== null ) {
 			$prefix = $title->getDbKey();
 		}
 		$any = $dbr->anyString();
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable strval makes this non-null
-		$conds[] = 'page_title ' . $dbr->buildLike( $prefix, $any );
+		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable $prefix is checked for null
+		$queryBuilder->where( $dbr->expr( 'page_title', IExpression::LIKE, new LikeValue( $prefix, $any ) ) );
 	}
 
 	/**
-	 * @param IDatabase $dbr
+	 * @param IReadableDatabase $dbr
 	 * @param string $column
 	 * @param string $regex
 	 * @return string query condition for regex
 	 */
 	public static function regexCond( $dbr, $column, $regex ) {
 		if ( $dbr->getType() == 'postgres' ) {
-			$op = '~';
+			$cond = "$column ~ ";
 		} else {
-			$op = 'REGEXP';
+			$cond = "CAST($column AS BINARY) REGEXP BINARY ";
 		}
-		return "$column $op " . $dbr->addQuotes( $regex );
+		$cond .= $dbr->addQuotes( $regex );
+		return $cond;
 	}
 
 	/**
@@ -119,38 +130,39 @@ class Search {
 	 * @param array $namespaces
 	 * @param string|null $category
 	 * @param string|null $prefix
+	 * @param int|null $pageLimit
 	 * @param bool $use_regex
 	 * @return IResultWrapper Resulting rows
 	 */
-	public static function getMatchingTitles(
+	public function getMatchingTitles(
 		$str,
 		$namespaces,
 		$category,
 		$prefix,
+		$pageLimit,
 		$use_regex = false
 	) {
-		$dbr = wfGetDB( DB_REPLICA );
-
-		$tables = [ 'page' ];
-		$vars = [ 'page_title', 'page_namespace' ];
-
+		$dbr = $this->loadBalancer->getReplicaDatabase();
+		$queryBuilder = $dbr->newSelectQueryBuilder()
+			->select( [ 'page_title', 'page_namespace' ] )
+			->from( 'page' );
 		$str = str_replace( ' ', '_', $str );
 		if ( $use_regex ) {
-			$comparisonCond = self::regexCond( $dbr, 'page_title', $str );
+			$queryBuilder->where( self::regexCond( $dbr, 'page_title', $str ) );
 		} else {
 			$any = $dbr->anyString();
-			$comparisonCond = 'page_title ' . $dbr->buildLike( $any, $str, $any );
+			$queryBuilder->where( $dbr->expr( 'page_title', IExpression::LIKE, new LikeValue( $any, $str, $any ) ) );
 		}
-		$conds = [
-			$comparisonCond,
-			'page_namespace' => $namespaces,
-		];
-
-		self::categoryCondition( $category, $tables, $conds );
-		self::prefixCondition( $prefix, $conds );
-		$sort = [ 'ORDER BY' => 'page_namespace, page_title' ];
-
-		return $dbr->select( $tables, $vars, $conds, __METHOD__, $sort );
+		$queryBuilder->andWhere( [ 'page_namespace' => $namespaces ] );
+		if ( $pageLimit === null || $pageLimit === '' ) {
+			$pageLimit = $this->config->get( 'ReplaceTextResultsLimit' );
+		}
+		self::categoryCondition( $category, $queryBuilder );
+		$this->prefixCondition( $prefix, $dbr, $queryBuilder );
+		return $queryBuilder->orderBy( [ 'page_namespace', 'page_title' ] )
+			->limit( $pageLimit )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 	}
 
 	/**

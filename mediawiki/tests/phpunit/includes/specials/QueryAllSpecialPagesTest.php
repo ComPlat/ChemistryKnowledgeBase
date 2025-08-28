@@ -7,11 +7,14 @@
  * @author Antoine Musso
  */
 
+use MediaWiki\SpecialPage\QueryPage;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\SpecialLinkSearch;
 use Wikimedia\Rdbms\ResultWrapper;
 
 /**
  * @group Database
- * @covers QueryPage<extended>
+ * @covers \MediaWiki\SpecialPage\QueryPage<extended>
  */
 class QueryAllSpecialPagesTest extends MediaWikiIntegrationTestCase {
 
@@ -20,7 +23,7 @@ class QueryAllSpecialPagesTest extends MediaWikiIntegrationTestCase {
 	 */
 	private $queryPages;
 
-	/** @var string[] List query pages that can not be tested automatically */
+	/** @var string[] List query pages that cannot be tested automatically */
 	protected $manualTest = [
 		SpecialLinkSearch::class
 	];
@@ -53,17 +56,16 @@ class QueryAllSpecialPagesTest extends MediaWikiIntegrationTestCase {
 	 * Test SQL for each of our QueryPages objects
 	 */
 	public function testQuerypageSqlQuery() {
-		global $wgDBtype;
-
 		foreach ( $this->queryPages as $page ) {
 			// With MySQL, skips special pages reopening a temporary table
 			// See https://bugs.mysql.com/bug.php?id=10327
 			if (
-				$wgDBtype === 'mysql'
-				&& in_array( $page->getName(), $this->reopensTempTable )
+				$this->getDb()->getType() === 'mysql' &&
+				str_contains( $this->getDb()->getSoftwareLink(), 'MySQL' ) &&
+				in_array( $page->getName(), $this->reopensTempTable )
 			) {
 				$this->markTestSkipped( "SQL query for page {$page->getName()} "
-					. "can not be tested on MySQL backend (it reopens a temporary table)" );
+					. "cannot be tested on MySQL backend (it reopens a temporary table)" );
 				continue;
 			}
 

@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Tests\Unit\Revision;
 
-use CommentStoreComment;
 use DummyContentForTesting;
+use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
@@ -18,6 +18,10 @@ use MediaWikiUnitTestCase;
  */
 class RevisionStoreRecordTest extends MediaWikiUnitTestCase {
 	use RevisionRecordTests;
+
+	protected function expectedDefaultFieldVisibility( $field ): bool {
+		return true;
+	}
 
 	/**
 	 * @param array $rowOverrides
@@ -53,7 +57,7 @@ class RevisionStoreRecordTest extends MediaWikiUnitTestCase {
 		return new RevisionStoreRecord( $title, $user, $comment, (object)$row, $slots, $wikiId );
 	}
 
-	public function provideIsCurrent() {
+	public static function provideIsCurrent() {
 		yield [
 			[
 				'rev_id' => 11,

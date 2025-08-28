@@ -2,31 +2,38 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Hooks\Handlers;
 
-use DatabaseUpdater;
-use MediaWiki\Extension\AbuseFilter\Maintenance\FixOldLogEntries;
-use MediaWiki\Extension\AbuseFilter\Maintenance\NormalizeThrottleParameters;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\AbuseFilter\Maintenance\MigrateActorsAF;
 use MediaWiki\Extension\AbuseFilter\Maintenance\UpdateVarDumps;
+use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MessageLocalizer;
-use MWException;
-use RequestContext;
-use User;
 
 class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 	/** @var MessageLocalizer */
 	private $messageLocalizer;
 	/** @var UserGroupManager */
 	private $userGroupManager;
+	/** @var UserFactory */
+	private $userFactory;
 
 	/**
 	 * @param MessageLocalizer $messageLocalizer
 	 * @param UserGroupManager $userGroupManager
+	 * @param UserFactory $userFactory
 	 */
-	public function __construct( MessageLocalizer $messageLocalizer, UserGroupManager $userGroupManager ) {
+	public function __construct(
+		MessageLocalizer $messageLocalizer,
+		UserGroupManager $userGroupManager,
+		UserFactory $userFactory
+	) {
 		$this->messageLocalizer = $messageLocalizer;
 		$this->userGroupManager = $userGroupManager;
+		$this->userFactory = $userFactory;
 	}
 
 	/**
@@ -38,14 +45,14 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 		return new self(
 			// @todo Use a proper MessageLocalizer once available (T247127)
 			RequestContext::getMain(),
-			MediaWikiServices::getInstance()->getUserGroupManager()
+			MediaWikiServices::getInstance()->getUserGroupManager(),
+			MediaWikiServices::getInstance()->getUserFactory()
 		);
 	}
 
 	/**
 	 * @codeCoverageIgnore This is tested by installing or updating MediaWiki
 	 * @param DatabaseUpdater $updater
-	 * @throws MWException
 	 */
 	public function onLoadExtensionSchemaUpdates( $updater ) {
 		$dbType = $updater->getDB()->getType();
@@ -57,19 +64,8 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 		);
 
 		if ( $dbType === 'mysql' || $dbType === 'sqlite' ) {
-			$updater->dropExtensionField(
-				'abuse_filter_log',
-				'afl_log_id',
-				"$dir/$dbType/patch-drop_afl_log_id.sql"
-			);
-
-			$updater->addExtensionField(
-				'abuse_filter_log',
-				'afl_filter_id',
-				"$dir/$dbType/patch-split-afl_filter.sql"
-			);
-
 			if ( $dbType === 'mysql' ) {
+				// 1.37
 				$updater->renameExtensionIndex(
 					'abuse_filter_log',
 					'ip_timestamp',
@@ -77,6 +73,8 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 					"$dir/mysql/patch-rename-indexes.sql",
 					true
 				);
+
+				// 1.38
 				// This one has its own files because apparently, sometimes this particular index can already
 				// have the correct name (T291725)
 				$updater->renameExtensionIndex(
@@ -86,6 +84,8 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 					"$dir/mysql/patch-rename-wiki-timestamp-index.sql",
 					true
 				);
+
+				// 1.38
 				// This one is also separate to avoid interferences with the afl_filter field removal below.
 				$updater->renameExtensionIndex(
 					'abuse_filter_log',
@@ -95,27 +95,13 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 					true
 				);
 			}
+			// 1.38
 			$updater->dropExtensionField(
 				'abuse_filter_log',
 				'afl_filter',
 				"$dir/$dbType/patch-remove-afl_filter.sql"
 			);
 		} elseif ( $dbType === 'postgres' ) {
-			$updater->addExtensionUpdate( [
-				'dropPgField', 'abuse_filter_log', 'afl_log_id' ] );
-			$updater->addExtensionUpdate( [
-				'setDefault', 'abuse_filter_log', 'afl_filter', ''
-			] );
-			$updater->addExtensionUpdate( [
-				'addPgField', 'abuse_filter_log', 'afl_global', 'SMALLINT NOT NULL DEFAULT 0'
-			] );
-			$updater->addExtensionUpdate( [
-				'addPgField', 'abuse_filter_log', 'afl_filter_id', 'INTEGER NOT NULL DEFAULT 0'
-			] );
-			$updater->addExtensionUpdate( [
-				'addPgIndex', 'abuse_filter_log', 'abuse_filter_log_filter_timestamp_full',
-				'(afl_global, afl_filter_id, afl_timestamp)'
-			] );
 			$updater->addExtensionUpdate( [
 				'dropPgIndex', 'abuse_filter_log', 'abuse_filter_log_timestamp'
 			] );
@@ -178,9 +164,38 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 			] );
 		}
 
+		// 1.41
+		$updater->addExtensionUpdate( [
+			'addField', 'abuse_filter', 'af_actor',
+			"$dir/$dbType/patch-add-af_actor.sql", true
+		] );
+
+		// 1.41
+		$updater->addExtensionUpdate( [
+			'addField', 'abuse_filter_history', 'afh_actor',
+			"$dir/$dbType/patch-add-afh_actor.sql", true
+		] );
+
+		// 1.43
+		$updater->addExtensionUpdate( [
+			'runMaintenance',
+			MigrateActorsAF::class,
+		] );
+
+		// 1.43
+		$updater->addExtensionUpdate( [
+			'dropField', 'abuse_filter', 'af_user',
+			"$dir/$dbType/patch-drop-af_user.sql", true
+		] );
+
+		// 1.43
+		$updater->addExtensionUpdate( [
+			'dropField', 'abuse_filter_history', 'afh_user',
+			"$dir/$dbType/patch-drop-afh_user.sql", true
+		] );
+
 		$updater->addExtensionUpdate( [ [ $this, 'createAbuseFilterUser' ] ] );
-		$updater->addPostDatabaseUpdateMaintenance( NormalizeThrottleParameters::class );
-		$updater->addPostDatabaseUpdateMaintenance( FixOldLogEntries::class );
+		// 1.35
 		$updater->addPostDatabaseUpdateMaintenance( UpdateVarDumps::class );
 	}
 
@@ -191,7 +206,7 @@ class SchemaChangesHandler implements LoadExtensionSchemaUpdatesHook {
 	 */
 	public function createAbuseFilterUser( DatabaseUpdater $updater ): bool {
 		$username = $this->messageLocalizer->msg( 'abusefilter-blocker' )->inContentLanguage()->text();
-		$user = User::newFromName( $username );
+		$user = $this->userFactory->newFromName( $username );
 
 		if ( $user && !$updater->updateRowExists( 'create abusefilter-blocker-user' ) ) {
 			$user = User::newSystemUser( $username, [ 'steal' => true ] );

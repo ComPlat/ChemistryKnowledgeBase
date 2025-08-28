@@ -4679,7 +4679,14 @@ class UnionType implements Serializable, Stringable
             if (!$php81_map) {
                 $php81_map = self::computePHP81FunctionSignatureMap($php80_map);
             }
-            return $php81_map;
+            if ($target_php_version < 80200) {
+                return $php81_map;
+            }
+            static $php82_map = [];
+            if (!$php82_map) {
+                $php82_map = self::computePHP82FunctionSignatureMap($php81_map);
+            }
+            return $php82_map;
         }
         static $php74_map = [];
         if (!$php74_map) {
@@ -4743,29 +4750,39 @@ class UnionType implements Serializable, Stringable
      */
     public static function getLatestRealFunctionSignatureMap(int $target_php_version): array
     {
+        if ($target_php_version >= 80100) {
+            static $map_81;
+            return $map_81 ?? ($map_81 = self::computeLatestRealFunctionSignatureMap(''));
+        }
         if ($target_php_version >= 80000) {
             static $map_80;
-            return $map_80 ?? ($map_80 = self::computeLatestRealFunctionSignatureMap(true));
+            return $map_80 ?? ($map_80 = self::computeLatestRealFunctionSignatureMap('_php80'));
         }
         static $map_73;
-        return $map_73 ?? ($map_73 = self::computeLatestRealFunctionSignatureMap(false));
+        return $map_73 ?? ($map_73 = self::computeLatestRealFunctionSignatureMap('_php73'));
     }
 
     /**
      * @return array<string,string>
      */
-    private static function computeLatestRealFunctionSignatureMap(bool $is_php8): array
+    private static function computeLatestRealFunctionSignatureMap(string $version): array
     {
         $map = [];
-        if ($is_php8) {
-            $map_raw = require(__DIR__ . '/Internal/FunctionSignatureMapReal.php');
-        } else {
-            $map_raw = require(__DIR__ . '/Internal/FunctionSignatureMapReal_php73.php');
-        }
+        $map_raw = require(__DIR__ . "/Internal/FunctionSignatureMapReal{$version}.php");
         foreach ($map_raw as $key => $value) {
             $map[\strtolower($key)] = $value;
         }
         return $map;
+    }
+
+    /**
+     * @param array<string,associative-array<int|string,string>> $php81_map
+     * @return array<string,associative-array<int|string,string>>
+     */
+    private static function computePHP82FunctionSignatureMap(array $php81_map): array
+    {
+        $delta_raw = require(__DIR__ . '/Internal/FunctionSignatureMap_php82_delta.php');
+        return self::applyDeltaToGetNewerSignatures($php81_map, $delta_raw);
     }
 
     /**

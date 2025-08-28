@@ -2,21 +2,28 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
 use InvalidArgumentException;
+use Eris\Random\RandomRange;
 
 /**
  * @return FrequencyGenerator
  */
 function frequency(/*$frequencyAndGenerator, $frequencyAndGenerator, ...*/)
 {
-    return new FrequencyGenerator(func_get_args());
+    return call_user_func_array(
+        [Generators::class, 'frequency'],
+        func_get_args()
+    );
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<Generator<T>>
+ */
 class FrequencyGenerator implements Generator
 {
     private $generators;
-    private $frequencies;
 
     public function __construct(array $generatorsWithFrequency)
     {
@@ -43,7 +50,7 @@ class FrequencyGenerator implements Generator
         );
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         list($index, $generator) = $this->pickFrom($this->generators, $rand);
         $originalValue = $generator->__invoke($size, $rand);
@@ -57,7 +64,7 @@ class FrequencyGenerator implements Generator
         );
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         $input = $element->input();
         $originalGeneratorIndex = $input['generator'];
@@ -77,18 +84,18 @@ class FrequencyGenerator implements Generator
     /**
      * @return array  two elements: index and Generator object
      */
-    private function pickFrom($generators, $rand)
+    private function pickFrom($generators, RandomRange $rand)
     {
         $acc = 0;
         $frequencies = $this->frequenciesFrom($generators);
-        $random = $rand(1, array_sum($frequencies));
+        $random = $rand->rand(1, array_sum($frequencies));
         foreach ($generators as $index => $generator) {
             $acc += $generator['frequency'];
             if ($random <= $acc) {
                 return [$index, $generator['generator']];
             }
         }
-        throw new Exception(
+        throw new \Exception(
             'Unable to pick a generator with frequencies: ' . var_export($frequencies, true)
         );
     }

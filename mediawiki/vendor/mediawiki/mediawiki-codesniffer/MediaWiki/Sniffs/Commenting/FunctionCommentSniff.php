@@ -77,7 +77,19 @@ class FunctionCommentSniff implements Sniff {
 		$tokens = $phpcsFile->getTokens();
 		$find = Tokens::$methodPrefixes;
 		$find[] = T_WHITESPACE;
-		$commentEnd = $phpcsFile->findPrevious( $find, $stackPtr - 1, null, true );
+		$searchBefore = $stackPtr;
+		$linesBetweenDocAndFunction = 1;
+		do {
+			$commentEnd = $phpcsFile->findPrevious( $find, $searchBefore - 1, null, true );
+			// Allow attributes between doc block and function, T306941
+			if ( isset( $tokens[$commentEnd]['attribute_opener'] ) ) {
+				$searchBefore = $tokens[$commentEnd]['attribute_opener'];
+				// Attributes should be on their own lines
+				$linesBetweenDocAndFunction++;
+				continue;
+			}
+			break;
+		} while ( true );
 		if ( $tokens[$commentEnd]['code'] === T_COMMENT ) {
 			// Inline comments might just be closing comments for
 			// control structures or functions instead of function comments
@@ -91,11 +103,30 @@ class FunctionCommentSniff implements Sniff {
 		if ( $tokens[$commentEnd]['code'] !== T_DOC_COMMENT_CLOSE_TAG
 			&& $tokens[$commentEnd]['code'] !== T_COMMENT
 		) {
-			// Don't require documentation for functions with no parameters, except getters
-			if ( ( substr( $funcName, 0, 3 ) === 'get' || $phpcsFile->getMethodParameters( $stackPtr ) )
-				&& !$this->isTestFile( $phpcsFile, $stackPtr )
-			) {
-				$methodProps = $phpcsFile->getMethodProperties( $stackPtr );
+			// Function has no documentation; check if this is allowed or not
+			$methodProps = $phpcsFile->getMethodProperties( $stackPtr );
+			$methodParams = $phpcsFile->getMethodParameters( $stackPtr );
+			$hasReturnType = $methodProps['return_type'] !== '' || $funcName === '__construct';
+			$hasParams = $methodParams !== [];
+			$getterWithoutParams = !$hasParams && preg_match( '/^(get|is)[A-Z]/', $funcName );
+			$allParamsTyped = true;
+			foreach ( $methodParams as $parameter ) {
+				if ( $parameter['type_hint'] === '' ) {
+					$allParamsTyped = false;
+					break;
+				}
+			}
+			// Enforce strict return type or @return documentation for interfaces/abstract methods,
+			// but only if they are entirely undocumented at the moment
+			$returnsValue = $this->functionReturnsValue( $phpcsFile, $stackPtr ) ?? true;
+			$isFullyTyped = $allParamsTyped && ( $hasReturnType || !$returnsValue );
+			$isTestFile = $this->isTestFile( $phpcsFile, $stackPtr );
+			// A function is *allowed* to omit the documentation comment
+			// (but in many cases, documentation comments still make sense, and are not discouraged)
+			// if it is fully typed (parameter and return type declarations), or in a test file,
+			// or has no parameters and is not a getter.
+			// The last exception, allowing parameterless non-getters to omit their return type, may be removed later.
+			if ( !$isFullyTyped && !$isTestFile && ( $getterWithoutParams || $hasParams ) ) {
 				$phpcsFile->addError(
 					'Missing function doc comment',
 					$stackPtr,
@@ -114,7 +145,7 @@ class FunctionCommentSniff implements Sniff {
 			);
 			return;
 		}
-		if ( $tokens[$commentEnd]['line'] !== $tokens[$stackPtr]['line'] - 1 ) {
+		if ( $tokens[$commentEnd]['line'] !== $tokens[$stackPtr]['line'] - $linesBetweenDocAndFunction ) {
 			$phpcsFile->addError(
 				'There must be no blank lines after the function comment',
 				$commentEnd,
@@ -140,7 +171,9 @@ class FunctionCommentSniff implements Sniff {
 			return;
 		}
 
-		$this->processReturn( $phpcsFile, $stackPtr, $commentStart );
+		if ( $funcName !== '__construct' ) {
+			$this->processReturn( $phpcsFile, $stackPtr, $commentStart );
+		}
 		$this->processThrows( $phpcsFile, $commentStart );
 		$this->processParams( $phpcsFile, $stackPtr, $commentStart );
 	}
@@ -155,45 +188,10 @@ class FunctionCommentSniff implements Sniff {
 	protected function processReturn( File $phpcsFile, int $stackPtr, int $commentStart ): void {
 		$tokens = $phpcsFile->getTokens();
 
-		// Skip constructors
-		if ( $phpcsFile->getDeclarationName( $stackPtr ) === '__construct' ) {
-			return;
-		}
-
-		$found = false;
-		// if function has body (not abstract or part of interface)
-		if ( isset( $tokens[$stackPtr]['scope_opener'] ) ) {
-			$endFunction = $tokens[$stackPtr]['scope_closer'];
-			for ( $i = $endFunction - 1; $i > $stackPtr; $i-- ) {
-				$token = $tokens[$i];
-				if ( isset( $token['scope_condition'] ) && (
-					$tokens[$token['scope_condition']]['code'] === T_CLOSURE ||
-					$tokens[$token['scope_condition']]['code'] === T_FUNCTION ||
-					$tokens[$token['scope_condition']]['code'] === T_ANON_CLASS
-				) ) {
-					// Skip to the other side of the closure/inner function and continue
-					$i = $token['scope_condition'];
-					continue;
-				}
-				if ( $token['code'] === T_RETURN ||
-					$token['code'] === T_YIELD ||
-					$token['code'] === T_YIELD_FROM
-				) {
-					if ( isset( $tokens[$i + 1] ) && $tokens[$i + 1]['code'] === T_SEMICOLON ) {
-						// This is a `return;` so it doesn't need documentation
-						continue;
-					}
-					$found = true;
-					break;
-				}
-			}
-		}
-
-		// If a return type is provided, there should be a @return
-		$returnType = $phpcsFile->getMethodProperties( $stackPtr )['return_type'];
-		if ( $returnType !== '' && $returnType !== 'void' ) {
-			$found = true;
-		}
+		$hasReturnType = $phpcsFile->getMethodProperties( $stackPtr )['return_type'] !== '';
+		// Assume interfaces/abstract methods don't return anything when they have some comment
+		// already, no matter what the comment says
+		$returnsValue = $this->functionReturnsValue( $phpcsFile, $stackPtr ) ?? false;
 
 		$returnPtr = null;
 		foreach ( $tokens[$commentStart]['comment_tags'] as $ptr ) {
@@ -239,8 +237,8 @@ class FunctionCommentSniff implements Sniff {
 			}
 			[ $type, $separatorLength, $comment ] = $this->splitTypeAndComment( $content );
 			$fixType = false;
-			// Check for unneeded punctation
-			$type = $this->fixTrailingPunctation(
+			// Check for unneeded punctuation
+			$type = $this->fixTrailingPunctuation(
 				$phpcsFile,
 				$retTypePtr,
 				$type,
@@ -290,13 +288,43 @@ class FunctionCommentSniff implements Sniff {
 					$type . ( $comment !== '' ? str_repeat( ' ', $separatorLength ) . $comment : '' )
 				);
 			}
-		} elseif ( $found && !$this->isTestFunction( $phpcsFile, $stackPtr ) ) {
+		} elseif ( $returnsValue && !$hasReturnType && !$this->isTestFunction( $phpcsFile, $stackPtr ) ) {
 			$phpcsFile->addError(
-				'Missing @return tag in function comment',
+				'Missing return type or @return tag in function comment',
 				$tokens[$commentStart]['comment_closer'],
 				'MissingReturn'
 			);
 		}
+	}
+
+	private function functionReturnsValue( File $phpcsFile, int $stackPtr ): ?bool {
+		$tokens = $phpcsFile->getTokens();
+
+		// Interfaces or abstract functions don't have a body
+		if ( !isset( $tokens[$stackPtr]['scope_closer'] ) ) {
+			return null;
+		}
+
+		for ( $i = $tokens[$stackPtr]['scope_closer'] - 1; $i > $stackPtr; $i-- ) {
+			$token = $tokens[$i];
+			if ( isset( $token['scope_condition'] ) ) {
+				$scope = $tokens[$token['scope_condition']]['code'];
+				if ( $scope === T_FUNCTION || $scope === T_CLOSURE || $scope === T_ANON_CLASS ) {
+					// Skip to the other side of the closure/inner function and continue
+					$i = $token['scope_condition'];
+					continue;
+				}
+			}
+			if ( $token['code'] === T_YIELD || $token['code'] === T_YIELD_FROM ) {
+				return true;
+			} elseif ( $token['code'] === T_RETURN &&
+				// Ignore empty `return;` and continue searching
+				isset( $tokens[$i + 1] ) && $tokens[$i + 1]['code'] !== T_SEMICOLON
+			) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -448,14 +476,14 @@ class FunctionCommentSniff implements Sniff {
 				$phpcsFile->addError( 'Missing parameter type', $tag, 'MissingParamType' );
 			}
 
-			$isPassByReference = substr( $var, 0, 1 ) === '&';
+			$isPassByReference = str_starts_with( $var, '&' );
 			// Remove the pass by reference to allow compare with varargs
 			if ( $isPassByReference ) {
 				$var = substr( $var, 1 );
 			}
 
-			$isLegacyVariadicArg = substr( $var, -4 ) === ',...';
-			$isVariadicArg = substr( $var, 0, 4 ) === '...$';
+			$isLegacyVariadicArg = str_ends_with( $var, ',...' );
+			$isVariadicArg = str_starts_with( $var, '...$' );
 			// Remove the variadic indicator from the doc name to compare it against the real
 			// name, so that we can allow both formats.
 			if ( $isLegacyVariadicArg ) {
@@ -514,7 +542,6 @@ class FunctionCommentSniff implements Sniff {
 				);
 			} else {
 				// Check number of spaces after the type.
-				$spaces = 1;
 				if ( $param['type_space'] !== $spaces ) {
 					$fix = $phpcsFile->addFixableWarning(
 						'Expected %s spaces after parameter type; %s found',
@@ -533,7 +560,7 @@ class FunctionCommentSniff implements Sniff {
 
 			}
 			$fixVar = false;
-			$var = $this->fixTrailingPunctation(
+			$var = $this->fixTrailingPunctuation(
 				$phpcsFile,
 				$param['tag'],
 				$param['var'],
@@ -578,7 +605,7 @@ class FunctionCommentSniff implements Sniff {
 				}
 				if ( $realName !== $var ) {
 					if (
-						substr( $realName, 0, 4 ) === '...$' &&
+						str_starts_with( $realName, '...$' ) &&
 						( $param['legacy_variadic_arg'] || $param['variadic_arg'] )
 					) {
 						// Mark all variants as found
@@ -607,7 +634,7 @@ class FunctionCommentSniff implements Sniff {
 			}
 			$foundParams[] = $var;
 			$fixType = false;
-			// Check for unneeded punctation on parameter type
+			// Check for unneeded punctuation on parameter type
 			$type = $this->fixWrappedParenthesis(
 				$phpcsFile,
 				$param['tag'],
@@ -630,7 +657,7 @@ class FunctionCommentSniff implements Sniff {
 				'param'
 			);
 			$explodedType = $type === '' ? [] : explode( '|', $type );
-			$nullableDoc = substr( $type, 0, 1 ) === '?';
+			$nullableDoc = str_starts_with( $type, '?' );
 			$nullFound = false;
 			foreach ( $explodedType as $index => $singleType ) {
 				$singleType = lcfirst( $singleType );
@@ -638,7 +665,7 @@ class FunctionCommentSniff implements Sniff {
 				// part of (T218324)
 				if ( $singleType === 'null' || $singleType === 'mixed' ) {
 					$nullFound = true;
-				} elseif ( substr( $singleType, -10 ) === '[optional]' ) {
+				} elseif ( str_ends_with( $singleType, '[optional]' ) ) {
 					$fix = $phpcsFile->addFixableError(
 						'Key word "[optional]" on "%s" should not be used',
 						$param['tag'],
@@ -686,7 +713,6 @@ class FunctionCommentSniff implements Sniff {
 				continue;
 			}
 			// Check number of spaces after the var name.
-			$spaces = 1;
 			if ( $param['var_space'] !== $spaces &&
 				ltrim( $param['comment'] ) !== ''
 			) {
@@ -720,10 +746,19 @@ class FunctionCommentSniff implements Sniff {
 				);
 			}
 		}
-		// Report missing comments. On tests only, when not everything is missing.
-		$missing = array_diff( array_column( $realParams, 'name' ), $foundParams );
-		if ( $foundParams !== [] || !$this->isTestFunction( $phpcsFile, $stackPtr ) ) {
-			foreach ( $missing as $neededParam ) {
+		$missingParams = [];
+		$hasUntypedParams = false;
+		foreach ( $realParams as $param ) {
+			$hasUntypedParams = $hasUntypedParams || $param['type_hint'] === '';
+			if ( !in_array( $param['name'], $foundParams ) ) {
+				$missingParams[] = $param['name'];
+			}
+		}
+		$isTestFunction = $this->isTestFunction( $phpcsFile, $stackPtr );
+		// Report missing comments, unless *all* parameters have types.
+		// As an exception, tests are allowed to omit comments an long as they omit *all* comments.
+		if ( $hasUntypedParams && ( !$isTestFunction || $foundParams !== [] ) ) {
+			foreach ( $missingParams as $neededParam ) {
 				$phpcsFile->addError(
 					'Doc comment for parameter "%s" missing',
 					$commentStart,

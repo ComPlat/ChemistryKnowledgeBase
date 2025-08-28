@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\DisplayTitle;
 
-use Config;
 use HtmlArmor;
 use MediaWiki\Hook\BeforePageDisplayHook;
 use MediaWiki\Hook\OutputPageParserOutputHook;
@@ -30,11 +29,6 @@ class DisplayTitleHooks implements
 	SkinTemplateNavigation__UniversalHook
 {
 	/**
-	 * @var Config
-	 */
-	private $config;
-
-	/**
 	 * @var DisplayTitleService
 	 */
 	private $displayTitleService;
@@ -45,16 +39,13 @@ class DisplayTitleHooks implements
 	private $namespaceInfo;
 
 	/**
-	 * @param Config $config
 	 * @param DisplayTitleService $displayTitleService
 	 * @param NamespaceInfo $namespaceInfo
 	 */
 	public function __construct(
-		Config $config,
 		DisplayTitleService $displayTitleService,
 		NamespaceInfo $namespaceInfo
 	) {
-		$this->config = $config;
 		$this->displayTitleService = $displayTitleService;
 		$this->namespaceInfo = $namespaceInfo;
 	}
@@ -102,6 +93,7 @@ class DisplayTitleHooks implements
 	 * @param array &$links The array of arrays of URLs set up so far
 	 */
 	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {
+		$pagename = null;
 		if ( $sktemplate->getUser()->isRegistered() ) {
 			$menu_urls = $links['user-menu'] ?? [];
 			if ( isset( $menu_urls['userpage'] ) ) {
@@ -113,7 +105,7 @@ class DisplayTitleHooks implements
 			$page_urls = $links['user-page'] ?? [];
 			if ( isset( $page_urls['userpage'] ) ) {
 				// If we determined $pagename already, don't do so again.
-				if ( !isset( $menu_urls['userpage'] ) ) {
+				if ( $pagename === null ) {
 					$pagename = $page_urls['userpage']['text'];
 					$title = $sktemplate->getUser()->getUserPage();
 					$this->displayTitleService->getDisplayTitle( $title, $pagename );
@@ -131,9 +123,9 @@ class DisplayTitleHooks implements
 	 * @since 1.4
 	 * @param LinkRenderer $linkRenderer the LinkRenderer object
 	 * @param LinkTarget $target the LinkTarget that the link is pointing to
-	 * @param string|HtmlArmor &$text the contents that the <a> tag should have
-	 * @param array &$customAttribs the HTML attributes that the <a> tag should have
-	 * @param string &$query the query string to add to the generated URL
+	 * @param string|null|HtmlArmor &$text the contents that the <a> tag should have
+	 * @param string[] &$customAttribs the HTML attributes that the <a> tag should have
+	 * @param string[] &$query the query string to add to the generated URL
 	 * @param string &$ret the value to return if the hook returns false
 	 */
 	public function onHtmlPageLinkRendererBegin( $linkRenderer, $target, &$text, &$customAttribs, &$query, &$ret ) {
@@ -198,21 +190,6 @@ class DisplayTitleHooks implements
 					$parserOutput->setTitleText( $displaytitle );
 				}
 			}
-		}
-	}
-
-	/**
-	 * Implements ScribuntoExternalLibraries hook.
-	 * See https://www.mediawiki.org/wiki/Extension:Scribunto#Other_pages
-	 * Handle Scribunto integration
-	 *
-	 * @since 1.2
-	 * @param string $engine engine in use
-	 * @param array &$extraLibraries list of registered libraries
-	 */
-	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ) {
-		if ( $engine === 'lua' ) {
-			$extraLibraries['mw.ext.displaytitle'] = DisplayTitleLuaLibrary::class;
 		}
 	}
 }

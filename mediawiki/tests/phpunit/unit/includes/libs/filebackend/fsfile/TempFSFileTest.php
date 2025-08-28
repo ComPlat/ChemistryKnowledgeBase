@@ -1,11 +1,12 @@
 <?php
 
+namespace Wikimedia\Tests\FileBackend\FSFile;
+
 use MediaWiki\FileBackend\FSFile\TempFSFileFactory;
+use MediaWikiUnitTestCase;
 
 /**
- * @coversDefaultClass \MediaWiki\FileBackend\FSFile\TempFSFileFactory
- * @covers ::__construct
- * @covers ::newTempFSFile
+ * @covers \MediaWiki\FileBackend\FSFile\TempFSFileFactory
  */
 class TempFSFileTest extends MediaWikiUnitTestCase {
 	use TempFSFileTestTrait;

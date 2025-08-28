@@ -1,9 +1,13 @@
 <?php
 
+namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaSandbox;
+
+use MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEngineUnitTestBase;
+
 /**
  * @covers \MediaWiki\Extension\Scribunto\Engines\LuaSandbox\LuaSandboxEngine
  */
-class LuaSandboxTest extends Scribunto_LuaEngineUnitTestBase {
+class SandboxTest extends LuaEngineUnitTestBase {
 	/** @inheritDoc */
 	protected static $moduleName = 'SandboxTests';
 

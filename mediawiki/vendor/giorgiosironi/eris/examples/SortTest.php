@@ -1,7 +1,8 @@
 <?php
-use Eris\Generator;
 
-class SortTest extends PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class SortTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
@@ -9,7 +10,7 @@ class SortTest extends PHPUnit_Framework_TestCase
     {
         $this
             ->forAll(
-                Generator\seq(Generator\nat())
+                Generators::seq(Generators::nat())
             )
             ->then(function ($array) {
                 sort($array);

@@ -1,10 +1,21 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiContinuationManager;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
+use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Request\FauxRequest;
+use UnexpectedValueException;
+
 /**
- * @covers ApiContinuationManager
+ * @covers \MediaWiki\Api\ApiContinuationManager
  * @group API
  */
-class ApiContinuationManagerTest extends MediaWikiIntegrationTestCase {
+class ApiContinuationManagerTest extends ApiTestCase {
 
 	private static function getManager( $continue, $allModules, $generatedModules ) {
 		$context = new DerivativeContext( RequestContext::getMain() );
@@ -161,7 +172,7 @@ class ApiContinuationManagerTest extends MediaWikiIntegrationTestCase {
 			self::getManager( 'foo', $allModules, [ 'mock1', 'mock2' ] );
 			$this->fail( 'Expected exception not thrown' );
 		} catch ( ApiUsageException $ex ) {
-			$this->assertTrue( ApiTestCase::apiExceptionHasCode( $ex, 'badcontinue' ),
+			$this->assertApiErrorCode( 'badcontinue', $ex,
 				'Expected exception'
 			);
 		}
@@ -187,8 +198,8 @@ class ApiContinuationManagerTest extends MediaWikiIntegrationTestCase {
 			$this->fail( 'Expected exception not thrown' );
 		} catch ( UnexpectedValueException $ex ) {
 			$this->assertSame(
-				'Module \'mocklist\' called ApiContinuationManager::addContinueParam ' .
-					'but was not passed to ApiContinuationManager::__construct',
+				'Module \'mocklist\' called ' . ApiContinuationManager::class . '::addContinueParam ' .
+					'but was not passed to ' . ApiContinuationManager::class . '::__construct',
 				$ex->getMessage(),
 				'Expected exception'
 			);

@@ -5,11 +5,12 @@ namespace MediaWiki\Tests\Rest;
 use MediaWiki\Rest\ConditionalHeaderUtil;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
+use MediaWikiUnitTestCase;
 
 /**
  * @covers \MediaWiki\Rest\ConditionalHeaderUtil
  */
-class ConditionalHeaderUtilTest extends \MediaWikiUnitTestCase {
+class ConditionalHeaderUtilTest extends MediaWikiUnitTestCase {
 	public static function provider() {
 		return [
 			'nothing' => [
@@ -242,6 +243,24 @@ class ConditionalHeaderUtilTest extends \MediaWikiUnitTestCase {
 				null,
 				null,
 				[ 'If-Unmodified-Since' => 'Mon, 14 Oct 2019 00:00:00 GMT' ],
+				412,
+				[]
+			],
+			'If-None-Match wildcard GET request, resource has representation' => [
+				'GET',
+				null,
+				null,
+				true,
+				[ 'If-None-Match' => '*' ],
+				304,
+				[]
+			],
+			'If-None-Match wildcard non-GET request, resource has representation' => [
+				'POST',
+				null,
+				null,
+				true,
+				[ 'If-None-Match' => '*' ],
 				412,
 				[]
 			],

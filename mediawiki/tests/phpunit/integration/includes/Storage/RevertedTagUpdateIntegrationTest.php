@@ -2,12 +2,12 @@
 
 namespace MediaWiki\Tests\Storage;
 
-use ChangeTags;
-use DeferredUpdates;
-use FormatJson;
-use HashConfig;
+use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\MainConfigNames;
 use MediaWikiIntegrationTestCase;
 use RecentChange;
+use WikiPage;
 
 /**
  * @covers \MediaWiki\Storage\RevertedTagUpdate
@@ -19,23 +19,6 @@ use RecentChange;
  * @see RevertedTagUpdateTest for non-DB tests
  */
 class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
-	protected function setUp(): void {
-		parent::setUp();
-
-		$this->tablesUsed = array_merge(
-			$this->tablesUsed,
-			[
-				'page',
-				'revision',
-				'comment',
-				'text',
-				'content',
-				'change_tag',
-				'objectcache',
-				'job'
-			]
-		);
-	}
 
 	/**
 	 * This test ensures the update is not performed at the end of the web request, but
@@ -47,13 +30,13 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	public function testWithJobQueue() {
 		$num = 5;
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		// Make a manual revert to revision with content '0'
 		// The user HAS the 'autopatrol' right
 		$revertRevId = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -82,13 +65,13 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	public function testDelayedJobExecutionWithPatrol() {
 		$num = 5;
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		// Make a manual revert to revision with content '0'
 		// The user DOES NOT have the 'autopatrol' right
 		$revertRevId = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -129,13 +112,13 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	public function testNoJobExecutionWhenRevertIsReverted() {
 		$num = 5;
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		// Make a manual revert to revision with content '0'
 		// The user DOES NOT have the 'autopatrol' right
 		$revertId1 = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -153,7 +136,7 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 
 		// now a sysop reverts the revert made by a regular user
 		$revertId2 = $this->editPage(
-			$pageTitle,
+			$page,
 			'5',
 			'',
 			NS_MAIN,
@@ -188,15 +171,15 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 		$num = 5;
 
 		// disable patrolling
-		$this->overrideMwServices( new HashConfig( [ 'UseRCPatrol' => false ] ) );
+		$this->overrideConfigValues( [ MainConfigNames::UseRCPatrol => false ] );
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		// Make a manual revert to revision with content '0'
 		// The user DOES NOT have the 'autopatrol' right, but that should not matter here
 		$revertRevId = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -227,8 +210,8 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	public function testDelayedJobExecutionWithHook() {
 		$num = 5;
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		$this->setTemporaryHook(
 			'BeforeRevertedTagUpdate',
@@ -252,7 +235,7 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 		// Make a manual revert to revision with content '0'
 		// The user HAS the 'autopatrol' right, but that should be vetoed by the hook
 		$revertRevId = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -293,8 +276,8 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	public function testNoDelayedJobExecutionWithHook() {
 		$num = 5;
 
-		$revisionIds = $this->setupEditsOnPage( $num );
-		$pageTitle = $this->getExistingTestPage()->getTitle()->getDBkey();
+		$page = $this->getExistingTestPage();
+		$revisionIds = $this->setupEditsOnPage( $page, $num );
 
 		$this->setTemporaryHook(
 			'BeforeRevertedTagUpdate',
@@ -319,7 +302,7 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 		// The user DOES NOT have the 'autopatrol' right, but that should be
 		// overridden by the hook.
 		$revertRevId = $this->editPage(
-			$pageTitle,
+			$page,
 			'0',
 			'',
 			NS_MAIN,
@@ -344,16 +327,15 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Sets up a set number of edits on a page.
 	 *
+	 * @param WikiPage $page the page to set up
 	 * @param int $editCount
 	 *
 	 * @return array
 	 */
-	private function setupEditsOnPage( int $editCount ): array {
-		$wikiPage = $this->getExistingTestPage();
-		$pageTitle = $wikiPage->getTitle()->getDBkey();
+	private function setupEditsOnPage( WikiPage $page, int $editCount ): array {
 		$revIds = [];
 		for ( $i = 0; $i <= $editCount; $i++ ) {
-			$revIds[] = $this->editPage( $pageTitle, strval( $i ) )
+			$revIds[] = $this->editPage( $page, strval( $i ) )
 				->value['revision-record']->getId();
 		}
 
@@ -366,12 +348,12 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 	 * @param array $revisionIds
 	 */
 	private function verifyNoRevertedTags( array $revisionIds ) {
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->getDb();
 		foreach ( $revisionIds as $revisionId ) {
 			$this->assertNotContains(
 				'mw-reverted',
-				ChangeTags::getTags( $dbw, null, $revisionId ),
-				'ChangeTags::getTags()'
+				$this->getServiceContainer()->getChangeTagsStore()->getTags( $dbw, null, $revisionId ),
+				'ChangeTagsStore->getTags()'
 			);
 		}
 	}
@@ -386,26 +368,22 @@ class RevertedTagUpdateIntegrationTest extends MediaWikiIntegrationTestCase {
 		array $revisionIds,
 		int $revertRevId
 	) {
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->getDb();
 		// for each reverted revision
 		foreach ( $revisionIds as $revisionId ) {
 			$this->assertContains(
 				'mw-reverted',
-				ChangeTags::getTags( $dbw, null, $revisionId ),
-				'ChangeTags::getTags()'
+				$this->getServiceContainer()->getChangeTagsStore()->getTags( $dbw, null, $revisionId ),
+				'ChangeTagsStore->getTags()'
 			);
 
 			// do basic checks for the ct_params field
-			$extraParams = $dbw->selectField(
-				[ 'change_tag', 'change_tag_def' ],
-				'ct_params',
-				[
-					'ct_rev_id' => $revisionId,
-					'ct_tag_id = ctd_id',
-					'ctd_name' => 'mw-reverted'
-				],
-				__METHOD__
-			);
+			$extraParams = $dbw->newSelectQueryBuilder()
+				->select( 'ct_params' )
+				->from( 'change_tag' )
+				->join( 'change_tag_def', null, 'ct_tag_id = ctd_id' )
+				->where( [ 'ct_rev_id' => $revisionId, 'ctd_name' => 'mw-reverted' ] )
+				->caller( __METHOD__ )->fetchField();
 			$this->assertNotEmpty( $extraParams, 'change_tag.ct_params' );
 			$this->assertJson( $extraParams, 'change_tag.ct_params' );
 			$parsedParams = FormatJson::decode( $extraParams, true );

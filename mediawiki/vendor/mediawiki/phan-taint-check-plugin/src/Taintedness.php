@@ -23,7 +23,6 @@ class Taintedness {
 
 	/**
 	 * @var self|null Taintedness for array elements that we couldn't attribute to any key
-	 * @todo Can we store this under a bogus key in self::$dimTaint ?
 	 */
 	private $unknownDimsTaint;
 
@@ -91,20 +90,21 @@ class Taintedness {
 	}
 
 	/**
-	 * Temporary method, should only be used in getRelevantLinksForTaintedness
-	 * @return bool
+	 * Returns a copy of this object where the taintedness of every known key has been reassigned
+	 * to unknown keys.
+	 * @return self
 	 */
-	public function hasSomethingOutOfKnownDims(): bool {
-		return $this->flags > 0 || $this->keysTaint > 0
-			|| ( $this->unknownDimsTaint && !$this->unknownDimsTaint->isSafe() );
-	}
-
-	/**
-	 * Temporary (?) method, should only be used in getRelevantLinksForTaintedness
-	 * @return self[]
-	 */
-	public function getDimTaint(): array {
-		return $this->dimTaint;
+	public function asKnownKeysMadeUnknown(): self {
+		$ret = new self( $this->flags );
+		$ret->keysTaint = $this->keysTaint;
+		$ret->unknownDimsTaint = $this->unknownDimsTaint;
+		if ( $this->dimTaint ) {
+			$ret->unknownDimsTaint ??= self::newSafe();
+			foreach ( $this->dimTaint as $keyTaint ) {
+				$ret->unknownDimsTaint->mergeWith( $keyTaint );
+			}
+		}
+		return $ret;
 	}
 
 	/**
@@ -265,7 +265,8 @@ class Taintedness {
 				$value->asValueFirstLevel()
 			);
 		}
-		$intersect->keysTaint = $sink->keysTaint & $value->keysTaint;
+		$valueKeysAsExec = ( ( $value->keysTaint | $value->flags ) & SecurityCheckPlugin::ALL_TAINT ) << 1;
+		$intersect->keysTaint = $sink->keysTaint & $valueKeysAsExec;
 		foreach ( $sink->dimTaint as $key => $dTaint ) {
 			$intersect->dimTaint[$key] = self::intersectForSink(
 				$dTaint,
@@ -273,6 +274,27 @@ class Taintedness {
 			);
 		}
 		return $intersect;
+	}
+
+	/**
+	 * Removes offset data from $this for all known offsets of $other, in place.
+	 *
+	 * @param Taintedness $other
+	 * @return void
+	 */
+	public function removeKnownKeysFrom( self $other ): void {
+		foreach ( $other->dimTaint as $key => $_ ) {
+			unset( $this->dimTaint[$key] );
+		}
+		if (
+			( $this->flags & SecurityCheckPlugin::SQL_NUMKEY_TAINT ) &&
+			!$this->has( SecurityCheckPlugin::SQL_TAINT )
+		) {
+			// Note that this adjustment is not guaranteed to happen immediately after the removal of the last
+			// integer key. For instance, in [ 0 => unsafe, 'foo' => unsafe ], if only the element 0 is removed,
+			// this branch will not run because 'foo' still contributes sql taint.
+			$this->flags &= ~SecurityCheckPlugin::SQL_NUMKEY_TAINT;
+		}
 	}
 
 	/**
@@ -323,7 +345,7 @@ class Taintedness {
 		if ( is_scalar( $offset ) ) {
 			$this->dimTaint[$offset] = $value;
 		} else {
-			$this->unknownDimsTaint = $this->unknownDimsTaint ?? self::newSafe();
+			$this->unknownDimsTaint ??= self::newSafe();
 			$this->unknownDimsTaint->mergeWith( $value );
 		}
 	}
@@ -457,6 +479,26 @@ class Taintedness {
 	}
 
 	/**
+	 * Creates a copy of this object without the given key
+	 * @param string|int|bool|float $key
+	 * @return $this
+	 */
+	public function withoutKey( $key ): self {
+		$ret = clone $this;
+		unset( $ret->dimTaint[$key] );
+		if (
+			( $ret->flags & SecurityCheckPlugin::SQL_NUMKEY_TAINT ) &&
+			!$ret->has( SecurityCheckPlugin::SQL_TAINT )
+		) {
+			// Note that this adjustment is not guaranteed to happen immediately after the removal of the last
+			// integer key. For instance, in [ 0 => unsafe, 'foo' => unsafe ], if the element 0 is removed,
+			// this branch will not run because 'foo' still contributes sql taint.
+			$ret->flags &= ~SecurityCheckPlugin::SQL_NUMKEY_TAINT;
+		}
+		return $ret;
+	}
+
+	/**
 	 * Creates a copy of this object without known offsets, and without keysTaint
 	 * @return $this
 	 */
@@ -466,7 +508,7 @@ class Taintedness {
 		if ( !$ret->dimTaint ) {
 			return $ret;
 		}
-		$ret->unknownDimsTaint = $ret->unknownDimsTaint ?? self::newSafe();
+		$ret->unknownDimsTaint ??= self::newSafe();
 		foreach ( $ret->dimTaint as $dim => $taint ) {
 			$ret->unknownDimsTaint->mergeWith( $taint );
 			unset( $ret->dimTaint[$dim] );
@@ -481,6 +523,49 @@ class Taintedness {
 	 */
 	public function asKeyForForeach(): self {
 		return new self( ( $this->keysTaint | $this->flags ) & ~SecurityCheckPlugin::SQL_NUMKEY_TAINT );
+	}
+
+	/**
+	 * Applies an array_replace operations to $this, in place.
+	 *
+	 * @param Taintedness $other
+	 * @return void
+	 */
+	public function arrayReplace( self $other ): void {
+		$this->flags |= $other->flags;
+		$this->dimTaint = array_replace( $this->dimTaint, $other->dimTaint );
+		if ( $other->unknownDimsTaint ) {
+			if ( $this->unknownDimsTaint ) {
+				$this->unknownDimsTaint->mergeWith( $other->unknownDimsTaint );
+			} else {
+				$this->unknownDimsTaint = $other->unknownDimsTaint;
+			}
+		}
+	}
+
+	/**
+	 * Applies an array_merge operations to $this, in place.
+	 *
+	 * @param Taintedness $other
+	 * @return void
+	 */
+	public function arrayMerge( self $other ): void {
+		// First merge the known elements
+		$this->dimTaint = array_merge( $this->dimTaint, $other->dimTaint );
+		// Then merge general flags, key flags, and any unknown keys
+		$this->flags |= $other->flags;
+		$this->keysTaint |= $other->keysTaint;
+		$this->unknownDimsTaint ??= new self( SecurityCheckPlugin::NO_TAINT );
+		if ( $other->unknownDimsTaint ) {
+			$this->unknownDimsTaint->mergeWith( $other->unknownDimsTaint );
+		}
+		// Finally, move taintedness from int keys to unknown
+		foreach ( $this->dimTaint as $k => $val ) {
+			if ( is_int( $k ) ) {
+				$this->unknownDimsTaint->mergeWith( $val );
+				unset( $this->dimTaint[$k] );
+			}
+		}
 	}
 
 	// Conversion/checks shortcuts
@@ -531,44 +616,6 @@ class Taintedness {
 	}
 
 	/**
-	 * Similar to asExecToYesTaint, but preserves existing YES flags
-	 *
-	 * @return self
-	 */
-	public function withExecToYesTaint(): self {
-		$flags = ( $this->flags & SecurityCheckPlugin::ALL_TAINT ) |
-			( ( $this->flags & SecurityCheckPlugin::ALL_EXEC_TAINT ) >> 1 );
-		$ret = new self( $flags );
-		if ( $this->unknownDimsTaint ) {
-			$ret->unknownDimsTaint = $this->unknownDimsTaint->withExecToYesTaint();
-		}
-		$ret->keysTaint = ( $this->keysTaint & SecurityCheckPlugin::ALL_TAINT ) |
-			( ( $this->keysTaint & SecurityCheckPlugin::ALL_EXEC_TAINT ) >> 1 );
-		foreach ( $this->dimTaint as $k => $val ) {
-			$ret->dimTaint[$k] = $val->withExecToYesTaint();
-		}
-		return $ret;
-	}
-
-	/**
-	 * Add SQL_TAINT wherever SQL_NUMKEY_TAINT is set
-	 */
-	public function addSqlToNumkey(): void {
-		if ( $this->flags & SecurityCheckPlugin::SQL_NUMKEY_TAINT ) {
-			$this->flags |= SecurityCheckPlugin::SQL_TAINT;
-		}
-		if ( $this->keysTaint & SecurityCheckPlugin::SQL_NUMKEY_TAINT ) {
-			$this->keysTaint |= SecurityCheckPlugin::SQL_TAINT;
-		}
-		if ( $this->unknownDimsTaint ) {
-			$this->unknownDimsTaint->addSqlToNumkey();
-		}
-		foreach ( $this->dimTaint as $val ) {
-			$val->addSqlToNumkey();
-		}
-	}
-
-	/**
 	 * Convert the yes taint bits to corresponding exec taint bits recursively.
 	 * Any UNKNOWN_TAINT or INAPPLICABLE_TAINT is discarded. Note that this returns a copy of the
 	 * original object. The shape is preserved.
@@ -616,6 +663,8 @@ class Taintedness {
 				$ret->unknownDimsTaint = $newVal;
 			}
 		}
+		$ret->keysTaint |= ( $this->flags | $this->keysTaint ) &
+			( ( $offsets->getKeysFlags() & SecurityCheckPlugin::ALL_TAINT ) << 1 );
 		return $ret;
 	}
 
@@ -657,10 +706,46 @@ class Taintedness {
 	}
 
 	/**
+	 * Given some method links, returns a list of pairs of LinksSet and Taintedness objects, where the taintedness
+	 * in each pair should be backpropagated to the links in the LinksSet.
+	 *
+	 * @param MethodLinks $links
+	 * @return array<array<LinksSet|Taintedness>>
+	 * @phan-return array<array{0:LinksSet,1:Taintedness}>
+	 */
+	public function decomposeForLinks( MethodLinks $links ): array {
+		$pairs = [];
+
+		if ( $this->flags !== SecurityCheckPlugin::NO_TAINT ) {
+			$pairs[] = [ $links->getLinksCollapsing(), new self( $this->flags ) ];
+		}
+
+		if ( $this->keysTaint !== SecurityCheckPlugin::NO_TAINT ) {
+			$pairs[] = [ $links->asKeyForForeach()->getLinksCollapsing(), $this->asKeyForForeach() ];
+		}
+
+		foreach ( $this->dimTaint as $k => $dimTaint ) {
+			$pairs = array_merge(
+				$pairs,
+				$dimTaint->decomposeForLinks( $links->getForDim( $k ) )
+			);
+		}
+
+		if ( $this->unknownDimsTaint ) {
+			$pairs = array_merge(
+				$pairs,
+				$this->unknownDimsTaint->decomposeForLinks( $links->getForDim( null ) )
+			);
+		}
+		return $pairs;
+	}
+
+	/**
 	 * Get a stringified representation of this taintedness, useful for debugging etc.
 	 *
 	 * @param string $indent
 	 * @return string
+	 * @suppress PhanUnreferencedPublicMethod
 	 */
 	public function toString( $indent = '' ): string {
 		$flags = SecurityCheckPlugin::taintToString( $this->flags );
@@ -731,6 +816,6 @@ EOT;
 	 * @return string
 	 */
 	public function __toString(): string {
-		return $this->toString();
+		return $this->toShortString();
 	}
 }

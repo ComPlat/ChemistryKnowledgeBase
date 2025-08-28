@@ -26,7 +26,8 @@
 
 namespace Skins\Chameleon\Hooks;
 
-use ResourceLoader;
+use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\ResourceLoader\SkinModule;
 
 /**
  * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderRegisterModules
@@ -59,7 +60,7 @@ class ResourceLoaderRegisterModules {
 
 	private function registerChameleon(): void {
 		$this->resourceLoader->register( 'skins.chameleon', [
-			'class' => 'ResourceLoaderSkinModule',
+			'class' => SkinModule::class,
 			'features' => $this->getFeatures(),
 			'targets' => [
 				'desktop',
@@ -69,10 +70,6 @@ class ResourceLoaderRegisterModules {
 	}
 
 	private function getFeatures(): array {
-		if ( version_compare( MW_VERSION, '1.39', '<' ) ) {
-			return [ 'elements', 'content', 'legacy', 'toc' ];
-		}
-
 		$features = [
 			'elements',
 			'content-links',
@@ -85,6 +82,11 @@ class ResourceLoaderRegisterModules {
 			'i18n-headings',
 			'toc'
 		];
+
+		if ( version_compare( MW_VERSION, '1.43', '>=' ) ) {
+			$removed = [ 'i18n-all-lists-margins', 'interface-message-box' ];
+			$features = array_values( array_diff( $features, $removed ) );
+		}
 
 		if ( $this->configuration['egChameleonEnableExternalLinkIcons'] === true ) {
 			$features[] = 'content-links-external';

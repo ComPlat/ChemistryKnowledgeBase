@@ -2,20 +2,40 @@
 namespace Eris\Generator;
 
 use Eris\Quantifier\ForAll;
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
 
-class SubsetGeneratorTest extends \PHPUnit_Framework_TestCase
+class SubsetGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var string[]
+     */
+    private $universe;
+    /**
+     * @var SubsetGenerator
+     */
+    private $generator;
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->universe = ['a', 'b', 'c', 'd', 'e'];
         $this->generator = new SubsetGenerator($this->universe);
         $this->size = 100;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
     
     public function testScalesGenerationSizeToTouchAllPossibleSubsets()
     {
         $maxSize = ForAll::DEFAULT_MAX_SIZE;
+        /** @var array<int, list<int>> $subsetSizes */
         $subsetSizes = [];
         for ($size = 0; $size < $maxSize; $size++) {
             $subsetSizes[] = count($this->generator->__invoke($size, $this->rand)->unbox());
@@ -24,7 +44,7 @@ class SubsetGeneratorTest extends \PHPUnit_Framework_TestCase
         $subsetSizeFrequencies = array_count_values($subsetSizes);
         // notice the full universe is very rarely generated
         // hence its presence is not asserted here
-        for ($subsetSize = 0; $subsetSize < count($this->universe); $subsetSize++) {
+        for ($subsetSize = 0, $subsetSizeMax = count($this->universe); $subsetSize < $subsetSizeMax; $subsetSize++) {
             $this->assertGreaterThan(
                 0,
                 $subsetSizeFrequencies[$subsetSize],
@@ -56,17 +76,17 @@ class SubsetGeneratorTest extends \PHPUnit_Framework_TestCase
     public function testShrinkEmptySet()
     {
         $elements = $this->generator->__invoke($size = 0, $this->rand);
-        $this->assertEquals(0, count($elements->unbox()));
-        $this->assertEquals(0, count($this->generator->shrink($elements)->unbox()));
+        $this->assertCount(0, $elements->unbox());
+        $this->assertCount(0, $this->generator->shrink($elements)->unbox());
     }
 
     private function assertNoRepeatedElements($generated)
     {
         sort($generated);
-        $this->assertTrue(
-            array_unique($generated) === $generated,
-            "There are repeated elements inside a generated value: "
-            . var_export($generated, true)
+        $this->assertSame(
+            array_unique($generated),
+            $generated,
+            "There are repeated elements inside a generated value: " . var_export($generated, true)
         );
     }
 }

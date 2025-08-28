@@ -9,17 +9,17 @@
 namespace MediaWiki\Extension\InputBox;
 
 use Article;
-use Config;
-use MediaWiki;
+use MediaWiki\Actions\ActionEntryPoint;
+use MediaWiki\Config\Config;
 use MediaWiki\Hook\MediaWikiPerformActionHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
-use OutputPage;
-use Parser;
-use SpecialPage;
-use Title;
-use User;
-use WebRequest;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
 /**
  * InputBox hooks
@@ -29,7 +29,6 @@ class InputBoxHooks implements
 	SpecialPageBeforeExecuteHook,
 	MediaWikiPerformActionHook
 {
-
 	/** @var Config */
 	private $config;
 
@@ -80,7 +79,7 @@ class InputBoxHooks implements
 	 */
 	public function render( $input, $args, Parser $parser ) {
 		// Create InputBox
-		$inputBox = new InputBox( $parser );
+		$inputBox = new InputBox( $this->config, $parser );
 
 		// Configure InputBox
 		$inputBox->extractOptions( $parser->replaceVariables( $input ) );
@@ -98,7 +97,7 @@ class InputBoxHooks implements
 	 * @param Title $title
 	 * @param User $user
 	 * @param WebRequest $request
-	 * @param MediaWiki $wiki
+	 * @param ActionEntryPoint $wiki
 	 * @return bool
 	 */
 	public function onMediaWikiPerformAction(
@@ -109,21 +108,24 @@ class InputBoxHooks implements
 		$request,
 		$wiki
 	) {
-		if ( $wiki->getAction() !== 'edit' && $request->getText( 'veaction' ) !== 'edit' ) {
+		// In order to check for 'action=edit' in URL parameters, even if another extension overrides
+		// the action, we must not use getActionName() here. (T337436)
+		if ( $request->getRawVal( 'action' ) !== 'edit' && $request->getRawVal( 'veaction' ) !== 'edit' ) {
 			// not our problem
 			return true;
 		}
-		if ( $request->getText( 'prefix', '' ) === '' ) {
+		$prefix = $request->getText( 'prefix', '' );
+		if ( $prefix === '' ) {
 			// Fine
 			return true;
 		}
 
-		$title = $request->getText( 'prefix', '' ) . $request->getText( 'title', '' );
+		$title = $prefix . $request->getText( 'title', '' );
 		$params = $request->getValues();
 		unset( $params['prefix'] );
 		$params['title'] = $title;
 
-		$output->redirect( wfAppendQuery( $this->config->get( 'Script' ), $params ), '301' );
+		$output->redirect( wfAppendQuery( $output->getConfig()->get( 'Script' ), $params ), '301' );
 		return false;
 	}
 }

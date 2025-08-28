@@ -1,10 +1,13 @@
 <?php
 
+namespace MediaWiki\Tests\Site;
+
+use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Site\MediaWikiPageNameNormalizer;
-use PHPUnit\Framework\Assert;
+use MediaWikiUnitTestCase;
 
 /**
- * @covers MediaWiki\Site\MediaWikiPageNameNormalizer
+ * @covers \MediaWiki\Site\MediaWikiPageNameNormalizer
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,11 +37,11 @@ class MediaWikiPageNameNormalizerTest extends MediaWikiUnitTestCase {
 	 * @dataProvider normalizePageTitleProvider
 	 */
 	public function testNormalizePageTitle( $expected, $pageName, $getResponse ) {
-		MediaWikiPageNameNormalizerTestMockHttp::$response = $getResponse;
+		$httpRequestFactory = $this->createMock( HttpRequestFactory::class );
+		$httpRequestFactory->method( 'get' )
+			->willReturn( $getResponse );
 
-		$normalizer = new MediaWikiPageNameNormalizer(
-			new MediaWikiPageNameNormalizerTestMockHttp()
-		);
+		$normalizer = new MediaWikiPageNameNormalizer( $httpRequestFactory );
 
 		$this->assertSame(
 			$expected,
@@ -46,7 +49,7 @@ class MediaWikiPageNameNormalizerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function normalizePageTitleProvider() {
+	public static function normalizePageTitleProvider() {
 		// Response are taken from wikidata and kkwiki using the following API request
 		// api.php?action=query&prop=info&redirects=1&converttitles=1&format=json&titles=…
 		return [
@@ -93,23 +96,4 @@ class MediaWikiPageNameNormalizerTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-}
-
-/**
- * @private
- * @see Http
- */
-class MediaWikiPageNameNormalizerTestMockHttp extends Http {
-
-	/**
-	 * @var mixed
-	 */
-	public static $response;
-
-	public static function get( $url, array $options = [], $caller = __METHOD__ ) {
-		Assert::assertIsString( $url );
-		Assert::assertIsString( $caller );
-
-		return self::$response;
-	}
 }

@@ -10,7 +10,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "antispam",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"GroupPermissions": {
 		"sysop": {
@@ -44,19 +44,13 @@
 		}
 	},
 	"APIModules": {
-		"titleblacklist": "MediaWiki\\Extension\\TitleBlacklist\\Api\\ApiQueryTitleBlacklist"
+		"titleblacklist": "MediaWiki\\Extension\\TitleBlacklist\\Api\\ApiTitleBlacklist"
 	},
 	"MessagesDirs": {
 		"TitleBlacklist": [
 			"i18n",
 			"i18n/api"
 		]
-	},
-	"AutoloadClasses": {
-		"MediaWiki\\Extension\\TitleBlacklist\\TitleBlacklist": "includes/TitleBlacklist.php",
-		"TitleBlacklist": "includes/TitleBlacklist.php",
-		"MediaWiki\\Extension\\TitleBlacklist\\TitleBlacklistEntry": "includes/TitleBlacklistEntry.php",
-		"TitleBlacklistEntry": "includes/TitleBlacklistEntry.php"
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\TitleBlacklist\\": "includes/"
@@ -66,18 +60,10 @@
 			"scripts": "mediawiki.api.titleblacklist.js",
 			"dependencies": [
 				"mediawiki.api"
-			],
-			"targets": [
-				"desktop",
-				"mobile"
 			]
 		},
 		"ext.titleblacklist.visualEditor": {
-			"scripts": "ve-titleblacklist/ve.init.mw.TitleBlacklistSaveErrorHandler.js",
-			"targets": [
-				"desktop",
-				"mobile"
-			]
+			"scripts": "ve-titleblacklist/ve.init.mw.TitleBlacklistSaveErrorHandler.js"
 		}
 	},
 	"attributes": {
@@ -91,17 +77,21 @@
 		"localBasePath": "modules",
 		"remoteExtPath": "TitleBlacklist/modules"
 	},
+	"callback": "MediaWiki\\Extension\\TitleBlacklist\\Hooks::onRegistration",
 	"Hooks": {
 		"getUserPermissionsErrorsExpensive": "TitleBlacklistHookHandler",
 		"TitleGetEditNotices": "TitleBlacklistHookHandler",
 		"MovePageCheckPermissions": "TitleBlacklistHookHandler",
 		"EditFilter": "TitleBlacklistHookHandler",
 		"PageSaveComplete": "TitleBlacklistHookHandler",
-		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\TitleBlacklist\\Hooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "TitleBlacklistScribuntoHookHandler"
 	},
 	"HookHandlers": {
 		"TitleBlacklistHookHandler": {
 			"class": "MediaWiki\\Extension\\TitleBlacklist\\Hooks"
+		},
+		"TitleBlacklistScribuntoHookHandler": {
+			"class": "MediaWiki\\Extension\\TitleBlacklist\\ScribuntoHooks"
 		}
 	},
 	"config": {

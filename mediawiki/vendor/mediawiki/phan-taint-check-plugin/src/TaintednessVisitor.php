@@ -98,6 +98,10 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 		// Variables are already handled in visitVar
 		\ast\AST_CLOSURE_VAR => true,
 		\ast\AST_CLOSURE_USES => true,
+		\ast\AST_LABEL => true,
+		\ast\AST_ATTRIBUTE => true,
+		\ast\AST_ATTRIBUTE_GROUP => true,
+		\ast\AST_ATTRIBUTE_LIST => true,
 	];
 
 	/**
@@ -272,7 +276,54 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 	 * @param Node $node
 	 */
 	public function visitUnset( Node $node ): void {
+		$varNode = $node->children['var'];
+		if ( $varNode instanceof Node && $varNode->kind === \ast\AST_DIM ) {
+			$this->handleUnsetDim( $varNode );
+		}
 		$this->setCurTaintSafe();
+	}
+
+	/**
+	 * Analyzes expressions like unset( $arr['foo'] ) to infer shape mutations.
+	 * @param Node $node
+	 * @return void
+	 */
+	private function handleUnsetDim( Node $node ): void {
+		$expr = $node->children['expr'];
+		if ( !$expr instanceof Node ) {
+			// Syntax error.
+			return;
+		}
+		if ( $expr->kind !== \ast\AST_VAR ) {
+			// For now, we only handle a single offset.
+			// TODO actually recurse.
+			return;
+		}
+
+		$keyNode = $node->children['dim'];
+		$key = $keyNode !== null ? $this->resolveOffset( $keyNode ) : null;
+		if ( $key instanceof Node ) {
+			// We can't tell what gets removed.
+			return;
+		}
+
+		try {
+			$var = $this->getCtxN( $expr )->getVariable();
+		} catch ( NodeException | IssueException $_ ) {
+			return;
+		}
+
+		if ( $var instanceof GlobalVariable ) {
+			// Don't handle for now.
+			return;
+		}
+
+		$curTaint = self::getTaintednessRaw( $var );
+		if ( !$curTaint ) {
+			// Is this even possible? Don't do anything, just in case.
+			return;
+		}
+		self::setTaintednessRaw( $var, $curTaint->withoutKey( $key ) );
 	}
 
 	/**
@@ -457,13 +508,14 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 		int $op,
 		int $mask
 	): Taintedness {
-		if ( $op === \ast\flags\BINARY_ADD && $mask !== SecurityCheckPlugin::NO_TAINT ) {
-			// HACK: This means that a node can be array, so assume array plus
-			$combinedTaint = $leftTaint->asArrayPlusWith( $rightTaint );
-		} else {
-			$combinedTaint = $leftTaint->asMergedWith( $rightTaint )->asCollapsed()->withOnly( $mask );
+		if ( $mask === SecurityCheckPlugin::NO_TAINT ) {
+			return Taintedness::newSafe();
 		}
-		return $combinedTaint;
+		if ( $op === \ast\flags\BINARY_ADD ) {
+			// HACK: This means that a node can be array, so assume array plus
+			return $leftTaint->asArrayPlusWith( $rightTaint );
+		}
+		return $leftTaint->asMergedWith( $rightTaint )->asCollapsed()->withOnly( $mask );
 	}
 
 	/**
@@ -650,8 +702,6 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 			return;
 		}
 
-		// If we find no __toString(), then presumably the object can't be outputted, so should be safe.
-		$this->curTaintWithError = TaintednessWithError::newEmpty();
 		foreach ( $clazzes as $clazz ) {
 			try {
 				$toString = $clazz->getMethodByName( $this->code_base, '__toString' );
@@ -660,33 +710,36 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 				continue;
 			}
 
-			$this->curTaintWithError->mergeWith( $this->handleMethodCall( $toString, $toString->getFQSEN(), [] ) );
+			$toStringTaint = $this->handleMethodCall( $toString, $toString->getFQSEN(), [] );
+			if ( !$this->curTaintWithError ) {
+				$this->curTaintWithError = $toStringTaint;
+			} else {
+				$this->curTaintWithError->mergeWith( $toStringTaint );
+			}
 		}
+
+		// If we find no __toString(), then presumably the object can't be outputted, so should be safe.
+		$this->curTaintWithError ??= TaintednessWithError::newEmpty();
 
 		$this->setCachedData( $node );
 	}
 
 	/**
-	 * Somebody calls a method or function
-	 *
-	 * This has to figure out:
-	 *  Is the return value of the call tainted
-	 *  Are any of the arguments tainted
-	 *  Does the function do anything scary with its arguments
-	 * It also has to maintain quite a bit of book-keeping.
-	 *
-	 * This also handles (function) call, static call, and new operator
 	 * @param Node $node
 	 */
 	public function visitMethodCall( Node $node ): void {
-		$funcs = $this->getFuncsFromNode( $node, __METHOD__ );
-		if ( !$funcs ) {
+		$methodName = $node->children['method'];
+		$isStatic = $node->kind === \ast\AST_STATIC_CALL;
+		try {
+			$method = $this->getCtxN( $node )->getMethod( $methodName, $isStatic, true );
+		} catch ( NodeException | CodeBaseException | IssueException $e ) {
+			$this->debug( __METHOD__, "Cannot find method in node. " . $this->getDebugInfo( $e ) );
 			$this->setCurTaintUnknown();
 			$this->setCachedData( $node );
 			return;
 		}
 
-		$this->analyzeCallNode( $node, $funcs );
+		$this->analyzeCallNode( $node, [ $method ] );
 	}
 
 	/**
@@ -695,13 +748,18 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 	 */
 	protected function analyzeCallNode( Node $node, iterable $funcs ): void {
 		$args = $node->children['args']->children;
-		$this->curTaintWithError = TaintednessWithError::newEmpty();
 		foreach ( $funcs as $func ) {
 			// No point in analyzing abstract function declarations
 			if ( !$func instanceof FunctionLikeDeclarationType ) {
-				$this->curTaintWithError->mergeWith( $this->handleMethodCall( $func, $func->getFQSEN(), $args ) );
+				$callTaint = $this->handleMethodCall( $func, $func->getFQSEN(), $args );
+				if ( !$this->curTaintWithError ) {
+					$this->curTaintWithError = $callTaint;
+				} else {
+					$this->curTaintWithError->mergeWith( $callTaint );
+				}
 			}
 		}
+		$this->curTaintWithError ??= TaintednessWithError::newEmpty();
 		$this->setCachedData( $node );
 	}
 
@@ -718,7 +776,15 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 	 * @param Node $node
 	 */
 	public function visitCall( Node $node ): void {
-		$this->visitMethodCall( $node );
+		$funcs = $this->getCtxN( $node->children['expr'] )->getFunctionFromNode();
+
+		if ( !$funcs ) {
+			$this->setCurTaintUnknown();
+			$this->setCachedData( $node );
+			return;
+		}
+
+		$this->analyzeCallNode( $node, $funcs );
 	}
 
 	/**
@@ -973,7 +1039,7 @@ class TaintednessVisitor extends PluginAwarePostAnalysisVisitor {
 			$curTaint->addKeysTaintedness( $keyTaint->get() );
 			$curError->mergeWith( $keyTaintAll->getError() );
 			$curError->mergeWith( $valTaintAll->getError() );
-			$links->mergeWith( $keyTaintAll->getMethodLinks()->asCollapsed() );
+			$links->addKeysLinks( $keyTaintAll->getMethodLinks()->getLinksCollapsing() );
 			$links->setAtDim( $offset, $valTaintAll->getMethodLinks() );
 		}
 		$this->curTaintWithError = new TaintednessWithError( $curTaint, $curError, $links );

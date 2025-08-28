@@ -1,16 +1,32 @@
 <?php
 namespace Eris\Generator;
 
-class OneOfGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class OneOfGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var ChooseGenerator
+     */
+    private $singleElementGenerator;
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->singleElementGenerator = new ChooseGenerator(0, 100);
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
-    public function testConstructWithAnArrayOfGenerators()
+    public function testConstructWithAnArrayOfGenerators(): void
     {
         $generator = new OneOfGenerator([
             $this->singleElementGenerator,
@@ -18,21 +34,19 @@ class OneOfGeneratorTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $element = $generator($this->size, $this->rand);
-        $this->assertInternalType('integer', $element->unbox());
+        \Eris\PHPUnitDeprecationHelper::assertIsInt($element->unbox());
     }
 
-    public function testConstructWithNonGenerators()
+    public function testConstructWithNonGenerators(): void
     {
         $generator = new OneOfGenerator([42, 42]);
         $element = $generator($this->size, $this->rand)->unbox();
         $this->assertEquals(42, $element);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testConstructWithNoArguments()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $generator = new OneOfGenerator([]);
         $element = $generator($this->size, $this->rand);
     }

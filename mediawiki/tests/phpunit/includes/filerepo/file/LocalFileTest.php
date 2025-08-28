@@ -9,7 +9,12 @@ use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\FileBackend\FSFileBackend;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -17,14 +22,6 @@ use Wikimedia\TestingAccessWrapper;
  */
 class LocalFileTest extends MediaWikiIntegrationTestCase {
 	use MockAuthorityTrait;
-
-	protected function setUp(): void {
-		parent::setUp();
-		$this->tablesUsed[] = 'image';
-		$this->tablesUsed[] = 'oldimage';
-		$this->tablesUsed[] = 'page';
-		$this->tablesUsed[] = 'text';
-	}
 
 	private static function getDefaultInfo() {
 		return [
@@ -45,7 +42,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getHashPath
+	 * @covers \File::getHashPath
 	 * @dataProvider provideGetHashPath
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -66,7 +63,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getRel
+	 * @covers \File::getRel
 	 * @dataProvider provideGetRel
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -88,7 +85,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getUrlRel
+	 * @covers \File::getUrlRel
 	 * @dataProvider provideGetUrlRel
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -110,7 +107,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getArchivePath
+	 * @covers \File::getArchivePath
 	 * @dataProvider provideGetArchivePath
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -139,7 +136,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getThumbPath
+	 * @covers \File::getThumbPath
 	 * @dataProvider provideGetThumbPath
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -168,7 +165,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getArchiveUrl
+	 * @covers \File::getArchiveUrl
 	 * @dataProvider provideGetArchiveUrl
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -192,7 +189,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getThumbUrl
+	 * @covers \File::getThumbUrl
 	 * @dataProvider provideGetThumbUrl
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -216,7 +213,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getArchiveVirtualUrl
+	 * @covers \File::getArchiveVirtualUrl
 	 * @dataProvider provideGetArchiveVirtualUrl
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -242,7 +239,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getThumbVirtualUrl
+	 * @covers \File::getThumbVirtualUrl
 	 * @dataProvider provideGetThumbVirtualUrl
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -266,7 +263,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getUrl
+	 * @covers \File::getUrl
 	 * @dataProvider provideGetUrl
 	 * @param string $expected
 	 * @param bool $capitalLinks
@@ -287,7 +284,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers LocalFile::getUploader
+	 * @covers \LocalFile::getUploader
 	 */
 	public function testGetUploaderForNonExistingFile() {
 		$file = ( new LocalRepo( self::getDefaultInfo() ) )->newFile( 'test!' );
@@ -295,8 +292,8 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function providePermissionChecks() {
-		$capablePerformer = $this->mockAnonAuthorityWithPermissions( [ 'deletedhistory', 'deletedtext' ] );
-		$incapablePerformer = $this->mockAnonAuthorityWithoutPermissions( [ 'deletedhistory', 'deletedtext' ] );
+		$capablePerformer = $this->mockRegisteredAuthorityWithPermissions( [ 'deletedhistory', 'deletedtext' ] );
+		$incapablePerformer = $this->mockRegisteredAuthorityWithoutPermissions( [ 'deletedhistory', 'deletedtext' ] );
 		yield 'Deleted, RAW' => [
 			'performer' => $incapablePerformer,
 			'audience' => File::RAW,
@@ -339,9 +336,9 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		UserIdentity $uploader,
 		int $deletedFlags
 	): OldLocalFile {
-		$this->db->insert(
-			'oldimage',
-			[
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'oldimage' )
+			->row( [
 				'oi_name' => 'Random-11m.png',
 				'oi_archive_name' => 'Random-11m.png',
 				'oi_size' => 10816824,
@@ -354,15 +351,16 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'oi_minor_mime' => 'png',
 				'oi_description_id' => $this->getServiceContainer()
 					->getCommentStore()
-					->createComment( $this->db, 'comment' )->id,
+					->createComment( $this->getDb(), 'comment' )->id,
 				'oi_actor' => $this->getServiceContainer()
 					->getActorStore()
-					->acquireActorId( $uploader, $this->db ),
-				'oi_timestamp' => $this->db->timestamp( '20201105235242' ),
+					->acquireActorId( $uploader, $this->getDb() ),
+				'oi_timestamp' => $this->getDb()->timestamp( '20201105235242' ),
 				'oi_sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru',
 				'oi_deleted' => $deletedFlags,
-			]
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 		$file = OldLocalFile::newFromTitle(
 			Title::makeTitle( NS_FILE, 'Random-11m.png' ),
 			$this->getServiceContainer()->getRepoGroup()->getLocalRepo(),
@@ -392,13 +390,13 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'fa_minor_mime' => 'png',
 				'fa_description_id' => $this->getServiceContainer()
 					->getCommentStore()
-					->createComment( $this->db, 'comment' )->id,
+					->createComment( $this->getDb(), 'comment' )->id,
 				'fa_actor' => $this->getServiceContainer()
 					->getActorStore()
-					->acquireActorId( $uploader, $this->db ),
+					->acquireActorId( $uploader, $this->getDb() ),
 				'fa_user' => $uploader->getId(),
 				'fa_user_text' => $uploader->getName(),
-				'fa_timestamp' => $this->db->timestamp( '20201105235242' ),
+				'fa_timestamp' => $this->getDb()->timestamp( '20201105235242' ),
 				'fa_sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru',
 				'fa_deleted' => $deletedFlags,
 			]
@@ -407,7 +405,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider providePermissionChecks
-	 * @covers LocalFile::getUploader
+	 * @covers \LocalFile::getUploader
 	 */
 	public function testGetUploader(
 		Authority $performer,
@@ -425,7 +423,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider providePermissionChecks
-	 * @covers ArchivedFile::getDescription
+	 * @covers \ArchivedFile::getDescription
 	 */
 	public function testGetDescription(
 		Authority $performer,
@@ -443,7 +441,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider providePermissionChecks
-	 * @covers ArchivedFile::getUploader
+	 * @covers \ArchivedFile::getUploader
 	 */
 	public function testArchivedGetUploader(
 		Authority $performer,
@@ -461,7 +459,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider providePermissionChecks
-	 * @covers LocalFile::getDescription
+	 * @covers \LocalFile::getDescription
 	 */
 	public function testArchivedGetDescription(
 		Authority $performer,
@@ -478,7 +476,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers File::getDescriptionShortUrl
+	 * @covers \File::getDescriptionShortUrl
 	 */
 	public function testDescriptionShortUrlForNonExistingFile() {
 		$file = ( new LocalRepo( self::getDefaultInfo() ) )->newFile( 'test!' );
@@ -486,7 +484,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers LocalFile::getDescriptionText
+	 * @covers \LocalFile::getDescriptionText
 	 */
 	public function testDescriptionText_NonExisting() {
 		$file = ( new LocalRepo( self::getDefaultInfo() ) )->newFile( 'test!' );
@@ -494,7 +492,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers LocalFile::getDescriptionText
+	 * @covers \LocalFile::getDescriptionText
 	 */
 	public function testDescriptionText_Existing() {
 		$this->assertTrue( $this->editPage(
@@ -507,7 +505,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'TEST CONTENT', $file->getDescriptionText() );
 	}
 
-	public function provideLoadFromDBAndCache() {
+	public static function provideLoadFromDBAndCache() {
 		return [
 			'legacy' => [
 				'a:6:{s:10:"frameCount";i:0;s:9:"loopCount";i:1;s:8:"duration";d:0;s:8:"bitDepth";i:16;s:9:"colorType";s:10:"truecolour";s:8:"metadata";a:2:{s:8:"DateTime";s:19:"2019:07:30 13:52:32";s:15:"_MW_PNG_VERSION";i:1;}}',
@@ -541,8 +539,8 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	 * Test loadFromDB() and loadFromCache() and helpers
 	 *
 	 * @dataProvider provideLoadFromDBAndCache
-	 * @covers File
-	 * @covers LocalFile
+	 * @covers \File
+	 * @covers \LocalFile
 	 * @param string $meta
 	 * @param array $blobs Metadata blob values
 	 * @param int|false $largeItemSize The size of the "large" metadata item,
@@ -559,7 +557,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			] )
 		);
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->getDb();
 		$norm = $services->getActorNormalization();
 		$user = $this->getTestSysop()->getUserIdentity();
 		$actorId = $norm->acquireActorId( $user, $dbw );
@@ -602,9 +600,9 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			'sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru'
 		];
 
-		$dbw->insert(
-			'image',
-			[
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'image' )
+			->row( [
 				'img_name' => 'Random-11m.png',
 				'img_size' => 10816824,
 				'img_width' => 1000,
@@ -618,8 +616,9 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'img_actor' => $actorId,
 				'img_timestamp' => $dbw->timestamp( '20201105235242' ),
 				'img_sha1' => 'sy02psim0bgdh0jt4vdltuzoh7j80ru',
-			]
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 		$repo = $services->getRepoGroup()->getLocalRepo();
 		$file = $repo->findFile( $title );
 
@@ -634,8 +633,11 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 
 		// Test cache by corrupting DB
 		// Don't wipe img_metadata though since that will be loaded by loadExtraFromDB()
-		$dbw->update( 'image', [ 'img_size' => 0 ],
-			[ 'img_name' => 'Random-11m.png' ], __METHOD__ );
+		$dbw->newUpdateQueryBuilder()
+			->update( 'image' )
+			->set( [ 'img_size' => 0 ] )
+			->where( [ 'img_name' => 'Random-11m.png' ] )
+			->caller( __METHOD__ )->execute();
 		$file = LocalFile::newFromTitle( $title, $repo );
 
 		$this->assertFileProperties( $expectedProps, $file );
@@ -648,7 +650,10 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $user->equals( $file->getUploader() ) );
 
 		// Make sure we were actually hitting the WAN cache
-		$dbw->delete( 'image', [ 'img_name' => 'Random-11m.png' ], __METHOD__ );
+		$dbw->newDeleteQueryBuilder()
+			->deleteFrom( 'image' )
+			->where( [ 'img_name' => 'Random-11m.png' ] )
+			->caller( __METHOD__ )->execute();
 		$file->invalidateCache();
 		$file = LocalFile::newFromTitle( $title, $repo );
 		$this->assertSame( false, $file->exists() );
@@ -685,7 +690,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayEquals( $expectedProps, $actualProps, false, true );
 	}
 
-	public function provideLegacyMetadataRoundTrip() {
+	public static function provideLegacyMetadataRoundTrip() {
 		return [
 			[ '0' ],
 			[ '-1' ],
@@ -696,7 +701,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Test the legacy function LocalFile::getMetadata()
 	 * @dataProvider provideLegacyMetadataRoundTrip
-	 * @covers LocalFile
+	 * @covers \LocalFile
 	 */
 	public function testLegacyMetadataRoundTrip( $meta ) {
 		$file = new class( $meta ) extends LocalFile {
@@ -712,7 +717,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $meta, $file->getMetadata() );
 	}
 
-	public function provideRecordUpload3() {
+	public static function provideRecordUpload3() {
 		$files = [
 			'test.jpg' => [
 				'width' => 20,
@@ -806,7 +811,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	 * Test recordUpload3() and confirm that file properties are reflected back
 	 * after loading the new file from the DB.
 	 *
-	 * @covers LocalFile
+	 * @covers \LocalFile
 	 * @dataProvider provideRecordUpload3
 	 * @param array $props File properties
 	 * @param array $conf LocalRepo configuration overrides
@@ -846,7 +851,7 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers LocalFile
+	 * @covers \LocalFile
 	 */
 	public function testUpload() {
 		$repo = new LocalRepo(
@@ -867,7 +872,10 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			$path,
 			'comment',
 			'page text',
-			0
+			0,
+			false,
+			false,
+			$this->getTestUser()->getUser()
 		);
 		$this->assertStatusGood( $status );
 
@@ -878,12 +886,15 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 			$path,
 			'comment',
 			'page text',
-			0
+			0,
+			false,
+			false,
+			$this->getTestUser()->getUser()
 		);
 		$this->assertStatusGood( $status );
 	}
 
-	public function provideReserializeMetadata() {
+	public static function provideReserializeMetadata() {
 		return [
 			[
 				'',
@@ -903,21 +914,21 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * Test reserializeMetadata() via maybeUpgradeRow()
 	 *
-	 * @covers LocalFile::maybeUpgradeRow
-	 * @covers LocalFile::reserializeMetadata
+	 * @covers \LocalFile::maybeUpgradeRow
+	 * @covers \LocalFile::reserializeMetadata
 	 * @dataProvider provideReserializeMetadata
 	 */
 	public function testReserializeMetadata( $input, $expected ) {
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->getDb();
 		$services = $this->getServiceContainer();
 		$norm = $services->getActorNormalization();
 		$user = $this->getTestSysop()->getUserIdentity();
 		$actorId = $norm->acquireActorId( $user, $dbw );
 		$comment = $services->getCommentStore()->createComment( $dbw, 'comment' );
 
-		$dbw->insert(
-			'image',
-			[
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'image' )
+			->row( [
 				'img_name' => 'Test.pdf',
 				'img_size' => 1,
 				'img_width' => 1,
@@ -931,8 +942,9 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'img_actor' => $actorId,
 				'img_timestamp' => $dbw->timestamp( '20201105235242' ),
 				'img_sha1' => 'hhhh',
-			]
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
 		$repo = new LocalRepo( [
 			'class' => LocalRepo::class,
@@ -954,16 +966,20 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 		$file->load();
 		$file->maybeUpgradeRow();
 
-		$metadata = $dbw->decodeBlob( $dbw->selectField( 'image', 'img_metadata',
-			[ 'img_name' => 'Test.pdf' ], __METHOD__ ) );
+		$metadata = $dbw->decodeBlob( $dbw->newSelectQueryBuilder()
+			->select( 'img_metadata' )
+			->from( 'image' )
+			->where( [ 'img_name' => 'Test.pdf' ] )
+			->caller( __METHOD__ )->fetchField()
+		);
 		$this->assertStringMatchesFormat( $expected, $metadata );
 	}
 
 	/**
 	 * Test upgradeRow() via maybeUpgradeRow()
 	 *
-	 * @covers LocalFile::maybeUpgradeRow
-	 * @covers LocalFile::upgradeRow
+	 * @covers \LocalFile::maybeUpgradeRow
+	 * @covers \LocalFile::upgradeRow
 	 */
 	public function testUpgradeRow() {
 		$repo = new LocalRepo( [
@@ -978,16 +994,16 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'containerPaths' => [ 'test-public' => __DIR__ . '/../../../data/media' ]
 			] )
 		] );
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = $this->getDb();
 		$services = $this->getServiceContainer();
 		$norm = $services->getActorNormalization();
 		$user = $this->getTestSysop()->getUserIdentity();
 		$actorId = $norm->acquireActorId( $user, $dbw );
 		$comment = $services->getCommentStore()->createComment( $dbw, 'comment' );
 
-		$dbw->insert(
-			'image',
-			[
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'image' )
+			->row( [
 				'img_name' => 'Png-native-test.png',
 				'img_size' => 1,
 				'img_width' => 1,
@@ -1001,15 +1017,20 @@ class LocalFileTest extends MediaWikiIntegrationTestCase {
 				'img_actor' => $actorId,
 				'img_timestamp' => $dbw->timestamp( '20201105235242' ),
 				'img_sha1' => 'hhhh',
-			]
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
 		$title = Title::makeTitle( NS_FILE, 'Png-native-test.png' );
 		$file = new LocalFile( $title, $repo );
 		$file->load();
 		$file->maybeUpgradeRow();
-		$metadata = $dbw->decodeBlob( $dbw->selectField( 'image', 'img_metadata',
-			[ 'img_name' => 'Png-native-test.png' ] ) );
+		$metadata = $dbw->decodeBlob( $dbw->newSelectQueryBuilder()
+			->select( 'img_metadata' )
+			->from( 'image' )
+			->where( [ 'img_name' => 'Png-native-test.png' ] )
+			->fetchField()
+		);
 		// Just confirm that it looks like JSON with real metadata
 		$this->assertStringStartsWith( '{"data":{"frameCount":0,', $metadata );
 

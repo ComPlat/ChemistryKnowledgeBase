@@ -1,17 +1,74 @@
 {
 	"$schema": "http://json-schema.org/schema#",
 	"description": "MediaWiki extension.json schema",
+	"definitions": {
+		"resourceLoaderFileInfo": {
+			"oneOf": [
+				{
+					"type": "string",
+					"description": "The name of the file"
+				},
+				{
+					"type": "object",
+					"required": [ "name" ],
+					"properties": {
+						"name": {
+							"type": "string",
+							"description": "The name of the file"
+						},
+						"type": {
+							"type": "string",
+							"description": "The type of the file. The default is to detect it from the extension",
+							"enum": [ "script", "script-vue", "data", "text" ]
+						},
+						"main": {
+							"type": "boolean",
+							"description": "Used to indicate the main script in a package"
+						},
+						"content": {
+							"type": "string",
+							"description": "The content to use for the file"
+						},
+						"file": {
+							"type": "string",
+							"description": "The relative path to the file"
+						},
+						"callback": {
+							"type": [ "string", "array" ],
+							"description": "A PHP method to call for the file contents"
+						},
+						"callbackParam": {
+							"description": "A value to be passed as the third parameter to the callback and versionCallback"
+						},
+						"versionCallback": {
+							"type": [ "string", "array" ],
+							"description": "A PHP method which will return either a FilePath or the definition summary for the file"
+						},
+						"config": {
+							"type": "array",
+							"description": "An array of config variable names to be delivered as a JSON data file",
+							"items": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			]
+		}
+	},
 	"type": "object",
+	"required": [
+		"manifest_version",
+		"name"
+	],
 	"properties": {
 		"manifest_version": {
 			"type": "integer",
-			"description": "Version of the extension.json schema the extension.json file is in.",
-			"required": true
+			"description": "Version of the extension.json schema the extension.json file is in."
 		},
 		"name": {
 			"type": "string",
-			"description": "The extension's canonical name.",
-			"required": true
+			"description": "The extension's canonical name."
 		},
 		"namemsg": {
 			"type": "string",
@@ -19,7 +76,20 @@
 		},
 		"type": {
 			"type": "string",
-			"description": "The extension's type, as an index to $wgExtensionCredits.",
+			"description": "The extension's type.",
+			"examples": [
+				"api",
+				"antispam",
+				"editor",
+				"media",
+				"parserhook",
+				"semantic",
+				"skin",
+				"specialpage",
+				"variable",
+				"wikibase",
+				"other"
+			],
 			"default": "other"
 		},
 		"author": {
@@ -223,10 +293,8 @@
 								},
 								"scripts": {
 									"type": [ "string", "array" ],
-									"description": "Scripts to always include (array of file paths)",
-									"items": {
-										"type": "string"
-									}
+									"description": "Scripts to always include. Array of file paths or package file objects.",
+									"items": { "$ref": "#/definitions/resourceLoaderFileInfo" }
 								},
 								"languageScripts": {
 									"type": "object",
@@ -237,9 +305,7 @@
 												"string",
 												"array"
 											],
-											"items": {
-												"type": "string"
-											}
+											"items": { "$ref": "#/definitions/resourceLoaderFileInfo" }
 										}
 									}
 								},
@@ -252,9 +318,7 @@
 												"string",
 												"array"
 											],
-											"items": {
-												"type": "string"
-											}
+											"items": { "$ref": "#/definitions/resourceLoaderFileInfo" }
 										}
 									}
 								},
@@ -262,7 +326,7 @@
 									"type": [ "string", "array" ],
 									"description": "Scripts to include in debug contexts",
 									"items": {
-										"type": "string"
+										"$ref": "#/definitions/resourceLoaderFileInfo"
 									}
 								},
 								"dependencies": {
@@ -323,7 +387,7 @@
 								},
 								"targets": {
 									"type": [ "string", "array" ],
-									"description": "ResourceLoader target the module can run on",
+									"description": "ResourceLoader target the module can run on (unused since MediaWiki 1.42)",
 									"items": {
 										"type": "string"
 									}
@@ -336,12 +400,16 @@
 									"type": [ "string", "array" ],
 									"description": "Package files that can be require()d",
 									"items": {
-										"type": [ "string", "object" ]
+										"$ref": "#/definitions/resourceLoaderFileInfo"
 									}
 								},
 								"es6": {
 									"type": "boolean",
-									"description": "Whether this module requires an ES6-capable browser. If set to true, loading this module in a non-ES6 browser will cause an error. Using ES6 syntax in modules is not yet supported, but will be in the near future. Default is false."
+									"description": "Deprecated flag as to whether this module requires an ES6-capable browser; ignored since MediaWiki 1.41. Default is true."
+								},
+								"skipStructureTest": {
+									"type": "boolean",
+									"description": "Whether to skip ResourcesTest::testRespond()"
 								}
 							}
 						},
@@ -366,7 +434,7 @@
 								},
 								"targets": {
 									"type": [ "string", "array" ],
-									"description": "ResourceLoader target the module can run on",
+									"description": "ResourceLoader target the module can run on (unused since MediaWiki 1.42)",
 									"items": {
 										"type": "string"
 									}
@@ -653,6 +721,10 @@
 			"type": "object",
 			"description": "Default values of user options"
 		},
+		"ConditionalUserOptions": {
+			"type": "object",
+			"description": "Conditional defaults of user options"
+		},
 		"HiddenPrefs": {
 			"type": "array",
 			"description": "Preferences users cannot set",
@@ -672,6 +744,13 @@
 						}
 					}
 				}
+			}
+		},
+		"PrivilegedGroups": {
+			"type": "array",
+			"description": "User groups that should be considered privileged",
+			"items": {
+				"type": "string"
 			}
 		},
 		"RevokePermissions": {
@@ -705,6 +784,15 @@
 		"GrantPermissionGroups": {
 			"type": "object",
 			"description": "Map of grants to their UI grouping",
+			"patternProperties": {
+				"^[a-z]+$": {
+					"type": "string"
+				}
+			}
+		},
+		"GrantRiskGroups": {
+			"type": "object",
+			"description": "Map of grants to their risk category",
 			"patternProperties": {
 				"^[a-z]+$": {
 					"type": "string"
@@ -782,16 +870,24 @@
 			"type": "object",
 			"description": "File paths containing PHP internationalization data"
 		},
+		"RestModuleFiles": {
+			"type": "array",
+			"description": "Paths of REST API module files"
+		},
 		"MessagesDirs": {
 			"type": "object",
 			"description": "Directory paths containing JSON internationalization data"
+		},
+		"TranslationAliasesDirs": {
+			"type": "object",
+			"description": "Message directories containing JSON files for localisation of special page aliases"
 		},
 		"ExtensionEntryPointListFiles": {
 			"type": "object"
 		},
 		"SpecialPages": {
 			"type": "object",
-			"description": "SpecialPages implemented in this extension (mapping of page name to class name or to ObjectFactory spec)"
+			"description": "SpecialPages implemented in this extension (mapping of page name to class name or to ObjectFactory spec, or factory callback)"
 		},
 		"AutoloadNamespaces": {
 			"type": "object",
@@ -1020,12 +1116,16 @@
 							"description": "Path to style files. '{module}' will be replaced with the module's name."
 						},
 						"images": {
-							"type": [ "string", "null" ],
-							"description": "Path to images (optional). '{module}' will be replaced with the module's name."
+							"type": "string",
+							"description": "Path to image definition files. '{module}' will be replaced with the module's name. If the files don't exist, default theme's images will be used instead."
 						}
 					}
 				}
 			}
+		},
+		"SkinCodexThemes": {
+			"type": "object",
+			"description": "Name of the Codex theme to use for each skin, keyed by skin name. Skins not specified here default to the wikimedia-ui theme."
 		},
 		"PasswordPolicy": {
 			"type": "object",
@@ -1041,6 +1141,20 @@
 		"RawHtmlMessages": {
 			"type": "array",
 			"description": "Messages which are rendered as raw HTML",
+			"items": {
+				"type": "string"
+			}
+		},
+		"LateJSConfigVarNames": {
+			"type": "array",
+			"description": "Names of JS config vars (as used in MakeGlobalVariablesScript hook or in ParserOutput::setJsConfigVar) that may be set from the end of the HTML body instead of the HTML head, to improve page load time. In JavaScript, these variables should be accessed via mw.hook('wikipage.content').",
+			"items": {
+				"type": "string"
+			}
+		},
+		"DatabaseVirtualDomains": {
+			"type": "array",
+			"description": "Names of virtual domains that are used to get a db connection.",
 			"items": {
 				"type": "string"
 			}
@@ -1076,7 +1190,6 @@
 						"_merge_strategy": {
 							"type": "string",
 							"enum": [
-								"array_merge_recursive",
 								"array_replace_recursive",
 								"array_plus_2d",
 								"array_plus",
@@ -1088,10 +1201,6 @@
 					}
 				}
 			}
-		},
-		"ParserTestFiles": {
-			"type": "array",
-			"description": "DEPRECATED: Parser test suite files to be run by parserTests.php when no specific filename is passed to it"
 		},
 		"SearchMappings": {
 			"type": "object",
@@ -1171,7 +1280,7 @@
 						"properties": {
 							"class": {
 								"type": "string",
-								"description": "The fully-qualified class name of a class implemeting Wikimedia\\Parsoid\\Ext\\ExtensionModule. This should be omitted if a factory is specified."
+								"description": "The fully-qualified class name of a class implementing Wikimedia\\Parsoid\\Ext\\ExtensionModule. This should be omitted if a factory is specified."
 							}
 						},
 						"required": [ "class" ]
@@ -1287,6 +1396,60 @@
 					}
 				}
 			}
+		},
+		"UserOptionsStoreProviders": {
+			"type": "object",
+			"description": "Map of user options store providers (specs for ObjectFactory, indexed by provider name). The class should implement the UserOptionsStore interface.",
+			"patternProperties": {
+				".*": {
+					"type": "object",
+					"properties": {
+						"factory": {
+							"type": [ "string", "array" ],
+							"description": "A factory function"
+						},
+						"class": {
+							"type": "string",
+							"description": "The fully-qualified class name of the store. This should be omitted if a factory is specified."
+						},
+						"args": {
+							"type": "array",
+							"description": "The arguments passed to the constructor or factory"
+						},
+						"services": {
+							"type": "array",
+							"description": "If supplied and non-empty, the named services are requested from the service container and prepended before 'args'."
+						}
+					}
+				}
+			}
+		},
+		"UserRegistrationProviders": {
+			"type": "object",
+			"description": "Map of user registration timestamp providers (specs for ObjectFactory, indexed by provider name)",
+			"patternProperties": {
+				".*": {
+					"type": "object",
+					"properties": {
+						"class": {
+							"type": "string",
+							"description": "The fully-qualified class name of the handler. This should be omitted if a factory is specified."
+						},
+						"args": {
+							"type": "array",
+							"description": "The arguments passed to the constructor or factory"
+						},
+						"services": {
+							"type": "array",
+							"description": "If supplied and non-empty, the named services are requested from the service container and prepended before 'args'."
+						}
+					}
+				}
+			}
+		},
+		"ForeignResourcesDir": {
+			"type": "string",
+			"description": "The directory holding the foreign-resources.yaml file, relative to the extension root. See https://www.mediawiki.org/wiki/Foreign_resources"
 		},
 		"load_composer_autoloader": {
 			"type": "boolean",

@@ -15,113 +15,100 @@
  * along with MultimediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { Utils } = require( 'mmv.ui.reuse' );
+
 ( function () {
-	QUnit.module( 'mw.mmv.ui.reuse.utils', QUnit.newMwEnvironment() );
+	QUnit.module( 'mmv.ui.reuse.utils', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Sense test, object creation and UI construction', function ( assert ) {
-		var utils = new mw.mmv.ui.Utils();
+	QUnit.test( 'createSelectMenu():', ( assert ) => {
+		const menuItems = [ 'original', 'small', 'medium', 'large' ];
+		const def = 'large';
+		const $select = Utils.createSelectMenu(
+			menuItems,
+			def
+		);
+		const $options = $select.children();
 
-		assert.true( utils instanceof mw.mmv.ui.Utils, 'ReuseUtils object is created.' );
-	} );
+		assert.strictEqual( $options.length, 4, 'Menu has correct number of items.' );
 
-	QUnit.test( 'createPulldownMenu():', function ( assert ) {
-		var utils = new mw.mmv.ui.Utils(),
-			menuItems = [ 'original', 'small', 'medium', 'large' ],
-			def = 'large',
-			menu = utils.createPulldownMenu(
-				menuItems,
-				[ 'mw-mmv-download-size' ],
-				def
-			),
-			options = menu.getMenu().getItems(),
-			i, data;
+		for ( let i = 0; i < menuItems.length; i++ ) {
+			const $option = $( $options[ i ] );
 
-		assert.strictEqual( options.length, 4, 'Menu has correct number of items.' );
-
-		for ( i = 0; i < menuItems.length; i++ ) {
-			data = options[ i ].getData();
-
-			assert.strictEqual( data.name, menuItems[ i ], 'Correct item name on the list.' );
-			assert.strictEqual( data.height, null, 'Correct item height on the list.' );
-			assert.strictEqual( data.width, null, 'Correct item width on the list.' );
+			assert.strictEqual( $option.data( 'name' ), menuItems[ i ], 'Correct item name on the list.' );
+			assert.strictEqual( $option.data( 'height' ), undefined, 'Correct item height on the list.' );
+			assert.strictEqual( $option.data( 'width' ), undefined, 'Correct item width on the list.' );
 		}
-
-		assert.strictEqual( menu.getMenu().findSelectedItem(), options[ 3 ], 'Default set correctly.' );
 	} );
 
-	QUnit.test( 'updateMenuOptions():', function ( assert ) {
-		var utils = new mw.mmv.ui.Utils(),
-			menu = utils.createPulldownMenu(
-				[ 'original', 'small', 'medium', 'large' ],
-				[ 'mw-mmv-download-size' ],
-				'original'
-			),
-			options = menu.getMenu().getItems(),
-			width = 700,
-			height = 500,
-			sizes = utils.getPossibleImageSizesForHtml( width, height ),
-			oldMessage = mw.message;
+	QUnit.test( 'updateSelectOptions():', ( assert ) => {
+		const $select = Utils.createSelectMenu(
+			[ 'original', 'small', 'medium', 'large' ],
+			'original'
+		);
+		const $options = $select.children();
+		const width = 700;
+		const height = 500;
+		const sizes = Utils.getPossibleImageSizesForHtml( width, height );
+		const oldMessage = mw.message;
 
 		mw.message = function ( messageKey ) {
-			assert.true( /^multimediaviewer-(small|medium|original|embed-dimensions)/.test( messageKey ), 'messageKey passed correctly.' );
+			assert.true( /^multimediaviewer-(small|medium|large|original|embed-dimensions)/.test( messageKey ), 'messageKey passed correctly.' );
 
 			return { text: function () {} };
 		};
 
-		utils.updateMenuOptions( sizes, options );
+		Utils.updateSelectOptions( sizes, $options );
 
 		mw.message = oldMessage;
 	} );
 
-	QUnit.test( 'getPossibleImageSizesForHtml()', function ( assert ) {
-		var utils = new mw.mmv.ui.Utils(),
-			exampleSizes = [
-				{
-					test: 'Extra large wide image',
-					width: 6000, height: 4000,
-					expected: {
-						small: { width: 640, height: 427 },
-						medium: { width: 1080, height: 720 },
-						large: { width: 1620, height: 1080 },
-						xl: { width: 3240, height: 2160 },
-						original: { width: 6000, height: 4000 }
-					}
-				},
-
-				{
-					test: 'Big wide image',
-					width: 2048, height: 1536,
-					expected: {
-						small: { width: 640, height: 480 },
-						medium: { width: 960, height: 720 },
-						large: { width: 1440, height: 1080 },
-						original: { width: 2048, height: 1536 }
-					}
-				},
-
-				{
-					test: 'Big tall image',
-					width: 201, height: 1536,
-					expected: {
-						small: { width: 63, height: 480 },
-						medium: { width: 94, height: 720 },
-						large: { width: 141, height: 1080 },
-						original: { width: 201, height: 1536 }
-					}
-				},
-
-				{
-					test: 'Very small image',
-					width: 15, height: 20,
-					expected: {
-						original: { width: 15, height: 20 }
-					}
+	QUnit.test( 'getPossibleImageSizesForHtml()', ( assert ) => {
+		const exampleSizes = [
+			{
+				test: 'Extra large wide image',
+				width: 6000, height: 4000,
+				expected: {
+					small: { width: 640, height: 427 },
+					medium: { width: 1080, height: 720 },
+					large: { width: 1620, height: 1080 },
+					xl: { width: 3240, height: 2160 },
+					original: { width: 6000, height: 4000 }
 				}
-			],
-			i, cursize, opts;
-		for ( i = 0; i < exampleSizes.length; i++ ) {
-			cursize = exampleSizes[ i ];
-			opts = utils.getPossibleImageSizesForHtml( cursize.width, cursize.height );
+			},
+
+			{
+				test: 'Big wide image',
+				width: 2048, height: 1536,
+				expected: {
+					small: { width: 640, height: 480 },
+					medium: { width: 960, height: 720 },
+					large: { width: 1440, height: 1080 },
+					original: { width: 2048, height: 1536 }
+				}
+			},
+
+			{
+				test: 'Big tall image',
+				width: 201, height: 1536,
+				expected: {
+					small: { width: 63, height: 480 },
+					medium: { width: 94, height: 720 },
+					large: { width: 141, height: 1080 },
+					original: { width: 201, height: 1536 }
+				}
+			},
+
+			{
+				test: 'Very small image',
+				width: 15, height: 20,
+				expected: {
+					original: { width: 15, height: 20 }
+				}
+			}
+		];
+		for ( let i = 0; i < exampleSizes.length; i++ ) {
+			const cursize = exampleSizes[ i ];
+			const opts = Utils.getPossibleImageSizesForHtml( cursize.width, cursize.height );
 			assert.deepEqual( opts, cursize.expected, 'Size calculation for "' + cursize.test + '" gives expected results' );
 		}
 	} );

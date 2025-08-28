@@ -2,13 +2,13 @@
 
 namespace MediaWiki\Extension\AbuseFilter\ChangeTags;
 
-use ChangeTags;
+use MediaWiki\ChangeTags\ChangeTagsStore;
 use MediaWiki\Extension\AbuseFilter\CentralDBManager;
 use MediaWiki\Extension\AbuseFilter\CentralDBNotAvailableException;
-use WANObjectCache;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\Database;
-use Wikimedia\Rdbms\IDatabase;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\LBFactory;
 
 /**
  * Database wrapper class which aids registering and reserving change tags
@@ -20,26 +20,25 @@ class ChangeTagsManager {
 	public const SERVICE_NAME = 'AbuseFilterChangeTagsManager';
 	private const CONDS_LIMIT_TAG = 'abusefilter-condition-limit';
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-
-	/** @var WANObjectCache */
-	private $cache;
-
-	/** @var CentralDBManager */
-	private $centralDBManager;
+	private ChangeTagsStore $changeTagsStore;
+	private LBFactory $lbFactory;
+	private WANObjectCache $cache;
+	private CentralDBManager $centralDBManager;
 
 	/**
-	 * @param ILoadBalancer $loadBalancer
+	 * @param ChangeTagsStore $changeTagsStore
+	 * @param LBFactory $lbFactory
 	 * @param WANObjectCache $cache
 	 * @param CentralDBManager $centralDBManager
 	 */
 	public function __construct(
-		ILoadBalancer $loadBalancer,
+		ChangeTagsStore $changeTagsStore,
+		LBFactory $lbFactory,
 		WANObjectCache $cache,
 		CentralDBManager $centralDBManager
 	) {
-		$this->loadBalancer = $loadBalancer;
+		$this->changeTagsStore = $changeTagsStore;
+		$this->lbFactory = $lbFactory;
 		$this->cache = $cache;
 		$this->centralDBManager = $centralDBManager;
 	}
@@ -49,7 +48,7 @@ class ChangeTagsManager {
 	 */
 	public function purgeTagCache(): void {
 		// xxx: this doesn't purge all existing caches, see T266105
-		ChangeTags::purgeTagCacheAll();
+		$this->changeTagsStore->purgeTagCacheAll();
 		$this->cache->delete( $this->getCacheKeyForStatus( true ) );
 		$this->cache->delete( $this->getCacheKeyForStatus( false ) );
 	}
@@ -71,12 +70,12 @@ class ChangeTagsManager {
 	}
 
 	/**
-	 * @param IDatabase $dbr
+	 * @param IReadableDatabase $dbr
 	 * @param bool $enabled
 	 * @param bool $global
 	 * @return string[]
 	 */
-	private function loadTagsFromDb( IDatabase $dbr, bool $enabled, bool $global = false ): array {
+	private function loadTagsFromDb( IReadableDatabase $dbr, bool $enabled, bool $global = false ): array {
 		// This is a pretty awful hack.
 		$where = [
 			'afa_consequence' => 'tag',
@@ -89,14 +88,13 @@ class ChangeTagsManager {
 			$where['af_global'] = 1;
 		}
 
-		$res = $dbr->select(
-			[ 'abuse_filter_action', 'abuse_filter' ],
-			'afa_parameters',
-			$where,
-			__METHOD__,
-			[],
-			[ 'abuse_filter' => [ 'INNER JOIN', 'afa_filter=af_id' ] ]
-		);
+		$res = $dbr->newSelectQueryBuilder()
+			->select( 'afa_parameters' )
+			->from( 'abuse_filter_action' )
+			->join( 'abuse_filter', null, 'afa_filter=af_id' )
+			->where( $where )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$tags = [];
 		foreach ( $res as $row ) {
@@ -117,7 +115,7 @@ class ChangeTagsManager {
 			$this->getCacheKeyForStatus( $enabled ),
 			WANObjectCache::TTL_MINUTE,
 			function ( $oldValue, &$ttl, array &$setOpts ) use ( $enabled ) {
-				$dbr = $this->loadBalancer->getConnectionRef( DB_REPLICA );
+				$dbr = $this->lbFactory->getReplicaDatabase();
 				try {
 					$globalDbr = $this->centralDBManager->getConnection( DB_REPLICA );
 				} catch ( CentralDBNotAvailableException $_ ) {

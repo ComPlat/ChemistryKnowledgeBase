@@ -1,6 +1,14 @@
 <?php
 
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiDisabled;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiModuleManager;
+use MediaWiki\Api\ApiQueryDisabled;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
+use MediaWiki\Title\Title;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -11,6 +19,8 @@ use Wikimedia\TestingAccessWrapper;
  * - do not have inconsistencies in the parameter definitions
  *
  * @group API
+ * @group Database
+ * @coversNothing
  */
 class ApiStructureTest extends MediaWikiIntegrationTestCase {
 
@@ -49,13 +59,13 @@ class ApiStructureTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Test a message
-	 * @param Message $msg
+	 * @param string|array|Message $msg Message definition, see Message::newFromSpecifier()
 	 * @param string $what Which message is being checked
 	 */
 	private function checkMessage( $msg, $what ) {
-		$msg = ApiBase::makeMessage( $msg, self::getMain()->getContext() );
-		$this->assertInstanceOf( Message::class, $msg, "$what message" );
-		$this->assertTrue( $msg->exists(), "$what message {$msg->getKey()} exists" );
+		// Message::newFromSpecifier() will throw and fail the test if the specifier isn't valid
+		$msg = Message::newFromSpecifier( $msg );
+		$this->assertTrue( $msg->exists(), "API $what message \"{$msg->getKey()}\" must exist. Did you forgot to add it to your i18n/en.json?" );
 	}
 
 	/**
@@ -79,7 +89,14 @@ class ApiStructureTest extends MediaWikiIntegrationTestCase {
 
 		// Module description messages.
 		$this->checkMessage( $module->getSummaryMessage(), 'Module summary' );
-		$this->checkMessage( $module->getExtendedDescription(), 'Module help top text' );
+		$extendedDesc = $module->getExtendedDescription();
+		if ( is_array( $extendedDesc ) && is_array( $extendedDesc[0] ) ) {
+			// The definition in getExtendedDescription() may also specify fallback keys. This is weird,
+			// and it was never needed for other API doc messages, so it's only supported here.
+			$extendedDesc = Message::newFallbackSequence( $extendedDesc[0] )
+				->params( array_slice( $extendedDesc, 1 ) );
+		}
+		$this->checkMessage( $extendedDesc, 'Module help top text' );
 
 		// Messages for examples.
 		foreach ( $module->getExamplesMessages() as $qs => $msg ) {
@@ -108,10 +125,7 @@ class ApiStructureTest extends MediaWikiIntegrationTestCase {
 		return $ret;
 	}
 
-	/**
-	 * @dataProvider provideParameters
-	 */
-	public function testParameters( string $path, array $params, string $name ): void {
+	private function doTestParameters( string $path, array $params, string $name ): void {
 		$main = self::getMain();
 
 		$dataName = $this->dataName();
@@ -154,6 +168,21 @@ class ApiStructureTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
+	/**
+	 * @dataProvider provideParameters
+	 */
+	public function testParameters( string $path, string $argset, array $args, ApiMain $main ): void {
+		$module = $main->getModuleFromPath( $path );
+		$params = $module->getFinalParams( ...$args );
+		if ( !$params ) {
+			$this->addToAssertionCount( 1 );
+			return;
+		}
+		foreach ( $params as $param => $_ ) {
+			$this->doTestParameters( $path, $params, $param );
+		}
+	}
+
 	public static function provideParameters(): Iterator {
 		$main = self::getMain();
 		$paths = self::getSubModulePaths( $main->getModuleManager() );
@@ -164,12 +193,10 @@ class ApiStructureTest extends MediaWikiIntegrationTestCase {
 		];
 
 		foreach ( $paths as $path ) {
-			$module = $main->getModuleFromPath( $path );
 			foreach ( $argsets as $argset => $args ) {
-				$params = $module->getFinalParams( ...$args );
-				foreach ( $params as $param => $dummy ) {
-					yield "Module $path, $argset, parameter $param" => [ $path, $params, $param ];
-				}
+				// NOTE: Retrieving the module parameters here may have side effects such as DB queries that
+				// should be avoided in data providers (T341731). So do that in the test method instead.
+				yield "Module $path, argset $argset" => [ $path, $argset, $args, $main ];
 			}
 		}
 	}

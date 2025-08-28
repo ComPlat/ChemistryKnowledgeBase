@@ -2,13 +2,14 @@
 
 namespace MediaWiki\Extension\Math\InputCheck;
 
-use HashBagOStuff;
+use MediaWiki\Extension\Math\Math;
 use MediaWiki\Extension\Math\MathMathML;
 use MediaWiki\Http\HttpRequestFactory;
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 use MockHttpTrait;
-use WANObjectCache;
+use RuntimeException;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	use MockHttpTrait;
@@ -16,7 +17,7 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	private const SAMPLE_KEY = 'global:MediaWiki\Extension\Math\InputCheck\MathoidChecker:' .
 	'eb27aefff6e58e58dcefa22102531a58';
 
-	public function provideTexExamples() {
+	public static function provideTexExamples() {
 		return [
 			[ '\sin x', 'eb27aefff6e58e58dcefa22102531a58' ],
 			[ '\sin_x', '7b33c69d6eac9126d41b663b93896951' ],
@@ -52,10 +53,27 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @covers \MediaWiki\Extension\Math\InputCheck\MathoidChecker::getCheckResponse
 	 */
+	public function testResponseWithPurge() {
+		$fakeWAN = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+		$fakeWAN->set( self::SAMPLE_KEY,
+			[ 999, 'unexpected' ],
+			WANObjectCache::TTL_INDEFINITE,
+			[ 'version' => MathoidChecker::VERSION ] );
+		// double check that the fake works
+		$this->assertSame( [ 999, 'unexpected' ], $fakeWAN->get( self::SAMPLE_KEY ) );
+		$this->setFakeRequest( 200, 'expected' );
+		$this->setService( 'MainWANObjectCache', $fakeWAN );
+		$checker = $this->getMathoidChecker( '\sin x', true );
+		$this->assertSame( [ 200, 'expected' ], $checker->getCheckResponse() );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\Math\InputCheck\MathoidChecker::getCheckResponse
+	 */
 	public function testResponseFromResponse() {
 		$fakeWAN = WANObjectCache::newEmpty();
 		$fakeWAN->set( self::SAMPLE_KEY, 'expected' );
-		// double check that the fake does not works
+		// double check that the fake does not work
 		$this->assertSame( false, $fakeWAN->get( self::SAMPLE_KEY ) );
 		$this->setService( 'MainWANObjectCache', $fakeWAN );
 		$this->setFakeRequest( 200, 'expected' );
@@ -69,12 +87,12 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	public function testFailedResponse() {
 		$fakeWAN = WANObjectCache::newEmpty();
 		$fakeWAN->set( self::SAMPLE_KEY, 'expected' );
-		// double check that the fake does not works
+		// double check that the fake does not work
 		$this->assertSame( false, $fakeWAN->get( self::SAMPLE_KEY ) );
 		$this->setService( 'MainWANObjectCache', $fakeWAN );
 		$this->setFakeRequest( 401, false );
 		$checker = $this->getMathoidChecker();
-		$this->expectException( 'MWException' );
+		$this->expectException( RuntimeException::class );
 		$checker->getCheckResponse();
 	}
 
@@ -82,10 +100,12 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	 * @covers       \MediaWiki\Extension\Math\InputCheck\MathoidChecker::isValid
 	 * @dataProvider provideMathoidSamples
 	 * @param string $input LaTeX input to check
-	 * @param HttpRequestFactory $request fake mathoid response
+	 * @param string $mockRequestBody
+	 * @param int $mockResponseStatus
 	 * @param array $expeted
 	 */
-	public function testIsValid( $input, $request, $expeted ) {
+	public function testIsValid( $input, $mockRequestBody, $mockResponseStatus, $expeted ) {
+		$request = $this->makeFakeHttpRequest( $mockRequestBody, $mockResponseStatus );
 		$this->installMockHttp( $request );
 		$checker = $this->getMathoidChecker( $input );
 		$this->assertSame( $expeted['valid'], $checker->isValid() );
@@ -95,10 +115,12 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	 * @covers       \MediaWiki\Extension\Math\InputCheck\MathoidChecker::getValidTex
 	 * @dataProvider provideMathoidSamples
 	 * @param string $input LaTeX input to check
-	 * @param HttpRequestFactory $request fake mathoid response
+	 * @param string $mockRequestBody
+	 * @param int $mockResponseStatus
 	 * @param array $expeted
 	 */
-	public function testGetChecked( $input, $request, $expeted ) {
+	public function testGetChecked( $input, $mockRequestBody, $mockResponseStatus, $expeted ) {
+		$request = $this->makeFakeHttpRequest( $mockRequestBody, $mockResponseStatus );
 		$this->installMockHttp( $request );
 		$checker = $this->getMathoidChecker( $input );
 		$this->assertSame( $expeted['checked'], $checker->getValidTex() );
@@ -108,10 +130,12 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 	 * @covers       \MediaWiki\Extension\Math\InputCheck\MathoidChecker::getError
 	 * @dataProvider provideMathoidSamples
 	 * @param string $input LaTeX input to check
-	 * @param HttpRequestFactory $request fake mathoid response
+	 * @param string $mockRequestBody
+	 * @param int $mockResponseStatus
 	 * @param array $expeted
 	 */
-	public function testGetError( $input, $request, $expeted ) {
+	public function testGetError( $input, $mockRequestBody, $mockResponseStatus, $expeted ) {
+		$request = $this->makeFakeHttpRequest( $mockRequestBody, $mockResponseStatus );
 		$this->installMockHttp( $request );
 		$checker = $this->getMathoidChecker( $input );
 		if ( array_key_exists( 'error', $expeted ) ) {
@@ -127,12 +151,12 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @param string $tex
+	 * @param bool $purge
 	 * @return MathoidChecker
 	 */
-	private function getMathoidChecker( $tex = '\sin x' ): MathoidChecker {
-		return MediaWikiServices::getInstance()
-			->getService( 'Math.CheckerFactory' )
-			->newMathoidChecker( $tex, 'tex' );
+	private function getMathoidChecker( string $tex = '\sin x', bool $purge = false ): MathoidChecker {
+		return Math::getCheckerFactory()
+			->newMathoidChecker( $tex, 'tex', $purge );
 	}
 
 	private function setFakeRequest( $returnStatus, $content ): void {
@@ -149,26 +173,25 @@ class MathoidCheckerTest extends MediaWikiIntegrationTestCase {
 		$this->setService( 'HttpRequestFactory', $fakeHTTP );
 	}
 
-	public function provideMathoidSamples() {
+	public static function provideMathoidSamples() {
 		yield '\ sin x' => [
 			'\sin x',
-			$this->makeFakeHttpRequest( file_get_contents( __DIR__ . '/data/mathoid/sinx.json' ), 200 ),
+			file_get_contents( __DIR__ . '/data/mathoid/sinx.json' ), 200,
 			[ 'valid' => true, 'checked' => '\sin x' ],
 		];
 		yield 'invalid F' => [
 			'1+\invalid',
-			$this->makeFakeHttpRequest( file_get_contents( __DIR__ . '/data/mathoid/invalidF.json' ), 400 ),
+			file_get_contents( __DIR__ . '/data/mathoid/invalidF.json' ), 400,
 			[ 'valid' => false, 'checked' => null, 'error' => 'unknown function' ],
 		];
 		yield 'unescaped' => [
 			'1.5%',
-			$this->makeFakeHttpRequest( file_get_contents( __DIR__ . '/data/mathoid/deprecated.json' ),
-				200 ),
+			file_get_contents( __DIR__ . '/data/mathoid/deprecated.json' ), 200,
 			[ 'valid' => true, 'checked' => '1.5\%' ],
 		];
 		yield 'syntax error' => [
 			'\left( x',
-			$this->makeFakeHttpRequest( file_get_contents( __DIR__ . '/data/mathoid/syntaxE.json' ), 400 ),
+			file_get_contents( __DIR__ . '/data/mathoid/syntaxE.json' ), 400,
 			[ 'valid' => false, 'checked' => null, 'error' => 'Failed to parse' ],
 		];
 	}

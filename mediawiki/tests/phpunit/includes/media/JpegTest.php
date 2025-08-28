@@ -4,7 +4,8 @@ use MediaWiki\MainConfigNames;
 
 /**
  * @group Media
- * @covers JpegHandler
+ * @covers \JpegHandler
+ * @requires extension exif
  */
 class JpegTest extends MediaWikiMediaTestCase {
 	/** @var JpegHandler */
@@ -12,7 +13,6 @@ class JpegTest extends MediaWikiMediaTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->checkPHPExtension( 'exif' );
 
 		$this->overrideConfigValue( MainConfigNames::ShowEXIF, true );
 
@@ -45,7 +45,7 @@ class JpegTest extends MediaWikiMediaTestCase {
 	}
 
 	/**
-	 * @covers JpegHandler::getCommonMetaArray
+	 * @covers \JpegHandler::getCommonMetaArray
 	 */
 	public function testGetIndependentMetaArray() {
 		$file = $this->dataFile( 'test.jpg', 'image/jpeg' );
@@ -66,7 +66,7 @@ class JpegTest extends MediaWikiMediaTestCase {
 
 	/**
 	 * @dataProvider provideSwappingICCProfile
-	 * @covers JpegHandler::swapICCProfile
+	 * @covers \JpegHandler::swapICCProfile
 	 */
 	public function testSwappingICCProfile(
 		$sourceFilename, $controlFilename, $newProfileFilename, $oldProfileName
@@ -86,7 +86,6 @@ class JpegTest extends MediaWikiMediaTestCase {
 
 		copy( $sourceFilepath, $filepath );
 
-		$file = $this->dataFile( $sourceFilename, 'image/jpeg' );
 		$this->handler->swapICCProfile(
 			$filepath,
 			[ 'sRGB', '-' ],
@@ -100,7 +99,7 @@ class JpegTest extends MediaWikiMediaTestCase {
 		);
 	}
 
-	public function provideSwappingICCProfile() {
+	public static function provideSwappingICCProfile() {
 		return [
 			// File with sRGB should end up with TinyRGB
 			[

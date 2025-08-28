@@ -1,32 +1,41 @@
 <?php
 
-use MediaWiki\Extension\Scribunto\Hooks as ScribuntoHooks;
+namespace MediaWiki\Extension\Scribunto\Tests;
 
-class ScribuntoHooksTest extends PHPUnit\Framework\TestCase {
+use MediaWiki\Extension\Scribunto\Hooks;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MediaWikiCoversValidator;
+use Monolog\Test\TestCase;
+
+/**
+ * @covers \MediaWiki\Extension\Scribunto\Hooks
+ */
+class HooksTest extends TestCase {
 	use MediaWikiCoversValidator;
 
-	public function provideContentHandlerDefaultModelFor() {
+	public static function provideContentHandlerDefaultModelFor() {
 		return [
-			[ 'Module:Foo', CONTENT_MODEL_SCRIBUNTO, true ],
-			[ 'Module:Foo/doc', null, true ],
-			[ 'Module:Foo/styles.css', 'sanitized-css', true, 'sanitized-css' ],
-			[ 'Module:Foo.json', CONTENT_MODEL_JSON, true ],
-			[ 'Module:Foo/subpage.json', CONTENT_MODEL_JSON, true ],
-			[ 'Main Page', null, true ],
+			[ 'Module:Foo', CONTENT_MODEL_SCRIBUNTO ],
+			[ 'Module:Foo/doc', null ],
+			[ 'Module:Foo/styles.css', 'sanitized-css', 'sanitized-css' ],
+			[ 'Module:Foo.json', CONTENT_MODEL_JSON ],
+			[ 'Module:Foo/subpage.json', CONTENT_MODEL_JSON ],
+			[ 'Main Page', null ],
 		];
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\Scribunto\Hooks::contentHandlerDefaultModelFor
 	 * @dataProvider provideContentHandlerDefaultModelFor
 	 */
 	public function testContentHandlerDefaultModelFor( $name, $expected,
-		$retVal, $before = null
+		$before = null
 	) {
 		$title = Title::newFromText( $name );
 		$model = $before;
-		$ret = ScribuntoHooks::contentHandlerDefaultModelFor( $title, $model );
-		$this->assertSame( $retVal, $ret );
+		( new Hooks(
+			MediaWikiServices::getInstance()->getMainConfig()
+		) )->onContentHandlerDefaultModelFor( $title, $model );
 		$this->assertSame( $expected, $model );
 	}
 }

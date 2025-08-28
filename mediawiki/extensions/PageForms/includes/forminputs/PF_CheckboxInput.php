@@ -4,6 +4,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+
 /**
  * @ingroup PFFormInput
  */
@@ -36,7 +38,9 @@ class PFCheckboxInput extends PFFormInput {
 
 		// Can show up here either as an array or a string, depending on
 		// whether it came from user input or a wiki page
-		if ( is_array( $cur_value ) ) {
+		if ( !isset( $cur_value ) ) {
+			$isChecked = false;
+		} elseif ( is_array( $cur_value ) ) {
 			$isChecked = array_key_exists( 'value', $cur_value ) && $cur_value['value'] == 'on';
 		} else {
 			// Default to false - no need to check if it matches
@@ -69,14 +73,25 @@ class PFCheckboxInput extends PFFormInput {
 		if ( $is_disabled ) {
 			$checkboxAttrs['disabled'] = true;
 		}
-		$text .= "\t" . new OOUI\CheckboxInputWidget( $checkboxAttrs ) . "<t />";
 		if ( isset( $other_args['label'] ) ) {
-			$text = Html::rawElement(
-				'label',
-				[ 'for' => $inputID ],
-				$text . $other_args['label']
-			);
+			$labelText = new OOUI\HtmlSnippet( $other_args['label'] );
+			$labelAttrs = [
+				'label' => $labelText,
+				'align' => 'inline',
+				'for' => $inputID
+			];
+		} else {
+			$labelAttrs = [];
 		}
+		$text .= new OOUI\FieldLayout(
+			new OOUI\CheckboxInputWidget( $checkboxAttrs ),
+			$labelAttrs
+		);
+		$text = Html::rawElement(
+			'div',
+			[ 'class' => 'pf-checkbox-input-container' ],
+			$text
+		);
 		return $text;
 	}
 

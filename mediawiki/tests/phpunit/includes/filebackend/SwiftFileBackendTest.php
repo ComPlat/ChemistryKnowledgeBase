@@ -1,5 +1,9 @@
 <?php
 
+use MediaWiki\Logger\LoggerFactory;
+use Wikimedia\FileBackend\FileBackend;
+use Wikimedia\FileBackend\FileBackendError;
+use Wikimedia\FileBackend\SwiftFileBackend;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -7,10 +11,10 @@ use Wikimedia\TestingAccessWrapper;
  * @group FileBackend
  * @group medium
  *
- * @covers SwiftFileBackend
- * @covers SwiftFileBackendDirList
- * @covers SwiftFileBackendFileList
- * @covers SwiftFileBackendList
+ * @covers \Wikimedia\FileBackend\SwiftFileBackend
+ * @covers \Wikimedia\FileBackend\FileIteration\SwiftFileBackendDirList
+ * @covers \Wikimedia\FileBackend\FileIteration\SwiftFileBackendFileList
+ * @covers \Wikimedia\FileBackend\FileIteration\SwiftFileBackendList
  */
 class SwiftFileBackendTest extends MediaWikiIntegrationTestCase {
 	/** @var TestingAccessWrapper|SwiftFileBackend */
@@ -29,13 +33,13 @@ class SwiftFileBackendTest extends MediaWikiIntegrationTestCase {
 				'swiftAuthUrl'     => 'http://127.0.0.1:8080/auth', // unused
 				'swiftUser'        => 'test:tester',
 				'swiftKey'         => 'testing',
-				'swiftTempUrlKey'  => 'b3968d0207b54ece87cccc06515a89d4' // unused
+				'swiftTempUrlKey'  => 'b3968d0207b54ece87cccc06515a89d4', // unused
+				'logger'           => LoggerFactory::getInstance( 'FileOperation' )
 			] )
 		);
 	}
 
 	/**
-	 * @covers SwiftFileBackend::extractMutableContentHeaders
 	 * @dataProvider provider_testExtractPostableContentHeaders
 	 */
 	public function testExtractPostableContentHeaders( $raw, $sanitized ) {
@@ -135,7 +139,6 @@ class SwiftFileBackendTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers SwiftFileBackend::extractMetadataHeaders
 	 * @dataProvider provider_testGetMetadataHeaders
 	 */
 	public function testGetMetadataHeaders( $raw, $sanitized ) {
@@ -163,7 +166,6 @@ class SwiftFileBackendTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers SwiftFileBackend::getMetadataFromHeaders
 	 * @dataProvider provider_testGetMetadata
 	 */
 	public function testGetMetadata( $raw, $sanitized ) {
@@ -188,5 +190,80 @@ class SwiftFileBackendTest extends MediaWikiIntegrationTestCase {
 				]
 			]
 		];
+	}
+
+	private function setupAuthFailure() {
+		$this->backend->authErrorTimestamp = time();
+		$this->backend->http = null;
+	}
+
+	public function testGetFileStatAuthFail() {
+		$this->setupAuthFailure();
+		$result = $this->backend->getFileStat( [
+			'src' => 'mwstore://local-swift-testing/c/test.txt'
+		] );
+		$this->assertSame( FileBackend::STAT_ERROR, $result );
+	}
+
+	public function testGetFileContentsAuthFail() {
+		$this->setupAuthFailure();
+		$result = $this->backend->getFileContents( [
+			'src' => 'mwstore://local-swift-testing/c/test.txt'
+		] );
+		$this->assertFalse( $result );
+	}
+
+	public function testGetLocalCopyAuthFail() {
+		$this->setupAuthFailure();
+		$result = $this->backend->getLocalCopy( [
+			'src' => 'mwstore://local-swift-testing/c/test.txt'
+		] );
+		$this->assertNull( $result );
+	}
+
+	public function testCreateAuthFail() {
+		$this->setupAuthFailure();
+		$status = $this->backend->create( [
+			'dst' => 'mwstore://local-swift-testing/c/test.txt',
+			'content' => '',
+		] );
+		// Ideally it would fail with backend-fail-connect, but preloadFileStat()
+		// fails without any way to propagate error details.
+		$this->assertStatusError( 'backend-fail-internal', $status );
+	}
+
+	public function testSecureAuthFail() {
+		$this->setupAuthFailure();
+		$status = $this->backend->secure( [
+			'dir' => 'mwstore://local-swift-testing/c',
+			'noAccess' => true,
+		] );
+		$this->assertStatusError( 'backend-fail-internal', $status );
+	}
+
+	public function testPrepareAuthFail() {
+		$this->setupAuthFailure();
+		$status = $this->backend->prepare( [
+			'dir' => 'mwstore://local-swift-testing/c',
+			'noAccess' => true,
+		] );
+		$this->assertStatusError( 'backend-fail-internal', $status );
+	}
+
+	public function testCleanAuthFail() {
+		$this->setupAuthFailure();
+		$status = $this->backend->clean( [
+			'dir' => 'mwstore://local-swift-testing/c',
+		] );
+		$this->assertStatusError( 'backend-fail-internal', $status );
+	}
+
+	public function testGetFileListAuthFail() {
+		$this->setupAuthFailure();
+		$result = $this->backend->getFileList( [
+			'dir' => 'mwstore://local-swift-testing/c',
+		] );
+		$this->expectException( FileBackendError::class );
+		iterator_to_array( $result );
 	}
 }

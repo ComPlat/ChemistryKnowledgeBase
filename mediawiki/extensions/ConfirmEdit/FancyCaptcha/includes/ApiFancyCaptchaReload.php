@@ -1,4 +1,9 @@
 <?php
+
+namespace MediaWiki\Extension\ConfirmEdit\FancyCaptcha;
+
+use MediaWiki\Api\ApiBase;
+
 /**
  * Api module to reload FancyCaptcha
  *
@@ -17,9 +22,12 @@ class ApiFancyCaptchaReload extends ApiBase {
 		return true;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
+	public function isInternal() {
+		return true;
+	}
+
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [];
 	}

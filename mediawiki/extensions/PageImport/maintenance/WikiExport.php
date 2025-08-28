@@ -36,7 +36,7 @@ class WikiExport extends Maintenance {
     // read = 4, write = 2, execute = 1
     const DIRECTORY_MODE = 0766;
 
-    // Defaul folder for deleted pages
+    // Default folder for deleted pages
     const DELETED_FOLDER = ".deleted";
 
     // folder for files

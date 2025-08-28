@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Tests\Unit\Settings\Config;
 
-use Config;
-use HashConfig;
+use MediaWiki\Config\Config;
+use MediaWiki\Config\HashConfig;
 use MediaWiki\Settings\Config\ConfigBuilder;
 use MediaWiki\Settings\Config\ConfigBuilderBase;
 use MediaWiki\Settings\Config\GlobalConfigBuilder;
@@ -56,7 +56,7 @@ class ConfigBuilderBaseTest extends TestCase {
 	public function testBuild() {
 		$builder = new GlobalConfigBuilder();
 		$builder
-			->set( 'foo',  'bar' )
+			->set( 'foo', 'bar' )
 			->set( 'baz', 'quu' );
 		$this->assertSame( 'bar', $builder->build()->get( 'foo' ) );
 		$this->assertSame( 'quu', $builder->build()->get( 'baz' ) );

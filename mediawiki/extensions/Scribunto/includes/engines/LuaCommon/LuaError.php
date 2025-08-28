@@ -1,8 +1,12 @@
 <?php
 
-use MediaWiki\Extension\Scribunto\ScribuntoException;
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
 
-class Scribunto_LuaError extends ScribuntoException {
+use MediaWiki\Extension\Scribunto\ScribuntoException;
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
+class LuaError extends ScribuntoException {
 	/** @var string */
 	public $luaMessage;
 
@@ -77,9 +81,9 @@ class Scribunto_LuaError extends ScribuntoException {
 			$backtraceLineMsg = wfMessage( 'scribunto-lua-backtrace-line' )
 				->rawParams( "<strong>$src</strong>" )
 				->params( $function );
-			in_array( 'content', $msgOptions ) ?
-				$backtraceLine = $backtraceLineMsg->inContentLanguage()->parse() :
-				$backtraceLine = $backtraceLineMsg->parse();
+			$backtraceLine = in_array( 'content', $msgOptions ) ?
+				$backtraceLineMsg->inContentLanguage()->parse() :
+				$backtraceLineMsg->parse();
 
 			$s .= "<li>$backtraceLine</li>";
 		}
@@ -87,3 +91,5 @@ class Scribunto_LuaError extends ScribuntoException {
 		return $s;
 	}
 }
+
+class_alias( LuaError::class, 'Scribunto_LuaError' );

@@ -15,7 +15,7 @@ How to install
     ```
     {
     	"require-dev": {
-    		"mediawiki/mediawiki-codesniffer": "38.0.0"
+    		"mediawiki/mediawiki-codesniffer": "40.0.1"
     	},
     	"scripts": {
     		"test": [
@@ -110,9 +110,19 @@ Some of the sniffs provided by this codesniffer standard allow you to configure 
     </rule>
     ```
 
-TODO
-----
-* Migrate the old code-utils/check-vars.php
+* `MediaWiki.Arrays.TrailingComma`: This sniff lets you enforce that multi-line arrays have trailing commas,
+  which makes Git diffs nicer.
+  It can also enforce that single-line arrays have no trailing comma.
+  By default, it does nothing.
+
+    ```
+    <rule ref="MediaWiki.Arrays.TrailingComma">
+        <properties>
+            <property name="singleLine" value="false" />
+            <property name="multiLine" value="true" />
+        </properties>
+    </rule>
+    ```
 
 ---
 [0]: https://packagist.org/packages/squizlabs/php_codesniffer

@@ -2,17 +2,18 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function seq(Generator $singleElementGenerator)
 {
-    // TODO: Generator::box($singleElementGenerator);
-    if (!($singleElementGenerator instanceof Generator)) {
-        $singleElementGenerator = new Constant($singleElementGenerator);
-    }
-    return new SequenceGenerator($singleElementGenerator);
+    return Generators::seq($singleElementGenerator);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<list<T>>
+ */
 class SequenceGenerator implements Generator
 {
     private $singleElementGenerator;
@@ -22,13 +23,13 @@ class SequenceGenerator implements Generator
         $this->singleElementGenerator = $singleElementGenerator;
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
-        $sequenceLength = $rand(0, $size);
+        $sequenceLength = $rand->rand(0, $size);
         return $this->vector($sequenceLength)->__invoke($size, $rand);
     }
 
-    public function shrink(GeneratedValueSingle $sequence)
+    public function shrink(GeneratedValue $sequence)
     {
         $options = [];
         if (count($sequence->unbox()) > 0) {

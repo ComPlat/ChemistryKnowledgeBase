@@ -2,7 +2,7 @@
 
 const { action, assert, utils } = require( 'api-testing' );
 
-describe( 'Reparse of dependent pages', function () {
+describe( 'Reparse of dependent pages', () => {
 	const title = utils.title( 'Reparse_' );
 	const template = utils.title( 'Template' );
 	const link = utils.title( 'Link' );
@@ -14,21 +14,21 @@ describe( 'Reparse of dependent pages', function () {
 	} );
 
 	it( 'should create a page with missing template and link', async () => {
-		await alice.edit( title, { text: `{{${template}}} [[${link}]]`, createonly: true } );
+		await alice.edit( title, { text: `{{${ template }}} [[${ link }]]`, createonly: true } );
 
 		const html = await alice.getHtml( title );
 
-		assert.match( html, new RegExp( `title=Template:${template}&amp;action=edit&amp;redlink=1` ) );
-		assert.match( html, new RegExp( `title=${link}&amp;action=edit&amp;redlink=1` ) );
+		assert.match( html, new RegExp( `title=Template:${ template }&amp;action=edit&amp;redlink=1` ) );
+		assert.match( html, new RegExp( `title=${ link }&amp;action=edit&amp;redlink=1` ) );
 	} );
 
 	it( 'should create missing template and link', async () => {
-		await alice.edit( `Template:${template}`, { text: 'Howdy', createonly: true } );
+		await alice.edit( `Template:${ template }`, { text: 'Howdy', createonly: true } );
 		await alice.edit( link, { text: 'Test link', createonly: true } );
 	} );
 
 	// FIXME: T230211
-	it.skip( 'should get page with updated template and link', async function () {
+	it.skip( 'should get page with updated template and link', async () => {
 		const { parse } = await alice.action( 'parse', { page: title } );
 
 		assert.notInclude( parse.text[ '*' ], 'redlink=1' );

@@ -2,7 +2,8 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * One Generator for each member of the Tuple:
@@ -13,19 +14,18 @@ use DomainException;
  */
 function tuple()
 {
-    $arguments = func_get_args();
-    if (is_array($arguments[0])) {
-        $generators = $arguments[0];
-    } else {
-        $generators = $arguments;
-    }
-    return new TupleGenerator($generators);
+    return call_user_func_array(
+        [Generators::class, 'tuple'],
+        func_get_args()
+    );
 }
 
+/**
+ * @template-implements Generator<list<mixed>>
+ */
 class TupleGenerator implements Generator
 {
     private $generators;
-    private $size;
     private $numberOfGenerators;
 
     public function __construct(array $generators)
@@ -34,7 +34,7 @@ class TupleGenerator implements Generator
         $this->numberOfGenerators = count($generators);
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         $input = array_map(
             function ($generator) use ($size, $rand) {
@@ -91,7 +91,7 @@ class TupleGenerator implements Generator
         }
     }
 
-    public function shrink(GeneratedValueSingle $tuple)
+    public function shrink(GeneratedValue $tuple)
     {
         $input = $tuple->input();
 
@@ -106,7 +106,7 @@ class TupleGenerator implements Generator
                 if ($generator instanceof Generator) {
                     return $generator;
                 }
-                return new Constant($generator);
+                return new ConstantGenerator($generator);
             },
             $generators
         );

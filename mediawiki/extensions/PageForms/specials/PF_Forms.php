@@ -7,6 +7,9 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -25,8 +28,7 @@ class PFForms extends QueryPage {
 	}
 
 	function getPageHeader() {
-		$header = Html::element( 'p', null, $this->msg( 'pf_forms_docu' )->text() );
-		return $header;
+		return Html::element( 'p', null, $this->msg( 'pf_forms_docu' )->text() );
 	}
 
 	function getPageFooter() {

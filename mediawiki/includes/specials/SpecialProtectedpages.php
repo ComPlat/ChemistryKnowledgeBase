@@ -1,7 +1,5 @@
 <?php
 /**
- * Implements Special:Protectedpages
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -18,63 +16,53 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @ingroup SpecialPage
  */
+
+namespace MediaWiki\Specials;
 
 use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\CommentFormatter\RowCommentFormatter;
+use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\HTMLForm\Field\HTMLMultiSelectField;
+use MediaWiki\HTMLForm\Field\HTMLSelectNamespace;
+use MediaWiki\HTMLForm\Field\HTMLSizeFilterField;
+use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Pager\ProtectedPagesPager;
 use MediaWiki\Permissions\RestrictionStore;
-use Wikimedia\Rdbms\ILoadBalancer;
+use MediaWiki\SpecialPage\SpecialPage;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * A special page that lists protected pages
  *
  * @ingroup SpecialPage
  */
-class SpecialProtectedpages extends SpecialPage {
-	protected $IdLevel = 'level';
-	protected $IdType = 'type';
-
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-
-	/** @var CommentStore */
-	private $commentStore;
-
-	/** @var UserCache */
-	private $userCache;
-
-	/** @var RowCommentFormatter */
-	private $rowCommentFormatter;
-
-	/** @var RestrictionStore */
-	private $restrictionStore;
+class SpecialProtectedPages extends SpecialPage {
+	private LinkBatchFactory $linkBatchFactory;
+	private IConnectionProvider $dbProvider;
+	private CommentStore $commentStore;
+	private RowCommentFormatter $rowCommentFormatter;
+	private RestrictionStore $restrictionStore;
 
 	/**
 	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param ILoadBalancer $loadBalancer
+	 * @param IConnectionProvider $dbProvider
 	 * @param CommentStore $commentStore
-	 * @param UserCache $userCache
 	 * @param RowCommentFormatter $rowCommentFormatter
 	 * @param RestrictionStore $restrictionStore
 	 */
 	public function __construct(
 		LinkBatchFactory $linkBatchFactory,
-		ILoadBalancer $loadBalancer,
+		IConnectionProvider $dbProvider,
 		CommentStore $commentStore,
-		UserCache $userCache,
 		RowCommentFormatter $rowCommentFormatter,
 		RestrictionStore $restrictionStore
 	) {
 		parent::__construct( 'Protectedpages' );
 		$this->linkBatchFactory = $linkBatchFactory;
-		$this->loadBalancer = $loadBalancer;
+		$this->dbProvider = $dbProvider;
 		$this->commentStore = $commentStore;
-		$this->userCache = $userCache;
 		$this->rowCommentFormatter = $rowCommentFormatter;
 		$this->restrictionStore = $restrictionStore;
 	}
@@ -86,8 +74,8 @@ class SpecialProtectedpages extends SpecialPage {
 		$this->addHelpLink( 'Help:Protected_pages' );
 
 		$request = $this->getRequest();
-		$type = $request->getVal( $this->IdType );
-		$level = $request->getVal( $this->IdLevel );
+		$type = $request->getVal( 'type' );
+		$level = $request->getVal( 'level' );
 		$sizetype = $request->getVal( 'size-mode' );
 		$size = $request->getIntOrNull( 'size' );
 		$ns = $request->getIntOrNull( 'namespace' );
@@ -102,10 +90,8 @@ class SpecialProtectedpages extends SpecialPage {
 			$this->commentStore,
 			$this->linkBatchFactory,
 			$this->getLinkRenderer(),
-			$this->loadBalancer,
+			$this->dbProvider,
 			$this->rowCommentFormatter,
-			$this->userCache,
-			[],
 			$type,
 			$level,
 			$ns,
@@ -117,15 +103,13 @@ class SpecialProtectedpages extends SpecialPage {
 		);
 
 		$this->getOutput()->addHTML( $this->showOptions(
-			$ns,
 			$type,
 			$level,
-			$sizetype,
-			$size,
 			$filters
 		) );
 
 		if ( $pager->getNumRows() ) {
+			$this->getOutput()->addModuleStyles( 'mediawiki.interface.helpers.styles' );
 			$this->getOutput()->addParserOutputContent( $pager->getFullOutput() );
 		} else {
 			$this->getOutput()->addWikiMsg( 'protectedpagesempty' );
@@ -133,18 +117,13 @@ class SpecialProtectedpages extends SpecialPage {
 	}
 
 	/**
-	 * @param int $namespace
 	 * @param string $type Restriction type
 	 * @param string $level Restriction level
-	 * @param string $sizetype "min" or "max"
-	 * @param int $size
 	 * @param array $filters Filters set for the pager: indefOnly,
 	 *   cascadeOnly, noRedirect
 	 * @return string Input form
 	 */
-	protected function showOptions( $namespace, $type, $level, $sizetype,
-		$size, $filters
-	) {
+	protected function showOptions( $type, $level, $filters ) {
 		$formDescriptor = [
 			'namespace' => [
 				'class' => HTMLSelectNamespace::class,
@@ -205,8 +184,8 @@ class SpecialProtectedpages extends SpecialPage {
 			'type' => 'select',
 			'options' => $options,
 			'label' => $this->msg( 'restriction-type' )->text(),
-			'name' => $this->IdType,
-			'id' => $this->IdType,
+			'name' => 'type',
+			'id' => 'type',
 		];
 	}
 
@@ -216,30 +195,22 @@ class SpecialProtectedpages extends SpecialPage {
 	 * @return array
 	 */
 	protected function getLevelMenu( $pr_level ) {
-		// Temporary array
-		$m = [ $this->msg( 'restriction-level-all' )->text() => 0 ];
-		$options = [];
+		$options = [ 'restriction-level-all' => 0 ];
 
-		// First pass to load the log names
+		// Load the log names as options
 		foreach ( $this->getConfig()->get( MainConfigNames::RestrictionLevels ) as $type ) {
-			// Messages used can be 'restriction-level-sysop' and 'restriction-level-autoconfirmed'
 			if ( $type != '' && $type != '*' ) {
-				$text = $this->msg( "restriction-level-$type" )->text();
-				$m[$text] = $type;
+				// Messages: restriction-level-sysop, restriction-level-autoconfirmed
+				$options["restriction-level-$type"] = $type;
 			}
-		}
-
-		// Third pass generates sorted XHTML content
-		foreach ( $m as $text => $type ) {
-			$options[$text] = $type;
 		}
 
 		return [
 			'type' => 'select',
-			'options' => $options,
-			'label' => $this->msg( 'restriction-level' )->text(),
-			'name' => $this->IdLevel,
-			'id' => $this->IdLevel
+			'options-messages' => $options,
+			'label-message' => 'restriction-level',
+			'name' => 'level',
+			'id' => 'level',
 		];
 	}
 
@@ -247,3 +218,9 @@ class SpecialProtectedpages extends SpecialPage {
 		return 'maintenance';
 	}
 }
+
+/**
+ * Retain the old class name for backwards compatibility.
+ * @deprecated since 1.41
+ */
+class_alias( SpecialProtectedPages::class, 'SpecialProtectedpages' );

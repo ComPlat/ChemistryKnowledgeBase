@@ -1,10 +1,11 @@
 ( function () {
+	const EXPIRY_PREFIX = '_EXPIRY_';
+
 	QUnit.module( 'mediawiki.storage' );
 
 	QUnit.test( 'set/get(Object) with storage support', function ( assert ) {
-		var data = {},
+		const data = {},
 			done = assert.async(),
-			EXPIRY_PREFIX = '_EXPIRY_',
 			object = { test: 'value' },
 			stub = {
 				setItem: function ( k, v ) {
@@ -47,7 +48,7 @@
 		mw.storage.set( 'baz', 'Non-JSON' );
 		assert.strictEqual( mw.storage.getObject( 'baz' ), null, 'Non-JSON values are null' );
 
-		var now = Math.floor( Date.now() / 1000 );
+		const now = Math.floor( Date.now() / 1000 );
 		mw.storage.set( 'foo', 'test', 60 * 60 );
 		assert.true( mw.storage.get( EXPIRY_PREFIX + 'foo' ) > now, 'Future expiry time stored' );
 		assert.strictEqual( mw.storage.get( 'foo' ), 'test', 'Non-expired item fetched from store' );
@@ -67,11 +68,11 @@
 		mw.storage.remove( 'foo' );
 		assert.strictEqual( mw.storage.get( EXPIRY_PREFIX + 'baz' ), null, 'Removed item has no expiry' );
 
-		assert.throws( function () {
+		assert.throws( () => {
 			mw.storage.set( EXPIRY_PREFIX + 'foo', 'test', 60 * 60 );
 		}, 'Error thrown when key prefix conflicts with EXPIRY_PREFIX' );
 
-		mw.storage.clearExpired().then( function () {
+		mw.storage.clearExpired().then( () => {
 			assert.deepEqual( Object.keys( data ), [ 'baz' ], 'Only unexpired keys present after #clearExpired' );
 			done();
 		} );
@@ -82,7 +83,7 @@
 		// (quota full, or security/privacy settings).
 		// On most browsers, these interface will be accessible with
 		// their methods throwing.
-		var stub = {
+		const stub = {
 			getItem: this.sandbox.stub(),
 			removeItem: this.sandbox.stub(),
 			setItem: this.sandbox.stub()
@@ -101,13 +102,13 @@
 		assert.strictEqual( mw.storage.remove( 'bar' ), false );
 	} );
 
-	QUnit.test( 'set/get(Object) with storage object disabled', function ( assert ) {
+	QUnit.test( 'set/get(Object) with storage object disabled', ( assert ) => {
 		// On other browsers, these entire object is disabled.
 		// `'localStorage' in window` would be true (and pass feature test)
 		// but trying to read the object as window.localStorage would throw
 		// an exception. Such case would instantiate SafeStorage with
 		// undefined after the internal try/catch.
-		var old = mw.storage.store;
+		const old = mw.storage.store;
 		mw.storage.store = undefined;
 
 		assert.strictEqual( mw.storage.get( 'foo' ), false );
@@ -119,6 +120,37 @@
 		assert.strictEqual( mw.storage.remove( 'bar' ), false );
 
 		mw.storage.store = old;
+	} );
+
+	QUnit.test( 'set/get with expiry - partial failure', function ( assert ) {
+		const store = {};
+		const stub = {
+			setItem: this.sandbox.spy( ( k, v ) => {
+				if ( k.startsWith( EXPIRY_PREFIX ) ) {
+					// Mock a failing store when trying to set a key with expiry
+					throw new Error();
+				}
+				store[ k ] = v;
+			} ),
+			getItem: function ( k ) {
+				return store[ k ] || null;
+			},
+			removeItem: function ( k ) {
+				delete store[ k ];
+			}
+		};
+		this.sandbox.stub( mw.storage, 'store', stub );
+
+		// Test the test code above
+		mw.storage.set( 'bar', 'test' );
+		assert.strictEqual( mw.storage.get( 'bar' ), 'test' );
+
+		// Test the failure behavior when setting expiry
+		mw.storage.set( 'foo', 'test', 99 );
+		assert.strictEqual( stub.setItem.withArgs( EXPIRY_PREFIX + 'foo' ).calledOnce, true );
+		assert.strictEqual( stub.setItem.withArgs( 'foo' ).notCalled, true );
+		assert.strictEqual( mw.storage.get( 'foo' ), null, 'Item was not set when setting expiry failed' );
+
 	} );
 
 }() );

@@ -8,6 +8,7 @@
  */
 
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MediaWikiServices;
 
 /**
  * @ingroup PFSpecialPages
@@ -26,8 +27,8 @@ class PFUploadForm extends HTMLForm {
 	/** @var string raw html */
 	protected $mTextAfterSummary;
 
-	/** @var array */
-	protected $mMaxUploadSize = [];
+	/** @var int[] */
+	protected $mMaxUploadSize;
 
 	/** @var string */
 	private $mDestFile;
@@ -42,11 +43,11 @@ class PFUploadForm extends HTMLForm {
 	 */
 	public function __construct(
 		array $options = [],
-		IContextSource $context = null,
-		LinkRenderer $linkRenderer = null,
-		LocalRepo $localRepo = null,
-		Language $contentLanguage = null,
-		NamespaceInfo $nsInfo = null
+		?IContextSource $context = null,
+		?LinkRenderer $linkRenderer = null,
+		?LocalRepo $localRepo = null,
+		?Language $contentLanguage = null,
+		?NamespaceInfo $nsInfo = null
 	) {
 		if ( $context instanceof IContextSource ) {
 			$this->setContext( $context );
@@ -61,13 +62,21 @@ class PFUploadForm extends HTMLForm {
 		$this->mTextTop = $options['texttop'] ?? '';
 		$this->mTextAfterSummary = $options['textaftersummary'] ?? '';
 
+		$this->mMaxUploadSize = [
+			'file' => min(
+				UploadBase::getMaxUploadSize( 'file' ),
+				UploadBase::getMaxPhpUploadSize()
+			),
+			'url' => UploadBase::getMaxUploadSize( 'url' ),
+		];
+
 		$sourceDescriptor = $this->getSourceSection();
 		$descriptor = $sourceDescriptor
 			+ $this->getDescriptionSection()
 			+ $this->getOptionsSection();
 
-		Hooks::run( 'UploadFormInitDescriptor', [ &$descriptor ] );
-		parent::__construct( $descriptor, $this->getContext() );
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'UploadFormInitDescriptor', [ &$descriptor ] );
+		parent::__construct( $descriptor, $this->getContext(), 'upload' );
 
 		# Set some form properties
 		$this->setSubmitTextMsg( 'uploadbtn' );
@@ -90,7 +99,7 @@ class PFUploadForm extends HTMLForm {
 
 	/**
 	 * Get the descriptor of the fieldset that contains the file source
-	 * selection. The section is 'source'
+	 * selection. The section is 'upload-source'
 	 *
 	 * @return array Descriptor array
 	 */
@@ -127,11 +136,6 @@ class PFUploadForm extends HTMLForm {
 			];
 		}
 
-		$this->mMaxUploadSize['file'] = min(
-			UploadBase::getMaxUploadSize( 'file' ),
-			UploadBase::getMaxPhpUploadSize()
-		);
-
 		$help = $this->msg( 'upload-maxfilesize',
 				$this->getContext()->getLanguage()->formatSize( $this->mMaxUploadSize['file'] )
 			)->parse();
@@ -144,7 +148,7 @@ class PFUploadForm extends HTMLForm {
 		}
 
 		$descriptor['UploadFile'] = [
-			'class' => PFUploadSourceField::class,
+			'class' => UploadSourceField::class,
 			'section' => 'source',
 			'type' => 'file',
 			'id' => 'wpUploadFile',
@@ -170,7 +174,7 @@ class PFUploadForm extends HTMLForm {
 				'checked' => $selectedSourceType == 'url',
 			];
 		}
-		Hooks::run( 'UploadFormSourceDescriptors', [ &$descriptor, &$radio, $selectedSourceType ] );
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'UploadFormSourceDescriptors', [ &$descriptor, &$radio, $selectedSourceType ] );
 
 		$descriptor['Extensions'] = [
 			'type' => 'info',
@@ -218,7 +222,7 @@ class PFUploadForm extends HTMLForm {
 
 	/**
 	 * Get the descriptor of the fieldset that contains the file description
-	 * input. The section is 'description'
+	 * input. The section is 'upload-description'
 	 *
 	 * @return array Descriptor array
 	 */
@@ -230,9 +234,6 @@ class PFUploadForm extends HTMLForm {
 				'id' => 'wpDestFile',
 				'label-message' => 'destfilename',
 				'size' => 60,
-				'default' => $this->mDestFile,
-				# @todo FIXME: Hack to work around poor handling of the 'default' option in HTMLForm
-				'nodata' => strval( $this->mDestFile ) !== '',
 			],
 			'UploadDescription' => [
 				'type' => 'textarea',
@@ -253,7 +254,7 @@ class PFUploadForm extends HTMLForm {
 */
 			'License' => [
 				'type' => 'select',
-				'class' => 'Licenses',
+				'class' => Licenses::class,
 				'section' => 'description',
 				'id' => 'wpLicense',
 				'label-message' => 'license',
@@ -267,6 +268,13 @@ class PFUploadForm extends HTMLForm {
 				'default' => $this->mTextAfterSummary,
 				'raw' => true,
 			];
+		}
+
+		if ( strval( $this->mDestFile ) !== '' ) {
+			$descriptor['DestFile']['default'] = $this->mDestFile;
+			# @todo FIXME: Hack to work around poor handling of the 'default' option in HTMLForm
+			$descriptor['DestFile']['nodata'] = true;
+			$descriptor['DestFile']['cssclass'] = 'defaultFilename';
 		}
 
 		if ( $this->mForReUpload ) {
@@ -294,7 +302,7 @@ class PFUploadForm extends HTMLForm {
 
 	/**
 	 * Get the descriptor of the fieldset that contains the upload options,
-	 * such as "watch this file". The section is 'options'
+	 * such as "watch this file". The section is 'upload-options'
 	 *
 	 * @return array Descriptor array
 	 */
@@ -360,8 +368,18 @@ END;
 <script src="{$wgScriptPath}/resources/lib/jquery/jquery.js"></script>
 <script src="{$wgPageFormsScriptPath}/libs/PF_upload.js"></script>
 </head>
+<style>
+fieldset {
+	margin-bottom: 20px;
+}
+td {
+	padding: 3px 0;
+}
+</style>
 <body>
+<div id="content">
 {$out->getHTML()}
+</div>
 </body>
 </html>
 

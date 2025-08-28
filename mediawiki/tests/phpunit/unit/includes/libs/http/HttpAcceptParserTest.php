@@ -1,15 +1,18 @@
 <?php
 
+namespace Wikimedia\Tests\Http;
+
+use PHPUnit\Framework\TestCase;
 use Wikimedia\Http\HttpAcceptParser;
 
 /**
- * @covers Wikimedia\Http\HttpAcceptParser
+ * @covers \Wikimedia\Http\HttpAcceptParser
  *
  * @author Daniel Kinzler
  */
-class HttpAcceptParserTest extends \PHPUnit\Framework\TestCase {
+class HttpAcceptParserTest extends TestCase {
 
-	public function provideParseWeights() {
+	public static function provideParseWeights() {
 		return [
 			[ // #0
 				'',
@@ -52,7 +55,7 @@ class HttpAcceptParserTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals( $expected, $actual ); // shouldn't be sensitive to order
 	}
 
-	public function provideParseAccept() {
+	public static function provideParseAccept() {
 		return [
 			[
 				// Sort by decending q

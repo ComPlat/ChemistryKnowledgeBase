@@ -1,13 +1,16 @@
 <?php
 
+use MediaWiki\Language\LanguageCode;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MainConfigSchema;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Settings\Config\ArrayConfigBuilder;
 use MediaWiki\Settings\Config\ConfigSchemaAggregator;
 use MediaWiki\Settings\Config\PhpIniSink;
 use MediaWiki\Settings\DynamicDefaultValues;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\Settings\Source\ReflectionSchemaSource;
+use MediaWiki\Title\NamespaceInfo;
 
 class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 	/** @var string */
@@ -117,18 +120,6 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 			'SharedPrefix' => '',
 			'SharedSchema' => null,
 			'MetaNamespace' => 'MediaWiki',
-			'MainWANCache' => 'mediawiki-main-default',
-			'WANObjectCaches' => [
-				// XXX Is this duplication really intentional? Isn't the first entry unused?
-				0 => [
-					'class' => WANObjectCache::class,
-					'cacheId' => 0,
-				],
-				'mediawiki-main-default' => [
-					'class' => WANObjectCache::class,
-					'cacheId' => 0,
-				],
-			],
 			'EnableUserEmailMuteList' => false,
 			'EnableUserEmailBlacklist' => false,
 			'NamespaceProtection' => [ NS_MEDIAWIKI => 'editinterface' ],
@@ -184,6 +175,7 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 				$ret = max( '20030516000000', gmdate( 'YmdHis', @filemtime( MW_CONFIG_FILE ) ) );
 				return $ret;
 			},
+			'RateLimits' => MainConfigSchema::getDefaultValue( 'RateLimits' ),
 		];
 
 		foreach (
@@ -268,31 +260,6 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 			[
 				'Sitename' => 'my site',
 				'MetaNamespace' => 'my_site',
-			],
-		];
-		yield '$wgMainCacheType set' => [
-			[ 'MainCacheType' => 7 ],
-			[
-				'MainCacheType' => 7,
-				'WANObjectCaches' => [
-					0 => [
-						'class' => WANObjectCache::class,
-						'cacheId' => 0,
-					],
-					'mediawiki-main-default' => [
-						'class' => WANObjectCache::class,
-						'cacheId' => 7,
-					],
-				],
-			],
-		];
-		yield '$wgMainWANCache set' => [
-			[ 'MainWANCache' => 'my-cache' ],
-			[
-				'MainWANCache' => 'my-cache',
-				// XXX Is this intentional? Customizing MainWANCache without adding it to
-				// WANObjectCaches seems like it will break everything?
-				'WANObjectCaches' => [ [ 'class' => WANObjectCache::class, 'cacheId' => 0 ] ],
 			],
 		];
 		yield '$wgProhibitedFileExtensions set' => [
@@ -441,9 +408,7 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 				'StylePath' => '/resources/skins',
 				'Logo' => '/resources/resources/assets/change-your-logo.svg',
 				'FooterIcons' => [ 'poweredby' => [ 'mediawiki' => [
-					'src' => '/resources/resources/assets/poweredby_mediawiki_88x31.png',
-					'srcset' => '/resources/resources/assets/poweredby_mediawiki_132x47.png 1.5x,' .
-						' /resources/resources/assets/poweredby_mediawiki_176x62.png 2x',
+					'src' => '/resources/resources/assets/poweredby_mediawiki.svg',
 				] ] ],
 			],
 		];
@@ -693,7 +658,7 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 				'DefaultUserOptions' => [
 					'rcdays' => 0,
 					'watchlistdays' => 0,
-					'timecorrection' => 'System|' . (string)( -7 * 60 ),
+					'timecorrection' => 'System|' . ( -7 * 60 ),
 				],
 				'DBerrorLogTZ' => 'America/Phoenix',
 			],
@@ -839,7 +804,7 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 			static function ( self $testObj, array $vars ) use ( $expectedDefault ): array {
 				$testObj->assertContains( 'pagelang', $vars['LogTypes'] );
 				$testObj->assertSame( PageLangLogFormatter::class,
-					$vars['LogActionsHandlers']['pagelang/pagelang'] );
+					$vars['LogActionsHandlers']['pagelang/pagelang']['class'] );
 
 				return $expectedDefault;
 			},
@@ -902,22 +867,6 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 				$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
 			}
 		];
-		yield '$wgMinimalPasswordLength' => [
-			[ 'MinimalPasswordLength' => 17 ],
-			static function ( self $testObj, array $vars ) use ( $expectedDefault ): array {
-				$testObj->assertSame( 17,
-					$vars['PasswordPolicy']['policies']['default']['MinimalPasswordLength'] );
-				return $expectedDefault;
-			},
-		];
-		yield '$wgMaximalPasswordLength' => [
-			[ 'MaximalPasswordLength' => 17 ],
-			static function ( self $testObj, array $vars ) use ( $expectedDefault ): array {
-				$testObj->assertSame( 17,
-					$vars['PasswordPolicy']['policies']['default']['MaximalPasswordLength'] );
-				return $expectedDefault;
-			},
-		];
 		yield 'Bogus $wgPHPSessionHandling' => [
 			[ 'PHPSessionHandling' => 'bogus' ],
 			[ 'PHPSessionHandling' => 'warn' ],
@@ -929,6 +878,26 @@ class SetupDynamicConfigTest extends MediaWikiUnitTestCase {
 		yield 'Disable $wgPHPSessionHandling' => [
 			[ 'PHPSessionHandling' => 'disable' ],
 			[ 'PHPSessionHandling' => 'disable' ],
+		];
+
+		// use old deprecated rate limit names
+		$rateLimits = [
+				'emailuser' => [
+					'newbie' => [ 1, 86400 ],
+				],
+				'changetag' => [
+					'ip' => [ 1, 60 ],
+					'newbie' => [ 2, 60 ],
+				],
+			];
+
+		yield 'renamed $wgRateLimits' => [
+			[ 'RateLimits' => $rateLimits + $expectedDefault['RateLimits'] ],
+			static function ( self $testObj, array $vars ) use ( $expectedDefault, $rateLimits ): array {
+				$testObj->assertSame( $rateLimits['emailuser'], $vars['RateLimits']['sendemail'], 'emailuser' );
+				$testObj->assertSame( $rateLimits['changetag'], $vars['RateLimits']['changetags'], 'changetag' );
+				return [];
+			}
 		];
 		// XXX No obvious way to test MW_NO_SESSION, because constants can't be undefined
 	}

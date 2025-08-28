@@ -10,6 +10,7 @@
 */
 
 @import 'variables.less';
+@import 'mediawiki.mixins.less';
 
 /*
 ** Common styles across desktop and mobile
@@ -26,14 +27,14 @@
 	position: relative;
 	z-index: 2;
 	background: @content-background;
-	color: @text-color;
+	color: @color-base;
 	border: 1px solid @content-border;
 	line-height: 1.5em;
 }
 
 /* Hide, but keep accessible for screen-readers */
 #column-one h2 {
-	.hidden();
+	.mixin-screen-reader-text();
 }
 
 /* the left column width is specified in class .portlet */
@@ -51,14 +52,12 @@
 body {
 	font-family: sans-serif;
 	font-size: x-small; // Typical: 16px * 0.625 == 10px.
-	background: @background url( images/headbg.jpg ) 0 0 no-repeat;
-	// stylelint-disable value-list-comma-newline-after
+	/* stylelint-disable @stylistic/value-list-comma-newline-after, @stylistic/declaration-colon-newline-after */
 	/* @embed */
-	background: linear-gradient( transparent, transparent ),
-		url( images/headbg.svg ) 0 0 no-repeat,
+	background: url( images/headbg.svg ) 0 0 no-repeat,
 		@background url( images/headbg-gradient.svg ) 0 0 repeat-x;
-	// stylelint-enable value-list-comma-newline-after
-	color: @text-color;
+	/* stylelint-enable @stylistic/value-list-comma-newline-after, @stylistic/declaration-colon-newline-after */
+	color: @color-base;
 	direction: ltr; /* Needed for RTL flipping */
 	unicode-bidi: embed;
 }
@@ -75,8 +74,7 @@ body {
 
 /* general styles */
 ul {
-	list-style-type: square;
-	.list-style-image( 'images/bullet.svg' );
+	list-style: square url( images/bullet.svg );
 }
 
 pre,
@@ -88,7 +86,8 @@ pre,
 	margin-top: 0.4em;
 	margin-bottom: 0.1em;
 	padding-top: 0;
-	overflow: visible;
+	/* Change the default from mediawiki.skinning CSS to let indicators float into heading area (T373617) */
+	display: block;
 }
 
 .mw-indicators {
@@ -97,12 +96,12 @@ pre,
 }
 
 .mw-indicator {
-	display: -moz-inline-block;
 	display: inline-block;
 }
 
 .mw-jump-link:not( :focus ) {
 	.mixin-screen-reader-text;
+	.user-select( none );
 }
 
 /*
@@ -147,9 +146,11 @@ table.rimage {
 /*
 ** general portlet styles (elements in the quickbar)
 */
+.mw-portlet,
 .portlet {
 	overflow: hidden;
 
+	label,
 	h3 {
 		background: transparent;
 		display: inline;
@@ -169,13 +170,14 @@ table.rimage {
 	}
 }
 
+.mw-portlet > div,
 .pBody {
 	font-size: 95%;
-	color: @text-color;
+	color: @color-base;
 	border-collapse: collapse;
 
 	/* allows .pBody styles to wrap around content added via SkinAfterPortlet hook */
-	&:after {
+	&::after {
 		content: '';
 		clear: both;
 		display: block;
@@ -221,7 +223,7 @@ li#pt-userpage,
 */
 /* "Not logged in" text in gray */
 li#pt-anonuserpage {
-	color: @text-grey;
+	color: @color-subtle;
 }
 
 /*
@@ -248,12 +250,6 @@ li#pt-anonuserpage {
 	font-size: 85%;
 }
 
-#login-sectiontip {
-	font-size: 85%;
-	line-height: 1.2;
-	padding-top: 2em;
-}
-
 /**
  * This was originally added by Gabriel Wicke in r3681 (committed on 25 May 2004)
  * with the commit message "tweaks to page history".
@@ -267,10 +263,6 @@ li#pt-anonuserpage {
 
 div.patrollink {
 	clear: both;
-}
-
-.sharedUploadNotice {
-	font-style: italic;
 }
 
 .toggle {
@@ -293,36 +285,11 @@ div.noarticletext {
 	border: 1px solid @content-border;
 	background: @content-background;
 	padding: 0.2em 1em;
-	color: @text-color;
+	color: @color-base;
 }
 
 #powersearch p {
 	margin-top: 0;
-}
-
-div.multipageimagenavbox {
-	border: solid 1px @content-border;
-	padding: 4px;
-	margin: 1em;
-	background: @background;
-
-	div.thumb {
-		border: 0;
-		margin-left: 2em;
-		margin-right: 2em;
-	}
-
-	hr {
-		margin: 6px;
-	}
-}
-
-table.multipageimage td {
-	text-align: center;
-}
-
-.templatesUsed {
-	margin-top: 1.5em;
 }
 
 .mw-summary-preview {

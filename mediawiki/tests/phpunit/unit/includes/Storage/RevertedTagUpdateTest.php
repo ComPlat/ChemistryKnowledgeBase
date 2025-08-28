@@ -2,7 +2,10 @@
 
 namespace MediaWiki\Tests\Storage;
 
+use ChangeTags;
+use MediaWiki\ChangeTags\ChangeTagsStore;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
@@ -11,11 +14,11 @@ use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\RevertedTagUpdate;
 use MediaWikiUnitTestCase;
 use MockTitleTrait;
-use PHPUnit\Framework\MockObject\Builder\InvocationMocker;
+use PHPUnit\Framework\MockObject\Stub\ReturnCallback;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use TestLogger;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * @covers \MediaWiki\Storage\RevertedTagUpdate
@@ -25,12 +28,9 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 	use MockTitleTrait;
 
 	/**
-	 * Convenience function for creating a RevertedTagUpdate that does not use
-	 * the ChangeTags static class. Instead, a mock for a future ChangeTags-like
-	 * object should be provided.
-	 * TODO: clean this up once T245964 is resolved
+	 * Convenience function for creating a RevertedTagUpdate object
 	 *
-	 * @param FutureChangeTags $futureChangeTags
+	 * @param ChangeTagsStore $changeTagsStore
 	 * @param RevisionStore $revisionStore
 	 * @param LoggerInterface $logger
 	 * @param string[] $softwareTags
@@ -41,7 +41,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 	 * @return RevertedTagUpdate
 	 */
 	private function newRevertedTagUpdate(
-		$futureChangeTags,
+		$changeTagsStore,
 		RevisionStore $revisionStore,
 		LoggerInterface $logger,
 		array $softwareTags,
@@ -49,62 +49,24 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		int $revertId,
 		EditResult $editResult
 	): RevertedTagUpdate {
-		// LoadBalancer is never used in unit tests because getTags is overridden
-		$loadBalancer = $this->createNoOpMock( ILoadBalancer::class );
+		$dbProvider = $this->createMock( IConnectionProvider::class );
+		$changeTagsStore->method( 'getSoftwareTags' )
+			->willReturn( $softwareTags );
 
-		return new class(
-			$futureChangeTags,
+		$serviceOptions = new ServiceOptions(
+			RevertedTagUpdate::CONSTRUCTOR_OPTIONS,
+			[ MainConfigNames::RevertedTagMaxDepth => $revertedTagMaxDepth ]
+		);
+
+		return new RevertedTagUpdate(
 			$revisionStore,
 			$logger,
-			$softwareTags,
-			$loadBalancer,
-			$revertedTagMaxDepth,
+			$changeTagsStore,
+			$dbProvider,
+			$serviceOptions,
 			$revertId,
 			$editResult
-		) extends RevertedTagUpdate {
-
-			protected $futureChangeTags;
-
-			public function __construct(
-				$futureChangeTags,
-				RevisionStore $revisionStore,
-				LoggerInterface $logger,
-				array $softwareTags,
-				ILoadBalancer $loadBalancer,
-				int $revertedTagMaxDepth,
-				int $revertId,
-				EditResult $editResult
-			) {
-				$serviceOptions = new ServiceOptions(
-					RevertedTagUpdate::CONSTRUCTOR_OPTIONS,
-					[ MainConfigNames::RevertedTagMaxDepth => $revertedTagMaxDepth ]
-				);
-
-				parent::__construct(
-					$revisionStore,
-					$logger,
-					$softwareTags,
-					$loadBalancer,
-					$serviceOptions,
-					$revertId,
-					$editResult
-				);
-				$this->futureChangeTags = $futureChangeTags;
-			}
-
-			protected function markAsReverted( int $revisionId, array $extraParams ) {
-				$this->futureChangeTags->addTags(
-					$revisionId,
-					$extraParams
-				);
-			}
-
-			protected function getChangeTags( int $revisionId ) {
-				return $this->futureChangeTags->getTags(
-					$revisionId
-				);
-			}
-		};
+		);
 	}
 
 	/**
@@ -137,43 +99,43 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * Sets up assertions to run inside RevertedTagUpdate::markAsReverted()
-	 * overloaded method.
+	 * Returns a closure that determines the return value of ChangeTagsStore::addTags()
 	 *
-	 * @param InvocationMocker $futureChangeTagsMocker
 	 * @param int $revertedRevisionId
 	 * @param int $newRevisionId
 	 * @param EditResult $editResult
+	 * @return callable
 	 */
-	private function setFutureChangeTagsAsserts(
-		InvocationMocker $futureChangeTagsMocker,
+	private function getChangeTagsReturnCallback(
 		int $revertedRevisionId,
 		int $newRevisionId,
 		EditResult $editResult
-	) {
-		$futureChangeTagsMocker->willReturnCallback( function (
-			int $revisionId,
-			array $extraParams
+	): callable {
+		return function (
+			$tags, $rc_id, $rev_id,
+			$log_id, $params
 		) use ( $newRevisionId, $revertedRevisionId, $editResult ) {
 			$this->assertSame(
-				$revertedRevisionId,
-				$revisionId,
+				[ ChangeTags::TAG_REVERTED ],
+				$tags,
 				'RevertedTagUpdate::markAsReverted() $revisionId'
 			);
-			$this->assertArrayEquals(
-				array_merge(
+			$this->assertSame(
+				$revertedRevisionId,
+				$rev_id,
+				'RevertedTagUpdate::markAsReverted() $revisionId'
+			);
+			$this->assertSame(
+				FormatJson::encode( array_merge(
 					[ 'revertId' => $newRevisionId ],
 					$editResult->jsonSerialize()
-				),
-				$extraParams,
-				false,
-				true,
-				'RevertedTagUpdate::markAsReverted()'
+				) ),
+				$params
 			);
-		} );
+		};
 	}
 
-	public function provideRevertedTagUpdateDisabled() {
+	public static function provideRevertedTagUpdateDisabled() {
 		yield 'mw-reverted tag is disabled' => [ [], 15 ];
 		yield '$wgRevertedTagMaxDepth is 0' => [ [ 'mw-reverted' ], 0 ];
 	}
@@ -188,7 +150,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		int $revertedTagMaxDepth
 	) {
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$this->createNoOpMock( RevisionStore::class ),
 			new TestLogger(),
 			$softwareChangeTags,
@@ -199,7 +161,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		$update->doUpdate();
 	}
 
-	public function provideInvalidEditResults() {
+	public static function provideInvalidEditResults() {
 		yield 'edit is not a revert' => [
 			new EditResult(
 				false,
@@ -233,7 +195,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 	public function testInvalidEditResult( EditResult $editResult ) {
 		$logger = new TestLogger( true );
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$this->createNoOpMock( RevisionStore::class ),
 			$logger,
 			[ 'mw-reverted' ],
@@ -274,7 +236,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		);
 
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -319,7 +281,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		);
 
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -337,7 +299,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		], $logger->getBuffer() );
 	}
 
-	public function providePageIdMismatch() {
+	public static function providePageIdMismatch() {
 		yield 'mismatch between reverted revisions' => [
 			10,
 			22,
@@ -385,7 +347,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		);
 
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -427,7 +389,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		);
 
 		$update = $this->newRevertedTagUpdate(
-			$this->createNoOpMock( FutureChangeTags::class ),
+			$this->createMock( ChangeTagsStore::class ),
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -439,7 +401,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 
 		$this->assertSame( [
 			[
-				LogLevel::NOTICE,
+				LogLevel::INFO,
 				'The revert\'s text had been marked as deleted before the update was ' .
 					'executed. Skipping...',
 			],
@@ -457,10 +419,10 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 
 		$logger = new TestLogger( true );
 
-		$futureChangeTags = $this->createNoOpMock( FutureChangeTags::class, [ 'getTags' ] );
-		$futureChangeTags->expects( $this->once() )
+		$changeTagsStore = $this->createMock( ChangeTagsStore::class );
+		$changeTagsStore->expects( $this->once() )
 			->method( 'getTags' )
-			->with( 300 )
+			->with( $this->anything(), null, 300 )
 			->willReturn( [ 'mw-reverted' ] );
 
 		$editResult = new EditResult(
@@ -475,7 +437,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 		);
 
 		$update = $this->newRevertedTagUpdate(
-			$futureChangeTags,
+			$changeTagsStore,
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -487,7 +449,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 
 		$this->assertSame( [
 			[
-				LogLevel::NOTICE,
+				LogLevel::INFO,
 				'The revert had been reverted before the update was executed. Skipping...'
 			],
 		], $logger->getBuffer() );
@@ -512,20 +474,18 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 			[ 'mw-rollback' ]
 		);
 
-		$futureChangeTags = $this->createMock( FutureChangeTags::class );
-		$futureChangeTags->expects( $this->once() )
+		$changeTagsStore = $this->createMock( ChangeTagsStore::class );
+		$changeTagsStore->expects( $this->once() )
 			->method( 'getTags' )
 			->willReturn( [] );
-		$this->setFutureChangeTagsAsserts(
-			$futureChangeTags->expects( $this->once() )
-				->method( 'addTags' ),
-			123,
-			124,
-			$editResult
-		);
+		$changeTagsStore->expects( $this->once() )
+			->method( 'addTags' )
+			->willReturnCallback(
+				$this->getChangeTagsReturnCallback( 123, 124, $editResult )
+			);
 
 		$update = $this->newRevertedTagUpdate(
-			$futureChangeTags,
+			$changeTagsStore,
 			$revisionStore,
 			new TestLogger(),
 			[ 'mw-reverted' ],
@@ -560,15 +520,15 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 			[ 'mw-undo' ]
 		);
 
-		$futureChangeTags = $this->createNoOpMock( FutureChangeTags::class, [ 'getTags' ] );
-		$futureChangeTags->expects( $this->once() )
+		$changeTagsStore = $this->createMock( ChangeTagsStore::class, [ 'getTags' ] );
+		$changeTagsStore->expects( $this->once() )
 			->method( 'getTags' )
 			->willReturn( [] );
 
 		$logger = new TestLogger( true );
 
 		$update = $this->newRevertedTagUpdate(
-			$futureChangeTags,
+			$changeTagsStore,
 			$revisionStore,
 			$logger,
 			[ 'mw-reverted' ],
@@ -580,7 +540,7 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 
 		$this->assertSame( [
 			[
-				LogLevel::NOTICE,
+				LogLevel::INFO,
 				'The revert is deeper than $wgRevertedTagMaxDepth. Skipping...'
 			],
 		], $logger->getBuffer() );
@@ -619,29 +579,28 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 			[ 'mw-undo' ]
 		);
 
-		$futureChangeTags = $this->createMock( FutureChangeTags::class );
+		$changeTagsStore = $this->createMock( ChangeTagsStore::class );
 
 		// Revision 125 has the same content as 124, so it should not be marked
 		// as reverted. See: T265312
 		$reallyRevertedRevs = [ 123, 124, 126 ];
+		$changeTagsStoreRetCallbacks = [];
 		for ( $i = 0; $i <= 2; $i++ ) {
-			$this->setFutureChangeTagsAsserts(
-				// $i + 1 because getTags is invoked first
-				$futureChangeTags->expects( $this->at( $i + 1 ) )
-					->method( 'addTags' ),
-				$reallyRevertedRevs[$i],
-				130,
-				$editResult
+			$changeTagsStoreRetCallbacks[] = new ReturnCallback(
+				$this->getChangeTagsReturnCallback( $reallyRevertedRevs[$i], 130, $editResult )
 			);
 		}
-		$futureChangeTags->expects( $this->exactly( 3 ) )
+		$changeTagsStore
+			->method( 'addTags' )
+			->willReturnOnConsecutiveCalls( ...$changeTagsStoreRetCallbacks );
+		$changeTagsStore->expects( $this->exactly( 3 ) )
 			->method( 'addTags' );
-		$futureChangeTags->expects( $this->once() )
+		$changeTagsStore->expects( $this->once() )
 			->method( 'getTags' )
 			->willReturn( [] );
 
 		$update = $this->newRevertedTagUpdate(
-			$futureChangeTags,
+			$changeTagsStore,
 			$revisionStore,
 			new TestLogger(),
 			[ 'mw-reverted' ],
@@ -650,14 +609,5 @@ class RevertedTagUpdateTest extends MediaWikiUnitTestCase {
 			$editResult
 		);
 		$update->doUpdate();
-	}
-}
-
-// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
-class FutureChangeTags {
-	public function addTags( ...$args ) {
-	}
-
-	public function getTags() {
 	}
 }

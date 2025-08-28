@@ -1,19 +1,22 @@
 <?php
 
+namespace Wikimedia\Tests\ObjectCache;
+
+use MediaWikiCoversValidator;
+use PHPUnit\Framework\TestCase;
 use Wikimedia\LightweightObjectStore\StorageAwareness;
+use Wikimedia\ObjectCache\CachedBagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\TestingAccessWrapper;
 
 /**
+ * @covers \Wikimedia\ObjectCache\CachedBagOStuff
  * @group BagOStuff
  */
-class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
+class CachedBagOStuffTest extends TestCase {
 
 	use MediaWikiCoversValidator;
 
-	/**
-	 * @covers CachedBagOStuff::__construct
-	 * @covers CachedBagOStuff::get
-	 */
 	public function testGetFromBackend() {
 		$backend = new HashBagOStuff;
 		$cache = new CachedBagOStuff( $backend );
@@ -25,10 +28,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		$this->assertEquals( 'bar', $cache->get( 'foo' ), 'cached' );
 	}
 
-	/**
-	 * @covers CachedBagOStuff::set
-	 * @covers CachedBagOStuff::delete
-	 */
 	public function testSetAndDelete() {
 		$backend = new HashBagOStuff;
 		$cache = new CachedBagOStuff( $backend );
@@ -44,10 +43,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		}
 	}
 
-	/**
-	 * @covers CachedBagOStuff::set
-	 * @covers CachedBagOStuff::delete
-	 */
 	public function testWriteCacheOnly() {
 		$backend = new HashBagOStuff;
 		$cache = new CachedBagOStuff( $backend );
@@ -68,9 +63,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		$this->assertEquals( 'old', $cache->get( 'foo' ) ); // Reloaded from backend
 	}
 
-	/**
-	 * @covers CachedBagOStuff::get
-	 */
 	public function testCacheBackendMisses() {
 		$backend = new HashBagOStuff;
 		$cache = new CachedBagOStuff( $backend );
@@ -89,9 +81,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue( $cache->get( 'bar' ) );
 	}
 
-	/**
-	 * @covers CachedBagOStuff::deleteObjectsExpiringBefore
-	 */
 	public function testExpire() {
 		$backend = $this->getMockBuilder( HashBagOStuff::class )
 			->onlyMethods( [ 'deleteObjectsExpiringBefore' ] )
@@ -104,9 +93,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		$cache->deleteObjectsExpiringBefore( '20110401000000' );
 	}
 
-	/**
-	 * @covers CachedBagOStuff::makeKey
-	 */
 	public function testMakeKey() {
 		$backend = $this->getMockBuilder( HashBagOStuff::class )
 			->setConstructorArgs( [ [ 'keyspace' => 'magic' ] ] )
@@ -125,9 +111,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		);
 	}
 
-	/**
-	 * @covers CachedBagOStuff::makeGlobalKey
-	 */
 	public function testMakeGlobalKey() {
 		$backend = $this->getMockBuilder( HashBagOStuff::class )
 			->setConstructorArgs( [ [ 'keyspace' => 'magic' ] ] )
@@ -142,11 +125,6 @@ class CachedBagOStuffTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame( 'global:special:logic', $cache->makeGlobalKey( 'special', 'logic' ) );
 	}
 
-	/**
-	 * @covers CachedBagOStuff::watchErrors()
-	 * @covers CachedBagOStuff::getLastError()
-	 * @covers CachedBagOStuff::setLastError()
-	 */
 	public function testErrorHandling() {
 		$backend = new HashBagOStuff;
 		$cache = new CachedBagOStuff( $backend );

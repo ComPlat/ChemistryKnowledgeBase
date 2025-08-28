@@ -15,18 +15,20 @@
  * along with MediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { CanvasButtons } = require( 'mmv' );
+
 ( function () {
 	QUnit.module( 'mmv.ui.CanvasButtons', QUnit.newMwEnvironment() );
 
-	QUnit.test( 'Prev/Next', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			buttons = new mw.mmv.ui.CanvasButtons( $qf, $( '<div>' ), $( '<div>' ) );
+	QUnit.test( 'Prev/Next', ( assert ) => {
+		const $qf = $( '#qunit-fixture' );
+		const buttons = new CanvasButtons( $qf, $( '<div>' ), $( '<div>' ) );
 
-		buttons.on( 'next', function () {
+		buttons.on( 'next', () => {
 			assert.true( true, 'Switched to next image' );
 		} );
 
-		buttons.on( 'prev', function () {
+		buttons.on( 'prev', () => {
 			assert.true( true, 'Switched to prev image' );
 		} );
 

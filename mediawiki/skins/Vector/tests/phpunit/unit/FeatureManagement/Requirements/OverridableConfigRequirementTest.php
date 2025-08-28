@@ -20,12 +20,11 @@
 
 namespace MediaWiki\Skins\Vector\Tests\Unit\FeatureManagement\Requirements;
 
-use CentralIdLookup;
-use HashConfig;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Request\WebRequest;
 use MediaWiki\Skins\Vector\Constants;
 use MediaWiki\Skins\Vector\FeatureManagement\Requirements\OverridableConfigRequirement;
-use User;
-use WebRequest;
+use MediaWiki\User\UserIdentity;
 
 /**
  * @group Vector
@@ -34,23 +33,18 @@ use WebRequest;
  */
 class OverridableConfigRequirementTest extends \MediaWikiUnitTestCase {
 
-	public function providerLanguageInHeaderTreatmentRequirement() {
+	public static function providerLanguageInHeaderTreatmentRequirement() {
 		return [
 			[
 				// Is language enabled
 				[
 					'logged_in' => false,
 					'logged_out' => false,
+					'beta' => false,
 				],
-				// is A-B test enabled
-				false,
 				// note 0 = anon user
 				0,
-				// use central id lookup?
-				false,
 				// `languageinheader` query param
-				null,
-				// AB test name
 				null,
 				false,
 				'If nothing enabled, nobody gets new treatment'
@@ -60,240 +54,67 @@ class OverridableConfigRequirementTest extends \MediaWikiUnitTestCase {
 				[
 					'logged_in' => false,
 					'logged_out' => true,
+					'beta' => false,
 				],
-				// is A-B test enabled
-				false,
 				// note 0 = anon user
 				0,
-				// use central id lookup?
-				false,
 				// `languageinheader` query param
 				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
 				true,
-				'Anon users should get new treatment if enabled when A/B test disabled'
+				'Anon users should get new treatment if enabled'
 			],
 			[
 				// Is language enabled
 				[
 					'logged_in' => true,
 					'logged_out' => false,
+					'beta' => false,
 				],
-				// is A-B test enabled
-				false,
-				2,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				'Logged in users should get new treatment if enabled when A/B test disabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				false,
 				1,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				'All odd logged in users should get new treatent when A/B test disabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => false,
-					'logged_out' => true,
-				],
-				// is A-B test enabled
-				true,
-				// note 0 = anon user
-				0,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				// Ab test is only for logged in users
-				'Anon users with a/b test enabled should see new treatment when config enabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => false,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				//
-				// note 0 = anon user
-				0,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				false,
-				// Ab test is only for logged in users
-				'Anon users with a/b test enabled should see old treatment when config disabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				2,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				'Even logged in users get new treatment when A/B test enabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				1,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				false,
-				'Odd logged in users do not get new treatment when A/B test enabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				2,
-				// use central id lookup?
-				true,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				'With CentralIdLookup, even logged in users get new treatment when A/B test enabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				1,
-				// use central id lookup?
-				true,
-				// `languageinheader` query param
-				null,
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				false,
-				'With CentralIdLookup, odd logged in users do not get new treatment when A/B test enabled'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				1,
-				// use central id lookup?
-				false,
-				// `languageinheader` query param
-				"1",
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
-				true,
-				'Odd logged in users get new treatment when A/B test enabled and query param set to "1"'
-			],
-			[
-				// Is language enabled
-				[
-					'logged_in' => true,
-					'logged_out' => false,
-				],
-				// is A-B test enabled
-				true,
-				1,
-				// use central id lookup?
-				false,
 				// `languageinheader` query param
 				"0",
-				// AB test name
-				'VectorLanguageInHeaderTreatmentABTest',
 				false,
-				'Even logged in users get old treatment when A/B test enabled and query param set to "0"'
+				'Even logged in users get old treatment when query param set to "0"'
 			],
 			[
 				// Is language enabled
 				[
 					'logged_in' => false,
 					'logged_out' => false,
+					'beta' => false,
 				],
-				// is A-B test enabled
-				false,
 				1,
-				// use central id lookup?
-				false,
 				// `languageinheader` query param
 				"1",
-				// AB test name
-				null,
 				true,
-				'Users get new treatment when query param set to "1" regardless of state of A/B test or config flags'
+				'Users get new treatment when query param set to "1" regardless of state of config flags'
 			],
 			[
 				// Is language enabled
 				[
 					'logged_in' => false,
 					'logged_out' => false,
+					'beta' => true,
 				],
-				// is A-B test enabled
-				false,
 				1,
-				// use central id lookup?
-				false,
 				// `languageinheader` query param
-				"0",
-				// AB test name
 				null,
 				false,
-				'Users get old treatment when query param set to "0" regardless of state of A/B test or config flags'
+				'Users get old treatment when beta config flag enabled and BetaFeatures extension disabled. ' .
+				'(BetaFeatures extension is disabled by default.)'
+			],
+			[
+				// Is language enabled
+				[
+					'logged_in' => false,
+					'logged_out' => false,
+					'beta' => false,
+				],
+				1,
+				// `languageinheader` query param
+				"0",
+				false,
+				'Users get old treatment when query param set to "0" regardless of state of config flags'
 			],
 		];
 	}
@@ -302,30 +123,25 @@ class OverridableConfigRequirementTest extends \MediaWikiUnitTestCase {
 	 * @covers ::isMet
 	 * @dataProvider providerLanguageInHeaderTreatmentRequirement
 	 * @param bool $configValue
-	 * @param bool $abValue
 	 * @param int $userId
-	 * @param bool $useCentralIdLookup
 	 * @param string|null $queryParam
-	 * @param string|null $testName
 	 * @param bool $expected
 	 * @param string $msg
+	 * @param bool $betaEnabled
 	 */
 	public function testLanguageInHeaderTreatmentRequirement(
 		$configValue,
-		$abValue,
 		$userId,
-		$useCentralIdLookup,
 		$queryParam,
-		$testName,
 		$expected,
-		$msg
+		$msg,
+		$betaEnabled = false
 	) {
 		$config = new HashConfig( [
 			Constants::CONFIG_KEY_LANGUAGE_IN_HEADER => $configValue,
-			Constants::CONFIG_LANGUAGE_IN_HEADER_TREATMENT_AB_TEST => $abValue,
 		] );
 
-		$user = $this->createMock( User::class );
+		$user = $this->createMock( UserIdentity::class );
 		$user->method( 'isRegistered' )->willReturn( $userId !== 0 );
 		$user->method( 'getID' )->willReturn( $userId );
 
@@ -333,21 +149,85 @@ class OverridableConfigRequirementTest extends \MediaWikiUnitTestCase {
 		$request->method( 'getCheck' )->willReturn( $queryParam !== null );
 		$request->method( 'getBool' )->willReturn( (bool)$queryParam );
 
-		$centralIdLookup = $this->createMock( CentralIdLookup::class );
-		$centralIdLookup->method( 'centralIdFromLocalUser' )->willReturn( $userId );
-
-		$requirement = new OverridableConfigRequirement(
-			$config,
-			$user,
-			$request,
-			$useCentralIdLookup ? $centralIdLookup : null,
-			'VectorLanguageInHeader',
-			'LanguageInHeader',
-			'languageinheader',
-			$testName ?? null
-		);
+		if ( $betaEnabled ) {
+			$requirement = $this->getMockBuilder( OverridableConfigRequirement::class )
+				->setConstructorArgs( [
+					$config,
+					$user,
+					$request,
+					'VectorLanguageInHeader',
+					'LanguageInHeader'
+				] )->getMock();
+			$requirement->method( 'isVector2022BetaFeatureEnabled' )->willReturn( true );
+		} else {
+			$requirement = new OverridableConfigRequirement(
+				$config,
+				$user,
+				$request,
+				'VectorLanguageInHeader',
+				'LanguageInHeader'
+			);
+		}
 
 		$this->assertSame( $expected, $requirement->isMet(), $msg );
+	}
+
+	public static function providerLanguageInHeaderTreatmentRequirementBetaEnabled() {
+		return [
+			[
+				// Is language enabled
+				[
+					'logged_in' => false,
+					'logged_out' => false,
+					'beta' => true,
+				],
+				1,
+				// `languageinheader` query param
+				null,
+				false,
+				'Users get new treatment when beta config flag enabled and BetaFeatures extension enabled. ' .
+				'(BetaFeatures extension is disabled by default.)'
+			],
+			[
+				// Is language enabled
+				[
+					'logged_in' => false,
+					'logged_out' => false,
+					'beta' => false,
+				],
+				1,
+				// `languageinheader` query param
+				"0",
+				false,
+				'Users get old treatment when query param set to "0" regardless of state of config flags'
+			],
+		];
+	}
+
+	/**
+	 * @covers ::isMet
+	 * @dataProvider providerLanguageInHeaderTreatmentRequirementBetaEnabled
+	 * @param bool $configValue
+	 * @param int $userId
+	 * @param string|null $queryParam
+	 * @param bool $expected
+	 * @param string $msg
+	 */
+	public function testLanguageInHeaderTreatmentRequirementBetaEnabled(
+		$configValue,
+		$userId,
+		$queryParam,
+		$expected,
+		$msg
+	) {
+		$this->testLanguageInHeaderTreatmentRequirement(
+			$configValue,
+			$userId,
+			$queryParam,
+			$expected,
+			$msg,
+			true
+		);
 	}
 
 }

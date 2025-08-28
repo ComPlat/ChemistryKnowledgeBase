@@ -3,7 +3,7 @@
 use MediaWiki\Tests\Unit\DummyServicesTrait;
 
 /**
- * @covers ImportLogFormatter
+ * @covers \ImportLogFormatter
  */
 class ImportLogFormatterTest extends LogFormatterTestCase {
 	use DummyServicesTrait;
@@ -113,7 +113,6 @@ class ImportLogFormatterTest extends LogFormatterTestCase {
 	 */
 	public function testInterwikiLogDatabaseRows( $row, $extra ) {
 		// Setup importiw: as interwiki prefix
-		// DummyServicesTrait::getDummyInterwikiLookup
 		$interwikiLookup = $this->getDummyInterwikiLookup( [ 'importiw' ] );
 		$this->setService( 'InterwikiLookup', $interwikiLookup );
 

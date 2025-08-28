@@ -1,11 +1,24 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
 
-class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
+use DateTime;
+use DateTimeZone;
+use Exception;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\MainConfigNames;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use MediaWiki\Utils\MWTimestamp;
+use Wikimedia\RequestTimeout\TimeoutException;
+
+class LanguageLibrary extends LibraryBase {
 	/** @var Language[] */
 	public $langCache = [];
-	/** @var array */
+	/** @var array[] */
 	public $timeCache = [];
 	/** @var int */
 	public $maxLangCacheSize;
@@ -25,6 +38,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 			'fetchLanguageName',
 			'fetchLanguageNames',
 			'getFallbacksFor',
+			'toBcp47Code',
 		];
 		$methods = [
 			'lcfirst',
@@ -72,12 +86,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function isSupportedLanguage( $code ) {
 		$this->checkType( 'isSupportedLanguage', 1, $code, 'string' );
-		try {
-			// There's no good reason this should throw, but it does. Sigh.
-			return [ Language::isSupportedLanguage( $code ) ];
-		} catch ( MWException $ex ) {
-			return [ false ];
-		}
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()->isSupportedLanguage( $code ) ];
 	}
 
 	/**
@@ -88,7 +97,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function isKnownLanguageTag( $code ) {
 		$this->checkType( 'isKnownLanguageTag', 1, $code, 'string' );
-		return [ Language::isKnownLanguageTag( $code ) ];
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()->isKnownLanguageTag( $code ) ];
 	}
 
 	/**
@@ -99,7 +108,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function isValidCode( $code ) {
 		$this->checkType( 'isValidCode', 1, $code, 'string' );
-		return [ Language::isValidCode( $code ) ];
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()->isValidCode( $code ) ];
 	}
 
 	/**
@@ -110,7 +119,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function isValidBuiltInCode( $code ) {
 		$this->checkType( 'isValidBuiltInCode', 1, $code, 'string' );
-		return [ (bool)Language::isValidBuiltInCode( $code ) ];
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()->isValidBuiltInCode( $code ) ];
 	}
 
 	/**
@@ -122,8 +131,9 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function fetchLanguageName( $code, $inLanguage ) {
 		$this->checkType( 'fetchLanguageName', 1, $code, 'string' );
-		$this->checkTypeOptional( 'fetchLanguageName', 2, $inLanguage, 'string', null );
-		return [ Language::fetchLanguageName( $code, $inLanguage ) ];
+		$this->checkTypeOptional( 'fetchLanguageName', 2, $inLanguage, 'string', LanguageNameUtils::AUTONYMS );
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()
+			->getLanguageName( $code, $inLanguage ) ];
 	}
 
 	/**
@@ -134,9 +144,10 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 * @return string[][]
 	 */
 	public function fetchLanguageNames( $inLanguage, $include ) {
-		$this->checkTypeOptional( 'fetchLanguageNames', 1, $inLanguage, 'string', null );
-		$this->checkTypeOptional( 'fetchLanguageNames', 2, $include, 'string', 'mw' );
-		return [ Language::fetchLanguageNames( $inLanguage, $include ) ];
+		$this->checkTypeOptional( 'fetchLanguageNames', 1, $inLanguage, 'string', LanguageNameUtils::AUTONYMS );
+		$this->checkTypeOptional( 'fetchLanguageNames', 2, $include, 'string', LanguageNameUtils::DEFINED );
+		return [ MediaWikiServices::getInstance()->getLanguageNameUtils()
+			->getLanguageNames( $inLanguage, $include ) ];
 	}
 
 	/**
@@ -147,11 +158,23 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function getFallbacksFor( $code ) {
 		$this->checkType( 'getFallbacksFor', 1, $code, 'string' );
-		$ret = Language::getFallbacksFor( $code );
+		$ret = MediaWikiServices::getInstance()->getLanguageFallback()->getAll( $code );
 		// Make 1-based
 		if ( count( $ret ) ) {
 			$ret = array_combine( range( 1, count( $ret ) ), $ret );
 		}
+		return [ $ret ];
+	}
+
+	/**
+	 * Handler for toBcp47Code
+	 * @internal
+	 * @param string $code a MediaWiki-internal code
+	 * @return string[] a BCP-47 language tag
+	 */
+	public function toBcp47Code( $code ) {
+		$this->checkType( 'toBcp47Code', 1, $code, 'string' );
+		$ret = LanguageCode::bcp47( $code );
 		return [ $ret ];
 	}
 
@@ -161,19 +184,24 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 * @param string $name
 	 * @param array $args
 	 * @return array
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
-	public function languageMethod( $name, $args ) {
-		$name = strval( $name );
+	public function languageMethod( string $name, array $args ): array {
+		if ( !is_string( $args[0] ?? null ) ) {
+			throw new LuaError(
+				"invalid code property of language object when calling $name"
+			);
+		}
 		$code = array_shift( $args );
 		if ( !isset( $this->langCache[$code] ) ) {
 			if ( count( $this->langCache ) > $this->maxLangCacheSize ) {
-				throw new Scribunto_LuaError( 'too many language codes requested' );
+				throw new LuaError( 'too many language codes requested' );
 			}
-			try {
-				$this->langCache[$code] = Language::factory( $code );
-			} catch ( MWException $ex ) {
-				throw new Scribunto_LuaError( "language code '$code' is invalid" );
+			$services = MediaWikiServices::getInstance();
+			if ( $services->getLanguageNameUtils()->isValidCode( $code ) ) {
+				$this->langCache[$code] = $services->getLanguageFactory()->getLanguage( $code );
+			} else {
+				throw new LuaError( "language code '$code' is invalid" );
 			}
 		}
 		$lang = $this->langCache[$code];
@@ -300,10 +328,10 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 		$num = $args[0];
 		$this->checkType( 'formatNum', 1, $num, 'number' );
 		if ( is_infinite( $num ) ) {
-			throw new Scribunto_LuaError( "bad argument #1 to 'formatNum' (infinite)" );
+			throw new LuaError( "bad argument #1 to 'formatNum' (infinite)" );
 		}
 		if ( is_nan( $num ) ) {
-			throw new Scribunto_LuaError( "bad argument #1 to 'formatNum' (NaN)" );
+			throw new LuaError( "bad argument #1 to 'formatNum' (NaN)" );
 		}
 
 		$noCommafy = false;
@@ -325,14 +353,14 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 	 * @param Language $lang
 	 * @param array $args
 	 * @return array
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function formatDate( $lang, $args ) {
 		$this->checkType( 'formatDate', 1, $args[0], 'string' );
 		$this->checkTypeOptional( 'formatDate', 2, $args[1], 'string', '' );
 		$this->checkTypeOptional( 'formatDate', 3, $args[2], 'boolean', false );
 
-		list( $format, $date, $local ) = $args;
+		[ $format, $date, $local ] = $args;
 		$langcode = $lang->getCode();
 
 		if ( $date === '' ) {
@@ -362,15 +390,19 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 		try {
 			$utc = new DateTimeZone( 'UTC' );
 			$dateObject = new DateTime( $date, $utc );
+		} catch ( TimeoutException $ex ) {
+			// Unfortunately DateTime throws a generic Exception, but we can't
+			// ignore an exception generated by the RequestTimeout library.
+			throw $ex;
 		} catch ( Exception $ex ) {
-			throw new Scribunto_LuaError( "bad argument #2 to 'formatDate' (not a valid timestamp)" );
+			throw new LuaError( "bad argument #2 to 'formatDate': invalid timestamp '$date'" );
 		}
 
 		# Set output timezone.
 		if ( $local ) {
-			global $wgLocaltimezone;
-			if ( isset( $wgLocaltimezone ) ) {
-				$tz = new DateTimeZone( $wgLocaltimezone );
+			$localtimezone = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::Localtimezone );
+			if ( isset( $localtimezone ) ) {
+				$tz = new DateTimeZone( $localtimezone );
 			} else {
 				$tz = new DateTimeZone( date_default_timezone_get() );
 			}
@@ -382,9 +414,9 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 		$ts = $dateObject->format( 'YmdHis' );
 
 		if ( $ts < 0 ) {
-			throw new Scribunto_LuaError( "mw.language:formatDate() only supports years from 0" );
+			throw new LuaError( "mw.language:formatDate() only supports years from 0" );
 		} elseif ( $ts >= 100000000000000 ) {
-			throw new Scribunto_LuaError( "mw.language:formatDate() only supports years up to 9999" );
+			throw new LuaError( "mw.language:formatDate() only supports years up to 9999" );
 		}
 
 		$ttl = null;
@@ -407,7 +439,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 		$this->checkType( 'formatDuration', 1, $args[0], 'number' );
 		$this->checkTypeOptional( 'formatDuration', 2, $args[1], 'table', [] );
 
-		list( $seconds, $chosenIntervals ) = $args;
+		[ $seconds, $chosenIntervals ] = $args;
 		$chosenIntervals = array_values( $chosenIntervals );
 
 		$ret = $lang->formatDuration( $seconds, $chosenIntervals );
@@ -425,7 +457,7 @@ class Scribunto_LuaLanguageLibrary extends Scribunto_LuaLibraryBase {
 		$this->checkType( 'getDurationIntervals', 1, $args[0], 'number' );
 		$this->checkTypeOptional( 'getDurationIntervals', 2, $args[1], 'table', [] );
 
-		list( $seconds, $chosenIntervals ) = $args;
+		[ $seconds, $chosenIntervals ] = $args;
 		$chosenIntervals = array_values( $chosenIntervals );
 
 		$ret = $lang->getDurationIntervals( $seconds, $chosenIntervals );

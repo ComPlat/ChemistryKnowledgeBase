@@ -18,10 +18,17 @@
  * @file
  */
 
+namespace MediaWiki\Cache;
+
+use MediaWiki\Deferred\CdnCacheUpdate;
+use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\HtmlFileCacheUpdate;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\HookContainer\HookRunner;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Title\TitleFactory;
+use Traversable;
 
 /**
  * Class to invalidate the CDN and HTMLFileCache entries associated with URLs/titles
@@ -29,7 +36,7 @@ use MediaWiki\Page\PageReference;
  * @ingroup Cache
  * @since 1.35
  */
-class HtmlCacheUpdater {
+class HTMLCacheUpdater {
 	/** @var int Seconds between initial and rebound purges; 0 if disabled */
 	private $reboundDelay;
 	/** @var bool Whether filesystem-based HTML output caching is enabled */
@@ -122,8 +129,8 @@ class HtmlCacheUpdater {
 	 *
 	 * @param string[]|string $urls URL or list of URLs
 	 * @param int $flags Bit field of class PURGE_* constants
-	 *  [Default: HtmlCacheUpdater::PURGE_PRESEND]
-	 * @param mixed[] $unless Optional map of (HtmlCacheUpdater::UNLESS_* constant => value)
+	 *  [Default: HTMLCacheUpdater::PURGE_PRESEND]
+	 * @param mixed[] $unless Optional map of (HTMLCacheUpdater::UNLESS_* constant => value)
 	 */
 	public function purgeUrls( $urls, $flags = self::PURGE_PRESEND, array $unless = [] ) {
 		$minFreshCacheMtime = $unless[self::UNLESS_CACHE_MTIME_AFTER] ?? null;
@@ -154,8 +161,8 @@ class HtmlCacheUpdater {
 	 * @param Traversable|PageReference[]|PageReference $pages PageReference or iterator yielding
 	 *        PageReference instances
 	 * @param int $flags Bit field of class PURGE_* constants
-	 *  [Default: HtmlCacheUpdater::PURGE_PRESEND]
-	 * @param mixed[] $unless Optional map of (HtmlCacheUpdater::UNLESS_* constant => value)
+	 *  [Default: HTMLCacheUpdater::PURGE_PRESEND]
+	 * @param mixed[] $unless Optional map of (HTMLCacheUpdater::UNLESS_* constant => value)
 	 */
 	public function purgeTitleUrls( $pages, $flags = self::PURGE_PRESEND, array $unless = [] ) {
 		$pages = is_iterable( $pages ) ? $pages : [ $pages ];
@@ -163,7 +170,7 @@ class HtmlCacheUpdater {
 
 		foreach ( $pages as $page ) {
 			// TODO: We really only need to cast to PageIdentity. We could use a LinkBatch for that.
-			$title = $this->titleFactory->castFromPageReference( $page );
+			$title = $this->titleFactory->newFromPageReference( $page );
 
 			if ( $title->canExist() ) {
 				$pageIdentities[] = $title;
@@ -175,7 +182,6 @@ class HtmlCacheUpdater {
 		}
 
 		if ( $this->useFileCache ) {
-			// @phan-suppress-next-line PhanTypeMismatchArgument castFrom does not return null here
 			$update = HtmlFileCacheUpdate::newFromPages( $pageIdentities );
 			if ( $this->fieldHasFlag( $flags, self::PURGE_PRESEND ) ) {
 				DeferredUpdates::addUpdate( $update, DeferredUpdates::PRESEND );
@@ -189,7 +195,6 @@ class HtmlCacheUpdater {
 			$urls = [];
 			foreach ( $pageIdentities as $pi ) {
 				/** @var PageIdentity $pi */
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
 				$urls = array_merge( $urls, $this->getUrls( $pi, $flags ) );
 			}
 			$this->purgeUrls( $urls, $flags );
@@ -204,7 +209,7 @@ class HtmlCacheUpdater {
 	 * @return string[] URLs
 	 */
 	public function getUrls( PageReference $page, int $flags = 0 ): array {
-		$title = $this->titleFactory->castFromPageReference( $page );
+		$title = $this->titleFactory->newFromPageReference( $page );
 
 		if ( !$title->canExist() ) {
 			return [];
@@ -237,7 +242,6 @@ class HtmlCacheUpdater {
 		// Extensions may add novel ways to access this content
 		$append = [];
 		$mode = $flags & self::PURGE_URLS_LINKSUPDATE_ONLY;
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
 		$this->hookRunner->onHtmlCacheUpdaterAppendUrls( $title, $mode, $append );
 		$urls = array_merge( $urls, $append );
 
@@ -247,9 +251,11 @@ class HtmlCacheUpdater {
 		$urls = array_merge( $urls, $append );
 
 		// Legacy. TODO: Deprecate this
-		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable castFrom does not return null here
 		$this->hookRunner->onTitleSquidURLs( $title, $urls );
 
 		return $urls;
 	}
 }
+
+/** @deprecated class alias since 1.42 */
+class_alias( HTMLCacheUpdater::class, 'HtmlCacheUpdater' );

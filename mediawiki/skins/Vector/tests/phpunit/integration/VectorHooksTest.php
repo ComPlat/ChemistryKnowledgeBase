@@ -6,19 +6,21 @@
 
 namespace MediaWiki\Skins\Vector\Tests\Integration;
 
-use HashConfig;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\ResourceLoader\Context;
 use MediaWiki\Skins\Vector\Constants;
+use MediaWiki\Skins\Vector\FeatureManagement\Requirements\LimitedWidthContentRequirement;
 use MediaWiki\Skins\Vector\Hooks;
 use MediaWiki\Skins\Vector\SkinVector22;
 use MediaWiki\Skins\Vector\SkinVectorLegacy;
-use MediaWiki\User\UserOptionsManager;
+use MediaWiki\Title\Title;
+use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
 use ReflectionMethod;
-use RequestContext;
-use ResourceLoaderContext;
 use RuntimeException;
-use Title;
-use User;
 
 /**
  * Integration tests for Vector Hooks.
@@ -51,17 +53,13 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	public function provideGetVectorResourceLoaderConfig() {
+	public static function provideGetActiveABTest() {
 		return [
 			[
 				[
 					'VectorWebABTestEnrollment' => [],
-					'VectorSearchHost' => 'en.wikipedia.org'
 				],
-				[
-					'wgVectorSearchHost' => 'en.wikipedia.org',
-					'wgVectorWebABTestEnrollment' => [],
-				]
+				[]
 			],
 			[
 				[
@@ -83,39 +81,35 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 								],
 						],
 					],
-					'VectorSearchHost' => 'en.wikipedia.org'
 				],
 				[
-					'wgVectorSearchHost' => 'en.wikipedia.org',
-					'wgVectorWebABTestEnrollment' => [
-						'name' => 'vector.sticky_header',
-						'enabled' => true,
-						'buckets' => [
-								'unsampled' => [
-										'samplingRate' => 1,
-								],
-								'control' => [
-										'samplingRate' => 0
-								],
-								'stickyHeaderEnabled' => [
-										'samplingRate' => 0
-								],
-								'stickyHeaderDisabled' => [
-										'samplingRate' => 0
-								],
-						],
+					'name' => 'vector.sticky_header',
+					'enabled' => true,
+					'buckets' => [
+							'unsampled' => [
+									'samplingRate' => 1,
+							],
+							'control' => [
+									'samplingRate' => 0
+							],
+							'stickyHeaderEnabled' => [
+									'samplingRate' => 0
+							],
+							'stickyHeaderDisabled' => [
+									'samplingRate' => 0
+							],
 					],
 				]
 			],
 		];
 	}
 
-	public function provideGetVectorResourceLoaderConfigWithExceptions() {
+	public static function provideGetActiveABTestWithExceptions() {
 		return [
 			# Bad experiment (no buckets)
 			[
 				[
-					'VectorSearchHost' => 'en.wikipedia.org',
+					'VectorSearchApiUrl' => 'https://en.wikipedia.org/w/rest.php',
 					'VectorWebABTestEnrollment' => [
 						'name' => 'vector.sticky_header',
 						'enabled' => true,
@@ -125,7 +119,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 			# Bad experiment (no unsampled bucket)
 			[
 				[
-					'VectorSearchHost' => 'en.wikipedia.org',
+					'VectorSearchApiUrl' => 'https://en.wikipedia.org/w/rest.php',
 					'VectorWebABTestEnrollment' => [
 						'name' => 'vector.sticky_header',
 						'enabled' => true,
@@ -140,7 +134,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 			# Bad experiment (wrong format)
 			[
 				[
-					'VectorSearchHost' => 'en.wikipedia.org',
+					'VectorSearchApiUrl' => 'https://en.wikipedia.org/w/rest.php',
 					'VectorWebABTestEnrollment' => [
 						'name' => 'vector.sticky_header',
 						'enabled' => true,
@@ -153,7 +147,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 			# Bad experiment (samplingRate defined as string)
 			[
 				[
-					'VectorSearchHost' => 'en.wikipedia.org',
+					'VectorSearchApiUrl' => 'https://en.wikipedia.org/w/rest.php',
 					'VectorWebABTestEnrollment' => [
 						'name' => 'vector.sticky_header',
 						'enabled' => true,
@@ -171,7 +165,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @covers ::shouldDisableMaxWidth
 	 */
-	public function providerShouldDisableMaxWidth() {
+	public static function providerShouldDisableMaxWidth() {
 		$excludeTalkFooConfig = self::makeMaxWidthConfig(
 			false,
 			[ NS_TALK ],
@@ -248,6 +242,22 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				true
 			],
 			[
+				'Can be disabled with a regex match, also for falsy 0.',
+				self::makeMaxWidthConfig(
+					false,
+					[
+						/* no namespaces excluded */
+					],
+					[
+						/* no includes */
+					],
+					[ 'foo' => '[0-9]+' ]
+				),
+				Title::makeTitle( NS_MAIN, 'Test' ),
+				[ 'foo' => '0' ],
+				true
+			],
+			[
 				'Can be disabled with a non-regex wildcard (for backwards compatibility).',
 				self::makeMaxWidthConfig(
 					false,
@@ -273,7 +283,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				),
 				Title::makeTitle( NS_SPECIAL, 'Specialpages' ),
 				[ 'action' => 'history' ],
-				false
+				true
 			],
 			[
 				'Max width can be disabled on talk pages',
@@ -300,7 +310,9 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ::shouldDisableMaxWidth
+	 * @todo move into MediaWiki\Skins\Vector\FeatureManagement\Requirements\LimitedWidthContentRequirement
+	 *  test in future.
+	 * @covers MediaWiki\Skins\Vector\FeatureManagement\Requirements\LimitedWidthContentRequirement::isMet
 	 * @dataProvider providerShouldDisableMaxWidth
 	 */
 	public function testShouldDisableMaxWidth(
@@ -310,21 +322,26 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		$requestValues,
 		$shouldDisableMaxWidth
 	) {
+		$requirement = new LimitedWidthContentRequirement(
+			new HashConfig( [ 'VectorMaxWidthOptions' => $options ] ),
+			new FauxRequest( $requestValues ),
+			$title
+		);
 		$this->assertSame(
-			$shouldDisableMaxWidth,
-			Hooks::shouldDisableMaxWidth( $options, $title, $requestValues ),
+			!$shouldDisableMaxWidth,
+			$requirement->isMet(),
 			$msg
 		);
 	}
 
 	/**
-	 * @covers ::getVectorResourceLoaderConfig
-	 * @dataProvider provideGetVectorResourceLoaderConfig
+	 * @covers ::getActiveABTest
+	 * @dataProvider provideGetActiveABTest
 	 */
-	public function testGetVectorResourceLoaderConfig( $configData, $expected ) {
+	public function testGetActiveABTest( $configData, $expected ) {
 		$config = new HashConfig( $configData );
-		$vectorConfig = Hooks::getVectorResourceLoaderConfig(
-			$this->createMock( ResourceLoaderContext::class ),
+		$vectorConfig = Hooks::getActiveABTest(
+			$this->createMock( Context::class ),
 			$config
 		);
 
@@ -335,14 +352,14 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ::getVectorResourceLoaderConfig
-	 * @dataProvider provideGetVectorResourceLoaderConfigWithExceptions
+	 * @covers ::getActiveABTest
+	 * @dataProvider provideGetActiveABTestWithExceptions
 	 */
-	public function testGetVectorResourceLoaderConfigWithExceptions( $configData ) {
+	public function testGetActiveABTestWithExceptions( $configData ) {
 		$config = new HashConfig( $configData );
 		$this->expectException( RuntimeException::class );
-		Hooks::getVectorResourceLoaderConfig(
-			$this->createMock( ResourceLoaderContext::class ),
+		Hooks::getActiveABTest(
+			$this->createMock( Context::class ),
 			$config
 		);
 	}
@@ -351,8 +368,8 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::onLocalUserCreated
 	 */
 	public function testOnLocalUserCreatedLegacy() {
-		$this->setMwGlobals( [
-			'wgVectorDefaultSkinVersionForNewAccounts' => Constants::SKIN_VERSION_LEGACY,
+		$config = new HashConfig( [
+			'VectorDefaultSkinVersionForNewAccounts' => Constants::SKIN_VERSION_LEGACY,
 		] );
 
 		$user = $this->createMock( User::class );
@@ -360,20 +377,22 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		$userOptionsManager->expects( $this->once() )
 			->method( 'setOption' )
 			->with( $user, 'skin', Constants::SKIN_NAME_LEGACY );
-		$this->setService( 'UserOptionsManager', $userOptionsManager );
 
 		// NOTE: Using $this->getServiceContainer()->getHookContainer()->run( ... )
 		// will instead call Echo's legacy hook as that is already registered which
 		// will break this test. Use Vector's hook handler instead.
-		( new Hooks() )->onLocalUserCreated( $user, false );
+		( new Hooks(
+			$config,
+			$userOptionsManager
+		) )->onLocalUserCreated( $user, false );
 	}
 
 	/**
 	 * @covers ::onLocalUserCreated
 	 */
 	public function testOnLocalUserCreatedLatest() {
-		$this->setMwGlobals( [
-			'wgVectorDefaultSkinVersionForNewAccounts' => Constants::SKIN_VERSION_LATEST,
+		$config = new HashConfig( [
+			'VectorDefaultSkinVersionForNewAccounts' => Constants::SKIN_VERSION_LATEST,
 		] );
 
 		$user = $this->createMock( User::class );
@@ -381,32 +400,40 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		$userOptionsManager->expects( $this->once() )
 			->method( 'setOption' )
 			->with( $user, 'skin', Constants::SKIN_NAME_MODERN );
-		$this->setService( 'UserOptionsManager', $userOptionsManager );
 
 		// NOTE: Using $this->getServiceContainer()->getHookContainer()->run( ... )
 		// will instead call Echo's legacy hook as that is already registered which
 		// will break this test. Use Vector's hook handler instead.
-		( new Hooks() )->onLocalUserCreated( $user, false );
+		( new Hooks(
+			$config,
+			$userOptionsManager
+		) )->onLocalUserCreated( $user, false );
 	}
 
 	/**
 	 * @covers ::onSkinTemplateNavigation
 	 */
 	public function testOnSkinTemplateNavigation() {
-		$this->setMwGlobals( [
-			'wgVectorUseIconWatch' => true
-		] );
-		$skin = new SkinVector22( [ 'name' => 'vector' ] );
+		$this->overrideConfigValue( 'VectorUseIconWatch', true );
+		$skin = new SkinVector22(
+			$this->getServiceContainer()->getLanguageConverterFactory(),
+			$this->getServiceContainer()->get( 'Vector.FeatureManagerFactory' ),
+			[ 'name' => 'vector' ]
+		);
 		$skin->getContext()->setTitle( Title::newFromText( 'Foo' ) );
 		$contentNavWatch = [
+			'associated-pages' => [],
+			'views' => [],
 			'actions' => [
-				'watch' => [ 'class' => [ 'watch' ] ],
+				'watch' => [ 'class' => [ 'watch' ], 'icon' => 'star' ],
 			]
 		];
 		$contentNavUnWatch = [
+			'associated-pages' => [],
+			'views' => [],
 			'actions' => [
 				'move' => [ 'class' => [ 'move' ] ],
-				'unwatch' => [],
+				'unwatch' => [ 'icon' => 'unStar' ],
 			],
 		];
 
@@ -431,8 +458,14 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::updateUserLinksItems
 	 */
 	public function testUpdateUserLinksItems() {
-		$vector2022Skin = new SkinVector22( [ 'name' => 'vector-2022' ] );
+		$vector2022Skin = new SkinVector22(
+			$this->getServiceContainer()->getLanguageConverterFactory(),
+			$this->getServiceContainer()->get( 'Vector.FeatureManagerFactory' ),
+			[ 'name' => 'vector-2022' ]
+		);
 		$contentNav = [
+			'associated-pages' => [],
+			'views' => [],
 			'user-page' => [
 				'userpage' => [ 'class' => [], 'icon' => 'userpage' ],
 			],
@@ -440,8 +473,13 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				'login' => [ 'class' => [], 'icon' => 'login' ],
 			]
 		];
-		$vectorLegacySkin = new SkinVectorLegacy( [ 'name' => 'vector' ] );
+		$vectorLegacySkin = new SkinVectorLegacy(
+			$this->getServiceContainer()->getLanguageConverterFactory(),
+			[ 'name' => 'vector' ]
+		);
 		$contentNavLegacy = [
+			'associated-pages' => [],
+			'views' => [],
 			'user-page' => [
 				'userpage' => [ 'class' => [], 'icon' => 'userpage' ],
 			]
@@ -468,19 +506,33 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		$updateUserLinksDropdownItems->setAccessible( true );
 
 		// Anon users
-		$skin = new SkinVector22( [ 'name' => 'vector-2022' ] );
+		$skin = new SkinVector22(
+			$this->getServiceContainer()->getLanguageConverterFactory(),
+			$this->getServiceContainer()->get( 'Vector.FeatureManagerFactory' ),
+			[ 'name' => 'vector-2022' ]
+		);
 		$contentAnon = [
 			'user-menu' => [
 				'anonuserpage' => [ 'class' => [], 'icon' => 'anonuserpage' ],
 				'createaccount' => [ 'class' => [], 'icon' => 'createaccount' ],
 				'login' => [ 'class' => [], 'icon' => 'login' ],
-				'login-private' => [ 'class' => [], 'icon' => 'login-private' ],
+				'anontalk' => [ 'class' => [], 'icon' => 'anontalk' ],
+				'anoncontribs' => [ 'class' => [], 'icon' => 'anoncontribs' ],
 			],
 		];
 		$updateUserLinksDropdownItems->invokeArgs( null, [ $skin, &$contentAnon ] );
 		$this->assertTrue(
-			count( $contentAnon['user-menu'] ) === 0,
-			'Anon user page, create account, login, and login private links are removed from anon user links dropdown'
+			count( $contentAnon['user-menu'] ) === 2 &&
+			isset( $contentAnon['user-menu']['createaccount'] ) &&
+			isset( $contentAnon['user-menu']['login'] ),
+			'Anon user page, anon talk, anon contribs links are removed from user-menu'
+		);
+
+		$this->assertTrue(
+			count( $contentAnon['user-menu'] ) === 2 &&
+			isset( $contentAnon['user-menu-anon-editor']['anontalk'] ) &&
+			isset( $contentAnon['user-menu-anon-editor']['anoncontribs'] ),
+			'Anon talk, anon contribs links are moved to user-menu-anon-editor'
 		);
 
 		// Registered user
@@ -501,7 +553,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 			'User page link in user links dropdown requires collapsible class'
 		);
 		$this->assertEquals(
-			'<span class="mw-ui-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>',
+			'<span class="vector-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>',
 			$contentRegistered['user-menu']['userpage']['link-html'],
 			'User page link in user links dropdown has link-html'
 		);
@@ -509,83 +561,19 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 			'Watchlist link in user links dropdown requires collapsible class'
 		);
 		$this->assertEquals(
-			'<span class="mw-ui-icon mw-ui-icon-watchlist mw-ui-icon-wikimedia-watchlist"></span>',
+			'<span class="vector-icon mw-ui-icon-watchlist mw-ui-icon-wikimedia-watchlist"></span>',
 			$contentRegistered['user-menu']['watchlist']['link-html'],
 			'Watchlist link in user links dropdown has link-html'
 		);
 		$this->assertFalse( isset( $contentRegistered['user-menu']['logout'] ),
 			'Logout link in user links dropdown is not set'
 		);
-	}
-
-	/**
-	 * @covers ::updateUserLinksOverflowItems
-	 */
-	public function testUpdateUserLinksOverflowItems() {
-		$updateUserLinksOverflowItems = new ReflectionMethod(
-			Hooks::class,
-			'updateUserLinksOverflowItems'
-		);
-		$updateUserLinksOverflowItems->setAccessible( true );
-		$skin = new SkinVector22( [ 'name' => 'vector-2022' ] );
-
-		// Registered user
-		$registeredUser = $this->createMock( User::class );
-		$registeredUser->method( 'isRegistered' )->willReturn( true );
-		$context = new RequestContext();
-		$context->setUser( $registeredUser );
-		$skin->setContext( $context );
-		$content = [
-			'notifications' => [
-				'alert' => [ 'class' => [], 'icon' => 'alert' ],
-			],
-			'user-interface-preferences' => [
-				'uls' => [ 'class' => [], 'icon' => 'uls' ],
-			],
-			'user-page' => [
-				'userpage' => [ 'class' => [], 'icon' => 'userpage' ],
-				'watchlist' => [ 'class' => [], 'icon' => 'watchlist' ],
-			],
-			'user-menu' => [
-				'watchlist' => [ 'class' => [], 'icon' => 'watchlist' ],
-			],
-		];
-		$updateUserLinksOverflowItems->invokeArgs( null, [ $skin, &$content ] );
-		$this->assertContains( 'user-links-collapsible-item',
-			$content['vector-user-menu-overflow']['uls']['class'],
-			'ULS link in user links overflow requires collapsible class'
-		);
-		$this->assertContains( 'user-links-collapsible-item',
-			$content['vector-user-menu-overflow']['userpage']['class'],
-			'User page link in user links overflow requires collapsible class'
-		);
-		$this->assertNotContains( 'mw-ui-icon',
-			$content['vector-user-menu-overflow']['userpage']['class'],
-			'User page link in user links overflow does not have icon classes'
-		);
-		$this->assertContains( 'user-links-collapsible-item',
-			$content['vector-user-menu-overflow']['watchlist']['class'],
-			'Watchlist link in user links overflow requires collapsible class'
-		);
-		$this->assertContains( 'mw-ui-button',
-			$content['vector-user-menu-overflow']['watchlist']['link-class'],
-			'Watchlist link in user links overflow requires button classes'
-		);
-		$this->assertContains( 'mw-ui-quiet',
-			$content['vector-user-menu-overflow']['watchlist']['link-class'],
-			'Watchlist link in user links overflow requires quiet button classes'
-		);
-		$this->assertContains( 'mw-ui-icon-element',
-			$content['vector-user-menu-overflow']['watchlist']['link-class'],
-			'Watchlist link in user links overflow hides text'
-		);
-		$this->assertTrue(
-			$content['vector-user-menu-overflow']['watchlist']['id'] === 'pt-watchlist-2',
-			'Watchlist link in user links has unique id'
+		$this->assertTrue( isset( $contentRegistered['user-menu-logout']['logout'] ),
+			'Logout link in user links dropdown is not set'
 		);
 	}
 
-	public function provideAppendClassToItem() {
+	public static function provideAppendClassToItem() {
 		return [
 			// Add array class to array
 			[
@@ -644,7 +632,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expected, $item );
 	}
 
-	public function provideUpdateItemData() {
+	public static function provideUpdateItemData() {
 		return [
 			// Removes extra attributes
 			[
@@ -661,7 +649,7 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				[
 					'class' => [],
 					'link-html' =>
-					'<span class="mw-ui-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>'
+					'<span class="vector-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>'
 				],
 			],
 			// Adds collapsible class
@@ -676,19 +664,30 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				[ 'class' => [], 'button' => true ],
 				'link-class',
 				'link-html',
-				[ 'class' => [], 'link-class' => [ 'mw-ui-button', 'mw-ui-quiet' ] ],
+				[ 'class' => [], 'link-class' => [
+					'cdx-button',
+					'cdx-button--fake-button',
+					'cdx-button--fake-button--enabled',
+					'cdx-button--weight-quiet'
+				] ],
 			],
 			// Adds text hidden classes
 			[
-				[ 'class' => [], 'text-hidden' => true, 'icon' => 'userpage' ],
+				[ 'class' => [], 'button' => true, 'text-hidden' => true, 'icon' => 'userpage' ],
 				'link-class',
 				'link-html',
-				[ 'class' => [], 'link-class' => [
-					'mw-ui-icon',
-					'mw-ui-icon-element',
-					'mw-ui-icon-userpage',
-					'mw-ui-icon-wikimedia-userpage'
-				] ],
+				[
+					'class' => [],
+					'link-class' => [
+						'cdx-button',
+						'cdx-button--fake-button',
+						'cdx-button--fake-button--enabled',
+						'cdx-button--weight-quiet',
+						'cdx-button--icon-only'
+					],
+					'link-html' =>
+						'<span class="vector-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>'
+				],
 			],
 			// Adds button and icon classes
 			[
@@ -696,10 +695,12 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 				'class',
 				'link-html',
 				[ 'class' => [
-					'mw-ui-button',
-					'mw-ui-quiet'
+					'cdx-button',
+					'cdx-button--fake-button',
+					'cdx-button--fake-button--enabled',
+					'cdx-button--weight-quiet'
 				], 'link-html' =>
-					'<span class="mw-ui-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>'
+					'<span class="vector-icon mw-ui-icon-userpage mw-ui-icon-wikimedia-userpage"></span>'
 				],
 			]
 		];
@@ -721,6 +722,6 @@ class VectorHooksTest extends MediaWikiIntegrationTestCase {
 		);
 		$updateItemData->setAccessible( true );
 		$data = $updateItemData->invokeArgs( null, [ $item, $buttonClassProp, $iconHtmlProp ] );
-		$this->assertEquals( $expected, $data );
+		$this->assertArraySubmapSame( $expected, $data );
 	}
 }

@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Filter;
 
-use BadMethodCallException;
+use LogicException;
 use MediaWiki\Extension\AbuseFilter\Filter\Filter;
 use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\Filter\LastEditInfo;
@@ -13,29 +13,13 @@ use MediaWikiUnitTestCase;
 /**
  * @group Test
  * @group AbuseFilter
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Filter\MutableFilter
+ * @covers \MediaWiki\Extension\AbuseFilter\Filter\MutableFilter
  */
 class MutableFilterTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param mixed $value
 	 * @param string $setter
 	 * @param string $getter
-	 * @covers ::setRules
-	 * @covers ::setComments
-	 * @covers ::setName
-	 * @covers ::setActionsNames
-	 * @covers ::setGroup
-	 * @covers ::setEnabled
-	 * @covers ::setDeleted
-	 * @covers ::setHidden
-	 * @covers ::setGlobal
-	 * @covers ::setActions
-	 * @covers ::setUserID
-	 * @covers ::setUserName
-	 * @covers ::setTimestamp
-	 * @covers ::setID
-	 * @covers ::setHitCount
-	 * @covers ::setThrottled
 	 * @dataProvider provideSetters
 	 */
 	public function testSetters( $value, string $setter, string $getter ) {
@@ -55,7 +39,7 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 	/**
 	 * @return array
 	 */
-	public function provideSetters() {
+	public static function provideSetters() {
 		return [
 			'rules' => [ 'rules', 'setRules', 'getRules' ],
 			'comments' => [ 'comments', 'setComments', 'getComments' ],
@@ -65,6 +49,7 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			'enabled' => [ true, 'setEnabled', 'isEnabled' ],
 			'deleted' => [ false, 'setDeleted', 'isDeleted' ],
 			'hidden' => [ true, 'setHidden', 'isHidden' ],
+			'protected' => [ true, 'setProtected', 'isProtected' ],
 			'global' => [ false, 'setGlobal', 'isGlobal' ],
 			'actions' => [ [ 'foo' => [] ], 'setActions', 'getActions' ],
 			'user ID' => [ 163, 'setUserID', 'getUserID' ],
@@ -76,9 +61,6 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-	/**
-	 * @covers ::setActionsNames
-	 */
 	public function testSetActionsNames_withActionsSet() {
 		$filter = new MutableFilter(
 			new Specs( 'rules', 'comments', 'name', [], 'group' ),
@@ -86,13 +68,10 @@ class MutableFilterTest extends MediaWikiUnitTestCase {
 			[ 'foo' => [] ],
 			new LastEditInfo( 42, 'User', '12345' )
 		);
-		$this->expectException( BadMethodCallException::class );
+		$this->expectException( LogicException::class );
 		$filter->setActionsNames( [ 'x' ] );
 	}
 
-	/**
-	 * @covers ::newFromParentFilter
-	 */
 	public function testNewFromParentFilter() {
 		$baseFilter = new Filter(
 			new Specs( 'rules', 'comments', 'name', [ 'x' ], 'group' ),

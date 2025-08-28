@@ -2,14 +2,15 @@
 
 namespace MediaWiki\Extension\OATHAuth;
 
-use IContextSource;
 use MediaWiki\Auth\AbstractSecondaryAuthenticationProvider;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\OATHAuth\HTMLForm\IManageForm;
-use Message;
+use MediaWiki\Message\Message;
 
 interface IModule {
 	/**
-	 * Name of the module
+	 * Name of the module, as declared in the OATHAuth.Modules extension.json attribute.
+	 *
 	 * @return string
 	 */
 	public function getName();
@@ -20,17 +21,10 @@ interface IModule {
 	public function getDisplayName();
 
 	/**
-	 *
 	 * @param array $data
 	 * @return IAuthKey
 	 */
 	public function newKey( array $data );
-
-	/**
-	 * @param OATHUser $user
-	 * @return array
-	 */
-	public function getDataFromUser( OATHUser $user );
 
 	/**
 	 * @return AbstractSecondaryAuthenticationProvider
@@ -38,8 +32,9 @@ interface IModule {
 	public function getSecondaryAuthProvider();
 
 	/**
-	 * Is this module currently enabled for the given user
-	 * Arguably, module is enabled just by the fact its set on user
+	 * Is this module currently enabled for the given user?
+	 *
+	 * Arguably, module is enabled just by the fact its set on user,
 	 * but it might not be true for all future modules
 	 *
 	 * @param OATHUser $user
@@ -72,14 +67,15 @@ interface IModule {
 
 	/**
 	 * Return Message object for the short text to be displayed as description
+	 *
 	 * @return Message
 	 */
 	public function getDescriptionMessage();
 
 	/**
-	 * Module-specific text that will be shown when user is disabling
+	 * Module-specific text that will be shown when the user is disabling
 	 * the module, to warn of data-loss.
-	 * This will be shown alongside generic warning message.
+	 * This will be shown alongside the generic warning message.
 	 *
 	 * @return Message|null if no additional text is needed
 	 */

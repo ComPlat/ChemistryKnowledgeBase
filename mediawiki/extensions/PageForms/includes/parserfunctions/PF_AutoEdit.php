@@ -11,25 +11,22 @@
  * 'query string' variable.
  *
  * The parameters of #autoedit are called in the same format as those
- * of #formlink. T The two additions are:
+ * of #formlink. The two additions are:
  * 'minor' - sets this to be a "minor edit"
  * 'reload' - causes the page to reload after the user clicks the button
  * or link.
  */
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class PFAutoEdit {
 	public static function run( Parser $parser ) {
 		global $wgPageFormsAutoeditNamespaces;
 
 		$parser->getOutput()->addModules( [ 'ext.pageforms.autoedit' ] );
-		if ( method_exists( $parser->getOutput(), 'setPreventClickjacking' ) ) {
-			// MW 1.38+
-			$parser->getOutput()->setPreventClickjacking( true );
-		} else {
-			$parser->getOutput()->preventClickjacking( true );
-		}
+		$parser->getOutput()->setPreventClickjacking( true );
 
 		// Set defaults.
 		$formcontent = '';
@@ -52,12 +49,7 @@ class PFAutoEdit {
 		// We don't need the parser.
 		array_shift( $params );
 
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			// MW 1.36+
-			$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
-		} else {
-			$wikiPageFactory = null;
-		}
+		$wikiPageFactory = MediaWikiServices::getInstance()->getWikiPageFactory();
 
 		foreach ( $params as $param ) {
 			$elements = explode( '=', $param, 2 );
@@ -83,6 +75,12 @@ class PFAutoEdit {
 					break;
 				case 'confirm':
 					$confirmEdit = true;
+					break;
+				case 'confirm text':
+					$confirmEdit = true;
+					$value = $parser->recursiveTagParse( $value );
+					$arr = [ 'confirmtext' => $value ];
+					$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
 					break;
 				case 'query string':
 					$inQueryArr = self::convertQueryString( $value, $inQueryArr );
@@ -115,12 +113,7 @@ class PFAutoEdit {
 							$errorMsg = wfMessage( 'pf-autoedit-invalidnamespace', $targetTitle->getNsText() )->parse();
 							return Html::element( 'div', [ 'class' => 'error' ], $errorMsg );
 						}
-						if ( $wikiPageFactory !== null ) {
-							// MW 1.36+
-							$targetWikiPage = $wikiPageFactory->newFromTitle( $targetTitle );
-						} else {
-							$targetWikiPage = WikiPage::factory( $targetTitle );
-						}
+						$targetWikiPage = $wikiPageFactory->newFromTitle( $targetTitle );
 						$targetWikiPage->clear();
 						$editTime = $targetWikiPage->getTimestamp();
 						$latestRevId = $targetWikiPage->getLatest();

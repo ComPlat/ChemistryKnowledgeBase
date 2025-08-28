@@ -1,13 +1,14 @@
 <?php
-use Eris\Generator;
 
-class FloatTest extends \PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class FloatTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
     public function testAPropertyHoldingForAllNumbers()
     {
-        $this->forAll(Generator\float())
+        $this->forAll(Generators::float())
             ->then(function ($number) {
                 $this->assertEquals(
                     0.0,
@@ -18,7 +19,7 @@ class FloatTest extends \PHPUnit_Framework_TestCase
 
     public function testAPropertyHoldingOnlyForPositiveNumbers()
     {
-        $this->forAll(Generator\float())
+        $this->forAll(Generators::float())
             ->then(function ($number) {
                 $this->assertTrue(
                     $number >= 0,

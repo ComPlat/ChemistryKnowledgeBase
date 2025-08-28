@@ -2,7 +2,8 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * Generates a positive or negative integer (with absolute value bounded by
@@ -10,7 +11,7 @@ use DomainException;
  */
 function int()
 {
-    return new IntegerGenerator();
+    return Generators::int();
 }
 
 /**
@@ -18,18 +19,12 @@ function int()
  */
 function pos()
 {
-    $mustBeStrictlyPositive = function ($n) {
-        return abs($n) + 1;
-    };
-    return new IntegerGenerator($mustBeStrictlyPositive);
+    return Generators::pos();
 }
 
 function nat()
 {
-    $mustBeNatural = function ($n) {
-        return abs($n);
-    };
-    return new IntegerGenerator($mustBeNatural);
+    return Generators::nat();
 }
 
 /**
@@ -37,17 +32,17 @@ function nat()
  */
 function neg()
 {
-    $mustBeStrictlyNegative = function ($n) {
-        return (-1) * (abs($n) + 1);
-    };
-    return new IntegerGenerator($mustBeStrictlyNegative);
+    return Generators::neg();
 }
 
 function byte()
 {
-    return new ChooseGenerator(0, 255);
+    return Generators::byte();
 }
 
+/**
+ * @template-implements Generator<int>
+ */
 class IntegerGenerator implements Generator
 {
     private $mapFn;
@@ -61,12 +56,12 @@ class IntegerGenerator implements Generator
         }
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
-        $value = $rand(0, $size);
+        $value = $rand->rand(0, $size);
         $mapFn = $this->mapFn;
 
-        $result = $rand(0, 1) === 0
+        $result = $rand->rand(0, 1) === 0
                           ? $mapFn($value)
                           : $mapFn($value * (-1));
         return GeneratedValueSingle::fromJustValue(
@@ -75,7 +70,7 @@ class IntegerGenerator implements Generator
         );
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         $mapFn = $this->mapFn;
         $element = $element->input();

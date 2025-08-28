@@ -1,8 +1,11 @@
 <?php
 
-namespace MediaWiki\Auth;
+namespace MediaWiki\Tests\Auth;
 
+use MediaWiki\Auth\UserDataAuthenticationRequest;
 use MediaWiki\MainConfigNames;
+use MediaWiki\User\User;
+use StatusValue;
 
 /**
  * @group AuthManager
@@ -23,10 +26,17 @@ class UserDataAuthenticationRequestTest extends AuthenticationRequestTestCase {
 	 * @dataProvider providePopulateUser
 	 * @param string $email Email to set
 	 * @param string $realname Realname to set
-	 * @param \StatusValue $expect Expected return
+	 * @param StatusValue $expect Expected return
 	 */
 	public function testPopulateUser( $email, $realname, $expect ) {
-		$user = new \User();
+		$this->clearHooks( [
+			'UserGetEmail',
+			'UserSetEmailAuthenticationTimestamp',
+			'InvalidateEmailComplete',
+			'UserSetEmail',
+		] );
+
+		$user = new User();
 		$user->setEmail( 'default@example.com' );
 		$user->setRealName( 'Fake Name' );
 
@@ -41,13 +51,13 @@ class UserDataAuthenticationRequestTest extends AuthenticationRequestTestCase {
 	}
 
 	public static function providePopulateUser() {
-		$good = \StatusValue::newGood();
+		$good = StatusValue::newGood();
 		return [
 			[ 'email@example.com', 'Real Name', $good ],
 			[ 'email@example.com', '', $good ],
 			[ '', 'Real Name', $good ],
 			[ '', '', $good ],
-			[ 'invalid-email', 'Real Name', \StatusValue::newFatal( 'invalidemailaddress' ) ],
+			[ 'invalid-email', 'Real Name', StatusValue::newFatal( 'invalidemailaddress' ) ],
 		];
 	}
 
@@ -64,7 +74,7 @@ class UserDataAuthenticationRequestTest extends AuthenticationRequestTestCase {
 		parent::testLoadFromSubmission( $args, $data, $expectState );
 	}
 
-	public function provideLoadFromSubmission() {
+	public static function provideLoadFromSubmission() {
 		$unhidden = [];
 		$hidden = [ 'realname' ];
 

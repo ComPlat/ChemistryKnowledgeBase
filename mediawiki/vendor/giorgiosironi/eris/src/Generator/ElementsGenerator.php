@@ -2,19 +2,21 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function elements(/*$a, $b, ...*/)
 {
-    $arguments = func_get_args();
-    if (count($arguments) == 1) {
-        return Generator\ElementsGenerator::fromArray($arguments[0]);
-    } else {
-        return Generator\ElementsGenerator::fromArray($arguments);
-    }
+    return call_user_func_array(
+        [Generators::class, 'elements'],
+        func_get_args()
+    );
 }
 
-
+/**
+ * @psalm-template T
+ * @template-implements Generator<T>
+ */
 class ElementsGenerator implements Generator
 {
     private $domain;
@@ -29,13 +31,13 @@ class ElementsGenerator implements Generator
         $this->domain = $domain;
     }
 
-    public function __invoke($_size, $rand)
+    public function __invoke($_size, RandomRange $rand)
     {
-        $index = $rand(0, count($this->domain) - 1);
+        $index = $rand->rand(0, count($this->domain) - 1);
         return GeneratedValueSingle::fromJustValue($this->domain[$index], 'elements');
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         return $element;
     }

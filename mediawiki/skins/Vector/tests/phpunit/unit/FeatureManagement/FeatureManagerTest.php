@@ -21,7 +21,9 @@
 
 namespace MediaWiki\Skins\Vector\Tests\Unit\FeatureManagement;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Skins\Vector\FeatureManagement\FeatureManager;
+use MediaWiki\User\Options\UserOptionsLookup;
 
 /**
  * @group Vector
@@ -37,7 +39,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	public function testRegisterSimpleRequirementThrowsWhenRequirementIsRegisteredTwice() {
 		$this->expectException( \LogicException::class );
 
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->registerSimpleRequirement( 'requirementA', true );
 		$featureManager->registerSimpleRequirement( 'requirementA', true );
 	}
@@ -62,33 +67,16 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::getFeatureBodyClass
-	 */
-	public function testGetFeatureBodyClass() {
-		$featureManager = new FeatureManager();
-		$featureManager->registerSimpleRequirement( 'requirement', true );
-		$featureManager->registerSimpleRequirement( 'disabled', false );
-		$featureManager->registerFeature( 'sticky-header', [ 'requirement' ] );
-		$featureManager->registerFeature( 'TableOfContents', [ 'requirement' ] );
-		$featureManager->registerFeature( 'Test', [ 'disabled' ] );
-		$this->assertEquals(
-			[
-				'vector-feature-sticky-header-enabled',
-				'vector-feature-table-of-contents-enabled',
-				'vector-feature-test-disabled'
-			],
-			$featureManager->getFeatureBodyClass()
-		);
-	}
-
-	/**
 	 * @dataProvider provideInvalidFeatureConfig
 	 * @covers ::registerFeature
 	 */
 	public function testRegisterFeatureValidatesConfig( $expectedExceptionType, $config ) {
 		$this->expectException( $expectedExceptionType );
 
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->registerSimpleRequirement( 'requirement', true );
 		$featureManager->registerFeature( 'feature', $config );
 	}
@@ -97,7 +85,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	 * @covers ::isRequirementMet
 	 */
 	public function testIsRequirementMet() {
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->registerSimpleRequirement( 'enabled', true );
 		$featureManager->registerSimpleRequirement( 'disabled', false );
 
@@ -111,7 +102,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	public function testIsRequirementMetThrowsExceptionWhenRequirementIsntRegistered() {
 		$this->expectException( \InvalidArgumentException::class );
 
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->isRequirementMet( 'foo' );
 	}
 
@@ -121,7 +115,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	public function testRegisterFeatureThrowsExceptionWhenFeatureIsRegisteredTwice() {
 		$this->expectException( \LogicException::class );
 
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->registerFeature( 'featureA', [] );
 		$featureManager->registerFeature( 'featureA', [] );
 	}
@@ -130,7 +127,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	 * @covers ::isFeatureEnabled
 	 */
 	public function testIsFeatureEnabled() {
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->registerSimpleRequirement( 'foo', false );
 		$featureManager->registerFeature( 'requiresFoo', 'foo' );
 
@@ -161,7 +161,10 @@ class FeatureManagerTest extends \MediaWikiUnitTestCase {
 	public function testIsFeatureEnabledThrowsExceptionWhenFeatureIsntRegistered() {
 		$this->expectException( \InvalidArgumentException::class );
 
-		$featureManager = new FeatureManager();
+		$featureManager = new FeatureManager(
+			$this->createMock( UserOptionsLookup::class ),
+			RequestContext::getMain()
+		);
 		$featureManager->isFeatureEnabled( 'foo' );
 	}
 }

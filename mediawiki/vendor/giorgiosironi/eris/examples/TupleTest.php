@@ -1,16 +1,17 @@
 <?php
-use Eris\Generator;
 
-class TupleTest extends PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class TupleTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
     public function testConcatenationMaintainsLength()
     {
         $this->forAll(
-            Generator\tuple(
-                Generator\elements("A", "B", "C"),
-                Generator\choose(0, 9)
+            Generators::tuple(
+                Generators::elements("A", "B", "C"),
+                Generators::choose(0, 9)
             )
         )
             ->then(function ($tuple) {

@@ -1,52 +1,39 @@
 <?php
 
+namespace MediaWiki\Tests\Site;
+
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Site\CachingSiteStore;
+use MediaWiki\Site\HashSiteStore;
+use MediaWiki\Site\MediaWikiSite;
+use MediaWiki\Site\Site;
+use MediaWiki\Site\SiteList;
+use MediaWiki\Site\SiteStore;
+use MediaWikiIntegrationTestCase;
+
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
- *
- * @file
- * @since 1.25
- *
- * @ingroup Site
- * @ingroup Test
- *
+ * @covers \MediaWiki\Site\CachingSiteStore
  * @group Site
  * @group Database
- *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
+class CachingSiteStoreTest extends MediaWikiIntegrationTestCase {
 
-	/**
-	 * @covers CachingSiteStore::getSites
-	 */
 	public function testGetSites() {
 		$testSites = TestSites::getSites();
+		$services = MediaWikiServices::getInstance();
 
 		$store = new CachingSiteStore(
 			$this->getHashSiteStore( $testSites ),
-			ObjectCache::getLocalClusterInstance()
+			$services->getObjectCacheFActory()
+				->getLocalClusterInstance()
 		);
 
 		$sites = $store->getSites();
 
 		$this->assertInstanceOf( SiteList::class, $sites );
 
-		/**
-		 * @var Site $site
-		 */
+		/** @var Site $site */
 		foreach ( $sites as $site ) {
 			$this->assertInstanceOf( Site::class, $site );
 		}
@@ -58,12 +45,11 @@ class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
 		}
 	}
 
-	/**
-	 * @covers CachingSiteStore::saveSites
-	 */
 	public function testSaveSites() {
+		$services = MediaWikiServices::getInstance();
 		$store = new CachingSiteStore(
-			new HashSiteStore(), ObjectCache::getLocalClusterInstance()
+			new HashSiteStore(),
+			$services->getObjectCacheFActory()->getLocalClusterInstance()
 		);
 
 		$sites = [];
@@ -89,14 +75,13 @@ class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
 		$this->assertEquals( 'nl', $site->getLanguageCode() );
 	}
 
-	/**
-	 * @covers CachingSiteStore::reset
-	 */
 	public function testReset() {
 		$dbSiteStore = $this->createMock( SiteStore::class );
 
 		$dbSiteStore->method( 'getSite' )
 			->willReturn( $this->getTestSite() );
+
+		$services = MediaWikiServices::getInstance()->getObjectCacheFactory();
 
 		$dbSiteStore->method( 'getSites' )
 			->willReturnCallback( function () {
@@ -106,7 +91,7 @@ class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
 				return $siteList;
 			} );
 
-		$store = new CachingSiteStore( $dbSiteStore, ObjectCache::getLocalClusterInstance() );
+		$store = new CachingSiteStore( $dbSiteStore, $services->getLocalClusterInstance() );
 
 		// initialize internal cache
 		$this->assertGreaterThan( 0, $store->getSites()->count(), 'count sites' );
@@ -128,16 +113,13 @@ class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
 		$enwiki = new MediaWikiSite();
 		$enwiki->setGlobalId( 'enwiki' );
 		$enwiki->setLanguageCode( 'en' );
-
 		return $enwiki;
 	}
 
-	/**
-	 * @covers CachingSiteStore::clear
-	 */
 	public function testClear() {
+		$services = MediaWikiServices::getInstance()->getObjectCacheFactory();
 		$store = new CachingSiteStore(
-			new HashSiteStore(), ObjectCache::getLocalClusterInstance()
+			new HashSiteStore(), $services->getLocalClusterInstance()
 		);
 		$this->assertTrue( $store->clear() );
 
@@ -150,13 +132,11 @@ class CachingSiteStoreTest extends \MediaWikiIntegrationTestCase {
 
 	/**
 	 * @param Site[] $sites
-	 *
 	 * @return SiteStore
 	 */
 	private function getHashSiteStore( array $sites ) {
 		$siteStore = new HashSiteStore();
 		$siteStore->saveSites( $sites );
-
 		return $siteStore;
 	}
 

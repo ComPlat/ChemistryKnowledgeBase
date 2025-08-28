@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Adriendelucca",
 			"Fohanno",
 			"Fulup",
 			"Huñvreüs",
@@ -77,6 +78,7 @@
 	"pf_createclass_success": "Krouet e vo ar perzhioù, ar patrom ar furmskrid hag ar rummad.",
 	"pf_createclass_create": "Krouiñ",
 	"formstart": "Ouzhpennañ ur bajenn gant ur furmskrid",
+	"pf-formstart-formlabel": "Furmskridoù:",
 	"pf_formstart_badform": "Fazi : n'eus bet kavet pajenn furmskrid ebet en $1.",
 	"pf_formstart_badtitle": "Fazi : « $1 » n'eo ket un titl reizh evit ur bajenn.",
 	"pf_formstart_createoredit": "Krouiñ pe kemmañ",
@@ -93,6 +95,7 @@
 	"pf_formedit_formwarning": "Evezh : Ar bajenn-mañ [[$1|zo anezhi dija]], met ne implij ket ar furmskrid-mañ.",
 	"pf_formedit_remove": "Tennañ",
 	"pf_formedit_addanother": "Ouzhpennañ unan all",
+	"pf-formedit-nodata": "Roadenn ebet",
 	"pf_formedit_none": "Hini ebet/dianav",
 	"pf_formedit_saveandcontinueediting": "Enrollañ ha kenderc'hel",
 	"pf_formedit_tooltip_saveandcontinueediting": "Enrollañ ar roadennoù ha kenderc'hel da zegas kemmoù",
@@ -130,7 +133,7 @@
 	"pf_category_hasdefaultform": "Ar rummad-mañ a implij ar furmskrid $1.",
 	"pf_category_desc": "Ar rummad $1 eo hemañ.",
 	"pf_blank_namespace": "Pennañ",
-	"right-viewedittab": "Gwelet an ivinell \"kemmañ\" evit ar pajennoù kemmus dre ur furmskrid",
+	"right-viewedittab": "Gwelet an ivinell \"{{int:edit}}\" evit ar pajennoù kemmus dre ur furmskrid",
 	"right-editrestrictedfields": "Aozañ maeziennoù strishaet ar furmskridoù",
 	"pf-autocomplete-searching": "O klask...",
 	"pf-autocomplete-input-too-short": "Merkit $1 arouezenn pe vuioc'h.",

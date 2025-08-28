@@ -20,16 +20,16 @@
 
 /* global Uint8Array */
 
-//( function ( $, jQuery, mw ) {
-	var uploadWarning, $license = $( '#wpLicense' );
+//( function( $, jQuery, mw ) {
+	let uploadWarning, $license = $( '#wpLicense' );
 
-	$( function () {
+	$( () => {
 		// fillDestFile setup
-		//mw.config.get( 'wgUploadSourceIds' ).forEach( function ( sourceId ) {
-		var sourceIDs = [ 'wpUploadFile' ];
-		sourceIDs.forEach( function ( sourceId ) {
-			$( '#' + sourceId ).on( 'change', function () {
-				var path, slash, backslash, fname;
+		//mw.config.get( 'wgUploadSourceIds' ).forEach( function( sourceId ) {
+		const sourceIDs = [ 'wpUploadFile' ];
+		sourceIDs.forEach( ( sourceId ) => {
+			$( '#' + sourceId ).on( 'change', function() {
+				let path, slash, backslash, fname;
 				// Remove any previously flagged errors
 				$( '#mw-upload-permitted, #mw-upload-prohibited' ).removeClass();
 
@@ -53,7 +53,7 @@
 //				}
 
 				// Output result
-				if ( $( '#wpDestFile' ).length ) {
+				if ( $( '#wpDestFile' ).length && ! $( '#wpDestFile' ).hasClass( 'defaultFilename' ) ) {
 					// Call decodeURIComponent function to remove possible URL-encoded characters
 					// from the file name (T32390). Especially likely with upload-form-url.
 					// decodeURIComponent can throw an exception if input is invalid utf-8

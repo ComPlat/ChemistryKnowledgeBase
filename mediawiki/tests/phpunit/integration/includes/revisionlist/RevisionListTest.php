@@ -1,30 +1,21 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageIdentityValue;
-use Wikimedia\Rdbms\FakeResultWrapper;
-use Wikimedia\Rdbms\IDatabase;
+use MediaWiki\RevisionList\RevisionItem;
+use MediaWiki\RevisionList\RevisionList;
 
 /**
- * @covers RevisionList
- * @covers RevisionListBase
- * @covers RevisionItem
- * @covers RevisionItemBase
+ * @covers \MediaWiki\RevisionList\RevisionList
+ * @covers \MediaWiki\RevisionList\RevisionListBase
+ * @covers \MediaWiki\RevisionList\RevisionItem
+ * @covers \MediaWiki\RevisionList\RevisionItemBase
  * @group Database
  *
  * @author DannyS712
  */
 class RevisionListTest extends MediaWikiIntegrationTestCase {
-
-	protected function setUp(): void {
-		parent::setUp();
-
-		$this->tablesUsed[] = 'revision';
-		$this->tablesUsed[] = 'page';
-		$this->tablesUsed[] = 'comment';
-		$this->tablesUsed[] = 'content';
-		$this->tablesUsed[] = 'user';
-	}
 
 	public function testGetType() {
 		$context = new RequestContext();
@@ -37,66 +28,17 @@ class RevisionListTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * @dataProvider provideTestDoQuery
-	 */
-	public function testDoQuery( $filterIds ) {
-		$context = new RequestContext();
-
-		$page = new PageIdentityValue( 123, NS_MAIN, __METHOD__, PageIdentity::LOCAL );
-		$revisionList = new RevisionList( $context, $page );
-
-		$conds = [ 'rev_page' => 123 ];
-		if ( $filterIds !== false ) {
-			$revisionList->filterByIds( $filterIds );
-			$conds['rev_id'] = $filterIds;
-		}
-
-		$revQuery = $this->getServiceContainer()
-			->getRevisionStore()
-			->getQueryInfo( [ 'page', 'user' ] );
-
-		$db = $this->createMock( IDatabase::class );
-		$db->expects( $this->once() )
-			->method( 'select' )
-			->with(
-				$revQuery['tables'],
-				$revQuery['fields'],
-				$conds,
-				'RevisionList::doQuery',
-				[ 'ORDER BY' => 'rev_id DESC' ],
-				$revQuery['joins']
-			)
-			->willReturn(
-				new FakeResultWrapper( [] )
-			);
-
-		$revisionList->doQuery( $db );
-	}
-
-	public function provideTestDoQuery() {
-		return [
-			'no filter' => [ false ],
-			'with filter' => [ [ 1, 2, 91 ] ],
-		];
-	}
-
 	public function testNewItem() {
 		// Need a row that is valid for RevisionFactory::newRevisionFromRow
 		$wikiPage = $this->getExistingTestPage( __METHOD__ );
 		$currentRevId = $wikiPage->getRevisionRecord()->getId();
 
-		$revQuery = $this->getServiceContainer()
-			->getRevisionStore()
-			->getQueryInfo( [ 'page', 'user' ] );
-		$row = $this->db->selectRow(
-			$revQuery['tables'],
-			$revQuery['fields'],
-			[ 'rev_id' => $currentRevId ],
-			__METHOD__,
-			[],
-			$revQuery['joins']
-		);
+		$queryBuilder = $this->getServiceContainer()->getRevisionStore()->newSelectQueryBuilder( $this->getDb() )
+			->joinComment()
+			->joinPage()
+			->joinUser()
+			->where( [ 'rev_id' => $currentRevId ] );
+		$row = $queryBuilder->caller( __METHOD__ )->fetchRow();
 
 		$context = new RequestContext();
 		$context->setUser( $this->getTestSysop()->getUser() );

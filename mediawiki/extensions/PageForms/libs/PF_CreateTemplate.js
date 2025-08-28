@@ -1,6 +1,6 @@
 
-var fieldNum = 1;
-var hierarchyPlaceholder =  mediaWiki.msg( 'pf_createtemplate_hierarchystructureplaceholder' );
+let fieldNum = 1;
+const hierarchyPlaceholder =  mediaWiki.msg( 'pf_createtemplate_hierarchystructureplaceholder' );
 
 function toggleCargoInputs() {
 	if (jQuery('#use_cargo_toggle').attr('aria-checked') == 'true') {
@@ -25,48 +25,48 @@ function toggleCargoInputs() {
 
 jQuery.fn.createTemplateAddField = function( addAboveCurInstance ) {
 	fieldNum++;
-	var $newField = jQuery( '#starterField' ).clone().css( 'display', '' ).removeAttr( 'id' );
-	var newHTML = $newField.html().replace(/starter/g, fieldNum);
+	const $newField = jQuery( '#starterField' ).clone().css( 'display', '' ).removeAttr( 'id' );
+	const newHTML = $newField.html().replace(/starter/g, fieldNum);
 	$newField.html( newHTML );
-	$newField.find( ".removeButton" ).click( function () {
+	$newField.find( ".removeButton" ).click( function() {
 		// Remove the encompassing div for this instance.
 		$( this ).closest( ".fieldBox" )
-			.fadeOut( 'fast', function () {
+			.fadeOut( 'fast', function() {
 				jQuery(this).remove();
 			} );
 	} );
 	$newField.find( ".addAboveButton" ).click( function() {
 		$( this ).createTemplateAddField( true );
 	} );
-	$newField.find( ".isList" ).click( function () {
+	$newField.find( ".isList" ).click( function() {
 		$( this ).closest( ".fieldBox" ).find( ".delimiter" ).toggle();
 	} );
-	$newField.find( ".is_hierarchy" ).click( function () {
+	$newField.find( ".is_hierarchy" ).click( function() {
 		toggleHierarchyInput($( this ).closest( ".fieldBox" ));
 	} );
-	$newField.find( ".hierarchy_structure" ).click( function () {
+	$newField.find( ".hierarchy_structure" ).click( function() {
 		if ($( this ).attr( 'validInput' ) === undefined || $( this ).attr( 'validInput' ) !== 'true') {
 			removeHierarchyPlaceholder( jQuery( this ) );
 		}
 	} );
-	$newField.find( ".hierarchy_structure" ).blur( function () {
+	$newField.find( ".hierarchy_structure" ).blur( function() {
 		setHierarchyPlaceholder( $( this ) );
 	} );
-	var combobox = new pf.ComboBoxInput();
+	const combobox = new pf.ComboBoxInput();
 	$newField.find( '.pfComboBox' ).each( function() {
 		combobox.apply( $( this ) );
 	} );
 	if ( addAboveCurInstance ){
 		$newField.insertBefore(this.closest(".fieldBox"))
-                        .hide().fadeIn();
+			.hide().fadeIn();
 	} else {
 		jQuery( '#fieldsList' ).append( $newField.hide().fadeIn() );
 	}
 }
 
 function validateCreateTemplateForm() {
-	var blankTemplateName = ( jQuery( 'input[name="template_name"]' ).val() === '' );
-	var blankCargoTableName = ( jQuery( '#use_cargo_toggle' ).attr('aria-checked') == 'true' &&
+	const blankTemplateName = ( jQuery( 'input[name="template_name"]' ).val() === '' );
+	const blankCargoTableName = ( jQuery( '#use_cargo_toggle' ).attr('aria-checked') == 'true' &&
 		jQuery( 'input[name="cargo_table"]' ).val() === '' );
 	if ( blankTemplateName || blankCargoTableName || !validateHierarchyStructure() ) {
 		scroll( 0, 0 );
@@ -116,19 +116,19 @@ function removeHierarchyPlaceholder( textareaElement ) {
 }
 
 function validateHierarchyStructure() {
-	var $hierarchyTextAreas = jQuery("textarea[name*='hierarchy_structure_']");
-	for (var i = 0; i < $hierarchyTextAreas.length; i++) {
-		var structure = $hierarchyTextAreas[i].value.trim();
+	const $hierarchyTextAreas = jQuery("textarea[name*='hierarchy_structure_']");
+	for (let i = 0; i < $hierarchyTextAreas.length; i++) {
+		const structure = $hierarchyTextAreas[i].value.trim();
 		if (structure !== "") {
-			var nodes = structure.split(/\n/);
-			var matches = nodes[0].match(/^([*]*)[^*]*/i);
+			const nodes = structure.split(/\n/);
+			let matches = nodes[0].match(/^([*]*)[^*]*/i);
 			if (matches[1].length !== 1) {
 				alert("Error: The first entry of hierarchy values should start with exactly one \'*\'; the entry \"" +
 					nodes[0] + "\" has " + matches[1].length + " \'*\'");
 				return false;
 			}
-			var level = 0;
-			for (var j = 0; j < nodes.length; j++) {
+			let level = 0;
+			for (let j = 0; j < nodes.length; j++) {
 				matches = nodes[j].match(/^([*]*)( *)(.*)/i);
 				if (matches[1].length < 1) {
 					alert("Error: Each entry of hierarchy values should start with at least one \'*\'; the entry \"" +
@@ -151,16 +151,16 @@ function validateHierarchyStructure() {
 	return true;
 }
 
-jQuery( document ).ready( function () {
-	var el = document.getElementById('fieldsList');
-	var sortable = Sortable.create(el, {
+$( () => {
+	const el = document.getElementById('fieldsList');
+	const sortable = Sortable.create(el, {
 		handle: '.instanceRearranger',
 	});
-	var toggleSwitch = new OO.ui.ToggleSwitchWidget( {
+	const toggleSwitch = new OO.ui.ToggleSwitchWidget( {
 		id: 'use_cargo_toggle',
 		value: true,
 	} );
-	var fullWikiSwitch = new OO.ui.ToggleSwitchWidget( {
+	const fullWikiSwitch = new OO.ui.ToggleSwitchWidget( {
 		id: 'use_fullwikitext_toggle',
 		value: false
 	} );
@@ -176,46 +176,52 @@ jQuery( document ).ready( function () {
 	jQuery( "label.hierarchy_structure_input" ).css( 'display', 'none' );
 	jQuery( "div.hierarchy_structure" ).css( 'display', 'none' );
 	jQuery( 'form#createTemplateForm' ).removeAttr('style');
-	jQuery( '#use_cargo_toggle' ).click( function() {
+	jQuery( '#use_cargo_toggle' ).click( () => {
 		toggleCargoInputs();
 	} );
 	jQuery( '#fullwikitext_toggle' ).prepend( fullWikiSwitch.$element );
 	jQuery( '#use_fullwikitext_toggle' ).attr( 'name', 'use_fullwikitext_toggle' );
-	jQuery( '#use_fullwikitext_toggle' ).click( function() {
+	jQuery( '#use_fullwikitext_toggle' ).click( () => {
 		if (jQuery('#use_fullwikitext_toggle').attr('aria-checked') == 'true') {
 			jQuery('input[name="use_fullwikitext"]').attr('value', '1');
 		} else {
 			jQuery('input[name="use_fullwikitext"]').attr('value', '0');
 		}
 	} );
-	jQuery( ".createTemplateAddField" ).click( function () {
-		$( this ).createTemplateAddField( false );
-	} );
-	jQuery( ".addAboveButton" ).click( function () {
+	jQuery( ".createTemplateAddField" )
+		.on( 'click', function() {
+			$( this ).createTemplateAddField( false );
+		})
+		.on( 'keydown', function( e ) {
+			if ( e.key === 'Enter' || e.key === ' ' ) {
+				e.preventDefault();
+				$( this ).createTemplateAddField( false );
+			}
+		});
+
+	jQuery( ".addAboveButton" ).click( function() {
 		$( this ).createTemplateAddField( true );
 	} );
-	jQuery( ".removeButton" ).click( function () {
+	jQuery( ".removeButton" ).click( function() {
 		// Remove the encompassing div for this instance.
 		jQuery( this ).closest( ".fieldBox" )
-			.fadeOut( 'fast', function () {
+			.fadeOut( 'fast', function() {
 				jQuery( this ).remove();
 			} );
 	} );
-	jQuery( ".isList" ).click( function () {
+	jQuery( ".isList" ).click( function() {
 		jQuery( this ).closest( ".fieldBox" ).find( ".delimiter" ).toggle();
 	} );
-	jQuery( ".is_hierarchy" ).click( function () {
+	jQuery( ".is_hierarchy" ).click( function() {
 		toggleHierarchyInput( jQuery( this ).closest( ".fieldBox" ) );
 	} );
-	jQuery( ".hierarchy_structure" ).click( function () {
+	jQuery( ".hierarchy_structure" ).click( function() {
 		if (jQuery( this ).attr( 'validInput' ) === undefined || jQuery( this ).attr( 'validInput' ) !== 'true') {
 			removeHierarchyPlaceholder( jQuery( this ) );
 		}
 	} );
-	jQuery( ".hierarchy_structure" ).blur( function () {
+	jQuery( ".hierarchy_structure" ).blur( function() {
 		setHierarchyPlaceholder( jQuery( this ) );
 	} );
-	jQuery( '#createTemplateForm' ).submit( function () {
-		return validateCreateTemplateForm();
-	} );
+	jQuery( '#createTemplateForm' ).submit( () => validateCreateTemplateForm() );
 } );

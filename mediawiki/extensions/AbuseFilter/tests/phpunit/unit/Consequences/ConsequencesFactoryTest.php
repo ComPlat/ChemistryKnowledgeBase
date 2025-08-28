@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Consequences;
 
-use HashBagOStuff;
 use MediaWiki\Block\BlockUserFactory;
 use MediaWiki\Block\DatabaseBlockStore;
 use MediaWiki\Config\ServiceOptions;
@@ -16,15 +15,16 @@ use MediaWiki\Session\Session;
 use MediaWiki\User\UserEditTracker;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
+use MediaWiki\User\UserIdentityUtils;
 use MediaWikiUnitTestCase;
 use MessageLocalizer;
 use Psr\Log\NullLogger;
+use Wikimedia\ObjectCache\HashBagOStuff;
 
 /**
  * @group Test
  * @group AbuseFilter
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesFactory
- * @covers ::__construct
+ * @covers \MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesFactory
  */
 class ConsequencesFactoryTest extends MediaWikiUnitTestCase {
 
@@ -38,7 +38,8 @@ class ConsequencesFactoryTest extends MediaWikiUnitTestCase {
 				'BlockCIDRLimit' => [],
 			]
 		);
-		return new ConsequencesFactory(
+
+		$consequencesFactory = new ConsequencesFactory(
 			$opts,
 			new NullLogger(),
 			$this->createMock( BlockUserFactory::class ),
@@ -48,75 +49,53 @@ class ConsequencesFactoryTest extends MediaWikiUnitTestCase {
 			$this->createMock( ChangeTagger::class ),
 			$this->createMock( BlockAutopromoteStore::class ),
 			$this->createMock( FilterUser::class ),
-			$this->createMock( Session::class ),
 			$this->createMock( MessageLocalizer::class ),
 			$this->createMock( UserEditTracker::class ),
 			$this->createMock( UserFactory::class ),
-			'1.2.3.4'
+			$this->createMock( UserIdentityUtils::class )
 		);
+		$consequencesFactory->setSession( $this->createMock( Session::class ) );
+
+		return $consequencesFactory;
 	}
 
-	/**
-	 * @covers ::newBlock
-	 */
 	public function testNewBlock() {
 		$this->getFactory()->newBlock( $this->createMock( Parameters::class ), '', false );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newRangeBlock
-	 */
 	public function testNewRangeBlock() {
 		$this->getFactory()->newRangeBlock( $this->createMock( Parameters::class ), '' );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newDegroup
-	 */
 	public function testNewDegroup() {
 		$this->getFactory()->newDegroup( $this->createMock( Parameters::class ), new VariableHolder() );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newBlockAutopromote
-	 */
 	public function testNewBlockAutopromote() {
 		$this->getFactory()->newBlockAutopromote( $this->createMock( Parameters::class ), 42 );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newThrottle
-	 */
 	public function testNewThrottle() {
 		$this->getFactory()->newThrottle( $this->createMock( Parameters::class ), [] );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newWarn
-	 */
 	public function testNewWarn() {
 		$this->getFactory()->newWarn( $this->createMock( Parameters::class ), '' );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newDisallow
-	 */
 	public function testNewDisallow() {
 		$this->getFactory()->newDisallow( $this->createMock( Parameters::class ), '' );
 		$this->addToAssertionCount( 1 );
 	}
 
-	/**
-	 * @covers ::newTag
-	 */
 	public function testNewTag() {
-		$this->getFactory()->newTag( $this->createMock( Parameters::class ), null, [] );
+		$this->getFactory()->newTag( $this->createMock( Parameters::class ), [] );
 		$this->addToAssertionCount( 1 );
 	}
 }

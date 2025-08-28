@@ -2,16 +2,17 @@
 
 namespace MediaWiki\Tests\Unit\Revision;
 
-use Content;
 use InvalidArgumentException;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\Revision\MutableRevisionSlots;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\Revision\SlotRecord;
-use WikitextContent;
 
 /**
  * @covers \MediaWiki\Revision\MutableRevisionSlots
+ * @covers \MediaWiki\Revision\RevisionSlots
  */
 class MutableRevisionSlotsTest extends RevisionSlotsTest {
 
@@ -23,7 +24,7 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 		return new MutableRevisionSlots( $slots );
 	}
 
-	public function provideConstructorFailue() {
+	public static function provideConstructorFailue() {
 		yield 'array or the wrong thing' => [
 			[ 1, 2, 3 ]
 		];
@@ -32,9 +33,6 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 	/**
 	 * @dataProvider provideConstructorFailue
 	 * @param array $slots
-	 *
-	 * @covers \MediaWiki\Revision\RevisionSlots::__construct
-	 * @covers \MediaWiki\Revision\RevisionSlots::setSlotsInternal
 	 */
 	public function testConstructorFailue( $slots ) {
 		$this->expectException( InvalidArgumentException::class );
@@ -68,12 +66,12 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 		$slotA = SlotRecord::newUnsaved( SlotRecord::MAIN, new WikitextContent( 'A' ) );
 		$slots->setSlot( $slotA );
 		$this->assertSame( $slotA, $slots->getSlot( SlotRecord::MAIN ) );
-		$this->assertSame( [ 'main' => $slotA ], $slots->getSlots() );
+		$this->assertSame( [ SlotRecord::MAIN => $slotA ], $slots->getSlots() );
 
 		$slotB = SlotRecord::newUnsaved( SlotRecord::MAIN, new WikitextContent( 'B' ) );
 		$slots->setSlot( $slotB );
 		$this->assertSame( $slotB, $slots->getSlot( SlotRecord::MAIN ) );
-		$this->assertSame( [ 'main' => $slotB ], $slots->getSlots() );
+		$this->assertSame( [ SlotRecord::MAIN => $slotB ], $slots->getSlots() );
 	}
 
 	/**
@@ -93,7 +91,7 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 		$slotC = $this->newSavedSlot( 'foo', new WikitextContent( 'C' ) );
 		$slots->inheritSlot( $slotB );
 		$slots->inheritSlot( $slotC );
-		$this->assertSame( [ 'main', 'foo' ], $slots->getSlotRoles() );
+		$this->assertSame( [ SlotRecord::MAIN, 'foo' ], $slots->getSlotRoles() );
 		$this->assertNotSame( $slotB, $slots->getSlot( SlotRecord::MAIN ) );
 		$this->assertNotSame( $slotC, $slots->getSlot( 'foo' ) );
 		$this->assertTrue( $slots->getSlot( SlotRecord::MAIN )->isInherited() );
@@ -110,7 +108,7 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 		$slotA = SlotRecord::newUnsaved( SlotRecord::MAIN, new WikitextContent( 'A' ) );
 		$slots->setSlot( $slotA );
 		$this->assertSame( $slotA, $slots->getSlot( SlotRecord::MAIN ) );
-		$this->assertSame( [ 'main' => $slotA ], $slots->getSlots() );
+		$this->assertSame( [ SlotRecord::MAIN => $slotA ], $slots->getSlots() );
 
 		$newContent = new WikitextContent( 'B' );
 		$slots->setContent( SlotRecord::MAIN, $newContent );
@@ -121,7 +119,7 @@ class MutableRevisionSlotsTest extends RevisionSlotsTest {
 		$slotA = SlotRecord::newUnsaved( SlotRecord::MAIN, new WikitextContent( 'A' ) );
 		$slots = new MutableRevisionSlots( [ $slotA ] );
 
-		$this->assertSame( [ 'main' => $slotA ], $slots->getSlots() );
+		$this->assertSame( [ SlotRecord::MAIN => $slotA ], $slots->getSlots() );
 
 		$slots->removeSlot( SlotRecord::MAIN );
 		$this->assertSame( [], $slots->getSlots() );

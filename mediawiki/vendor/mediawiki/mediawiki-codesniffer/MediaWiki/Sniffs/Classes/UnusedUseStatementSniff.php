@@ -43,11 +43,13 @@ class UnusedUseStatementSniff implements Sniff {
 		'@see' => null,
 		'@throws' => null,
 		'@var' => null,
-		// phan
+		// Static code analyzers like Phan, PHPStan, or Psalm
 		'@phan-param' => null,
 		'@phan-property' => null,
 		'@phan-return' => null,
 		'@phan-var' => null,
+		'@phpstan-import-type' => '/\bfrom\h+(.*)/',
+		'@psalm-import-type' => '/\bfrom\h+(.*)/',
 		// Deprecated
 		'@expectedException' => null,
 		'@method' => null,
@@ -82,9 +84,9 @@ class UnusedUseStatementSniff implements Sniff {
 			// We only care about use statements in the global scope, or the
 			// equivalent for bracketed namespace (use statements in the namespace
 			// and not in any class, etc.)
-			// TODO: Use array_key_first() if available
-			$scope = key( $tokens[$stackPtr]['conditions'] );
+			$scope = array_key_first( $tokens[$stackPtr]['conditions'] );
 			if ( count( $tokens[$stackPtr]['conditions'] ) === 1
+				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable False positive
 				&& $tokens[$stackPtr]['conditions'][$scope] === T_NAMESPACE
 			) {
 				$useScopeEnd = $tokens[$scope]['scope_closer'];
@@ -114,12 +116,13 @@ class UnusedUseStatementSniff implements Sniff {
 
 				// If a backslash is used before the class name then this is some other
 				// use statement.
-				// T_STRING also used for $this->property or self::function()
+				// T_STRING also used for $this->property or self::function() or "function namedFuncton()"
 				$before = $phpcsFile->findPrevious( Tokens::$emptyTokens, $i - 1, null, true );
 				if ( $tokens[$before]['code'] === T_OBJECT_OPERATOR
 					|| $tokens[$before]['code'] === T_NULLSAFE_OBJECT_OPERATOR
 					|| $tokens[$before]['code'] === T_DOUBLE_COLON
 					|| $tokens[$before]['code'] === T_NS_SEPARATOR
+					|| $tokens[$before]['code'] === T_FUNCTION
 					// Trait use statement within a class.
 					|| ( $tokens[$before]['code'] === T_USE
 						&& empty( $tokens[$before]['conditions'] )
@@ -132,12 +135,19 @@ class UnusedUseStatementSniff implements Sniff {
 
 			} elseif ( $tokens[$i]['code'] === T_DOC_COMMENT_TAG ) {
 				// Usage in a doc comment
-				if ( !array_key_exists( $tokens[$i]['content'], self::CLASS_TAGS )
+				$tag = $tokens[$i]['content'];
+				if ( !array_key_exists( $tag, self::CLASS_TAGS )
 					|| $tokens[$i + 2]['code'] !== T_DOC_COMMENT_STRING
 				) {
 					continue;
 				}
-				$docType = $this->extractType( $tokens[$i + 2]['content'] );
+				$content = $tokens[$i + 2]['content'];
+				if ( is_string( self::CLASS_TAGS[$tag] ) &&
+					preg_match( self::CLASS_TAGS[$tag], $content, $matches )
+				) {
+					$content = $matches[1];
+				}
+				$docType = $this->extractType( $content );
 				if ( !preg_match_all( $classNamesPattern, $docType, $matches ) ) {
 					continue;
 				}
@@ -236,7 +246,7 @@ class UnusedUseStatementSniff implements Sniff {
 		$useTokenTypes = array_merge( $namespaceTokenTypes, [ T_AS ] );
 
 		while ( $currentUsePtr && $tokens[$currentUsePtr]['code'] === T_USE ) {
-			// Seek to the end of the statement and get the string before the semi colon.
+			// Seek to the end of the statement and get the string before the semicolon.
 			$semicolon = $phpcsFile->findNext( $useTokenTypes, $currentUsePtr + 1, null, true );
 			if ( $tokens[$semicolon]['code'] !== T_SEMICOLON ) {
 				break;

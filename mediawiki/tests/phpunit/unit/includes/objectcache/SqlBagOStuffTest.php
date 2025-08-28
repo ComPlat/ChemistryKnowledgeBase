@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @covers \SqlBagOStuff
+ * @group BagOStuff
+ */
 class SqlBagOStuffTest extends MediaWikiUnitTestCase {
 	public static function provideMakeKey() {
 		yield [ 'local', 'first', [ 'second', 'third' ],
@@ -20,7 +24,6 @@ class SqlBagOStuffTest extends MediaWikiUnitTestCase {
 	 * @param string $class
 	 * @param array $components
 	 * @param string $expected
-	 * @covers SqlBagOStuff::makeKeyInternal
 	 * @dataProvider SqlBagOStuffTest::provideMakeKey
 	 */
 	public function testMakeKey(
@@ -34,5 +37,33 @@ class SqlBagOStuffTest extends MediaWikiUnitTestCase {
 			'servers' => []
 		] );
 		$this->assertSame( $expected, $cache->makeKey( $class, ...$components ) );
+	}
+
+	public function testSisterKeys() {
+		$cache = new SqlBagOStuff( [
+			'keyspace' => 'test',
+			'servers' => [ 'pc1' => [], 'pc2' => [], 'pc3' => [], 'pc4' => [], 'pc5' => [], 'pc6' => [] ],
+			'shards' => 30
+		] );
+		$cacheObj = \Wikimedia\TestingAccessWrapper::newFromObject( $cache );
+
+		[ $indexFirstKey, $tableNameFirstKey ] = $cacheObj->getKeyLocation( 'Test123' );
+		[ $indexSecondKey, $tableNameSecondKey ] = $cacheObj->getKeyLocation( 'Test133' );
+		$this->assertNotEquals( $indexFirstKey, $indexSecondKey );
+		$this->assertNotEquals( $tableNameFirstKey, $tableNameSecondKey );
+
+		[ $indexFirstKey, $tableNameFirstKey ] = $cacheObj->getKeyLocation( 'Test123|#|12345' );
+		[ $indexSecondKey, $tableNameSecondKey ] = $cacheObj->getKeyLocation( 'Test123|#|54321' );
+		$this->assertSame( $indexFirstKey, $indexSecondKey );
+		$this->assertSame( $tableNameFirstKey, $tableNameSecondKey );
+
+		[ $indexFirstKey, $tableNameFirstKey ] = $cacheObj->getKeyLocation(
+			$cache->makeKey( 'Test123', '|#|', '12345' )
+		);
+		[ $indexSecondKey, $tableNameSecondKey ] = $cacheObj->getKeyLocation(
+			$cache->makeKey( 'Test123', '|#|', '54321' )
+		);
+		$this->assertSame( $indexFirstKey, $indexSecondKey );
+		$this->assertSame( $tableNameFirstKey, $tableNameSecondKey );
 	}
 }

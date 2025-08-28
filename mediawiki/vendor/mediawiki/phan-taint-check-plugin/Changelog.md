@@ -1,5 +1,41 @@
 # MediaWiki Security Check Plugin changelog
 
+## v6.0.0
+### Breaking changes
+* (MW) Most of the taintedness values hardcoded in MediaWikiSecurityCheckPlugin::getCustomFuncTaints() have been removed, and annotations have been
+  added to the relevant methods in MediaWiki itself. Therefore, this version of phan-taint-check-plugin is only compatible with MediaWiki 1.41+.
+
+### New features
+* getCustomFuncTaints implementations can now return FunctionTaintedness objects directly, in addition to arrays.
+* Array keys (and shapes in general) are now tracked more granularly when backpropagating the effects of a function call.
+* (MW) Analyze the `$rows` argument to `Database::insert()` more accurately, and apply similar rules to `InsertQueryBuilder::row()` and `::rows()`.
+* Improved shape inference for several built-in array functions.
+* (MW) Treat the `help` key in HTMLForm descriptors as an HTML sink.
+* (MW) Add compatibility for new Parser FQSEN `\MediaWiki\Parser\Parser`. The non-namespaced version is also still supported.
+
+### Bug fixes
+* Fixed a bug where `*-taint` annotations in an interface method were only inherited by the method implementation in children classes.
+
+### Internal changes
+* Bumped phan/phan to 5.4.3
+
+## v5.0.0
+### Breaking changes
+* The raw_param taint flag was removed; error reporting is now sufficiently good that this is no longer needed, and can be treated as normal exec.
+* The taint type "misc" was removed. Use the appropriate category instead. This type was originally used for "rce" and "path", so the appropriate replacement could be one of those.
+* The `SecurityCheckMulti` issue type was removed. Now, the plugin emits one issue per taint type.
+* Dropped support for PHP 7.2 and 7.3.
+
+### New features
+* Added support for the effects of `unset( $var['k'] )` on the shape of `$var`.
+* The plugin now infers the effect of some array_* functions on the resulting taintedness more accurately.
+
+### Changed
+* The `SecurityCheck-RCE` and `SecurityCheck-PathTraversal` issue types now have critical severity.
+
+### Internal changes
+* Bumped phan/phan to 5.4.2
+
 ## v4.0.0
 ### Breaking changes
 * Global variables and property no longer have EXEC flags if they're later output. Previously, it was supposed to report assigning a tainted value to an object

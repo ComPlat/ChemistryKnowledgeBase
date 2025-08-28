@@ -2,7 +2,7 @@
 
 /**
  * @group Media
- * @covers SVGReader
+ * @covers \SVGReader
  */
 class SVGReaderTest extends \MediaWikiIntegrationTestCase {
 
@@ -33,18 +33,13 @@ class SVGReaderTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	private function assertMetadata( $infile, $expected ) {
-		try {
-			$svgReader = new SVGReader( $infile );
-			$data = $svgReader->getMetadata();
-
-			$this->assertEquals( $expected, $data, 'SVG metadata extraction test' );
-		} catch ( MWException $e ) {
-			if ( $expected === false ) {
-				$this->assertTrue( true, 'SVG metadata extracted test (expected failure)' );
-			} else {
-				throw $e;
-			}
+		if ( $expected === false ) {
+			$this->expectException( InvalidSVGException::class );
 		}
+		$svgReader = new SVGReader( $infile );
+		$data = $svgReader->getMetadata();
+
+		$this->assertEquals( $expected, $data, 'SVG metadata extraction test' );
 	}
 
 	public static function provideSvgFiles() {
@@ -107,8 +102,8 @@ class SVGReaderTest extends \MediaWikiIntegrationTestCase {
 			[
 				"$base/Speech_bubbles.svg",
 				[
-					'width' => 627,
-					'height' => 461,
+					'width' => 669,
+					'height' => 491,
 					'originalWidth' => '17.7cm',
 					'originalHeight' => '13cm',
 					'translations' => [
@@ -138,6 +133,17 @@ class SVGReaderTest extends \MediaWikiIntegrationTestCase {
 					'height' => 594,
 					'originalWidth' => '100%',
 					'originalHeight' => '100%',
+					'translations' => []
+				],
+			],
+			[
+				"$base/css-animated.svg",
+				[
+					'width' => 100,
+					'height' => 100,
+					'originalWidth' => '100',
+					'originalHeight' => '100',
+					'animated' => true,
 					'translations' => []
 				],
 			],
@@ -172,27 +178,32 @@ class SVGReaderTest extends \MediaWikiIntegrationTestCase {
 
 	public static function provideSvgUnits() {
 		return [
-			[ '1' , 1 ],
-			[ '1.1' , 1.1 ],
-			[ '0.1' , 0.1 ],
-			[ '.1' , 0.1 ],
-			[ '1e2' , 100 ],
-			[ '1E2' , 100 ],
-			[ '+1' , 1 ],
-			[ '-1' , -1 ],
-			[ '-1.1' , -1.1 ],
-			[ '1e+2' , 100 ],
-			[ '1e-2' , 0.01 ],
-			[ '10px' , 10 ],
-			[ '10pt' , 10 * 1.25 ],
-			[ '10pc' , 10 * 15 ],
-			[ '10mm' , 10 * 3.543307 ],
-			[ '10cm' , 10 * 35.43307 ],
-			[ '10in' , 10 * 90 ],
-			[ '10em' , 10 * 16 ],
-			[ '10ex' , 10 * 12 ],
-			[ '10%' , 51.2 ],
-			[ '10 px' , 10 ],
+			[ '1', 1 ],
+			[ '1.1', 1.1 ],
+			[ '0.1', 0.1 ],
+			[ '.1', 0.1 ],
+			[ '1e2', 100 ],
+			[ '1E2', 100 ],
+			[ '+1', 1 ],
+			[ '-1', -1 ],
+			[ '-1.1', -1.1 ],
+			[ '1e+2', 100 ],
+			[ '1e-2', 0.01 ],
+			[ '10px', 10 ],
+			[ '10.2cm', 10.2 * 37.795275 ],
+			[ '10pt', 10 * 1.333333 ],
+			[ '10pc', 10 * 16 ],
+			[ '10mm', 10 * 3.7795275 ],
+			[ '10q', 10 * 0.944881 ],
+			[ '10Q', 10 * 0.944881 ],
+			[ '10cm', 10 * 37.795275 ],
+			[ '10in', 10 * 96 ],
+			[ '10em', 10 * 16 ],
+			[ '10rem', 10 * 16 ],
+			[ '10ex', 10 * 8 ],
+			[ '10ch', 10 * 8 ],
+			[ '10%', 51.2 ],
+			[ '10 px', 10 ],
 			// Invalid values
 			[ '1e1.1', 10 ],
 			[ '10bp', 10 ],

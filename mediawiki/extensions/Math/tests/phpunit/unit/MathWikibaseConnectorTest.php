@@ -3,9 +3,10 @@
 namespace MediaWiki\Extension\Math\Tests;
 
 use DataValues\StringValue;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Config\ConfigException;
+use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
-use MWException;
+use Psr\Log\LoggerInterface;
 use Wikibase\DataModel\Entity\BasicEntityIdParser;
 use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\DataModel\Entity\Item;
@@ -30,13 +31,13 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 	}
 
 	public function testFetchInvalidLanguage() {
-		$languageFactory = $this->createMock( LanguageFactory::class );
-		$languageFactory->method( 'getLanguage' )
-			->willThrowException( new MWException( 'Invalid code' ) );
-		$mathWikibase = $this->getWikibaseConnector( $languageFactory );
+		$languageNameUtils = $this->createMock( LanguageNameUtils::class );
+		$languageNameUtils->method( 'isValidCode' )
+			->willReturn( false );
+		$mathWikibase = $this->getWikibaseConnector( null, $languageNameUtils );
 
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'Invalid language code specified.' );
+		$this->expectExceptionMessage( 'Invalid language code specified.' );
 		$mathWikibase->fetchWikibaseFromId( 'Q1', '&' );
 	}
 
@@ -44,17 +45,17 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 		$entityRevisionLookup = $this->createMock( EntityRevisionLookup::class );
 		$entityRevisionLookup->method( 'getEntityRevision' )
 			->willThrowException( new StorageException( 'Invalid code' ) );
-		$mathWikibase = $this->getWikibaseConnector( null, null, $entityRevisionLookup );
+		$mathWikibase = $this->getWikibaseConnector( null, null, null, $entityRevisionLookup );
 
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'Non-existing Wikibase ID.' );
+		$this->expectExceptionMessage( 'Non-existing Wikibase ID.' );
 		$mathWikibase->fetchWikibaseFromId( 'Q1', '&' );
 	}
 
 	public function testFetchNonExistingId() {
 		$mathWikibase = $this->getWikibaseConnector();
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'Non-existing Wikibase ID.' );
+		$this->expectExceptionMessage( 'Non-existing Wikibase ID.' );
 		$mathWikibase->fetchWikibaseFromId( 'Q1', 'en' );
 	}
 
@@ -67,7 +68,7 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 					if ( $id === 'Q1' ) {
 						return new ItemId( 'Q1' );
 					} else {
-						throw new \ConfigException();
+						throw new ConfigException();
 					}
 				} );
 
@@ -81,6 +82,7 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 		$mathWikibase = $this->getWikibaseConnector(
 			null,
 			null,
+			null,
 			$revisionLookupMock,
 			null,
 			$parserMock
@@ -88,7 +90,7 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 
 		// but obviously on non-existing errors when trying to fetch information
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'Non-existing Wikibase ID.' );
+		$this->expectExceptionMessage( 'Non-existing Wikibase ID.' );
 		$mathWikibase->fetchWikibaseFromId( 'Q1', 'en' );
 	}
 
@@ -104,9 +106,9 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 					}
 				} );
 
-		$mathWikibase = $this->getWikibaseConnector( null, null, null, null, $parserMock );
+		$mathWikibase = $this->getWikibaseConnector( null, null, null, null, null, $parserMock );
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'Invalid Wikibase ID.' );
+		$this->expectExceptionMessage( 'Invalid Wikibase ID.' );
 		$mathWikibase->fetchWikibaseFromId( '1', 'en' );
 	}
 
@@ -115,7 +117,7 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 		$entityRevisionMock = $this->createMock( EntityRevision::class );
 		$wikibaseConnector = $this->getWikibaseConnectorWithExistingItems( $entityRevisionMock );
 		$this->expectException( 'InvalidArgumentException' );
-		$this->expectErrorMessage( 'The specified Wikibase ID does not represented an item.' );
+		$this->expectExceptionMessage( 'The specified Wikibase ID does not represented an item.' );
 		$wikibaseConnector->fetchWikibaseFromId( 'Q1', 'en' );
 	}
 
@@ -131,7 +133,7 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 					if ( str_starts_with( $id, 'Q' ) ) {
 						return new ItemId( $id );
 					} else {
-						throw new \ConfigException();
+						throw new ConfigException();
 					}
 				} );
 
@@ -177,7 +179,8 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 	/**
 	 * @dataProvider provideItemSetups
 	 */
-	public function testFetchMassEnergyEquivalenceHasPartsItem( Item $item ) {
+	public function testFetchMassEnergyEquivalenceHasPartsItem( bool $hasPart ) {
+		$item = $this->setupMassEnergyEquivalenceItem( $hasPart );
 		$wikibaseConnector = $this->getWikibaseConnectorWithExistingItems( new EntityRevision( $item ) );
 		$wikibaseInfo = $wikibaseConnector->fetchWikibaseFromId( 'Q1', 'en' );
 
@@ -205,18 +208,27 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 	/**
 	 * @dataProvider provideItemSetups
 	 */
-	public function testFetchMassEnergyWithStorageExceptionLogging( Item $item ) {
-		$wikibaseConnector = $this->getWikibaseConnectorWithExistingItems( new EntityRevision( $item ), true );
+	public function testFetchMassEnergyWithStorageExceptionLogging( bool $hasPart ) {
+		$logger = $this->createMock( LoggerInterface::class );
+		$logger->expects( $this->once() )
+			->method( 'warning' )
+			->with( 'Cannot fetch URL for EntityId Q3. Reason: Test Exception' );
 
-		$this->expectError();
-		$this->expectErrorMessage( 'LOG[warning]: Cannot fetch URL for EntityId Q3. Reason: Test Exception' );
+		$item = $this->setupMassEnergyEquivalenceItem( $hasPart );
+		$wikibaseConnector = $this->getWikibaseConnectorWithExistingItems(
+			new EntityRevision( $item ),
+			true,
+			$logger
+		);
+
 		$wikibaseConnector->fetchWikibaseFromId( 'Q1', 'en' );
 	}
 
 	/**
 	 * @dataProvider provideItemSetups
 	 */
-	public function testFetchMassEnergyWithStorageException( Item $item ) {
+	public function testFetchMassEnergyWithStorageException( bool $hasPart ) {
+		$item = $this->setupMassEnergyEquivalenceItem( $hasPart );
 		$wikibaseConnector = $this->getWikibaseConnectorWithExistingItems(
 			new EntityRevision( $item ),
 			true,
@@ -237,10 +249,10 @@ class MathWikibaseConnectorTest extends MathWikibaseConnectorTestFactory {
 		}
 	}
 
-	public function provideItemSetups(): array {
+	public static function provideItemSetups(): array {
 		return [
-			[ $this->setupMassEnergyEquivalenceItem( true ) ],
-			[ $this->setupMassEnergyEquivalenceItem( false ) ],
+			[ true ],
+			[ false ],
 		];
 	}
 }

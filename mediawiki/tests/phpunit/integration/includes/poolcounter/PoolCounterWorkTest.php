@@ -21,15 +21,25 @@
  * @file
  */
 
+use MediaWiki\PoolCounter\PoolCounter;
+use MediaWiki\PoolCounter\PoolCounterWork;
+use MediaWiki\Status\Status;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub\Stub;
 use Psr\Log\LoggerInterface;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group Concurrency
- * @coversDefaultClass PoolCounterWork
+ * @coversDefaultClass \MediaWiki\PoolCounter\PoolCounterWork
  */
 class PoolCounterWorkTest extends MediaWikiIntegrationTestCase {
 
+	/**
+	 * @param MockObject $obj
+	 * @param array<string,Stub> $configMethods Method names mapped to return values
+	 * @return MockObject
+	 */
 	private function configureMock( $obj, $configMethods ) {
 		$obj->expects( $this->never() )
 			->method( $this->anythingBut( ...array_keys( $configMethods ) ) );
@@ -49,11 +59,10 @@ class PoolCounterWorkTest extends MediaWikiIntegrationTestCase {
 		$logger = $this->createMock( LoggerInterface::class );
 		$this->configureMock( $logger, $loggerMethods );
 
-		$this->setLogger( 'poolcounter', $logger );
-
 		$poolCounter = $this->getMockBuilder( PoolCounter::class )
 			->disableOriginalConstructor()
 			->getMockForAbstractClass();
+		$poolCounter->setLogger( $logger );
 
 		$this->configureMock( $poolCounter, $poolCounterMethods );
 
@@ -222,10 +231,9 @@ class PoolCounterWorkTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::execute
 	 */
 	public function testDoWorkRaiseException() {
-		$workerResults = 'SomeStringForResult';
-
+		$expectedException = new RuntimeException( __METHOD__ );
 		$worker = $this->configureFixture(
-			[ 'doWork' => $this->throwException( new MWException() ) ],
+			[ 'doWork' => $this->throwException( $expectedException ) ],
 			[
 				'acquireForMe' => $this->returnValue( Status::newGood( PoolCounter::LOCK_HELD ) ),
 				'release' => $this->returnValue( '' )
@@ -233,8 +241,8 @@ class PoolCounterWorkTest extends MediaWikiIntegrationTestCase {
 			[]
 		);
 
-		$this->expectException( MWException::class );
-		$result = $worker->execute();
+		$this->expectExceptionObject( $expectedException );
+		$worker->execute();
 	}
 
 	/**

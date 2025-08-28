@@ -31,11 +31,18 @@ class ParserTestTopLevelSuite extends TestSuite {
 	 * @{
 	 */
 
-	/** Include files shipped with MediaWiki core */
+	/**
+	 * Include files shipped with MediaWiki core
+	 */
 	public const CORE_ONLY = 1;
-	/** Include non core files as set in $wgParserTestFiles */
+	/** Include non core files returned by
+	 * ParserTestRunner::getParserTestFiles() (that is, parser tests belonging
+	 * to extensions).
+	 */
 	public const NO_CORE = 2;
-	/** Include anything set via $wgParserTestFiles */
+	/** Include anything returned by ParserTestRunner::getParserTestFiles(),
+	 * both core and extensions.
+	 */
 	public const WITH_ALL = self::CORE_ONLY | self::NO_CORE;
 
 	/** @} */
@@ -53,12 +60,12 @@ class ParserTestTopLevelSuite extends TestSuite {
 	 * @code
 	 * ParserTestTopLevelSuite::suite( ParserTestTopLevelSuite::NO_CORE );
 	 * @endcode
-	 * Get any test defined via $wgParserTestFiles:
+	 * Get any test returned by ParserTestRunner::getParserTestFiles():
 	 * @code
 	 * ParserTestTopLevelSuite::suite( ParserTestTopLevelSuite::WITH_ALL );
 	 * @endcode
 	 *
-	 * @param int $flags Bitwise flag to filter out the $wgParserTestFiles that
+	 * @param int $flags Bitwise flag to filter out the test files that
 	 * will be included.  Default: ParserTestTopLevelSuite::CORE_ONLY
 	 *
 	 * @return TestSuite
@@ -67,7 +74,7 @@ class ParserTestTopLevelSuite extends TestSuite {
 		return new self( $flags );
 	}
 
-	public function __construct( $flags, array $parserTestFlags = null ) {
+	public function __construct( $flags, ?array $parserTestFlags = null ) {
 		parent::__construct();
 
 		$this->ptRecorder = new PhpunitTestRecorder;
@@ -99,7 +106,7 @@ class ParserTestTopLevelSuite extends TestSuite {
 		# Filter out .txt files
 		$files = ParserTestRunner::getParserTestFiles();
 		foreach ( $files as $extName => $parserTestFile ) {
-			$isCore = ( strpos( $parserTestFile, $mwTestDir ) === 0 );
+			$isCore = str_starts_with( $parserTestFile, $mwTestDir );
 
 			if ( $isCore && $wantsCore ) {
 				self::debug( "included core parser tests: $parserTestFile" );
@@ -117,7 +124,7 @@ class ParserTestTopLevelSuite extends TestSuite {
 		$testList = [];
 		$counter = 0;
 		foreach ( $filesToTest as $extensionName => $fileName ) {
-			$isCore = ( strpos( $fileName, $mwTestDir ) === 0 );
+			$isCore = str_starts_with( $fileName, $mwTestDir );
 			if ( is_int( $extensionName ) ) {
 				// If there's no extension name because this is coming
 				// from the legacy global, then assume the next level directory

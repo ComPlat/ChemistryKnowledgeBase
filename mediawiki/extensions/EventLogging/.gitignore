@@ -1,9 +1,0 @@
-*~
-.*.swp
-/tests/suite.php
-/node_modules/
-/docs/
-/composer.lock
-/vendor
-.eslintcache
-/modules/lib/.foreign

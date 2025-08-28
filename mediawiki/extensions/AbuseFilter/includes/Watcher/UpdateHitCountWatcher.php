@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Watcher;
 
-use DeferredUpdates;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\AbuseFilter\CentralDBManager;
 use Wikimedia\Rdbms\IDatabase;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\LBFactory;
 
 /**
  * Watcher that updates hit counts of filters
@@ -13,21 +13,21 @@ use Wikimedia\Rdbms\ILoadBalancer;
 class UpdateHitCountWatcher implements Watcher {
 	public const SERVICE_NAME = 'AbuseFilterUpdateHitCountWatcher';
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+	/** @var LBFactory */
+	private $lbFactory;
 
 	/** @var CentralDBManager */
 	private $centralDBManager;
 
 	/**
-	 * @param ILoadBalancer $loadBalancer
+	 * @param LBFactory $lbFactory
 	 * @param CentralDBManager $centralDBManager
 	 */
 	public function __construct(
-		ILoadBalancer $loadBalancer,
+		LBFactory $lbFactory,
 		CentralDBManager $centralDBManager
 	) {
-		$this->loadBalancer = $loadBalancer;
+		$this->lbFactory = $lbFactory;
 		$this->centralDBManager = $centralDBManager;
 	}
 
@@ -38,7 +38,7 @@ class UpdateHitCountWatcher implements Watcher {
 		// Run in a DeferredUpdate to avoid primary database queries on raw/view requests (T274455)
 		DeferredUpdates::addCallableUpdate( function () use ( $localFilters, $globalFilters ) {
 			if ( $localFilters ) {
-				$this->updateHitCounts( $this->loadBalancer->getConnectionRef( DB_PRIMARY ), $localFilters );
+				$this->updateHitCounts( $this->lbFactory->getPrimaryDatabase(), $localFilters );
 			}
 
 			if ( $globalFilters ) {
@@ -53,11 +53,11 @@ class UpdateHitCountWatcher implements Watcher {
 	 * @param array $loggedFilters
 	 */
 	private function updateHitCounts( IDatabase $dbw, array $loggedFilters ): void {
-		$dbw->update(
-			'abuse_filter',
-			[ 'af_hit_count=af_hit_count+1' ],
-			[ 'af_id' => $loggedFilters ],
-			__METHOD__
-		);
+		$dbw->newUpdateQueryBuilder()
+			->update( 'abuse_filter' )
+			->set( [ 'af_hit_count=af_hit_count+1' ] )
+			->where( [ 'af_id' => $loggedFilters ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 }

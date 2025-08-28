@@ -1,16 +1,28 @@
 <?php
 
+namespace MediaWiki\Tests\Parser;
+
+use HtmlArmor;
+use LogicException;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentityValue;
+use MediaWikiLangTestCase;
+use MockTitleTrait;
 
 /**
  * @group Database
- * @covers Parser
- * @covers BlockLevelPass
+ * @covers \MediaWiki\Parser\Parser
+ * @covers \MediaWiki\Parser\BlockLevelPass
  */
 class ParserMethodsTest extends MediaWikiLangTestCase {
 	use MockTitleTrait;
@@ -112,7 +124,7 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 		$parser = $this->getServiceContainer()->getParser();
 		$po = ParserOptions::newFromAnon();
 		$parser->setHook( 'recursivecallparser', [ $this, 'helperParserFunc' ] );
-		$this->expectException( MWException::class );
+		$this->expectException( LogicException::class );
 		$this->expectExceptionMessage(
 			"Parser state cleared while parsing. Did you call Parser::parse recursively?"
 		);
@@ -147,13 +159,14 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers Parser
-	 * @covers ParserOutput::getSections
+	 * @covers \MediaWiki\Parser\Parser
+	 * @covers \MediaWiki\Parser\ParserOutput::getSections
 	 */
 	public function testGetSections() {
+		$this->overrideConfigValue( MainConfigNames::FragmentMode, [ 'html5' ] );
 		$title = Title::makeTitle( NS_MAIN, 'TestGetSections' );
 		$out = $this->getServiceContainer()->getParser()->parse(
-			"==foo==\n<h2>bar</h2>\n==baz==\n",
+			"==foo==\n<h2>bar</h2>\n==baz==\n== Romeo+Juliet %A Ó %20 ==\ntest",
 			$title,
 			ParserOptions::newFromAnon()
 		);
@@ -167,6 +180,7 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 				'fromtitle' => $title->getPrefixedDBkey(),
 				'byteoffset' => 0,
 				'anchor' => 'foo',
+				'linkAnchor' => 'foo',
 			],
 			[
 				'toclevel' => 1,
@@ -177,6 +191,7 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 				'fromtitle' => false,
 				'byteoffset' => null,
 				'anchor' => 'bar',
+				'linkAnchor' => 'bar',
 			],
 			[
 				'toclevel' => 1,
@@ -187,7 +202,19 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 				'fromtitle' => $title->getPrefixedDBkey(),
 				'byteoffset' => 21,
 				'anchor' => 'baz',
+				'linkAnchor' => 'baz',
 			],
+			[
+				'toclevel' => 1,
+				'level' => '2',
+				'line' => 'Romeo+Juliet %A Ó %20',
+				'number' => '4',
+				'index' => '3',
+				'fromtitle' => $title->getPrefixedDBkey(),
+				'byteoffset' => 29,
+				'anchor' => 'Romeo+Juliet_%A_Ó_%20',
+				'linkAnchor' => 'Romeo+Juliet_%A_Ó_%2520',
+			]
 		], $out->getSections(), 'getSections() with proper value when <h2> is used' );
 	}
 
@@ -221,6 +248,11 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 				'http://example.org/%23%2F%3F&=+;?%23/?%26%3D%2B%3B#%23/?&=+;',
 			],
 			[
+				'Removing dot segments in the path part only',
+				'http://example.org/foo/../bar?param=foo/../bar#foo/../bar',
+				'http://example.org/bar?param=foo/../bar#foo/../bar',
+			],
+			[
 				'IPv6 links aren\'t escaped',
 				'http://[::1]/foobar',
 				'http://[::1]/foobar',
@@ -231,18 +263,6 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 				'http://%5B::1%5D/foobar',
 			],
 		];
-	}
-
-	public function testWrapOutput() {
-		$title = Title::makeTitle( NS_MAIN, 'Foo' );
-		$po = ParserOptions::newFromAnon();
-		$parser = $this->getServiceContainer()->getParser();
-		$parser->parse( 'Hello World', $title, $po );
-		$text = $parser->getOutput()->getText();
-
-		$this->assertStringContainsString( 'Hello World', $text );
-		$this->assertStringContainsString( '<div', $text );
-		$this->assertStringContainsString( 'class="mw-parser-output"', $text );
 	}
 
 	public function provideRevisionAccess() {
@@ -389,7 +409,7 @@ class ParserMethodsTest extends MediaWikiLangTestCase {
 
 		$parser = $this->getServiceContainer()->getParser();
 		$parser->parse( $text, $title, $po, true, true, $revId );
-		$html = $parser->getOutput()->getText();
+		$html = $parser->getOutput()->getRawText();
 
 		$this->assertStringContainsString( $expectedInHtml, $html, 'In HTML' );
 

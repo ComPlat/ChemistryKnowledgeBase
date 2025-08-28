@@ -1,3 +1,4 @@
 /vm/
 .idea/
 /vendor
+composer.lock

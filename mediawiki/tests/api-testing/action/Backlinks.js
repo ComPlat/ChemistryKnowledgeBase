@@ -2,7 +2,7 @@
 
 const { action, assert, utils } = require( 'api-testing' );
 
-describe( 'Backlinks', function () {
+describe( 'Backlinks', () => {
 	const randomPage = utils.title( 'Esther' );
 
 	const linksToEsther1 = utils.title( 'LinksToEsther1' );
@@ -13,9 +13,9 @@ describe( 'Backlinks', function () {
 	before( async () => {
 		bob = await action.bob();
 
-		const randomPageText = `I'm guessing you came here from ${linksToEsther1} or ${linksToEsther2}.`;
+		const randomPageText = `I'm guessing you came here from ${ linksToEsther1 } or ${ linksToEsther2 }.`;
 
-		const text = `All I do is link to [[${randomPage}|Page]]`;
+		const text = `All I do is link to [[${ randomPage }|Page]]`;
 
 		await bob.edit( linksToEsther1, { text } );
 		await bob.edit( linksToEsther2, { text } );

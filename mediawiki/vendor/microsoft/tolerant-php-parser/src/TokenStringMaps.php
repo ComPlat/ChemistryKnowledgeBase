@@ -57,6 +57,7 @@ class TokenStringMaps {
         "interface" => TokenKind::InterfaceKeyword,
         "isset" => TokenKind::IsSetKeyword,
         "list" => TokenKind::ListKeyword,
+        "match" => TokenKind::MatchKeyword,
         "namespace" => TokenKind::NamespaceKeyword,
         "new" => TokenKind::NewKeyword,
         "or" => TokenKind::OrKeyword,
@@ -108,6 +109,7 @@ class TokenStringMaps {
         "void" => TokenKind::VoidReservedWord,
         "iterable" => TokenKind::IterableReservedWord,
         "mixed" => TokenKind::MixedReservedWord,
+        "never" => TokenKind::NeverReservedWord,
     ];
 
     const OPERATORS_AND_PUNCTUATORS = [

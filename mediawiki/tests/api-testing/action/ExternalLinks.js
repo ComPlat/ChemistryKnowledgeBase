@@ -2,12 +2,12 @@
 
 const { action, assert, utils } = require( 'api-testing' );
 
-describe( 'ExternalLinks', function testExternalLinks() {
+describe( 'ExternalLinks', () => {
 	const page = utils.title( 'ExternalLinkTest_' );
 	const links = [
 		'http://example.org/search-me',
 		'http://www.example.org/some-page',
-		'ssh://example.org'
+		'ssh://example.org/'
 	];
 
 	let alice;
@@ -15,7 +15,7 @@ describe( 'ExternalLinks', function testExternalLinks() {
 	before( async () => {
 		alice = await action.alice();
 
-		const text = links.reduce( ( currText, url ) => `${currText} [${url}]`, '' );
+		const text = links.reduce( ( currText, url ) => `${ currText } [${ url }]`, '' );
 
 		await alice.edit( page, { text } );
 	} );
@@ -35,7 +35,7 @@ describe( 'ExternalLinks', function testExternalLinks() {
 	it( 'can be filtered by protocol', async () => {
 		const result = await alice.prop( 'extlinks', page, { elprotocol: 'ssh' } );
 		const fetchedLinks = result[ page ].extlinks.map( ( p ) => p[ '*' ] );
-		assert.sameMembers( fetchedLinks, [ 'ssh://example.org' ] );
+		assert.sameMembers( fetchedLinks, [ 'ssh://example.org/' ] );
 	} );
 
 	it( 'throws an error on invalid protocol', async () => {

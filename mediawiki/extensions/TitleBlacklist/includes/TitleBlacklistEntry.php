@@ -9,11 +9,11 @@
 
 namespace MediaWiki\Extension\TitleBlacklist;
 
-use CoreParserFunctions;
-use Exception;
-use ExtensionRegistry;
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\AntiSpoof\AntiSpoof;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\CoreParserFunctions;
+use MediaWiki\Registration\ExtensionRegistry;
 use Wikimedia\AtEase\AtEase;
 
 /**
@@ -84,7 +84,7 @@ class TitleBlacklistEntry {
 		}
 
 		if ( !is_array( $wgTitleBlacklistUsernameSources ) ) {
-			throw new Exception(
+			throw new ConfigException(
 				'$wgTitleBlacklistUsernameSources must be "*", false or an array' );
 		}
 
@@ -128,7 +128,7 @@ class TitleBlacklistEntry {
 
 			if ( $status->isOK() ) {
 				// Remove version from return value
-				list( , $title ) = explode( ':', $status->getValue(), 2 );
+				[ , $title ] = explode( ':', $status->getValue(), 2 );
 			} else {
 				wfDebugLog( 'TitleBlacklist', 'AntiSpoof could not normalize "' . $title . '" ' .
 					$status->getMessage( false, false, 'en' )->text() . '.'
@@ -190,34 +190,24 @@ class TitleBlacklistEntry {
 		$regex = trim( $pockets[1] );
 		// We'll be matching against text form
 		$regex = str_replace( '_', ' ', $regex );
-		$opts_str = isset( $pockets[3] ) ? trim( $pockets[3] ) : '';
+		$opts_str = trim( $pockets[3] ?? '' );
 		// Parse opts
 		$opts = preg_split( '/\s*\|\s*/', $opts_str );
 		foreach ( $opts as $opt ) {
 			$opt2 = strtolower( $opt );
-			if ( $opt2 == 'autoconfirmed' ) {
-				$options['autoconfirmed'] = true;
-			}
-			if ( $opt2 == 'moveonly' ) {
-				$options['moveonly'] = true;
-			}
-			if ( $opt2 == 'newaccountonly' ) {
-				$options['newaccountonly'] = true;
-			}
-			if ( $opt2 == 'noedit' ) {
-				$options['noedit'] = true;
-			}
-			if ( $opt2 == 'casesensitive' ) {
-				$options['casesensitive'] = true;
-			}
-			if ( $opt2 == 'reupload' ) {
-				$options['reupload'] = true;
+			if ( in_array( $opt2, [
+				'antispoof',
+				'autoconfirmed',
+				'casesensitive',
+				'moveonly',
+				'newaccountonly',
+				'noedit',
+				'reupload',
+			] ) ) {
+				$options[$opt2] = true;
 			}
 			if ( preg_match( '/errmsg\s*=\s*(.+)/i', $opt, $matches ) ) {
 				$options['errmsg'] = $matches[1];
-			}
-			if ( $opt2 == 'antispoof' ) {
-				$options['antispoof'] = true;
 			}
 		}
 		// Process magic words
@@ -241,13 +231,7 @@ class TitleBlacklistEntry {
 					}
 			}
 		}
-		// Return result
-		if ( $regex ) {
-			// @phan-suppress-next-line SecurityCheck-ReDoS
-			return new TitleBlacklistEntry( $regex, $options, $raw, $source );
-		} else {
-			return null;
-		}
+		return $regex ? new TitleBlacklistEntry( $regex, $options, $raw, $source ) : null;
 	}
 
 	/**
@@ -286,8 +270,6 @@ class TitleBlacklistEntry {
 	}
 
 	/**
-	 * Set the format version
-	 *
 	 * @param int $v New version to set
 	 */
 	public function setFormatVersion( $v ) {
@@ -309,5 +291,3 @@ class TitleBlacklistEntry {
 		return $message ?: "titleblacklist-forbidden-{$operation}";
 	}
 }
-
-class_alias( TitleBlacklistEntry::class, 'TitleBlacklistEntry' );

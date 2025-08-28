@@ -1,8 +1,12 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
 
-class Scribunto_LuaMessageLibrary extends Scribunto_LuaLibraryBase {
+use MediaWiki\Language\RawMessage;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
+
+class MessageLibrary extends LibraryBase {
 	public function register() {
 		$lib = [
 			'plain' => [ $this, 'messagePlain' ],
@@ -38,10 +42,25 @@ class Scribunto_LuaMessageLibrary extends Scribunto_LuaLibraryBase {
 		} else {
 			$msg = Message::newFallbackSequence( $data['keys'] );
 		}
-		$msg->inLanguage( $data['lang'] )
-			->useDatabase( $data['useDB'] );
+		if ( is_string( $data['lang'] ) &&
+			!MediaWikiServices::getInstance()->getLanguageNameUtils()->isValidCode( $data['lang'] )
+		) {
+			throw new LuaError( "language code '{$data['lang']}' is invalid" );
+		} else {
+			$msg->inLanguage( $data['lang'] );
+		}
+		$msg->useDatabase( $data['useDB'] );
 		if ( $setParams ) {
-			$msg->params( array_values( $data['params'] ) );
+			foreach ( $data['params'] as $param ) {
+				// Only rawParam and numParam are supposed by the Lua message API
+				if ( is_array( $param ) && isset( $param['raw'] ) ) {
+					$msg->rawParams( $param );
+				} elseif ( is_array( $param ) && isset( $param['num'] ) ) {
+					$msg->numParams( $param );
+				} else {
+					$msg->params( $param );
+				}
+			}
 		}
 		return $msg;
 	}
@@ -53,12 +72,8 @@ class Scribunto_LuaMessageLibrary extends Scribunto_LuaLibraryBase {
 	 * @return string[]
 	 */
 	public function messagePlain( $data ) {
-		try {
-			$msg = $this->makeMessage( $data, true );
-			return [ $msg->plain() ];
-		} catch ( MWException $ex ) {
-			throw new Scribunto_LuaError( "msg:plain() failed (" . $ex->getMessage() . ")" );
-		}
+		$msg = $this->makeMessage( $data, true );
+		return [ $msg->plain() ];
 	}
 
 	/**
@@ -70,14 +85,10 @@ class Scribunto_LuaMessageLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function messageCheck( $what, $data ) {
 		if ( !in_array( $what, [ 'exists', 'isBlank', 'isDisabled' ] ) ) {
-			throw new Scribunto_LuaError( "invalid what for 'messageCheck'" );
+			throw new LuaError( "invalid what for 'messageCheck'" );
 		}
 
-		try {
-			$msg = $this->makeMessage( $data, false );
-			return [ call_user_func( [ $msg, $what ] ) ];
-		} catch ( MWException $ex ) {
-			throw new Scribunto_LuaError( "msg:$what() failed (" . $ex->getMessage() . ")" );
-		}
+		$msg = $this->makeMessage( $data, false );
+		return [ call_user_func( [ $msg, $what ] ) ];
 	}
 }

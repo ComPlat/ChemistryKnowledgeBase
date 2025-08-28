@@ -1,6 +1,14 @@
 <?php
 
+namespace MediaWiki\Tests\Parser;
+
+use DummyContentForTesting;
 use MediaWiki\Parser\ParserObserver;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Title\Title;
+use MediaWikiUnitTestCase;
+use TestLogger;
 
 /**
  * @covers \MediaWiki\Parser\ParserObserver
@@ -35,7 +43,7 @@ class ParserObserverTest extends MediaWikiUnitTestCase {
 		$this->assertArrayEquals( $expects, $logger->getBuffer() );
 	}
 
-	public function provideDuplicateParse() {
+	public static function provideDuplicateParse() {
 		yield [
 			'foo',
 			'bar',

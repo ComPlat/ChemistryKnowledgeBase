@@ -1,6 +1,6 @@
 # MediaWiki SCSS library
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ProfessionalWiki/SCSS/CI/master)](https://github.com/ProfessionalWiki/SCSS/actions?query=workflow%3ACI)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ProfessionalWiki/SCSS/ci.yml?branch=master)](https://github.com/ProfessionalWiki/SCSS/actions?query=workflow%3ACI)
 [![Latest Stable Version](https://poser.pugx.org/mediawiki/scss/version.png)](https://packagist.org/packages/mediawiki/scss)
 [![License](https://poser.pugx.org/mediawiki/scss/license)](https://packagist.org/packages/mediawiki/scss)
 
@@ -8,8 +8,8 @@ The MediaWiki SCSS library provides a ResourceLoader module capable of compiling
 
 ## Requirements
 
-- [PHP] 7.4.3 or later
-- [MediaWiki] 1.35 or later
+- [PHP] 8.0 or later
+- [MediaWiki] 1.39 or later
 - [Composer]
 
 ## Use
@@ -122,6 +122,15 @@ version 3][license] (or any later version).
 [contact-form]: https://professional.wiki/en/contact
 
 ## Release notes
+
+### Version 4.0.0
+
+Released on 2024-04-25
+
+* Raised minimum MediaWiki version from 1.35 to 1.39
+* Raised minimum PHP version from 7.4.3 to 8.0
+* Raised minimum `scssphp` version from 1.10.2 to 1.12.1
+* Modernized coding standards
 
 ### Version 3.0.1
 

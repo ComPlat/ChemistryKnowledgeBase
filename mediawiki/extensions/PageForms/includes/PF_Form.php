@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\Title\Title;
+
 /**
  * Represents a user-defined form.
  *
@@ -17,8 +19,9 @@ class PFForm {
 
 	static function create( $formName, $items ) {
 		$form = new PFForm();
-		$form->mFormName = ucfirst( str_replace( '_', ' ', $formName ) );
-		$form->mAssociatedCategory = null;
+		if ( $formName !== null ) {
+			$form->mFormName = ucfirst( str_replace( '_', ' ', $formName ) );
+		}
 		$form->mItems = $items;
 		return $form;
 	}

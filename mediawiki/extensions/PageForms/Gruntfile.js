@@ -1,5 +1,6 @@
 /* eslint-env node */
-module.exports = function ( grunt ) {
+module.exports = function (grunt) {
+	const conf = grunt.file.readJSON( 'extension.json' );
 	grunt.loadNpmTasks( 'grunt-eslint' );
 	grunt.loadNpmTasks( 'grunt-banana-checker' );
 
@@ -16,7 +17,6 @@ module.exports = function ( grunt ) {
 				'!libs/jquery.rateyo.js',
 				'!libs/FullCalendar/fullcalendar.js',
 				'!libs/FullCalendar/locale-all.js',
-				'!libs/FancyBox/jquery.fancybox.js',
 				'!libs/jstree.js',
 				'!libs/jsuites.js',
 				'!libs/jspreadsheet.js',

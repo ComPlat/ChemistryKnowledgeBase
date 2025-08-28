@@ -24,26 +24,30 @@
 
 namespace MediaWiki\Extension\CategoryTree;
 
-use Article;
-use Config;
-use Html;
-use IContextSource;
-use MediaWiki\Hook\OutputPageMakeCategoryLinksHook;
-use MediaWiki\Hook\OutputPageParserOutputHook;
+use MediaWiki\Config\Config;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Hook\CategoryViewer__doCategoryQueryHook;
+use MediaWiki\Hook\CategoryViewer__generateLinkHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Hook\SkinBuildSidebarHook;
 use MediaWiki\Hook\SpecialTrackingCategories__generateCatLinkHook;
 use MediaWiki\Hook\SpecialTrackingCategories__preprocessHook;
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkTarget;
-use MediaWiki\Page\Hook\ArticleFromTitleHook;
-use OutputPage;
-use Parser;
-use ParserOutput;
-use PPFrame;
-use Sanitizer;
+use MediaWiki\Output\Hook\OutputPageRenderCategoryLinkHook;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\ResourceLoader as RL;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFormatter;
 use Skin;
-use SpecialPage;
-use Title;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IResultWrapper;
 
 /**
  * Hooks for the CategoryTree extension, an AJAX based gadget
@@ -52,32 +56,32 @@ use Title;
  * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
  */
 class Hooks implements
-	ArticleFromTitleHook,
 	SpecialTrackingCategories__preprocessHook,
 	SpecialTrackingCategories__generateCatLinkHook,
-	OutputPageParserOutputHook,
 	SkinBuildSidebarHook,
 	ParserFirstCallInitHook,
-	OutputPageMakeCategoryLinksHook
+	OutputPageRenderCategoryLinkHook,
+	CategoryViewer__doCategoryQueryHook,
+	CategoryViewer__generateLinkHook
 {
+	private CategoryCache $categoryCache;
+	private Config $config;
+	private IConnectionProvider $dbProvider;
+	private LinkRenderer $linkRenderer;
+	private TitleFormatter $titleFormatter;
 
-	private const EXTENSION_DATA_FLAG = 'CategoryTree';
-
-	/** @var CategoryCache */
-	private $categoryCache;
-
-	/**
-	 * @var Config
-	 */
-	private $config;
-
-	/**
-	 * @param CategoryCache $categoryCache
-	 * @param Config $config
-	 */
-	public function __construct( CategoryCache $categoryCache, Config $config ) {
+	public function __construct(
+		CategoryCache $categoryCache,
+		Config $config,
+		IConnectionProvider $dbProvider,
+		LinkRenderer $linkRenderer,
+		TitleFormatter $titleFormatter
+	) {
 		$this->categoryCache = $categoryCache;
 		$this->config = $config;
+		$this->dbProvider = $dbProvider;
+		$this->linkRenderer = $linkRenderer;
+		$this->titleFormatter = $titleFormatter;
 	}
 
 	/**
@@ -181,102 +185,101 @@ class Hooks implements
 	 * @param array $argv
 	 * @param Parser|null $parser
 	 * @param PPFrame|null $frame
-	 * @param bool $allowMissing
 	 * @return bool|string
 	 */
 	public function parserHook(
 		$cat,
 		array $argv,
-		Parser $parser = null,
-		PPFrame $frame = null,
-		$allowMissing = false
+		?Parser $parser = null,
+		?PPFrame $frame = null
 	) {
 		if ( $parser ) {
-			# flag for use by Hooks::parserOutput
-			$parser->getOutput()->setExtensionData( self::EXTENSION_DATA_FLAG, true );
+			$parserOutput = $parser->getOutput();
+			$parserOutput->addModuleStyles( [ 'ext.categoryTree.styles' ] );
+			$parserOutput->addModules( [ 'ext.categoryTree' ] );
+
+			$disableCache = $this->config->get( 'CategoryTreeDisableCache' );
+			if ( $disableCache === true ) {
+				$parserOutput->updateCacheExpiry( 0 );
+			} elseif ( is_int( $disableCache ) ) {
+				$parserOutput->updateCacheExpiry( $disableCache );
+			}
 		}
 
-		$ct = new CategoryTree( $argv );
+		$ct = new CategoryTree( $argv, $this->config, $this->dbProvider, $this->linkRenderer );
 
 		$attr = Sanitizer::validateTagAttributes( $argv, 'div' );
 
 		$hideroot = isset( $argv['hideroot'] )
-			? CategoryTree::decodeBoolean( $argv['hideroot'] ) : null;
+			? OptionManager::decodeBoolean( $argv['hideroot'] ) : false;
 		$onlyroot = isset( $argv['onlyroot'] )
-			? CategoryTree::decodeBoolean( $argv['onlyroot'] ) : null;
-		$depthArg = isset( $argv['depth'] ) ? (int)$argv['depth'] : null;
+			? OptionManager::decodeBoolean( $argv['onlyroot'] ) : false;
+		$depthArg = isset( $argv['depth'] ) ? (int)$argv['depth'] : 1;
 
-		$depth = CategoryTree::capDepth( $ct->getOption( 'mode' ), $depthArg );
+		$depth = $ct->optionManager->capDepth( $depthArg );
 		if ( $onlyroot ) {
 			$depth = 0;
+			$message = '<span class="error">'
+				. wfMessage( 'categorytree-onlyroot-message' )->inContentLanguage()->parse()
+				. '</span>';
+			if ( $parser ) {
+				$parser->getOutput()->addWarningMsg( 'categorytree-deprecation-warning' );
+				$parser->addTrackingCategory( 'categorytree-deprecation-category' );
+			}
+		} else {
+			$message = '';
 		}
 
-		return $ct->getTag( $parser, $cat, $hideroot, $attr, $depth, $allowMissing );
+		return $message .
+			$ct->getTag( $cat ?? '', $hideroot, $attr, $depth );
 	}
 
 	/**
-	 * Hook callback that injects messages and things into the <head> tag,
-	 * if needed in the current page.
-	 * Does nothing if self::EXTENSION_DATA_FLAG is not set on $parserOutput extension data.
-	 * @param OutputPage $outputPage
-	 * @param ParserOutput $parserOutput
-	 */
-	public function onOutputPageParserOutput( $outputPage, $parserOutput ): void {
-		if ( $parserOutput->getExtensionData( self::EXTENSION_DATA_FLAG ) ) {
-			CategoryTree::setHeaders( $outputPage );
-		}
-	}
-
-	/**
-	 * ArticleFromTitle hook, override category page handling
-	 *
-	 * @param Title $title
-	 * @param Article|null &$article Article (object) that will be returned
-	 * @param IContextSource $context
-	 * @return bool|void True or no return value to continue or false to abort
-	 */
-	public function onArticleFromTitle( $title, &$article, $context ) {
-		if ( $title->getNamespace() === NS_CATEGORY ) {
-			$article = new CategoryTreeCategoryPage( $title );
-		}
-	}
-
-	/**
-	 * OutputPageMakeCategoryLinks hook, override category links
+	 * OutputPageRenderCategoryLink hook
 	 * @param OutputPage $out
-	 * @param array $categories
-	 * @param array &$links
-	 * @return bool
+	 * @param ProperPageIdentity $categoryTitle
+	 * @param string $text
+	 * @param ?string &$link
+	 * @return void
 	 */
-	public function onOutputPageMakeCategoryLinks( $out, $categories, &$links ) {
+	public function onOutputPageRenderCategoryLink(
+		OutputPage $out,
+		ProperPageIdentity $categoryTitle,
+		string $text,
+		?string &$link
+	): void {
 		if ( !$this->config->get( 'CategoryTreeHijackPageCategories' ) ) {
 			// Not enabled, don't do anything
-			return true;
+			return;
+		}
+		if ( !$categoryTitle->exists() ) {
+			// Category doesn't exist. Let the normal LinkRenderer generate the link.
+			return;
 		}
 
-		$options = $this->config->get( 'CategoryTreePageCategoryOptions' );
-		foreach ( $categories as $category => $type ) {
-			$links[$type][] = $this->parserHook( $category, $options, null, null, true );
-		}
 		CategoryTree::setHeaders( $out );
 
-		return false;
+		$options = $this->config->get( 'CategoryTreePageCategoryOptions' );
+		$link = $this->parserHook(
+			$this->titleFormatter->getPrefixedText( $categoryTitle ),
+			$options
+		);
 	}
 
 	/**
 	 * Get exported data for the "ext.categoryTree" ResourceLoader module.
 	 *
 	 * @internal For use in extension.json only.
+	 * @param RL\Context $context
+	 * @param Config $config
 	 * @return array Data to be serialised as data.json
 	 */
-	public static function getDataForJs() {
-		global $wgCategoryTreeCategoryPageOptions;
-
+	public static function getDataForJs( RL\Context $context, Config $config ) {
 		// Look, this is pretty bad but CategoryTree is just whacky, it needs to be rewritten
-		$ct = new CategoryTree( $wgCategoryTreeCategoryPageOptions );
+		$optionManager = new OptionManager( $config->get( 'CategoryTreeCategoryPageOptions' ), $config );
 
 		return [
-			'defaultCtOptions' => $ct->getOptionsAsJsStructure(),
+			'defaultCtOptions' => $optionManager->getOptionsAsJsStructure(),
 		];
 	}
 
@@ -311,5 +314,47 @@ class Hooks implements
 		$cat = $this->categoryCache->getCategory( $catTitle );
 
 		$html .= CategoryTree::createCountString( $specialPage->getContext(), $cat, 0 );
+	}
+
+	/**
+	 * @param string $type
+	 * @param IResultWrapper $res
+	 */
+	public function onCategoryViewer__doCategoryQuery( $type, $res ) {
+		if ( $type === 'subcat' && $res ) {
+			$this->categoryCache->fillFromQuery( $res );
+		}
+	}
+
+	/**
+	 * @param string $type
+	 * @param Title $title
+	 * @param string $html
+	 * @param string &$link
+	 * @return bool
+	 */
+	public function onCategoryViewer__generateLink( $type, $title, $html, &$link ) {
+		if ( $type !== 'subcat' || $link !== null ) {
+			return true;
+		}
+
+		$request = RequestContext::getMain()->getRequest();
+		if ( $request->getCheck( 'notree' ) ) {
+			return true;
+		}
+
+		$options = $this->config->get( 'CategoryTreeCategoryPageOptions' );
+		$mode = $request->getRawVal( 'mode' );
+		if ( $mode !== null ) {
+			$options['mode'] = $mode;
+		}
+		$tree = new CategoryTree( $options, $this->config, $this->dbProvider, $this->linkRenderer );
+
+		$cat = $this->categoryCache->getCategory( $title );
+
+		$link = $tree->renderNodeInfo( $title, $cat );
+
+		CategoryTree::setHeaders( RequestContext::getMain()->getOutput() );
+		return false;
 	}
 }

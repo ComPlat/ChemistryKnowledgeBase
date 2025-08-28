@@ -3,6 +3,7 @@
 use MediaWiki\Extension\Math\MathMathML;
 use MediaWiki\Extension\Math\MathRestbaseInterface;
 use MediaWiki\Extension\Math\Tests\MathMockHttpTrait;
+use MediaWiki\Parser\Parser;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -19,7 +20,7 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->setMwGlobals( 'wgMathoidCli', false );
+		$this->overrideConfigValue( 'MathoidCli', false );
 	}
 
 	/**
@@ -44,8 +45,8 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testChangeRootElemts() {
 		$mml = new MathMathML( '<mo>sin</mo>', [ 'type' => 'invalid' ] );
-		$mml->setAllowedRootElements( [ 'a','b' ] );
-		$this->assertSame( [ 'a','b' ], $mml->getAllowedRootElements() );
+		$mml->setAllowedRootElements( [ 'a', 'b' ] );
+		$this->assertSame( [ 'a', 'b' ], $mml->getAllowedRootElements() );
 	}
 
 	/**
@@ -55,24 +56,17 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testMakeRequestInvalid() {
 		$url = 'http://example.com/invalid';
-		$this->setMwGlobals( [
-			'wgMathMathMLUrl' => $url,
-		] );
+		$this->overrideConfigValue( 'MathMathMLUrl', $url );
 		$this->installMockHttp(
 			$this->makeFakeHttpRequest( 'Method Not Allowed', 405 )
 		);
 
 		$renderer = new MathMathML();
 		$requestReturn = $renderer->makeRequest();
-		$this->assertFalse( $requestReturn->isGood(),
-			"requestReturn is false if HTTP::post returns false." );
 		$this->assertNull( $requestReturn->getValue(),
-			"result value is null if HTTP::post returns false." );
-		$this->assertTrue(
-			$requestReturn->hasMessage(
-				wfMessage( 'math_invalidresponse', '', $url, 'Method Not Allowed' )
-			),
-			"return an error if HTTP::post returns false"
+			"result value is null if MediaWiki\\Http\\HttpRequestFactory::post returns false." );
+		$this->assertStatusError( 'math_invalidresponse', $requestReturn,
+			"return an error if MediaWiki\\Http\\HttpRequestFactory::post returns false"
 		);
 	}
 
@@ -88,9 +82,8 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$renderer = new MathMathML();
 
 		$requestReturn = $renderer->makeRequest();
-		$this->assertTrue( $requestReturn->isGood(), "successful call return" );
+		$this->assertStatusGood( $requestReturn, 'successful call return' );
 		$this->assertSame( 'test content', $requestReturn->getValue(), 'successful call' );
-		$this->assertArrayEquals( [], $requestReturn->getErrors(), "successful call error-message" );
 	}
 
 	/**
@@ -100,19 +93,15 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testMakeRequestTimeout() {
 		$url = 'http://example.com/timeout';
-		$this->setMwGlobals( [
-			'wgMathMathMLUrl' => $url,
-		] );
+		$this->overrideConfigValue( 'MathMathMLUrl', $url );
 		$this->installMockHttp(
 			$this->makeFakeTimeoutRequest()
 		);
 		$renderer = new MathMathML();
 
 		$requestReturn = $renderer->makeRequest();
-		$this->assertFalse( $requestReturn->isGood(), "timeout call return" );
 		$this->assertNull( $requestReturn->getValue(), "timeout call return" );
-		$this->assertTrue(
-			$requestReturn->hasMessage( wfMessage( 'math_timeout', '', $url ) ),
+		$this->assertStatusError( 'math_timeout', $requestReturn,
 			"timeout call errormessage"
 		);
 	}
@@ -176,7 +165,7 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 
 	public function testWarning() {
 		$this->setupGoodMathRestBaseMockHttp();
-		$this->setMwGlobals( "wgMathDisableTexFilter", 'always' );
+		$this->overrideConfigValue( 'MathDisableTexFilter', 'always' );
 
 		$renderer = new MathMathML();
 		$rbi = $this->getMockBuilder( MathRestbaseInterface::class )
@@ -208,11 +197,18 @@ class MathMathMLTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( "data-qid", $out );
 	}
 
+	public function testGetHtmlOutputNoSvg() {
+		$math = new MathMathML( "a+b" );
+		$out = $math->getHtmlOutput( false );
+		$this->assertStringNotContainsString( "<svg", $out );
+		$this->assertStringNotContainsString( "mwe-math-mathml-a11y", $out );
+		$this->assertStringContainsString( "mwe-math-mathml-", $out );
+	}
+
 	public function testEmpty() {
 		// TODO: Once render returns status, we won't need TestingAccessWrapper anymore.
 		$math = TestingAccessWrapper::newFromObject( new MathMathML( '' ) );
 		$renderStatus = $math->doRender();
-		$this->assertFalse( $renderStatus->isGood() );
-		$this->assertTrue( $renderStatus->hasMessage( 'math_empty_tex' ) );
+		$this->assertStatusError( 'math_empty_tex', $renderStatus );
 	}
 }

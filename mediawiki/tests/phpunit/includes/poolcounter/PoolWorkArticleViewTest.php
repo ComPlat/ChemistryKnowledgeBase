@@ -1,14 +1,19 @@
 <?php
 
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\Logger\Spi as LoggerSpi;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\PoolCounter\PoolWorkArticleView;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Status\Status;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * @covers PoolWorkArticleView
+ * @covers \MediaWiki\PoolCounter\PoolWorkArticleView
  * @group Database
  */
 class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
@@ -19,9 +24,8 @@ class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
 	 * @return LoggerSpi
 	 */
 	protected function getLoggerSpi( $logger = null ) {
-		$logger = $logger ?: new NullLogger();
 		$spi = $this->createNoOpMock( LoggerSpi::class, [ 'getLogger' ] );
-		$spi->method( 'getLogger' )->willReturn( $logger );
+		$spi->method( 'getLogger' )->willReturn( $logger ?? new NullLogger() );
 		return $spi;
 	}
 
@@ -34,7 +38,7 @@ class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
 	 */
 	protected function newPoolWorkArticleView(
 		WikiPage $page,
-		RevisionRecord $rev = null,
+		?RevisionRecord $rev = null,
 		$options = null
 	) {
 		if ( !$options ) {
@@ -95,7 +99,7 @@ class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertNotNull( $out );
 		$this->assertNotFalse( $out );
-		$this->assertStringContainsString( 'First', $out->getText() );
+		$this->assertStringContainsString( 'First', $out->getRawText() );
 	}
 
 	public function testDoWorkWithFakeRevision() {
@@ -117,7 +121,7 @@ class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'NOPE', $text );
 	}
 
-	public function provideMagicWords() {
+	public static function provideMagicWords() {
 		yield 'PAGEID' => [
 			'Test {{PAGEID}} Test',
 			static function ( RevisionRecord $rev ) {
@@ -192,7 +196,7 @@ class PoolWorkArticleViewTest extends MediaWikiIntegrationTestCase {
 		$work = $this->newPoolWorkArticleView( $page, $fakeRev, $options );
 		/** @var Status $status */
 		$status = $work->execute();
-		$this->assertTrue( $status->isGood() );
+		$this->assertStatusGood( $status );
 	}
 
 }

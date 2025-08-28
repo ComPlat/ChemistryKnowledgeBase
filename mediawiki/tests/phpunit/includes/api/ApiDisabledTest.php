@@ -1,18 +1,19 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
 /**
  * @group API
  * @group medium
  *
- * @covers ApiDisabled
+ * @covers MediaWiki\Api\ApiDisabled
  */
 class ApiDisabledTest extends ApiTestCase {
 	public function testDisabled() {
 		$this->mergeMwGlobalArrayValue( 'wgAPIModules',
 			[ 'login' => 'ApiDisabled' ] );
 
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'The "login" module has been disabled.' );
+		$this->expectApiErrorCode( 'moduledisabled' );
 
 		$this->doApiRequest( [ 'action' => 'login' ] );
 	}

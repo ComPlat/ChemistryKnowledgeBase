@@ -57,13 +57,17 @@ class PropertyDocumentationSniff implements Sniff {
 			return;
 		}
 
-		$find = Tokens::$scopeModifiers;
-		$find[] = T_WHITESPACE;
+		$find = Tokens::$emptyTokens;
 		$find[] = T_STATIC;
-		$find[] = T_VAR;
 		$find[] = T_NULLABLE;
 		$find[] = T_STRING;
-		$commentEnd = $phpcsFile->findPrevious( $find, $stackPtr - 1, null, true );
+		$visibilityPtr = $phpcsFile->findPrevious( $find, $stackPtr - 1, null, true );
+		if ( !$visibilityPtr || ( $tokens[$visibilityPtr]['code'] !== T_VAR &&
+			!isset( Tokens::$scopeModifiers[ $tokens[$visibilityPtr]['code'] ] ) )
+		) {
+			return;
+		}
+		$commentEnd = $phpcsFile->findPrevious( [ T_WHITESPACE ], $visibilityPtr - 1, null, true );
 		if ( $tokens[$commentEnd]['code'] === T_COMMENT ) {
 			// Inline comments might just be closing comments for
 			// control structures or functions instead of function comments
@@ -77,14 +81,16 @@ class PropertyDocumentationSniff implements Sniff {
 		if ( $tokens[$commentEnd]['code'] !== T_DOC_COMMENT_CLOSE_TAG
 			&& $tokens[$commentEnd]['code'] !== T_COMMENT
 		) {
-			$methodProps = $phpcsFile->getMemberProperties( $stackPtr );
-			$phpcsFile->addError(
-				'Missing class property doc comment',
-				$stackPtr,
-				// Messages used: MissingDocumentationPublic, MissingDocumentationProtected,
-				// MissingDocumentationPrivate
-				'MissingDocumentation' . ucfirst( $methodProps['scope'] )
-			);
+			$memberProps = $phpcsFile->getMemberProperties( $stackPtr );
+			if ( $memberProps['type'] === '' ) {
+				$phpcsFile->addError(
+					'Missing class property doc comment',
+					$stackPtr,
+					// Messages used: MissingDocumentationPublic, MissingDocumentationProtected,
+					// MissingDocumentationPrivate
+					'MissingDocumentation' . ucfirst( $memberProps['scope'] )
+				);
+			}
 			return;
 		}
 		if ( $tokens[$commentEnd]['code'] === T_COMMENT ) {
@@ -92,7 +98,7 @@ class PropertyDocumentationSniff implements Sniff {
 			$stackPtr, 'WrongStyle' );
 			return;
 		}
-		if ( $tokens[$commentEnd]['line'] !== $tokens[$stackPtr]['line'] - 1 ) {
+		if ( $tokens[$commentEnd]['line'] !== $tokens[$visibilityPtr]['line'] - 1 ) {
 			$error = 'There must be no blank lines after the class property comment';
 			$phpcsFile->addError( $error, $commentEnd, 'SpacingAfter' );
 		}
@@ -106,7 +112,7 @@ class PropertyDocumentationSniff implements Sniff {
 			}
 		}
 
-		$this->processVar( $phpcsFile, $commentStart );
+		$this->processVar( $phpcsFile, $commentStart, $stackPtr );
 	}
 
 	/**
@@ -114,8 +120,9 @@ class PropertyDocumentationSniff implements Sniff {
 	 *
 	 * @param File $phpcsFile The file being scanned.
 	 * @param int $commentStart The position in the stack where the comment started.
+	 * @param int $stackPtr The position in the stack where the property itself started (T_VARIABLE)
 	 */
-	private function processVar( File $phpcsFile, int $commentStart ): void {
+	private function processVar( File $phpcsFile, int $commentStart, int $stackPtr ): void {
 		$tokens = $phpcsFile->getTokens();
 		$var = null;
 		foreach ( $tokens[$commentStart]['comment_tags'] as $ptr ) {
@@ -160,8 +167,8 @@ class PropertyDocumentationSniff implements Sniff {
 			}
 			[ $type, $separatorLength, $comment ] = $this->splitTypeAndComment( $content );
 			$fixType = false;
-			// Check for unneeded punctation
-			$type = $this->fixTrailingPunctation(
+			// Check for unneeded punctuation
+			$type = $this->fixTrailingPunctuation(
 				$phpcsFile,
 				$varType,
 				$type,
@@ -211,8 +218,8 @@ class PropertyDocumentationSniff implements Sniff {
 					$type . ( $comment !== '' ? str_repeat( ' ', $separatorLength ) . $comment : '' )
 				);
 			}
-		} else {
-			$error = 'Missing @var tag in class property comment';
+		} elseif ( $phpcsFile->getMemberProperties( $stackPtr )['type'] === '' ) {
+			$error = 'Missing type or @var tag in class property comment';
 			$phpcsFile->addError( $error, $tokens[$commentStart]['comment_closer'], 'MissingVar' );
 		}
 	}

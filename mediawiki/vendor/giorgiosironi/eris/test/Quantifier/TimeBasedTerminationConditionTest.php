@@ -3,9 +3,22 @@ namespace Eris\Quantifier;
 
 use DateInterval;
 
-class TimeBasedTerminationConditionTest extends \PHPUnit_Framework_TestCase
+class TimeBasedTerminationConditionTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var \Closure
+     */
+    private $time;
+    /**
+     * @var int
+     */
+    private $currentTime;
+    /**
+     * @var TimeBasedTerminationCondition
+     */
+    private $condition;
+
+    protected function setUp(): void
     {
         $this->time = function () {
             return $this->currentTime;

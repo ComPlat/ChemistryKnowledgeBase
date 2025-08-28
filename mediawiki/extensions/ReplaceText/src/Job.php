@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * https://www.gnu.org/copyleft/gpl.html
  *
  * @file
  * @author Yaron Koren
@@ -21,31 +21,54 @@
  */
 namespace MediaWiki\Extension\ReplaceText;
 
-use CommentStoreComment;
 use Job as JobParent;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\MovePageFactory;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Title\Title;
+use MediaWiki\User\UserFactory;
+use MediaWiki\Watchlist\WatchlistManager;
 use RecentChange;
-use RequestContext;
-use TextContent;
-use Title;
-use User;
-use WatchAction;
 use Wikimedia\ScopedCallback;
-use WikiPage;
-use WikitextContent;
 
 /**
  * Background job to replace text in a given page
  * - based on /includes/RefreshLinksJob.php
  */
 class Job extends JobParent {
+	private MovePageFactory $movePageFactory;
+	private PermissionManager $permissionManager;
+	private UserFactory $userFactory;
+	private WatchlistManager $watchlistManager;
+	private WikiPageFactory $wikiPageFactory;
+
 	/**
 	 * Constructor.
 	 * @param Title $title
 	 * @param array|bool $params Cannot be === true
+	 * @param MovePageFactory $movePageFactory
+	 * @param PermissionManager $permissionManager
+	 * @param UserFactory $userFactory
+	 * @param WatchlistManager $watchlistManager
+	 * @param WikiPageFactory $wikiPageFactory
 	 */
-	function __construct( $title, $params = [] ) {
+	function __construct( $title, $params,
+		MovePageFactory $movePageFactory,
+		PermissionManager $permissionManager,
+		UserFactory $userFactory,
+		WatchlistManager $watchlistManager,
+		WikiPageFactory $wikiPageFactory
+	) {
 		parent::__construct( 'replaceText', $title, $params );
+		$this->movePageFactory = $movePageFactory;
+		$this->permissionManager = $permissionManager;
+		$this->userFactory = $userFactory;
+		$this->watchlistManager = $watchlistManager;
+		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
@@ -54,9 +77,13 @@ class Job extends JobParent {
 	 */
 	function run() {
 		// T279090
-		$current_user = User::newFromId( $this->params['user_id'] );
-		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-		if ( !$permissionManager->userCan(
+		$current_user = $this->userFactory->newFromId( $this->params['user_id'] );
+		if ( !$current_user->isRegistered() ) {
+			$this->error = 'replacetext: the user ID ' . $this->params['user_id'] .
+				' does not belong to a registered user.';
+			return false;
+		}
+		if ( !$this->permissionManager->userCan(
 			'replacetext', $current_user, $this->title
 		) ) {
 			$this->error = 'replacetext: permission no longer valid';
@@ -72,7 +99,7 @@ class Job extends JobParent {
 		}
 
 		if ( $this->title === null ) {
-			$this->error = "replaceText: Invalid title";
+			$this->error = 'replaceText: Invalid title';
 			return false;
 		}
 
@@ -85,39 +112,25 @@ class Job extends JobParent {
 			);
 
 			if ( $new_title === null ) {
-				$this->error = "replaceText: Invalid new title - " . $this->params['replacement_str'];
+				$this->error = 'replaceText: Invalid new title - ' . $this->params['replacement_str'];
 				return false;
 			}
 
 			$reason = $this->params['edit_summary'];
 			$create_redirect = $this->params['create_redirect'];
-			$mvPage = MediaWikiServices::getInstance()->getMovePageFactory()->newMovePage( $this->title, $new_title );
+			$mvPage = $this->movePageFactory->newMovePage( $this->title, $new_title );
 			$mvStatus = $mvPage->move( $current_user, $reason, $create_redirect );
 			if ( !$mvStatus->isOK() ) {
-				$this->error = "replaceText: error while moving: " . $this->title->getPrefixedDBkey() .
-					". Errors: " . $mvStatus->getWikiText();
+				$this->error = 'replaceText: error while moving: ' . $this->title->getPrefixedDBkey() .
+					'. Errors: ' . $mvStatus->getWikiText();
 				return false;
 			}
 
 			if ( $this->params['watch_page'] ) {
-				if ( method_exists( \MediaWiki\Watchlist\WatchlistManager::class, 'addWatch' ) ) {
-					// MW 1.37+
-					MediaWikiServices::getInstance()->getWatchlistManager()->addWatch( $current_user, $new_title );
-				} else {
-					// Method was removed, but we only invoke it in versions its
-					// still available, suppress phan error
-					// @phan-suppress-next-line PhanUndeclaredStaticMethod
-					WatchAction::doWatch( $new_title, $current_user );
-				}
-
+				$this->watchlistManager->addWatch( $current_user, $new_title );
 			}
 		} else {
-			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-				// MW 1.36+
-				$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->title );
-			} else {
-				$wikiPage = new WikiPage( $this->title );
-			}
+			$wikiPage = $this->wikiPageFactory->newFromTitle( $this->title );
 			$latestRevision = $wikiPage->getRevisionRecord();
 
 			if ( $latestRevision === null ) {
@@ -146,14 +159,6 @@ class Job extends JobParent {
 
 				$slotContent = $revisionSlots->getContent( $role );
 
-				if ( $slotContent->getModel() !== CONTENT_MODEL_WIKITEXT ) {
-					// The slot does not contain wikitext, give an error.
-					$this->error =
-						'replaceText: Slot "' . $role .
-						'" does not hold regular wikitext for wiki page "' . $this->title->getPrefixedDBkey() . '".';
-					return false;
-				}
-
 				if ( !( $slotContent instanceof TextContent ) ) {
 					// Sanity check: Does the slot actually contain TextContent?
 					$this->error =
@@ -178,7 +183,10 @@ class Job extends JobParent {
 				// If there's at least one replacement, modify the slot.
 				if ( $num_matches > 0 ) {
 					$hasMatches = true;
-					$updater->setContent( $role, new WikitextContent( $new_text ) );
+					$updater->setContent(
+						$role,
+						ContentHandler::makeContent( $new_text, $this->title, $slotContent->getModel() )
+					);
 				}
 			}
 
@@ -187,16 +195,14 @@ class Job extends JobParent {
 			if ( $hasMatches ) {
 				$edit_summary = CommentStoreComment::newUnsavedComment( $this->params['edit_summary'] );
 				$flags = EDIT_MINOR;
-				if ( $permissionManager->userHasRight( $current_user, 'bot' ) ) {
+				if ( $this->permissionManager->userHasRight( $current_user, 'bot' ) ) {
 					$flags |= EDIT_FORCE_BOT;
 				}
-				if ( isset( $this->params['doAnnounce'] ) &&
-					!$this->params['doAnnounce'] ) {
-					$flags |= EDIT_SUPPRESS_RC;
-					# fixme log this action
+				if ( isset( $this->params['botEdit'] ) && $this->params['botEdit'] ) {
+					$flags |= EDIT_FORCE_BOT;
 				}
-				if ( $permissionManager->userHasRight( $current_user, 'patrol' ) ||
-					$permissionManager->userHasRight( $current_user, 'autopatrol' ) ) {
+				if ( $this->permissionManager->userHasRight( $current_user, 'patrol' ) ||
+					$this->permissionManager->userHasRight( $current_user, 'autopatrol' ) ) {
 					$updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
 				}
 				$updater->saveRevision( $edit_summary, $flags );

@@ -271,6 +271,32 @@ class ConfigBuilder {
 	}
 
 	/**
+	 * Adds one or more built-in plugins.
+	 * @param string[] $plugins
+	 * @return self
+	 */
+	public function addPlugins( array $plugins ): self {
+		$this->options['plugins'] = array_merge(
+			$this->options['plugins'] ?? [],
+			$plugins
+		);
+		return $this;
+	}
+
+	/**
+	 * Adds one or more custom plugins.
+	 *
+	 * @param string[] $plugins
+	 * @return self
+	 */
+	public function addCustomPlugins( array $plugins ): self {
+		foreach ( $plugins as $plugin ) {
+			$this->options['plugins'][] = __DIR__ . "/Plugin/$plugin.php";
+		}
+		return $this;
+	}
+
+	/**
 	 * @internal
 	 * This should only be used by the config file in this repo.
 	 *

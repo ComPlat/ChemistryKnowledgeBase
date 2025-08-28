@@ -1,16 +1,22 @@
 <?php
 
 use MediaWiki\Block\DatabaseBlock;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\User\CentralId\CentralIdLookup;
+use MediaWiki\User\CentralId\LocalIdLookup;
+use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 
 /**
- * @covers LocalIdLookup
+ * @covers \MediaWiki\User\CentralId\LocalIdLookup
  * @group Database
  */
 class LocalIdLookupTest extends MediaWikiIntegrationTestCase {
 	use MockAuthorityTrait;
 
+	/** @var UserIdentity[] */
 	private $localUsers = [];
 
 	public function addDBData() {
@@ -41,14 +47,21 @@ class LocalIdLookupTest extends MediaWikiIntegrationTestCase {
 	}
 
 	private function newLookup( array $configOverride = [] ) {
-		return new LocalIdLookup(
+		$lookup = new LocalIdLookup(
 			new HashConfig( [
-				'SharedDB' => null,
-				'SharedTables' => [],
-				'LocalDatabases' => [],
+				MainConfigNames::SharedDB => null,
+				MainConfigNames::SharedTables => [],
+				MainConfigNames::LocalDatabases => [],
 			] + $configOverride ),
-			$this->getServiceContainer()->getDBLoadBalancer()
+			$this->getServiceContainer()->getConnectionProvider(),
+			$this->getServiceContainer()->getHideUserUtils()
 		);
+		$lookup->init(
+			'test',
+			$this->getServiceContainer()->getUserIdentityLookup(),
+			$this->getServiceContainer()->getUserFactory()
+		);
+		return $lookup;
 	}
 
 	public function testLookupCentralIds() {
@@ -126,9 +139,9 @@ class LocalIdLookupTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testIsAttachedShared( $sharedDB, $sharedTable, $localDBSet ) {
 		$lookup = $this->newLookup( [
-			'SharedDB' => $sharedDB ? "dummy" : null,
-			'SharedTables' => $sharedTable ? [ 'user' ] : [],
-			'LocalDatabases' => $localDBSet ? [ 'shared' ] : [],
+			MainConfigNames::SharedDB => $sharedDB ? "dummy" : null,
+			MainConfigNames::SharedTables => $sharedTable ? [ 'user' ] : [],
+			MainConfigNames::LocalDatabases => $localDBSet ? [ 'shared' ] : [],
 		] );
 		$this->assertSame(
 			$sharedDB && $sharedTable && $localDBSet,

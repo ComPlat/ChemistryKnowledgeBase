@@ -1,21 +1,28 @@
 <?php
 
-class Scribunto_LuaUriLibraryTest extends Scribunto_LuaEngineTestBase {
+namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon;
+
+use MediaWiki\MainConfigNames;
+
+/**
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaCommon\UriLibrary
+ */
+class UriLibraryTest extends LuaEngineTestBase {
 	/** @inheritDoc */
 	protected static $moduleName = 'UriLibraryTests';
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->setMwGlobals( [
-			'wgServer' => '//wiki.local',
-			'wgCanonicalServer' => 'http://wiki.local',
-			'wgUsePathInfo' => true,
-			'wgActionPaths' => [],
-			'wgScript' => '/w/index.php',
-			'wgScriptPath' => '/w',
-			'wgArticlePath' => '/wiki/$1',
-			'wgFragmentMode' => [ 'legacy', 'html5' ],
+		$this->overrideConfigValues( [
+			MainConfigNames::Server => '//wiki.local',
+			MainConfigNames::CanonicalServer => 'http://wiki.local',
+			MainConfigNames::UsePathInfo => true,
+			MainConfigNames::ActionPaths => [],
+			MainConfigNames::Script => '/w/index.php',
+			MainConfigNames::ScriptPath => '/w',
+			MainConfigNames::ArticlePath => '/wiki/$1',
+			MainConfigNames::FragmentMode => [ 'legacy', 'html5' ],
 		] );
 	}
 

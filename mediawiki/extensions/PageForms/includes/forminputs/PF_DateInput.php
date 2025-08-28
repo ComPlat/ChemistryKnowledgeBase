@@ -4,6 +4,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+
 /**
  * @ingroup PFFormInput
  */
@@ -93,8 +95,8 @@ class PFDateInput extends PFFormInput {
 
 		// Convert any date format to ISO standards.
 		$date = str_replace( "/", "-", $date );
-		// Special handling for "MM.YYYY" format.
-		if ( preg_match( '/^(\d\d)\.(\d\d\d\d)$/', $date, $matches ) ) {
+		// Special handling for "MM.YYYY" and "MM-YYYY" formats.
+		if ( preg_match( '/^(\d{1,2})[.-](\d\d\d\d)$/', $date, $matches ) ) {
 			$date = $matches[2] . '-' . $matches[1];
 		}
 		// Returns an array with detailed information about the date.
@@ -174,7 +176,7 @@ class PFDateInput extends PFFormInput {
 				$month = $date['month'];
 				$day = $date['day'];
 			} else {
-				list( $year, $month, $day ) = self::parseDate( $date );
+				[ $year, $month, $day ] = self::parseDate( $date );
 			}
 		} else {
 			// Just keep everything at null.

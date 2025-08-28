@@ -2,13 +2,18 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function vector($size, Generator $elementsGenerator)
 {
-    return new VectorGenerator($size, $elementsGenerator);
+    return Generators::vector($size, $elementsGenerator);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<list<T>>
+ */
 class VectorGenerator implements Generator
 {
     private $generator;
@@ -24,12 +29,12 @@ class VectorGenerator implements Generator
         $this->elementsGeneratorClass = get_class($generator);
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         return $this->generator->__invoke($size, $rand);
     }
 
-    public function shrink(GeneratedValueSingle $vector)
+    public function shrink(GeneratedValue $vector)
     {
         return $this->generator->shrink($vector);
     }

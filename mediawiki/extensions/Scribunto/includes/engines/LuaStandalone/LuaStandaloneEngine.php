@@ -3,12 +3,11 @@
 namespace MediaWiki\Extension\Scribunto\Engines\LuaStandalone;
 
 use Exception;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
 use MediaWiki\Logger\LoggerFactory;
-use ParserOutput;
-use Scribunto_LuaEngine;
-use Wikimedia\AtEase\AtEase;
+use MediaWiki\Parser\ParserOutput;
 
-class LuaStandaloneEngine extends Scribunto_LuaEngine {
+class LuaStandaloneEngine extends LuaEngine {
 	/** @var int|null */
 	protected static $clockTick;
 	/** @var array|false */
@@ -85,9 +84,8 @@ class LuaStandaloneEngine extends Scribunto_LuaEngine {
 	 */
 	protected function getClockTick() {
 		if ( self::$clockTick === null ) {
-			AtEase::suppressWarnings();
-			self::$clockTick = intval( shell_exec( 'getconf CLK_TCK' ) );
-			AtEase::restoreWarnings();
+			// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged,MediaWiki.Usage.ForbiddenFunctions.shell_exec
+			self::$clockTick = intval( @shell_exec( 'getconf CLK_TCK' ) );
 			if ( !self::$clockTick ) {
 				self::$clockTick = 100;
 			}

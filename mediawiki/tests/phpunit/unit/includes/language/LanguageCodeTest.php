@@ -1,17 +1,25 @@
 <?php
 
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
+use Wikimedia\Bcp47Code\Bcp47CodeValue;
+
 /**
- * @covers LanguageCode
  * @group Language
+ * @covers \MediaWiki\Language\LanguageCode
  *
  * @author Thiemo Kreuz
  */
 class LanguageCodeTest extends MediaWikiUnitTestCase {
+	use DummyServicesTrait;
 
 	public function testConstructor() {
-		$instance = new LanguageCode();
+		$instance = new LanguageCode( 'fa' );
 
 		$this->assertInstanceOf( LanguageCode::class, $instance );
+		$this->assertSame( 'fa', $instance->toString() );
 	}
 
 	public function testGetDeprecatedCodeMapping() {
@@ -196,9 +204,64 @@ class LanguageCodeTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * Test LanguageCode::isWellFormedLanguageTag()
+	 * @dataProvider provideBcp47ToInternal()
+	 */
+	public function testBcp47ToInternal( $expected, $bcp47 ) {
+		$result = LanguageCode::bcp47ToInternal( $bcp47 );
+		$this->assertEquals( $expected, $result );
+	}
+
+	/**
+	 * @dataProvider provideSupportedLanguageCodes()
+	 */
+	public function testBcp47ToInternalLanguage( $internalCode ) {
+		if ( $internalCode === 'egl' ) {
+			# 'egl' was added as an internal code prematurely; 'eml' hasn't
+			# been added to the deprecated list yet (T36217) and so only
+			# 'eml' is a "real" internal code.
+			$internalCode = 'eml';
+		}
+		$lang = $this->createMock( Language::class );
+		$lang->method( 'getCode' )->willReturn( $internalCode );
+		$result = LanguageCode::bcp47ToInternal( $lang );
+		$this->assertEquals( $internalCode, $result );
+	}
+
+	public function provideSupportedLanguageCodes() {
+		$lnu = $this->getDummyLanguageNameUtils();
+		$languages = $lnu->getLanguageNames(
+			LanguageNameUtils::AUTONYMS, LanguageNameUtils::SUPPORTED
+		);
+		foreach ( $languages as $code => $autonym ) {
+			yield [ $code ];
+		}
+	}
+
+	public function provideBcp47ToInternal() {
+		foreach ( $this->provideSupportedLanguageCodes() as $args ) {
+			$code = $args[0];
+			if ( $code === 'egl' ) {
+				# 'egl' was added as an internal code prematurely; 'eml' hasn't
+				# been added to the deprecated list yet (T36217) and so only
+				# 'eml' is a "real" internal code.
+				continue;
+			}
+			$bcp47 = LanguageCode::bcp47( $code );
+			yield "$code as string" => [ $code, $bcp47 ];
+			yield "$code as Bcp47Code object" => [ $code, new Bcp47CodeValue( $bcp47 ) ];
+			// Verify case-insensitivity: lowercase
+			$bcp47 = strtolower( $bcp47 );
+			yield "$code as lowercase string" => [ $code, $bcp47 ];
+			yield "$code as lowercase Bcp47Code object" => [ $code, new Bcp47CodeValue( $bcp47 ) ];
+			// Verify case-insensitivity: uppercase
+			$bcp47 = strtoupper( $bcp47 );
+			yield "$code as uppercase string" => [ $code, $bcp47 ];
+			yield "$code as uppercase Bcp47Code object" => [ $code, new Bcp47CodeValue( $bcp47 ) ];
+		}
+	}
+
+	/**
 	 * @dataProvider provideWellFormedLanguageTags
-	 * @covers LanguageCode::isWellFormedLanguageTag
 	 */
 	public function testWellFormedLanguageTag( $code, $message = '' ) {
 		$this->assertTrue(
@@ -244,13 +307,13 @@ class LanguageCodeTest extends MediaWikiUnitTestCase {
 			[ 'zh-cmn-Hant', 'three-letter variant and script' ],
 			[ 'zh-cmn-Hant-HK', 'three-letter variant, script and country' ],
 			[ 'xr-p-lze', 'Extension' ],
+			[ 'en-GB-oed', 'grandfathered language tag, mixed capitalisation' ],
+			[ 'en-gb-oed', 'grandfathered language tag, all lowercase' ],
 		];
 	}
 
 	/**
-	 * Negative test for LanguageCode::isWellFormedLanguageTag()
 	 * @dataProvider provideMalformedLanguageTags
-	 * @covers LanguageCode::isWellFormedLanguageTag
 	 */
 	public function testMalformedLanguageTag( $code, $message = '' ) {
 		$this->assertFalse(
@@ -303,10 +366,6 @@ class LanguageCodeTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-	/**
-	 * Negative test for LanguageCode::isWellFormedLanguageTag()
-	 * @covers LanguageCode::isWellFormedLanguageTag
-	 */
 	public function testLenientLanguageTag() {
 		$this->assertTrue(
 			LanguageCode::isWellFormedLanguageTag( 'pa_guru', true ),

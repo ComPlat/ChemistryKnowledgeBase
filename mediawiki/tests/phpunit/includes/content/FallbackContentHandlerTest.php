@@ -1,9 +1,19 @@
 <?php
 
+use MediaWiki\Content\FallbackContent;
+use MediaWiki\Content\FallbackContentHandler;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Parser\ParserObserver;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Title\Title;
+
 /**
  * See also unit tests at \MediaWiki\Tests\Unit\FallbackContentHandlerTest
  *
  * @group ContentHandler
+ * @covers \MediaWiki\Content\FallbackContentHandler
+ * @covers \MediaWiki\Content\ContentHandler
  */
 class FallbackContentHandlerTest extends MediaWikiLangTestCase {
 
@@ -15,26 +25,19 @@ class FallbackContentHandlerTest extends MediaWikiLangTestCase {
 			'wgContentHandlers',
 			[ self::CONTENT_MODEL => FallbackContentHandler::class ]
 		);
+		$this->setService( '_ParserObserver', $this->createMock( ParserObserver::class ) );
 	}
 
-	/**
-	 * @param string $data
-	 * @param string $type
-	 *
-	 * @return FallbackContent
-	 */
-	public function newContent( $data, $type = self::CONTENT_MODEL ) {
+	private function newContent( string $data, string $type = self::CONTENT_MODEL ) {
 		return new FallbackContent( $data, $type );
 	}
 
-	/**
-	 * @covers ContentHandler::getSlotDiffRenderer
-	 */
 	public function testGetSlotDiffRenderer() {
 		$context = new RequestContext();
 		$context->setRequest( new FauxRequest() );
 
 		$handler = new FallbackContentHandler( 'horkyporky' );
+		$this->hideDeprecated( 'ContentHandler::getSlotDiffRendererInternal' );
 		$slotDiffRenderer = $handler->getSlotDiffRenderer( $context );
 
 		$oldContent = $handler->unserializeContent( 'Foo' );
@@ -44,18 +47,20 @@ class FallbackContentHandlerTest extends MediaWikiLangTestCase {
 		$this->assertNotEmpty( $diff );
 	}
 
-	/**
-	 * @covers FallbackContentHandler::fillParserOutput
-	 */
 	public function testGetParserOutput() {
 		$this->setUserLang( 'en' );
 		$this->setContentLang( 'qqx' );
 
-		$title = Title::newFromText( 'Test' );
+		$title = $this->createMock( Title::class );
+		$title->method( 'getPageLanguage' )
+			->willReturn( $this->getServiceContainer()->getContentLanguage() );
+
 		$content = $this->newContent( 'Horkyporky' );
 		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
-		$po = $contentRenderer->getParserOutput( $content, $title );
-		$html = $po->getText();
+		$opts = ParserOptions::newFromAnon();
+		// TODO T371004
+		$po = $contentRenderer->getParserOutput( $content, $title, null, $opts );
+		$html = $po->runOutputPipeline( $opts, [] )->getContentHolderText();
 		$html = preg_replace( '#<!--.*?-->#sm', '', $html ); // strip comments
 
 		$this->assertStringNotContainsString( 'Horkyporky', $html );

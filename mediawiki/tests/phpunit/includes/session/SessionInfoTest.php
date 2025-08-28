@@ -1,62 +1,69 @@
 <?php
 
-namespace MediaWiki\Session;
+namespace MediaWiki\Tests\Session;
 
+use InvalidArgumentException;
+use MediaWiki\Session\SessionInfo;
+use MediaWiki\Session\SessionManager;
+use MediaWiki\Session\SessionProvider;
+use MediaWiki\Session\UserInfo;
 use MediaWikiIntegrationTestCase;
+use stdClass;
 
 /**
  * @group Session
  * @group Database
- * @covers MediaWiki\Session\SessionInfo
+ * @covers \MediaWiki\Session\SessionInfo
  */
 class SessionInfoTest extends MediaWikiIntegrationTestCase {
 	use SessionProviderTestTrait;
 
 	public function testBasics() {
 		$anonInfo = UserInfo::newAnonymous();
-		$userInfo = UserInfo::newFromName( 'UTSysop', true );
-		$unverifiedUserInfo = UserInfo::newFromName( 'UTSysop', false );
+		$username = 'SessionInfoTestTestBasics';
+		$userInfo = UserInfo::newFromName( $username, true );
+		$unverifiedUserInfo = UserInfo::newFromName( $username, false );
 
 		try {
 			new SessionInfo( SessionInfo::MIN_PRIORITY - 1, [] );
 			$this->fail( 'Expected exception not thrown', 'priority < min' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid priority', $ex->getMessage(), 'priority < min' );
 		}
 
 		try {
 			new SessionInfo( SessionInfo::MAX_PRIORITY + 1, [] );
 			$this->fail( 'Expected exception not thrown', 'priority > max' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid priority', $ex->getMessage(), 'priority > max' );
 		}
 
 		try {
 			new SessionInfo( SessionInfo::MIN_PRIORITY, [ 'id' => 'ABC?' ] );
 			$this->fail( 'Expected exception not thrown', 'bad session ID' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid session ID', $ex->getMessage(), 'bad session ID' );
 		}
 
 		try {
-			new SessionInfo( SessionInfo::MIN_PRIORITY, [ 'userInfo' => new \stdClass ] );
+			new SessionInfo( SessionInfo::MIN_PRIORITY, [ 'userInfo' => new stdClass ] );
 			$this->fail( 'Expected exception not thrown', 'bad userInfo' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid userInfo', $ex->getMessage(), 'bad userInfo' );
 		}
 
 		try {
 			new SessionInfo( SessionInfo::MIN_PRIORITY, [] );
 			$this->fail( 'Expected exception not thrown', 'no provider, no id' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Must supply an ID when no provider is given', $ex->getMessage(),
 				'no provider, no id' );
 		}
 
 		try {
-			new SessionInfo( SessionInfo::MIN_PRIORITY, [ 'copyFrom' => new \stdClass ] );
+			new SessionInfo( SessionInfo::MIN_PRIORITY, [ 'copyFrom' => new stdClass ] );
 			$this->fail( 'Expected exception not thrown', 'bad copyFrom' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid copyFrom', $ex->getMessage(),
 				'bad copyFrom' );
 		}
@@ -91,7 +98,7 @@ class SessionInfoTest extends MediaWikiIntegrationTestCase {
 				'metadata' => 'foo',
 			] );
 			$this->fail( 'Expected exception not thrown', 'bad metadata' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Invalid metadata', $ex->getMessage(), 'bad metadata' );
 		}
 
@@ -327,7 +334,7 @@ class SessionInfoTest extends MediaWikiIntegrationTestCase {
 			'userInfo' => $userInfo
 		] );
 		$this->assertSame(
-			'[' . SessionInfo::MIN_PRIORITY . "]Mock<+:{$userInfo->getId()}:UTSysop>$id",
+			'[' . SessionInfo::MIN_PRIORITY . "]Mock<+:{$userInfo->getId()}:$username>$id",
 			(string)$info,
 			'toString'
 		);
@@ -339,7 +346,7 @@ class SessionInfoTest extends MediaWikiIntegrationTestCase {
 			'userInfo' => $unverifiedUserInfo
 		] );
 		$this->assertSame(
-			'[' . SessionInfo::MIN_PRIORITY . "]Mock<-:{$userInfo->getId()}:UTSysop>$id",
+			'[' . SessionInfo::MIN_PRIORITY . "]Mock<-:{$userInfo->getId()}:$username>$id",
 			(string)$info,
 			'toString'
 		);
@@ -350,8 +357,8 @@ class SessionInfoTest extends MediaWikiIntegrationTestCase {
 		$info1 = new SessionInfo( SessionInfo::MIN_PRIORITY + 1, [ 'id' => $id ] );
 		$info2 = new SessionInfo( SessionInfo::MIN_PRIORITY + 2, [ 'id' => $id ] );
 
-		$this->assertTrue( SessionInfo::compare( $info1, $info2 ) < 0, '<' );
-		$this->assertTrue( SessionInfo::compare( $info2, $info1 ) > 0, '>' );
-		$this->assertTrue( SessionInfo::compare( $info1, $info1 ) === 0, '==' );
+		$this->assertLessThan( 0, SessionInfo::compare( $info1, $info2 ), '<' );
+		$this->assertGreaterThan( 0, SessionInfo::compare( $info2, $info1 ), '>' );
+		$this->assertSame( 0, SessionInfo::compare( $info1, $info1 ), '==' );
 	}
 }

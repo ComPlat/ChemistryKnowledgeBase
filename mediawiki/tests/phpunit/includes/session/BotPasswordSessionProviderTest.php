@@ -1,41 +1,56 @@
 <?php
 
-namespace MediaWiki\Session;
+namespace MediaWiki\Tests\Session;
 
+use InvalidArgumentException;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Config\MultiConfig;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Session\BotPasswordSessionProvider;
+use MediaWiki\Session\Session;
+use MediaWiki\Session\SessionInfo;
+use MediaWiki\Session\SessionManager;
+use MediaWiki\Session\UserInfo;
+use MediaWiki\User\BotPassword;
 use MediaWikiIntegrationTestCase;
-use MultiConfig;
 use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use TestLogger;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group Session
  * @group Database
- * @covers MediaWiki\Session\BotPasswordSessionProvider
+ * @covers \MediaWiki\Session\BotPasswordSessionProvider
  */
 class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 	use SessionProviderTestTrait;
 
+	/** @var HashConfig */
 	private $config;
+	/** @var string */
+	private $configHash;
 
-	private function getProvider( $name = null, $prefix = null ) {
+	private function getProvider( $name = null, $prefix = null, $isApiRequest = true ) {
 		global $wgSessionProviders;
 
 		$params = [
 			'priority' => 40,
 			'sessionCookieName' => $name,
 			'sessionCookieOptions' => [],
+			'isApiRequest' => $isApiRequest,
 		];
 		if ( $prefix !== null ) {
 			$params['sessionCookieOptions']['prefix'] = $prefix;
 		}
 
-		if ( !$this->config ) {
-			$this->config = new \HashConfig( [
-				'CookiePrefix' => 'wgCookiePrefix',
-				'EnableBotPasswords' => true,
-				'BotPasswordsDatabase' => false,
-				'SessionProviders' => $wgSessionProviders + [
+		$configHash = json_encode( [ $name, $prefix, $isApiRequest ] );
+		if ( !$this->config || $this->configHash !== $configHash ) {
+			$this->config = new HashConfig( [
+				MainConfigNames::CookiePrefix => 'wgCookiePrefix',
+				MainConfigNames::EnableBotPasswords => true,
+				MainConfigNames::SessionProviders => $wgSessionProviders + [
 					BotPasswordSessionProvider::class => [
 						'class' => BotPasswordSessionProvider::class,
 						'args' => [ $params ],
@@ -43,10 +58,11 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 					]
 				],
 			] );
+			$this->configHash = $configHash;
 		}
 		$manager = new SessionManager( [
 			'config' => new MultiConfig( [ $this->config, $this->getServiceContainer()->getMainConfig() ] ),
-			'logger' => new \Psr\Log\NullLogger,
+			'logger' => new NullLogger,
 			'store' => new TestBagOStuff,
 		] );
 
@@ -58,7 +74,6 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 
 		$this->overrideConfigValues( [
 			MainConfigNames::EnableBotPasswords => true,
-			MainConfigNames::BotPasswordsDatabase => false,
 			MainConfigNames::CentralIdLookupProvider => 'local',
 			MainConfigNames::GrantPermissions => [
 				'test' => [ 'read' => true ],
@@ -76,24 +91,23 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 			->getLookup( 'local' )
 			->centralIdFromName( $sysop->getName() );
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->delete(
-			'bot_passwords',
-			[ 'bp_user' => $userId, 'bp_app_id' => 'BotPasswordSessionProvider' ],
-			__METHOD__
-		);
-		$dbw->insert(
-			'bot_passwords',
-			[
+		$dbw = $this->getDb();
+		$dbw->newDeleteQueryBuilder()
+			->deleteFrom( 'bot_passwords' )
+			->where( [ 'bp_user' => $userId, 'bp_app_id' => 'BotPasswordSessionProvider' ] )
+			->caller( __METHOD__ )->execute();
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'bot_passwords' )
+			->row( [
 				'bp_user' => $userId,
 				'bp_app_id' => 'BotPasswordSessionProvider',
 				'bp_password' => $passwordHash->toString(),
 				'bp_token' => 'token!',
 				'bp_restrictions' => '{"IPAddresses":["127.0.0.0/8"]}',
 				'bp_grants' => '["test"]',
-			],
-			__METHOD__
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	public function testConstructor() {
@@ -102,7 +116,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 		try {
 			$provider = new BotPasswordSessionProvider( $grantsInfo );
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame(
 				'MediaWiki\\Session\\BotPasswordSessionProvider::__construct: priority must be specified',
 				$ex->getMessage()
@@ -117,7 +131,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 				]
 			);
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame(
 				'MediaWiki\\Session\\BotPasswordSessionProvider::__construct: Invalid priority',
 				$ex->getMessage()
@@ -132,7 +146,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 				]
 			);
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame(
 				'MediaWiki\\Session\\BotPasswordSessionProvider::__construct: Invalid priority',
 				$ex->getMessage()
@@ -182,34 +196,33 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testProvideSessionInfo() {
-		$provider = $this->getProvider();
-		$request = new \FauxRequest;
+		$request = new FauxRequest;
 		$request->setCookie( '_BPsession', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'wgCookiePrefix' );
 
-		if ( !defined( 'MW_API' ) && !defined( 'MW_REST_API' ) ) {
-			$this->assertNull( $provider->provideSessionInfo( $request ) );
-			define( 'MW_API', 1 ); // TODO this irreversibly affects all future tests!
-		}
+		$provider = $this->getProvider( null, null, false );
+		$this->assertNull( $provider->provideSessionInfo( $request ) );
+
+		$provider = $this->getProvider();
 
 		$info = $provider->provideSessionInfo( $request );
 		$this->assertInstanceOf( SessionInfo::class, $info );
 		$this->assertSame( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $info->getId() );
 
-		$this->config->set( 'EnableBotPasswords', false );
+		$this->config->set( MainConfigNames::EnableBotPasswords, false );
 		$this->assertNull( $provider->provideSessionInfo( $request ) );
-		$this->config->set( 'EnableBotPasswords', true );
+		$this->config->set( MainConfigNames::EnableBotPasswords, true );
 
-		$this->assertNull( $provider->provideSessionInfo( new \FauxRequest ) );
+		$this->assertNull( $provider->provideSessionInfo( new FauxRequest ) );
 	}
 
 	public function testNewSessionInfoForRequest() {
 		$provider = $this->getProvider();
 		$user = static::getTestSysop()->getUser();
-		$request = $this->getMockBuilder( \FauxRequest::class )
+		$request = $this->getMockBuilder( FauxRequest::class )
 			->onlyMethods( [ 'getIP' ] )->getMock();
 		$request->method( 'getIP' )
 			->willReturn( '127.0.0.1' );
-		$bp = \BotPassword::newFromUser( $user, 'BotPasswordSessionProvider' );
+		$bp = BotPassword::newFromUser( $user, 'BotPasswordSessionProvider' );
 
 		$session = $provider->newSessionForRequest( $user, $bp, $request );
 		$this->assertInstanceOf( Session::class, $session );
@@ -222,22 +235,23 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 			'appId' => $bp->getAppId(),
 			'token' => $bp->getToken(),
 			'rights' => [ 'read' ],
+			'restrictions' => $bp->getRestrictions()->toJson(),
 		], $session->getProviderMetadata() );
 
 		$this->assertEquals( [ 'read' ], $session->getAllowedUserRights() );
 	}
 
 	public function testCheckSessionInfo() {
-		$logger = new \TestLogger( true );
+		$logger = new TestLogger( true );
 		$provider = $this->getProvider();
 		$this->initProvider( $provider, $logger );
 
 		$user = static::getTestSysop()->getUser();
-		$request = $this->getMockBuilder( \FauxRequest::class )
+		$request = $this->getMockBuilder( FauxRequest::class )
 			->onlyMethods( [ 'getIP' ] )->getMock();
 		$request->method( 'getIP' )
 			->willReturn( '127.0.0.1' );
-		$bp = \BotPassword::newFromUser( $user, 'BotPasswordSessionProvider' );
+		$bp = BotPassword::newFromUser( $user, 'BotPasswordSessionProvider' );
 
 		$data = [
 			'provider' => $provider,
@@ -252,7 +266,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 		];
 		$dataMD = $data['metadata'];
 
-		foreach ( array_keys( $data['metadata'] ) as $key ) {
+		foreach ( $data['metadata'] as $key => $_ ) {
 			$data['metadata'] = $dataMD;
 			unset( $data['metadata'][$key] );
 			$info = new SessionInfo( SessionInfo::MIN_PRIORITY, $data );
@@ -285,7 +299,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 		], $logger->getBuffer() );
 		$logger->clearBuffer();
 
-		$request2 = $this->getMockBuilder( \FauxRequest::class )
+		$request2 = $this->getMockBuilder( FauxRequest::class )
 			->onlyMethods( [ 'getIP' ] )->getMock();
 		$request2->method( 'getIP' )
 			->willReturn( '10.0.0.1' );
@@ -306,7 +320,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testGetAllowedUserRights() {
-		$logger = new \TestLogger( true );
+		$logger = new TestLogger( true );
 		$provider = $this->getProvider();
 		$this->initProvider( $provider, $logger );
 
@@ -316,7 +330,7 @@ class BotPasswordSessionProviderTest extends MediaWikiIntegrationTestCase {
 		try {
 			$provider->getAllowedUserRights( $backend );
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \InvalidArgumentException $ex ) {
+		} catch ( InvalidArgumentException $ex ) {
 			$this->assertSame( 'Backend\'s provider isn\'t $this', $ex->getMessage() );
 		}
 

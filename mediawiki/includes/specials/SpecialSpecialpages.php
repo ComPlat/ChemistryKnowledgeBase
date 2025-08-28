@@ -1,7 +1,5 @@
 <?php
 /**
- * Implements Special:Specialpages
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -18,15 +16,25 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @ingroup SpecialPage
  */
+
+namespace MediaWiki\Specials;
+
+use MediaWiki\Html\Html;
+use MediaWiki\Language\RawMessage;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputFlags;
+use MediaWiki\SpecialPage\UnlistedSpecialPage;
+use Wikimedia\Parsoid\Core\SectionMetadata;
+use Wikimedia\Parsoid\Core\TOCData;
 
 /**
  * A special page that lists special pages
  *
  * @ingroup SpecialPage
  */
-class SpecialSpecialpages extends UnlistedSpecialPage {
+class SpecialSpecialPages extends UnlistedSpecialPage {
 
 	public function __construct() {
 		parent::__construct( 'Specialpages' );
@@ -36,7 +44,7 @@ class SpecialSpecialpages extends UnlistedSpecialPage {
 		$out = $this->getOutput();
 		$this->setHeaders();
 		$this->outputHeader();
-		$out->setPreventClickjacking( false );
+		$out->getMetadata()->setPreventClickjacking( false );
 		$out->addModuleStyles( 'mediawiki.special' );
 
 		$groups = $this->getPageGroups();
@@ -59,17 +67,22 @@ class SpecialSpecialpages extends UnlistedSpecialPage {
 
 		// Put them into a sortable array
 		$groups = [];
-		/** @var SpecialPage $page */
 		foreach ( $pages as $page ) {
 			$group = $page->getFinalGroupName();
-			if ( !isset( $groups[$group] ) ) {
-				$groups[$group] = [];
+			$desc = $page->getDescription();
+			// T343849
+			if ( is_string( $desc ) ) {
+				wfDeprecated( "string return from {$page->getName()}::getDescription()", '1.41' );
+				$desc = ( new RawMessage( '$1' ) )->rawParams( $desc );
 			}
-			$groups[$group][$page->getDescription()] = [
-				$page->getPageTitle(),
-				$page->isRestricted(),
-				$page->isCached()
-			];
+			// (T360723) Only show an entry if the message isn't blanked, to allow on-wiki unlisting
+			if ( !$desc->isDisabled() ) {
+				$groups[$group][$desc->text()] = [
+					$page->getPageTitle(),
+					$page->isRestricted(),
+					$page->isCached()
+				];
+			}
 		}
 
 		// Sort
@@ -90,21 +103,87 @@ class SpecialSpecialpages extends UnlistedSpecialPage {
 	private function outputPageList( $groups ) {
 		$out = $this->getOutput();
 
+		// Legend
 		$includesRestrictedPages = false;
 		$includesCachedPages = false;
-
 		foreach ( $groups as $group => $sortedPages ) {
-			if ( strpos( $group, '/' ) !== false ) {
-				list( $group, $subGroup ) = explode( '/', $group, 2 );
-				$out->wrapWikiMsg(
-					"<h3 class=\"mw-specialpagessubgroup\">$1</h3>\n",
-					"specialpages-group-$group-$subGroup"
-				);
+			foreach ( $sortedPages as $desc => [ $title, $restricted, $cached ] ) {
+				if ( $cached ) {
+					$includesCachedPages = true;
+				}
+				if ( $restricted ) {
+					$includesRestrictedPages = true;
+				}
+			}
+		}
+
+		$notes = [];
+		if ( $includesRestrictedPages ) {
+			$restricedMsg = $this->msg( 'specialpages-note-restricted' );
+			if ( !$restricedMsg->isDisabled() ) {
+				$notes[] = $restricedMsg->parse();
+			}
+		}
+		if ( $includesCachedPages ) {
+			$cachedMsg = $this->msg( 'specialpages-note-cached' );
+			if ( !$cachedMsg->isDisabled() ) {
+				$notes[] = $cachedMsg->parse();
+			}
+		}
+		if ( $notes !== [] ) {
+			$legendHeading = $this->msg( 'specialpages-note-top' )->parse();
+
+			$legend = Html::rawElement(
+				'div',
+				[ 'class' => 'mw-changeslist-legend mw-specialpages-notes' ],
+				$legendHeading . implode( "\n", $notes )
+			);
+
+			$out->addHTML( $legend );
+			$out->addModuleStyles( 'mediawiki.special.changeslist.legend' );
+		}
+
+		// Format table of contents
+		$tocData = new TOCData();
+		$tocLength = 0;
+		foreach ( $groups as $group => $sortedPages ) {
+			if ( !str_contains( $group, '/' ) ) {
+				++$tocLength;
+				$tocData->addSection( new SectionMetadata(
+					1,
+					2,
+					$this->msg( "specialpages-group-$group" )->escaped(),
+					$this->getLanguage()->formatNum( $tocLength ),
+					(string)$tocLength,
+					null,
+					null,
+					"mw-specialpagesgroup-$group",
+					"mw-specialpagesgroup-$group"
+				) );
+			}
+		}
+
+		$pout = new ParserOutput;
+		$pout->setTOCData( $tocData );
+		$pout->setOutputFlag( ParserOutputFlags::SHOW_TOC );
+		$pout->setRawText( Parser::TOC_PLACEHOLDER );
+		$out->addParserOutput( $pout );
+
+		// Format contents
+		foreach ( $groups as $group => $sortedPages ) {
+			if ( str_contains( $group, '/' ) ) {
+				[ $group, $subGroup ] = explode( '/', $group, 2 );
+				$out->addHTML( Html::element(
+					'h3',
+					[ 'class' => "mw-specialpagessubgroup" ],
+					$this->msg( "specialpages-group-$group-$subGroup" )->text()
+				) . "\n" );
 			} else {
-				$out->wrapWikiMsg(
-					"<h2 class=\"mw-specialpagesgroup\" id=\"mw-specialpagesgroup-$group\">$1</h2>\n",
-					"specialpages-group-$group"
-				);
+				$out->addHTML( Html::element(
+					'h2',
+					[ 'class' => "mw-specialpagesgroup", 'id' => "mw-specialpagesgroup-$group" ],
+					$this->msg( "specialpages-group-$group" )->text()
+				) . "\n" );
 			}
 			$out->addHTML(
 				Html::openElement( 'div', [ 'class' => 'mw-specialpages-list' ] )
@@ -113,11 +192,9 @@ class SpecialSpecialpages extends UnlistedSpecialPage {
 			foreach ( $sortedPages as $desc => [ $title, $restricted, $cached ] ) {
 				$pageClasses = [];
 				if ( $cached ) {
-					$includesCachedPages = true;
 					$pageClasses[] = 'mw-specialpagecached';
 				}
 				if ( $restricted ) {
-					$includesRestrictedPages = true;
 					$pageClasses[] = 'mw-specialpagerestricted';
 				}
 
@@ -133,29 +210,11 @@ class SpecialSpecialpages extends UnlistedSpecialPage {
 				Html::closeElement( 'div' )
 			);
 		}
-
-		// add legend
-		$notes = [];
-		if ( $includesRestrictedPages ) {
-			$restricedMsg = $this->msg( 'specialpages-note-restricted' );
-			if ( !$restricedMsg->isDisabled() ) {
-				$notes[] = $restricedMsg->plain();
-			}
-		}
-		if ( $includesCachedPages ) {
-			$cachedMsg = $this->msg( 'specialpages-note-cached' );
-			if ( !$cachedMsg->isDisabled() ) {
-				$notes[] = $cachedMsg->plain();
-			}
-		}
-		if ( $notes !== [] ) {
-			$out->wrapWikiMsg(
-				"<h2 class=\"mw-specialpages-note-top\">$1</h2>", 'specialpages-note-top'
-			);
-			$out->wrapWikiTextAsInterface(
-				'mw-specialpages-notes',
-				implode( "\n", $notes )
-			);
-		}
 	}
 }
+
+/**
+ * Retain the old class name for backwards compatibility.
+ * @deprecated since 1.41
+ */
+class_alias( SpecialSpecialPages::class, 'SpecialSpecialpages' );

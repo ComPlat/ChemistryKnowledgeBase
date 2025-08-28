@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\MainConfigNames;
+use MediaWiki\Title\Title;
 
 /**
  * For doing Image Page tests that rely on 404 thumb handling
@@ -34,7 +35,7 @@ class ImagePage404Test extends MediaWikiMediaTestCase {
 	}
 
 	/**
-	 * @covers ImagePage::getThumbSizes
+	 * @covers \ImagePage::getThumbSizes
 	 * @dataProvider providerGetThumbSizes
 	 * @param string $filename
 	 * @param int $expectedNumberThumbs How many thumbnails to show
@@ -49,7 +50,7 @@ class ImagePage404Test extends MediaWikiMediaTestCase {
 		$this->assertCount( $expectedNumberThumbs, $actual );
 	}
 
-	public function providerGetThumbSizes() {
+	public static function providerGetThumbSizes() {
 		return [
 			[ 'animated.gif', 6 ],
 			[ 'Toll_Texas_1.svg', 6 ],

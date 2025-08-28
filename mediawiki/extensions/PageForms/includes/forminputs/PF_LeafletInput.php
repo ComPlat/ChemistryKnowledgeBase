@@ -6,6 +6,9 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFFormInput
  */
@@ -45,13 +48,12 @@ class PFLeafletInput extends PFOpenLayersInput {
 		$wgOut->addModules( 'ext.pageforms.maps' );
 
 		if ( array_key_exists( 'image', $other_args ) ) {
-			global $wgUploadDirectory;
 			$fileName = $other_args['image'];
 			$fileTitle = Title::makeTitleSafe( NS_FILE, $fileName );
 			$imagePage = new ImagePage( $fileTitle );
 			$file = $imagePage->getDisplayedFile();
-			$filePath = $wgUploadDirectory . '/' . $file->getUrlRel();
-			list( $imageWidth, $imageHeight, $type, $attr ) = getimagesize( $filePath );
+			$filePath = $file->getLocalRefPath();
+			[ $imageWidth, $imageHeight, $type, $attr ] = getimagesize( $filePath );
 			if ( !array_key_exists( 'height', $other_args ) && !array_key_exists( 'width', $other_args ) ) {
 				// Scale down image if it's huge.
 				$maxDimension = max( $imageHeight, $imageWidth );

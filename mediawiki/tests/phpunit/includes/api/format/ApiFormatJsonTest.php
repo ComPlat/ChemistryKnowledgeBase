@@ -1,11 +1,19 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Format;
+
+use InvalidArgumentException;
+use MediaWiki\Api\ApiFormatJson;
+use MediaWiki\Api\ApiResult;
+use MWException;
+
 /**
  * @group API
- * @covers ApiFormatJson
+ * @covers \MediaWiki\Api\ApiFormatJson
  */
 class ApiFormatJsonTest extends ApiFormatTestBase {
 
+	/** @inheritDoc */
 	protected $printerName = 'json';
 
 	private static function addFormatVersion( $format, $arr ) {
@@ -131,7 +139,7 @@ class ApiFormatJsonTest extends ApiFormatTestBase {
 				[
 					[ 'foo' => "\xFF" ],
 					new MWException(
-						'Internal error in ApiFormatJson::execute: ' .
+						'Internal error in ' . ApiFormatJson::class . '::execute: ' .
 						'Unable to encode API result as JSON'
 					),
 					[],
@@ -147,7 +155,7 @@ class ApiFormatJsonTest extends ApiFormatTestBase {
 				[
 					[ 'foo' => NAN ],
 					new MWException(
-						'Internal error in ApiFormatJson::execute: ' .
+						'Internal error in ' . ApiFormatJson::class . '::execute: ' .
 						'Unable to encode API result as JSON'
 					),
 					[],

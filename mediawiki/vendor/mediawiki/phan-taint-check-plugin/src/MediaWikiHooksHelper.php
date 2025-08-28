@@ -2,7 +2,9 @@
 
 namespace SecurityCheckPlugin;
 
+use Phan\CodeBase;
 use Phan\Config;
+use Phan\Language\FQSEN\FullyQualifiedClassName;
 use Phan\Language\FQSEN\FullyQualifiedFunctionLikeName;
 use Phan\Language\FQSEN\FullyQualifiedFunctionName;
 use Phan\Language\FQSEN\FullyQualifiedMethodName;
@@ -34,6 +36,9 @@ class MediaWikiHooksHelper {
 	 * @phan-var array<string,FullyQualifiedFunctionLikeName[]>
 	 */
 	private $hookSubscribers = [];
+
+	private ?FullyQualifiedClassName $parserFQSEN = null;
+	private ?FullyQualifiedClassName $ppFrameFQSEN = null;
 
 	/** @var self|null */
 	private static $instance;
@@ -71,11 +76,8 @@ class MediaWikiHooksHelper {
 		if ( !isset( $this->hookSubscribers[$hookName] ) ) {
 			$this->hookSubscribers[$hookName] = [];
 		}
-		foreach ( $this->hookSubscribers[$hookName] as $subscribe ) {
-			if ( $subscribe === $fqsen ) {
-				// dupe
-				return true;
-			}
+		if ( in_array( $fqsen, $this->hookSubscribers[$hookName], true ) ) {
+			return true;
 		}
 		$this->hookSubscribers[$hookName][] = $fqsen;
 		return false;
@@ -184,12 +186,42 @@ class MediaWikiHooksHelper {
 			if ( !isset( $this->hookSubscribers[$hook] ) ) {
 				continue;
 			}
-			foreach ( $this->hookSubscribers[$hook] as $implFQSEN ) {
-				if ( $implFQSEN === $fqsen ) {
-					return $hook;
-				}
+			if ( in_array( $fqsen, $this->hookSubscribers[$hook], true ) ) {
+				return $hook;
 			}
 		}
 		return null;
+	}
+
+	public function getMwParserClassFQSEN( CodeBase $codeBase ): FullyQualifiedClassName {
+		if ( !$this->parserFQSEN ) {
+			$namespacedFQSEN = FullyQualifiedClassName::fromFullyQualifiedString(
+				'\\MediaWiki\\Parser\\Parser'
+			);
+			if ( $codeBase->hasClassWithFQSEN( $namespacedFQSEN ) ) {
+				$this->parserFQSEN = $namespacedFQSEN;
+			} else {
+				$this->parserFQSEN = FullyQualifiedClassName::fromFullyQualifiedString(
+					'\\Parser'
+				);
+			}
+		}
+		return $this->parserFQSEN;
+	}
+
+	public function getPPFrameClassFQSEN( CodeBase $codeBase ): FullyQualifiedClassName {
+		if ( !$this->ppFrameFQSEN ) {
+			$namespacedFQSEN = FullyQualifiedClassName::fromFullyQualifiedString(
+				'\\MediaWiki\\Parser\\PPFrame'
+			);
+			if ( $codeBase->hasClassWithFQSEN( $namespacedFQSEN ) ) {
+				$this->ppFrameFQSEN = $namespacedFQSEN;
+			} else {
+				$this->ppFrameFQSEN = FullyQualifiedClassName::fromFullyQualifiedString(
+					'\\PPFrame'
+				);
+			}
+		}
+		return $this->ppFrameFQSEN;
 	}
 }

@@ -1,17 +1,22 @@
 <?php
 
+use MediaWiki\Cache\LinkCache;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkRendererFactory;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Page\PageReferenceValue;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 
 /**
- * @covers MediaWiki\Linker\LinkRenderer
+ * @covers \MediaWiki\Linker\LinkRenderer
  */
 class LinkRendererTest extends MediaWikiLangTestCase {
 	use LinkCacheTestTrait;
+	use MockTitleTrait;
 
 	/**
 	 * @var LinkRendererFactory
@@ -21,7 +26,6 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->overrideConfigValues( [
-			MainConfigNames::ArticlePath => '/wiki/$1',
 			MainConfigNames::Server => '//example.org',
 			MainConfigNames::CanonicalServer => 'http://example.org',
 			MainConfigNames::ScriptPath => '/w',
@@ -30,7 +34,7 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		$this->factory = $this->getServiceContainer()->getLinkRendererFactory();
 	}
 
-	public function provideMergeAttribs() {
+	public static function provideMergeAttribs() {
 		yield [ new TitleValue( NS_SPECIAL, 'BlankPage' ) ];
 		yield [ new PageReferenceValue( NS_SPECIAL, 'BlankPage', PageReference::LOCAL ) ];
 	}
@@ -57,7 +61,7 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	public function provideMakeKnownLink() {
+	public static function provideMakeKnownLink() {
 		yield [ new TitleValue( NS_MAIN, 'Foobar' ) ];
 		yield [ new PageReferenceValue( NS_MAIN, 'Foobar', PageReference::LOCAL ) ];
 	}
@@ -67,7 +71,10 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 	 * @covers \MediaWiki\Linker\LinkRenderer::makeKnownLink
 	 */
 	public function testMakeKnownLink( $target ) {
-		$linkRenderer = $this->factory->create();
+		$linkCache = $this->createMock( LinkCache::class );
+		$linkCache->method( 'addLinkObj' )->willReturn( 42 );
+		$this->setService( 'LinkCache', $linkCache );
+		$linkRenderer = $this->getServiceContainer()->getLinkRendererFactory()->create();
 
 		// Query added
 		$this->assertEquals(
@@ -90,7 +97,7 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	public function provideMakeBrokenLink() {
+	public static function provideMakeBrokenLink() {
 		yield [
 			new TitleValue( NS_MAIN, 'Foobar' ),
 			new TitleValue( NS_SPECIAL, 'Foobar' )
@@ -132,14 +139,14 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		// fragment stripped
 		if ( $target instanceof LinkTarget ) {
 			$this->assertEquals(
-				'<a href="/w/index.php?title=Foobar&amp;action=foobar" class="new" '
+				'<a href="/w/index.php?title=Foobar&amp;action=edit&amp;redlink=1" class="new" '
 				. 'title="Foobar (page does not exist)">Foobar</a>',
 				$linkRenderer->makeBrokenLink( $target->createFragmentTarget( 'foobar' ) )
 			);
 		}
 	}
 
-	public function provideMakeLink() {
+	public static function provideMakeLink() {
 		yield [
 			new TitleValue( NS_SPECIAL, 'Foobar' ),
 			new TitleValue( NS_SPECIAL, 'BlankPage' )
@@ -185,7 +192,60 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	public function provideGetLinkClasses() {
+	public static function provideMakeRedirectHeader() {
+		return [
+			[
+				[
+					'title' => 'Main_Page',
+				],
+				'<div class="redirectMsg"><p>Redirect to:</p><ul class="redirectText"><li><a class="new" title="Main Page (page does not exist)">Main Page</a></li></ul></div>'
+			],
+			[
+				[
+					'title' => 'Redirect',
+					'redirect' => true,
+				],
+				'<div class="redirectMsg"><p>Redirect to:</p><ul class="redirectText"><li><a class="new" title="Redirect (page does not exist)">Redirect</a></li></ul></div>'
+			],
+			// Test "forceKnown"; change namespace to NS_SPECIAL so we don't
+			// have to mock the LinkCache.
+			[
+				[
+					'title' => 'Main_Page',
+					'namespace' => NS_SPECIAL,
+					'forceKnown' => true,
+				],
+				'<div class="redirectMsg"><p>Redirect to:</p><ul class="redirectText"><li><a title="Special:Main Page">Special:Main Page</a></li></ul></div>',
+			],
+			[
+				[
+					'title' => 'Redirect',
+					'namespace' => NS_SPECIAL,
+					'redirect' => true,
+					'forceKnown' => true,
+				],
+				'<div class="redirectMsg"><p>Redirect to:</p><ul class="redirectText"><li><a href="/w/index.php?title=Special:Redirect&amp;redirect=no" title="Special:Redirect">Special:Redirect</a></li></ul></div>',
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider provideMakeRedirectHeader
+	 * @covers \MediaWiki\Linker\LinkRenderer::makeRedirectHeader
+	 */
+	public function testMakeRedirectHeader( $test, $expected ) {
+		$lang = $this->getServiceContainer()->getContentLanguage();
+		$target = $this->makeMockTitle( $test['title'], $test );
+		$forceKnown = $test['forceKnown'] ?? false;
+
+		$linkRenderer = $this->factory->create();
+		$this->assertEquals(
+			$expected,
+			$linkRenderer->makeRedirectHeader( $lang, $target, $forceKnown )
+		);
+	}
+
+	public static function provideGetLinkClasses() {
 		yield [
 			new TitleValue( NS_MAIN, 'FooBar' ),
 			new TitleValue( NS_MAIN, 'Redirect' ),
@@ -209,20 +269,20 @@ class LinkRendererTest extends MediaWikiLangTestCase {
 		$hookContainer = $services->getHookContainer();
 		$linkCache = $services->getLinkCache();
 		if ( $foobarTitle instanceof PageReference ) {
-			$cacheTitle = Title::castFromPageReference( $foobarTitle );
+			$cacheTitle = Title::newFromPageReference( $foobarTitle );
 		} else {
 			$cacheTitle = $foobarTitle;
 		}
 		$this->addGoodLinkObject( 1, $cacheTitle, 10, 0 );
 		if ( $redirectTitle instanceof PageReference ) {
-			$cacheTitle = Title::castFromPageReference( $redirectTitle );
+			$cacheTitle = Title::newFromPageReference( $redirectTitle );
 		} else {
 			$cacheTitle = $redirectTitle;
 		}
 		$this->addGoodLinkObject( 2, $cacheTitle, 10, 1 );
 
 		if ( $userTitle instanceof PageReference ) {
-			$cacheTitle = Title::castFromPageReference( $userTitle );
+			$cacheTitle = Title::newFromPageReference( $userTitle );
 		} else {
 			$cacheTitle = $userTitle;
 		}

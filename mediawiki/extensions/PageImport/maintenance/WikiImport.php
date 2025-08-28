@@ -61,8 +61,8 @@ class WikiImport extends Maintenance {
     public function __construct() {
         parent::__construct();
 
-        $this->addDescription( 'Script for exporting wiki pages to readable individual files.' );
-        $this->addOption( 'directory', 'files will be exported to subfolder of this diretory', false, true );
+        $this->addDescription( 'Script for importing wiki pages to readable individual files.' );
+        $this->addOption( 'directory', 'files will be exported to subfolder of this directory', false, true );
         $this->addOption( 'namespace', 'Only show/count jobs of a given type', false, true );
         $this->addOption( 'verbose', 'Show more details in the log output', false, false, 'v' );
         $this->addOption( 'force', 'Force import even if last revision is not auto-generated', false, false, 'f' );
@@ -142,24 +142,11 @@ class WikiImport extends Maintenance {
                     continue;
                 }
 
-                if ($nsID === NS_FILE) {
-                    global $wgFileExtensions;
-                    $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
-                    if (!in_array($fileExtension, $wgFileExtensions)) {
-                        $this->printLine("\tfile type not supported: $fileExtension\n");
-                        continue;
-                    }
-                    $imported = $this->uploadFile("$namespaceDir/$file", $file);
+                $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
+                if ($fileExtension == self::FILE_EXTENSION) {
+                    $imported = $this->importFile($nsID, $nsName, "$namespaceDir/$file");
                     if ($imported) {
                         $count++;
-                    }
-                } else {
-                    $fileExtension = pathinfo($file, PATHINFO_EXTENSION);
-                    if ($fileExtension == self::FILE_EXTENSION) {
-                        $imported = $this->importFile($nsID, $nsName, "$namespaceDir/$file");
-                        if ($imported) {
-                            $count++;
-                        }
                     }
                 }
             }
@@ -171,10 +158,10 @@ class WikiImport extends Maintenance {
 
     /**
      * import a single file.
-     * @param int    $nsId   ID of the namespace
+     * @param int    $nsID   ID of the namespace
      * @param string $nsName string representation of the namespace
      * @param string $file   filename including path of the file to import
-     * @return void
+     * @return bool
      */
     private function importFile($nsID, $nsName, $file) {
         $encodedFileName = pathinfo($file, PATHINFO_FILENAME);
@@ -375,10 +362,6 @@ class WikiImport extends Maintenance {
         $fileTitle = Title::newFromText($decodedFileName, NS_FILE);
         $fileInRepo = $this->fileRepo->newFile($fileTitle);
         if ($fileTitle->exists()) {
-            if ($fileInRepo->getLocalRefPath() == '' || is_null($fileInRepo->getLocalRefPath())) {
-                $this->printLine("\tignoring $filename -- no file found.\n");
-                return false;
-            }
             $hashOld = md5(file_get_contents($fileInRepo->getLocalRefPath()));
             $fileData = file_get_contents($location);
             $hashNew = md5($fileData);

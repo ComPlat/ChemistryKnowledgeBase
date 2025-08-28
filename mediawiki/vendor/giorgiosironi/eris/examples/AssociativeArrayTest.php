@@ -1,24 +1,25 @@
 <?php
-use Eris\Generator;
 
-class AssociativeArrayTest extends PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class AssociativeArrayTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
     public function testAssociativeArraysGeneratedOnStandardKeys()
     {
         $this->forAll(
-            Generator\associative([
-                'letter' => Generator\elements("A", "B", "C"),
-                'cipher' => Generator\choose(0, 9),
+            Generators::associative([
+                'letter' => Generators::elements("A", "B", "C"),
+                'cipher' => Generators::choose(0, 9),
             ])
         )
             ->then(function ($array) {
-                $this->assertEquals(2, count($array));
+                $this->assertCount(2, $array);
                 $letter = $array['letter'];
-                $this->assertInternalType('string', $letter);
+                \Eris\PHPUnitDeprecationHelper::assertIsString($letter);
                 $cipher = $array['cipher'];
-                $this->assertInternalType('integer', $cipher);
+                \Eris\PHPUnitDeprecationHelper::assertIsInt($cipher);
             });
     }
 }

@@ -2,17 +2,17 @@
 
 namespace MediaWiki\Tests\Rest\Handler;
 
-use BagOStuff;
 use Exception;
-use HashConfig;
+use MediaWiki\Content\TextContent;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Rest\Handler\RevisionSourceHandler;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWikiIntegrationTestCase;
-use TextContent;
 use Wikimedia\Message\MessageValue;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * @covers \MediaWiki\Rest\Handler\RevisionSourceHandler
@@ -28,14 +28,10 @@ class RevisionSourceHandlerTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		// Clean up these tables after each test
-		$this->tablesUsed = [
-			'page',
-			'revision',
-			'comment',
-			'text',
-			'content'
-		];
+		$this->overrideConfigValues( [
+			MainConfigNames::RightsUrl => 'https://example.com/rights',
+			MainConfigNames::RightsText => 'some rights',
+		] );
 	}
 
 	/**
@@ -43,15 +39,9 @@ class RevisionSourceHandlerTest extends MediaWikiIntegrationTestCase {
 	 * @return RevisionSourceHandler
 	 * @throws Exception
 	 */
-	private function newHandler( BagOStuff $cache = null ): RevisionSourceHandler {
+	private function newHandler( ?BagOStuff $cache = null ): RevisionSourceHandler {
 		$handler = new RevisionSourceHandler(
-			new HashConfig( [
-				'RightsUrl' => 'https://example.com/rights',
-				'RightsText' => 'some rights',
-			] ),
-			$this->getServiceContainer()->getRevisionLookup(),
-			$this->getServiceContainer()->getTitleFormatter(),
-			$this->getServiceContainer()->getPageStore()
+			$this->getServiceContainer()->getPageRestHelperFactory()
 		);
 
 		return $handler;
@@ -77,7 +67,7 @@ class RevisionSourceHandlerTest extends MediaWikiIntegrationTestCase {
 			[ 'pathParams' => [ 'id' => $firstRev->getId() ] ]
 		);
 
-		$htmlUrl = "https://wiki.example.com/rest/v1/revision/{$firstRev->getId()}/html";
+		$htmlUrl = "https://wiki.example.com/rest/mock/revision/{$firstRev->getId()}/html";
 
 		$handler = $this->newHandler();
 		$config = [ 'format' => 'bare' ];
@@ -158,6 +148,34 @@ class RevisionSourceHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $rev->getComment()->text, $data['comment'] );
 		$this->assertSame( $rev->getUser()->getId(), $data['user']['id'] );
 		$this->assertSame( $rev->getUser()->getName(), $data['user']['name'] );
+	}
+
+	/**
+	 * @param RevisionRecord $rev
+	 * @param array $data
+	 */
+	private function assertRestbaseCompatibleResponseData( RevisionRecord $rev, array $data ): void {
+		$page = $this->getServiceContainer()->getWikiPageFactory()
+			->newFromTitle( $rev->getPage() );
+
+		$this->assertSame( $page->getTitle()->getPrefixedDBkey(), $data['title'] );
+		$this->assertSame( $rev->getPage()->getId(), $data['page_id'] );
+		$this->assertSame( $rev->getId(), $data['rev'] );
+		$this->assertSame( $rev->getPage()->getNamespace(), $data['namespace'] );
+		$this->assertSame( $page->getUser(), $data['user_id'] );
+		$this->assertSame( $page->getUserText(), $data['user_text'] );
+		$this->assertSame(
+			wfTimestampOrNull( TS_ISO_8601, $page->getTimestamp() ),
+			$data['timestamp']
+		);
+		$this->assertSame( $rev->getComment()->text, $data['comment'] );
+		$this->assertSame( [], $data['tags'] );
+		$this->assertSame( [], $data['restrictions'] );
+		$this->assertSame(
+			$page->getTitle()->getPageLanguage()->getCode(),
+			$data['page_language']
+		);
+		$this->assertSame( $page->isRedirect(), $data['redirect'] );
 	}
 
 }

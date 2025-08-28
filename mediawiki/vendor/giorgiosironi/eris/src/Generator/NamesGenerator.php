@@ -2,12 +2,17 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function names()
 {
-    return NamesGenerator::defaultDataSet();
+    return Generators::names();
 }
 
+/**
+ * @template-implements Generator<string>
+ */
 class NamesGenerator implements Generator
 {
     private $list;
@@ -32,7 +37,7 @@ class NamesGenerator implements Generator
         $this->list = $list;
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         $candidateNames = $this->filterDataSet(
             $this->lengthLessThanOrEqualTo($size)
@@ -40,11 +45,11 @@ class NamesGenerator implements Generator
         if (!$candidateNames) {
             return GeneratedValueSingle::fromJustValue('', 'names');
         }
-        $index = $rand(0, count($candidateNames) - 1);
+        $index = $rand->rand(0, count($candidateNames) - 1);
         return GeneratedValueSingle::fromJustValue($candidateNames[$index], 'names');
     }
 
-    public function shrink(GeneratedValueSingle $value)
+    public function shrink(GeneratedValue $value)
     {
         $candidateNames = $this->filterDataSet(
             $this->lengthSlightlyLessThan(strlen($value->unbox()))

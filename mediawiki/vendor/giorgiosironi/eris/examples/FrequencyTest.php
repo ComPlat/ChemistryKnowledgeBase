@@ -1,7 +1,8 @@
 <?php
-use Eris\Generator;
 
-class FrequencyTest extends \PHPUnit_Framework_TestCase
+use Eris\Generators;
+
+class FrequencyTest extends \PHPUnit\Framework\TestCase
 {
     use Eris\TestTrait;
 
@@ -9,7 +10,7 @@ class FrequencyTest extends \PHPUnit_Framework_TestCase
     {
         $this
             ->forAll(
-                Generator\frequency(
+                Generators::frequency(
                     [8, false],
                     [4, 0],
                     [4, '']
@@ -24,10 +25,10 @@ class FrequencyTest extends \PHPUnit_Framework_TestCase
     {
         $this
             ->forAll(
-                Generator\frequency(
-                    [8, Generator\choose(1, 100)],
-                    [4, Generator\choose(100, 200)],
-                    [4, Generator\choose(200, 300)]
+                Generators::frequency(
+                    [8, Generators::choose(1, 100)],
+                    [4, Generators::choose(100, 200)],
+                    [4, Generators::choose(200, 300)]
                 )
             )
             ->then(function ($element) {

@@ -1,8 +1,20 @@
 <?php
 namespace Eris\Generator;
 
-class RegexGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class RegexGeneratorTest extends \PHPUnit\Framework\TestCase
 {
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
     public static function supportedRegexes()
     {
         return [
@@ -15,10 +27,10 @@ class RegexGeneratorTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
     /**
@@ -29,7 +41,7 @@ class RegexGeneratorTest extends \PHPUnit_Framework_TestCase
         $generator = new RegexGenerator($expression);
         for ($i = 0; $i < 100; $i++) {
             $value = $generator($this->size, $this->rand)->unbox();
-            $this->assertRegexp("/{$expression}/", $value);
+            \Eris\PHPUnitDeprecationHelper::assertMatchesRegularExpression("/{$expression}/", $value);
         }
     }
 

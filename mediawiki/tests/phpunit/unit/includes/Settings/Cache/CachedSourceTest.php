@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Tests\Unit\Settings\Cache;
 
-use HashBagOStuff;
 use MediaWiki\Settings\Cache\CacheableSource;
 use MediaWiki\Settings\Cache\CachedSource;
 use MediaWiki\Settings\SettingsBuilderException;
 use PHPUnit\Framework\TestCase;
+use Wikimedia\ObjectCache\HashBagOStuff;
 
 /**
  * @covers \MediaWiki\Settings\Cache\CachedSource
@@ -17,7 +17,7 @@ class CachedSourceTest extends TestCase {
 		$hashKey = 'abc123';
 		$ttl = 123;
 
-		list( $cache, $key ) = $this->createCacheMock( $hashKey );
+		[ $cache, $key ] = $this->createCacheMock( $hashKey );
 		$source = $this->createMock( CacheableSource::class );
 		$cacheSource = new CachedSource( $cache, $source );
 
@@ -69,7 +69,7 @@ class CachedSourceTest extends TestCase {
 		$settings = [ 'config' => [ 'Foo' => 'value' ] ];
 		$hashKey = 'abc123';
 
-		list( $cache, $key ) = $this->createCacheMock( $hashKey );
+		[ $cache, $key ] = $this->createCacheMock( $hashKey );
 		$source = $this->createMock( CacheableSource::class );
 		$cacheSource = new CachedSource( $cache, $source );
 
@@ -111,7 +111,7 @@ class CachedSourceTest extends TestCase {
 		$hashKey = 'abc123';
 		$expired = microtime( true ) - 1;
 
-		list( $cache, $key ) = $this->createCacheMock( $hashKey );
+		[ $cache, $key ] = $this->createCacheMock( $hashKey );
 		$source = $this->createMock( CacheableSource::class );
 		$cacheSource = new CachedSource( $cache, $source );
 
@@ -140,7 +140,7 @@ class CachedSourceTest extends TestCase {
 		$source
 			->expects( $this->once() )
 			->method( 'load' )
-			->will( $this->throwException( new SettingsBuilderException( 'foo' ) ) );
+			->willThrowException( new SettingsBuilderException( 'foo' ) );
 
 		$this->assertSame( $settings, $cacheSource->load() );
 	}
@@ -150,7 +150,7 @@ class CachedSourceTest extends TestCase {
 		$hashKey = 'abc123';
 		$expired = microtime( true ) - 1;
 
-		list( $cache, $key ) = $this->createCacheMock( $hashKey, [ 'lock' ] );
+		[ $cache, $key ] = $this->createCacheMock( $hashKey, [ 'lock' ] );
 		$source = $this->createMock( CacheableSource::class );
 		$cacheSource = new CachedSource( $cache, $source );
 
@@ -198,7 +198,7 @@ class CachedSourceTest extends TestCase {
 			array_merge( [ 'get', 'makeGlobalKey', 'set' ], $methods )
 		);
 
-		$key = 'global:MediaWiki\Tests\Unit\Settings\Cache\CachedSourceTest:' . $hashKey;
+		$key = 'global:' . self::class . ':' . $hashKey;
 
 		$cache
 			->expects( $this->once() )

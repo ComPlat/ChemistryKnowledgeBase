@@ -24,34 +24,29 @@
 
 namespace MediaWiki\Extension\CategoryTree;
 
-use Html;
-use HTMLForm;
+use MediaWiki\Html\Html;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 use SearchEngineFactory;
-use SpecialPage;
-use Title;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Special page for the CategoryTree extension, an AJAX based gadget
  * to display the category structure of a wiki
  */
 class CategoryTreePage extends SpecialPage {
-	public $target = '';
+	public string $target = '';
+	private IConnectionProvider $dbProvider;
+	private SearchEngineFactory $searchEngineFactory;
+	public ?CategoryTree $tree = null;
 
-	/** @var SearchEngineFactory */
-	private $searchEngineFactory;
-
-	/**
-	 * @var CategoryTree
-	 */
-	public $tree = null;
-
-	/**
-	 * @param SearchEngineFactory $searchEngineFactory
-	 */
 	public function __construct(
+		IConnectionProvider $dbProvider,
 		SearchEngineFactory $searchEngineFactory
 	) {
 		parent::__construct( 'CategoryTree' );
+		$this->dbProvider = $dbProvider;
 		$this->searchEngineFactory = $searchEngineFactory;
 	}
 
@@ -59,9 +54,9 @@ class CategoryTreePage extends SpecialPage {
 	 * @param string $name
 	 * @return mixed
 	 */
-	private function getOption( $name ) {
+	private function getOption( string $name ) {
 		if ( $this->tree ) {
-			return $this->tree->getOption( $name );
+			return $this->tree->optionManager->getOption( $name );
 		} else {
 			return $this->getConfig()->get( 'CategoryTreeDefaultOptions' )[$name];
 		}
@@ -101,7 +96,7 @@ class CategoryTreePage extends SpecialPage {
 			$options[$option] = $request->getVal( $option, $default );
 		}
 
-		$this->tree = new CategoryTree( $options );
+		$this->tree = new CategoryTree( $options, $config, $this->dbProvider, $this->getLinkRenderer() );
 
 		$this->getOutput()->addWikiMsg( 'categorytree-header' );
 
@@ -116,9 +111,9 @@ class CategoryTreePage extends SpecialPage {
 	 * Input form for entering a category
 	 */
 	private function executeInputForm() {
-		$namespaces = $this->getRequest()->getRawVal( 'namespaces' );
+		$namespaces = $this->getRequest()->getRawVal( 'namespaces' ) ?? '';
 		// mode may be overriden by namespaces option
-		$mode = ( $namespaces === null ? $this->getOption( 'mode' ) : CategoryTreeMode::ALL );
+		$mode = ( $namespaces === '' ? $this->getOption( 'mode' ) : CategoryTreeMode::ALL );
 		if ( $mode === CategoryTreeMode::CATEGORIES ) {
 			$modeDefault = 'categories';
 		} elseif ( $mode === CategoryTreeMode::PAGES ) {
@@ -133,6 +128,7 @@ class CategoryTreePage extends SpecialPage {
 				'name' => 'target',
 				'label-message' => 'categorytree-category',
 				'namespace' => NS_CATEGORY,
+				'default' => str_replace( '_', ' ', $this->target ),
 			],
 
 			'mode' => [
@@ -197,8 +193,8 @@ class CategoryTreePage extends SpecialPage {
 		$output->addHTML( Html::rawElement( 'div',
 			[
 				'class' => 'CategoryTreeResult CategoryTreeTag',
-				'data-ct-mode' => $this->tree->getOption( 'mode' ),
-				'data-ct-options' => $this->tree->getOptionsAsJsStructure(),
+				'data-ct-mode' => $this->tree->optionManager->getOption( 'mode' ),
+				'data-ct-options' => $this->tree->optionManager->getOptionsAsJsStructure(),
 			],
 			$this->tree->renderNode( $title, 1 )
 		) );
@@ -214,7 +210,7 @@ class CategoryTreePage extends SpecialPage {
 	 */
 	public function prefixSearchSubpages( $search, $limit, $offset ) {
 		$title = Title::newFromText( $search, NS_CATEGORY );
-		if ( $title && $title->getNamespace() !== NS_CATEGORY ) {
+		if ( $title && !$title->inNamespace( NS_CATEGORY ) ) {
 			// Someone searching for something like "Wikipedia:Foo"
 			$title = Title::makeTitleSafe( NS_CATEGORY, $search );
 		}

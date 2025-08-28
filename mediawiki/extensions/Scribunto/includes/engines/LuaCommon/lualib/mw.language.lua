@@ -63,12 +63,14 @@ function language.new( code )
 	if code == nil then
 		error( "too few arguments to mw.language.new()", 2 )
 	end
+	util.checkType( 'language.new', 1, code, 'string' )
 
 	local lang = { code = code }
 
 	local checkSelf = util.makeCheckSelfFunction( 'mw.language', 'lang', lang, 'language object' )
 
 	local wrappers = {
+		toBcp47Code = 0,
 		lcfirst = 1,
 		ucfirst = 1,
 		lc = 1,

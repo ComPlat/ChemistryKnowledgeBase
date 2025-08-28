@@ -28,7 +28,9 @@ use Phan\CodeBase;
 use Phan\Exception\CodeBaseException;
 use Phan\Language\Context;
 use Phan\Language\Element\FunctionInterface;
+use Phan\Language\Element\Method;
 use Phan\Language\FQSEN\FullyQualifiedClassName;
+use Phan\Language\Type\GenericArrayType;
 use SecurityCheckPlugin\FunctionTaintedness;
 use SecurityCheckPlugin\MWPreVisitor;
 use SecurityCheckPlugin\MWVisitor;
@@ -55,32 +57,6 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 	 * @inheritDoc
 	 */
 	protected function getCustomFuncTaints(): array {
-		$selectWrapper = [
-			self::SQL_EXEC_TAINT,
-			// List of fields. MW does not escape things like COUNT(*)
-			self::SQL_EXEC_TAINT,
-			// Where conditions
-			self::SQL_NUMKEY_EXEC_TAINT,
-			// the function name doesn't seem to be escaped
-			self::SQL_EXEC_TAINT,
-			// OPTIONS. Its complicated. HAVING is like WHERE
-			// This is treated as special case
-			self::NO_TAINT,
-			// Join conditions. This is treated as special case
-			self::NO_TAINT,
-			// What should DB results be considered?
-			'overall' => self::YES_TAINT
-		];
-
-		$linkRendererMethods = [
-			self::NO_TAINT, /* target */
-			self::ESCAPES_HTML, /* text (using HtmlArmor) */
-			// The array keys for this aren't escaped (!)
-			self::NO_TAINT, /* attribs */
-			self::NO_TAINT, /* query */
-			'overall' => self::ESCAPED_TAINT
-		];
-
 		$shellCommandOutput = [
 			// This is a bit unclear. Most of the time
 			// you should probably be escaping the results
@@ -88,239 +64,42 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			'overall' => self::YES_TAINT
 		];
 
+		$insertTaint = new FunctionTaintedness( Taintedness::newSafe() );
+		// table name
+		$insertTaint->setParamSinkTaint( 0, new Taintedness( self::SQL_EXEC_TAINT ) );
+		$insertTaint->addParamFlags( 0, self::NO_OVERRIDE );
+		// Insert values. The keys names are unsafe. The argument can be either a single row or an array of rows.
+		// Note, here we are assuming the single row case. The multiple rows case is handled in modifyParamSinkTaint.
+		$sqlExecKeysTaint = Taintedness::newSafe();
+		$sqlExecKeysTaint->addKeysTaintedness( self::SQL_EXEC_TAINT );
+		$insertTaint->setParamSinkTaint( 1, $sqlExecKeysTaint );
+		$insertTaint->addParamFlags( 1, self::NO_OVERRIDE );
+		// method name
+		$insertTaint->setParamSinkTaint( 2, new Taintedness( self::SQL_EXEC_TAINT ) );
+		$insertTaint->addParamFlags( 2, self::NO_OVERRIDE );
+		// options. They are not escaped
+		$insertTaint->setParamSinkTaint( 3, new Taintedness( self::SQL_EXEC_TAINT ) );
+		$insertTaint->addParamFlags( 3, self::NO_OVERRIDE );
+
+		$insertQBRowTaint = new FunctionTaintedness( Taintedness::newSafe() );
+		$insertQBRowTaint->setParamSinkTaint( 0, clone $sqlExecKeysTaint );
+		$insertQBRowTaint->addParamFlags( 0, self::NO_OVERRIDE );
+
+		$insertQBRowsTaint = new FunctionTaintedness( Taintedness::newSafe() );
+		$multiRowsTaint = Taintedness::newSafe();
+		$multiRowsTaint->setOffsetTaintedness( null, clone $sqlExecKeysTaint );
+		$insertQBRowsTaint->setParamSinkTaint( 0, $multiRowsTaint );
+		$insertQBRowsTaint->addParamFlags( 0, self::NO_OVERRIDE );
+
 		return [
 			// Note, at the moment, this checks where the function
 			// is implemented, so you can't use IDatabase.
-			'\Wikimedia\Rdbms\Database::query' => [
-				self::SQL_EXEC_TAINT,
-				// What should DB results be considered?
-				'overall' => self::YES_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::query' => [
-				self::SQL_EXEC_TAINT,
-				// What should DB results be considered?
-				'overall' => self::YES_TAINT
-			],
-			'\Wikimedia\Rdbms\IMaintainableDatabase::query' => [
-				self::SQL_EXEC_TAINT,
-				// What should DB results be considered?
-				'overall' => self::YES_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::query' => [
-				self::SQL_EXEC_TAINT,
-				// What should DB results be considered?
-				'overall' => self::YES_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::select' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::select' => $selectWrapper,
-			'\Wikimedia\Rdbms\Database::select' => $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::select' => $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::selectField' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::selectField' => $selectWrapper,
-			'\Wikimedia\Rdbms\Database::selectField' => $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::selectField' => $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::selectFieldValues' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::selectFieldValues' => $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::selectFieldValues' => $selectWrapper,
-			'\Wikimedia\Rdbms\Database::selectFieldValues' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::selectSQLText' => [
-					'overall' => self::YES_TAINT & ~self::SQL_TAINT
-				] + $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::selectSQLText' => [
-					'overall' => self::YES_TAINT & ~self::SQL_TAINT
-				] + $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::selectSQLText' => [
-					'overall' => self::YES_TAINT & ~self::SQL_TAINT
-				] + $selectWrapper,
-			'\Wikimedia\Rdbms\Database::selectSQLText' => [
-					'overall' => self::YES_TAINT & ~self::SQL_TAINT
-				] + $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::selectRowCount' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::selectRowCount' => $selectWrapper,
-			'\Wikimedia\Rdbms\Database::selectRowCount' => $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::selectRowCount' => $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::selectRow' => $selectWrapper,
-			'\Wikimedia\Rdbms\IMaintainableDatabase::selectRow' => $selectWrapper,
-			'\Wikimedia\Rdbms\Database::selectRow' => $selectWrapper,
-			'\Wikimedia\Rdbms\DBConnRef::selectRow' => $selectWrapper,
-			'\Wikimedia\Rdbms\IDatabase::delete' => [
-				self::SQL_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IMaintainableDatabase::delete' => [
-				self::SQL_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\Database::delete' => [
-				self::SQL_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::delete' => [
-				self::SQL_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::insert' => [
-				self::SQL_EXEC_TAINT, // table name
-				// FIXME This doesn't correctly work
-				// when inserting multiple things at once.
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::SQL_EXEC_TAINT, // options. They are not escaped
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IMaintainableDatabase::insert' => [
-				self::SQL_EXEC_TAINT, // table name
-				// FIXME This doesn't correctly work
-				// when inserting multiple things at once.
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::SQL_EXEC_TAINT, // options. They are not escaped
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\Database::insert' => [
-				self::SQL_EXEC_TAINT, // table name
-				// Insert values. The keys names are unsafe.
-				// Unclear how well this works for the multi case.
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::SQL_EXEC_TAINT, // options. They are not escaped
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::insert' => [
-				self::SQL_EXEC_TAINT, // table name
-				// Insert values. The keys names are unsafe.
-				// Unclear how well this works for the multi case.
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::SQL_EXEC_TAINT, // options. They are not escaped
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::update' => [
-				self::SQL_EXEC_TAINT, // table name
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::NO_TAINT, // options. They are validated
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IMaintainableDatabase::update' => [
-				self::SQL_EXEC_TAINT, // table name
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::NO_TAINT, // options. They are validated
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\Database::update' => [
-				self::SQL_EXEC_TAINT, // table name
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::NO_TAINT, // options. They are validated
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::update' => [
-				self::SQL_EXEC_TAINT, // table name
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_NUMKEY_EXEC_TAINT,
-				self::SQL_EXEC_TAINT, // method name
-				self::NO_TAINT, // options. They are validated
-				'overall' => self::NO_TAINT
-			],
-			// This is subpar, as addIdentifierQuotes isn't always
-			// the right type of escaping.
-			'\Wikimedia\Rdbms\Database::addIdentifierQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabaseMysqlBase::addIdentifierQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabaseMssql::addIdentifierQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::addIdentifierQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::addIdentifierQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\Database::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DBConnRef::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabaseMysqlBase::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabaseMssql::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IDatabase::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\IMaintainableDatabase::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabasePostgres::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\DatabaseSqlite::addQuotes' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\Wikimedia\Rdbms\Database::buildLike' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				( self::YES_TAINT & ~self::SQL_TAINT ) | self::VARIADIC_PARAM,
-				'overall' => self::NO_TAINT
-			],
-			// makeList is special cased in MWVistor::checkMakeList
-			// so simply disable auto-taint detection here.
-			'\Wikimedia\Rdbms\IDatabase::makeList' => [
-				self::YES_TAINT & ~self::SQL_TAINT,
-				self::NO_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			// '\Message::__construct' => self::YES_TAINT,
-			// '\wfMessage' => self::YES_TAINT,
-			'\Message::plain' => [ 'overall' => self::YES_TAINT ],
-			'\Message::text' => [ 'overall' => self::YES_TAINT ],
-			'\Message::parseAsBlock' => [ 'overall' => self::ESCAPED_TAINT ],
-			'\Message::parse' => [ 'overall' => self::ESCAPED_TAINT ],
-			'\Message::__toString' => [ 'overall' => self::ESCAPED_TAINT ],
-			'\Message::escaped' => [ 'overall' => self::ESCAPED_TAINT ],
-			'\Message::rawParams' => [
-				self::HTML_EXEC_TAINT | self::RAW_PARAM | self::VARIADIC_PARAM,
-				// meh, not sure how right the overall is.
-				'overall' => self::HTML_TAINT
-			],
-			// AddItem should also take care of addGeneral and friends.
-			'\StripState::addItem' => [
-				self::NO_TAINT, // type
-				self::NO_TAINT, // marker
-				self::HTML_EXEC_TAINT, // contents
-				'overall' => self::NO_TAINT
-			],
+			'\Wikimedia\Rdbms\IDatabase::insert' => $insertTaint,
+			'\Wikimedia\Rdbms\IMaintainableDatabase::insert' => $insertTaint,
+			'\Wikimedia\Rdbms\Database::insert' => $insertTaint,
+			'\Wikimedia\Rdbms\DBConnRef::insert' => $insertTaint,
+			'\Wikimedia\Rdbms\InsertQueryBuilder::row' => $insertQBRowTaint,
+			'\Wikimedia\Rdbms\InsertQueryBuilder::rows' => $insertQBRowsTaint,
 			// FIXME Doesn't handle array args right.
 			'\wfShellExec' => [
 				self::SHELL_EXEC_TAINT | self::ARRAY_OK,
@@ -355,136 +134,6 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			],
 			'\Shellbox\Command\UnboxedResult::getStdout' => $shellCommandOutput,
 			'\Shellbox\Command\UnboxedResult::getStderr' => $shellCommandOutput,
-			'\Html::rawElement' => [
-				self::YES_TAINT,
-				self::ESCAPES_HTML,
-				self::YES_TAINT,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Html::element' => [
-				self::YES_TAINT,
-				self::ESCAPES_HTML,
-				self::ESCAPES_HTML,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Xml::tags' => [
-				self::YES_TAINT,
-				self::ESCAPES_HTML,
-				self::YES_TAINT,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Xml::element' => [
-				self::YES_TAINT,
-				self::ESCAPES_HTML,
-				self::ESCAPES_HTML,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Xml::encodeJsVar' => [
-				self::ESCAPES_HTML,
-				self::NO_TAINT, /* pretty */
-				'overall' => self::NO_TAINT
-			],
-			'\Xml::encodeJsCall' => [
-				self::YES_TAINT, /* func name. unescaped */
-				self::ESCAPES_HTML,
-				self::NO_TAINT, /* pretty */
-				'overall' => self::NO_TAINT
-			],
-			'\OutputPage::addHeadItem' => [
-				self::HTML_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\OutputPage::addHTML' => [
-				self::HTML_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\OutputPage::prependHTML' => [
-				self::HTML_EXEC_TAINT,
-				'overall' => self::NO_TAINT
-			],
-			'\OutputPage::addInlineStyle' => [
-				self::HTML_EXEC_TAINT,
-				'overall' => self::NO_TAINT,
-			],
-			'\OutputPage::parse' => [ 'overall' => self::NO_TAINT, ],
-			'\Sanitizer::removeHTMLtags' => [
-				self::NO_TAINT, // See T268353
-				self::SHELL_EXEC_TAINT, /* attribute callback */
-				self::NO_TAINT, /* callback args */
-				self::YES_TAINT, /* extra tags */
-				self::NO_TAINT, /* remove tags */
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Sanitizer::escapeHtmlAllowEntities' => [
-				( self::YES_TAINT & ~self::HTML_TAINT ),
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Sanitizer::safeEncodeAttribute' => [
-				self::ESCAPES_HTML,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\Sanitizer::encodeAttribute' => [
-				self::ESCAPES_HTML,
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\WebRequest::getGPCVal' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getRawVal' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getVal' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getArray' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getIntArray' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getInt' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getIntOrNull' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getFloat' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getBool' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getFuzzyBool' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getCheck' => [ 'overall' => self::NO_TAINT, ],
-			'\WebRequest::getText' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getValues' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getValueNames' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getQueryValues' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getRawQueryString' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getRawPostString' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getRawInput' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getCookie' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getGlobalRequestURL' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getRequestURL' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getFullRequestURL' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getAllHeaders' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getHeader' => [ 'overall' => self::YES_TAINT, ],
-			'\WebRequest::getAcceptLang' => [ 'overall' => self::YES_TAINT, ],
-			'\HtmlArmor::__construct' => [
-				self::HTML_EXEC_TAINT | self::RAW_PARAM,
-				'overall' => self::NO_TAINT
-			],
-			// Due to limitations in how we handle list()
-			// elements, hard code CommentStore stuff.
-			'\CommentStore::insert' => [
-				'overall' => self::NO_TAINT
-			],
-			'\CommentStore::getJoin' => [
-				'overall' => self::NO_TAINT
-			],
-			'\CommentStore::insertWithTempTable' => [
-				'overall' => self::NO_TAINT
-			],
-			// TODO FIXME, Why couldn't it figure out
-			// that this is safe on its own?
-			// It seems that it has issue with
-			// the url query parameters.
-			'\Linker::linkKnown' => [
-				self::NO_TAINT, /* target */
-				self::HTML_EXEC_TAINT | self::RAW_PARAM, /* raw html text */
-				// The array keys for this aren't escaped (!)
-				self::NO_TAINT, /* customAttribs */
-				self::NO_TAINT, /* query */
-				self::NO_TAINT, /* options. All are safe */
-				'overall' => self::ESCAPED_TAINT
-			],
-			'\MediaWiki\Linker\LinkRenderer::buildAElement' => $linkRendererMethods,
-			'\MediaWiki\Linker\LinkRenderer::makeLink' => $linkRendererMethods,
-			'\MediaWiki\Linker\LinkRenderer::makeKnownLink' => $linkRendererMethods,
-			'\MediaWiki\Linker\LinkRenderer::makePreloadedLink' => $linkRendererMethods,
-			'\MediaWiki\Linker\LinkRenderer::makeBrokenLink' => $linkRendererMethods,
 			// The value of a status object can be pretty much anything, with any degree of taintedness
 			// and escaping. Since it's a widely used class, it will accumulate a lot of links and taintedness
 			// offset, resulting in huge objects (the short string representation of those Taintedness objects
@@ -556,6 +205,50 @@ class MediaWikiSecurityCheckPlugin extends SecurityCheckPlugin {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Special-case the $rows argument to Database::insert (T290563)
+	 * @inheritDoc
+	 * @suppress PhanUnusedPublicMethodParameter
+	 */
+	public function modifyParamSinkTaint(
+		Taintedness $paramSinkTaint,
+		Taintedness $curArgTaintedness,
+		Node $argument,
+		int $argIndex,
+		FunctionInterface $func,
+		FunctionTaintedness $funcTaint,
+		Context $context,
+		CodeBase $code_base
+	): Taintedness {
+		if ( !$func instanceof Method || $argIndex !== 1 || $func->getName() !== 'insert' ) {
+			return $paramSinkTaint;
+		}
+
+		$classFQSEN = $func->getClassFQSEN();
+		if ( $classFQSEN->__toString() !== '\\Wikimedia\\Rdbms\\Database' ) {
+			$idbFQSEN = FullyQualifiedClassName::fromFullyQualifiedString( '\\Wikimedia\\Rdbms\\IDatabase' );
+			$isDBSubclass = $classFQSEN->asType()->asExpandedTypes( $code_base )->hasType( $idbFQSEN->asType() );
+			if ( !$isDBSubclass ) {
+				return $paramSinkTaint;
+			}
+		}
+
+		$argType = UnionTypeVisitor::unionTypeFromNode( $code_base, $context, $argument );
+		$keyType = GenericArrayType::keyUnionTypeFromTypeSetStrict( $argType->getTypeSet() );
+		if ( $keyType !== GenericArrayType::KEY_INT ) {
+			// Note, it might still be an array of rows, but it's too hard for us to tell.
+			return $paramSinkTaint;
+		}
+
+		// Definitely a list of rows, so remove taintedness from the outer array keys, and instead add it to the
+		// keys of inner arrays.
+		$sqlExecKeysTaint = Taintedness::newSafe();
+		$sqlExecKeysTaint->addKeysTaintedness( self::SQL_EXEC_TAINT );
+		$adjustedParamTaint = Taintedness::newSafe();
+		$adjustedParamTaint->setOffsetTaintedness( null, $sqlExecKeysTaint );
+		return $adjustedParamTaint;
 	}
 
 	/**

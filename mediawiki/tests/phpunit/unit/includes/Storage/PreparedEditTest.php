@@ -1,8 +1,9 @@
 <?php
 
-namespace MediaWiki\Edit;
+namespace MediaWiki\Tests\Edit;
 
-use ParserOutput;
+use MediaWiki\Edit\PreparedEdit;
+use MediaWiki\Parser\ParserOutput;
 
 /**
  * @covers \MediaWiki\Edit\PreparedEdit
@@ -10,9 +11,13 @@ use ParserOutput;
 class PreparedEditTest extends \MediaWikiUnitTestCase {
 	public function testCallback() {
 		$output = new ParserOutput();
+		$output->clearParseStartTime();
+
 		$edit = new PreparedEdit();
 		$edit->parserOutputCallback = static function () {
-			return new ParserOutput();
+			$output = new ParserOutput();
+			$output->clearParseStartTime();
+			return $output;
 		};
 
 		$this->assertEquals( $output, $edit->getOutput() );

@@ -11,12 +11,9 @@ use MessageLocalizer;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Variables\VariablesFormatter
+ * @covers \MediaWiki\Extension\AbuseFilter\Variables\VariablesFormatter
  */
 class VariablesFormatterTest extends MediaWikiUnitTestCase {
-	/**
-	 * @covers ::__construct
-	 */
 	public function testConstruct() {
 		$this->assertInstanceOf(
 			VariablesFormatter::class,
@@ -28,9 +25,6 @@ class VariablesFormatterTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::setMessageLocalizer
-	 */
 	public function testSetMessageLocalizer() {
 		$formatter = new VariablesFormatter(
 			$this->createMock( KeywordsManager::class ),
@@ -39,13 +33,14 @@ class VariablesFormatterTest extends MediaWikiUnitTestCase {
 		);
 		$ml = $this->createMock( MessageLocalizer::class );
 		$formatter->setMessageLocalizer( $ml );
-		$this->assertSame( $ml, TestingAccessWrapper::newFromObject( $formatter )->messageLocalizer );
+		/** @var VariablesFormatter $wrapper */
+		$wrapper = TestingAccessWrapper::newFromObject( $formatter );
+		$this->assertSame( $ml, $wrapper->messageLocalizer );
 	}
 
 	/**
 	 * @param mixed $var
 	 * @param string $expected
-	 * @covers ::formatVar
 	 * @dataProvider provideFormatVar
 	 */
 	public function testFormatVar( $var, string $expected ) {
@@ -56,7 +51,7 @@ class VariablesFormatterTest extends MediaWikiUnitTestCase {
 	 * Provider for testFormatVar
 	 * @return array
 	 */
-	public function provideFormatVar() {
+	public static function provideFormatVar() {
 		return [
 			'boolean' => [ true, 'true' ],
 			'single-quote string' => [ 'foo', "'foo'" ],
@@ -79,9 +74,6 @@ class VariablesFormatterTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-	/**
-	 * @covers ::buildVarDumpTable
-	 */
 	public function testBuildVarDumpTable_empty() {
 		$ml = $this->createMock( MessageLocalizer::class );
 		$ml->method( 'msg' )->willReturnCallback( function ( $key ) {
@@ -98,9 +90,6 @@ class VariablesFormatterTest extends MediaWikiUnitTestCase {
 		$this->assertStringNotContainsString( 'mw-abuselog-var-value', $actual, 'no values' );
 	}
 
-	/**
-	 * @covers ::buildVarDumpTable
-	 */
 	public function testBuildVarDumpTable() {
 		$ml = $this->createMock( MessageLocalizer::class );
 		$ml->method( 'msg' )->willReturnCallback( function ( $key ) {

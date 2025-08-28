@@ -1,8 +1,15 @@
 <?php
 
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Specials\SpecialMyLanguage;
+use MediaWiki\Specials\SpecialPageLanguage;
+use MediaWiki\Title\Title;
+
 /**
  * @group Database
- * @covers SpecialMyLanguage
+ * @covers \MediaWiki\Specials\SpecialMyLanguage
  */
 class SpecialMyLanguageTest extends MediaWikiIntegrationTestCase {
 	public function addDBDataOnce() {
@@ -12,36 +19,54 @@ class SpecialMyLanguageTest extends MediaWikiIntegrationTestCase {
 			'Page/Another/en',
 			'Page/Another/ru',
 			'Page/Another/zh',
+			'Page/Foreign',
+			'Page/Foreign/en',
+			'Page/Foreign/zh',
+			'Page/Redirect',
 		];
+		// In the real-world, they are in respective languages,
+		// but we don't need to set all of them for tests.
+		$pageLang = [
+			'Page/Foreign' => 'zh',
+		];
+		$pageContent = [
+			'Page/Redirect' => '#REDIRECT [[Page/Another#Section]]',
+		];
+		$user = $this->getTestSysop()->getUser();
+		$context = RequestContext::getMain();
+		$context->setUser( $user );
 		foreach ( $titles as $title ) {
-			$page = WikiPage::factory( Title::newFromText( $title ) );
-			if ( $page->getId() == 0 ) {
-				$page->doUserEditContent(
-					new WikitextContent( 'UTContent' ),
-					User::newFromName( 'UTSysop' ),
-					'UTPageSummary',
-					EDIT_NEW
-				);
+			$this->editPage(
+				$title,
+				new WikitextContent( $pageContent[$title] ?? 'SpecialMyLanguageTest content' ),
+				'SpecialMyLanguageTest Summary',
+				NS_MAIN,
+				$user
+			);
+			if ( isset( $pageLang[$title] ) ) {
+				SpecialPageLanguage::changePageLanguage(
+					$context, Title::newFromText( $title ), $pageLang[$title], 'Test' );
 			}
 		}
 	}
 
 	/**
-	 * @covers SpecialMyLanguage::findTitle
+	 * @covers \MediaWiki\Specials\SpecialMyLanguage::findTitle
 	 * @dataProvider provideFindTitle
 	 * @param string $expected
 	 * @param string $subpage
-	 * @param string $langCode
+	 * @param string $contLang
 	 * @param string $userLang
 	 */
-	public function testFindTitle( $expected, $subpage, $langCode, $userLang ) {
-		$this->setContentLang( $langCode );
+	public function testFindTitle( $expected, $subpage, $contLang, $userLang ) {
+		$this->setContentLang( $contLang );
 		$services = $this->getServiceContainer();
 		$special = new SpecialMyLanguage(
 			$services->getLanguageNameUtils(),
 			$services->getRedirectLookup()
 		);
 		$special->getContext()->setLanguage( $userLang );
+		$this->overrideConfigValue( MainConfigNames::PageLanguageUseDB, true );
 		// Test with subpages both enabled and disabled
 		$this->mergeMwGlobalArrayValue( 'wgNamespacesWithSubpages', [ NS_MAIN => true ] );
 		$this->assertTitle( $expected, $special->findTitle( $subpage ) );
@@ -54,16 +79,18 @@ class SpecialMyLanguageTest extends MediaWikiIntegrationTestCase {
 	 * @param Title|null $title
 	 */
 	private function assertTitle( $expected, $title ) {
-		if ( $title ) {
-			$title = $title->getPrefixedText();
+		if ( $expected === null ) {
+			$this->assertNull( $title );
+		} else {
+			$expected = Title::newFromText( $expected );
+			$this->assertTrue( $expected->isSameLinkAs( $title ) );
 		}
-		$this->assertEquals( $expected, $title );
 	}
 
 	public static function provideFindTitle() {
 		// See addDBDataOnce() for page declarations
 		return [
-			// [ $expected, $subpage, $langCode, $userLang ]
+			// [ $expected, $subpage, $contLang, $userLang ]
 			[ null, '::Fail', 'en', 'en' ],
 			[ 'Page/Another', 'Page/Another/en', 'en', 'en' ],
 			[ 'Page/Another', 'Page/Another', 'en', 'en' ],
@@ -82,11 +109,14 @@ class SpecialMyLanguageTest extends MediaWikiIntegrationTestCase {
 			[ 'Page/Another/ar', 'Page/Another/ru', 'en', 'ar' ],
 			[ null, 'Special:Blankpage', 'en', 'ar' ],
 			[ null, 'Media:Fail', 'en', 'ar' ],
+			[ 'Page/Foreign/en', 'Page/Foreign', 'en', 'en' ],
+			[ 'Page/Foreign', 'Page/Foreign', 'en', 'zh-hk' ],
+			[ 'Page/Another/ar#Section', 'Page/Redirect', 'en', 'ar' ],
 		];
 	}
 
 	/**
-	 * @covers SpecialMyLanguage::findTitleForTransclusion
+	 * @covers \MediaWiki\Specials\SpecialMyLanguage::findTitleForTransclusion
 	 * @dataProvider provideFindTitleForTransclusion
 	 * @param string $expected
 	 * @param string $subpage

@@ -1,10 +1,16 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class DisableShrinkingTest extends \PHPUnit_Framework_TestCase
+class DisableShrinkingTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
+
+    /**
+     * @var int
+     */
+    private $calls;
 
     /**
      * Shrinking may be avoided when then() is slow or non-deterministic.
@@ -14,7 +20,7 @@ class DisableShrinkingTest extends \PHPUnit_Framework_TestCase
         $this->calls = 0;
         $this
             ->forAll(
-                Generator\nat()
+                Generators::nat()
             )
             ->disableShrinking()
             ->then(function ($number) {

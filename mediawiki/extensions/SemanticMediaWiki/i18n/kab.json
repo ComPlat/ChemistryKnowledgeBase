@@ -1,7 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Agurzil",
 			"Belkacem77",
+			"ButterflyOfFire",
 			"Mastanabal"
 		]
 	},
@@ -38,10 +40,11 @@
 	"smw-paramdesc-filename": "ISem n ufaylu n tuffɣa",
 	"smw-smwdoc-par-format": "Amasal n ugmuḍ anida ara d-ttwasken tsemlit n uɣewwaṛ.",
 	"smw_exportrdf_submit": "Sifeḍ",
+	"smw-categories": "Taggayin",
 	"smw-special-property-searchform-options": "Iɣewwaṛen",
 	"smw-special-wantedproperties-filter-label": "Imzizdig:",
 	"smw-special-wantedproperties-filter-none": "Ulac",
-	"smw-special-wantedproperties-template": "$1 ($2 {{PLURAL:$2|n useqdec}})",
+	"smw-special-wantedproperties-template": "$1 ($2 {{PLURAL:$2|n useqdec|n iseqdac}})",
 	"smw-statistics": "Tidaddanin n tesnamka",
 	"smw-ask-order-rand": "agacuran",
 	"smw_ask_queryhead": "Ccerṭ",

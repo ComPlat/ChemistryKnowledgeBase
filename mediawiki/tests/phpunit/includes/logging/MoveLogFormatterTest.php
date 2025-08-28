@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @covers MoveLogFormatter
+ * @covers \MoveLogFormatter
  */
 class MoveLogFormatterTest extends LogFormatterTestCase {
 
@@ -126,6 +126,30 @@ class MoveLogFormatterTest extends LogFormatterTestCase {
 						'target_title' => 'NewPage',
 						'suppressredirect' => false,
 					],
+				],
+			],
+
+			// row with invalid title (T370396)
+			[
+				[
+					'type' => 'move',
+					'action' => 'move',
+					'comment' => 'comment',
+					'namespace' => NS_TALK,
+					'title' => 'OldPage',
+					'params' => [
+						'4::target' => 'Talk:Help:NewPage',
+						'5::noredir' => '0',
+					],
+				],
+				[
+					'text' => 'User moved page Talk:OldPage to Invalid title',
+					'api' => [
+						'target_ns' => -1,
+						'target_title' => 'Special:Badtitle/Talk:Help:NewPage',
+						'suppressredirect' => false,
+					],
+					'preload' => [ /* empty, do not try to preload the bad title */ ],
 				],
 			],
 		];

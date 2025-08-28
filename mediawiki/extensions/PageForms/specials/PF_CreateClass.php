@@ -9,7 +9,9 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * @ingroup PFSpecialPages
@@ -32,7 +34,7 @@ class PFCreateClass extends SpecialPage {
 		if ( !$this->getUser()->isAllowed( 'createclass' ) ) {
 			$this->displayRestrictionError();
 		}
-		$this->printCreateClassForm( $query );
+		$this->printCreateClassForm();
 	}
 
 	private function createAllPages() {
@@ -40,19 +42,19 @@ class PFCreateClass extends SpecialPage {
 		$req = $this->getRequest();
 		$user = $this->getUser();
 
-		$template_name = trim( $req->getVal( "template_name" ) );
+		$template_name = trim( $req->getVal( "template_name" ) ?? '' );
 		$template_multiple = $req->getBool( "template_multiple" );
-		$use_cargo = trim( $req->getBool( "use_cargo" ) );
-		$cargo_table = trim( $req->getVal( "cargo_table" ) );
-		$use_fullwikitext = trim( $req->getBool( "use_fullwikitext" ) );
+		$use_cargo = $req->getBool( "use_cargo" );
+		$cargo_table = trim( $req->getVal( "cargo_table" ) ?? '' );
+		$use_fullwikitext = $req->getBool( "use_fullwikitext" );
 		// If this is a multiple-instance template, there
 		// shouldn't be a corresponding form or category.
 		if ( $template_multiple ) {
 			$form_name = null;
 			$category_name = null;
 		} else {
-			$form_name = trim( $req->getVal( "form_name" ) );
-			$category_name = trim( $req->getVal( "category_name" ) );
+			$form_name = trim( $req->getVal( "form_name" ) ?? '' );
+			$category_name = trim( $req->getVal( "category_name" ) ?? '' );
 		}
 		$fields = [];
 		$jobs = [];
@@ -61,10 +63,10 @@ class PFCreateClass extends SpecialPage {
 		for ( $i = 1; $req->getVal( "name_$i" ) != ''; $i++ ) {
 			// Go through the query values, setting the appropriate
 			// local variables.
-			$field_name = trim( $req->getVal( "name_$i" ) );
-			$display_label = trim( $req->getVal( "label_$i" ) );
+			$field_name = trim( $req->getVal( "name_$i" ) ?? '' );
+			$display_label = trim( $req->getVal( "label_$i" ) ?? '' );
 			$display_label = $display_label ?: $field_name;
-			$property_name = trim( $req->getVal( "property_name_$i" ) );
+			$property_name = trim( $req->getVal( "property_name_$i" ) ?? '' );
 			$property_type = $req->getVal( "field_type_$i" );
 			$allowed_values = $req->getVal( "allowed_values_$i" );
 			$is_list = $req->getCheck( "is_list_$i" );
@@ -118,7 +120,7 @@ class PFCreateClass extends SpecialPage {
 		}
 
 		// Also create the "connecting property", if there is one.
-		$connectingProperty = trim( $req->getVal( 'connecting_property' ) );
+		$connectingProperty = trim( $req->getVal( 'connecting_property' ) ?? '' );
 		if ( defined( 'SMW_VERSION' ) && $connectingProperty != '' ) {
 			$property_title = Title::makeTitleSafe( SMW_NS_PROPERTY, $connectingProperty );
 			$datatypeLabels = PFUtils::getSMWContLang()->getDatatypeLabels();
@@ -149,12 +151,7 @@ class PFCreateClass extends SpecialPage {
 		$full_text = $pfTemplate->createText();
 
 		$template_title = Title::makeTitleSafe( NS_TEMPLATE, $template_name );
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			// MW 1.36+
-			$template_page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $template_title );
-		} else {
-			$template_page = WikiPage::factory( $template_title );
-		}
+		$template_page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $template_title );
 		$edit_summary = '';
 		PFCreatePageJob::createOrModifyPage( $template_page, $full_text, $edit_summary, $user );
 
@@ -202,17 +199,12 @@ class PFCreateClass extends SpecialPage {
 			$jobs[] = new PFCreatePageJob( $category_title, $params );
 		}
 
-		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
-			// MW 1.37+
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
-		} else {
-			JobQueueGroup::singleton()->push( $jobs );
-		}
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
 
 		$out->addWikiMsg( 'pf_createclass_success' );
 	}
 
-	private function printCreateClassForm( $query ) {
+	private function printCreateClassForm() {
 		$lang = $this->getLanguage();
 		$out = $this->getOutput();
 		$req = $this->getRequest();

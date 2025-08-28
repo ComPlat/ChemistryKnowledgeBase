@@ -11,12 +11,7 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$readOnlyFile = $this->getNewTempFile();
-		unlink( $readOnlyFile );
-
 		$this->overrideConfigValues( [
-			MainConfigNames::ReadOnly => null,
-			MainConfigNames::ReadOnlyFile => $readOnlyFile,
 			MainConfigNames::UrlProtocols => [
 				'http://',
 				'https://',
@@ -32,6 +27,7 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::wfArrayDiff2
 	 */
 	public function testWfArrayDiff2( $a, $b, $expected ) {
+		$this->expectDeprecationAndContinue( '/wfArrayDiff2/' );
 		$this->assertEquals(
 			$expected, wfArrayDiff2( $a, $b )
 		);
@@ -86,58 +82,6 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals(
 			"%E7%89%B9%E5%88%A5:Contributions/Foobar",
 			wfUrlencode( "\xE7\x89\xB9\xE5\x88\xA5:Contributions/Foobar" ) );
-	}
-
-	/**
-	 * @covers ::wfExpandIRI
-	 */
-	public function testExpandIRI() {
-		$this->assertEquals(
-			"https://te.wikibooks.org/wiki/ఉబుంటు_వాడుకరి_మార్గదర్శని",
-			wfExpandIRI( "https://te.wikibooks.org/wiki/"
-				. "%E0%B0%89%E0%B0%AC%E0%B1%81%E0%B0%82%E0%B0%9F%E0%B1%81_"
-				. "%E0%B0%B5%E0%B0%BE%E0%B0%A1%E0%B1%81%E0%B0%95%E0%B0%B0%E0%B0%BF_"
-				. "%E0%B0%AE%E0%B0%BE%E0%B0%B0%E0%B1%8D%E0%B0%97%E0%B0%A6%E0%B0%B0"
-				. "%E0%B1%8D%E0%B0%B6%E0%B0%A8%E0%B0%BF" ) );
-	}
-
-	/**
-	 * Intended to cover the relevant bits of ServiceWiring.php, as well as GlobalFunctions.php
-	 * @covers ::wfReadOnly
-	 */
-	public function testReadOnlyEmpty() {
-		$this->hideDeprecated( 'wfReadOnly' );
-		$this->assertFalse( wfReadOnly() );
-		$this->assertFalse( wfReadOnly() );
-	}
-
-	/**
-	 * Intended to cover the relevant bits of ServiceWiring.php, as well as GlobalFunctions.php
-	 * @covers ::wfReadOnly
-	 */
-	public function testReadOnlySet() {
-		$this->hideDeprecated( 'wfReadOnly' );
-		global $wgReadOnlyFile;
-
-		$f = fopen( $wgReadOnlyFile, "wt" );
-		fwrite( $f, 'Message' );
-		fclose( $f );
-
-		$this->assertTrue( wfReadOnly() );
-		$this->assertTrue( wfReadOnly() ); # Check cached
-	}
-
-	/**
-	 * This behaviour could probably be deprecated. Several extensions rely on it as of 1.29.
-	 * @covers ::wfReadOnlyReason
-	 */
-	public function testReadOnlyGlobalChange() {
-		$this->hideDeprecated( 'wfReadOnlyReason' );
-		$this->assertFalse( wfReadOnlyReason() );
-
-		$this->overrideConfigValue( MainConfigNames::ReadOnly, 'reason' );
-
-		$this->assertSame( 'reason', wfReadOnlyReason() );
 	}
 
 	public static function provideArrayToCGI() {
@@ -195,7 +139,7 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 			[ 'foo=bar&qwerty=asdf', [ 'foo' => 'bar', 'qwerty' => 'asdf' ] ], // multiple value
 			[ 'foo=A%26B%3D5%2B6%40%21%22%27', [ 'foo' => 'A&B=5+6@!"\'' ] ], // urldecoding test
 			[ 'foo[bar]=baz', [ 'foo' => [ 'bar' => 'baz' ] ] ],
-			[ 'foo%5Bbar%5D=baz', [ 'foo' => [ 'bar' => 'baz' ] ] ],  // urldecoding test 2
+			[ 'foo%5Bbar%5D=baz', [ 'foo' => [ 'bar' => 'baz' ] ] ], // urldecoding test 2
 			[
 				'foo%5Bbar%5D=baz&foo%5Bqwerty%5D=asdf',
 				[ 'foo' => [ 'bar' => 'baz', 'qwerty' => 'asdf' ] ]
@@ -311,7 +255,7 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $expected, wfPercent( $input, $accuracy, $round ) );
 	}
 
-	public function provideWfPercentTest() {
+	public static function provideWfPercentTest() {
 		return [
 			[ 6 / 7, '0.86%', 2, false ],
 			[ 3 / 3, '1%' ],
@@ -414,7 +358,7 @@ class GlobalTest extends MediaWikiIntegrationTestCase {
 		$this->markTestSkippedIfNoDiff3();
 
 		$mergedText = null;
-		$attemptMergeResult = null;
+		$mergeAttemptResult = null;
 		$isMerged = wfMerge( $old, $mine, $yours, $mergedText, $mergeAttemptResult );
 
 		$msg = 'Merge should be a ';

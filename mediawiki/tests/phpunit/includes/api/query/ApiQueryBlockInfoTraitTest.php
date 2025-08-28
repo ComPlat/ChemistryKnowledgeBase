@@ -1,13 +1,20 @@
 <?php
 
-use MediaWiki\Block\DatabaseBlock;
+namespace MediaWiki\Tests\Api\Query;
+
+use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\Api\ApiQueryBlockInfoTrait;
+use MediaWiki\Tests\MockDatabase;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWikiIntegrationTestCase;
 use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * @covers ApiQueryBlockInfoTrait
+ * @covers \MediaWiki\Api\ApiQueryBlockInfoTrait
  */
 class ApiQueryBlockInfoTraitTest extends MediaWikiIntegrationTestCase {
+	use MockAuthorityTrait;
 
 	public function testUsesApiBlockInfoTrait() {
 		$this->assertTrue( method_exists( ApiQueryBlockInfoTrait::class, 'getBlockDetails' ),
@@ -15,59 +22,62 @@ class ApiQueryBlockInfoTraitTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider provideAddBlockInfoToQuery
+	 * @dataProvider provideAddDeletedUserFilter
 	 */
-	public function testAddBlockInfoToQuery( $args, $expect ) {
+	public function testAddDeletedUserFilter( $isAllowed, $expect ) {
 		// Fake timestamp to show up in the queries
-		$reset = ConvertibleTimestamp::setFakeTime( '20190101000000' );
+		ConvertibleTimestamp::setFakeTime( '20190101000000' );
 
-		$data = [];
+		$authority = $this->mockRegisteredAuthorityWithPermissions(
+			$isAllowed ? [ 'hideuser' ] : [] );
+		$db = new MockDatabase;
+		$queryBuilder = $db->newSelectQueryBuilder()
+			->from( 'table' );
 
-		$mock = $this->getMockForTrait( ApiQueryBlockInfoTrait::class );
-		$mock->method( 'getDB' )->willReturn( wfGetDB( DB_REPLICA ) );
-		$mock->method( 'getAuthority' )
-			->willReturn( $this->getMutableTestUser()->getUser() );
-		$mock->method( 'addTables' )->willReturnCallback( static function ( $v ) use ( &$data ) {
-			$data['tables'] = array_merge( $data['tables'] ?? [], (array)$v );
-		} );
-		$mock->method( 'addFields' )->willReturnCallback( static function ( $v ) use ( &$data ) {
-			$data['fields'] = array_merge( $data['fields'] ?? [], (array)$v );
-		} );
-		$mock->method( 'addWhere' )->willReturnCallback( static function ( $v ) use ( &$data ) {
-			$data['where'] = array_merge( $data['where'] ?? [], (array)$v );
-		} );
-		$mock->method( 'addJoinConds' )->willReturnCallback( static function ( $v ) use ( &$data ) {
-			$data['joins'] = array_merge( $data['joins'] ?? [], (array)$v );
-		} );
+		$mock = $this->getMockBuilder( ApiQueryBase::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [
+				'getQueryBuilder',
+				'getDB',
+				'getAuthority'
+			] )
+			->getMockForAbstractClass();
 
-		TestingAccessWrapper::newFromObject( $mock )->addBlockInfoToQuery( ...$args );
-		$this->assertEquals( $expect, $data );
+		$mock->method( 'getQueryBuilder' )->willReturn( $queryBuilder );
+		$mock->method( 'getDB' )->willReturn( new MockDatabase );
+		$mock->method( 'getAuthority' )->willReturn( $authority );
+
+		TestingAccessWrapper::newFromObject( $mock )->addDeletedUserFilter();
+		$data = $queryBuilder->getQueryInfo();
+		$this->assertSame( $expect, $data );
 	}
 
-	public function provideAddBlockInfoToQuery() {
-		$queryInfo = DatabaseBlock::getQueryInfo();
-
-		$db = wfGetDB( DB_REPLICA );
-		$ts = $db->addQuotes( $db->timestamp( '20190101000000' ) );
-
+	public static function provideAddDeletedUserFilter() {
 		return [
-			[ [ false ], [
-				'tables' => [ 'blk' => [ 'ipblocks' ] ],
-				'fields' => [ 'ipb_deleted' ],
-				'where' => [ 'ipb_deleted = 0 OR ipb_deleted IS NULL' ],
-				'joins' => [
-					'blk' => [ 'LEFT JOIN', [ 'ipb_user=user_id', "ipb_expiry > $ts" ] ]
+			'unauthorized' => [
+				false,
+				[
+					'tables' => [ 'table' ],
+					'fields' => [ 'hu_deleted' => '1=0' ],
+					'conds' => [ '(SELECT  1  FROM "block_target" "hu_block_target" ' .
+						'JOIN "block" "hu_block" ON ((hu_block.bl_target=hu_block_target.bt_id))   ' .
+						'WHERE (hu_block_target.bt_user=user_id) AND hu_block.bl_deleted = 1  ) IS NULL' ],
+					'options' => [],
+					'join_conds' => [],
 				],
-			] ],
-
-			[ [ true ], [
-				'tables' => [ 'blk' => $queryInfo['tables'] ],
-				'fields' => $queryInfo['fields'],
-				'where' => [ 'ipb_deleted = 0 OR ipb_deleted IS NULL' ],
-				'joins' => $queryInfo['joins'] + [
-					'blk' => [ 'LEFT JOIN', [ 'ipb_user=user_id', "ipb_expiry > $ts" ] ]
+			],
+			'authorized' => [
+				true,
+				[
+					'tables' => [ 'table' ],
+					'fields' => [ 'hu_deleted' => '(SELECT  1  FROM "block_target" "hu_block_target" ' .
+						'JOIN "block" "hu_block" ON ((hu_block.bl_target=hu_block_target.bt_id))   ' .
+						'WHERE (hu_block_target.bt_user=user_id) AND hu_block.bl_deleted = 1  ) IS NOT NULL' ],
+					'conds' => [],
+					'options' => [],
+					'join_conds' => []
 				],
-			] ],
+			],
 		];
 	}
 

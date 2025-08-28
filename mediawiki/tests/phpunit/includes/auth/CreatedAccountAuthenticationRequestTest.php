@@ -1,6 +1,8 @@
 <?php
 
-namespace MediaWiki\Auth;
+namespace MediaWiki\Tests\Auth;
+
+use MediaWiki\Auth\CreatedAccountAuthenticationRequest;
 
 /**
  * @group AuthManager
@@ -18,7 +20,7 @@ class CreatedAccountAuthenticationRequestTest extends AuthenticationRequestTestC
 		$this->assertSame( 'Test', $ret->username );
 	}
 
-	public function provideLoadFromSubmission() {
+	public static function provideLoadFromSubmission() {
 		return [
 			'Empty request' => [
 				[],

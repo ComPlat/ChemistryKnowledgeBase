@@ -3,26 +3,16 @@
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
+/**
+ * @group Database
+ */
 class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
-	protected function setUp(): void {
-		parent::setUp();
-
-		// These services cache their joins
-		$this->getServiceContainer()->resetServiceForTesting( 'CommentStore' );
-		$this->getServiceContainer()->resetServiceForTesting( 'ActorMigration' );
-	}
-
-	protected function tearDown(): void {
-		$this->getServiceContainer()->resetServiceForTesting( 'CommentStore' );
-		$this->getServiceContainer()->resetServiceForTesting( 'ActorMigration' );
-		parent::tearDown();
-	}
 
 	/**
-	 * @covers DatabaseLogEntry::newFromId
-	 * @covers DatabaseLogEntry::getSelectQueryData
+	 * @covers \DatabaseLogEntry::newFromId
+	 * @covers \DatabaseLogEntry::getSelectQueryData
 	 *
 	 * @dataProvider provideNewFromId
 	 *
@@ -33,11 +23,11 @@ class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testNewFromId( $id,
 		array $selectFields,
-		array $row = null,
-		array $expectedFields = null
+		?array $row = null,
+		?array $expectedFields = null
 	) {
 		$row = $row ? (object)$row : null;
-		$db = $this->createMock( IDatabase::class );
+		$db = $this->createMock( IReadableDatabase::class );
 		$db->expects( self::once() )
 			->method( 'selectRow' )
 			->with( $selectFields['tables'],
@@ -49,7 +39,7 @@ class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
 			)
 			->will( self::returnValue( $row ) );
 
-		/** @var IDatabase $db */
+		/** @var IReadableDatabase $db */
 		$logEntry = DatabaseLogEntry::newFromId( $id, $db );
 
 		if ( !$expectedFields ) {
@@ -61,13 +51,13 @@ class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	public function provideNewFromId() {
+	public static function provideNewFromId() {
 		$newTables = [
 			'tables' => [
 				'logging',
-				'user',
 				'comment_log_comment' => 'comment',
-				'logging_actor' => 'actor'
+				'logging_actor' => 'actor',
+				'user' => 'user',
 			],
 			'fields' => [
 				'log_id',
@@ -126,7 +116,7 @@ class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	public function provideGetPerformerIdentity() {
+	public static function provideGetPerformerIdentity() {
 		yield 'registered actor' => [
 			'actor_row_fields' => [
 				'user_id' => 42,
@@ -150,7 +140,7 @@ class DatabaseLogEntryTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider provideGetPerformerIdentity
-	 * @covers DatabaseLogEntry::getPerformerIdentity
+	 * @covers \DatabaseLogEntry::getPerformerIdentity
 	 */
 	public function testGetPerformer( array $actorRowFields, UserIdentity $expected ) {
 		$logEntry = DatabaseLogEntry::newFromRow( [

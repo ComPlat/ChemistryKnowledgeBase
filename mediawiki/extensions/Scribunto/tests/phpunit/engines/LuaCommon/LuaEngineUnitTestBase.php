@@ -1,5 +1,10 @@
 <?php
 
+namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon;
+
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
+use MediaWikiCoversValidator;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestSuite;
 
@@ -12,17 +17,17 @@ use PHPUnit\Framework\TestSuite;
  * - getTestModules(): Add a mapping from $moduleName to the file containing
  *   the code.
  */
-abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
+abstract class LuaEngineUnitTestBase extends TestCase {
 	use MediaWikiCoversValidator;
-	use Scribunto_LuaEngineTestHelper;
+	use LuaEngineTestHelper;
 
 	/** @var string|null */
 	private static $staticEngineName = null;
 	/** @var string|null */
 	private $engineName = null;
-	/** @var Scribunto_LuaEngine|null */
+	/** @var LuaEngine|null */
 	private $engine = null;
-	/** @var Scribunto_LuaDataProvider|null */
+	/** @var LuaDataProvider|null */
 	private $luaDataProvider = null;
 
 	/**
@@ -41,7 +46,7 @@ abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
 	 * Class to use for the data provider
 	 * @var string
 	 */
-	protected static $dataProviderClass = Scribunto_LuaDataProvider::class;
+	protected static $dataProviderClass = LuaDataProvider::class;
 
 	/**
 	 * Tests to skip. Associative array mapping test name to skip reason.
@@ -58,10 +63,7 @@ abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
 	public function __construct(
 		$name = null, array $data = [], $dataName = '', $engineName = null
 	) {
-		if ( $engineName === null ) {
-			$engineName = self::$staticEngineName;
-		}
-		$this->engineName = $engineName;
+		$this->engineName = $engineName ?? self::$staticEngineName;
 		parent::__construct( $name, $data, $dataName );
 	}
 
@@ -89,10 +91,7 @@ abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
 	public function toString(): string {
 		// When running tests written in Lua, return a nicer representation in
 		// the failure message.
-		if ( $this->luaTestName ) {
-			return $this->engineName . ': ' . $this->luaTestName;
-		}
-		return $this->engineName . ': ' . parent::toString();
+		return $this->engineName . ': ' . ( $this->luaTestName ?: parent::toString() );
 	}
 
 	/**
@@ -126,7 +125,7 @@ abstract class Scribunto_LuaEngineUnitTestBase extends TestCase {
 		} else {
 			try {
 				$actual = $this->provideLuaData()->run( $key );
-			} catch ( Scribunto_LuaError $ex ) {
+			} catch ( LuaError $ex ) {
 				if ( substr( $ex->getLuaMessage(), 0, 6 ) === 'SKIP: ' ) {
 					$this->markTestSkipped( substr( $ex->getLuaMessage(), 6 ) );
 				} else {

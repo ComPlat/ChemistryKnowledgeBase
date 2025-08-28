@@ -2,13 +2,12 @@
 
 use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\User\TempUser\RealTempUserConfig;
 use MediaWiki\User\UserRigorOptions;
 use Psr\Log\LogLevel;
-use Wikimedia\Message\ITextFormatter;
-use Wikimedia\Message\MessageValue;
 
 /**
- * @covers MediaWiki\User\UserNameUtils
+ * @covers \MediaWiki\User\UserNameUtils
  * @author DannyS712
  */
 class UserNameUtilsTest extends MediaWikiUnitTestCase {
@@ -16,7 +15,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideIsValid
-	 * @covers MediaWiki\User\UserNameUtils::isValid
+	 * @covers \MediaWiki\User\UserNameUtils::isValid
 	 */
 	public function testIsValid( string $name, bool $result ) {
 		$this->assertSame(
@@ -25,7 +24,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideIsValid() {
+	public static function provideIsValid() {
 		return [
 			'Empty string' => [ '', false ],
 			'Blank space' => [ ' ', false ],
@@ -33,6 +32,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 			'Contains slash' => [ 'Ab/cd', false ],
 			'Whitespace' => [ 'Ab cd', true ],
 			'IP' => [ '192.168.1.1', false ],
+			'IP dash range' => [ '111.222.333.444-555.666.777.888', false ],
 			'IP range' => [ '116.17.184.5/32', false ],
 			'IPv6 range' => [ '::e:f:2001/96', false ],
 			'Reserved Namespace' => [ 'User:Abcd', false ],
@@ -51,20 +51,15 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideIsUsable
-	 * @covers MediaWiki\User\UserNameUtils::isUsable
+	 * @covers \MediaWiki\User\UserNameUtils::isUsable
 	 */
 	public function testIsUsable( string $name, bool $result ) {
-		$textFormatter = $this->getMockForAbstractClass( ITextFormatter::class );
-		$textFormatter->method( 'format' )
-			->with( MessageValue::new( 'reserved-user' ) )
-			->willReturn( 'reserved-user' );
-
 		$utils = $this->getDummyUserNameUtils( [
 			MainConfigNames::ReservedUsernames => [
 				'MediaWiki default',
 				'msg:reserved-user'
 			],
-			'textFormatter' => $textFormatter,
+			'textFormatter' => $this->getDummyTextFormatter(),
 		] );
 		$this->assertSame(
 			$result,
@@ -72,17 +67,40 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideIsUsable() {
+	public static function provideIsUsable() {
 		return [
 			'Only valid user names are creatable' => [ '', false ],
 			'Reserved names cannot be used' => [ 'MediaWiki default', false ],
 			'Names can also be reserved via msg: ' => [ 'reserved-user', false ],
 			'User names with no issues can be used' => [ 'FooBar', true ],
+			'Reserved temp users' => [ '!Unregistered 1234', false ],
+			'Real temp users' => [ '*Unregistered 1234', true ],
 		];
 	}
 
+	public function testIsUsableForTemporaryAccountWhenFeatureIsKnownButDisabled() {
+		$utils = $this->getDummyUserNameUtils( [
+			'tempUserConfig' => new RealTempUserConfig( [
+				'enabled' => false,
+				'known' => true,
+				'expireAfterDays' => null,
+				'actions' => [ 'edit' ],
+				'serialProvider' => [ 'type' => 'local' ],
+				'serialMapping' => [ 'type' => 'plain-numeric' ],
+				'reservedPattern' => '!$1',
+				'matchPattern' => '*$1',
+				'genPattern' => '*Unregistered $1'
+			] ),
+		] );
+		$this->assertFalse(
+			$utils->isUsable( '*Unregistered 1234' ),
+			'::isUsable should return false for a valid temporary account ' .
+			'when TempUserConfig::isEnabled is false and TempUserConfig::isKnown is true'
+		);
+	}
+
 	/**
-	 * @covers MediaWiki\User\UserNameUtils::isCreatable
+	 * @covers \MediaWiki\User\UserNameUtils::isCreatable
 	 */
 	public function testIsCreatable() {
 		$logger = new TestLogger( true, static function ( $message ) {
@@ -131,7 +149,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideGetCanonical
-	 * @covers MediaWiki\User\UserNameUtils::getCanonical
+	 * @covers \MediaWiki\User\UserNameUtils::getCanonical
 	 */
 	public function testGetCanonical( string $name, array $expectedArray ) {
 		$utils = $this->getDummyUserNameUtils();
@@ -229,7 +247,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers MediaWiki\User\UserNameUtils::getCanonical
+	 * @covers \MediaWiki\User\UserNameUtils::getCanonical
 	 */
 	public function testGetCanonical_bad() {
 		$this->expectException( InvalidArgumentException::class );
@@ -239,7 +257,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideIPs
-	 * @covers MediaWiki\User\UserNameUtils::isIP
+	 * @covers \MediaWiki\User\UserNameUtils::isIP
 	 */
 	public function testIsIP( string $value, bool $result ) {
 		$utils = $this->getDummyUserNameUtils();
@@ -249,7 +267,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideIPs() {
+	public static function provideIPs() {
 		return [
 			'Empty string' => [ '', false ],
 			'Blank space' => [ ' ', false ],
@@ -270,7 +288,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideIPRanges
-	 * @covers MediaWiki\User\UserNameUtils::isValidIPRange
+	 * @covers \MediaWiki\User\UserNameUtils::isValidIPRange
 	 */
 	public function testIsValidIPRange( $value, $result ) {
 		$utils = $this->getDummyUserNameUtils();
@@ -280,7 +298,7 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideIPRanges() {
+	public static function provideIPRanges() {
 		return [
 			[ '116.17.184.5/32', true ],
 			[ '0.17.184.5/30', true ],
@@ -306,6 +324,29 @@ class UserNameUtilsTest extends MediaWikiUnitTestCase {
 			[ '::6d:f:2001/*', false ],
 			[ '::86:f:2001/ab', false ],
 			[ '::23:f:2001/', false ]
+		];
+	}
+
+	/**
+	 * @dataProvider provideIPv4DashRanges
+	 * @covers \MediaWiki\User\UserNameUtils::isLikeIPv4DashRange
+	 */
+	public function testIsLikeIPv4DashRange( $value, $result ) {
+		$utils = $this->getDummyUserNameUtils();
+		$this->assertSame(
+			$result,
+			$utils->isLikeIPv4DashRange( $value )
+		);
+	}
+
+	public static function provideIPv4DashRanges() {
+		return [
+			[ '1.2.3.4-5.6.7.8', true ],
+			[ '111.222.333.444-555.666.777.888', true ],
+			[ '128.128.128.0-128.128.128.1', true ],
+			[ '255.255.255.50-255.255.255.254', true ],
+			[ 'User 1.2.3.4-5.6.7.8', false ],
+			[ 'A string', false ]
 		];
 	}
 

@@ -1,9 +1,15 @@
 <?php
 
+use MediaWiki\Debug\MWDebug;
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\HookContainer\StaticHookRegistry;
+use MediaWiki\Message\Message;
+use MediaWiki\Tests\Unit\FakeQqxMessageLocalizer;
 use PHPUnit\Framework\Constraint\Constraint;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Container\ContainerInterface;
+use SebastianBergmann\Comparator\ComparisonFailure;
 use Wikimedia\ObjectFactory\ObjectFactory;
 use Wikimedia\Services\NoSuchServiceException;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
@@ -44,23 +50,34 @@ trait MediaWikiTestCaseTrait {
 	/**
 	 * Return a PHPUnit mock that is expected to never have any methods called on it.
 	 *
-	 * @param string $type
-	 * @param string[] $allow methods to allow
+	 * @psalm-template RealInstanceType of object
 	 *
-	 * @return MockObject
+	 * @psalm-param class-string<RealInstanceType> $type
+	 * @psalm-param list<string> $allow Methods to allow
+	 *
+	 * @param string $type
+	 * @param string[] $allow Methods to allow
+	 *
+	 * @return MockObject&RealInstanceType
 	 */
 	protected function createNoOpMock( $type, $allow = [] ) {
 		$mock = $this->createMock( $type );
-		$mock->expects( $this->never() )->method( $this->anythingBut( '__destruct', ...$allow ) );
+		$mock->expects( $this->never() )->method( $this->anythingBut( '__debugInfo', '__destruct', ...$allow ) );
 		return $mock;
 	}
 
 	/**
 	 * Return a PHPUnit mock that is expected to never have any methods called on it.
 	 *
+	 * @psalm-template RealInstanceType of object
+	 *
+	 * @psalm-param class-string<RealInstanceType> $type
+	 * @psalm-param list<string> $allow Methods to allow
+	 *
 	 * @param string $type
 	 * @param string[] $allow methods to allow
-	 * @return MockObject
+	 *
+	 * @return MockObject&RealInstanceType
 	 */
 	protected function createNoOpAbstractMock( $type, $allow = [] ) {
 		$mock = $this->getMockBuilder( $type )
@@ -98,7 +115,7 @@ trait MediaWikiTestCaseTrait {
 	 */
 	protected function createHookContainer( $hooks = [] ) {
 		$hookContainer = new HookContainer(
-			new \MediaWiki\HookContainer\StaticHookRegistry(),
+			new StaticHookRegistry(),
 			$this->createSimpleObjectFactory()
 		);
 		foreach ( $hooks as $name => $callback ) {
@@ -108,21 +125,17 @@ trait MediaWikiTestCaseTrait {
 	}
 
 	/**
-	 * Check if $extName is a loaded PHP extension, will skip the
-	 * test whenever it is not loaded.
+	 * Skip the test if not running the necessary php version
 	 *
-	 * @since 1.21 added to MediaWikiIntegrationTestCase
-	 * @since 1.37 moved to MediaWikiTestCaseTrait to be available in unit tests
-	 * @param string $extName
-	 * @return bool
+	 * @since 1.42 (also backported to 1.39.8, 1.40.4 and 1.41.2)
+	 *
+	 * @param string $op
+	 * @param string $version
 	 */
-	protected function checkPHPExtension( $extName ) {
-		$loaded = extension_loaded( $extName );
-		if ( !$loaded ) {
-			$this->markTestSkipped( "PHP extension '$extName' is not loaded, skipping." );
+	protected function markTestSkippedIfPhp( $op, $version ) {
+		if ( version_compare( PHP_VERSION, $version, $op ) ) {
+			$this->markTestSkipped( "PHP $version isn't supported for this test" );
 		}
-
-		return $loaded;
 	}
 
 	/**
@@ -202,7 +215,51 @@ trait MediaWikiTestCaseTrait {
 	}
 
 	/**
-	 * Assert that two arrays are equal. By default this means that both arrays need to hold
+	 * Assert that an associative array contains the subset of an expected array.
+	 *
+	 * The internal key order does not matter.
+	 * Values are compared with strict equality.
+	 *
+	 * @since 1.41
+	 * @param array $expected
+	 * @param array $actual
+	 * @param string $message
+	 */
+	protected function assertArrayContains(
+		array $expected,
+		array $actual,
+		$message = ''
+	) {
+		$patched = array_replace_recursive( $actual, $expected );
+
+		ksort( $patched );
+		ksort( $actual );
+		$result = ( $actual === $patched );
+
+		if ( !$result ) {
+			$comparisonFailure = new ComparisonFailure(
+				$patched,
+				$actual,
+				var_export( $patched, true ),
+				var_export( $actual, true )
+			);
+
+			$failureDescription = 'Failed asserting that array contains the expected submap.';
+			if ( $message != '' ) {
+				$failureDescription = $message . "\n" . $failureDescription;
+			}
+
+			throw new ExpectationFailedException(
+				$failureDescription,
+				$comparisonFailure
+			);
+		} else {
+			$this->assertTrue( true, $message );
+		}
+	}
+
+	/**
+	 * Assert that two arrays are equal. By default, this means that both arrays need to hold
 	 * the same set of values. Using additional arguments, order and associated key can also
 	 * be set as relevant.
 	 *
@@ -213,14 +270,9 @@ trait MediaWikiTestCaseTrait {
 	 * @param bool $ordered If the order of the values should match
 	 * @param bool $named If the keys should match
 	 * @param string $message
-	 * @param float $delta Deprecated in assertEquals()
-	 * @param int $maxDepth Deprecated in assertEquals()
-	 * @param bool $canonicalize Deprecated in assertEquals()
-	 * @param bool $ignoreCase Deprecated in assertEquals()
 	 */
 	public function assertArrayEquals(
-		array $expected, array $actual, $ordered = false, $named = false, string $message = '',
-		float $delta = 0.0, int $maxDepth = 10, bool $canonicalize = false, bool $ignoreCase = false
+		array $expected, array $actual, $ordered = false, $named = false, string $message = ''
 	) {
 		if ( !$ordered ) {
 			$this->objectAssociativeSort( $expected );
@@ -232,11 +284,7 @@ trait MediaWikiTestCaseTrait {
 			$actual = array_values( $actual );
 		}
 
-		$this->assertEquals(
-			$expected, $actual, $message,
-			// Deprecated args
-			$delta, $maxDepth, $canonicalize, $ignoreCase
-		);
+		$this->assertEquals( $expected, $actual, $message );
 	}
 
 	/**
@@ -300,31 +348,39 @@ trait MediaWikiTestCaseTrait {
 	}
 
 	/**
+	 * Check that no fake timestamp is set before the tests (e.g. in a test provider).
+	 * They should be only set in the tests and cleared by fakeTimestampTearDown().
+	 *
+	 * @since 1.43
+	 * @before
+	 */
+	protected function fakeTimestampSetUp() {
+		$realTime = time();
+		$maybeFakeTime = ConvertibleTimestamp::time();
+		if ( abs( $maybeFakeTime - $realTime ) > 1 ) {
+			$this->assertTrue( false, "Someone set a fake timestamp ($maybeFakeTime) " .
+				"and did not clean it up. This will cause confusing test failures." );
+		}
+	}
+
+	/**
 	 * @param string $text
 	 * @param array $params
 	 * @return Message|MockObject
 	 * @since 1.35
 	 */
-	protected function getMockMessage( $text = '', $params = [] ) {
-		/** @var MockObject $msg */
+	protected function getMockMessage( string $text = '', array $params = [] ) {
+		// Warning, don't use PHPUnit's logicalOr with strings as that's extremely slow!
+		$oneOf = fn ( string ...$methods ) => $this->logicalOr(
+			...array_map( [ $this, 'identicalTo' ], $methods )
+		);
+
 		$msg = $this->createMock( Message::class );
-		$msg->method( 'toString' )->willReturn( $text );
-		$msg->method( '__toString' )->willReturn( $text );
-		$msg->method( 'text' )->willReturn( $text );
-		$msg->method( 'parse' )->willReturn( $text );
-		$msg->method( 'plain' )->willReturn( $text );
-		$msg->method( 'parseAsBlock' )->willReturn( $text );
-		$msg->method( 'escaped' )->willReturn( $text );
-		$msg->method( 'title' )->willReturn( $msg );
-		$msg->method( 'getKey' )->willReturn( $text );
-		$msg->method( 'params' )->willReturn( $msg );
+		$msg->method( $oneOf( '__toString', 'escaped', 'getKey', 'parse', 'parseAsBlock',
+			'plain', 'text', 'toString' ) )->willReturn( $text );
 		$msg->method( 'getParams' )->willReturn( $params );
-		$msg->method( 'rawParams' )->willReturn( $msg );
-		$msg->method( 'numParams' )->willReturn( $msg );
-		$msg->method( 'inLanguage' )->willReturn( $msg );
-		$msg->method( 'inContentLanguage' )->willReturn( $msg );
-		$msg->method( 'useDatabase' )->willReturn( $msg );
-		$msg->method( 'setContext' )->willReturn( $msg );
+		$msg->method( $oneOf( 'inContentLanguage', 'inLanguage', 'numParams', 'params',
+			'rawParams', 'setContext', 'title', 'useDatabase' ) )->willReturnSelf();
 		$msg->method( 'exists' )->willReturn( true );
 		return $msg;
 	}
@@ -367,7 +423,7 @@ trait MediaWikiTestCaseTrait {
 		}
 	}
 
-	protected function assertStatusMessage( $messageKey, StatusValue $status, $message = '' ) {
+	protected function assertStatusMessage( string $messageKey, StatusValue $status, $message = '' ) {
 		if ( !$status->hasMessage( $messageKey ) ) {
 			$this->failStatus( $status, "Status should have message $messageKey", $message );
 		} else {
@@ -375,16 +431,52 @@ trait MediaWikiTestCaseTrait {
 		}
 	}
 
+	/**
+	 * Check if the status contains exactly the same messages as the expected status.
+	 *
+	 * Prefer using assertStatusError / assertStatusWarning unless you really need to check the
+	 * parameters, count and order of the messages too.
+	 *
+	 * This method does not compare isGood() vs isOK() or the values of the statuses, use dedicated
+	 * assertion methods for that.
+	 *
+	 * Note that some differences between the internals of the objects are allowed (such as their own
+	 * class, use of MessageSpecifier vs string keys, use of strings vs other scalars for parameters).
+	 *
+	 * @param StatusValue $expected
+	 * @param StatusValue $actual
+	 * @param string $message
+	 */
+	protected function assertStatusMessagesExactly( StatusValue $expected, StatusValue $actual, $message = '' ) {
+		$localizer = new FakeQqxMessageLocalizer();
+
+		foreach ( [ 'error', 'warning' ] as $type ) {
+			foreach (
+				array_map( null, $expected->getMessages( $type ), $actual->getMessages( $type ) )
+					as [ $expectedMsg, $actualMsg ]
+			) {
+				if (
+					$expectedMsg === null || $actualMsg === null ||
+					$localizer->msg( $expectedMsg )->text() !== $localizer->msg( $actualMsg )->text()
+				) {
+					$this->failStatus( $actual, "Status messages should be exactly like: $expected\nActual:", $message );
+				}
+			}
+		}
+
+		$this->addToAssertionCount( 1 );
+	}
+
 	protected function assertStatusValue( $expected, StatusValue $status, $message = 'Status value' ) {
 		$this->assertEquals( $expected, $status->getValue(), $message );
 	}
 
-	protected function assertStatusError( $messageKey, StatusValue $status, $message = '' ) {
+	protected function assertStatusError( string $messageKey, StatusValue $status, $message = '' ) {
 		$this->assertStatusNotOK( $status, $message );
 		$this->assertStatusMessage( $messageKey, $status, $message );
 	}
 
-	protected function assertStatusWarning( $messageKey, StatusValue $status, $message = '' ) {
+	protected function assertStatusWarning( string $messageKey, StatusValue $status, $message = '' ) {
 		$this->assertStatusNotGood( $status, $message );
 		$this->assertStatusOK( $status, $message );
 		$this->assertStatusMessage( $messageKey, $status, $message );
@@ -408,5 +500,34 @@ trait MediaWikiTestCaseTrait {
 		$actual = str_replace( '>', ">\n", $actual );
 
 		$this->assertEquals( $expected, $actual, $msg );
+	}
+
+	/**
+	 * This method allows you to assert that the given callback emits a PHP error. It is a PHPUnit 10 compatible
+	 * replacement for expectNotice(), expectWarning(), expectError(), and the other methods deprecated in
+	 * https://github.com/sebastianbergmann/phpunit/issues/5062.
+	 *
+	 * @param int $errorLevel
+	 * @param callable $callback
+	 * @param string|null $msg String that must be contained in the error message
+	 */
+	protected function expectPHPError(
+		int $errorLevel,
+		callable $callback,
+		?string $msg = null
+	): void {
+		try {
+			$errorEmitted = false;
+			set_error_handler( function ( $_, $actualMsg ) use ( $msg, &$errorEmitted ) {
+				if ( $msg !== null ) {
+					$this->assertStringContainsString( $msg, $actualMsg );
+				}
+				$errorEmitted = true;
+			}, $errorLevel );
+			$callback();
+			$this->assertTrue( $errorEmitted, "No PHP error was emitted." );
+		} finally {
+			restore_error_handler();
+		}
 	}
 }

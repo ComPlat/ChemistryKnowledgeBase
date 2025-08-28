@@ -1,26 +1,26 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Query;
+
+use MediaWiki\Block\BlockActionInfo;
 use MediaWiki\Block\DatabaseBlock;
+use MediaWiki\Block\Restriction\ActionRestriction;
 use MediaWiki\Block\Restriction\NamespaceRestriction;
 use MediaWiki\Block\Restriction\PageRestriction;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Tests\Api\ApiTestCase;
 
 /**
  * @group API
  * @group Database
  * @group medium
  *
- * @covers ApiQueryBlocks
+ * @covers MediaWiki\Api\ApiQueryBlocks
  */
 class ApiQueryBlocksTest extends ApiTestCase {
 
-	protected $tablesUsed = [
-		'ipblocks',
-		'ipblocks_restrictions',
-	];
-
 	public function testExecute() {
-		list( $data ) = $this->doApiRequest( [
+		[ $data ] = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'blocks',
 		] );
@@ -32,15 +32,14 @@ class ApiQueryBlocksTest extends ApiTestCase {
 		$sysop = $this->getTestSysop()->getUser();
 
 		$block = new DatabaseBlock( [
-			'address' => $badActor->getName(),
-			'user' => $badActor->getId(),
+			'address' => $badActor,
 			'by' => $sysop,
 			'expiry' => 'infinity',
 		] );
 
 		$this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( $block );
 
-		list( $data ) = $this->doApiRequest( [
+		[ $data ] = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'blocks',
 		] );
@@ -60,16 +59,13 @@ class ApiQueryBlocksTest extends ApiTestCase {
 		$sysop = $this->getTestSysop()->getUser();
 
 		$block = new DatabaseBlock( [
-			'address' => $badActor->getName(),
-			'user' => $badActor->getId(),
+			'address' => $badActor,
 			'by' => $sysop,
-			'ipb_expiry' => 'infinity',
-			'ipb_sitewide' => 1,
 		] );
 
 		$this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( $block );
 
-		list( $data ) = $this->doApiRequest( [
+		[ $data ] = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'blocks',
 		] );
@@ -91,8 +87,7 @@ class ApiQueryBlocksTest extends ApiTestCase {
 		$sysop = $this->getTestSysop()->getUser();
 
 		$block = new DatabaseBlock( [
-			'address' => $badActor->getName(),
-			'user' => $badActor->getId(),
+			'address' => $badActor,
 			'by' => $sysop,
 			'expiry' => 'infinity',
 			'sitewide' => 0,
@@ -110,37 +105,41 @@ class ApiQueryBlocksTest extends ApiTestCase {
 		$pageData = $this->insertPage( $title );
 		$pageId = $pageData['id'];
 
-		$this->db->insert( 'ipblocks_restrictions', [
-			'ir_ipb_id' => $block->getId(),
-			'ir_type' => PageRestriction::TYPE_ID,
-			'ir_value' => $pageId,
-		] );
-		// Page that has been deleted.
-		$this->db->insert( 'ipblocks_restrictions', [
-			'ir_ipb_id' => $block->getId(),
-			'ir_type' => PageRestriction::TYPE_ID,
-			'ir_value' => 999999,
-		] );
-		$this->db->insert( 'ipblocks_restrictions', [
-			'ir_ipb_id' => $block->getId(),
-			'ir_type' => NamespaceRestriction::TYPE_ID,
-			'ir_value' => NS_USER_TALK,
-		] );
-		// Invalid type
-		$this->db->insert( 'ipblocks_restrictions', [
-			'ir_ipb_id' => $block->getId(),
-			'ir_type' => 127,
-			'ir_value' => 4,
-		] );
-		// Action (upload)
-		$this->db->insert( 'ipblocks_restrictions', [
-			'ir_ipb_id' => $block->getId(),
-			'ir_type' => 3,
-			'ir_value' => 1,
-		] );
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'ipblocks_restrictions' )
+			->row( [
+				'ir_ipb_id' => $block->getId(),
+				'ir_type' => PageRestriction::TYPE_ID,
+				'ir_value' => $pageId,
+			] )
+			// Page that has been deleted.
+			->row( [
+				'ir_ipb_id' => $block->getId(),
+				'ir_type' => PageRestriction::TYPE_ID,
+				'ir_value' => 999999,
+			] )
+			->row( [
+				'ir_ipb_id' => $block->getId(),
+				'ir_type' => NamespaceRestriction::TYPE_ID,
+				'ir_value' => NS_USER_TALK,
+			] )
+			// Invalid type
+			->row( [
+				'ir_ipb_id' => $block->getId(),
+				'ir_type' => 127,
+				'ir_value' => 4,
+			] )
+			// Action (upload)
+			->row( [
+				'ir_ipb_id' => $block->getId(),
+				'ir_type' => ActionRestriction::TYPE_ID,
+				'ir_value' => BlockActionInfo::ACTION_UPLOAD,
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
 		// Test without requesting restrictions.
-		list( $data ) = $this->doApiRequest( [
+		[ $data ] = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'blocks',
 		] );
@@ -154,7 +153,7 @@ class ApiQueryBlocksTest extends ApiTestCase {
 		$this->assertArrayNotHasKey( 'restrictions', $data['query']['blocks'][0] );
 
 		// Test requesting the restrictions.
-		list( $data ) = $this->doApiRequest( [
+		[ $data ] = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'blocks',
 			'bkprop' => 'id|user|expiry|restrictions'
@@ -167,7 +166,7 @@ class ApiQueryBlocksTest extends ApiTestCase {
 				'pages' => [
 					[
 						'id' => $pageId,
-						'ns' => 0,
+						'ns' => NS_MAIN,
 						'title' => $title,
 					],
 				],

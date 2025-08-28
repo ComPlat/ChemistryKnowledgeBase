@@ -15,6 +15,8 @@
  * along with MediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { TruncatableTextField } = require( 'mmv' );
+
 ( function () {
 	QUnit.module( 'mmv.ui.TruncatableTextField', QUnit.newMwEnvironment() );
 
@@ -25,14 +27,12 @@
 	 * @param {number} height
 	 * @param {jQuery} $qf fixture element
 	 * @param {Object} sandbox sinon instance
-	 * @return {mw.mmv.ui.TruncatableTextField}
+	 * @return {TruncatableTextField}
 	 */
-	function getField( width, height, $qf, sandbox ) {
-		var $container = $( '<div>' ).appendTo( $qf ),
-			$element = $( '<span>' ),
-			ttf = new mw.mmv.ui.TruncatableTextField( $container, $element, {} );
-
-		ttf.htmlUtils.htmlToTextWithLinks = sandbox.stub().returnsArg( 0 );
+	function getField( width, height, $qf ) {
+		const $container = $( '<div>' ).appendTo( $qf );
+		const $element = $( '<span>' );
+		const ttf = new TruncatableTextField( $container, $element, {} );
 
 		$container.css( {
 			fontFamily: 'monospace',
@@ -44,18 +44,18 @@
 		return ttf;
 	}
 
-	QUnit.test( 'Normal constructor', function ( assert ) {
-		var $container = $( '#qunit-fixture' ),
-			$element = $( '<div>' ).appendTo( $container ).text( 'This is a unique string.' ),
-			ttf = new mw.mmv.ui.TruncatableTextField( $container, $element );
+	QUnit.test( 'Normal constructor', ( assert ) => {
+		const $container = $( '#qunit-fixture' );
+		const $element = $( '<div>' ).appendTo( $container ).text( 'This is a unique string.' );
+		const ttf = new TruncatableTextField( $container, $element );
 
 		assert.strictEqual( ttf.$element.text(), 'This is a unique string.', 'The constructor set the element to the right thing.' );
 		assert.strictEqual( ttf.$element.closest( '#qunit-fixture' ).length, 1, 'The constructor put the element into the container.' );
 	} );
 
 	QUnit.test( 'Set method', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			ttf = getField( 3, 2, $qf, this.sandbox );
+		const $qf = $( '#qunit-fixture' );
+		const ttf = getField( 3, 2, $qf );
 
 		ttf.shrink = this.sandbox.stub();
 		ttf.set( 'abc' );

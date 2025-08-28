@@ -1,8 +1,0 @@
-{
-	"@metadata": {
-		"authors": [
-			"Rancher"
-		]
-	},
-	"urlgetparameters-desc": "Омогућава коришћење и приказ параметара „GET“ URL адреса на вики страници."
-}
