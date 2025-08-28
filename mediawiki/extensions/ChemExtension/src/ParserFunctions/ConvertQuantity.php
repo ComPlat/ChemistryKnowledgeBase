@@ -7,8 +7,9 @@ use DIQA\ChemExtension\Utils\GeneralTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Parser;
+use SMW\DIProperty;
 use SMW\Services\ServicesFactory;
-use SMWDIProperty;
+
 
 class ConvertQuantity
 {
@@ -100,7 +101,7 @@ class ConvertQuantity
 
 
     public static function convert($property, $value, $unit) {
-        $propertyDI = SMWDIProperty::newFromUserLabel($property);
+        $propertyDI = DIProperty::newFromUserLabel($property);
         $num = new \SMWQuantityValue(\SMWQuantityValue::TYPE_ID);
         $applicationFactory = ServicesFactory::getInstance();
 

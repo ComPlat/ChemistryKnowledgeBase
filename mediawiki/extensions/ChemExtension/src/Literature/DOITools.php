@@ -4,9 +4,10 @@ namespace DIQA\ChemExtension\Literature;
 
 use DateTime;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use SMW\DIProperty;
 use Title;
-use SMWDIWikiPage;
-use SMWDIProperty;
+use SMW\DIWikiPage;
+
 use SMWDIBlob;
 
 class DOITools {
@@ -192,8 +193,8 @@ class DOITools {
     }
 
     public static function getDOIFromPage($pageTitle) {
-        $doiResult = smwfGetStore()->getPropertyValues(SMWDIWikiPage::newFromTitle($pageTitle),
-            SMWDIProperty::newFromUserLabel("DOI"));
+        $doiResult = smwfGetStore()->getPropertyValues(DIWikiPage::newFromTitle($pageTitle),
+            DIProperty::newFromUserLabel("DOI"));
         if (count($doiResult) > 0) {
             $first = reset($doiResult);
             return $first->getString();
@@ -202,7 +203,7 @@ class DOITools {
     }
 
     public static function getPageFromDOI($doi) {
-        $doiResult = smwfGetStore()->getPropertySubjects(SMWDIProperty::newFromUserLabel("DOI"), new SMWDIBlob($doi));
+        $doiResult = smwfGetStore()->getPropertySubjects(DIProperty::newFromUserLabel("DOI"), new SMWDIBlob($doi));
         $doiResult->rewind();
         return $doiResult->valid() ? $doiResult->current()->getTitle() : null;
     }

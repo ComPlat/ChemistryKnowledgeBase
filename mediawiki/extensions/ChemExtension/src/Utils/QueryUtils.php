@@ -5,13 +5,12 @@ use Article;
 use SMW\Query\QueryContext;
 use Title;
 use SMWDataItem;
-use SMWDIWikiPage;
+use SMW\DIWikiPage;
 use SMWDITime;
 use SMWQueryProcessor;
 use SMW\DataValueFactory;
 use SMW\DataValues\PropertyChainValue;
 use SMW\DIProperty;
-use SMW\DIWikiPage;
 use SMW\Query\PrintRequest;
 use SMW\Query\QueryResult;
 use SMW\Services\ServicesFactory;
@@ -337,7 +336,7 @@ class QueryUtils {
         $titleProperty = new DIProperty( DIProperty::TYPE_DISPLAYTITLE );
         $store = StoreFactory::getStore();
 
-        $subject = SMWDIWikiPage::newFromTitle( $title );
+        $subject = DIWikiPage::newFromTitle( $title );
         $values = $store->getPropertyValues( $subject, $titleProperty );
         $first = reset( $values );
         if ($first !== false) {

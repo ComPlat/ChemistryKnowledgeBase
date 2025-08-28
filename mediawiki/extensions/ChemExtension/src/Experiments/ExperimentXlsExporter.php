@@ -11,6 +11,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use SMW\DIProperty;
 
 class ExperimentXlsExporter
 {
@@ -35,7 +36,7 @@ class ExperimentXlsExporter
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $this->chemFormRepo = new ChemFormRepository($dbr);
         $this->moleculeCache = [];
-        $this->molfileProperty = \SMWDIProperty::newFromUserLabel("Molfile");
+        $this->molfileProperty = DIProperty::newFromUserLabel("Molfile");
     }
 
     public function export()
@@ -116,7 +117,7 @@ class ExperimentXlsExporter
         }
 
         $inchiKey = $this->chemFormRepo->getMoleculeKey($title->getText());
-        $molfile = smwfGetStore()->getPropertyValues(\SMWDIWikiPage::newFromTitle($title), $this->molfileProperty);
+        $molfile = smwfGetStore()->getPropertyValues(\DIWikiPage::newFromTitle($title), $this->molfileProperty);
         if (count($molfile) > 0) {
             $first = reset($molfile);
             $result = ['inchikey' => $inchiKey, 'molfile' => $first->getString()];
