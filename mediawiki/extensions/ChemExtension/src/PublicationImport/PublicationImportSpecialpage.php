@@ -3,10 +3,11 @@
 namespace DIQA\ChemExtension\PublicationImport;
 
 use DIQA\ChemExtension\Jobs\PublicationImportJob;
-use DIQA\ChemExtension\Literature\LiteratureRepository;
+use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
+use eftec\bladeone\BladeOne;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
@@ -15,7 +16,6 @@ use OOUI\FormLayout;
 use OOUI\SelectFileInputWidget;
 use OOUI\TextInputWidget;
 use OutputPage;
-use eftec\bladeone\BladeOne;
 use RequestContext;
 use SpecialPage;
 use Title;
@@ -64,6 +64,9 @@ class PublicationImportSpecialpage extends SpecialPage
                     $topics = $wgRequest->getText('topic', '');
                     if ($topics === '') $topics = "Topic";
                     $doi = $wgRequest->getText('doi', '');
+                    if ($doi === '') {
+                        throw new Exception('DOI is mandatory. Please specify one.');
+                    }
                     $this->checkIfDOIAlreadyExists($doi);
                     $uploadedFiles = $this->processUpload($tmpFolder);
                     $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
@@ -126,11 +129,12 @@ class PublicationImportSpecialpage extends SpecialPage
                 'infusable' => true,
                 'name' => 'doi',
                 'value' => '',
-                'placeholder' => 'DOI'
+                'placeholder' => 'DOI',
+                'required' => true,
             ]),
             [
                 'align' => 'top',
-                'label' => 'DOI (optional)'
+                'label' => 'DOI'
             ]
         );
 
@@ -264,6 +268,7 @@ HTML;
 
     private function checkIfDOIAlreadyExists($doi): void
     {
+        $doi = DOITools::parseDOI($doi);
         $results = QueryUtils::executeBasicQuery("[[DOI::$doi]]");
         $exists = $results->getCount() > 0;
         $pageTitle = null;
