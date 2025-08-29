@@ -44,7 +44,7 @@ lessc --version
 
 printf "\n\n\n#################### Install PHP\n"
 date
-sudo apt -y install php8.3 php8.3-cli php8.3-{bz2,curl,mbstring,intl,gd,zip,xml,mysql}
+sudo apt -y install php8.3 php8.3-cli php8.3-{bz2,curl,mbstring,intl,gd,zip,xml,mysql,xdebug}
 sudo apt -y install php8.3-fpm
 sudo a2enconf php8.3-fpm
 
