@@ -140,8 +140,67 @@ wfLoadSkin( 'Vector' );
 # Add more configuration options below.
 
 #################################################################
+# Logos
+#################################################################
+$wgLogos = ['1x' => "$wgScriptPath/extensions/ChemExtension/resources/home.png"];
+$wgFavicon = "$wgScriptPath/extensions/ChemExtension/resources/favicon.ico";
+$wgFooterIcons['poweredby']['kit'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/KIT-logo.png",
+    'url' => 'https://www.ibcs.kit.edu/'
+];
+$wgFooterIcons['poweredby']['github'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/GitHub_Logo.png",
+    'url' => 'https://github.com/ComPlat/ChemistryKnowledgeBase'
+];
+$wgFooterIcons['poweredby']['flaticon'] = [
+    'src' => "$wgScriptPath/extensions/ChemExtension/resources/flaticon-512.png",
+    'url' => 'https://www.flaticon.com/free-icons/guide" title="guide icons',
+    'title' => 'Flaticon icons created by Freepik - Flaticon'
+];
+
+$wgHooks['SkinAddFooterLinks'][] = function ( Skin $skin, string $key, array &$footerlinks ) {
+    if ( $key === 'places' ) {
+        $footerlinks['licenses'] = Html::rawElement( 'a', [
+            'href' => Title::newFromText(
+                $skin->msg( 'licenses-page' )->inContentLanguage()->text()
+            )->getFullURL()
+        ], $skin->msg( 'licenses-page' )->escaped() );
+    };
+};
+
+
+#################################################################
 # General settings
 #################################################################
+$wgGroupPermissions['*']['createaccount'] = true;
+$wgGroupPermissions['*']['read'] = true;
+$wgGroupPermissions['*']['edit'] = true;
+$wgGroupPermissions['user']['read'] = true;
+$wgGroupPermissions['contributor']['edit'] = true;
+$wgGroupPermissions['editor']['modifyMolecule'] = true;
+
+$wgHTTPTimeout = 60;
+$wgIgnoreImageErrors=true;
+$wgJobRunRate = 100;
+
+$wgUrlProtocols[] = "file://";
+$wgFileExtensions = array( 'png', 'gif', 'jpg', 'jpeg', 'doc',
+    'xls', 'mpp', 'pdf', 'ppt', 'tiff', 'bmp', 'docx', 'xlsx',
+    'pptx', 'ps', 'odt', 'ods', 'odp', 'odg', 'zip'
+);
+
+$wgRawHtml = true;
+
+$wgParserCacheType = CACHE_NONE;
+
+$wgPFEnableStringFunctions = true;
+$wgStringFunctionsLimitSearch = 5000;
+$wgPFStringLengthLimit = 65536;
+
+#Set Default Timezone
+$wgLocaltimezone = 'Europe/Berlin';
+date_default_timezone_set( $wgLocaltimezone );
+
 $wgGenerateThumbnailOnParse = true;
 
 $wgServerHTTP = $wgServer;
@@ -154,8 +213,8 @@ $wgWikiServerPath = __DIR__ ;
 $wgHashedUploadDirectory = true;
 
 $wgGroupPermissions['*']['createaccount']       = false;
-$wgGroupPermissions['*']['edit']                = true;
-$wgGroupPermissions['*']['createpage']          = true;
+$wgGroupPermissions['*']['edit']                = false;
+$wgGroupPermissions['*']['createpage']          = false;
 $wgGroupPermissions['user']['createaccount']    = false;
 $wgGroupPermissions['user']['createpage']       = true;
 $wgGroupPermissions['user']['edit']             = true;
