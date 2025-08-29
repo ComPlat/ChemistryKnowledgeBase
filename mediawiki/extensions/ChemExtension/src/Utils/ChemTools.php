@@ -20,7 +20,7 @@ class ChemTools {
         return preg_match(self::CHEMFORM_ID, trim($s), $matches) === 1;
     }
 
-    public static function getChemFormIdFromPageTitle(string $pageTitle) {
+    public static function getChemFormIdFromPageTitle(?string $pageTitle) {
         if (preg_match("/Molecule:(\\d+)/", $pageTitle, $matches) !== 1) {
             if (preg_match("/Reaction:(\\d+)/", $pageTitle, $matches) !== 1) {
                 return null;

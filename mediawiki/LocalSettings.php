@@ -94,7 +94,7 @@ $wgUseInstantCommons = false;
 $wgPingback = true;
 
 # Site language code, should be one of the list in ./includes/languages/data/Names.php
-$wgLanguageCode = "de";
+$wgLanguageCode = "en";
 
 # Time zone
 $wgLocaltimezone = "UTC";
@@ -154,8 +154,8 @@ $wgWikiServerPath = __DIR__ ;
 $wgHashedUploadDirectory = true;
 
 $wgGroupPermissions['*']['createaccount']       = false;
-$wgGroupPermissions['*']['edit']                = false;
-$wgGroupPermissions['*']['createpage']          = false;
+$wgGroupPermissions['*']['edit']                = true;
+$wgGroupPermissions['*']['createpage']          = true;
 $wgGroupPermissions['user']['createaccount']    = false;
 $wgGroupPermissions['user']['createpage']       = true;
 $wgGroupPermissions['user']['edit']             = true;

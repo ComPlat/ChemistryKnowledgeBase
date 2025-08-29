@@ -9,7 +9,6 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
-use Hooks;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use ParserOptions;
@@ -47,7 +46,8 @@ class ExperimentListRenderer extends ExperimentRenderer
             foreach ($keyValues as $key => $value) {
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
-                    Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
+                    $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+                    $hooksContainer->run('CollectMolecules', [$chemFormId, $this->context['page']]);
                 }
             }
         });

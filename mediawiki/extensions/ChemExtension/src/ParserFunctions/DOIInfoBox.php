@@ -29,7 +29,7 @@ class DOIInfoBox
     public static function renderDOIInfoBox(Parser $parser, $doi): array
     {
         try {
-
+            $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
             $repo = new LiteratureRepository($dbr);
             if ($doi !== '') {
@@ -55,7 +55,7 @@ class DOIInfoBox
 
             self::$DOI_INFO_BOX[] = $html;
 
-            \Hooks::run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);
+            $hooksContainer->run('ExtendSubtitle', [WikiTools::sanitizeHTML($html)]);
             return ['', 'noparse' => true, 'isHTML' => true];
         } catch(Exception $e) {
             $html = self::getBlade()->run ( "error", ['message' => $e->getMessage()]);

@@ -6,7 +6,6 @@ use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\HtmlTableEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
-use Hooks;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use ParserOptions;
@@ -26,7 +25,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
      */
     protected function getContent(): string
     {
-
+        $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $mainTemplate = $experimentType->getMainTemplate();
         $rowTemplate = $experimentType->getRowTemplate();
@@ -38,7 +37,7 @@ class ExperimentLinkRenderer extends ExperimentRenderer
                 $templateParams .= "\n|$key=$value";
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
-                    Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
+                    $hooksContainer->run('CollectMolecules', [$chemFormId, $this->context['page']]);
                 }
             }
             $experiments .= "{{" . $rowTemplate . $templateParams . "\n}}";
@@ -67,7 +66,7 @@ TEMPLATE;
                 $basePageTitle = Title::newFromText($rows['BasePageName']);
                 $doidata = null;
                 if (!is_null($basePageTitle)) {
-                    Hooks::run('CollectPublications', [$basePageTitle, & $doidata]);
+                    $hooksContainer->run('CollectPublications', [$basePageTitle, & $doidata]);
                     if (!is_null($doidata)) {
                         $reference = DOITools::generateReferenceIndex($doidata['data']);
                         $url = "#literature_$reference";
