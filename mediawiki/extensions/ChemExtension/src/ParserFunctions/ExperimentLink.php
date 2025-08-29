@@ -192,7 +192,7 @@ class ExperimentLink
             'parameters' => $parameters,
             'selectExperimentQuery' => $selectExperimentQuery,
         ]);
-        $html = $renderer;
+        $html = $renderer->render();
         return [
             'table' => $html,
             'refs' => RenderLiterature::$LITERATURE_REFS,
