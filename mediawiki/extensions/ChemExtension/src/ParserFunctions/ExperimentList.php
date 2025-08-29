@@ -43,7 +43,7 @@ class ExperimentList
                 'description' => $parameters['description'] ?? '',
                 'index' => null
             ]);
-            $html = $renderer;
+            $html = $renderer->render();
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
 
         } catch(ExperimentNotExistsException $e) {
