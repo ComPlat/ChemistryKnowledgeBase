@@ -354,8 +354,8 @@ $wgCategoryTreeMaxDepth=4;
 #################################################################
 # WikiFarm
 #################################################################
-//require_once ("extensions/WikiFarm/WikiSwitch.php");
-//wfLoadExtension('WikiFarm');
+require_once ("extensions/WikiFarm/WikiSwitch.php");
+wfLoadExtension('WikiFarm');
 
 #################################################################
 # Enhanced Retrieval
