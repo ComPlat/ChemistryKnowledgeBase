@@ -1438,6 +1438,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	// Hook that fires each time a new template instance is added.
 	// The first parameter is a jQuery selection of the newly created instance div.
 	mw.hook('pf.addTemplateInstance').fire($new_div);
+	return $new_div;
 };
 
 // The first argument is needed, even though it's an attribute of the element
@@ -1908,10 +1909,29 @@ $( () => {
 
 		// We are all done - remove the loading spinner.
 		$('.loadingImage').remove();
+		preSelectByIndex();
+
 	}, 0 );
 
 	mw.hook('pf.formSetupAfter').fire();
 });
+
+function preSelectByIndex() {
+	let queryParams = {};
+	let search = window.location.search;
+	search = search.length > 0 ? search.substring(1) : '';
+	let params = search.split("&");
+	for(let i = 0; i < params.length;i++) {
+		let keyValue = params[i].split("=");
+		if (keyValue.length != 2) {
+			continue;
+		}
+		queryParams[keyValue[0]] = decodeURIComponent(keyValue[1]);
+	}
+	if (queryParams['expand']) {
+		$('.multipleTemplateInstance').eq(queryParams['expand']).trigger('click');
+	}
+}
 
 // If some part of the form is clicked, minimize any multiple-instance
 // template instances that need minimizing, and move the "focus" to the current
@@ -1977,7 +1997,9 @@ $('#pf-expand-all a').click(( event ) => {
 });
 
 $('.pfSendBack').click( () => {
-	window.history.back();
+	if (window.top == window.self) {
+		window.history.back();
+	}
 });
 
 }( jQuery, mediaWiki ) );

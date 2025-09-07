@@ -192,4 +192,6 @@ $( () => {
 	// Attach click handler for sidebar
 	// eslint-disable-next-line no-jquery/no-global-selector
 	attachHandler( $( '#p-categorytree-portlet' ) );
+
+	attachHandler( $('#mw-data-after-content') );
 } );

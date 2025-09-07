@@ -784,7 +784,9 @@ abstract class Skin extends ContextSource {
 			$linkPage = $this->msg( 'pagecategorieslink' )->inContentLanguage()->text();
 			$pageCategoriesLinkTitle = Title::newFromText( $linkPage );
 			if ( $pageCategoriesLinkTitle ) {
-				$link = $linkRenderer->makeLink( $pageCategoriesLinkTitle, $msg->text() );
+                $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+                $hookContainer->run('chem_categorylist', [$this->getOutput()->getTitle(), & $label]);
+                $link = $linkRenderer->makeLink($pageCategoriesLinkTitle, isset($label) && $label !== '' ? $label : $msg->text());
 			} else {
 				$link = $msg->escaped();
 			}

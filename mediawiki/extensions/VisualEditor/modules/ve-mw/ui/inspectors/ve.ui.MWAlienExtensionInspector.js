@@ -59,6 +59,10 @@ ve.ui.MWAlienExtensionInspector.prototype.getSetupProcess = function ( data ) {
 		.next( () => {
 			const attributes = this.selectedNode.getAttribute( 'mw' ).attrs;
 
+			// Patch: KK to extend tag edit panel
+			if (ve.ui.MWAlienExtensionInspectorExtension) {
+				ve.ui.MWAlienExtensionInspectorExtension.extend(this);
+			}
 			if ( attributes && !ve.isEmptyObject( attributes ) ) {
 				for ( const key in attributes ) {
 					const attributeInput = new OO.ui.TextInputWidget( {

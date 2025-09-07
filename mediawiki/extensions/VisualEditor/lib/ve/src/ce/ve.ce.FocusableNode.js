@@ -431,6 +431,10 @@ ve.ce.FocusableNode.prototype.onFocusableMouseDown = function ( e ) {
 		selection = surfaceModel.getSelection(),
 		nodeRange = this.model.getOuterRange();
 
+	if (ve.ce.FocusableNodeExtension) {
+		ve.ce.FocusableNodeExtension.extend(this, e.target);
+	}
+
 	if ( e.which === OO.ui.MouseButtons.RIGHT ) {
 		// The same technique is used in ve.ce.TableNode:
 		// Make ce=true so we get cut/paste options in the context menu
