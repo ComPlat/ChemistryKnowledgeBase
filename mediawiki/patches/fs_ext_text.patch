@@ -11,8 +11,9 @@ diff --git a/mediawiki/extensions/EnhancedRetrieval/src/FacetedSearch/FSSolrSMWD
          $text = $rawText ?? $this->getText( $wikiPage, $doc, $messages );
  
 +        $extText = '';
-+        \Hooks::run('FS_ExtendSearchFulltext', [& $extText]);
-+        \Hooks::run('CleanupChemExtState');
++        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++        $hookContainer->run('FS_ExtendSearchFulltext', [& $extText]);
++        $hookContainer->run('CleanupChemExtState');
 +        $text .= $extText;
 +
          $doc['id'] = $pageID;

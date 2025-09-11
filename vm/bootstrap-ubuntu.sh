@@ -57,7 +57,7 @@ sudo apt -y install unzip
 
 printf "\n\n\n#################### Get Powersuche\n"
 date
-sudo wget https://downloads.diqa-pm.com/free/power-search/2.3.0/powersearch-2.3.0.zip
+sudo wget https://downloads.diqa-pm.com/free/power-search/2.4.1/powersearch-2.4.1.zip
 
 
 printf "\n\n\n#################### Install ImageMagick\n"
