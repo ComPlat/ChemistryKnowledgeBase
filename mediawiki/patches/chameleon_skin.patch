@@ -1,0 +1,25 @@
+Index: mediawiki/skins/chameleon/layouts/fixedhead.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/skins/chameleon/layouts/fixedhead.xml b/mediawiki/skins/chameleon/layouts/fixedhead.xml
+--- a/mediawiki/skins/chameleon/layouts/fixedhead.xml	(revision 63c815d533a584ed8faf9414600403acd966f7a0)
++++ b/mediawiki/skins/chameleon/layouts/fixedhead.xml	(date 1757583044506)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <!--
+-<?xml-model href="https://ProfessionalWiki.github.io/chameleon/schema/3.6/layout.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
++<?xml-model href="https://ProfessionalWiki.github.io/chameleon/schema/3.4/layout.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+ This file is part of the MediaWiki skin Chameleon.
+ 
+ @copyright 2013 - 2021, Stephan Gambke
+@@ -35,7 +35,7 @@
+ 		<component type="PersonalTools" position="right"/>
+ 	</component>
+ 
+-	<grid class="flex-fill">
++	<grid class="flex-fill" mode="fluid">
+ 		<row>
+ 			<cell>
+ 				<component type="SiteNotice"/>
