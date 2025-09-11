@@ -39,7 +39,7 @@ class DOIResolver
         }
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_MASTER
+            DB_PRIMARY
         );
         $repo = new LiteratureRepository($dbr);
         $repo->addLiterature($doi, json_encode($result));
@@ -51,7 +51,7 @@ class DOIResolver
 
     public function resolveAsync($doi, Title $wikiPage) {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_MASTER
+            DB_PRIMARY
         );
         $repo = new LiteratureRepository($dbr);
         $data = $repo->getLiterature($doi);

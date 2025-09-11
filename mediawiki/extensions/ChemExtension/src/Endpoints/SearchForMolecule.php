@@ -34,7 +34,7 @@ class SearchForMolecule extends SimpleHandler
         $this->trivialnameProp = QueryUtils::newPropertyPrintRequest("Trivialname");
         $this->inchiKey = QueryUtils::newPropertyPrintRequest("InChIKey");
         $this->abbreviation = QueryUtils::newPropertyPrintRequest("Abbreviation");
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->repo = new ChemFormRepository($dbr);
     }
 

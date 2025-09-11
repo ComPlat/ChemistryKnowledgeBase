@@ -27,7 +27,7 @@ class PubChemService {
         $synonyms = new PubChemSynonymsResult($service->getSynonyms($moleculeKey));
         $categories = new PubChemCategoriesResult($service->getCategories($record->getCID()));
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new PubChemRepository($dbr);
         $repo->addPubChemResult($moleculeKey,
             json_encode($record->getRawResult()),

@@ -34,7 +34,7 @@ class SpecialLiterature extends SpecialPage
         $cache = __DIR__ . '/../../cache';
         $this->blade = new BladeOne ($views, $cache);
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->repo = new LiteratureRepository($dbr);
 
     }

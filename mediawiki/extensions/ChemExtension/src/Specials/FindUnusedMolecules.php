@@ -39,7 +39,7 @@ class FindUnusedMolecules extends SpecialPage
         $output->addWikiTextAsContent("This page shows molecules/reactions which are not used in the wiki.");
         $this->addPagination($output, $offset, $limit);
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $ids = $repo->getUnusedMoleculeIds($limit, $offset);
 
