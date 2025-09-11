@@ -10,13 +10,13 @@
 }
 
 @media (min-width: 1101px) and (max-width: 1920px) {
-	div.facets { width:25%; }
-	div#results { width:70%; }  
+	div.facets { width:30%; }
+	div#results { width:65%; }
 }
 
 @media (min-width: 1921px) {
-	div.facets { width:15%; }
-	div#results { width:80%; }  
+	div.facets { width:20%; }
+	div#results { width:75%; }
 }
 
 #fs_query_button, .fs_category_filter, .fs_sort_order {
