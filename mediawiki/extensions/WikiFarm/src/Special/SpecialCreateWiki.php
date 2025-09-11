@@ -5,6 +5,7 @@ use DateTime;
 use DIQA\WikiFarm\WikiRepository;
 use eftec\bladeone\BladeOne;
 use Exception;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FieldLayout;
@@ -43,8 +44,8 @@ class SpecialCreateWiki extends \SpecialPage {
         $output = $this->getOutput();
         $this->setHeaders();
 
-        global $wgUser;
-        if ($wgUser->isAnon()) {
+        $user = RequestContext::getMain()->getUser();
+        if ($user->isAnon()) {
             $output->addHTML(wfMessage('wfarm-must-be-logged-in-with-edit'));
             return;
         }
@@ -112,8 +113,8 @@ class SpecialCreateWiki extends \SpecialPage {
 
     private function getWikiTable() {
         global $wgServer;
-        global $wgUser;
-        $allWikiCreated = $this->repository->getAllWikisCreatedById($wgUser->getId());
+        $user = RequestContext::getMain()->getUser();
+        $allWikiCreated = $this->repository->getAllWikisCreatedById($user->getId());
         return $this->blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer

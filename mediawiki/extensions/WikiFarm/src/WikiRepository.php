@@ -1,9 +1,8 @@
 <?php
 namespace DIQA\WikiFarm;
 
-use IMaintainableDatabase;
-use MediaWiki\MediaWikiServices;
 use User;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 
 class WikiRepository {
