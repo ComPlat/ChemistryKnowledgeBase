@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use SMW\DIProperty;
+use SMW\DIWikiPage;
 
 class ExperimentXlsExporter
 {
@@ -117,7 +118,7 @@ class ExperimentXlsExporter
         }
 
         $inchiKey = $this->chemFormRepo->getMoleculeKey($title->getText());
-        $molfile = smwfGetStore()->getPropertyValues(\DIWikiPage::newFromTitle($title), $this->molfileProperty);
+        $molfile = smwfGetStore()->getPropertyValues(DIWikiPage::newFromTitle($title), $this->molfileProperty);
         if (count($molfile) > 0) {
             $first = reset($molfile);
             $result = ['inchikey' => $inchiKey, 'molfile' => $first->getString()];

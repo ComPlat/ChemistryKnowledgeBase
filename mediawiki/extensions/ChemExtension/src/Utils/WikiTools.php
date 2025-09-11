@@ -78,7 +78,10 @@ class WikiTools {
 
             $comment = CommentStoreComment::newUnsavedComment( $editMessageText );
 
-            $updater = WikiPage::factory( $title )->newPageUpdater( $user );
+            $updater = MediaWikiServices::getInstance()->getWikiPageFactory()
+                ->newFromTitle( $title )
+                ->newPageUpdater( $user );
+
             $updater->setContent( SlotRecord::MAIN, $newContent );
             $updater->setRcPatrolStatus( RecentChange::PRC_PATROLLED );
             $updater->saveRevision( $comment , $flags );

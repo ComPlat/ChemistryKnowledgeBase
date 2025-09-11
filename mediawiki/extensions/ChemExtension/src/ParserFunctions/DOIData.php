@@ -41,6 +41,12 @@ class DOIData
             }
             $property = trim($parameters['property']);
             switch ($property) {
+                case 'showAuthor':
+                {
+                    $authors = DOITools::formatAuthors($data->author);
+                    $result = implode(", ", array_map(fn($e) => $e['name'], $authors));
+                    break;
+                }
                 case 'author':
                 {
                     $authors = DOITools::formatAuthors($data->author);
@@ -90,7 +96,7 @@ class DOIData
                     global $wgScriptPath;
                     $result = '<a target="_blank" href="'.$wgScriptPath.'/index.php?title=Special:Literature&doi='.
                         urlencode($parameters['doi']).'">Details</a>';
-                    break;
+                    return [$result, 'noparse' => true, 'isHTML' => true];
                 }
                 default:
                     $result = 'unknown property: "' . $property . '"';
