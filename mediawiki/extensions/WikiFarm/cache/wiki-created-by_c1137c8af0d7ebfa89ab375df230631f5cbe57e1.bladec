@@ -1,0 +1,46 @@
+<?php
+use DIQA\WikiFarm\Special\SpecialCreateWiki;
+use OOUI\ButtonWidget;
+$specialPage = $specialPage ?? null; // to prevent IDE warning
+?>
+<div id="wfarm-createdwikis-table" class="wfarm-createdwikis-table">
+<p><?php echo \htmlentities(wfMessage('wfarm-wikis-created-by-you')??'', ENT_QUOTES, 'UTF-8', false); ?></p>
+<table>
+ <tr>
+ <th><?php echo \htmlentities(wfMessage('wfarm-wiki-name')??'', ENT_QUOTES, 'UTF-8', false); ?></th>
+ <th><?php echo \htmlentities(wfMessage('wfarm-wiki-creation-date')??'', ENT_QUOTES, 'UTF-8', false); ?></th>
+ <th></th>
+ </tr>
+ <?php $__currentLoopData = $allWikiCreated; $this->addLoop($__currentLoopData);$this->getFirstLoop();
+ foreach($__currentLoopData as $row): $loop = $this->incrementLoopIndices();  ?>
+ <tr wiki-id="<?php echo \htmlentities($row['id']??'', ENT_QUOTES, 'UTF-8', false); ?>" class="<?php echo \htmlentities($row['wiki_status'] === 'IN_CREATION' ? "wfarm-in-creation": ""??'', ENT_QUOTES, 'UTF-8', false); ?>">
+ <td>
+ <?php if($row['wiki_status'] === 'CREATED'): ?>
+ <a target="_blank" href="<?php echo \htmlentities($baseURL??'', ENT_QUOTES, 'UTF-8', false); ?>/wiki<?php echo \htmlentities($row['id']??'', ENT_QUOTES, 'UTF-8', false); ?>/mediawiki"><?php echo \htmlentities($row['wiki_name']??'', ENT_QUOTES, 'UTF-8', false); ?></a>
+ <?php elseif($row['wiki_status'] === 'TO_BE_DELETED'): ?>
+ <?php echo \htmlentities($row['wiki_name']??'', ENT_QUOTES, 'UTF-8', false); ?> <?php echo \htmlentities(wfMessage('wfarm-wiki-to-be-deleted')??'', ENT_QUOTES, 'UTF-8', false); ?>
+
+ <?php else: ?>
+ <?php echo \htmlentities($row['wiki_name']??'', ENT_QUOTES, 'UTF-8', false); ?> <?php echo \htmlentities(wfMessage('wfarm-wiki-in-creation')??'', ENT_QUOTES, 'UTF-8', false); ?>
+
+ <?php endif; ?>
+ </td>
+
+ <td><?php echo \htmlentities($row['created_at']??'', ENT_QUOTES, 'UTF-8', false); ?> <?php echo \htmlentities(SpecialCreateWiki::within2Days($row['created_at']) && $row['wiki_status'] !== 'IN_CREATION' ? "(".wfMessage("wfarm-recent").")": ""??'', ENT_QUOTES, 'UTF-8', false); ?></td>
+ <td><?php
+ $deleteButton = new ButtonWidget([
+ 'classes' => ['wfarm-remove-wiki'],
+ 'label' => wfMessage('wfarm-remove-wiki')->text(),
+ 'flags' => ['primary', 'destructive'],
+ 'infusable' => true
+ ]);
+ $deleteButton->setAttributes(['wiki-id' => $row['id']]);
+ echo $deleteButton;
+ ?></td>
+ </tr>
+ <?php endforeach; $this->popLoop(); $loop = $this->getFirstLoop(); ?>
+</table>
+<?php if(count($allWikiCreated) === 0): ?>
+<p><?php echo \htmlentities(wfMessage('wfarm-no-wikis-found')??'', ENT_QUOTES, 'UTF-8', false); ?></p>
+<?php endif; ?>
+</div>

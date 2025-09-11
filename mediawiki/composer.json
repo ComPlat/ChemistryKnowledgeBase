@@ -94,7 +94,8 @@
 		"mediawiki/page-forms": "^6.0",
 		"mediawiki/chameleon-skin": "^5.0",
 		"mediawiki/display-title": "^4.0",
-		"diqa/enhanced-retrieval": "dev-master"
+		"diqa/enhanced-retrieval": "dev-master",
+		"ml/json-ld": "^1.2"
 	},
 	"require-dev": {
 		"composer/spdx-licenses": "1.5.8",

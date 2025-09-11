@@ -148,6 +148,7 @@ class ComposerStaticInit_mediawiki_vendor
             'MediaWiki\\Composer\\' => 19,
             'MediaWikiPhanConfig\\' => 20,
             'Matrix\\' => 7,
+            'ML\\JsonLD\\' => 10,
         ),
         'L' => 
         array (
@@ -572,6 +573,10 @@ class ComposerStaticInit_mediawiki_vendor
         array (
             0 => __DIR__ . '/..' . '/markbaker/matrix/classes/src',
         ),
+        'ML\\JsonLD\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/ml/json-ld',
+        ),
         'LightnCandy\\' => 
         array (
             0 => __DIR__ . '/..' . '/zordius/lightncandy/src',
@@ -738,6 +743,10 @@ class ComposerStaticInit_mediawiki_vendor
             array (
                 0 => __DIR__ . '/..' . '/pear/mail_mime',
                 1 => __DIR__ . '/..' . '/pear/mail',
+            ),
+            'ML\\IRI' => 
+            array (
+                0 => __DIR__ . '/..' . '/ml/iri',
             ),
         ),
         'L' => 
@@ -962,7 +971,9 @@ class ComposerStaticInit_mediawiki_vendor
         'DIQA\\FacetedSearch\\FacetedSearchUtil' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/FacetedSearchUtil.php',
         'DIQA\\FacetedSearch\\ProxyRestEndpoint' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/ProxyRestEndpoint.php',
         'DIQA\\FacetedSearch\\Proxy\\SolrProxy\\SolrService' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Proxy/SolrProxy/SolrService.php',
+        'DIQA\\FacetedSearch\\SolrProxy\\SolrService' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/SolrProxy/SolrService.php',
         'DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/Specials/FSFacetedSearchSpecial.php',
+        'DIQA\\FacetedSearch\\UpdateSolrIndexJob' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UpdateSolrIndexJob.php',
         'DIQA\\FacetedSearch\\UpdateSolrJob' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UpdateSolrJob.php',
         'DIQA\\FacetedSearch\\UpdateSolrWithDependantJob' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UpdateSolrWithDependantJob.php',
         'DIQA\\FacetedSearch\\UserPreference' => __DIR__ . '/../..' . '/extensions/EnhancedRetrieval/src/FacetedSearch/UserPreference.php',
@@ -1831,6 +1842,42 @@ class ComposerStaticInit_mediawiki_vendor
         'Liuggio\\StatsdClient\\Service\\StatsdService' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/Service/StatsdService.php',
         'Liuggio\\StatsdClient\\StatsdClient' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/StatsdClient.php',
         'Liuggio\\StatsdClient\\StatsdClientInterface' => __DIR__ . '/..' . '/liuggio/statsd-php-client/src/Liuggio/StatsdClient/StatsdClientInterface.php',
+        'ML\\IRI\\IRI' => __DIR__ . '/..' . '/ml/iri/ML/IRI/IRI.php',
+        'ML\\IRI\\Test\\IriTest' => __DIR__ . '/..' . '/ml/iri/ML/IRI/Test/IriTest.php',
+        'ML\\JsonLD\\DefaultDocumentFactory' => __DIR__ . '/..' . '/ml/json-ld/DefaultDocumentFactory.php',
+        'ML\\JsonLD\\Document' => __DIR__ . '/..' . '/ml/json-ld/Document.php',
+        'ML\\JsonLD\\DocumentFactoryInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentFactoryInterface.php',
+        'ML\\JsonLD\\DocumentInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentInterface.php',
+        'ML\\JsonLD\\DocumentLoaderInterface' => __DIR__ . '/..' . '/ml/json-ld/DocumentLoaderInterface.php',
+        'ML\\JsonLD\\Exception\\InvalidQuadException' => __DIR__ . '/..' . '/ml/json-ld/Exception/InvalidQuadException.php',
+        'ML\\JsonLD\\Exception\\JsonLdException' => __DIR__ . '/..' . '/ml/json-ld/Exception/JsonLdException.php',
+        'ML\\JsonLD\\FileGetContentsLoader' => __DIR__ . '/..' . '/ml/json-ld/FileGetContentsLoader.php',
+        'ML\\JsonLD\\Graph' => __DIR__ . '/..' . '/ml/json-ld/Graph.php',
+        'ML\\JsonLD\\GraphInterface' => __DIR__ . '/..' . '/ml/json-ld/GraphInterface.php',
+        'ML\\JsonLD\\JsonLD' => __DIR__ . '/..' . '/ml/json-ld/JsonLD.php',
+        'ML\\JsonLD\\JsonLdSerializable' => __DIR__ . '/..' . '/ml/json-ld/JsonLdSerializable.php',
+        'ML\\JsonLD\\LanguageTaggedString' => __DIR__ . '/..' . '/ml/json-ld/LanguageTaggedString.php',
+        'ML\\JsonLD\\NQuads' => __DIR__ . '/..' . '/ml/json-ld/NQuads.php',
+        'ML\\JsonLD\\Node' => __DIR__ . '/..' . '/ml/json-ld/Node.php',
+        'ML\\JsonLD\\NodeInterface' => __DIR__ . '/..' . '/ml/json-ld/NodeInterface.php',
+        'ML\\JsonLD\\Processor' => __DIR__ . '/..' . '/ml/json-ld/Processor.php',
+        'ML\\JsonLD\\Quad' => __DIR__ . '/..' . '/ml/json-ld/Quad.php',
+        'ML\\JsonLD\\QuadParserInterface' => __DIR__ . '/..' . '/ml/json-ld/QuadParserInterface.php',
+        'ML\\JsonLD\\QuadSerializerInterface' => __DIR__ . '/..' . '/ml/json-ld/QuadSerializerInterface.php',
+        'ML\\JsonLD\\RdfConstants' => __DIR__ . '/..' . '/ml/json-ld/RdfConstants.php',
+        'ML\\JsonLD\\RemoteDocument' => __DIR__ . '/..' . '/ml/json-ld/RemoteDocument.php',
+        'ML\\JsonLD\\Test\\DocumentTest' => __DIR__ . '/..' . '/ml/json-ld/Test/DocumentTest.php',
+        'ML\\JsonLD\\Test\\EarlReportGenerator' => __DIR__ . '/..' . '/ml/json-ld/Test/EarlReportGenerator.php',
+        'ML\\JsonLD\\Test\\FileGetContentsLoaderTest' => __DIR__ . '/..' . '/ml/json-ld/Test/FileGetContentsLoaderTest.php',
+        'ML\\JsonLD\\Test\\GraphTest' => __DIR__ . '/..' . '/ml/json-ld/Test/GraphTest.php',
+        'ML\\JsonLD\\Test\\JsonLDApiTest' => __DIR__ . '/..' . '/ml/json-ld/Test/JsonLDApiTest.php',
+        'ML\\JsonLD\\Test\\JsonTestCase' => __DIR__ . '/..' . '/ml/json-ld/Test/JsonTestCase.php',
+        'ML\\JsonLD\\Test\\NQuadsTest' => __DIR__ . '/..' . '/ml/json-ld/Test/NQuadsTest.php',
+        'ML\\JsonLD\\Test\\TestManifestIterator' => __DIR__ . '/..' . '/ml/json-ld/Test/TestManifestIterator.php',
+        'ML\\JsonLD\\Test\\ValueTest' => __DIR__ . '/..' . '/ml/json-ld/Test/ValueTest.php',
+        'ML\\JsonLD\\Test\\W3CTestSuiteTest' => __DIR__ . '/..' . '/ml/json-ld/Test/W3CTestSuiteTest.php',
+        'ML\\JsonLD\\TypedValue' => __DIR__ . '/..' . '/ml/json-ld/TypedValue.php',
+        'ML\\JsonLD\\Value' => __DIR__ . '/..' . '/ml/json-ld/Value.php',
         'Mail' => __DIR__ . '/..' . '/pear/mail/Mail.php',
         'Mail_RFC822' => __DIR__ . '/..' . '/pear/mail/Mail/RFC822.php',
         'Mail_mail' => __DIR__ . '/..' . '/pear/mail/Mail/mail.php',

@@ -10,6 +10,7 @@ return array(
     'SemanticMediaWiki' => array($baseDir . '/extensions/SemanticMediaWiki/includes/SemanticMediaWiki.php'),
     'Net' => array($vendorDir . '/pear/net_smtp', $vendorDir . '/pear/net_socket'),
     'Mail' => array($vendorDir . '/pear/mail_mime', $vendorDir . '/pear/mail'),
+    'ML\\IRI' => array($vendorDir . '/ml/iri'),
     'Liuggio' => array($vendorDir . '/liuggio/statsd-php-client/src'),
     'Less' => array($vendorDir . '/wikimedia/less.php/lib'),
     'JsonMapper' => array($vendorDir . '/netresearch/jsonmapper/src'),

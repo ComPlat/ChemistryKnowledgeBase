@@ -118,7 +118,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'title' => 'Refresh content investigations',
             'infusable' => true,
             'value' => json_encode([
-                'parameters' => $this->context['parameters'],
+                'parameters' => $this->context['parameters'] ?? [],
                 'page' => $this->context['page']->getPrefixedText(),
                 'cacheKey' => md5($text)
             ])

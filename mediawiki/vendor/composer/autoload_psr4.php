@@ -92,6 +92,7 @@ return array(
     'MediaWiki\\Composer\\' => array($baseDir . '/includes/composer'),
     'MediaWikiPhanConfig\\' => array($vendorDir . '/mediawiki/mediawiki-phan-config/src'),
     'Matrix\\' => array($vendorDir . '/markbaker/matrix/classes/src'),
+    'ML\\JsonLD\\' => array($vendorDir . '/ml/json-ld'),
     'LightnCandy\\' => array($vendorDir . '/zordius/lightncandy/src'),
     'JsonSchema\\' => array($vendorDir . '/justinrainbow/json-schema/src/JsonSchema'),
     'JohnKary\\PHPUnit\\Listener\\' => array($vendorDir . '/johnkary/phpunit-speedtrap/src'),
