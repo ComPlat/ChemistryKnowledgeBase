@@ -3,12 +3,22 @@ namespace DIQA\ChemExtension\Endpoints;
 
 use FSFile;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Rest\RequestInterface;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use MediaWiki\Rest\Validator\BodyValidator;
 use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class UploadFileToWiki extends SimpleHandler {
+
+    public function getSupportedRequestTypes(): array {
+        return ['application/octet-stream'];
+    }
+
+    public function getBodyValidator( $contentType ) {
+        return new FileBodyValidator();
+    }
 
     public function run() {
 
@@ -65,4 +75,16 @@ class UploadFileToWiki extends SimpleHandler {
 
         ];
     }
+}
+
+class FileBodyValidator implements BodyValidator {
+
+    /**
+     * @inheritDoc
+     * @return null
+     */
+    public function validateBody( RequestInterface $request ) {
+        return null;
+    }
+
 }

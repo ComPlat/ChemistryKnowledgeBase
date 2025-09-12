@@ -8,6 +8,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
 use Hooks;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 
 class PublicationImportJob extends Job
@@ -38,7 +39,8 @@ class PublicationImportJob extends Job
                 $this->logger->warn("Notification job was not created for page: " . $this->getTitle()->getPrefixedText());
             }
             $this->importPublicationPage();
-            Hooks::run('CleanupChemExtState');
+            $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hooksContainer->run('CleanupChemExtState');
 
         } catch (Exception $e) {
             $this->logger->error("ERROR: " . $e->getMessage());

@@ -119,9 +119,7 @@ class ExperimentXlsImporter
             $values = $this->readLine($row, $headerData['num-columns']);
 
             $aggregatedValues = $this->aggregateValues($headerData['property-data'], $values);
-
-
-            $rowNotEmpty = count(array_filter($values, fn($e) => trim($e) !== '')) > 0;
+            $rowNotEmpty = count(array_filter($values, fn($e) => !is_null($e) && trim($e) !== '')) > 0;
             if ($rowNotEmpty) {
                 $rowsContent .= "{{" . $rowTemplate;
                 foreach ($aggregatedValues as $value) {

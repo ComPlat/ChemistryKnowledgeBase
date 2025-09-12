@@ -44,7 +44,8 @@ abstract class PageIterator extends Maintenance
             $pages = explode(',', $this->getOption('p'));
             $this->processPages($pages);
         }
-        \Hooks::run('CleanupChemExtState');
+        $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hooksContainer->run('CleanupChemExtState');
         print "\n{$this->num_files} IDs refreshed.\n";
 
         if (count($this->problems) > 0) {

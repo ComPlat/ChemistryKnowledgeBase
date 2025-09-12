@@ -66,7 +66,8 @@ class MoleculePageCreationJob extends Job
             $job->run();
 
         }
-        \Hooks::run('CleanupChemExtState');
+        $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hooksContainer->run('CleanupChemExtState');
     }
 
     /**
