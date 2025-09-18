@@ -19,9 +19,7 @@
 	hasEditSection = $( '.mw-editsection' ).length > 0;
 
 	tour = new gt.TourBuilder( {
-		name: 'firstedit',
-		// Disable all logging from this extension per T288416
-		shouldLog: false
+		name: 'firstedit'
 	} );
 
 	tour.firstStep( {
@@ -98,7 +96,8 @@
 		closeOnClickOutside: false
 	} )
 		.transition( function () {
-			if ( !gt.isReviewing() ) {
+			// If you skip preview then gt will think you're editing not reviewing
+			if ( !gt.isEditing() && !gt.isReviewing() ) {
 				return gt.TransitionAction.END;
 			}
 		} )

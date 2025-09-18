@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Айбикә",
+			"З. ӘЙЛЕ"
+		]
+	},
+	"jsonschema-badidref": "Идентификатор һылтанмаһы дөрөҫ түгел: \"$1\"",
+	"jsonschema-idconvert": "var идентификаторға әйләндерелмәй: <code>$1</code>"
+}

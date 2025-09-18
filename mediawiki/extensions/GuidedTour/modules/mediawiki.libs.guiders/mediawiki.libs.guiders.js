@@ -98,10 +98,10 @@ mw.libs.guiders = ( function () {
 	].join( '' );
 
 	guiders._arrowSize = 42; // This is the arrow's width and height.
-	guiders._buttonElement = '<a></a>';
+	guiders._buttonElement = '<button></button>';
 	// eslint-disable-next-line no-script-url
 	guiders._buttonAttributes = { href: 'javascript:void(0);' };
-	guiders._buttonClass = 'mw-ui-button';
+	guiders._buttonClass = 'cdx-button';
 	guiders._currentGuiderID = null;
 	guiders._guiderInits = {}; // stores uncreated guiders indexed by id
 	guiders._guiders = {}; // stores created guiders indexed by id
@@ -165,7 +165,7 @@ mw.libs.guiders = ( function () {
 				thisButtonHtml = thisButton.name;
 			}
 			$thisButtonElem = $(
-				guiders._buttonElement,
+				thisButton.buttonElement || guiders._buttonElement,
 				$.extend(
 					{
 						class: guiders._buttonClass,
@@ -202,9 +202,11 @@ mw.libs.guiders = ( function () {
 		var xButtonContainer, $xButton;
 
 		xButtonContainer = myGuider.elem.find( '.guider_close' );
-		$xButton = $( '<a>',
-			$.extend( { class: 'x_button' }, guiders._buttonAttributes )
-		);
+		$xButton = $( '<button>' ).attr( {
+			class: 'cdx-button cdx-button--icon-only cdx-button--weight-quiet',
+			'aria-label': mw.msg( 'guidedtour-close-button' )
+		} );
+		$xButton = $xButton.append( $( '<span>' ).attr( { class: 'cdx-button__icon x_button__icon' } ) );
 		xButtonContainer.append( $xButton );
 		$xButton.on( {
 			click: function () {
@@ -807,15 +809,17 @@ mw.libs.guiders = ( function () {
 		guiderElemHeight = myGuider.elem.height();
 		isGuiderBelow = ( scrollHeight + windowHeight < guiderOffsetTop + guiderElemHeight ); /* we will need to scroll down */
 		isGuiderAbove = ( guiderOffsetTop < scrollHeight ); /* we will need to scroll up */
-		if ( myGuider.autoFocus && ( isGuiderBelow || isGuiderAbove ) ) {
-			// Sometimes the browser won't scroll if the person just clicked,
-			// so let's do this in a setTimeout.
-			guiders._removeAnimations( myGuider );
-			setTimeout( guiders.scrollToCurrent, 10 );
+		if ( myGuider.autoFocus ) {
+			if ( isGuiderBelow || isGuiderAbove ) {
+				// Sometimes the browser won't scroll if the person just clicked,
+				// so let's do this in a setTimeout.
+				guiders._removeAnimations( myGuider );
+				setTimeout( guiders.scrollToCurrent, 10 );
+			}
+			$( myGuider.elem ).find( '.cdx-button--action-progressive:first-child' ).trigger( 'focus' );
 		}
 
 		$( myGuider.elem ).trigger( 'guiders.show' );
-		$( myGuider.elem ).find( '.mw-ui-progressive:first-child' ).trigger( 'focus' );
 
 		// Create (preload) next guider if it hasn't been created
 		nextGuiderId = myGuider.next || null;

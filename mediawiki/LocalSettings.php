@@ -330,8 +330,13 @@ $sfgRenameEditTabs = true;
 #################################################################
 # Other extensions
 #################################################################
+wfLoadExtension( 'EventLogging' );
+$wgEventLoggingBaseUri = '/beacon/event';
+$wgEventLoggingServiceUri = '/beacon/intake-analytics';
+$wgEventLoggingStreamNames = false;
+
 wfLoadExtension('PageImport');
-//wfLoadExtension( 'GuidedTour' );
+wfLoadExtension( 'GuidedTour' );
 wfLoadExtension( 'CategoryTree' );
 wfLoadExtension( 'Nuke' );
 wfLoadExtension( 'ParserFunctions' );

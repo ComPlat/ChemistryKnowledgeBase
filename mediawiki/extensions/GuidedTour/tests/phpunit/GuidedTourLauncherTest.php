@@ -1,32 +1,26 @@
 <?php
 
 use MediaWiki\Extension\GuidedTour\GuidedTourLauncher;
+use MediaWiki\Json\FormatJson;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @covers \MediaWiki\Extension\GuidedTour\GuidedTourLauncher
  */
 class GuidedTourLauncherTest extends MediaWikiIntegrationTestCase {
-	protected $wrappedLauncher;
-
-	public function setUp(): void {
-		parent::setUp();
-
-		$this->wrappedLauncher = TestingAccessWrapper::newFromClass( GuidedTourLauncher::class );
-	}
-
 	/**
 	 * @dataProvider getNewStateProvider
 	 */
 	public function testGetNewState( $oldStateValue, $tourName, $step, $expectedNewStateValue ) {
-		$newStateValue = $this->wrappedLauncher->getNewState( $oldStateValue, $tourName, $step );
+		$wrappedLauncher = TestingAccessWrapper::newFromClass( GuidedTourLauncher::class );
+		$newStateValue = $wrappedLauncher->getNewState( $oldStateValue, $tourName, $step );
 		$this->assertSame(
 			$expectedNewStateValue,
 			$newStateValue
 		);
 	}
 
-	public function getNewStateProvider() {
+	public static function getNewStateProvider() {
 		$simpleExpectedState = [
 			'version' => 1,
 			'tours' => [
@@ -116,7 +110,7 @@ class GuidedTourLauncherTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function getNewCookieProvider() {
+	public static function getNewCookieProvider() {
 		$simpleExpectedCookieString = FormatJson::encode( [
 			'version' => 1,
 			'tours' => [

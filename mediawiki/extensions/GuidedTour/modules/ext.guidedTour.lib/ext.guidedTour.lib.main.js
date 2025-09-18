@@ -779,7 +779,7 @@
 			if ( cookieState.tours[ tourName ] === undefined ) {
 				cookieState.tours[ tourName ] = {};
 
-				cookieState.tours[ tourName ].startTime = new Date().getTime();
+				cookieState.tours[ tourName ].startTime = Date.now();
 			}
 
 			if (
@@ -876,15 +876,13 @@
 	 * it immediately
 	 *
 	 * mw.guidedTour.Tour#constructor has details on tourSpec.name,
-	 *   tourSpec.isSinglePage, tourSpec.showConditionally, and
-	 *   tourSpec.shouldLog
+	 * tourSpec.isSinglePage, and tourSpec.showConditionally.
 	 *
 	 * @method defineTour
-	 * @deprecated
 	 *
 	 * @param {Object} tourSpec object specifying tour
 	 * @param {Array} tourSpec.steps Array of steps; see
-	 * mw.guidedTour.TourBuilder#step.  In addition, the following deprecated
+	 * mw.guidedTour.TourBuilder#step.  In addition, the following
 	 * option is supported only through defineTour.
 	 * @param {Function} [tourSpec.steps.shouldSkip] Function returning a
 	 *  boolean, which specifies whether to skip the current step based on the
@@ -892,10 +890,10 @@
 	 * @param {boolean} tourSpec.steps.shouldSkip.return true to skip, false
 	 *  otherwise
 	 *
-	 * @return {boolean} true, on success; throws otherwise
+	 * @return {mw.guidedTour.TourBuilder} the builder used to create the tour
 	 * @throws {mw.guidedTour.TourDefinitionError} On invalid input
 	 */
-	mw.log.deprecate( gt, 'defineTour', function ( tourSpec ) {
+	gt.defineTour = function ( tourSpec ) {
 		var tourBuilder, stepBuilders = [], steps, i, j, stepCount;
 
 		/**
@@ -923,25 +921,27 @@
 		 * @private
 		 *
 		 * @param {number} skipStartIndex 0-based index of the step to start at
+		 * @param {number} delta +1 for moving forwards, -1 for moving backwards
 		 *
 		 * @return {mw.guidedTour.StepBuilder|mw.guidedTour.TransitionAction|undefined}
 		 *  next step, hide (if the tour should be hidden for now), or undefined
 		 *  for no change
 		 */
-		function followShouldSkip( skipStartIndex ) {
+		function followShouldSkip( skipStartIndex, delta ) {
 			var skipIndex = skipStartIndex;
 
-			while ( skipIndex < stepCount &&
+			while ( skipIndex >= 0 &&
+				skipIndex < stepCount &&
 				steps[ skipIndex ].shouldSkip &&
 				steps[ skipIndex ].shouldSkip() ) {
 
-				skipIndex++;
+				skipIndex += delta;
 			}
 
 			if ( skipIndex === skipStartIndex ) {
 				// No change, so don't skip
 				return undefined;
-			} else if ( skipIndex < stepCount ) {
+			} else if ( skipIndex >= 0 && skipIndex < stepCount ) {
 				return stepBuilders[ skipIndex ];
 			} else {
 				// Skipped past the end
@@ -959,8 +959,12 @@
 		 * @return {Function} Handler that returns the target after skipping
 		 */
 		function getTransitionHandler( startIndex ) {
-			return function () {
-				return followShouldSkip( startIndex );
+			return function ( event ) {
+				var delta = 1;
+				if ( event.type === gt.TransitionEvent.BUILTIN && event.subtype === gt.TransitionEvent.TRANSITION_BACK ) {
+					delta = -1;
+				}
+				return followShouldSkip( startIndex, delta );
 			};
 		}
 
@@ -992,6 +996,9 @@
 			if ( j < stepCount - 1 ) {
 				stepBuilders[ j ].next( stepBuilders[ j + 1 ] );
 			}
+			if ( j > 0 ) {
+				stepBuilders[ j ].back( stepBuilders[ j - 1 ] );
+			}
 
 			// Don't register a custom skip handler if it can never skip.
 			if ( steps[ j ].shouldSkip ) {
@@ -999,8 +1006,8 @@
 			}
 		}
 
-		return true;
-	} );
+		return tourBuilder;
+	};
 
 	// Keep after main mw.guidedTour methods.
 	// jsduck assumes methods belong to the classes they follow in source

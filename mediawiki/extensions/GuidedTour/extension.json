@@ -18,10 +18,7 @@
 	"license-name": "Apache-2.0",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.39.0",
-		"extensions": {
-			"EventLogging": "*"
-		}
+		"MediaWiki": ">= 1.43"
 	},
 	"MessagesDirs": {
 		"GuidedTour": [
@@ -55,7 +52,7 @@
 			},
 			"dependencies": [
 				"mediawiki.libs.guiders",
-				"mediawiki.ui.button"
+				"codex-search-styles"
 			]
 		},
 		"ext.guidedTour.lib.internal": {
@@ -68,7 +65,6 @@
 			"scripts": [
 				"ext.guidedTour.lib/ext.guidedTour.lib.TransitionEvent.js",
 				"ext.guidedTour.lib/ext.guidedTour.lib.main.js",
-				"ext.guidedTour.lib/ext.guidedTour.lib.EventLogger.js",
 				"ext.guidedTour.lib/ext.guidedTour.lib.TransitionAction.js",
 				"ext.guidedTour.lib/ext.guidedTour.lib.StepBuilder.js",
 				"ext.guidedTour.lib/ext.guidedTour.lib.Step.js",
@@ -85,14 +81,14 @@
 				"mediawiki.libs.guiders",
 				"mediawiki.user",
 				"mediawiki.util",
-				"ext.eventLogging",
 				"ext.guidedTour.lib.internal",
 				"ext.guidedTour.styles"
 			],
 			"messages": [
 				"guidedtour-next-button",
 				"guidedtour-okay-button",
-				"guidedtour-back-button"
+				"guidedtour-back-button",
+				"guidedtour-close-button"
 			]
 		},
 		"ext.guidedTour.launcher": {
@@ -182,10 +178,15 @@
 		]
 	},
 	"Hooks": {
-		"BeforePageDisplay": "MediaWiki\\Extension\\GuidedTour\\Hooks::onBeforePageDisplay",
-		"ResourceLoaderRegisterModules": "MediaWiki\\Extension\\GuidedTour\\Hooks::onResourceLoaderRegisterModules",
-		"RedirectSpecialArticleRedirectParams": "MediaWiki\\Extension\\GuidedTour\\Hooks::onRedirectSpecialArticleRedirectParams",
-		"MakeGlobalVariablesScript": "MediaWiki\\Extension\\GuidedTour\\GuidedTourLauncher::onMakeGlobalVariablesScript"
+		"BeforePageDisplay": "main",
+		"ResourceLoaderRegisterModules": "main",
+		"RedirectSpecialArticleRedirectParams": "main",
+		"MakeGlobalVariablesScript": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\GuidedTour\\Hooks"
+		}
 	},
 	"manifest_version": 2
 }
