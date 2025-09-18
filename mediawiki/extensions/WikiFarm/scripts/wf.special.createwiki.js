@@ -41,7 +41,7 @@
             usersMultiselectWidget.pushPending();
             Ajax.updateUsersOfWiki(selectedWiki, userNames).done(function (response) {
                 usersMultiselectWidget.popPending();
-            }).error(function (msg) {
+            }).catch(function (msg) {
                 console.log("Error WikiFarm: " + msg.responseText);
                 mw.notify(mw.message('wfarm-ajax-error').text());
             });
@@ -54,7 +54,7 @@
                 updateTable(function() {
                     createWikiButton.setDisabled(false);
                 });
-            }).error(function (msg) {
+            }).catch(function (msg) {
                 createWikiButton.setDisabled(false);
                 console.log("Error WikiFarm: " + msg.responseText);
                 mw.notify(mw.message('wfarm-ajax-error').text());
@@ -109,7 +109,7 @@
                     oouiButton.setDisabled(true);
                     Ajax.removeWiki(id).done(function () {
                         updateTable();
-                    }).error(function (msg) {
+                    }).catch(function (msg) {
                         oouiButton.setDisabled(false);
                         console.log("Error WikiFarm: " + msg.responseText);
                         mw.notify(mw.message('wfarm-ajax-error').text());
@@ -125,7 +125,7 @@
                 registerTableListeners();
                 $('#wfarm-wikiUserList-section').hide();
                 if (callbackOnSuccess) callbackOnSuccess();
-            }).error(function (msg) {
+            }).catch(function (msg) {
                 console.log("Error WikiFarm: " + msg.responseText);
                 mw.notify(mw.message('wfarm-ajax-error').text());
             });

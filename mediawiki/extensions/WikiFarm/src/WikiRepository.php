@@ -1,6 +1,7 @@
 <?php
 namespace DIQA\WikiFarm;
 
+use MediaWiki\MediaWikiServices;
 use User;
 use Wikimedia\Rdbms\IMaintainableDatabase;
 
@@ -31,7 +32,8 @@ class WikiRepository {
         $wikiId = self::createWikiInDB($wikiName, $user);
         $jobParams['wikiId'] = "$wikiId";
         $job = new CreateWikiJob( $title, $jobParams );
-        \JobQueueGroup::singleton()->push( $job );
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push( $job );
         return $wikiId;
     }
 
@@ -56,7 +58,8 @@ class WikiRepository {
         $this->updateToBeDeleted($wikiId);
 
         $job = new RemoveWikiJob( $title, $jobParams );
-        \JobQueueGroup::singleton()->push( $job );
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push( $job );
         return $wikiId;
     }
 

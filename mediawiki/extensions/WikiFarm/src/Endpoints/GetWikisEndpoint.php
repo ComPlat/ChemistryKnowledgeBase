@@ -28,7 +28,7 @@ class GetWikisEndpoint extends SimpleHandler {
         $html = $blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer ]
-        )->render ();
+        );
 
         return ['html' => $html];
     }
