@@ -117,10 +117,11 @@ class ExperimentLink
         $properties = $experimentType->getProperties();
         $convertedUnits = [];
         foreach ($properties as $p => $templateParam) {
-            $printRequests[] = QueryUtils::newPropertyPrintRequest($p,  $experimentType->getDefaultUnits()[$p] ?? null);
-            if (isset($experimentType->getDefaultUnits()[$p])) {
-                $convertedUnits[$templateParam] = $experimentType->getDefaultUnits()[$p];
+            $defaultUnit = ConvertQuantity::getDefaultUnit($p, $parameters['form']);
+            if (!is_null($defaultUnit)) {
+                $convertedUnits[$templateParam] = $defaultUnit;
             }
+            $printRequests[] = QueryUtils::newPropertyPrintRequest($p,  $defaultUnit ?? null);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
         $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);

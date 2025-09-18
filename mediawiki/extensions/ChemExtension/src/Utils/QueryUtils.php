@@ -254,7 +254,7 @@ class QueryUtils {
 
     public static function getUnitForProperty($property) {
         $value = self::getPropertyValue(Title::newFromText($property, SMW_NS_PROPERTY), "_UNIT");
-        return is_null($value) ? null : $value;
+        return is_null($value) ? null : $value->getString();
     }
 
 
