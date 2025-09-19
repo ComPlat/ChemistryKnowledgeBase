@@ -34,7 +34,7 @@ class SearchForMolecule extends SimpleHandler
         $this->trivialnameProp = QueryUtils::newPropertyPrintRequest("Trivialname");
         $this->inchiKey = QueryUtils::newPropertyPrintRequest("InChIKey");
         $this->abbreviation = QueryUtils::newPropertyPrintRequest("Abbreviation");
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->repo = new ChemFormRepository($dbr);
     }
 
@@ -142,7 +142,8 @@ class SearchForMolecule extends SimpleHandler
         $obj['Trivialname'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Trivialname');
         $obj['InChIKey'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'InChIKey');
         $obj['Abbreviation'] = QueryUtils::getPropertyValuesAsString($moleculePage, 'Abbreviation');
-        $obj['label'] = $this->makeLabel($obj);
+        $obj['displaytitle'] = $this->makeLabel($obj);
+        $obj['label'] = $obj['displaytitle'];
         return [$obj];
     }
 
@@ -181,7 +182,8 @@ class SearchForMolecule extends SimpleHandler
             $dataItem = $column->getNextDataItem();
             $obj['Abbreviation'] = $dataItem !== false ? $dataItem->getString() : '';
 
-            $obj['label'] = $this->makeLabel($obj);
+            $obj['displaytitle'] = $this->makeLabel($obj);
+            $obj['label'] = $obj['displaytitle'];
             $searchResults[] = $obj;
 
         }

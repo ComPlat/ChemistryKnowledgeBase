@@ -1,14 +1,18 @@
 <?php
 
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\Tests\AnsiTermColorer;
+use Wikimedia\Diff\Diff;
+use Wikimedia\Diff\UnifiedDiffFormatter;
 use Wikimedia\Parsoid\ParserTests\Test as ParserTest;
 use Wikimedia\Parsoid\ParserTests\TestFileReader;
 use Wikimedia\Parsoid\ParserTests\TestMode as ParserTestMode;
+use Wikimedia\ScopedCallback;
 
 require_once __DIR__ . '/../../maintenance/Maintenance.php';
 
-define( 'MW_PARSER_TEST', true );
+define( 'MW_AUTOLOAD_TEST_CLASSES', true );
 
 /**
  * Interactive parser test runner and test file editor
@@ -40,9 +44,12 @@ class ParserEditTests extends Maintenance {
 		$this->addOption( 'session-data', 'internal option, do not use', false, true );
 	}
 
-	public function finalSetup( SettingsBuilder $settingsBuilder = null ) {
+	public function finalSetup( SettingsBuilder $settingsBuilder ) {
+		// Some methods which are discouraged for normal code throw exceptions unless
+		// we declare this is just a test.
+		define( 'MW_PARSER_TEST', true );
+
 		parent::finalSetup( $settingsBuilder );
-		self::requireTestsAutoloader();
 		TestSetup::applyInitialConfig();
 	}
 
@@ -111,9 +118,10 @@ class ParserEditTests extends Maintenance {
 	}
 
 	protected function runTests() {
-		$teardown = $this->runner->staticSetup();
-		$teardown = $this->runner->setupDatabase( $teardown );
-		$teardown = $this->runner->setupUploads( $teardown );
+		$teardownGuard = null;
+		$teardownGuard = $this->runner->setupDatabase( $teardownGuard );
+		$teardownGuard = $this->runner->staticSetup( $teardownGuard );
+		$teardownGuard = $this->runner->setupUploads( $teardownGuard );
 
 		print "Running tests...\n";
 		$this->results = [];
@@ -137,6 +145,8 @@ class ParserEditTests extends Maintenance {
 			}
 		}
 		print "\n";
+
+		ScopedCallback::consume( $teardownGuard );
 	}
 
 	protected function showProgress() {
@@ -269,7 +279,7 @@ class ParserEditTests extends Maintenance {
 		$options = [];
 		foreach ( $specs as $spec ) {
 			if ( !preg_match( '/^(.*\[)(.)(\].*)$/', $spec, $m ) ) {
-				throw new MWException( 'Invalid option spec: ' . $spec );
+				throw new LogicException( 'Invalid option spec: ' . $spec );
 			}
 			print '* ' . $m[1] . $term->color( '35' ) . $m[2] . $term->color( '0' ) . $m[3] . "\n";
 			$options[strtoupper( $m[2] )] = true;

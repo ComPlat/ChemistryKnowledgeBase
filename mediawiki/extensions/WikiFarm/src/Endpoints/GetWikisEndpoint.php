@@ -2,9 +2,9 @@
 namespace DIQA\WikiFarm\Endpoints;
 
 use DIQA\WikiFarm\WikiRepository;
+use eftec\bladeone\BladeOne;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
-use Philo\Blade\Blade;
 use OutputPage;
 
 class GetWikisEndpoint extends SimpleHandler {
@@ -14,7 +14,7 @@ class GetWikisEndpoint extends SimpleHandler {
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new BladeOne( $views, $cache );
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -25,10 +25,10 @@ class GetWikisEndpoint extends SimpleHandler {
 
         global $wgServer;
         $allWikiCreated = $repository->getAllWikisCreatedById($wgUser->getId());
-        $html = $blade->view ()->make ( "wiki-created-by",
+        $html = $blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer ]
-        )->render ();
+        );
 
         return ['html' => $html];
     }

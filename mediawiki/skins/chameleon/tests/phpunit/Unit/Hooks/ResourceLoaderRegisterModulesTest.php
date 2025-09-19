@@ -24,7 +24,8 @@
 
 namespace Skins\Chameleon\Tests\Unit\Hooks;
 
-use ResourceLoader;
+use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\ResourceLoader\SkinModule;
 use PHPUnit\Framework\TestCase;
 use Skins\Chameleon\Hooks\ResourceLoaderRegisterModules;
 
@@ -84,7 +85,7 @@ class ResourceLoaderRegisterModulesTest extends TestCase {
 			->withConsecutive(
 				[ 'zzz.ext.bootstrap.styles', [ 'foo' => 'bar' ] ],
 				[ 'skins.chameleon', [
-					'class' => 'ResourceLoaderSkinModule',
+					'class' => SkinModule::class,
 					'features' => $this->getBaseFeatures(),
 					'targets' => [
 						'desktop',
@@ -110,16 +111,14 @@ class ResourceLoaderRegisterModulesTest extends TestCase {
 
 		$features = $this->getBaseFeatures();
 
-		if ( version_compare( MW_VERSION, '1.39', '>=' ) ) {
-			$features[] = 'content-links-external';
-		}
+		$features[] = 'content-links-external';
 
 		$resourceLoader->expects( $this->exactly( 2 ) )
 			->method( 'register' )
 			->withConsecutive(
 				[ 'zzz.ext.bootstrap.styles', [ 'foo' => 'bar' ] ],
 				[ 'skins.chameleon', [
-					'class' => 'ResourceLoaderSkinModule',
+					'class' => SkinModule::class,
 					'features' => $features,
 					'targets' => [
 						'desktop',
@@ -134,11 +133,7 @@ class ResourceLoaderRegisterModulesTest extends TestCase {
 	}
 
 	private function getBaseFeatures(): array {
-		if ( version_compare( MW_VERSION, '1.39', '<' ) ) {
-			return [ 'elements', 'content', 'legacy', 'toc' ];
-		}
-
-		return [
+		$features = [
 			'elements',
 			'content-links',
 			'content-media',
@@ -150,6 +145,13 @@ class ResourceLoaderRegisterModulesTest extends TestCase {
 			'i18n-headings',
 			'toc'
 		];
+
+		if ( version_compare( MW_VERSION, '1.43', '>=' ) ) {
+			$removed = [ 'i18n-all-lists-margins', 'interface-message-box' ];
+			$features = array_values( array_diff( $features, $removed ) );
+		}
+
+		return $features;
 	}
 
 }

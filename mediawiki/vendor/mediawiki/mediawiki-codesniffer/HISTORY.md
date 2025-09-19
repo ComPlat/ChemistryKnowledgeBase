@@ -1,5 +1,173 @@
 # MediaWiki-Codesniffer release history #
 
+## v45.0.0 / 2024-10-29
+### New sniffs ###
+* Add `MediaWiki.Usage.NullableType.ExplicitNullableTypes` to check for implicitly nullable types in PHP 8.4 (Umherirrender)
+
+### Changed sniffs ###
+* `NullableTypeSniff`: Also check closure and arrow functions (Umherirrender)
+
+### Documentation, dependencies and build changes ###
+* Update squizlabs/php_codesniffer to 3.10.3 (Umherirrender)
+* build: Support composer/semver 3.4.3 (C. Scott Ananian)
+* build: Drop support for older composer/semver versions (Alexander Vorwerk)
+* build: Add ext-dom to require-dev, used in a test (Reedy)
+
+
+## v44.0.0 / 2024-08-10
+### New sniffs ###
+* Add `Generic.CodeAnalysis.RequireExplicitBooleanOperatorPrecedence` (Daimona Eaytoy)
+* Add `Universal.CodeAnalysis.NoDoubleNegative` to replace `DoubleNotOperatorSniff` (Daimona Eaytoy)
+* Add `Universal.PHP.LowercasePHPTag` (Daimona Eaytoy)
+
+### Changed sniffs ###
+* `ExtendClassUsageSniff`: Add `$wgInitialSessionId` to non-config variables (Func)
+* `PhpunitAnnotationsSniff`: Update also absolute class names in `@covers` (Umherirrender)
+* `SpaceBeforeClassBrace.BraceNotOnOwnLine`: Handle multi-line anon class (Umherirrender)
+* `UnusedUseStatementSniff`: Don't report unused classes in`@phpstan…` and `@psalm-import-type` (thiemowmde)
+* `UnusedUseStatementSniff`: Replace hard-coded`@…-import-type` with more flexible config (thiemowmde)
+
+### Removed sniffs ###
+* `DoubleNotOperatorSniff`, replaced by `Universal.CodeAnalysis.NoDoubleNegative` (Daimona Eaytoy)
+
+### Documentation, dependencies and build changes ###
+* Support composer/semver 3.4.2 (Kunal Mehta)
+* build: Update codesniffer to 3.9.0, phpcsextra to 1.2.1 (Daimona Eaytoy)
+* build: Update minus-x to 1.1.3 (Alexander Vorwerk)
+* build: Upgrade mediawiki/mediawiki-phan-config to 0.14.0 (James D. Forrester)
+* build: Upgrade php-parallel-lint/php-parallel-lint to 1.4.0 (Umherirrender)
+* build: Upgrade phpunit to 9.6.16 (James D. Forrester)
+
+
+## 43.0.0 / 2024-01-29
+### New sniffs ###
+* Added the following sniffs from the PHPCSExtra standards: (Daimona Eaytoy)
+  * `Universal.Constants.LowercaseClassResolutionKeyword`: Enforce lowercase `::class`
+  * `Universal.Constants.UppercaseMagicConstants`: Enforce uppercase magic constants
+  * `Universal.ControlStructures.DisallowAlternativeSyntax`: Disallow alternative PHP syntax
+  * `Universal.Lists.DisallowLongListSyntax`: Disallow the long `list()`syntax
+  * `Universal.Operators.TypeSeparatorSpacing`: Forbid spaces in union and intersection types
+  * `Universal.UseStatements.KeywordSpacing`: Enforce a single space around keywords in `use` statements
+  * `Universal.UseStatements.LowercaseFunctionConst`: Enforce lowercase `function` and `const` in `use` statements
+  * `Universal.UseStatements.NoUselessAliases`: Forbids aliases in `use` statements where the alias is the same as the original name
+  * `Universal.WhiteSpace.CommaSpacing`: Enforce correct spacing around commas
+
+### Changed sniffs ###
+* `DeprecatedGlobalVariablesSniff`: Add `$wgCommandLineMode` (Bartosz Dziewoński)
+* `FunctionCommentSniff` & `PropertyDocumentationSniff`: Allow array shapes in PHPDoc comments (thiemowmde)
+* `FunctionCommentSniff`: Require documentation of getters starting with "is", not only "get" (thiemowmde)
+* `FunctionCommentSniff`: Actually check if a method returns anything (thiemowmde)
+* `FunctionAnnotationsSniff`: Add `@phan-type` as an allowed annotation (Umherirrender)
+* `FunctionAnnotationsSniff`: Add `@phan-side-effect-free` as an allowed annotation (Bartosz Dziewoński)
+* `LowerCamelFunctionsNameSniff`: Ignore hook methods (DannyS712)
+* `PhpunitAnnotationsSniff`: Enforce absolute class path for coverage annotations (Func)
+
+### Removed sniffs ###
+* `OneSpaceInlineArraySniff`: Superseded by `Universal.WhiteSpace.CommaSpacing`
+* `ShortListSyntaxSniff`: Superseded by `Universal.Lists.DisallowLongListSyntax`
+* `AlternativeSyntaxSniff`: Superseded by `Universal.ControlStructures.DisallowAlternativeSyntax`
+
+### Documentation, dependencies and build changes ###
+* Run in parallel with 64 jobs by default (Kunal Mehta, Antoine Musso)
+* build: Allow composer/semver 3.4.0 as well as 3.3.2 (Reedy)
+* tests: Add test for awfully inconsistent code (Daimona Eaytoy)
+* build: Update squizlabs/PHP_CodeSniffer to 3.8.1 (Umherirrender)
+
+
+## 42.0.0 / 2023-09-21
+### New sniffs ###
+* Create `MockBoilerplateSniff` for PHPUnit tests (DannyS712)
+* Create `OneSpaceInlineArraySniff` (Amir Sarabadani)
+* Create `ShortListSyntaxSniff` to replace `list()` by short array syntax (Umherirrender)
+* Enable `Generic.WhiteSpace.ScopeIndent` (Daimona Eaytoy)
+* Enable `Squiz.ControlStructures.ControlSignature` (Daimona Eaytoy)
+* Replace `AssignmentInControlStructuresSniff` with `Generic.CodeAnalysis.AssignmentInCondition` (Daimona Eaytoy)
+* Replace `DisallowEmptyLineFunctionsSniff` with `Squiz.WhiteSpace.FunctionOpeningBraceSpace` (Daimona Eaytoy)
+
+### Changed sniffs ###
+* `AssertCountSniff`: Prefer `assertSameSize` when both parts are `count()` (Func)
+* `DeprecatedGlobalVariablesSniff`: Add `$wgHooks` (Umherirrender)
+* `ForbiddenFunctionsSniff`: Fix not counting arguments correctly (Daimona Eaytoy)
+* `SpaceAfterClosureSniff`: Expand to enforce space after arrow functions (Umherirrender)
+* `UnusedUseStatement`: Ignore function name when detect unused use (Umherirrender)
+* `ValidGlobalNameSniff` & `UnusedGlobalVariablesSniff`: Make sniffs skip dynamic names (Daimona Eaytoy)
+
+### Documentation, dependencies and build changes ###
+* `ParenthesesAroundKeyword`: Use `fixer->beginChangeset/endChangeset` (Umherirrender)
+* Make some sniffs work for more OOP structures (Daimona Eaytoy)
+* build: Switch phan to special library mode (James D. Forrester)
+* build: Clean up of phan config (Umherirrender)
+
+## 41.0.0 / 2023-02-25
+### Changed sniffs ###
+* `AssertionOrderSniff`: Also run for `assertNotEquals`/`assertNotSame` (Umherirrender)
+* `AssertionOrderSniff`: Handle more wrong actual values (DannyS712)
+* `ForbiddenFunctionsSniff`: Forbid `eval()` and make `ForbiddenFunctions` sniff more flexible (Thiemo Kreuz)
+* `FunctionCommentSniff`: Allow fully-typed functions to omit documentation (Lucas Werkmeister)
+* `FunctionCommentSniff`: Allow fully typed `__constructor` without `@param` tags (thiemowmde)
+* `FunctionCommentSniff`: Allow prose-only documentation for statically typed functions (Lucas Werkmeister)
+* `FunctionCommentSniff`: Tiny performance optimization (thiemowmde)
+* `PropertyDocumentationSniff`: Allow prose-only documentation for statically typed properties (Lucas Werkmeister)
+* `PropertyDocumentationSniff`: Allow typed properties to omit documentation (Lucas Werkmeister)
+* `SpaceyParenthesisSniff`: Minor performance optimization (thiemowmde)
+
+### Documentation, dependencies and build changes ###
+* README: Remove todo about check-vars.php (Umherirrender)
+* build: Add Doxygen (James D. Forrester)
+* build: Pin PHPUnit to 9.5.28 (James D. Forrester)
+* build: Update squizlabs/PHP_CodeSniffer to 3.7.2 (Taavi Väänänen)
+* code: Disable `OneObjectStructurePerFile` during `FunctionComment` tests (thiemowmde)
+
+## 40.0.1 / 2022-11-01
+### Documentation, dependencies and build changes ###
+* build: Loosen symfony/polyfill-php80 requirement (Alexander Vorwerk)
+
+## 40.0.0 / 2022-11-01
+### New sniffs ###
+* Create `SameLineCatch` sniff to warn when a catch statement is not in the same
+  line as the preceding closing bracket. (Taavi Väänänen)
+* Create `EmptyLinesBetweenUse` sniff to complain about blank lines between use
+  statements. (DannyS712)
+* Create `TrailingComma` sniff to complain about missing trailing commas in
+  multiline arrays. (Lucas Werkmeister)
+
+### Changed sniffs ###
+* `AnnotationsSniff`: Suggest expectExceptionMessageMatches() (Umherirrender)
+* `ForbiddenFunctionsSniff`: Make forbidden argument count reporting more generic (Thiemo Kreuz)
+* `ExtendClassUsage`: Remove dot from error message (Umherirrender)
+
+### Documentation, dependencies and build changes ###
+* Require php7.4 and type hint class properties (Umherirrender)
+* build: Upgrade PHPUnit from 8.5+ to 9.5+ (Umherirrender)
+* build: Update mediawiki/mediawiki-phan-config to 0.12.0 (Daimona Eaytoy)
+* Require php7.3 and use new functions (Umherirrender)
+* build: Update squizlabs/php_codesniffer to 3.7.1 (Alexander Vorwerk)
+* build: Update squizlabs/php_codesniffer to 3.7.0 (Umherirrender)
+* Allow to use php8 functions with polyfill (Umherirrender)
+
+## 39.0.0 / 2022-05-04 ##
+### New sniffs ###
+* Create `PHPUnitAssertEmpty` sniff to warn against using `assertEmpty` (DannyS712)
+
+### Changed sniffs ###
+* `AssertionOrderSniff`: Also re-order actual value named `$expected*` (DannyS712)
+* `ClassLevelLicense`: Skip whole rest of file (Lucas Werkmeister)
+* `FunctionAnnotationsSniff`: Add some Psalm tags (Gergő Tisza)
+* `FunctionCommentSniff`: Skip attributes when checking for doc block (DannyS712)
+* `PropertyDocumentationSniff`: Handle visibility on its own line (DannyS712)
+* `SpecificAssertionsSniff`: Add `assertEmpty()` and `assertNotEmpty()` (DannyS712)
+* `SpecificAssertionsSniff`: Add `assertIsArray()` and `assertIsNotArray()` (DannyS712)
+
+### Documentation, dependencies and build changes ###
+* HISTORY: Fix 'visiblity' typo (Klein Muçi)
+* docs: Remove or replace usages of "sanity" (Reedy)
+* tests: Move AlphabeticArraySort tests into own directory (Lucas Werkmeister)
+* build: Lock down composer/semver version again now everything's upgraded (James D. Forrester)
+* build: Updating composer dependencies (libraryupgrader)
+* build: Update squizlabs/php_codesniffer to 3.6.2 (Alexander Vorwerk)
+* build: Updating mediawiki/mediawiki-phan-config to 0.11.1 (libraryupgrader)
+
+
 ## 38.0.0 / 2021-10-21 ##
 ### Changed sniffs ###
 * `AssertionOrderSniff`: Expand for slightly more complex cases (DannyS712)
@@ -562,7 +730,7 @@ Note: This will be the final release with PHP 5.5 and 5.6 support.
 * Move phpcs.xml to .phpcs.xml (Umherirrender)
 * Remove WhiteSpace.SpaceBeforeSingleLineComment.EmptyComment (Gergő Tisza)
 * Replace PEAR with Packagist in README.md link (Ricordisamoa)
-* Require that an explicit visiblity is set on methods and properties (Kunal Mehta)
+* Require that an explicit visibility is set on methods and properties (Kunal Mehta)
 * Rework ExtendClassUageSniff to avoid private class member (Umherirrender)
 * Skip inner functions in FunctionCommentSniff::processReturn (Umherirrender)
 * Update PHP_CodeSniffer to 3.2.2 (Ricordisamoa, Kunal Mehta)

@@ -1,6 +1,11 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Request\WebRequest;
 
 class ApiTestContext extends RequestContext {
 
@@ -11,7 +16,7 @@ class ApiTestContext extends RequestContext {
 	 * @param Authority|null $performer
 	 * @return DerivativeContext
 	 */
-	public function newTestContext( WebRequest $request, Authority $performer = null ) {
+	public function newTestContext( WebRequest $request, ?Authority $performer = null ) {
 		$context = new DerivativeContext( $this );
 		$context->setRequest( $request );
 		if ( $performer !== null ) {
@@ -21,3 +26,6 @@ class ApiTestContext extends RequestContext {
 		return $context;
 	}
 }
+
+/** @deprecated class alias since 1.42 */
+class_alias( ApiTestContext::class, 'ApiTestContext' );

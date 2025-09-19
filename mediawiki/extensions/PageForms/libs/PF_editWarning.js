@@ -7,18 +7,18 @@
  *
  * @author Yaron Koren
  */
-( function () {
+( function() {
 	'use strict';
 
-	var changesWereMade = false;
+	let changesWereMade = false;
 
-	mw.hook('pf.addTemplateInstance').add( function( $newInstance ) {
+	mw.hook('pf.addTemplateInstance').add( ( $newInstance ) => {
 		changesWereMade = true;
 	});
 
 
-	$( function () {
-		var allowCloseWindow, origText, newText, origValues = {},
+	$( () => {
+		let allowCloseWindow, origText, newText, origValues = {},
 			$allInputs = $( 'form#pfForm textarea, form#pfForm input[type=text], form#pfForm input:not([type]), form#pfForm select, #wpSummary' );
 
 		// Check if EditWarning is enabled and if we need it.
@@ -27,8 +27,8 @@
 		}
 
 		// Save the original value of the inputs.
-		$allInputs.each( function ( index, element ) {
-			var $element = $( element );
+		$allInputs.each( ( index, element ) => {
+			const $element = $( element );
 			if ( $element.hasClass( 'pfComboBox' ) ) {
 				// data() can't be used for combobox inputs, probably because they use OOUI.
 				origValues[element.id] = $element.textSelection( 'getContents' );
@@ -38,7 +38,7 @@
 		});
 
 		allowCloseWindow = mw.confirmCloseWindow( {
-			test: function () {
+			test: function() {
 				// Don't show a warning if the form is being
 				// submitted.
 				if ( mw.config.get( 'wgAction' ) === 'submit' ) {
@@ -51,8 +51,8 @@
 					return false;
 				}
 				// We use .textSelection, because editors might not have updated the form yet.
-				$allInputs.each( function( index, element ) {
-					var $element = $( element );
+				$allInputs.each( ( index, element ) => {
+					const $element = $( element );
 
 					// The setting of both origText and
 					// newText have to be different for the
@@ -80,7 +80,7 @@
 		} );
 
 		// Add form submission handler
-		$( '#pfForm' ).on( 'submit', function () {
+		$( '#pfForm' ).on( 'submit', () => {
 			allowCloseWindow.release();
 		} );
 	} );

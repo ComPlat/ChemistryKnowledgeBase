@@ -4,6 +4,10 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFFormInput
  */
@@ -14,18 +18,12 @@ class PFTextInput extends PFFormInput {
 	}
 
 	public static function getDefaultPropTypes() {
-		$defaultPropTypes = [
+		return [
+			'_txt' => [ 'field_type' => 'text' ],
 			'_num' => [ 'field_type' => 'number' ],
 			'_uri' => [ 'field_type' => 'URL' ],
 			'_ema' => [ 'field_type' => 'email' ]
 		];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$defaultPropTypes['_str'] = [ 'field_type' => 'string' ];
-		} else {
-			$defaultPropTypes['_txt'] = [ 'field_type' => 'text' ];
-		}
-		return $defaultPropTypes;
 	}
 
 	public static function getOtherPropTypesHandled() {
@@ -33,18 +31,12 @@ class PFTextInput extends PFFormInput {
 	}
 
 	public static function getDefaultPropTypeLists() {
-		$defaultPropTypeLists = [
+		return [
+			'_txt' => [ 'field_type' => 'text', 'is_list' => 'true', 'size' => '100' ],
 			'_num' => [ 'field_type' => 'number', 'is_list' => 'true', 'size' => '100' ],
 			'_uri' => [ 'field_type' => 'URL', 'is_list' => 'true' ],
 			'_ema' => [ 'field_type' => 'email', 'is_list' => 'true' ]
 		];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$defaultPropTypeLists['_str'] = [ 'field_type' => 'string', 'is_list' => 'true', 'size' => '100' ];
-		} else {
-			$defaultPropTypeLists['_txt'] = [ 'field_type' => 'text', 'is_list' => 'true', 'size' => '100' ];
-		}
-		return $defaultPropTypeLists;
 	}
 
 	public static function getOtherPropTypeListsHandled() {
@@ -162,7 +154,7 @@ class PFTextInput extends PFFormInput {
 		// We need to set the size by default.
 		$style = "width:650 height:500";
 
-		$cssClasses = [ 'pfFancyBox', 'pfUploadable' ];
+		$cssClasses = [ 'popupformlink', 'pfUploadable' ];
 
 		$showPreview = array_key_exists( 'image preview', $other_args );
 
@@ -216,10 +208,8 @@ class PFTextInput extends PFFormInput {
 		// holds a single value, not a list of values.)
 		$size = 35;
 		$inputType = '';
-		if ( array_key_exists( 'field_type', $other_args ) &&
-			( !array_key_exists( 'is_list', $other_args ) ||
-			!$other_args['is_list'] )
-		) {
+		$isList = array_key_exists( 'is_list', $other_args ) && $other_args['is_list'] == true;
+		if ( array_key_exists( 'field_type', $other_args ) && !$isList ) {
 			if ( $other_args['field_type'] == 'number' ) {
 				$size = 10;
 				$inputType = 'number';
@@ -265,18 +255,23 @@ class PFTextInput extends PFFormInput {
 			$wgPageFormsMapsWithFeeders[$targetMapName] = true;
 			$inputAttrs['data-feeds-to-map'] = $targetMapName;
 		}
+		if ( $isList ) {
+			if ( array_key_exists( 'delimiter', $other_args ) ) {
+				$delimiter = $other_args['delimiter'];
+			} else {
+				$delimiter = ',';
+			}
+			if ( is_array( $cur_value ) ) {
+				// If it's a list, then the value may have been
+				// turned into an array - if so, change it back.
+				$cur_value = implode( "$delimiter ", $cur_value );
+			}
+		} else {
+			$delimiter = null;
+		}
 		$text = Html::input( $input_name, $cur_value, 'text', $inputAttrs );
 
 		if ( array_key_exists( 'uploadable', $other_args ) && $other_args['uploadable'] == true ) {
-			if ( array_key_exists( 'is_list', $other_args ) && $other_args['is_list'] == true ) {
-				if ( array_key_exists( 'delimiter', $other_args ) ) {
-					$delimiter = $other_args['delimiter'];
-				} else {
-					$delimiter = ',';
-				}
-			} else {
-				$delimiter = null;
-			}
 			if ( array_key_exists( 'default filename', $other_args ) ) {
 				$default_filename = $other_args['default filename'];
 			} else {

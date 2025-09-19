@@ -1,12 +1,24 @@
 <?php
 namespace Eris\Generator;
 
-class ElementsGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class ElementsGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
     public function testGeneratesOnlyArgumentsInsideTheGivenArray()

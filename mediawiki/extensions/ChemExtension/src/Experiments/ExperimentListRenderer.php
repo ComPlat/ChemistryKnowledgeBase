@@ -9,7 +9,6 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
-use Hooks;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use ParserOptions;
@@ -34,7 +33,7 @@ class ExperimentListRenderer extends ExperimentRenderer
         $experimentPage = $pageTitle->getText() . '/' . $experimentName;
         $experimentPageTitle = Title::newFromText($experimentPage);
         if (!$experimentPageTitle->exists()) {
-            throw new ExperimentNotExistsException("Experiment '$experimentPage' does not exist.", $experimentName);
+            throw new ExperimentNotExistsException("Experiment '$experimentPage' does not yet exist. Please click, and select 'Add/edit experiments' from the popup menu.", $experimentName);
         }
 
         $text = WikiTools::getText($experimentPageTitle);
@@ -47,7 +46,8 @@ class ExperimentListRenderer extends ExperimentRenderer
             foreach ($keyValues as $key => $value) {
                 $chemFormId = ChemTools::getChemFormIdFromPageTitle($value);
                 if (!is_null($chemFormId)) {
-                    Hooks::run('CollectMolecules', [$chemFormId, $this->context['page']]);
+                    $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+                    $hooksContainer->run('CollectMolecules', [$chemFormId, $this->context['page']]);
                 }
             }
         });
@@ -118,7 +118,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'title' => 'Refresh content investigations',
             'infusable' => true,
             'value' => json_encode([
-                'parameters' => $this->context['parameters'],
+                'parameters' => $this->context['parameters'] ?? [],
                 'page' => $this->context['page']->getPrefixedText(),
                 'cacheKey' => md5($text)
             ])
@@ -129,7 +129,7 @@ class ExperimentListRenderer extends ExperimentRenderer
         if (WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeTag("span[@class='smw-highlighter']");
         }
-        return $this->blade->view()->make("experiment-table", [
+        return $this->blade->run("experiment-table", [
             'htmlTableEditor' => $htmlTableEditor,
             'experimentName' => $experimentName,
             'experimentPageTitle' => $experimentPageTitle,
@@ -139,7 +139,7 @@ class ExperimentListRenderer extends ExperimentRenderer
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
             'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
             'renameButton' => WikiTools::isInVisualEditor() || !$this->userHasMoveRights() ? '' : $renameButton->toString(),
-        ])->render();
+        ]);
 
     }
 

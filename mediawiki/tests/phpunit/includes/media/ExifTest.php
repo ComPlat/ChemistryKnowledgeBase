@@ -4,24 +4,20 @@ use MediaWiki\MainConfigNames;
 
 /**
  * @group Media
- * @covers Exif
+ * @covers \Exif
+ * @requires extension exif
  */
 class ExifTest extends MediaWikiIntegrationTestCase {
-
-	/** @var string */
-	protected $mediaPath;
+	private const FILE_PATH = __DIR__ . '/../../data/media/';
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->checkPHPExtension( 'exif' );
-
-		$this->mediaPath = __DIR__ . '/../../data/media/';
 
 		$this->overrideConfigValue( MainConfigNames::ShowEXIF, true );
 	}
 
 	public function testGPSExtraction() {
-		$filename = $this->mediaPath . 'exif-gps.jpg';
+		$filename = self::FILE_PATH . 'exif-gps.jpg';
 		$seg = JpegMetadataExtractor::segmentSplitter( $filename );
 		$exif = new Exif( $filename, $seg['byteOrder'] );
 		$data = $exif->getFilteredData();
@@ -36,7 +32,7 @@ class ExifTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testUnicodeUserComment() {
-		$filename = $this->mediaPath . 'exif-user-comment.jpg';
+		$filename = self::FILE_PATH . 'exif-user-comment.jpg';
 		$seg = JpegMetadataExtractor::segmentSplitter( $filename );
 		$exif = new Exif( $filename, $seg['byteOrder'] );
 		$data = $exif->getFilteredData();

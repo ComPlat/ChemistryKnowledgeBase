@@ -4,7 +4,7 @@ module.exports = {
 	/**
 	 * Generate a random number string with some additional extended ASCII.
 	 *
-	 * @param {string} prefix A prefix to appply to the generated output.
+	 * @param {string} prefix A prefix to apply to the generated output.
 	 * @return {string}
 	 */
 	getTestString( prefix = '' ) {
@@ -12,50 +12,31 @@ module.exports = {
 	},
 
 	/**
-	 * Wrapper for running mw.Api.get() in the browser
-	 *
-	 * @param {Object} request The name of the module to wait for
-	 * @return {Object|false} The raw response, or false if the request failed.
-	 */
-	async getMWApiResponse( request ) {
-		const result = await browser.execute( ( query ) => {
-			if ( typeof mw !== 'undefined' ) {
-				return false;
-			}
-
-			const api = new mw.Api();
-
-			api.get( query ).then(
-				function ( response ) {
-					return response;
-				},
-				function () {
-					return false;
-				}
-			);
-		}, request );
-
-		return result;
-	},
-
-	/**
 	 * Check if a page is (or, if it doesn't yet exist, would be by default) a wikitext content
 	 * object, as opposed to e.g. a JSON blob or a content model provided by an extension. This
-	 * is useful for when a target of a test requires wikitext behaviour, such as having a talk
-	 * page, being subject to redirects, being editable, or similar concerns.
+	 * is useful for when a target of a test requires wikitext behaviour, such as testing for
+	 * having a talk page, being subject to redirects, being editable, or similar concerns.
 	 *
-	 * @param {string} target The name of the page in question
-	 * @return {boolean} True if the target is not wikitext.
+	 * @param {string} target The name of the page in question.
+	 * @return {Promise<boolean>} True if the target is not wikitext.
 	 */
-	isTargetNotWikitext( target ) {
-		const apiResponse = this.getMWApiResponse( { action: 'query', format: 'json', prop: 'info', titles: target } );
-		return !(
-			apiResponse.query &&
-			apiResponse.query.pages &&
-			apiResponse.query.pages[ -1 ] &&
-			apiResponse.query.pages[ -1 ].contentmodel &&
-			apiResponse.query.pages[ -1 ].contentmodel === 'wikitext'
-		);
+	async isTargetNotWikitext( target ) {
+		// First, make sure that the 'mw' object should exist
+		await this.waitForModuleState( 'mediawiki.base' );
+
+		// Then, ask the API for the basic 'info' data about the given page
+		return browser.executeAsync( ( target_, done ) => {
+			mw.loader.using( 'mediawiki.api' ).then( () => {
+				const api = new mw.Api();
+				api.get( {
+					action: 'query', prop: 'info', titles: target_,
+					format: 'json', formatversion: 2
+				} ).then( ( result ) => {
+					// Finally, return whether said page is wikitext (or would be, if it doesn't yet exist)
+					done( result.query.pages[ 0 ].contentmodel !== 'wikitext' );
+				} );
+			} );
+		}, target );
 	},
 
 	/**
@@ -65,12 +46,15 @@ module.exports = {
 	 * @param {string} moduleStatus 'registered', 'loaded', 'loading', 'ready', 'error', 'missing'
 	 * @param {number} timeout The wait time in milliseconds before the wait fails
 	 */
-	waitForModuleState( moduleName, moduleStatus = 'ready', timeout = 2000 ) {
-		browser.waitUntil( () => {
-			return browser.execute( ( arg ) => {
-				return typeof mw !== 'undefined' &&
-					mw.loader.getState( arg.name ) === arg.status;
-			}, { status: moduleStatus, name: moduleName } );
-		}, timeout, 'Failed to wait for ' + moduleName + ' to be ' + moduleStatus + ' after ' + timeout + ' ms.' );
+	async waitForModuleState( moduleName, moduleStatus = 'ready', timeout = 5000 ) {
+		await browser.waitUntil(
+			() => browser.execute(
+				( arg ) => typeof mw !== 'undefined' && mw.loader.getState( arg.name ) === arg.status,
+				{ status: moduleStatus, name: moduleName }
+			), {
+				timeout: timeout,
+				timeoutMsg: 'Failed to wait for ' + moduleName + ' to be ' + moduleStatus + ' after ' + timeout + ' ms.'
+			}
+		);
 	}
 };

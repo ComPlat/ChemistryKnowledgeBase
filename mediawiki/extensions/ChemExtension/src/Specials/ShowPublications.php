@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\Specials;
 
 use DIQA\ChemExtension\Literature\PublicationRenderer;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class ShowPublications extends SpecialPage
@@ -15,7 +15,7 @@ class ShowPublications extends SpecialPage
         parent::__construct('ShowPublications');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
 
     }
@@ -43,14 +43,14 @@ class ShowPublications extends SpecialPage
         }
         $authorPublications = PublicationRenderer::renderPublicationListByAuthor($author);
 
-        $output->addHTML($this->blade->view()->make("showPublications.show-publication",
+        $output->addHTML($this->blade->run("showPublications.show-publication",
             [
                 'orcidPublications' => $orcidPublications,
                 'authorPublications' => $authorPublications,
                 'name' => $author,
                 'orcid' => $orcid,
             ]
-        )->render());
+        ));
     }
 
 

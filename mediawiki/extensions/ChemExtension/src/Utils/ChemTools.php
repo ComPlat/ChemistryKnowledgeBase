@@ -2,8 +2,8 @@
 
 namespace DIQA\ChemExtension\Utils;
 
-use SMWDIProperty;
-use SMWDIWikiPage;
+use SMW\DIWikiPage;
+use SMW\DIProperty;
 
 class ChemTools {
 
@@ -20,7 +20,7 @@ class ChemTools {
         return preg_match(self::CHEMFORM_ID, trim($s), $matches) === 1;
     }
 
-    public static function getChemFormIdFromPageTitle(string $pageTitle) {
+    public static function getChemFormIdFromPageTitle(?string $pageTitle) {
         if (preg_match("/Molecule:(\\d+)/", $pageTitle, $matches) !== 1) {
             if (preg_match("/Reaction:(\\d+)/", $pageTitle, $matches) !== 1) {
                 return null;
@@ -30,23 +30,23 @@ class ChemTools {
     }
 
     public static function getNamesOfMolecule($moleculeTitle) {
-        $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+        $moleculeTitleWP = DIWikiPage::newFromTitle($moleculeTitle);
         $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
-            SMWDIProperty::newFromUserLabel("Abbreviation"));
+            DIProperty::newFromUserLabel("Abbreviation"));
         if (count($res) > 0) {
             $first = reset($res);
             return $first->getString();
         } else {
-            $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+            $moleculeTitleWP = DIWikiPage::newFromTitle($moleculeTitle);
             $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
-                SMWDIProperty::newFromUserLabel("Trivialname"));
+                DIProperty::newFromUserLabel("Trivialname"));
             if (count($res) > 0) {
                 $first = reset($res);
                 return $first->getString();
             } else {
-                $moleculeTitleWP = SMWDIWikiPage::newFromTitle($moleculeTitle);
+                $moleculeTitleWP = DIWikiPage::newFromTitle($moleculeTitle);
                 $res = smwfGetStore()->getPropertyValues($moleculeTitleWP,
-                    SMWDIProperty::newFromUserLabel("IUPACName"));
+                    DIProperty::newFromUserLabel("IUPACName"));
                 if (count($res) > 0) {
                     $first = reset($res);
                     return $first->getString();

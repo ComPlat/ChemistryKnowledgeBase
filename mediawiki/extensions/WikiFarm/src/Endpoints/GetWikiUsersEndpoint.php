@@ -4,7 +4,6 @@ namespace DIQA\WikiFarm\Endpoints;
 use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
-use Philo\Blade\Blade;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class GetWikiUsersEndpoint extends SimpleHandler {

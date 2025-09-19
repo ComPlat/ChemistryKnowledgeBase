@@ -8,6 +8,7 @@
 			"Nedergard",
 			"Nike",
 			"Pyscowicz",
+			"Samoasambia",
 			"Str4nd"
 		]
 	},
@@ -23,7 +24,7 @@
 	"categorytree-mode-categories": "vain luokat",
 	"categorytree-mode-pages": "kaikki sivut tiedostoja lukuun ottamatta",
 	"categorytree-mode-all": "kaikki sivut",
-	"categorytree-collapse": "piilota",
+	"categorytree-collapse": "tiivistä",
 	"categorytree-expand": "näytä",
 	"categorytree-member-counts": "sisältää {{PLURAL:$1|1 alaluokan|$1 alaluokkaa}}, {{PLURAL:$2|1 sivun|$2 sivua}} ja {{PLURAL:$3|1 tiedoston|$3 tiedostoa}}",
 	"categorytree-num-categories": "$1 L",
@@ -38,5 +39,9 @@
 	"categorytree-no-pages": "ei sivuja eikä alaluokkia",
 	"categorytree-not-found": "Luokkaa <i>$1</i> ei löytynyt",
 	"categorytree-error": "Ongelma tietojen latauksessa.",
-	"categorytree-retry": "Odota hetki ja yritä uudelleen."
+	"categorytree-retry": "Odota hetki ja yritä uudelleen.",
+	"categorytree-onlyroot-message": "[https://phabricator.wikimedia.org/T290062 T290062]: Parametri <code>onlyroot</code> on vanhentunut. Käytä sen sijaan <code>depth=\"0\"</code>.",
+	"categorytree-deprecation-warning": "'''Varoitus:''' tämä sivu käyttää ominaisuutta <code>&lt;categorytree&gt;</code> vanhentuneella parametrilla.",
+	"categorytree-deprecation-category": "Sivut, jotka käyttävät vanhentuneita categorytree-parametreja",
+	"categorytree-deprecation-category-desc": "Sivu käyttää vanhentuneita luokkapuun (categorytree) parametreja, kuten <code>onlyroot</code>."
 }

@@ -1,34 +1,42 @@
 <?php
 
+use MediaWiki\HTMLForm\Field\HTMLCheckMatrix;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\HTMLForm\HTMLFormField;
+use MediaWiki\HTMLForm\HTMLFormFieldRequiredOptionsException;
+use MediaWiki\Message\Message;
+
 /**
- * @covers HTMLCheckMatrix
+ * @covers \MediaWiki\HTMLForm\Field\HTMLCheckMatrix
  */
 class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
-	private static $defaultOptions = [
+	/** @var array */
+	private $defaultOptions = [
 		'rows' => [ 'r1', 'r2' ],
 		'columns' => [ 'c1', 'c2' ],
 		'fieldname' => 'test',
 	];
 
-	public function testPlainInstantiation() {
-		try {
-			new HTMLCheckMatrix( [] );
-		} catch ( MWException $e ) {
-			$this->assertInstanceOf( HTMLFormFieldRequiredOptionsException::class, $e );
-			return;
-		}
+	protected function setUp(): void {
+		parent::setUp();
+		$htmlForm = $this->createMock( HTMLForm::class );
+		$htmlForm->method( 'msg' )->willReturnCallback( 'wfMessage' );
+		$this->defaultOptions['parent'] = $htmlForm;
+	}
 
-		$this->fail( 'Expected MWException indicating missing parameters but none was thrown.' );
+	public function testPlainInstantiation() {
+		$this->expectException( HTMLFormFieldRequiredOptionsException::class );
+		new HTMLCheckMatrix( [] );
 	}
 
 	public function testInstantiationWithMinimumRequiredParameters() {
-		new HTMLCheckMatrix( self::$defaultOptions );
+		new HTMLCheckMatrix( $this->defaultOptions );
 		$this->assertTrue( true ); // form instantiation must throw exception on failure
 	}
 
 	public function testValidateCallsUserDefinedValidationCallback() {
 		$called = false;
-		$field = new HTMLCheckMatrix( self::$defaultOptions + [
+		$field = new HTMLCheckMatrix( $this->defaultOptions + [
 			'validation-callback' => static function () use ( &$called ) {
 				$called = true;
 
@@ -43,11 +51,11 @@ class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
 	 * @dataProvider provideValidate
 	 */
 	public function testValidate( $expected, $submitted ) {
-		$field = new HTMLCheckMatrix( self::$defaultOptions );
+		$field = new HTMLCheckMatrix( $this->defaultOptions );
 		$this->assertSame( $expected, $this->validate( $field, $submitted ) );
 	}
 
-	public function provideValidate() {
+	public static function provideValidate() {
 		// $expected, $submitted
 		yield [ false, null ];
 		yield [ false, true ];
@@ -59,7 +67,7 @@ class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testValidateAllowsOnlyKnownTags() {
-		$field = new HTMLCheckMatrix( self::$defaultOptions );
+		$field = new HTMLCheckMatrix( $this->defaultOptions );
 		$this->assertInstanceOf( Message::class, $this->validate( $field, [ 'foo' ] ) );
 	}
 
@@ -71,7 +79,7 @@ class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
 	 * }
 	 */
 	public function testValuesForcedOnRemainOn() {
-		$field = new HTMLCheckMatrix( self::$defaultOptions + [
+		$field = new HTMLCheckMatrix( $this->defaultOptions + [
 				'force-options-on' => [ 'c2-r1' ],
 			] );
 		$expected = [
@@ -84,7 +92,7 @@ class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testValuesForcedOffRemainOff() {
-		$field = new HTMLCheckMatrix( self::$defaultOptions + [
+		$field = new HTMLCheckMatrix( $this->defaultOptions + [
 				'force-options-off' => [ 'c1-r2', 'c2-r2' ],
 			] );
 		$expected = [
@@ -100,7 +108,7 @@ class HTMLCheckMatrixTest extends MediaWikiUnitTestCase {
 	protected function validate( HTMLFormField $field, $submitted ) {
 		return $field->validate(
 			$submitted,
-			[ self::$defaultOptions['fieldname'] => $submitted ]
+			[ $this->defaultOptions['fieldname'] => $submitted ]
 		);
 	}
 

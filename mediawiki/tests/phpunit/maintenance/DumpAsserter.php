@@ -314,7 +314,7 @@ class DumpAsserter {
 	}
 
 	/**
-	 * Asserts that the xml reader is at an closing element of given name, and optionally
+	 * Asserts that the xml reader is at a closing element of given name, and optionally
 	 * skips past it. If the reader is at a whitespace element, the whitespace is
 	 * skipped first.
 	 *
@@ -557,10 +557,8 @@ class DumpAsserter {
 	 *
 	 * @return int
 	 */
-	public function getLineNumber( XMLReader $xml = null ) {
-		if ( !$xml ) {
-			$xml = $this->xml;
-		}
+	public function getLineNumber( ?XMLReader $xml = null ) {
+		$xml ??= $this->xml;
 
 		if ( $xml->nodeType == XMLReader::NONE ) {
 			return 0;
@@ -678,11 +676,11 @@ class DumpAsserter {
 	 */
 	public function stripTestTags( $text ) {
 		$text = preg_replace( '@<!--.*?-->@s', '', $text );
-		$text = preg_replace( '@</?test:[^>]+>@s', '', $text );
+		$text = preg_replace( '@</?test:[^>]+>@', '', $text );
 		return $text;
 	}
 
-	private function getAttributeArray( XMLReader $xml = null ) {
+	private function getAttributeArray( ?XMLReader $xml = null ) {
 		if ( !$xml ) {
 			$xml = $this->xml;
 		}

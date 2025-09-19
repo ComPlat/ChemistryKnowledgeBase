@@ -1,15 +1,17 @@
 <?php
 
-namespace Wikimedia\ParamValidator\TypeDef;
+namespace Wikimedia\Tests\ParamValidator\TypeDef;
 
+use InvalidArgumentException;
 use Wikimedia\Message\DataMessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\SimpleCallbacks;
+use Wikimedia\ParamValidator\TypeDef\TimestampDef;
 use Wikimedia\ParamValidator\ValidationException;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
- * @covers Wikimedia\ParamValidator\TypeDef\TimestampDef
+ * @covers \Wikimedia\ParamValidator\TypeDef\TimestampDef
  */
 class TimestampDefTest extends TypeDefTestCase {
 
@@ -22,12 +24,12 @@ class TimestampDefTest extends TypeDefTestCase {
 		if ( $ok ) {
 			$this->assertTrue( true ); // dummy
 		} else {
-			$this->expectException( \InvalidArgumentException::class );
+			$this->expectException( InvalidArgumentException::class );
 		}
 		$this->getInstance( new SimpleCallbacks( [] ), $options );
 	}
 
-	public function provideConstructorOptions(): array {
+	public static function provideConstructorOptions(): array {
 		return [
 			'Basic test' => [ [], true ],
 			'Default format ConvertibleTimestamp' => [ [ 'defaultFormat' => 'ConvertibleTimestamp' ], true ],

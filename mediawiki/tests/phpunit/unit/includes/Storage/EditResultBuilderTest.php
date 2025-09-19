@@ -44,7 +44,7 @@ class EditResultBuilderTest extends MediaWikiUnitTestCase {
 		$this->assertFalse( $er->isNew(), 'EditResult::isNew()' );
 	}
 
-	public function provideSetIsNew() {
+	public static function provideSetIsNew() {
 		return [
 			'not a new page' => [ false ],
 			'a new page' => [ true ]
@@ -389,7 +389,7 @@ class EditResultBuilderTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * Meant to reproduce the values provided by ChangeTags::getSoftwareTags.
+	 * Meant to reproduce the values provided by ChangeTagsStore->getSoftwareTags().
 	 *
 	 * @return string[]
 	 */

@@ -44,7 +44,7 @@ if (PHP_VERSION_ID < 70200) {
     exit(1);
 }
 
-const LATEST_KNOWN_PHP_AST_VERSION = '1.0.16';
+const LATEST_KNOWN_PHP_AST_VERSION = '1.1.1';
 
 /**
  * Dump instructions on how to install php-ast
@@ -146,8 +146,10 @@ if (extension_loaded('ast')) {
         exit(1);
     };
 
-    if (PHP_VERSION_ID >= 80200 && version_compare($ast_version, '1.0.15') < 0) {
-        $phan_output_ast_too_old_and_exit('1.0.15', '8.2');
+    if (PHP_VERSION_ID >= 80300 && version_compare($ast_version, '1.1.1') < 0) {
+        $phan_output_ast_too_old_and_exit('1.1.1', '8.3');
+    } elseif (PHP_VERSION_ID >= 80200 && version_compare($ast_version, '1.1.0') < 0) {
+        $phan_output_ast_too_old_and_exit('1.1.0', '8.2');
     } elseif (PHP_VERSION_ID >= 80100 && version_compare($ast_version, '1.0.14') < 0) {
         $phan_output_ast_too_old_and_exit('1.0.14', '8.1');
     } elseif (PHP_VERSION_ID >= 80000 && version_compare($ast_version, '1.0.11') < 0) {
@@ -173,9 +175,9 @@ if (extension_loaded('ast')) {
         exit(1);
     }
     // @phan-suppress-next-line PhanRedundantCondition, PhanImpossibleCondition, PhanSuspiciousValueComparison
-    if (PHP_VERSION_ID < 80100 && PHP_VERSION_ID % 100 === 0 && PHP_EXTRA_VERSION !== '') {
-        // Warn for 8.0.0RC1, 7.4.0alpha1, 7.3.0-dev, etc.
-        // But don't warn for 8.1.0 since there's no way to upgrade to a stable release.
+    if (PHP_VERSION_ID < 80400 && PHP_VERSION_ID % 100 === 0 && PHP_EXTRA_VERSION !== '') {
+        // Warn for 8.3.0RC1, 8.0.0RC1, 7.4.0alpha1, 7.3.0-dev, etc.
+        // But don't warn for 8.4.0 since there's no way yet to upgrade to a stable release.
         fwrite(STDERR, "WARNING: Phan may not work properly in versions prior to the first stable release of a php minor version. The currently used PHP version is " . PHP_VERSION . PHP_EOL);
     }
     unset($ast_version);
@@ -190,20 +192,32 @@ define('EXIT_SUCCESS', 0);
 define('EXIT_FAILURE', 1);
 define('EXIT_ISSUES_FOUND', EXIT_FAILURE);
 
+// Note that Phan's source code now throws exceptions rather than using assert(),
+// but make the settings consistent for any third party plugins still using assert().
+
+// assert_options has been deprecated starting with PHP 8.3 so use ini_set instead.
+// See https://wiki.php.net/rfc/assert-string-eval-cleanup#formal_proposal
+// Use ini_set where the value Phan uses is the same as php's defaults.
+// https://www.php.net/manual/en/function.assert-options.php
+
 // Throw exceptions so asserts can be linked to the code being analyzed
 ini_set('assert.exception', '1');
+// enable assert() function
+ini_set('assert.active', '1');
+// Exceptions are thrown instead of bailing in phan.
+ini_set('assert.bail', '0');
 // Set a substitute character for StringUtil::asUtf8()
 ini_set('mbstring.substitute_character', (string)0xFFFD);
+// Disable custom callbacks for assert.
+ini_set('assert.callback', '');
 
-// Explicitly set each option in case INI is set otherwise
-assert_options(ASSERT_ACTIVE, true);
-assert_options(ASSERT_WARNING, false);
-assert_options(ASSERT_BAIL, false);
-// ASSERT_QUIET_EVAL has been removed starting with PHP 8
-if (defined('ASSERT_QUIET_EVAL')) {
-    assert_options(ASSERT_QUIET_EVAL, false); // @phan-suppress-current-line UnusedPluginSuppression, PhanTypeMismatchArgumentNullableInternal
+if (PHP_VERSION_ID < 80300) {
+    // These differ from the ini default and these calls will emit deprecation warnings in PHP 8.3
+    // Explicitly set each option in case INI is set otherwise
+    ini_set('assert.warning', '0');
+    // ASSERT_QUIET_EVAL has been removed and has no effect starting with PHP 8
+    ini_set('assert.quiet_eval', '0');
 }
-assert_options(ASSERT_CALLBACK, '');  // Can't explicitly set ASSERT_CALLBACK to null?
 
 // php 8 seems to have segfault issues with disable_function
 if (!extension_loaded('filter') && !function_exists('filter_var')) {
@@ -360,6 +374,7 @@ function phan_error_handler(int $errno, string $errstr, string $errfile, int $er
     }
     if ($errno === E_DEPRECATED) {
         // Because php 7.2 is used in CI we're stuck on an unmaintained paratest version.
+        // NOTE: Known issues with dynamic properties in tolerant-php-parser are fixed in `main` (but not 0.1.1) but there may be remaining unknown ones.
         if (preg_match('/^Creation of dynamic property (ParaTest\\\\Runners|Microsoft\\\\PhpParser|Phan\\\\LanguageServer\\\\LanguageServer::)/', $errstr)) {
             return true;
         }

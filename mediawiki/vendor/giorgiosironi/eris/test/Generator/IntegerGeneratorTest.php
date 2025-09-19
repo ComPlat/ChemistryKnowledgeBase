@@ -1,19 +1,31 @@
 <?php
 namespace Eris\Generator;
 
-class IntegerGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class IntegerGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
     public function testPicksRandomlyAnInteger()
     {
         $generator = new IntegerGenerator();
         for ($i = 0; $i < 100; $i++) {
-            $this->assertInternalType('integer', $generator($this->size, $this->rand)->unbox());
+            \Eris\PHPUnitDeprecationHelper::assertIsInt($generator($this->size, $this->rand)->unbox());
         }
     }
 

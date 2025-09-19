@@ -3,6 +3,9 @@ namespace DIQA\WikiFarm\Special;
 
 use DateTime;
 use DIQA\WikiFarm\WikiRepository;
+use eftec\bladeone\BladeOne;
+use Exception;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use OOUI\ButtonWidget;
 use OOUI\FieldLayout;
@@ -11,8 +14,6 @@ use OOUI\LabelWidget;
 use OOUI\Tag;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
-use Exception;
 
 class SpecialCreateWiki extends \SpecialPage {
 
@@ -27,7 +28,7 @@ class SpecialCreateWiki extends \SpecialPage {
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ( $views, $cache );
+        $this->blade = new BladeOne( $views, $cache );
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
             DB_REPLICA
@@ -43,8 +44,8 @@ class SpecialCreateWiki extends \SpecialPage {
         $output = $this->getOutput();
         $this->setHeaders();
 
-        global $wgUser;
-        if ($wgUser->isAnon()) {
+        $user = RequestContext::getMain()->getUser();
+        if ($user->isAnon()) {
             $output->addHTML(wfMessage('wfarm-must-be-logged-in-with-edit'));
             return;
         }
@@ -112,12 +113,12 @@ class SpecialCreateWiki extends \SpecialPage {
 
     private function getWikiTable() {
         global $wgServer;
-        global $wgUser;
-        $allWikiCreated = $this->repository->getAllWikisCreatedById($wgUser->getId());
-        return $this->blade->view ()->make ( "wiki-created-by",
+        $user = RequestContext::getMain()->getUser();
+        $allWikiCreated = $this->repository->getAllWikisCreatedById($user->getId());
+        return $this->blade->run ( "wiki-created-by",
             ['allWikiCreated' => $allWikiCreated,
                 'baseURL' => $wgServer
                 ]
-        )->render ();
+        );
     }
 }

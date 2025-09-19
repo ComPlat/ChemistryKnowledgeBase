@@ -10,16 +10,19 @@
 	<description>A coding standard for MediaWiki.</description>
 
 	<arg name="tab-width" value="4" />
+	<arg name="parallel" value="64" />
 
 	<rule ref="Generic.Arrays.DisallowLongArraySyntax" />
 
 	<rule ref="Generic.Classes.DuplicateClassName" />
+	<rule ref="Generic.CodeAnalysis.AssignmentInCondition" />
 	<rule ref="Generic.CodeAnalysis.EmptyPHPStatement" />
 	<!-- Some people like else { /** comment */ }
 	<rule ref="Generic.CodeAnalysis.EmptyStatement" />
 	-->
 	<rule ref="Generic.CodeAnalysis.ForLoopShouldBeWhileLoop" />
 	<rule ref="Generic.CodeAnalysis.JumbledIncrementer" />
+	<rule ref="Generic.CodeAnalysis.RequireExplicitBooleanOperatorPrecedence" />
 	<rule ref="Generic.CodeAnalysis.UnconditionalIfStatement" />
 	<rule ref="Generic.CodeAnalysis.UnnecessaryFinalModifier" />
 	<!--
@@ -90,6 +93,23 @@
 	<rule ref="Generic.WhiteSpace.IncrementDecrementSpacing" />
 	<rule ref="Generic.WhiteSpace.SpreadOperatorSpacingAfter" />
 	<rule ref="Generic.WhiteSpace.LanguageConstructSpacing" />
+	<rule ref="Generic.WhiteSpace.ScopeIndent">
+		<properties>
+			<property name="tabIndent" value="true" />
+			<property name="ignoreIndentationTokens" type="array">
+				<!-- Comments before else(if) branches are sometimes aligned with the else(if) line -->
+				<element value="T_COMMENT" />
+				<!-- Long strings and heredoc/nowdoc sometimes start at the beginning of the line -->
+				<element value="T_CONSTANT_ENCAPSED_STRING" />
+				<element value="T_DOUBLE_QUOTED_STRING" />
+				<element value="T_START_HEREDOC" />
+				<element value="T_START_NOWDOC" />
+				<!-- PHP opening and closing tag don't have to be indented -->
+				<element value="T_OPEN_TAG" />
+				<element value="T_CLOSE_TAG" />
+			</property>
+		</properties>
+	</rule>
 
 	<rule ref="PSR2.Classes.ClassDeclaration">
 		<exclude name="PSR2.Classes.ClassDeclaration.SpaceBeforeBrace" />
@@ -126,6 +146,11 @@
 	<rule ref="Squiz.CSS.SemicolonSpacing" />
 	<rule ref="Squiz.Classes.SelfMemberReference" />
 	<rule ref="Squiz.Classes.ValidClassName" />
+	<rule ref="Squiz.ControlStructures.ControlSignature">
+		<properties>
+			<property name="requiredSpacesBeforeColon" value="0" />
+		</properties>
+	</rule>
 	<rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing">
 		<properties>
 			<property name="equalsSpacing" value="1" />
@@ -146,6 +171,7 @@
 		</properties>
 	</rule>
 	<rule ref="Squiz.WhiteSpace.LogicalOperatorSpacing" />
+	<rule ref="Squiz.WhiteSpace.FunctionOpeningBraceSpace" />
 	<rule ref="Squiz.WhiteSpace.FunctionSpacing">
 		<properties>
 			<property name="spacing" value="1" />
@@ -181,6 +207,18 @@
 	<rule ref="Generic.VersionControl.GitMergeConflict" />
 
 	<rule ref="PEAR.Functions.ValidDefaultValue.NotAtEnd" />
+
+	<rule ref="Universal.CodeAnalysis.NoDoubleNegative" />
+	<rule ref="Universal.Constants.LowercaseClassResolutionKeyword" />
+	<rule ref="Universal.Constants.UppercaseMagicConstants" />
+	<rule ref="Universal.ControlStructures.DisallowAlternativeSyntax" />
+	<rule ref="Universal.Lists.DisallowLongListSyntax" />
+	<rule ref="Universal.Operators.TypeSeparatorSpacing" />
+	<rule ref="Universal.PHP.LowercasePHPTag" />
+	<rule ref="Universal.UseStatements.KeywordSpacing" />
+	<rule ref="Universal.UseStatements.LowercaseFunctionConst" />
+	<rule ref="Universal.UseStatements.NoUselessAliases" />
+	<rule ref="Universal.WhiteSpace.CommaSpacing" />
 
 	<rule ref="MediaWiki.Classes.FullQualifiedClassName">
 		<!-- Set this to 5 or higher in your .phpcs.xml if you want to use this sniff -->

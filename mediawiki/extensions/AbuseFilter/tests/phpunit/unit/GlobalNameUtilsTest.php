@@ -29,12 +29,11 @@ use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
  * @group Test
  * @group AbuseFilter
  * @group AbuseFilterGeneric
+ * @covers \MediaWiki\Extension\AbuseFilter\GlobalNameUtils
  */
 class GlobalNameUtilsTest extends MediaWikiUnitTestCase {
 
 	/**
-	 * @covers \MediaWiki\Extension\AbuseFilter\GlobalNameUtils::splitGlobalName
-	 * @covers \MediaWiki\Extension\AbuseFilter\GlobalNameUtils::buildGlobalName
 	 * @dataProvider provideBuildGlobalName
 	 */
 	public function testBuildGlobalName( int $id, bool $global, string $expected ) {
@@ -44,7 +43,7 @@ class GlobalNameUtilsTest extends MediaWikiUnitTestCase {
 		$this->assertSame( [ $id, $global ], $filterDef );
 	}
 
-	public function provideBuildGlobalName(): array {
+	public static function provideBuildGlobalName(): array {
 		return [
 			[ 1, false, '1' ],
 			[ 2, true, 'global-2' ],
@@ -55,7 +54,6 @@ class GlobalNameUtilsTest extends MediaWikiUnitTestCase {
 	 * @param string $name The name of a filter
 	 * @param array|null $expected If array, the expected result like [ id, isGlobal ].
 	 *   If null it means that we're expecting an exception.
-	 * @covers \MediaWiki\Extension\AbuseFilter\GlobalNameUtils::splitGlobalName
 	 * @dataProvider provideGlobalNames
 	 */
 	public function testSplitGlobalName( $name, $expected ) {
@@ -68,12 +66,7 @@ class GlobalNameUtilsTest extends MediaWikiUnitTestCase {
 		}
 	}
 
-	/**
-	 * Data provider for testSplitGlobalName
-	 *
-	 * @return array
-	 */
-	public function provideGlobalNames() {
+	public static function provideGlobalNames() {
 		return [
 			[ '15', [ 15, false ] ],
 			[ 15, [ 15, false ] ],

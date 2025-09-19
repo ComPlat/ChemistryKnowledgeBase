@@ -2,20 +2,33 @@
 
 use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\CommentFormatter\CommentFormatter;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Pager\ContribsPager;
+use MediaWiki\Pager\IndexPager;
+use MediaWiki\Permissions\SimpleAuthority;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\Rdbms\FakeResultWrapper;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group Database
+ * @covers \MediaWiki\Pager\ContribsPager
+ * @covers \MediaWiki\Pager\ContributionsPager
  */
 class ContribsPagerTest extends MediaWikiIntegrationTestCase {
+	use TempUserTestTrait;
+
 	/** @var ContribsPager */
 	private $pager;
 
@@ -31,11 +44,8 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	/** @var HookContainer */
 	private $hookContainer;
 
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-
-	/** @var ActorMigration */
-	private $actorMigration;
+	/** @var IConnectionProvider */
+	private $dbProvider;
 
 	/** @var NamespaceInfo */
 	private $namespaceInfo;
@@ -51,8 +61,7 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		$this->revisionStore = $services->getRevisionStore();
 		$this->linkBatchFactory = $services->getLinkBatchFactory();
 		$this->hookContainer = $services->getHookContainer();
-		$this->loadBalancer = $services->getDBLoadBalancer();
-		$this->actorMigration = $services->getActorMigration();
+		$this->dbProvider = $services->getConnectionProvider();
 		$this->namespaceInfo = $services->getNamespaceInfo();
 		$this->commentFormatter = $services->getCommentFormatter();
 		$this->pager = $this->getContribsPager( [
@@ -61,15 +70,14 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		] );
 	}
 
-	private function getContribsPager( array $options, UserIdentity $targetUser = null ) {
+	private function getContribsPager( array $options, ?UserIdentity $targetUser = null ) {
 		return new ContribsPager(
 			new RequestContext(),
 			$options,
 			$this->linkRenderer,
 			$this->linkBatchFactory,
 			$this->hookContainer,
-			$this->loadBalancer,
-			$this->actorMigration,
+			$this->dbProvider,
 			$this->revisionStore,
 			$this->namespaceInfo,
 			$targetUser,
@@ -78,7 +86,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ContribsPager::reallyDoQuery
 	 * Tests enabling/disabling ContribsPager::reallyDoQuery hook via the revisionsOnly option to restrict
 	 * extensions are able to insert their own revisions
 	 */
@@ -99,7 +106,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ContribsPager::processDateFilter
 	 * @dataProvider dateFilterOptionProcessingProvider
 	 * @param array $inputOpts Input options
 	 * @param array $expectedOpts Expected options
@@ -178,25 +184,23 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ContribsPager::isQueryableRange
 	 * @dataProvider provideQueryableRanges
 	 */
 	public function testQueryableRanges( $ipRange ) {
-		$this->overrideConfigValue(
-			MainConfigNames::RangeContributionsCIDRLimit,
-			[
+		$config = new HashConfig( [
+			MainConfigNames::RangeContributionsCIDRLimit => [
 				'IPv4' => 16,
 				'IPv6' => 32,
 			]
-		);
+		] );
 
 		$this->assertTrue(
-			$this->pager->isQueryableRange( $ipRange ),
+			ContribsPager::isQueryableRange( $ipRange, $config ),
 			"$ipRange is a queryable IP range"
 		);
 	}
 
-	public function provideQueryableRanges() {
+	public static function provideQueryableRanges() {
 		return [
 			[ '116.17.184.5/32' ],
 			[ '0.17.184.5/16' ],
@@ -206,25 +210,23 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ContribsPager::isQueryableRange
 	 * @dataProvider provideUnqueryableRanges
 	 */
 	public function testUnqueryableRanges( $ipRange ) {
-		$this->overrideConfigValue(
-			MainConfigNames::RangeContributionsCIDRLimit,
-			[
+		$config = new HashConfig( [
+			MainConfigNames::RangeContributionsCIDRLimit => [
 				'IPv4' => 16,
 				'IPv6' => 32,
 			]
-		);
+		] );
 
 		$this->assertFalse(
-			$this->pager->isQueryableRange( $ipRange ),
+			ContribsPager::isQueryableRange( $ipRange, $config ),
 			"$ipRange is not a queryable IP range"
 		);
 	}
 
-	public function provideUnqueryableRanges() {
+	public static function provideUnqueryableRanges() {
 		return [
 			[ '116.17.184.5/33' ],
 			[ '0.17.184.5/15' ],
@@ -233,12 +235,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	/**
-	 * @covers \ContribsPager::getExtraSortFields
-	 * @covers \ContribsPager::getIndexField
-	 * @covers \ContribsPager::getQueryInfo
-	 * @covers \ContribsPager::getTargetTable
-	 */
 	public function testUniqueSortOrderWithoutIpChanges() {
 		$pager = $this->getContribsPager( [
 			'start' => '',
@@ -256,12 +252,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [ 'rev_timestamp DESC', 'rev_id DESC' ], $queryInfo[4]['ORDER BY'] );
 	}
 
-	/**
-	 * @covers \ContribsPager::getExtraSortFields
-	 * @covers \ContribsPager::getIndexField
-	 * @covers \ContribsPager::getQueryInfo
-	 * @covers \ContribsPager::getTargetTable
-	 */
 	public function testUniqueSortOrderOnIpChanges() {
 		$pager = $this->getContribsPager( [
 			'target' => '116.17.184.5/32',
@@ -278,9 +268,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [ 'ipc_rev_timestamp DESC', 'ipc_rev_id DESC' ], $queryInfo[4]['ORDER BY'] );
 	}
 
-	/**
-	 * @covers \ContribsPager::tryCreatingRevisionRecord
-	 */
 	public function testCreateRevision() {
 		$title = Title::makeTitle( NS_MAIN, __METHOD__ );
 
@@ -328,10 +315,8 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Flow uses ContribsPager::reallyDoQuery hook to provide something other then
-	 * stdClass as a row, and then manually formats it's own row in ContributionsLineEnding.
+	 * stdClass as a row, and then manually formats its own row in ContributionsLineEnding.
 	 * Emulate this behaviour and check that it works.
-	 *
-	 * @covers ContribsPager::formatRow
 	 */
 	public function testContribProvidedByHook() {
 		$this->setTemporaryHook( 'ContribsPager::reallyDoQuery', static function ( &$data ) {
@@ -348,7 +333,7 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'FROM_HOOK!', $pager->getBody() );
 	}
 
-	public function provideEmptyResultIntegration() {
+	public static function provideEmptyResultIntegration() {
 		$cases = [
 			[ 'target' => '127.0.0.1' ],
 			[ 'target' => '127.0.0.1/24' ],
@@ -376,12 +361,6 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 	 * filter options, by running the query on an empty DB.
 	 *
 	 * @dataProvider provideEmptyResultIntegration
-	 * @covers \ContribsPager::__construct
-	 * @covers \ContribsPager::getQueryInfo
-	 * @covers \ContribsPager::getDatabase
-	 * @covers \ContribsPager::getIpRangeConds
-	 * @covers \ContribsPager::getNamespaceCond
-	 * @covers \ContribsPager::getIndexField
 	 */
 	public function testEmptyResultIntegration( $options ) {
 		if ( !empty( $options['testUser'] ) ) {
@@ -392,21 +371,55 @@ class ContribsPagerTest extends MediaWikiIntegrationTestCase {
 		}
 		$pager = $this->getContribsPager( $options, $targetUser );
 		$this->assertIsString( $pager->getBody() );
+		$this->assertSame( 0, $pager->getNumRows() );
 	}
 
 	/**
-	 * DB integration test with a row in the result set.
-	 *
-	 * @covers \ContribsPager::formatRow
-	 * @covers \ContribsPager::doBatchLookups
+	 * DB integration test for an IP range target with a few edits.
 	 */
 	public function testPopulatedIntegration() {
-		$this->tablesUsed[] = 'page';
-		$user = $this->getTestUser()->getUser();
+		$this->disableAutoCreateTempUser();
+		$user = new SimpleAuthority( new UserIdentityValue( 0, '127.0.0.1' ), [] );
 		$title = Title::makeTitle( NS_MAIN, 'ContribsPagerTest' );
 		$this->editPage( $title, '', '', NS_MAIN, $user );
-		$pager = $this->getContribsPager( [], $user );
+		$this->editPage( $title, 'Test content.', '', NS_MAIN, $user );
+		$pager = $this->getContribsPager( [ 'target' => '127.0.0.1/16' ] );
 		$this->assertIsString( $pager->getBody() );
+		$this->assertSame( 2, $pager->getNumRows() );
 	}
 
+	/**
+	 * DB integration test for a reader with permissions to delete and rollback.
+	 */
+	public function testPopulatedIntegrationWithPermissions() {
+		$this->setGroupPermissions( [ '*' => [
+			'deletedhistory' => true,
+			'deleterevision' => true,
+			'rollback' => true,
+		] ] );
+		$sysop = $this->getTestsysop()->getUser();
+		$user = $this->getTestUser()->getUser();
+		$title = Title::makeTitle( NS_MAIN, 'ContribsPagerTest' );
+
+		// Edit from a different user so we show rollback links
+		$this->editPage( $title, '', '', NS_MAIN, $sysop );
+		$this->editPage( $title, 'Test content.', '', NS_MAIN, $user );
+
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'revision' )
+			->set( [
+				'rev_deleted' => RevisionRecord::DELETED_USER,
+				// Make a couple of alterations to ensure these paths are covered
+				'rev_minor_edit' => 1,
+				'rev_parent_id' => null,
+			] )
+			->where( [
+				'rev_actor' => $user->getActorId()
+			] )
+			->execute();
+
+		$pager = $this->getContribsPager( [], $user );
+		$this->assertIsString( $pager->getBody() );
+		$this->assertSame( 1, $pager->getNumRows() );
+	}
 }

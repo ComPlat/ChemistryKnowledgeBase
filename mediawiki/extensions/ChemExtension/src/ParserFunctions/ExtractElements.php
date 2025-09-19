@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\ParserFunctions;
 
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 
 class ExtractElements
 {
@@ -26,7 +26,7 @@ class ExtractElements
             }
             return [implode(',', $elements), 'noparse' => false, 'isHTML' => false];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
+            $html = self::getBlade()->run("error", ['message' => $e->getMessage()]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
 
@@ -35,13 +35,13 @@ class ExtractElements
     /**
      * @throws Exception
      */
-    private static function getBlade(): Blade
+    private static function getBlade(): BladeOne
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ( $views, $cache );
+        return new BladeOne ( $views, $cache );
     }
 }

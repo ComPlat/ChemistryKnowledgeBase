@@ -1,9 +1,10 @@
 <?php
 
+use MediaWiki\EditPage\EditPage;
 use MediaWiki\EditPage\IEditObject;
 
 /**
- * @covers EditPage
+ * @covers \MediaWiki\EditPage\EditPage
  *
  * MediaWikiCoversValidator fails when trying to say that this covers an interface,
  * but this covers \MediaWiki\EditPage\IEditObject primarily

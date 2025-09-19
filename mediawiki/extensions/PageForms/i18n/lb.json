@@ -3,7 +3,8 @@
 		"authors": [
 			"Les Meloures",
 			"Robby",
-			"Soued031"
+			"Soued031",
+			"Volvox"
 		]
 	},
 	"specialpages-group-pf_group": "Säiteformulairen",
@@ -70,7 +71,7 @@
 	"pf_createform_sectionname": "Numm vum Abschnitt",
 	"pf_createform_additembeforesave": "Dir musst mindestens eng Schabloun an dëser Formulaire drasetzen ier Dir e späichere kënnt.",
 	"pf_createform_otherparameters": "Aner Parameter",
-	"createcategory": "Eng Kategorie maachen",
+	"createcategory": "Eng Kategorie uleeën",
 	"pf-createcategory-with-name": "Kategorie uleeën: $1",
 	"pf_createcategory_name": "Numm vun der Kategorie:",
 	"pf_createcategory_defaultform": "Standard-Formulaire:",
@@ -82,6 +83,7 @@
 	"pf_createclass_success": "Déi spezifizéiert Säite ginn ugeluecht.",
 	"pf_createclass_create": "Uleeën",
 	"pf_createclass_ishierarchy": "Hierarchie?",
+	"pf-spreadsheet-addrow": "Zeil derbäisetzen",
 	"formstart": "Säit mat engem Formulaire derbäisetzen",
 	"pf_formstart_badform": "Feeler: et gouf keng Formulaire-Säit op $1 fonnt.",
 	"pf_formstart_badtitle": "Feeler: \"$1\" ass kee valaben Titel fir eng Säit",
@@ -102,6 +104,7 @@
 	"pf_formedit_formwarning": "Opgepasst: Dës Säit [[$1|gëtt et schonn]], awer si benotzt dëse Formulaire net.",
 	"pf_formedit_remove": "Dës Instanz ewechhuelen",
 	"pf_formedit_addanother": "Nach een derbäisetzen",
+	"pf-formedit-nodata": "Keng Donnéeën",
 	"pf_formedit_none": "Keen",
 	"pf_formedit_emptytitle": "Feeler: D'Donnéeën déi agi goufe féieren zu engem eidele Säitentitel.",
 	"pf_formedit_saveandcontinueediting": "Späicheren a virufueren",
@@ -109,6 +112,7 @@
 	"pf_formedit_tooltip_saveandcontinueediting": "Date späicheren a mam Ännere virufueren",
 	"pf_autoedit_anoneditwarning": "Opgepasst: Dir sidd net ageloggt. Dowéinst gëtt amplaz vun engem Benotzernumm Är IP Adress am Historique vun dëser Säit gespäichert.",
 	"pf_autoedit_success": "[[$1]] gouf mam Formulaire $2 geännert",
+	"pf_autoedit_newpagesuccess": "[[$1]] ugeluecht mam Formular $2.",
 	"pf_autoedit_fail": "D'Ännere vu(n) [[$1]] huet net funktionéiert.",
 	"pf_autoedit_notargetspecified": "Keng Zilsäit spezifizéiert.",
 	"pf_autoedit_invalidform": "'''$1''' ass kee valabele Formulaire.",
@@ -119,6 +123,7 @@
 	"pf_autoedit_nosemanticform": "De Formulaire $2 konnt net fir d'Säit $1 ofgeruff ginn. Kuckt [[{{#special:FormEdit}}/$2/$1]] fir méi Detailer.",
 	"pf_autoedit_summary": "Automatesch vun der Säit $1 geännert.",
 	"pf-autoedit-wait": "Waart wgl. ...",
+	"pf_autoedit_confirmcreate": "Sidd Dir sécher, datt Dir eng nei Säit mam Formular „$1“ uleeë wëllt?",
 	"runquery": "Ufro ausféieren",
 	"pf_runquery_title": "ausféiere vu der Ufro: $1",
 	"pf_runquery_additionalquery": "Zousätzlech Ufro",
@@ -138,7 +143,7 @@
 	"pf-preview-note": "Sou gesäit de Formulaire aus wann e benotzt gëtt:",
 	"pf-pageschemas-header": "Formulaire",
 	"pf-pageschemas-createtitle": "Numm vum Formulaire fir nei Säiten:",
-	"pf-pageschemas-edittitle": "Numm vum Formulaire fir Säiten déi et scho gëtt:",
+	"pf-pageschemas-edittitle": "Numm vum Formulaire fir Säiten, déi et scho gëtt:",
 	"pf_property_linkstoform": "Et ass mat Säite verlinkt déi de Formulaire $1 benotzen.",
 	"pf_property_allowedvals": "{{PLURAL:$1|Den erlaabte Wäert fir dës Eegeschaft ass|Déi erlaabt Wäerter fir dës Eegeschaft sinn}}:",
 	"pf_template_docu": "Dëst ass d''$1'-Schabloun.\nSi soll an dësem Format opgeruff ginn:",
@@ -163,9 +168,10 @@
 	"pf-datepicker-firstdate": "Den éischten Datum deen erausgesicht ka ginn (am Format JJJJ/MM/DD)",
 	"pf-datepicker-lastdate": "De leschten Datum deen erausgesicht ka ginn (am Format JJJJ/MM/DD)",
 	"pf-datepicker-disabledaysofweek": "Eng Lëscht vun Deeg déi net erausgesicht kënne ginn (z. B. Weekend:6, 0).",
+	"pf-datetimepicker-localtime": "An Ärer lokaler Zäit:",
 	"pf-regexp-wrongformat": "Falsche Format.",
 	"pf-missingconcept": "D'Konzept konnt net fonnt ginn: $1",
 	"pf-missingnamespace": "Den Nummraum konnt net fonnt ginn: $1",
-	"pf-resultstoshow": "Resultater fir ze weisen",
+	"pf-resultstoshow": "Gewise Resultater",
 	"pf-externalpageempty": "Déi extern Säit huet keen Inhalt."
 }

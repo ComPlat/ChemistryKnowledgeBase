@@ -1,12 +1,23 @@
 <?php
 
+use MediaWiki\Api\ApiResult;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
+use MediaWiki\Permissions\SimpleAuthority;
+use MediaWiki\RCFeed\IRCColourfulRCFeedFormatter;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentityValue;
 
 /**
  * @group Database
  */
 class LogFormatterTest extends MediaWikiLangTestCase {
+	/** @var array */
 	private static $oldExtMsgFiles;
 
 	/**
@@ -82,17 +93,17 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
+	 * @covers \LogFormatter::setShowUserToolLinks
 	 */
 	public function testNormalLogParams() {
 		$entry = $this->newLogEntry( 'test', [] );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$formatter->setShowUserToolLinks( false );
 		$paramsWithoutTools = $formatter->getMessageParametersForTesting();
 
-		$formatter2 = LogFormatter::newFromEntry( $entry );
+		$formatter2 = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter2->setContext( $this->context );
 		$formatter2->setShowUserToolLinks( true );
 		$paramsWithTools = $formatter2->getMessageParametersForTesting();
@@ -116,24 +127,23 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 		$this->assertEquals( $paramsWithoutTools[1], $paramsWithTools[1] );
 		$this->assertEquals( $paramsWithoutTools[2], $paramsWithTools[2] );
 
-		$this->assertEquals( $userLink, $paramsWithoutTools[0]['raw'] );
-		$this->assertEquals( $userLink . $userTools, $paramsWithTools[0]['raw'] );
+		$this->assertEquals( Message::rawParam( $userLink ), $paramsWithoutTools[0] );
+		$this->assertEquals( Message::rawParam( $userLink . $userTools ), $paramsWithTools[0] );
 
 		$this->assertEquals( $this->user->getName(), $paramsWithoutTools[1] );
 
-		$this->assertEquals( $titleLink, $paramsWithoutTools[2]['raw'] );
+		$this->assertEquals( Message::rawParam( $titleLink ), $paramsWithoutTools[2] );
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeRaw() {
 		$params = [ '4:raw:raw' => Linker::link( $this->title, null, [], [] ) ];
 		$expected = Linker::link( $this->title, null, [], [] );
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -142,15 +152,14 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeMsg() {
 		$params = [ '4:msg:msg' => 'log-description-phpunit' ];
 		$expected = wfMessage( 'log-description-phpunit' )->text();
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -159,15 +168,14 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeMsgContent() {
 		$params = [ '4:msg-content:msgContent' => 'log-description-phpunit' ];
 		$expected = wfMessage( 'log-description-phpunit' )->inContentLanguage()->text();
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -176,8 +184,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeNumber() {
 		global $wgLang;
@@ -186,7 +193,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 		$expected = $wgLang->formatNum( 123456789 );
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -195,8 +202,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeUserLink() {
 		$params = [ '4:user-link:userLink' => $this->user->getName() ];
@@ -206,7 +212,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 		);
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -215,14 +221,13 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeUserLink_empty() {
 		$params = [ '4:user-link:userLink' => ':' ];
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 
 		$this->context->setLanguage( 'qqx' );
 		$formatter->setContext( $this->context );
@@ -232,15 +237,14 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypeTitleLink() {
 		$params = [ '4:title-link:titleLink' => $this->title->getText() ];
 		$expected = Linker::link( $this->title, null, [], [] );
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -249,15 +253,14 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getActionText
+	 * @covers \LogFormatter::getActionText
 	 */
 	public function testLogParamsTypePlain() {
 		$params = [ '4:plain:plain' => 'Some plain text' ];
 		$expected = 'Some plain text';
 
 		$entry = $this->newLogEntry( 'param', $params );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		$logParam = $formatter->getActionText();
@@ -266,41 +269,123 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getPerformerElement
+	 * @covers \LogFormatter::getPerformerElement
+	 * @dataProvider provideLogElement
 	 */
-	public function testGetPerformerElement() {
+	public function testGetPerformerElement( $deletedFlag, $allowedAction ) {
 		$entry = $this->newLogEntry( 'param', [] );
 		$entry->setPerformer( new UserIdentityValue( 1328435, 'Test' ) );
+		if ( $deletedFlag !== 'none' ) {
+			$entry->setDeleted(
+				LogPage::DELETED_USER |
+					( $deletedFlag === 'suppressed' ? LogPage::DELETED_RESTRICTED : 0 )
+			);
+		}
 
-		$formatter = LogFormatter::newFromEntry( $entry );
-		$formatter->setContext( $this->context );
+		$context = new DerivativeContext( $this->context );
+		if ( $allowedAction !== 'none' ) {
+			$context->setAuthority( new SimpleAuthority(
+				$this->context->getUser(),
+				[ $deletedFlag === 'suppressed' ? 'suppressrevision' : 'deletedhistory' ]
+			) );
+		}
+
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
+		$formatter->setContext( $context );
+		if ( $allowedAction === 'view-for-user' ) {
+			$formatter->setAudience( LogFormatter::FOR_THIS_USER );
+		}
 
 		$element = $formatter->getPerformerElement();
-		$this->assertStringContainsString( 'User:Test', $element );
+		if ( $allowedAction === 'none' ||
+			( $deletedFlag !== 'none' && $allowedAction === 'view-public' )
+		) {
+			$this->assertStringNotContainsString( 'User:Test', $element );
+		} else {
+			$this->assertStringContainsString( 'User:Test', $element );
+		}
+
+		if ( $deletedFlag === 'none' ) {
+			$this->assertStringNotContainsString( 'history-deleted', $element );
+		} else {
+			$this->assertStringContainsString( 'history-deleted', $element );
+		}
+		if ( $deletedFlag === 'suppressed' ) {
+			$this->assertStringContainsString( 'mw-history-suppressed', $element );
+		} else {
+			$this->assertStringNotContainsString( 'mw-history-suppressed', $element );
+		}
 	}
 
 	/**
-	 * @covers LogFormatter::newFromEntry
-	 * @covers LogFormatter::getComment
+	 * @covers \LogFormatter::getComment
+	 * @dataProvider provideLogElement
 	 */
-	public function testLogComment() {
+	public function testLogComment( $deletedFlag, $allowedAction ) {
 		$entry = $this->newLogEntry( 'test', [] );
-		$formatter = LogFormatter::newFromEntry( $entry );
-		$formatter->setContext( $this->context );
+		if ( $deletedFlag !== 'none' ) {
+			$entry->setDeleted(
+				LogPage::DELETED_COMMENT |
+					( $deletedFlag === 'suppressed' ? LogPage::DELETED_RESTRICTED : 0 )
+			);
+		}
 
-		$comment = ltrim( Linker::commentBlock( $entry->getComment() ) );
+		$context = new DerivativeContext( $this->context );
+		if ( $allowedAction !== 'none' ) {
+			$context->setAuthority( new SimpleAuthority(
+				$this->context->getUser(),
+				[ $deletedFlag === 'suppressed' ? 'suppressrevision' : 'deletedhistory' ]
+			) );
+		}
 
-		$this->assertEquals( $comment, $formatter->getComment() );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
+		$formatter->setContext( $context );
+		if ( $allowedAction === 'view-for-user' ) {
+			$formatter->setAudience( LogFormatter::FOR_THIS_USER );
+		}
+
+		$expectedComment = ltrim( $this->getServiceContainer()->getCommentFormatter()->formatBlock( $entry->getComment() ) );
+		$comment = $formatter->getComment();
+
+		if ( $allowedAction === 'none' ||
+			( $deletedFlag !== 'none' && $allowedAction === 'view-public' )
+		) {
+			$this->assertStringNotContainsString( $expectedComment, $comment );
+		} else {
+			$this->assertStringContainsString( $expectedComment, $comment );
+		}
+		if ( $deletedFlag === 'none' ) {
+			$this->assertStringNotContainsString( 'history-deleted', $comment );
+		} else {
+			$this->assertStringContainsString( 'history-deleted', $comment );
+		}
+		if ( $deletedFlag === 'suppressed' ) {
+			$this->assertStringContainsString( 'mw-history-suppressed', $comment );
+		} else {
+			$this->assertStringNotContainsString( 'mw-history-suppressed', $comment );
+		}
+	}
+
+	public static function provideLogElement() {
+		return [
+			[ 'none', 'view' ],
+			[ 'deleted', 'none' ],
+			[ 'deleted', 'view-for-user' ],
+			[ 'deleted', 'view-public' ],
+			[ 'suppressed', 'none' ],
+			[ 'suppressed', 'view-for-user' ],
+			[ 'suppressed', 'view-public' ],
+		];
 	}
 
 	/**
 	 * @dataProvider provideApiParamFormatting
-	 * @covers LogFormatter::formatParametersForApi
-	 * @covers LogFormatter::formatParameterValueForApi
+	 * @covers \LogFormatter::formatParametersForApi
+	 * @covers \LogFormatter::formatParameterValueForApi
 	 */
 	public function testApiParamFormatting( $key, $value, $expected ) {
 		$entry = $this->newLogEntry( 'param', [ $key => $value ] );
-		$formatter = LogFormatter::newFromEntry( $entry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $entry );
 		$formatter->setContext( $this->context );
 
 		ApiResult::setIndexedTagName( $expected, 'param' );
@@ -357,7 +442,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	 * Third parties bots listen to those messages. They are clever enough
 	 * to fetch the i18n messages from the wiki and then analyze the IRC feed
 	 * to reverse engineer the $1, $2 messages.
-	 * One thing bots can not detect is when MediaWiki change the meaning of
+	 * One thing bots cannot detect is when MediaWiki change the meaning of
 	 * a message like what happened when we deployed 1.19. $1 became the user
 	 * performing the action which broke basically all bots around.
 	 *
@@ -389,8 +474,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	 */
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeBlock() {
 		$sep = $this->context->msg( 'colon-separator' )->text();
@@ -440,8 +525,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeDelete() {
 		$sep = $this->context->msg( 'colon-separator' )->text();
@@ -464,8 +549,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeNewusers() {
 		$this->assertIRCComment(
@@ -491,8 +576,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeMove() {
 		$move_params = [
@@ -521,8 +606,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypePatrol() {
 		# patrol/patrol
@@ -538,8 +623,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeProtect() {
 		$protectParams = [
@@ -588,8 +673,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeUpload() {
 		$sep = $this->context->msg( 'colon-separator' )->text();
@@ -612,8 +697,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeMerge() {
 		$sep = $this->context->msg( 'colon-separator' )->text();
@@ -632,8 +717,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @covers LogFormatter::getIRCActionComment
-	 * @covers LogFormatter::getIRCActionText
+	 * @covers \LogFormatter::getIRCActionComment
+	 * @covers \LogFormatter::getIRCActionText
 	 */
 	public function testIrcMsgForLogTypeImport() {
 		$sep = $this->context->msg( 'colon-separator' )->text();
@@ -682,7 +767,7 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 		$logEntry->setParameters( $params );
 		$logEntry->setLegacy( $legacy );
 
-		$formatter = LogFormatter::newFromEntry( $logEntry );
+		$formatter = $this->getServiceContainer()->getLogFormatterFactory()->newFromEntry( $logEntry );
 		$formatter->setContext( $this->context );
 
 		// Apply the same transformation as done in IRCColourfulRCFeedFormatter::getLine for rc_comment

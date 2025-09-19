@@ -1,15 +1,18 @@
 <?php
 
+use MediaWiki\Cache\HTMLCacheUpdater;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
  * @group Cache
- * @covers HtmlCacheUpdater
+ * @covers \MediaWiki\Cache\HTMLCacheUpdater
  */
-class HtmlCacheUpdaterTest extends MediaWikiUnitTestCase {
+class HTMLCacheUpdaterTest extends MediaWikiUnitTestCase {
 
 	public function testGetCdnUrls() {
-		$htmlCache = new HtmlCacheUpdater(
+		$htmlCache = new HTMLCacheUpdater(
 			$this->createHookContainer(),
 			$this->createTitleFactory(),
 			0, false, 86400 );
@@ -72,9 +75,9 @@ class HtmlCacheUpdaterTest extends MediaWikiUnitTestCase {
 	 * @return MockObject|TitleFactory
 	 */
 	private function createTitleFactory() {
-		$factory = $this->createNoOpMock( TitleFactory::class, [ 'castFromPageReference' ] );
+		$factory = $this->createNoOpMock( TitleFactory::class, [ 'newFromPageReference' ] );
 
-		$factory->method( 'castFromPageReference' )->willReturnArgument( 0 );
+		$factory->method( 'newFromPageReference' )->willReturnArgument( 0 );
 
 		return $factory;
 	}

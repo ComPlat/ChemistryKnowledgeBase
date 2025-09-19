@@ -6,17 +6,17 @@ use LuaSandbox;
 use LuaSandboxError;
 use LuaSandboxFunction;
 use LuaSandboxTimeoutError;
-use MWException;
-use Scribunto_LuaEngine;
-use Scribunto_LuaError;
-use Scribunto_LuaInterpreter;
-use Scribunto_LuaInterpreterBadVersionError;
-use Scribunto_LuaInterpreterNotFoundError;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaInterpreter;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaInterpreterBadVersionError;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaInterpreterNotFoundError;
+use RuntimeException;
 use UtfNormal\Validator;
 
-class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
+class LuaSandboxInterpreter extends LuaInterpreter {
 	/**
-	 * @var Scribunto_LuaEngine
+	 * @var LuaEngine
 	 */
 	public $engine;
 
@@ -36,17 +36,17 @@ class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 
 	/**
 	 * Check that php-luasandbox is available and of a recent-enough version
-	 * @throws Scribunto_LuaInterpreterNotFoundError
-	 * @throws Scribunto_LuaInterpreterBadVersionError
+	 * @throws LuaInterpreterNotFoundError
+	 * @throws LuaInterpreterBadVersionError
 	 */
 	public static function checkLuaSandboxVersion() {
 		if ( !extension_loaded( 'luasandbox' ) ) {
-			throw new Scribunto_LuaInterpreterNotFoundError(
+			throw new LuaInterpreterNotFoundError(
 				'The luasandbox extension is not present, this engine cannot be used.' );
 		}
 
-		if ( !is_callable( 'LuaSandbox::getVersionInfo' ) ) {
-			throw new Scribunto_LuaInterpreterBadVersionError(
+		if ( !is_callable( [ LuaSandbox::class, 'getVersionInfo' ] ) ) {
+			throw new LuaInterpreterBadVersionError(
 				'The luasandbox extension is too old (version 1.6+ is required), ' .
 					'this engine cannot be used.'
 			);
@@ -54,7 +54,7 @@ class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 	}
 
 	/**
-	 * @param Scribunto_LuaEngine $engine
+	 * @param LuaEngine $engine
 	 * @param array $options
 	 */
 	public function __construct( $engine, array $options ) {
@@ -74,9 +74,9 @@ class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 	}
 
 	/**
-	 * Convert a LuaSandboxError to a Scribunto_LuaError
+	 * Convert a LuaSandboxError to a LuaError
 	 * @param LuaSandboxError $e
-	 * @return Scribunto_LuaError
+	 * @return LuaError
 	 */
 	protected function convertSandboxError( LuaSandboxError $e ) {
 		$opts = [];
@@ -105,7 +105,7 @@ class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 	 * @param string $text
 	 * @param string $chunkName
 	 * @return mixed
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function loadString( $text, $chunkName ) {
 		try {
@@ -138,7 +138,7 @@ class LuaSandboxInterpreter extends Scribunto_LuaInterpreter {
 				// Per the documentation on LuaSandboxFunction::call, a return value
 				// of false means that something went wrong and it's PHP's fault,
 				// so throw a "real" exception.
-				throw new MWException(
+				throw new RuntimeException(
 					__METHOD__ . ': LuaSandboxFunction::call returned false' );
 			}
 			return $ret;

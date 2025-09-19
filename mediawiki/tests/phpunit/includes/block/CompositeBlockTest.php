@@ -11,7 +11,7 @@ use MediaWiki\MainConfigNames;
 /**
  * @group Database
  * @group Blocking
- * @coversDefaultClass \MediaWiki\Block\CompositeBlock
+ * @covers \MediaWiki\Block\CompositeBlock
  */
 class CompositeBlockTest extends MediaWikiLangTestCase {
 	private function getPartialBlocks() {
@@ -38,15 +38,7 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 		];
 	}
 
-	private function deleteBlocks( $blocks ) {
-		$blockStore = $this->getServiceContainer()->getDatabaseBlockStore();
-		foreach ( $blocks as $block ) {
-			$blockStore->deleteBlock( $block );
-		}
-	}
-
 	/**
-	 * @covers ::__construct
 	 * @dataProvider provideTestStrictestParametersApplied
 	 */
 	public function testStrictestParametersApplied( $blocks, $expected ) {
@@ -147,9 +139,6 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 		];
 	}
 
-	/**
-	 * @covers ::appliesToTitle
-	 */
 	public function testBlockAppliesToTitle() {
 		$this->overrideConfigValue( MainConfigNames::BlockDisablesLogin, false );
 
@@ -169,15 +158,8 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 
 		$this->assertTrue( $block->appliesToTitle( $pageFoo->getTitle() ) );
 		$this->assertTrue( $block->appliesToTitle( $pageBar->getTitle() ) );
-
-		$this->deleteBlocks( $blocks );
 	}
 
-	/**
-	 * @covers ::appliesToUsertalk
-	 * @covers ::appliesToPage
-	 * @covers ::appliesToNamespace
-	 */
 	public function testBlockAppliesToUsertalk() {
 		$this->overrideConfigValues( [
 			MainConfigNames::BlockAllowsUTEdit => true,
@@ -201,12 +183,9 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 		] );
 
 		$this->assertTrue( $block->appliesToUsertalk( $title ) );
-
-		$this->deleteBlocks( $blocks );
 	}
 
 	/**
-	 * @covers ::appliesToRight
 	 * @dataProvider provideTestBlockAppliesToRight
 	 */
 	public function testBlockAppliesToRight( $applies, $expected ) {
@@ -231,7 +210,7 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 		return $mockBlock;
 	}
 
-	public function provideTestBlockAppliesToRight() {
+	public static function provideTestBlockAppliesToRight() {
 		return [
 			'Block does not apply if no original blocks apply' => [
 				[ false, false ],
@@ -256,57 +235,57 @@ class CompositeBlockTest extends MediaWikiLangTestCase {
 		];
 	}
 
-	/**
-	 * AbstractBlock::getPermissionsError is deprecated. Block errors are tested
-	 * properly in BlockErrorFormatterTest::testGetMessage.
-	 *
-	 * @covers ::getPermissionsError
-	 */
-	public function testGetPermissionsError() {
-		$timestamp = '20000101000000';
+	public function testTimestamp() {
+		$timestamp = 20000101000000;
 
-		$compositeBlock = new CompositeBlock( [
-			'timestamp' => $timestamp,
-			'originalBlocks' => [
-				new SystemBlock( [
-					'systemBlock' => 'test1',
-				] ),
-				new SystemBlock( [
-					'systemBlock' => 'test2',
-				] )
-			]
+		$firstBlock = $this->createMock( DatabaseBlock::class );
+		$firstBlock->method( 'getTimestamp' )
+			->willReturn( (string)$timestamp );
+
+		$secondBlock = $this->createMock( DatabaseBlock::class );
+		$secondBlock->method( 'getTimestamp' )
+			->willReturn( (string)( $timestamp + 10 ) );
+
+		$thirdBlock = $this->createMock( DatabaseBlock::class );
+		$thirdBlock->method( 'getTimestamp' )
+			->willReturn( (string)( $timestamp + 100 ) );
+
+		$block = new CompositeBlock( [
+			'originalBlocks' => [ $thirdBlock, $firstBlock, $secondBlock ],
+		] );
+		$this->assertSame( (string)$timestamp, $block->getTimestamp() );
+	}
+
+	public function testCreateFromBlocks() {
+		$block1 = new SystemBlock( [
+			'address' => '127.0.0.1',
+			'systemBlock' => 'test1',
+		] );
+		$block2 = new SystemBlock( [
+			'address' => '127.0.0.1',
+			'systemBlock' => 'test2',
+		] );
+		$block3 = new SystemBlock( [
+			'address' => '127.0.0.1',
+			'systemBlock' => 'test3',
 		] );
 
-		$context = new DerivativeContext( RequestContext::getMain() );
-		$request = $this->getMockBuilder( FauxRequest::class )
-			->onlyMethods( [ 'getIP' ] )
-			->getMock();
-		$request->method( 'getIP' )
-			->willReturn( '1.2.3.4' );
-		$context->setRequest( $request );
+		$compositeBlock = CompositeBlock::createFromBlocks( $block1, $block2 );
+		$this->assertInstanceOf( CompositeBlock::class, $compositeBlock );
+		$this->assertCount( 2, $compositeBlock->getOriginalBlocks() );
+		[ $actualBlock1, $actualBlock2 ] = $compositeBlock->getOriginalBlocks();
+		$this->assertSame( $block1->getSystemBlockType(), $actualBlock1->getSystemBlockType() );
+		$this->assertSame( $block2->getSystemBlockType(), $actualBlock2->getSystemBlockType() );
+		$this->assertSame( 'blockedtext-composite-reason',
+			$compositeBlock->getReasonComment()->message->getKey() );
+		$this->assertSame( '127.0.0.1', $compositeBlock->getTargetName() );
 
-		$formatter = $this->getServiceContainer()->getBlockErrorFormatter();
-		$message = $formatter->getMessage(
-			$compositeBlock,
-			$context->getUser(),
-			$context->getLanguage(),
-			$context->getRequest()->getIP()
-		);
-
-		$this->assertSame( 'blockedtext-composite', $message->getKey() );
-		$this->assertSame(
-			[
-				'',
-				'no reason given',
-				'1.2.3.4',
-				'',
-				'Your IP address appears in multiple blocklists',
-				'infinite',
-				'',
-				'00:00, 1 January 2000',
-			],
-			$message->getParams()
-		);
+		$compositeBlock2 = CompositeBlock::createFromBlocks( $compositeBlock, $block3 );
+		$this->assertCount( 3, $compositeBlock2->getOriginalBlocks() );
+		[ $actualBlock1, $actualBlock2, $actualBlock3 ] = $compositeBlock2->getOriginalBlocks();
+		$this->assertSame( $block1->getSystemBlockType(), $actualBlock1->getSystemBlockType() );
+		$this->assertSame( $block2->getSystemBlockType(), $actualBlock2->getSystemBlockType() );
+		$this->assertSame( $block3->getSystemBlockType(), $actualBlock3->getSystemBlockType() );
 	}
 
 	/**

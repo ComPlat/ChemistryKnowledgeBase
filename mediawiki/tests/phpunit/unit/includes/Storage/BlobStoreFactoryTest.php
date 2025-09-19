@@ -9,7 +9,7 @@ use MediaWiki\Storage\BlobStore;
 use MediaWiki\Storage\BlobStoreFactory;
 use MediaWiki\Storage\SqlBlobStore;
 use MediaWikiUnitTestCase;
-use WANObjectCache;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\ILBFactory;
 use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\TestingAccessWrapper;
@@ -36,7 +36,7 @@ class BlobStoreFactoryTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideDbDomains() {
+	public static function provideDbDomains() {
 		yield [ false ];
 		yield [ 'someWiki' ];
 	}

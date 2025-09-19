@@ -1,8 +1,9 @@
 <?php
 
-namespace MediaWiki\ParamValidator\TypeDef;
+namespace MediaWiki\Tests\ParamValidator\TypeDef;
 
 use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\ParamValidator\TypeDef\UserDef;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
@@ -10,24 +11,25 @@ use MediaWiki\User\UserIdentityValue;
 use Wikimedia\Message\DataMessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\SimpleCallbacks;
-use Wikimedia\ParamValidator\TypeDef\TypeDefTestCase;
 use Wikimedia\ParamValidator\ValidationException;
 
 /**
- * @covers MediaWiki\ParamValidator\TypeDef\UserDef
+ * @covers \MediaWiki\ParamValidator\TypeDef\UserDef
  */
-class UserDefTest extends TypeDefTestCase {
+class UserDefTest extends TypeDefUnitTestCase {
 	use DummyServicesTrait;
 
 	protected function getInstance( SimpleCallbacks $callbacks, array $options ) {
 		// The UserIdentityLookup that we have knows about 5 users, with ids
-		// 1 through 5 and names starting with the first 5 letters of the alphabet:
+		// 1 through 5 and names starting with the first 5 letters of the alphabet
+		// And 1 temporary account with a larger id separate from this pattern:
 		$namesToIds = [
 			'Adam Smith' => 1,
 			'Becca' => 2,
 			'Charlie' => 3,
 			'Danny' => 4,
 			'Emma' => 5,
+			'*Unregistered 1' => 100,
 		];
 		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
 		$userIdentityLookup->method( 'getUserIdentityByName' )->willReturnCallback(
@@ -79,6 +81,7 @@ class UserDefTest extends TypeDefTestCase {
 			'Basic' => [ 'name', 'Adam Smith', 'Adam Smith' ],
 			'Normalized' => [ 'name', 'adam_Smith', 'Adam Smith' ],
 			'External' => [ 'interwiki', 'm>some_user', 'm>some_user' ],
+			'Temporary user' => [ 'temp', '*Unregistered 1', '*Unregistered 1' ],
 			'IPv4' => [ 'ip', '192.168.0.1', '192.168.0.1' ],
 			'IPv4, normalized' => [ 'ip', '192.168.000.001', '192.168.0.1' ],
 			'IPv6' => [ 'ip', '2001:DB8:0:0:0:0:0:0', '2001:DB8:0:0:0:0:0:0' ],
@@ -116,7 +119,7 @@ class UserDefTest extends TypeDefTestCase {
 				[ UserDef::PARAM_ALLOWED_USER_TYPES => [ $type ] ],
 			];
 
-			$types = array_diff( [ 'name', 'ip', 'cidr', 'interwiki' ], [ $type ] );
+			$types = array_diff( [ 'name', 'ip', 'temp', 'cidr', 'interwiki' ], [ $type ] );
 			yield "$key, without '$type' allowed" => [
 				$input,
 				$ex,
@@ -130,6 +133,9 @@ class UserDefTest extends TypeDefTestCase {
 				// UserIdentityValue object since the name and id are both
 				// known (id is 0 for all)
 				$obj = UserIdentityValue::newAnonymous( $expect );
+			} elseif ( $type === 'temp' ) {
+				// The 1 temp user has an id of 100
+				$obj = new UserIdentityValue( 100, $expect );
 			} else {
 				// Creating from name, we are only testing for "Adam Smith"
 				// so the id will be 1
@@ -178,6 +184,14 @@ class UserDefTest extends TypeDefTestCase {
 				yield "T232672: U+200E at position $i for $key" => [ $input, $expect ?? $input ];
 			}
 		}
+
+		yield 'Not a string' => [
+			[ 1, 2, 3 ],
+			new ValidationException(
+				DataMessageValue::new( 'paramvalidator-needstring', [], 'needstring' ),
+				'test', '', []
+			)
+		];
 	}
 
 	public function provideNormalizeSettings() {
@@ -186,7 +200,7 @@ class UserDefTest extends TypeDefTestCase {
 				[ 'param-foo' => 'bar' ],
 				[
 					'param-foo' => 'bar',
-					UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name', 'ip', 'cidr', 'interwiki' ],
+					UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name', 'ip', 'temp', 'cidr', 'interwiki' ],
 				],
 			],
 			'Types not overridden' => [
@@ -361,10 +375,10 @@ class UserDefTest extends TypeDefTestCase {
 			'Basic test' => [
 				[],
 				[
-					'subtypes' => [ 'name', 'ip', 'cidr', 'interwiki' ],
+					'subtypes' => [ 'name', 'ip', 'temp', 'cidr', 'interwiki' ],
 				],
 				[
-					ParamValidator::PARAM_TYPE => '<message key="paramvalidator-help-type-user"><text>1</text><list listType="text"><text><message key="paramvalidator-help-type-user-subtype-name"></message></text><text><message key="paramvalidator-help-type-user-subtype-ip"></message></text><text><message key="paramvalidator-help-type-user-subtype-cidr"></message></text><text><message key="paramvalidator-help-type-user-subtype-interwiki"></message></text></list><num>4</num></message>',
+					ParamValidator::PARAM_TYPE => '<message key="paramvalidator-help-type-user"><text>1</text><list listType="text"><text><message key="paramvalidator-help-type-user-subtype-name"></message></text><text><message key="paramvalidator-help-type-user-subtype-ip"></message></text><text><message key="paramvalidator-help-type-user-subtype-temp"></message></text><text><message key="paramvalidator-help-type-user-subtype-cidr"></message></text><text><message key="paramvalidator-help-type-user-subtype-interwiki"></message></text></list><num>5</num></message>',
 				],
 			],
 			'Specific types' => [
@@ -411,7 +425,7 @@ class UserDefTest extends TypeDefTestCase {
 		$this->assertUserIdentity( $res, 0, "Unknown user" );
 	}
 
-	public function provideMissingId() {
+	public static function provideMissingId() {
 		yield "0 no longer matches request ip" => [ 0 ];
 		yield "Id with no user" => [ 6 ];
 	}

@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"Afalau",
+			"Ceirios",
 			"Cymrodor",
 			"Lloffiwr",
 			"Pwyll",
-			"Robin Owain",
-			"Afalau"
+			"Robin Owain"
 		]
 	},
 	"abusefilter-desc": "Yn gosod tybiaethau i olygiadau'n awtomatig",
@@ -66,8 +67,8 @@
 	"abusefilter-log-details-privatedetails": "Manylion log preifat",
 	"abusefilter-log-details-ip": "Cyfeiriad IP gwreiddiol",
 	"abusefilter-log-details-checkuser": "Archwilio defnyddiwr",
-	"abusefilter-log-noactions": "Dim",
-	"abusefilter-log-noactions-filter": "Dim",
+	"abusefilter-log-noactions": "dim",
+	"abusefilter-log-noactions-filter": "dim",
 	"abusefilter-log-details-diff": "Newidiadau a wnaed yn y golygiad",
 	"abusefilter-log-linkoncontribs": "log camddefnydd",
 	"abusefilter-log-linkoncontribs-text": "Log camddefnydd ar gyfer {{GENDER:$1|y defnyddiwr hwn}}",
@@ -155,8 +156,8 @@
 	"abusefilter-edit-builder-vars-action": "Gweithred",
 	"abusefilter-edit-builder-vars-newsize": "Maint tudalen newydd",
 	"abusefilter-edit-builder-vars-oldsize": "Hen faint tudalen",
-	"abusefilter-edit-builder-vars-old-content-model": "Hen fodel cynnwys",
 	"abusefilter-edit-builder-vars-new-content-model": "Model cynnwys newydd",
+	"abusefilter-edit-builder-vars-old-content-model": "Hen fodel cynnwys",
 	"abusefilter-edit-builder-vars-page-id": "ID y dudalen",
 	"abusefilter-history-foruser": "Newidiadau gan $1",
 	"abusefilter-history-hidden": "Cudd",
@@ -167,7 +168,7 @@
 	"abusefilter-history-flags": "Fflagiau",
 	"abusefilter-history-comments": "Sylwadau",
 	"abusefilter-history-actions": "Gweithredoedd",
-	"abusefilter-history-backedit": "Nôl i'r golygydd hidlyddion",
+	"abusefilter-history-backedit": "Golygydd hidlyddion",
 	"abusefilter-history-deleted": "Wedi'i ddileu",
 	"abusefilter-history-filterid": "Hidlo",
 	"abusefilter-history-select-legend": "Mireinio chwiliad",
@@ -204,6 +205,15 @@
 	"abusefilter-view-privatedetails-submit": "Gweld manylion preifat",
 	"abusefilter-view-privatedetails-legend": "Gweld manylion preifat",
 	"abusefilter-log-details-id": "ID log",
+	"abusefilter-blocked-domains-notes": "Nodiadau",
+	"abusefilter-blocked-domains-add-submit": "Cyflwyno",
+	"abusefilter-blocked-domains-domain-header": "Parth",
+	"abusefilter-blocked-domains-notes-header": "Nodiadau",
+	"abusefilter-blocked-domains-actions-header": "Gweithredoedd",
+	"abusefilter-blocked-domains-remove": "dileu",
+	"abusefilter-blocked-domains-remove-title": "Dileu parth sydd wedi'i flocio",
+	"abusefilter-blocked-domains-remove-reason": "Rheswm",
+	"abusefilter-blocked-domains-remove-submit": "Dileu",
 	"abusefilter-log-ip-not-available": "Ddim ar gael",
 	"notification-link-text-show-filter": "Dangos hidlydd"
 }

@@ -1,5 +1,16 @@
 # MediaWiki-Phan-Config release history #
 
+## 0.14.0 / 2024-02-03
+* Add plugin to disallow use of `new Exception` (Daimona Eaytoy)
+* Do not emit MediaWikiNoEmptyIfDefined for properties of classes with the AllowDynamicProperties attribute (Daimona Eaytoy)
+* Emit MediaWikiNoEmptyIfDefined for all node types except array element access (Daimona Eaytoy)
+* Upgrade phan to 5.4.3 and mediawiki/phan-taint-check-plugin to 6.0.0 (James D. Forrester)
+
+## 0.13.0 / 2023-09-08
+* Add plugin to forbid `empty()` on defined variables and properties (Daimona Eaytoy)
+* Bump phan to 5.4.2 and taint-check to 5.0.0 (Michael Große)
+* "Auto discovery" of namespaces of wgConf and wgRequest (Amir Sarabadani)
+
 ## 0.12.1 / 2023-04-17
 * Enable PhanCompatibleSerializeInterfaceDeprecated (Umherirrender)
 * Create a separate config file for libraries (Daimona Eaytoy)

@@ -47,7 +47,7 @@ if ($wiki == 'main') {
     global $wgServer;
     $wgForeignFileRepos[] = [
         'class' => ForeignAPIRepo::class,
-        'name' => 'chemmain_139',
+        'name' => $wgSharedDB,
         'apibase' => "$wgServer/main/mediawiki/api.php",
         'url' => "$wgServer/main/images",
         'thumbUrl' => "$wgServer/main/images/thumb",

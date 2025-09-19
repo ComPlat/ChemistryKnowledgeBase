@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Job;
+use MediaWiki\MediaWikiServices;
 
 class PageImportJob extends Job {
 
@@ -34,6 +35,7 @@ class PageImportJob extends Job {
         print "\nbash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1";
         $output = shell_exec("bash $wgWikiFarmBinFolder/runImportInMainContext.sh $tmpFile $title 2>&1");
         $this->logger->debug($output);
-        \Hooks::run('CleanupChemExtState');
+        $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hooksContainer->run('CleanupChemExtState');
     }
 }

@@ -3,11 +3,26 @@
 namespace MediaWiki\Tests\Unit\Permissions;
 
 use MediaWiki\Block\Block;
+use MediaWiki\Block\BlockErrorFormatter;
+use MediaWiki\Block\SystemBlock;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Language\Language;
+use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Permissions\PermissionStatus;
+use MediaWiki\Permissions\RateLimiter;
+use MediaWiki\Permissions\RateLimitSubject;
 use MediaWiki\Permissions\SimpleAuthority;
 use MediaWiki\Permissions\UltimateAuthority;
+use MediaWiki\Permissions\UserAuthority;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Request\WebRequest;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
+use PHPUnit\Framework\MockObject\MockObject;
+use StatusValue;
 
 /**
  * Various useful Authority mocks.
@@ -22,6 +37,15 @@ trait MockAuthorityTrait {
 	 */
 	private function mockAnonUltimateAuthority(): Authority {
 		return new UltimateAuthority( new UserIdentityValue( 0, '127.0.0.1' ) );
+	}
+
+	/**
+	 * Create mock ultimate Authority for a temp user.
+	 *
+	 * @return Authority
+	 */
+	private function mockTempUltimateAuthority(): Authority {
+		return new UltimateAuthority( new UserIdentityValue( 42, '~2024-1' ), true );
 	}
 
 	/**
@@ -40,6 +64,15 @@ trait MockAuthorityTrait {
 	 */
 	private function mockAnonNullAuthority(): Authority {
 		return new SimpleAuthority( new UserIdentityValue( 0, '127.0.0.1' ), [] );
+	}
+
+	/**
+	 * Create mock Authority for a temp user with no permissions.
+	 *
+	 * @return Authority
+	 */
+	private function mockTempNullAuthority(): Authority {
+		return new SimpleAuthority( new UserIdentityValue( 42, '~2024-1' ), [], true );
 	}
 
 	/**
@@ -62,6 +95,16 @@ trait MockAuthorityTrait {
 	}
 
 	/**
+	 * Create a mock Authority for a temp user with $permissions.
+	 *
+	 * @param array $permissions
+	 * @return Authority
+	 */
+	private function mockTempAuthorityWithPermissions( array $permissions ): Authority {
+		return new SimpleAuthority( new UserIdentityValue( 42, '~2024-1' ), $permissions, true );
+	}
+
+	/**
 	 * Create a mock Authority for a registered user with $permissions.
 	 *
 	 * @param array $permissions
@@ -76,13 +119,15 @@ trait MockAuthorityTrait {
 	 *
 	 * @param UserIdentity $user
 	 * @param array $permissions
+	 * @param bool $isTemp
 	 * @return Authority
 	 */
 	private function mockUserAuthorityWithPermissions(
 		UserIdentity $user,
-		array $permissions
+		array $permissions,
+		bool $isTemp = false
 	): Authority {
-		return new SimpleAuthority( $user, $permissions );
+		return new SimpleAuthority( $user, $permissions, $isTemp );
 	}
 
 	/**
@@ -91,20 +136,23 @@ trait MockAuthorityTrait {
 	 * @param UserIdentity $user
 	 * @param Block $block
 	 * @param array $permissions
+	 * @param bool $isTemp
 	 *
 	 * @return Authority
 	 */
 	private function mockUserAuthorityWithBlock(
 		UserIdentity $user,
 		Block $block,
-		array $permissions = []
+		array $permissions = [],
+		bool $isTemp = false
 	): Authority {
 		return $this->mockAuthority(
 			$user,
 			static function ( $permission ) use ( $permissions ) {
 				return in_array( $permission, $permissions );
 			},
-			$block
+			$block,
+			$isTemp
 		);
 	}
 
@@ -117,6 +165,19 @@ trait MockAuthorityTrait {
 		return $this->mockUserAuthorityWithoutPermissions(
 			new UserIdentityValue( 0, '127.0.0.1' ),
 			$permissions
+		);
+	}
+
+	/**
+	 * Create a mock Authority for a temp user with all but $permissions
+	 * @param array $permissions
+	 * @return Authority
+	 */
+	private function mockTempAuthorityWithoutPermissions( array $permissions ): Authority {
+		return $this->mockUserAuthorityWithoutPermissions(
+			new UserIdentityValue( 42, '~2024-1' ),
+			$permissions,
+			true
 		);
 	}
 
@@ -136,17 +197,21 @@ trait MockAuthorityTrait {
 	 * Create a mock Authority for a $user with all but $permissions
 	 * @param UserIdentity $user
 	 * @param array $permissions
+	 * @param bool $isTemp
 	 * @return Authority
 	 */
 	private function mockUserAuthorityWithoutPermissions(
 		UserIdentity $user,
-		array $permissions
+		array $permissions,
+		bool $isTemp = false
 	): Authority {
 		return $this->mockAuthority(
 			$user,
 			static function ( $permission ) use ( $permissions ) {
 				return !in_array( $permission, $permissions );
-			}
+			},
+			null,
+			$isTemp
 		);
 	}
 
@@ -160,6 +225,21 @@ trait MockAuthorityTrait {
 		return $this->mockAuthority(
 			new UserIdentityValue( 0, '127.0.0.1' ),
 			$permissionCallback
+		);
+	}
+
+	/**
+	 * Create mock Authority for a temp user where permissions are determined by $callback.
+	 *
+	 * @param callable $permissionCallback
+	 * @return Authority
+	 */
+	private function mockTempAuthority( callable $permissionCallback ): Authority {
+		return $this->mockAuthority(
+			new UserIdentityValue( 42, '~2024-1' ),
+			$permissionCallback,
+			null,
+			true
 		);
 	}
 
@@ -182,13 +262,15 @@ trait MockAuthorityTrait {
 	 * @param UserIdentity $user
 	 * @param callable $permissionCallback ( string $permission, PageIdentity $page = null )
 	 * @param Block|null $block
+	 * @param bool $isTemp
 	 *
 	 * @return Authority
 	 */
 	private function mockAuthority(
 		UserIdentity $user,
 		callable $permissionCallback,
-		Block $block = null
+		?Block $block = null,
+		bool $isTemp = false
 	): Authority {
 		$mock = $this->createMock( Authority::class );
 		$mock->method( 'getUser' )->willReturn( $user );
@@ -215,6 +297,188 @@ trait MockAuthorityTrait {
 				return true;
 			} );
 		$mock->method( 'getBlock' )->willReturn( $block );
+		$mock->method( 'isTemp' )->willReturn( $isTemp );
+		$mock->method( 'isNamed' )->willReturn( $user->isRegistered() && !$isTemp );
 		return $mock;
+	}
+
+	/** @return string[] Some dummy message parameters to test error message formatting. */
+	private function getFakeBlockMessageParams(): array {
+		return [
+			'[[User:Blocker|Blocker]]',
+			'Block reason that can contain {{templates}}',
+			'192.168.0.1',
+			'Blocker',
+		];
+	}
+
+	/**
+	 * @param bool $limited
+	 * @return RateLimiter
+	 */
+	private function newRateLimiter( $limited = false ): RateLimiter {
+		/** @var RateLimiter&MockObject $rateLimiter */
+		$rateLimiter = $this->createNoOpMock(
+			RateLimiter::class,
+			[ 'limit', 'isLimitable' ]
+		);
+
+		$rateLimiter->method( 'limit' )->willReturn( $limited );
+		$rateLimiter->method( 'isLimitable' )->willReturn( true );
+
+		return $rateLimiter;
+	}
+
+	/**
+	 * @param string[] $permissions
+	 * @return PermissionManager
+	 */
+	private function newPermissionsManager( array $permissions ): PermissionManager {
+		/** @var PermissionManager&MockObject $permissionManager */
+		$permissionManager = $this->createNoOpMock(
+			PermissionManager::class,
+			[
+				'userHasRight',
+				'userHasAnyRight',
+				'userHasAllRights',
+				'userCan',
+				'getPermissionStatus',
+				'getPermissionErrors',
+				'isBlockedFrom',
+				'getApplicableBlock',
+				'newFatalPermissionDeniedStatus',
+			]
+		);
+
+		$permissionManager->method( 'userHasRight' )->willReturnCallback(
+			static function ( $user, $permission ) use ( $permissions ) {
+				return in_array( $permission, $permissions );
+			}
+		);
+
+		$permissionManager->method( 'userHasAnyRight' )->willReturnCallback(
+			static function ( $user, ...$actions ) use ( $permissions ) {
+				return array_diff( $actions, $permissions ) != $actions;
+			}
+		);
+
+		$permissionManager->method( 'userHasAllRights' )->willReturnCallback(
+			static function ( $user, ...$actions ) use ( $permissions ) {
+				return !array_diff( $actions, $permissions );
+			}
+		);
+
+		$permissionManager->method( 'userCan' )->willReturnCallback(
+			static function ( $permission, $user ) use ( $permissionManager ) {
+				return $permissionManager->userHasRight( $user, $permission );
+			}
+		);
+
+		$fakeBlockMessageParams = $this->getFakeBlockMessageParams();
+		// If the user has a block, the block applies to all actions except for 'read'
+		$permissionManager->method( 'getPermissionStatus' )->willReturnCallback(
+			static function ( $permission, $user, $target ) use ( $permissionManager, $fakeBlockMessageParams ) {
+				$status = PermissionStatus::newEmpty();
+				if ( !$permissionManager->userCan( $permission, $user, $target ) ) {
+					$status->fatal( 'permissionserrors' );
+				}
+				if ( $user->getBlock() && $permission !== 'read' ) {
+					$status->fatal( 'blockedtext-partial', ...$fakeBlockMessageParams );
+				}
+				return $status;
+			}
+		);
+
+		$permissionManager->method( 'getPermissionErrors' )->willReturnCallback(
+			static function ( $permission, $user, $target ) use ( $permissionManager, $fakeBlockMessageParams ) {
+				return $permissionManager
+					->getPermissionStatus( $permission, $user, $target )
+					->toLegacyErrorArray();
+			}
+		);
+
+		$permissionManager->method( 'newFatalPermissionDeniedStatus' )->willReturnCallback(
+			static function ( $permission, $context ) use ( $permissionManager ) {
+				return StatusValue::newFatal( 'permissionserrors' );
+			}
+		);
+
+		// If the page's title is "Forbidden", will return a SystemBlock. Likewise,
+		// if the action is 'blocked', this will return a SystemBlock.
+		$permissionManager->method( 'getApplicableBlock' )->willReturnCallback(
+			static function ( $action, User $user, $rigor, $page ) {
+				if ( $page && $page->getDBkey() === 'Forbidden' ) {
+					return new SystemBlock();
+				}
+
+				if ( $action === 'blocked' ) {
+					return new SystemBlock();
+				}
+
+				return null;
+			}
+		);
+
+		$permissionManager->method( 'isBlockedFrom' )->willReturnCallback(
+			static function ( User $user, $page ) {
+				return $page->getDBkey() === 'Forbidden';
+			}
+		);
+
+		return $permissionManager;
+	}
+
+	private function newUser( ?Block $block = null, bool $isTemp = false ): User {
+		/** @var User&MockObject $actor */
+		$actor = $this->createNoOpMock( User::class, [ 'getBlock', 'isNewbie', 'toRateLimitSubject' ] );
+		$actor->method( 'getBlock' )->willReturn( $block );
+		$actor->method( 'isNewbie' )->willReturn( false );
+		$actor->method( 'isTemp' )->willReturn( $isTemp );
+		$actor->method( 'isNamed' )->willReturn( !$isTemp );
+
+		$subject = new RateLimitSubject( $actor, '::1', [] );
+		$actor->method( 'toRateLimitSubject' )->willReturn( $subject );
+		return $actor;
+	}
+
+	private function newBlockErrorFormatter(): BlockErrorFormatter {
+		$blockErrorFormatter = $this->createNoOpMock( BlockErrorFormatter::class, [ 'getMessages' ] );
+		$blockErrorFormatter->method( 'getMessages' )->willReturn( [ new Message( 'blocked' ) ] );
+		return $blockErrorFormatter;
+	}
+
+	private function newContext(): IContextSource {
+		$language = $this->createNoOpMock( Language::class, [ 'getCode' ] );
+		$language->method( 'getCode' )->willReturn( 'en' );
+
+		$context = $this->createNoOpMock( IContextSource::class, [ 'getLanguage' ] );
+		$context->method( 'getLanguage' )->willReturn( $language );
+		return $context;
+	}
+
+	private function newRequest(): WebRequest {
+		$request = new FauxRequest();
+		$request->setIP( '1.2.3.4' );
+		return $request;
+	}
+
+	private function newUserAuthority( array $options = [] ): UserAuthority {
+		$permissionManager = $options['permissionManager']
+			?? $this->newPermissionsManager( $options['permissions'] ?? [] );
+
+		$rateLimiter = $options['rateLimiter']
+			?? $this->newRateLimiter( $options['limited'] ?? false );
+
+		$blockErrorFormatter = $options['blockErrorFormatter']
+			?? $this->newBlockErrorFormatter();
+
+		return new UserAuthority(
+			$options['actor'] ?? $this->newUser(),
+			$options['request'] ?? $this->newRequest(),
+			$options['context'] ?? $this->newContext(),
+			$permissionManager,
+			$rateLimiter,
+			$blockErrorFormatter
+		);
 	}
 }

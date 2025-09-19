@@ -11,7 +11,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"namespaces": [
 		{
@@ -57,6 +57,7 @@
 		"JsonSchemaException": "includes/Libs/JsonSchemaValidation/JsonSchemaException.php",
 		"MediaWiki\\Extension\\EventLogging\\EventLogging": "includes/EventLogging.php",
 		"MediaWiki\\Extension\\EventLogging\\Libs\\JsonSchemaValidation\\JsonSchemaException": "includes/Libs/JsonSchemaValidation/JsonSchemaException.php",
+		"MediaWiki\\Extension\\EventLogging\\Libs\\Legacy\\EventLoggingLegacyConverter": "includes/Libs/Legacy/EventLoggingLegacyConverter.php",
 		"MediaWiki\\Extension\\EventLogging\\Libs\\UserBucketProvider\\UserBucketProvider": "includes/Libs/UserBucketProvider/UserBucketProvider.php",
 		"UserBucketProvider": "includes/Libs/UserBucketProvider/UserBucketProvider.php"
 	},
@@ -79,17 +80,17 @@
 				"lib/metrics-platform/ContextUtils.js",
 				"lib/metrics-platform/ContextController.js",
 				"lib/metrics-platform/CurationController.js",
+				"lib/metrics-platform/DefaultEventSubmitter.js",
+				"lib/metrics-platform/Instrument.js",
 				"lib/metrics-platform/MetricsClient.js",
 				"lib/metrics-platform/SamplingController.js",
-				"ext.eventLogging/MediaWikiMetricsClientIntegration.js"
+				"lib/metrics-platform/StreamConfigUtils.js",
+				"ext.eventLogging/MediaWikiMetricsClientIntegration.js",
+				"ext.eventLogging/EventSubmitter.js"
 			],
 			"dependencies": [
 				"mediawiki.user",
 				"user.options"
-			],
-			"targets": [
-				"desktop",
-				"mobile"
 			]
 		},
 		"ext.eventLogging.debug": {
@@ -103,10 +104,6 @@
 						"EventLoggingSchemaApiUri"
 					]
 				}
-			],
-			"targets": [
-				"desktop",
-				"mobile"
 			]
 		},
 		"ext.eventLogging.jsonSchema": {
@@ -116,6 +113,7 @@
 			"styles": "modules/ext.eventLogging.jsonSchema.styles/jsonSchema.css"
 		}
 	},
+	"ForeignResourcesDir": "modules/lib",
 	"ResourceFileModulePaths": {
 		"localBasePath": "",
 		"remoteExtPath": "EventLogging"
@@ -130,6 +128,7 @@
 			"tests/qunit/ext.eventLogging/log.test.js",
 			"tests/qunit/ext.eventLogging/stream.test.js",
 			"tests/qunit/ext.eventLogging/utils.test.js",
+			"tests/qunit/ext.eventLogging/MediaWikiMetricsClientIntegration.test.js",
 			"tests/qunit/ext.eventLogging.debug/debug.test.js"
 		],
 		"dependencies": [
@@ -138,16 +137,27 @@
 		]
 	},
 	"Hooks": {
-		"CanonicalNamespaces": "MediaWiki\\Extension\\EventLogging\\Hooks::onCanonicalNamespaces",
+		"CanonicalNamespaces": "main",
 		"BeforePageDisplay": [
-			"MediaWiki\\Extension\\EventLogging\\Hooks::onBeforePageDisplay",
-			"MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onBeforePageDisplay"
+			"main",
+			"jsonschema"
 		],
-		"GetPreferences": "MediaWiki\\Extension\\EventLogging\\Hooks::onGetPreferences",
+		"GetPreferences": "main",
 		"CodeEditorGetPageLanguage": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onCodeEditorGetPageLanguage",
-		"EditFilterMergedContent": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onEditFilterMergedContent",
-		"MovePageIsValidMove": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onMovePageIsValidMove",
-		"ApiMain::moduleManager": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks::onApiMainModuleManager"
+		"EditFilterMergedContent": "jsonschema",
+		"MovePageIsValidMove": "jsonschema",
+		"ApiMain::moduleManager": "jsonschema"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\EventLogging\\Hooks",
+			"services": [
+				"UserOptionsLookup"
+			]
+		},
+		"jsonschema": {
+			"class": "MediaWiki\\Extension\\EventLogging\\JsonSchemaHooks"
+		}
 	},
 	"config": {
 		"EventLoggingBaseUri": {
@@ -177,5 +187,9 @@
 			"description": "Number of seconds EventLogging should wait to batch messages before sending them to the intake service."
 		}
 	},
-	"manifest_version": 2
+	"load_composer_autoloader": true,
+	"manifest_version": 2,
+	"ServiceWiringFiles": [
+		"ServiceWiring.php"
+	]
 }

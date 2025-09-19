@@ -2,8 +2,10 @@
 .*.swp
 /tests/suite.php
 /node_modules/
-/docs/
+/docs/*
+!/docs/images
 /composer.lock
 /vendor
 .eslintcache
 /modules/lib/.foreign
+/.stylelintcache

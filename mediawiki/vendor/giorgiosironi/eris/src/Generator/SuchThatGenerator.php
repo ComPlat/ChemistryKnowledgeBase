@@ -2,31 +2,35 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 use LogicException;
-use PHPUnit_Framework_Constraint;
 use PHPUnit\Framework\Constraint\Constraint;
-use PHPUnit_Framework_ExpectationFailedException;
 use PHPUnit\Framework\ExpectationFailedException;
 use Traversable;
 
 /**
- * @param callable|PHPUnit_Framework_Constraint $filter
+ * @param callable|Constraint $filter
  * @return SuchThatGenerator
  */
 function filter($filter, Generator $generator, $maximumAttempts = 100)
 {
-    return suchThat($filter, $generator, $maximumAttempts);
+    return Generators::suchThat($filter, $generator, $maximumAttempts);
 }
 
 /**
- * @param callable|PHPUnit_Framework_Constraint $filter
+ * @param callable|Constraint $filter
  * @return SuchThatGenerator
  */
 function suchThat($filter, Generator $generator, $maximumAttempts = 100)
 {
-    return new SuchThatGenerator($filter, $generator, $maximumAttempts);
+    return Generators::suchThat($filter, $generator, $maximumAttempts);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<T>
+ */
 class SuchThatGenerator implements Generator
 {
     private $filter;
@@ -34,7 +38,7 @@ class SuchThatGenerator implements Generator
     private $maximumAttempts;
     
     /**
-     * @param callable|PHPUnit_Framework_Constraint
+     * @param callable|Constraint
      */
     public function __construct($filter, $generator, $maximumAttempts = 100)
     {
@@ -43,7 +47,7 @@ class SuchThatGenerator implements Generator
         $this->maximumAttempts = $maximumAttempts;
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         $value = $this->generator->__invoke($size, $rand);
         $attempts = 0;
@@ -57,7 +61,7 @@ class SuchThatGenerator implements Generator
         return $value;
     }
 
-    public function shrink(GeneratedValueSingle $value)
+    public function shrink(GeneratedValue $value)
     {
         $shrunk = $this->generator->shrink($value);
         $attempts = 0;
@@ -87,12 +91,10 @@ class SuchThatGenerator implements Generator
 
     private function predicate(GeneratedValueSingle $value)
     {
-        if ($this->filter instanceof PHPUnit_Framework_Constraint || $this->filter instanceof Constraint) {
+        if ($this->filter instanceof Constraint) {
             try {
                 $this->filter->evaluate($value->unbox());
                 return true;
-            } catch (PHPUnit_Framework_ExpectationFailedException $e) {
-                return false;
             } catch (ExpectationFailedException $e) {
                 return false;
             }

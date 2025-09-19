@@ -1,11 +1,11 @@
 <?php
 
-require_once __DIR__ . '/LuaUstringLibraryTest.php';
+namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon;
 
 /**
  * @coversNothing -- Covers Lua code
  */
-class Scribunto_LuaUstringLibraryPureLuaTest extends Scribunto_LuaUstringLibraryTest {
+class UstringLibraryPureLuaTest extends UstringLibraryTest {
 	protected function setUp(): void {
 		parent::setUp();
 

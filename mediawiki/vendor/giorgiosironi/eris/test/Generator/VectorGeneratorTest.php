@@ -1,9 +1,37 @@
 <?php
 namespace Eris\Generator;
 
-class VectorGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class VectorGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $vectorSize;
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var ChooseGenerator
+     */
+    private $elementGenerator;
+    /**
+     * @var VectorGenerator
+     */
+    private $vectorGenerator;
+    /**
+     * @var \Closure
+     */
+    private $sum;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->vectorSize = rand(5, 10);
         $this->size = 10;
@@ -13,15 +41,17 @@ class VectorGeneratorTest extends \PHPUnit_Framework_TestCase
             $acc = $acc + $item;
             return $acc;
         };
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
     public function testGeneratesVectorWithGivenSizeAndElementsFromGivenGenerator()
     {
         $generator = $this->vectorGenerator;
+        /** @var GeneratedValue $vector */
         $vector = $generator($this->size, $this->rand);
+        self::assertInstanceOf(GeneratedValue::class, $vector);
 
-        $this->assertSame($this->vectorSize, count($vector->unbox()));
+        $this->assertCount($this->vectorSize, $vector->unbox());
         foreach ($vector->unbox() as $element) {
             $this->assertGreaterThanOrEqual(1, $element);
             $this->assertLessThanOrEqual(10, $element);

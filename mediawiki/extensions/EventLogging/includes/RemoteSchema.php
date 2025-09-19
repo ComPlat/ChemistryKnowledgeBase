@@ -2,13 +2,12 @@
 
 namespace MediaWiki\Extension\EventLogging;
 
-use BagOStuff;
-use FormatJson;
 use JsonSerializable;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
-use ObjectCache;
 use stdClass;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * Represents a schema revision on a remote wiki.
@@ -18,11 +17,17 @@ class RemoteSchema implements JsonSerializable {
 
 	public const LOCK_TIMEOUT = 20;
 
+	/** @var string */
 	public $title;
+	/** @var int */
 	public $revision;
+	/** @var BagOStuff */
 	public $cache;
+	/** @var HttpRequestFactory */
 	public $httpRequestFactory;
+	/** @var string */
 	public $key;
+	/** @var array|false */
 	public $content = false;
 
 	/**
@@ -37,7 +42,8 @@ class RemoteSchema implements JsonSerializable {
 
 		$this->title = $title;
 		$this->revision = $revision;
-		$this->cache = $cache ?: ObjectCache::getInstance( CACHE_ANYTHING );
+		$this->cache = $cache ?: MediaWikiServices::getInstance()
+			->getObjectCacheFactory()->getInstance( CACHE_ANYTHING );
 		$this->httpRequestFactory = $httpRequestFactory ?: MediaWikiServices::getInstance()->getHttpRequestFactory();
 		$this->key = $this->cache->makeGlobalKey(
 			'eventlogging-schema',

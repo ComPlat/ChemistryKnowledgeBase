@@ -53,7 +53,7 @@ class UpdateSolrJob extends Job {
 			}
 		}
 		if ( $consoleMode ) {
-			echo "Updated (SOLR): $title";
+			echo "Updated (SOLR): $title\n";
 		}
 	}
 	

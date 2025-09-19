@@ -1,7 +1,7 @@
 <?php
 
-use MediaWiki\Auth\AuthenticationRequestTestCase;
 use MediaWiki\Extension\TitleBlacklist\TitleBlacklistAuthenticationRequest;
+use MediaWiki\Tests\Auth\AuthenticationRequestTestCase;
 
 /**
  * @covers \MediaWiki\Extension\TitleBlacklist\TitleBlacklistAuthenticationRequest
@@ -11,7 +11,7 @@ class TitleBlacklistAuthenticationRequestTest extends AuthenticationRequestTestC
 		return new TitleBlacklistAuthenticationRequest();
 	}
 
-	public function provideLoadFromSubmission() {
+	public static function provideLoadFromSubmission() {
 		return [
 			'empty' => [ [], [], [ 'ignoreTitleBlacklist' => false ] ],
 			'true' => [ [], [ 'ignoreTitleBlacklist' => '1' ], [ 'ignoreTitleBlacklist' => true ] ],

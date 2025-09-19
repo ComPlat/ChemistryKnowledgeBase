@@ -3,6 +3,7 @@
 namespace MediaWiki\Tests\User\TempUser;
 
 use MediaWiki\User\TempUser\ScrambleMapping;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -10,6 +11,9 @@ use PHPUnit\Framework\TestCase;
  */
 class ScrambleMappingTest extends TestCase {
 	public function testMap() {
+		if ( !extension_loaded( 'gmp' ) && !extension_loaded( 'bcmath' ) ) {
+			$this->markTestSkipped( 'need extension gmp or bcmath' );
+		}
 		$map = new ScrambleMapping( [] );
 		$duplicates = 0;
 		// This has been verified up to 1e8 but for CI purposes we will use 200
@@ -27,5 +31,11 @@ class ScrambleMappingTest extends TestCase {
 			$bitArray[$major] = chr( $newBits );
 		}
 		$this->assertSame( 0, $duplicates, 'duplicate detected' );
+	}
+
+	public function testOffsetTooLarge() {
+		$map = new ScrambleMapping( [ 'offset' => 10 ] );
+		$this->expectException( OutOfBoundsException::class );
+		$map->getSerialIdForIndex( 1 );
 	}
 }

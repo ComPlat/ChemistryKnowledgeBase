@@ -11,14 +11,12 @@
 
 namespace MediaWiki\Extension\EventLogging;
 
-use FormatJson;
-use Html;
-use JsonContent;
-use JsonSchemaException;
-use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Content\JsonContent;
+use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
+use MediaWiki\Html\Html;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Revision\RevisionLookup;
-use Xml;
+use MediaWiki\Xml\Xml;
 
 /**
  * Represents the content of a JSON Schema article.
@@ -27,17 +25,8 @@ class JsonSchemaContent extends JsonContent {
 
 	private const DEFAULT_RECURSION_LIMIT = 3;
 
-	/** @var RevisionLookup */
-	private $revisionLookup;
-
-	/** @var LinkRenderer */
-	private $linkRenderer;
-
 	public function __construct( $text, $modelId = 'JsonSchema' ) {
 		parent::__construct( $text, $modelId );
-		$services = MediaWikiServices::getInstance();
-		$this->revisionLookup = $services->getRevisionLookup();
-		$this->linkRenderer = $services->getLinkRenderer();
 	}
 
 	/**
@@ -46,7 +35,7 @@ class JsonSchemaContent extends JsonContent {
 	 * @return array|bool
 	 */
 	public static function resolve( $ref ) {
-		list( $title, $revId ) = explode( '/', $ref );
+		[ $title, $revId ] = explode( '/', $ref );
 		$rs = new RemoteSchema( $title, (int)$revId );
 		return $rs->get();
 	}
@@ -112,11 +101,13 @@ class JsonSchemaContent extends JsonContent {
 		if ( $key === '$ref' ) {
 			$valParts = explode( '/', $val, 2 );
 			if ( !isset( $valParts[1] ) ) {
+				// Don't store or inject service objects in Content objects
+				// as that breaks serialization (T286610).
+				$services = MediaWikiServices::getInstance();
 				$revId = (int)$valParts[1];
-				$revRecord = $this->revisionLookup->getRevisionById( $revId );
+				$revRecord = $services->getRevisionLookup()->getRevisionById( $revId );
 				$title = $revRecord->getPageAsLinkTarget();
-				$link = $this->linkRenderer->makeLink( $title, $val, [], [ 'oldid' => $revId ] );
-
+				$link = $services->getLinkRenderer()->makeLink( $title, $val, [], [ 'oldid' => $revId ] );
 				$th = Xml::elementClean( 'th', [], $key );
 				$td = Xml::tags( 'td', [ 'class' => 'value' ], $link );
 				return Html::rawElement( 'tr', [], $th . $td );

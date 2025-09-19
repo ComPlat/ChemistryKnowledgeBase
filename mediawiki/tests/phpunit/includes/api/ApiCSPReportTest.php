@@ -1,11 +1,21 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiCSPReport;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
+use MediaWikiIntegrationTestCase;
+use Psr\Log\AbstractLogger;
 
 /**
  * @group API
  * @group medium
- * @covers ApiCSPReport
+ * @covers \MediaWiki\Api\ApiCSPReport
  */
 class ApiCSPReportTest extends MediaWikiIntegrationTestCase {
 
@@ -33,7 +43,7 @@ class ApiCSPReportTest extends MediaWikiIntegrationTestCase {
 					'[report-only] Received CSP report: ' .
 						'<https://blocked.test> blocked from being loaded on <https://doc.test/path>:4',
 					[
-						'method' => 'ApiCSPReport::execute',
+						'method' => ApiCSPReport::class . '::execute',
 						'user_id' => 'logged-out',
 						'user-agent' => 'Test/0.0',
 						'source' => 'internal'
@@ -76,7 +86,7 @@ class ApiCSPReportTest extends MediaWikiIntegrationTestCase {
 
 	private function doExecute( array $params, array $cspReport ) {
 		$log = [];
-		$logger = $this->createMock( Psr\Log\AbstractLogger::class );
+		$logger = $this->createMock( AbstractLogger::class );
 		$logger->method( 'warning' )->willReturnCallback(
 			static function ( $msg, $ctx ) use ( &$log ) {
 				unset( $ctx['csp-report'] );
@@ -96,8 +106,12 @@ class ApiCSPReportTest extends MediaWikiIntegrationTestCase {
 			'User-Agent' => 'Test/0.0'
 		] );
 
+		$services = $this->getServiceContainer();
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setRequest( $req );
+		$main = new ApiMain( $context );
 		$api = $this->getMockBuilder( ApiCSPReport::class )
-			->disableOriginalConstructor()
+			->setConstructorArgs( [ $main, 'mock', $services->getUrlUtils() ] )
 			->onlyMethods( [ 'getParameter', 'getRequest', 'getResult' ] )
 			->getMock();
 		$api->method( 'getParameter' )->willReturnCallback(

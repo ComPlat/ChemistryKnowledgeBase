@@ -2,7 +2,8 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * @param mixed $value  the only value to generate
@@ -10,9 +11,13 @@ use DomainException;
  */
 function constant($value)
 {
-    return ConstantGenerator::box($value);
+    return Generators::constant($value);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<T>
+ */
 class ConstantGenerator implements Generator
 {
     private $value;
@@ -27,12 +32,12 @@ class ConstantGenerator implements Generator
         $this->value = $value;
     }
 
-    public function __invoke($_size, $rand)
+    public function __invoke($_size, RandomRange $rand)
     {
         return GeneratedValueSingle::fromJustValue($this->value, 'constant');
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         return GeneratedValueSingle::fromJustValue($this->value, 'constant');
     }

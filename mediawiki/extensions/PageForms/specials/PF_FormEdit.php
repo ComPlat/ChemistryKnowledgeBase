@@ -8,6 +8,11 @@
  * @ingroup PF
  */
 
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Extension\ConfirmEdit\Hooks;
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -24,13 +29,14 @@ class PFFormEdit extends UnlistedSpecialPage {
 	function execute( $query ) {
 		$this->setHeaders();
 		$this->getOutput()->enableOOUI();
+		$req = $this->getRequest();
 
-		$this->mForm = $this->getRequest()->getText( 'form' );
-		$this->mTarget = $this->getRequest()->getText( 'target' );
+		$this->mForm = $req->getText( 'form' );
+		$this->mTarget = $req->getText( 'target' );
 
 		// if query string did not contain these variables, try the URL
 		if ( !$this->mForm && !$this->mTarget ) {
-			$queryparts = explode( '/', $query, 2 );
+			$queryparts = explode( '/', $query ?? '', 2 );
 			$this->mForm = isset( $queryparts[ 0 ] ) ? $queryparts[ 0 ] : '';
 			$this->mTarget = isset( $queryparts[ 1 ] ) ? $queryparts[ 1 ] : '';
 			$this->mTarget = str_replace( '_', ' ', $this->mTarget );
@@ -39,7 +45,16 @@ class PFFormEdit extends UnlistedSpecialPage {
 		$this->mForm = trim( $this->mForm );
 		$this->mTarget = trim( $this->mTarget );
 
-		$alt_forms = $this->getRequest()->getArray( 'alt_form' );
+		// This enables a @hack where the $wgUploadMissingFileUrl
+		// setting can be used to point red links to files to a form
+		// (which otherwise can't be done).
+		if ( $this->mTarget == '' && $req->getCheck( 'wpDestFile' ) ) {
+			$destFile = $req->getText( 'wpDestFile' );
+			$targetTitle = Title::makeTitleSafe( NS_FILE, $destFile );
+			$this->mTarget = $targetTitle->getFullText();
+		}
+
+		$alt_forms = $req->getArray( 'alt_form' );
 
 		$this->printForm( $this->mForm, $this->mTarget, $alt_forms );
 	}
@@ -133,7 +148,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 		// Override the default title for this page if a title was
 		// specified in the form.
 		$result = $module->getOptions();
-		$targetTitle = Title::newFromText( $result[ 'target' ] );
+		$targetTitle = Title::newFromText( html_entity_decode( $result[ 'target' ] ) );
 
 		// Set page title depending on whether an explicit title was
 		// specified in the form definition, and whether this is a
@@ -150,7 +165,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 		} elseif ( $result[ 'form' ] !== '' ) {
 			if ( empty( $targetName ) ) {
 				$pageTitle = $this->msg( 'pf_formedit_createtitlenotarget', $result[ 'form' ] )->text();
-			} elseif ( $targetTitle->exists() ) {
+			} elseif ( $targetTitle !== null && $targetTitle->exists() ) {
 				$pageTitle = $this->msg( 'pf_formedit_edittitle', $result[ 'form' ], $targetName )->text();
 			} else {
 				$pageTitle = $this->msg( 'pf_formedit_createtitle', $result[ 'form' ], $targetName )->text();
@@ -185,7 +200,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 
 		$text .= '<form name="createbox" id="pfForm" method="post" class="createbox">';
 		$pre_form_html = '';
-		Hooks::run( 'PageForms::HTMLBeforeForm', [ &$targetTitle, &$pre_form_html ] );
+		$this->getHookContainer()->run( 'PageForms::HTMLBeforeForm', [ &$targetTitle, &$pre_form_html ] );
 		$text .= $pre_form_html;
 
 		$out->addHTML( $text );
@@ -204,7 +219,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 	 * @param Title $targetTitle
 	 */
 	protected function showCaptcha( $targetTitle ) {
-		if ( !method_exists( 'ConfirmEditHooks', 'getInstance' ) ) {
+		if ( !ExtensionRegistry::getInstance()->isLoaded( 'ConfirmEdit' ) ) {
 			// ConfirmEdit extension is not installed.
 			return;
 		}
@@ -217,11 +232,15 @@ class PFFormEdit extends UnlistedSpecialPage {
 		$article = new Article( $targetTitle );
 		$fakeEditPage = new EditPage( $article );
 
-		$captcha = ConfirmEditHooks::getInstance();
+		$captcha = Hooks::getInstance();
 		$captcha->editShowCaptcha( $fakeEditPage );
 	}
 
 	protected function getGroupName() {
 		return 'pf_group';
+	}
+
+	public function doesWrites() {
+		return true;
 	}
 }

@@ -7,9 +7,10 @@ use DIQA\ChemExtension\CategoryIndexRepository;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
-use DatabaseUpdater;
 use DIQA\ChemExtension\Utils\ArrayTools;
-use IMaintainableDatabase;
+use MediaWiki\Installer\DatabaseUpdater;
+use Wikimedia\Rdbms\IMaintainableDatabase;
+
 
 /**
  * Load the required class
@@ -68,7 +69,7 @@ class setupStore extends \Maintenance
 
     private function getConnection()
     {
-        return $this->getDB(DB_MASTER);
+        return $this->getDB(DB_PRIMARY);
     }
 
     /**

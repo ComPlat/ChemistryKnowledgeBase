@@ -80,10 +80,9 @@ class TaintednessBackpropVisitor extends PluginAwareBaseAnalysisVisitor {
 	 */
 	public function visitEncapsList( Node $node ): void {
 		foreach ( $node->children as $child ) {
-			if ( !is_object( $child ) ) {
-				continue;
+			if ( $child instanceof Node ) {
+				$this->recurse( $child );
 			}
-			$this->recurse( $child );
 		}
 	}
 
@@ -92,10 +91,9 @@ class TaintednessBackpropVisitor extends PluginAwareBaseAnalysisVisitor {
 	 */
 	public function visitArray( Node $node ): void {
 		foreach ( $node->children as $child ) {
-			if ( !is_object( $child ) ) {
-				continue;
+			if ( $child instanceof Node ) {
+				$this->recurse( $child );
 			}
-			$this->recurse( $child );
 		}
 	}
 
@@ -103,11 +101,13 @@ class TaintednessBackpropVisitor extends PluginAwareBaseAnalysisVisitor {
 	 * @inheritDoc
 	 */
 	public function visitArrayElem( Node $node ): void {
-		if ( is_object( $node->children['key'] ) ) {
-			$this->recurse( $node->children['key'] );
+		$key = $node->children['key'];
+		if ( $key instanceof Node ) {
+			$this->recurse( $key, $this->taintedness->asKeyForForeach() );
 		}
-		if ( is_object( $node->children['value'] ) ) {
-			$this->recurse( $node->children['value'] );
+		$value = $node->children['value'];
+		if ( $value instanceof Node ) {
+			$this->recurse( $value, $this->taintedness->getTaintednessForOffsetOrWhole( $key ) );
 		}
 	}
 

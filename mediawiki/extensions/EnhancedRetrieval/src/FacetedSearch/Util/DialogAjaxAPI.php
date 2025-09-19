@@ -1,21 +1,20 @@
 <?php
 namespace DIQA\FacetedSearch\Util;
 
-use ApiBase;
+use eftec\bladeone\BladeOne;
+use MediaWiki\Api\ApiBase;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
-use Title;
 
 class DialogAjaxAPI extends ApiBase {
 
-	private $blade;
+	private BladeOne $blade;
 
 	public function __construct($query, $moduleName) {
 		parent::__construct ( $query, $moduleName );
 		$views = __DIR__ . '/../../../views';
 		$cache = __DIR__ . '/../../../cache';
 
-		$this->blade = new Blade ( $views, $cache );
+		$this->blade = new BladeOne( $views, $cache );
 	}
 
 	public function execute() {
@@ -39,11 +38,11 @@ class DialogAjaxAPI extends ApiBase {
 
 		$facetValues = new FacetValueGenerator($params ['property']);
 
-		$html = $this->blade->view ()->make ( "dialogs.facet-value-dialog",
+		$html = $this->blade->run ( "dialogs.facet-value-dialog",
 				array ('values' => $facetValues->getFacetData(),
 					   'toRemove' => json_encode($facetValues->getFacetsToRemove()),
 					   'facetName' => $params ['property'])
-		 )->render ();
+		 );
 
 		$htmlResult = ['html'=>$html];
 		$result = $this->getResult ();
@@ -57,12 +56,12 @@ class DialogAjaxAPI extends ApiBase {
         $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
         $hookContainer->run('fsgCustomFacetDialogContent', [ $params ['property'], & $content ]);
 
-        $html = $this->blade->view ()->make ( "dialogs.facet-custom-dialog",
+        $html = $this->blade->run( "dialogs.facet-custom-dialog",
             [
                 'content' => $content[$params ['property']] ?? '',
                 'facetName' => $params ['property']
             ]
-        )->render ();
+        );
 
         $htmlResult = ['html'=>$html];
         $result = $this->getResult ();

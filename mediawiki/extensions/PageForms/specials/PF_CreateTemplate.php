@@ -8,6 +8,9 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Title\Title;
+
 /**
  * @ingroup PFSpecialPages
  */
@@ -33,13 +36,9 @@ class PFCreateTemplate extends SpecialPage {
 		// Set limit on results - we don't want a massive dropdown
 		// of properties, if there are a lot of properties in this wiki.
 		// getProperties() functions stop requiring a limit
-		$options = new SMWRequestOptions();
+		$options = new \SMW\RequestOptions();
 		$options->limit = 500;
-		$used_properties = PFUtils::getSMWStore()->getPropertiesSpecial( $options );
-		if ( $used_properties instanceof SMW\SQLStore\PropertiesCollector ) {
-			// SMW 1.9+
-			$used_properties = $used_properties->runCollector();
-		}
+		$used_properties = PFUtils::getSMWStore()->getPropertiesSpecial( $options )->fetchList();
 		foreach ( $used_properties as $property ) {
 			// Skip over properties that are errors. (This
 			// shouldn't happen, but it sometimes does.)
@@ -52,11 +51,7 @@ class PFCreateTemplate extends SpecialPage {
 			}
 		}
 
-		$unused_properties = PFUtils::getSMWStore()->getUnusedPropertiesSpecial( $options );
-		if ( $unused_properties instanceof SMW\SQLStore\UnusedPropertiesCollector ) {
-			// SMW 1.9+
-			$unused_properties = $unused_properties->runCollector();
-		}
+		$unused_properties = PFUtils::getSMWStore()->getUnusedPropertiesSpecial( $options )->fetchList();
 		foreach ( $unused_properties as $property ) {
 			// Skip over properties that are errors. (This
 			// shouldn't happen, but it sometimes does.)
@@ -277,10 +272,10 @@ END;
 
 	static function printTemplateStyleInput( $htmlFieldName, $curSelection = null ) {
 		if ( !$curSelection ) {
-			$curSelection = 'standard';
+			$curSelection = 'table';
 		}
 		$text = "<p class=\"pfCreateTemplateStyle\">" . wfMessage( 'pf_createtemplate_outputformat' )->escaped() . "\n";
-		$text .= self::printTemplateStyleButton( 'standard', 'pf_createtemplate_standardformat', $htmlFieldName, $curSelection );
+		$text .= self::printTemplateStyleButton( 'table', 'pf_createtemplate_standardformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'infobox', 'pf_createtemplate_infoboxformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'plain', 'pf_createtemplate_plainformat', $htmlFieldName, $curSelection );
 		$text .= self::printTemplateStyleButton( 'sections', 'pf_createtemplate_sectionsformat', $htmlFieldName, $curSelection );
@@ -328,7 +323,7 @@ END;
 				if ( count( $var_elements ) != 2 ) {
 					continue;
 				}
-				list( $field_field, $id ) = $var_elements;
+				[ $field_field, $id ] = $var_elements;
 				if ( $field_field == 'name' && $id != 'starter' ) {
 					$field = PFTemplateField::create(
 						$val,

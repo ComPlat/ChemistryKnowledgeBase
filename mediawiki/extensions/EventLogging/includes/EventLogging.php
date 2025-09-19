@@ -11,78 +11,90 @@
 
 namespace MediaWiki\Extension\EventLogging;
 
-use DeferredUpdates;
-use ExtensionRegistry;
-use FormatJson;
-use MediaWiki\Extension\EventBus\EventBus;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Extension\EventLogging\EventSubmitter\EventSubmitter;
 use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
 use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonTreeRef;
+use MediaWiki\Extension\EventLogging\MetricsPlatform\MetricsClientFactory;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Wikimedia\MetricsPlatform\MetricsClient;
 
 class EventLogging {
+
+	/**
+	 * @var MetricsClient|null
+	 */
+	private static $metricsPlatformClient;
 
 	/**
 	 * Default logger.
 	 *
 	 * @internal
-	 * @return LoggerInterface
 	 */
 	public static function getLogger(): LoggerInterface {
 		return LoggerFactory::getInstance( 'EventLogging' );
 	}
 
+	private static function getEventSubmitter(): EventSubmitter {
+		return MediaWikiServices::getInstance()->get( 'EventLogging.EventSubmitter' );
+	}
+
+	/**
+	 * Gets the singleton instance of the Metrics Platform Client (MPC).
+	 *
+	 * @see https://wikitech.wikimedia.org/wiki/Metrics_Platform
+	 */
+	public static function getMetricsPlatformClient(): MetricsClient {
+		if ( !self::$metricsPlatformClient ) {
+			/** @var MetricsClientFactory $metricsClientFactory */
+			$metricsClientFactory =
+				MediaWikiServices::getInstance()->getService( 'EventLogging.MetricsClientFactory' );
+
+			self::$metricsPlatformClient = $metricsClientFactory->newMetricsClient( RequestContext::getMain() );
+		}
+
+		return self::$metricsPlatformClient;
+	}
+
+	/**
+	 * Resets the Metrics Platform Client for testing purposes. See also the warning and note
+	 * against {@link MediaWikiServices::resetServiceForTesting()}.
+	 *
+	 * @internal
+	 *
+	 * @throws RuntimeException If called outside a PHPUnit test
+	 */
+	public static function resetMetricsPlatformClient(): void {
+		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+			throw new RuntimeException( __METHOD__ . ' may only be called during unit tests.' );
+		}
+
+		self::$metricsPlatformClient = null;
+	}
+
 	/**
 	 * Submit an event according to the given stream's configuration.
+	 *
 	 * @param string $streamName
 	 * @param array $event
-	 * @param LoggerInterface|null $logger
-	 * @see https://wikitech.wikimedia.org/wiki/Event_Platform/Instrumentation_How_To#In_PHP
+	 * @param LoggerInterface|null $logger @deprecated since 1.40. All messages will be logged
+	 *  via the `EventLogging.Logger` service
 	 */
 	public static function submit(
 		string $streamName,
 		array $event,
 		?LoggerInterface $logger = null
 	): void {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'EventBus' ) ) {
-			self::getLogger()->warning( 'EventBus is not installed' );
-			return;
+		if ( $logger ) {
+			wfDeprecatedMsg( __METHOD__ . ': $logger parameter is deprecated', '1.40' );
 		}
 
-		DeferredUpdates::addCallableUpdate( function () use ( $streamName, $event, $logger ) {
-			$services = MediaWikiServices::getInstance();
-			$config = $services->getMainConfig();
-			$eventLoggingStreamNames = $config->get( 'EventLoggingStreamNames' );
-			$logger = $logger ?? self::getLogger();
-
-			if ( $eventLoggingStreamNames === false ) {
-				$streamConfigs = false;
-			} else {
-				$streamConfigs = $services->getService(
-					'EventStreamConfig.StreamConfigs'
-				)->get( $eventLoggingStreamNames, true );
-			}
-
-			if ( $streamConfigs !== false && !array_key_exists( $streamName, $streamConfigs ) ) {
-				$logger->warning(
-					'Event submitted for unregistered stream name "{streamName}".',
-					[ 'streamName' => $streamName ]
-				);
-				return;
-			}
-			if ( !isset( $event['$schema'] ) ) {
-				$logger->warning(
-					'Event data s missing required field "$schema".',
-					[ 'event' => $event ]
-				);
-				return;
-			}
-
-			$event = EventLoggingHelper::prepareEvent( $streamName, $event );
-			// @phan-suppress-next-line PhanUndeclaredClassMethod
-			EventBus::getInstanceForStream( $streamName )->send( [ $event ] );
-		} );
+		self::getEventSubmitter()->submit( $streamName, $event );
 	}
 
 	/**
@@ -97,7 +109,8 @@ class EventLogging {
 	 */
 	public static function sendBeacon( $url, array $data = [] ) {
 		$fname = __METHOD__;
-		$url = wfExpandUrl( $url, PROTO_INTERNAL );
+		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
+		$url = $urlUtils->expand( $url, PROTO_INTERNAL ) ?? '';
 		DeferredUpdates::addCallableUpdate( static function () use ( $url, $data, $fname ) {
 			$options = $data ? [ 'postData' => $data ] : [];
 			return MediaWikiServices::getInstance()->getHttpRequestFactory()
@@ -200,7 +213,7 @@ class EventLogging {
 	public static function schemaValidate( $object, $schema = null ) {
 		if ( $schema === null ) {
 			// Default to JSON Schema
-			$json = file_get_contents( dirname( __DIR__ ) . '/schemas/schemaschema.json' );
+			$json = file_get_contents(dirname(__DIR__) . '/schemas/schemaschema.json');
 			$schema = FormatJson::decode( $json, true );
 		}
 

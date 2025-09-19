@@ -1,12 +1,18 @@
 <?php
 
-namespace MediaWiki\Auth;
+namespace MediaWiki\Tests\Auth;
+
+use MediaWiki\Auth\AuthenticationRequest;
+use MediaWiki\Auth\PasswordAuthenticationRequest;
+use MediaWiki\Message\Message;
+use MediaWikiIntegrationTestCase;
+use UnexpectedValueException;
 
 /**
  * @group AuthManager
  * @covers \MediaWiki\Auth\AuthenticationRequest
  */
-class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
+class AuthenticationRequestTest extends MediaWikiIntegrationTestCase {
 	public function testBasics() {
 		$mock = $this->getMockForAbstractClass( AuthenticationRequest::class );
 
@@ -17,9 +23,9 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 		$ret = $mock->describeCredentials();
 		$this->assertIsArray( $ret );
 		$this->assertArrayHasKey( 'provider', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['provider'] );
+		$this->assertInstanceOf( Message::class, $ret['provider'] );
 		$this->assertArrayHasKey( 'account', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['account'] );
+		$this->assertInstanceOf( Message::class, $ret['account'] );
 	}
 
 	public function testLoadRequestsFromSubmission() {
@@ -125,7 +131,7 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 		try {
 			AuthenticationRequest::getUsernameFromRequests( $reqs );
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \UnexpectedValueException $ex ) {
+		} catch ( UnexpectedValueException $ex ) {
 			$this->assertSame(
 				'Conflicting username fields: "bar" from ' .
 					get_class( $reqs[1] ) . '::$username vs. "foo" from ' .
@@ -207,7 +213,7 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 
 		$fields = AuthenticationRequest::mergeFieldInfo( [ $req1 ] );
 		$expect = $req1->getFieldInfo();
-		foreach ( $expect as $name => &$options ) {
+		foreach ( $expect as &$options ) {
 			$options['optional'] = !empty( $options['optional'] );
 			$options['sensitive'] = !empty( $options['sensitive'] );
 		}
@@ -220,7 +226,7 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 		try {
 			AuthenticationRequest::mergeFieldInfo( [ $req1, $req3 ] );
 			$this->fail( 'Expected exception not thrown' );
-		} catch ( \UnexpectedValueException $ex ) {
+		} catch ( UnexpectedValueException $ex ) {
 			$this->assertSame(
 				'Field type conflict for "string1", "string" vs "checkbox"',
 				$ex->getMessage()
@@ -253,7 +259,7 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 
 		$fields = AuthenticationRequest::mergeFieldInfo( [ $req1, $req2 ] );
 		$expect = $req1->getFieldInfo() + $req2->getFieldInfo();
-		foreach ( $expect as $name => &$options ) {
+		foreach ( $expect as &$options ) {
 			$options['sensitive'] = !empty( $options['sensitive'] );
 		}
 		$expect['string1']['optional'] = false;
@@ -272,7 +278,7 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 	 * @param array|bool $expectState
 	 */
 	public function testLoadFromSubmission( $fieldInfo, $data, $expectState ) {
-		$mock = $this->getMockForAbstractClass( AuthenticationRequest::class );
+		$mock = $this->getMockForAbstractClass( AuthenticationRequestForLoadFromSubmission::class );
 		$mock->method( 'getFieldInfo' )
 			->willReturn( $fieldInfo );
 
@@ -516,4 +522,16 @@ class AuthenticationRequestTest extends \MediaWikiIntegrationTestCase {
 			],
 		];
 	}
+}
+
+// Dynamic properties from the testLoadFromSubmission not working in php8.2
+abstract class AuthenticationRequestForLoadFromSubmission extends AuthenticationRequest {
+	/** @var array */
+	public $choose;
+	/** @var bool */
+	public $push;
+	/** @var bool */
+	public $check;
+	/** @var string */
+	public $field;
 }

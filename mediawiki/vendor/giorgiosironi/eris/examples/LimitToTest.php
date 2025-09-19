@@ -1,19 +1,22 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class LimitToTest extends PHPUnit_Framework_TestCase
+class LimitToTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
 
+    /**
+     * @eris-repeat 5
+     */
     public function testNumberOfIterationsCanBeConfigured()
     {
-        $this->limitTo(5)
-             ->forAll(
-                Generator\int()
-            )
+        $this->forAll(
+            Generators::int()
+        )
             ->then(function ($value) {
-                $this->assertInternalType('integer', $value);
+                \Eris\PHPUnitDeprecationHelper::assertIsInt($value);
             });
     }
 
@@ -35,11 +38,27 @@ class LimitToTest extends PHPUnit_Framework_TestCase
 
     public function testTimeIntervalToRunForCanBeConfiguredAndAVeryLowNumberOfIterationsCanBeIgnored()
     {
-        $this->minimumEvaluationRatio(0.0)
-             ->limitTo(new DateInterval("PT2S"))
-             ->forAll(
-                Generator\int()
+        $this
+            ->minimumEvaluationRatio(0)
+            ->limitTo(new DateInterval('PT2S'))
+            ->forAll(
+                Generators::int()
             )
+            ->then(function ($value) {
+                usleep(100 * 1000);
+                $this->assertTrue(true);
+            });
+    }
+
+    /**
+     * @eris-ratio 0
+     * @eris-duration PT2S
+     */
+    public function testTimeIntervalToRunForCanBeConfiguredAndAVeryLowNumberOfIterationsCanBeIgnoredFromAnnotation()
+    {
+        $this->forAll(
+            Generators::int()
+        )
             ->then(function ($value) {
                 usleep(100 * 1000);
                 $this->assertTrue(true);

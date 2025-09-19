@@ -19,16 +19,21 @@
  */
 
 use MediaWiki\Config\ServiceOptions;
+use Wikimedia\ObjectCache\EmptyBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Rdbms\ChronologyProtector;
+use Wikimedia\Rdbms\ConfiguredReadOnlyMode;
 use Wikimedia\Rdbms\DatabaseDomain;
-use Wikimedia\Rdbms\DatabaseFactory;
 use Wikimedia\Rdbms\LBFactorySimple;
 use Wikimedia\RequestTimeout\CriticalSectionProvider;
 use Wikimedia\RequestTimeout\RequestTimeout;
+use Wikimedia\Stats\NullStatsdDataFactory;
 
 /**
  * @covers \Wikimedia\Rdbms\LBFactory
  * @covers \Wikimedia\Rdbms\LBFactorySimple
  * @covers \Wikimedia\Rdbms\LBFactoryMulti
+ * @covers \MWLBFactory
  */
 class MWLBFactoryTest extends MediaWikiUnitTestCase {
 
@@ -36,17 +41,16 @@ class MWLBFactoryTest extends MediaWikiUnitTestCase {
 		return new MWLBFactory(
 			new ServiceOptions( [], [] ),
 			new ConfiguredReadOnlyMode( 'Test' ),
-			new EmptyBagOStuff(),
+			new ChronologyProtector(),
 			new EmptyBagOStuff(),
 			new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] ),
 			new CriticalSectionProvider( RequestTimeout::singleton(), 1, null, null ),
 			new NullStatsdDataFactory(),
-			new DatabaseFactory()
+			[]
 		);
 	}
 
 	/**
-	 * @covers MWLBFactory::getLBFactoryClass
 	 * @dataProvider getLBFactoryClassProvider
 	 */
 	public function testGetLBFactoryClass( $config, $expected ) {
@@ -56,7 +60,7 @@ class MWLBFactoryTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function getLBFactoryClassProvider() {
+	public static function getLBFactoryClassProvider() {
 		yield 'undercore alias default' => [
 			[ 'class' => 'LBFactory_Simple' ],
 			Wikimedia\Rdbms\LBFactorySimple::class,
@@ -68,7 +72,6 @@ class MWLBFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers MWLBFactory::setDomainAliases()
 	 * @dataProvider setDomainAliasesProvider
 	 */
 	public function testDomainAliases( $dbname, $prefix, $expectedDomain ) {
@@ -88,7 +91,7 @@ class MWLBFactoryTest extends MediaWikiUnitTestCase {
 		$rawDomain = rtrim( "$dbname-$prefix", '-' );
 		$this->assertEquals(
 			$expectedDomain,
-			$lbFactory->resolveDomainID( $rawDomain ),
+			$lbFactory->getMainLB()->resolveDomainID( $rawDomain ),
 			'Domain aliases set'
 		);
 	}

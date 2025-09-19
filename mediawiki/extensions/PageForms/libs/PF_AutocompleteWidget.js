@@ -14,7 +14,7 @@
 
 pf.AutocompleteWidget = function( config ) {
 	// Parent constructor
-	var textInputConfig = {
+	const textInputConfig = {
 		name: 'page_name',
 		// The following classes are used here:
 		// * pfPageNameWithNamespace
@@ -63,8 +63,8 @@ OO.mixinClass( pf.AutocompleteWidget, OO.ui.mixin.LookupElement );
 /**
  * @inheritdoc
  */
-pf.AutocompleteWidget.prototype.getLookupRequest = function () {
-	var
+pf.AutocompleteWidget.prototype.getLookupRequest = function() {
+	let
 		value = this.getValue(),
 		deferred = $.Deferred(),
 		api,
@@ -88,14 +88,14 @@ pf.AutocompleteWidget.prototype.getLookupRequest = function () {
 /**
  * @inheritdoc
  */
-pf.AutocompleteWidget.prototype.getLookupCacheDataFromResponse = function ( response ) {
+pf.AutocompleteWidget.prototype.getLookupCacheDataFromResponse = function( response ) {
 	return response || [];
 };
 /**
  * @inheritdoc
  */
-pf.AutocompleteWidget.prototype.getLookupMenuOptionsFromData = function ( data ) {
-	var i,
+pf.AutocompleteWidget.prototype.getLookupMenuOptionsFromData = function( data ) {
+	let i,
 		item,
 		items = [];
 
@@ -117,22 +117,22 @@ pf.AutocompleteWidget.prototype.getLookupMenuOptionsFromData = function ( data )
 	for ( i = 0; i < data.length; i++ ) {
 		item = new OO.ui.MenuOptionWidget( {
 			// this data will be passed to onLookupMenuChoose when item is selected
-			data: data[ i ].title,
-			label: this.highlightText( data[ i ].title )
+			data: data[ i ].title.toString(),
+			label: this.highlightText( data[ i ].title.toString() )
 		} );
 		items.push( item );
 	}
 	return items;
 };
 
-pf.AutocompleteWidget.prototype.highlightText = function ( suggestion ) {
-	var searchTerm = this.getValue();
-	var searchRegexp = new RegExp("(?![^&;]+;)(?!<[^<>]*)(" +
+pf.AutocompleteWidget.prototype.highlightText = function( suggestion ) {
+	const searchTerm = this.getValue();
+	const searchRegexp = new RegExp("(?![^&;]+;)(?!<[^<>]*)(" +
 		searchTerm.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") +
 		")(?![^<>]*>)(?![^&;]+;)", "gi");
-	var itemLabel = suggestion;
-	var loc = itemLabel.search(searchRegexp);
-	var t;
+	const itemLabel = suggestion;
+	const loc = itemLabel.search(searchRegexp);
+	let t;
 
 	if (loc >= 0) {
 		t = itemLabel.slice(0, Math.max(0, loc)) +

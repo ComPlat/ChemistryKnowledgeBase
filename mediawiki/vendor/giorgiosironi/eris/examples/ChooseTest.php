@@ -1,16 +1,17 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class ChooseTest extends PHPUnit_Framework_TestCase
+class ChooseTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
 
     public function testSumOfTwoIntegersFromBoundedRangesIsCommutative()
     {
         $this->forAll(
-            Generator\choose(-1000, 430),
-            Generator\choose(230, -30000)
+            Generators::choose(-1000, 430),
+            Generators::choose(230, -30000)
         )
             ->then(function ($first, $second) {
                 $x = $first + $second;

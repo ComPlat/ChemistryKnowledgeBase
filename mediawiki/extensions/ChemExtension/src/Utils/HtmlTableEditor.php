@@ -17,7 +17,7 @@ class HtmlTableEditor
     public function __construct($tableHtml, $context)
     {
         $this->doc = new DOMDocument();
-        $this->doc->loadHTML(mb_convert_encoding($tableHtml, 'HTML-ENTITIES', 'UTF-8'));
+        $this->doc->loadHTML(HtmlTools::convert2HtmlEntities($tableHtml));
         $this->context = $context;
         $this->replaceInnerTables();
     }

@@ -11,7 +11,7 @@
  pf.spreadsheetAutocompleteWidget = function( config ) {
 	this.config = config || {};
 	// Parent constructor
-	var textInputConfig = {
+	const textInputConfig = {
 		// This turns off the local, browser-based autocompletion,
 		// which would normally suggest values that the user has
 		// typed before on that computer.
@@ -36,8 +36,8 @@ OO.mixinClass( pf.spreadsheetAutocompleteWidget, OO.ui.mixin.LookupElement );
 /**
  * @inheritdoc
  */
-pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
-    var
+pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function() {
+	let
 		value = this.getValue(),
 		deferred = $.Deferred(),
 		api,
@@ -58,7 +58,7 @@ pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
 	if( this.config.autocompletedatatype == 'category' ) {
 		requestParams.category = this.config.autocompletesettings;
 	} else if ( this.config.autocompletedatatype == 'cargo field' ) {
-		var table_and_field = this.config.autocompletesettings.split( '|' );
+		const table_and_field = this.config.autocompletesettings.split( '|' );
 		requestParams.cargo_table = table_and_field[0];
 		requestParams.cargo_field = table_and_field[1];
 	} else if ( this.config.autocompletedatatype == 'property' ) {
@@ -66,15 +66,15 @@ pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
 	} else if ( this.config.autocompletedatatype == 'concept' ) {
 		requestParams.concept = this.config.autocompletesettings;
 	} else if( this.config.autocompletedatatype == 'dep_on' ) {
-		var dep_field_opts = this.getDependentFieldOpts( this.config.data_y, this.config.dep_on_field );
+		const dep_field_opts = this.getDependentFieldOpts( this.config.data_y, this.config.dep_on_field );
 
-		if (dep_field_opts.prop.indexOf('|') === -1) {
+		if (!dep_field_opts.prop.includes('|')) {
 			requestParams.property = dep_field_opts.prop;
 			requestParams.baseprop = dep_field_opts.base_prop;
 			requestParams.basevalue = dep_field_opts.base_value;
 		} else {
-			var cargoTableAndFieldStr = dep_field_opts.prop;
-			var baseCargoTableAndFieldStr = dep_field_opts.base_prop;
+			const cargoTableAndFieldStr = dep_field_opts.prop;
+			const baseCargoTableAndFieldStr = dep_field_opts.base_prop;
 			requestParams.cargo_table = cargoTableAndFieldStr.split( '|' )[0];
 			requestParams.cargo_field = cargoTableAndFieldStr.split( '|' )[1];
 			requestParams.base_cargo_table = baseCargoTableAndFieldStr.split('|')[0];
@@ -88,15 +88,15 @@ pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
 /**
  * @inheritdoc
  */
- pf.spreadsheetAutocompleteWidget.prototype.getLookupCacheDataFromResponse = function ( response ) {
+ pf.spreadsheetAutocompleteWidget.prototype.getLookupCacheDataFromResponse = function( response ) {
 	return response || [];
 };
 
 /**
  * @inheritdoc
  */
- pf.spreadsheetAutocompleteWidget.prototype.getLookupMenuOptionsFromData = function ( data ) {
-	var item,
+ pf.spreadsheetAutocompleteWidget.prototype.getLookupMenuOptionsFromData = function( data ) {
+	let item,
 		items = [];
 
 	if ( data.error ) {
@@ -119,18 +119,18 @@ pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
 			items.push( item );
 		}
 	} else if( this.config.autocompletedatatype == 'external data' ) {
-		var self = this,
+		let self = this,
 			wgPageFormsEDSettings = mw.config.get('wgPageFormsEDSettings'),
 			name = this.config.autocompletesettings,
 			edgValues = mw.config.get('edgValues'),
 			valueFilter;
-        data = {};
+		data = {};
 		if ( wgPageFormsEDSettings !== null && wgPageFormsEDSettings[name].title !== undefined && wgPageFormsEDSettings[name].title !== "" ) {
 			data.title = edgValues[wgPageFormsEDSettings[name].title];
 			if (data.title !== undefined && data.title !== null) {
 				let i = 0;
-				data.title.forEach(function () {
-					var wgPageFormsAutocompleteOnAllChars = mw.config.get( 'wgPageFormsAutocompleteOnAllChars' );
+				data.title.forEach(() => {
+					const wgPageFormsAutocompleteOnAllChars = mw.config.get( 'wgPageFormsAutocompleteOnAllChars' );
 					if ( wgPageFormsAutocompleteOnAllChars ) {
 						valueFilter = data.title[i].toLowerCase().includes(self.getValue().toLowerCase());
 					} else {
@@ -158,30 +158,28 @@ pf.spreadsheetAutocompleteWidget.prototype.getLookupRequest = function () {
 };
 
 /**
- *
  * @param {string} suggestion
  * @return {Mixed} HtmlSnipppet
- *
  */
-pf.spreadsheetAutocompleteWidget.prototype.highlightText = function ( suggestion ) {
-	var searchTerm = this.getValue();
+pf.spreadsheetAutocompleteWidget.prototype.highlightText = function( suggestion ) {
+	let searchTerm = this.getValue();
 	if ( searchTerm[0] == ' ' ) {
 		searchTerm = searchTerm.slice(1);
 	}
-    var searchRegexp = new RegExp("(?![^&;]+;)(?!<[^<>]*)(" +
-        searchTerm.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") +
-        ")(?![^<>]*>)(?![^&;]+;)", "gi");
-    var itemLabel = suggestion;
-    var loc = itemLabel.search(searchRegexp);
-    var t;
-    if (loc >= 0) {
-        t = itemLabel.slice(0, Math.max(0, loc)) +
-            '<strong>' + itemLabel.substr(loc, searchTerm.length) + '</strong>' +
-            itemLabel.slice(loc + searchTerm.length);
-    } else {
-        t = itemLabel;
-    }
-    return new OO.ui.HtmlSnippet(t);
+	const searchRegexp = new RegExp("(?![^&;]+;)(?!<[^<>]*)(" +
+		searchTerm.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") +
+		")(?![^<>]*>)(?![^&;]+;)", "gi");
+	const itemLabel = suggestion;
+	const loc = itemLabel.search(searchRegexp);
+	let t;
+	if (loc >= 0) {
+		t = itemLabel.slice(0, Math.max(0, loc)) +
+			'<strong>' + itemLabel.substr(loc, searchTerm.length) + '</strong>' +
+			itemLabel.slice(loc + searchTerm.length);
+	} else {
+		t = itemLabel;
+	}
+	return new OO.ui.HtmlSnippet(t);
 };
 /**
  * Provides an OOUI's MenuOptionWidget with a "No Matches" label
@@ -206,10 +204,9 @@ pf.spreadsheetAutocompleteWidget.prototype.getNoMatchesOOUIMenuOptionWidget = fu
  * @param {string} curValue
  *
  * @return {boolean}
- *
  */
 pf.spreadsheetAutocompleteWidget.prototype.checkIfAnyWordStartsWithInputValue = function( string, curValue ) {
-	var regex = new RegExp('\\b' + curValue.toLowerCase());
+	const regex = new RegExp('\\b' + curValue.toLowerCase());
 	return string.toLowerCase().match(regex) !== null;
 }
 
@@ -220,16 +217,15 @@ pf.spreadsheetAutocompleteWidget.prototype.checkIfAnyWordStartsWithInputValue = 
  * @param {string} data_y
  * @param {string} dep_on_field
  * @return {Object} dep_field_opts
- *
  */
 pf.spreadsheetAutocompleteWidget.prototype.getDependentFieldOpts = function( data_y, dep_on_field ) {
-    var dep_field_opts = {};
-    var $baseElement;
+	const dep_field_opts = {};
+	let $baseElement;
 	$baseElement = $('td[data-y="'+data_y+'"][origname="'+dep_on_field+'"]');
-    dep_field_opts.base_value = $baseElement.html();
-    dep_field_opts.base_prop = mw.config.get('wgPageFormsFieldProperties')[dep_on_field] ||
+	dep_field_opts.base_value = $baseElement.html();
+	dep_field_opts.base_prop = mw.config.get('wgPageFormsFieldProperties')[dep_on_field] ||
 		$baseElement.attr('name');
-    dep_field_opts.prop = this.config['autocompletesettings'];
+	dep_field_opts.prop = this.config['autocompletesettings'];
 
-    return dep_field_opts;
+	return dep_field_opts;
 }

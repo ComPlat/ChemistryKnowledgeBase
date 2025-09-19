@@ -2,8 +2,9 @@
 
 namespace DIQA\ChemExtension\Pages;
 
-use IMaintainableDatabase;
+
 use Title;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 
 class ChemFormRepository

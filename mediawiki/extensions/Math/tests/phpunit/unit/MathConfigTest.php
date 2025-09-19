@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\Math\Tests;
 
-use ExtensionRegistry;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Math\MathConfig;
+use MediaWiki\Registration\ExtensionRegistry;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -17,22 +17,19 @@ class MathConfigTest extends TestCase {
 
 	private function newMathConfig(
 		array $configOverrides,
-		ExtensionRegistry $registry = null
+		?ExtensionRegistry $registry = null
 	): MathConfig {
-		if ( $registry === null ) {
-			$registry = ExtensionRegistry::getInstance();
-		}
 		return new MathConfig(
 			new ServiceOptions( MathConfig::CONSTRUCTOR_OPTIONS, $configOverrides + [
 				'MathDisableTexFilter' => MathConfig::ALWAYS,
 				'MathValidModes' => [ MathConfig::MODE_SOURCE ],
 				'MathEntitySelectorFallbackUrl' => self::DUMMY_URL,
 			] ),
-			$registry
+			$registry ?? ExtensionRegistry::getInstance()
 		);
 	}
 
-	public function provideTexCheckDisabled() {
+	public static function provideTexCheckDisabled() {
 		yield 'always' => [ 'always', MathConfig::ALWAYS ];
 		yield 'never' => [ 'never', MathConfig::NEVER ];
 		yield 'new' => [ 'new', MathConfig::NEW ];
@@ -50,15 +47,20 @@ class MathConfigTest extends TestCase {
 		$this->assertSame( $expected, $mathConfig->texCheckDisabled() );
 	}
 
-	public function provideNormalizeRenderingMode() {
+	public static function provideNormalizeRenderingMode() {
 		yield 'legacy user option' => [ 1, self::TEST_DEFAULT ];
 		yield 'source user option' => [ 3, MathConfig::MODE_SOURCE ];
 		yield 'mathml user option' => [ 5, MathConfig::MODE_MATHML ];
 		yield 'latexml user option' => [ 7, MathConfig::MODE_LATEXML ];
+		yield 'native user option' => [ 8, MathConfig::MODE_NATIVE_MML ];
+		yield 'mathjax option' => [ 9, MathConfig::MODE_NATIVE_JAX ];
+
 		yield 'source string' => [ 'source', MathConfig::MODE_SOURCE ];
 		yield 'mathml string' => [ 'mathml', MathConfig::MODE_MATHML ];
 		yield 'latexml string' => [ 'latexml', MathConfig::MODE_LATEXML ];
-		yield 'wrong capitalizaton' => [ 'LaTeXmL', MathConfig::MODE_LATEXML ];
+		yield 'native string' => [ 'native', MathConfig::MODE_NATIVE_MML ];
+		yield 'mathjax string' => [ 'mathjax', MathConfig::MODE_NATIVE_JAX ];
+		yield 'wrong capitalization' => [ 'LaTeXmL', MathConfig::MODE_LATEXML ];
 		yield 'unrecognized' => [ 'garbage', self::TEST_DEFAULT ];
 	}
 
@@ -72,18 +74,17 @@ class MathConfigTest extends TestCase {
 	public function testGetValidRenderingModes() {
 		$mathConfig = $this->newMathConfig( [
 			'MathValidModes' => [
-				MathConfig::MODE_MATHML,
-				5,
+				MathConfig::MODE_NATIVE_MML,
 				MathConfig::MODE_SOURCE,
 				'this will be converted to mathml' ],
 		] );
 		$actualModes = $mathConfig->getValidRenderingModes();
 		$this->assertCount( 2, $actualModes );
-		$this->assertContains( MathConfig::MODE_MATHML, $actualModes );
+		$this->assertContains( MathConfig::MODE_NATIVE_MML, $actualModes );
 		$this->assertContains( MathConfig::MODE_SOURCE, $actualModes );
 	}
 
-	public function provideIsValidRenderingMode() {
+	public static function provideIsValidRenderingMode() {
 		yield 'valid' => [ MathConfig::MODE_MATHML, true ];
 		yield 'garbage' => [ 'garbage', false ];
 		yield 'does not normalize' => [ 0, false ];
@@ -104,7 +105,7 @@ class MathConfigTest extends TestCase {
 			'MathValidModes' => [ MathConfig::MODE_MATHML ],
 		] );
 		$this->assertEquals(
-			[ 'mathml' => 'mw_math_mathml' ],
+			[ 'mathml' => 'mw-math-mathml' ],
 			$mathConfig->getValidRenderingModeKeys() );
 	}
 

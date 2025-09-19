@@ -1,4 +1,5 @@
 <?php
+
 namespace Eris\Quantifier;
 
 use Eris\Antecedent;
@@ -6,12 +7,15 @@ use Eris\Generator;
 use Eris\Generator\GeneratedValueSingle;
 use Eris\Generator\SkipValueException;
 use BadMethodCallException;
-use PHPUnit_Framework_Constraint;
 use PHPUnit\Framework\Constraint\Constraint;
 use Exception;
 use RuntimeException;
 use Eris\Listener;
+use Eris\Random\RandomRange;
 
+/**
+ * @method self and()
+ */
 class ForAll
 {
     const DEFAULT_MAX_SIZE = 200;
@@ -24,15 +28,18 @@ class ForAll
     private $ordinaryEvaluations = 0;
     private $aliases = [
         'and' => 'when',
-        'then' => '__invoke',
     ];
     private $terminationConditions = [];
     private $listeners = [];
     private $shrinkerFactoryMethod;
+
+    /**
+     * @var RandomRange
+     */
     private $rand;
     private $shrinkingEnabled = true;
 
-    public function __construct(array $generators, $iterations, $shrinkerFactory, $shrinkerFactoryMethod, $rand)
+    public function __construct(array $generators, $iterations, $shrinkerFactory, $shrinkerFactoryMethod, RandomRange $rand)
     {
         $this->generators = $this->generatorsFrom($generators);
         $this->iterations = $iterations;
@@ -91,8 +98,6 @@ class ForAll
         $arguments = func_get_args();
         if ($arguments[0] instanceof Antecedent) {
             $antecedent = $arguments[0];
-        } elseif ($arguments[0] instanceof PHPUnit_Framework_Constraint) {
-            $antecedent = Antecedent\IndependentConstraintsAntecedent::fromAll($arguments);
         } elseif ($arguments[0] instanceof Constraint) {
             $antecedent = Antecedent\IndependentConstraintsAntecedent::fromAll($arguments);
         } elseif ($arguments && count($arguments) == 1) {
@@ -114,7 +119,7 @@ class ForAll
             for (
                 $iteration = 0;
                 $iteration < $this->iterations
-                && !$this->terminationConditionsAreSatisfied();
+                    && !$this->terminationConditionsAreSatisfied();
                 $iteration++
             ) {
                 $generatedValues = [];
@@ -167,8 +172,7 @@ class ForAll
             }
         } catch (Exception $e) {
             $redTestException = $e;
-            $wrap = (bool) getenv('ERIS_ORIGINAL_INPUT');
-            if ($wrap) {
+            if ((bool) getenv('ERIS_ORIGINAL_INPUT')) {
                 $message = "Original input: " . var_export($values, true) . PHP_EOL
                     . "Possibly shrinked input follows." . PHP_EOL;
                 throw new RuntimeException($message, -1, $e);
@@ -183,6 +187,11 @@ class ForAll
                 $redTestException
             );
         }
+    }
+    
+    public function then(callable $assertion)
+    {
+        $this->__invoke($assertion);
     }
 
     /**

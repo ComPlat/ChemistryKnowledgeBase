@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\ChemScanner;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 class ChemScannerRequest
@@ -24,7 +24,7 @@ class ChemScannerRequest
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
     }
 
     public function send(): array
@@ -66,9 +66,9 @@ class ChemScannerRequest
         global $wgUser;
         $contLang = MediaWikiServices::getInstance()->getContentLanguage();
         $userNsName = $contLang->getNsText(NS_USER);
-        return '{{'.$this->blade->view ()->make ( "chemscanner-metadata",
+        return '{{'.$this->blade->run ( "chemscanner-metadata",
             ['user' => $userNsName.":".$wgUser->getName(),
             ]
-        )->render ();
+        );
     }
 }

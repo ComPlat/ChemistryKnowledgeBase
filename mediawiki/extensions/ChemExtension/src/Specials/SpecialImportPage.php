@@ -12,7 +12,7 @@ use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 use WebRequest;
 
@@ -32,7 +32,7 @@ class SpecialImportPage extends PageCreationSpecial
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->logger = new LoggerUtils('SpecialImportPage', 'ChemExtension');
         $this->addedJobs = [];
     }
@@ -51,7 +51,7 @@ class SpecialImportPage extends PageCreationSpecial
             if ($wgRequest->getMethod() == 'POST') {
                 try {
                     $this->processRequest($wgRequest);
-                    $html = $this->blade->view()->make("importPages.added-jobs", ['jobs' => $this->addedJobs])->render();
+                    $html = $this->blade->run("importPages.added-jobs", ['jobs' => $this->addedJobs]);
                     $this->getOutput()->addHTML($html);
                     return;
                 } catch (Exception $e) {

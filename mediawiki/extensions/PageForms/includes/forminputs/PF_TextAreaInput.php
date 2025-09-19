@@ -5,6 +5,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+
 /**
  * @ingroup PFFormInput
  */
@@ -94,34 +96,15 @@ class PFTextAreaInput extends PFFormInput {
 	}
 
 	public static function getDefaultPropTypes() {
-		$defaultPropTypes = [ '_cod' => [] ];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$defaultPropTypes['_txt'] = [];
-		}
-		return $defaultPropTypes;
+		return [ '_cod' => [] ];
 	}
 
 	public static function getOtherPropTypesHandled() {
-		$otherPropTypesHandled = [ '_wpg' ];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$otherPropTypesHandled[] = '_str';
-		} else {
-			$otherPropTypesHandled[] = '_txt';
-		}
-		return $otherPropTypesHandled;
+		return [ '_txt', '_wpg' ];
 	}
 
 	public static function getOtherPropTypeListsHandled() {
-		$otherPropTypeListsHandled = [ '_wpg' ];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$otherPropTypeListsHandled[] = '_str';
-		} else {
-			$otherPropTypeListsHandled[] = '_txt';
-		}
-		return $otherPropTypeListsHandled;
+		return [ '_txt', '_wpg' ];
 	}
 
 	public static function getParameters() {
@@ -250,17 +233,7 @@ class PFTextAreaInput extends PFFormInput {
 		}
 
 		if ( array_key_exists( 'maxlength', $this->mOtherArgs ) ) {
-			$maxlength = $this->mOtherArgs['maxlength'];
-			// For every actual character pressed (i.e., excluding
-			// things like the Shift key), reduce the string to its
-			// allowed length if it's exceeded that.
-			// This JS code is complicated so that it'll work
-			// correctly in IE - IE moves the cursor to the end
-			// whenever this.value is reset, so we'll make sure to
-			// do that only when we need to.
-			$maxLengthJSCheck = "if (window.event && window.event.keyCode < 48 && window.event.keyCode != 13) return; if (this.value.length > $maxlength) { this.value = this.value.substring(0, $maxlength); }";
-			$textarea_attrs['onKeyDown'] = $maxLengthJSCheck;
-			$textarea_attrs['onKeyUp'] = $maxLengthJSCheck;
+			$textarea_attrs['maxlength'] = $this->mOtherArgs['maxlength'];
 		}
 
 		if ( array_key_exists( 'placeholder', $this->mOtherArgs ) ) {

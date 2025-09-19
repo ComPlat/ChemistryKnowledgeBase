@@ -7,7 +7,7 @@ use DIQA\ChemExtension\Experiments\ExperimentNotExistsException;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 
 class ExperimentList
 {
@@ -47,11 +47,11 @@ class ExperimentList
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
 
         } catch(ExperimentNotExistsException $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage(),
-                'data' => [ 'experimentName' => $e->getExperimentName(), 'code' => $e->getCode()]])->render();
+            $html = self::getBlade()->run("error", ['message' => $e->getMessage(),
+                'data' => [ 'experimentName' => $e->getExperimentName(), 'code' => $e->getCode()]]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage(), 'code' => $e->getCode()])->render();
+            $html = self::getBlade()->run("error", ['message' => $e->getMessage(), 'code' => $e->getCode()]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
     }
@@ -59,14 +59,14 @@ class ExperimentList
     /**
      * @throws Exception
      */
-    private static function getBlade(): Blade
+    private static function getBlade(): BladeOne
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ( $views, $cache );
+        return new BladeOne ( $views, $cache );
     }
 
 }

@@ -1,6 +1,10 @@
 /**
  * JavaScript code to be used with input type datepicker.
  *
+ * @param $
+ * @param oo
+ * @param mw
+ * @param pf
  * @author Sam Wilson
  * @author Yaron Koren
  */
@@ -18,4 +22,4 @@
 		});
 	};
 
-} )( jQuery, OO, mediaWiki, pf )
+} )( jQuery, OO, mediaWiki, pf );

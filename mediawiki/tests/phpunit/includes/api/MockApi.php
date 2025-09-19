@@ -1,6 +1,11 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiBase;
+
 class MockApi extends ApiBase {
+	/** @var array */
 	public $warnings = [];
 
 	public function execute() {

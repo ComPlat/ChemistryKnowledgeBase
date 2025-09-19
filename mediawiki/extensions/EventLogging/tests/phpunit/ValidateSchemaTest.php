@@ -10,6 +10,7 @@
 
 use MediaWiki\Extension\EventLogging\EventLogging;
 use MediaWiki\Extension\EventLogging\JsonSchemaContent;
+use MediaWiki\Extension\EventLogging\Libs\JsonSchemaValidation\JsonSchemaException;
 
 /**
  * @group EventLogging
@@ -111,7 +112,7 @@ class ValidateSchemaTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * A valid event should, ahem, validate
-	 * @covers EventLogging::schemaValidate
+	 * @covers \MediaWiki\Extension\EventLogging\EventLogging::schemaValidate
 	 */
 	public function testValidEvent() {
 		$valid = EventLogging::schemaValidate(
@@ -122,7 +123,7 @@ class ValidateSchemaTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers EventLogging::schemaValidate
+	 * @covers \MediaWiki\Extension\EventLogging\EventLogging::schemaValidate
 	 */
 	public function testInvalidEvent() {
 		$this->expectException( JsonSchemaException::class );
@@ -135,7 +136,7 @@ class ValidateSchemaTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Event with non mandatory properties validates
-	 * @covers EventLogging::schemaValidate
+	 * @covers \MediaWiki\Extension\EventLogging\EventLogging::schemaValidate
 	 */
 	public function testEventNonMandatoryProperties() {
 		$valid = EventLogging::schemaValidate(
@@ -148,7 +149,7 @@ class ValidateSchemaTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * An empty event should validate if event does not have
 	 * mandatory properties
-	 * @covers EventLogging::schemaValidate
+	 * @covers \MediaWiki\Extension\EventLogging\EventLogging::schemaValidate
 	 */
 	public function testEmptyEventForSchemaWithOptionalOnlyPropertiesIsValid() {
 		$valid = EventLogging::schemaValidate(

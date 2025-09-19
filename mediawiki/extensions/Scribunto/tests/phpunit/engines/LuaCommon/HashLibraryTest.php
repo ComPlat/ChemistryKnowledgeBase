@@ -1,6 +1,11 @@
 <?php
 
-class Scribunto_LuaHashLibraryTest extends Scribunto_LuaEngineUnitTestBase {
+namespace MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon;
+
+/**
+ * @covers \MediaWiki\Extension\Scribunto\Engines\LuaCommon\HashLibrary
+ */
+class HashLibraryTest extends LuaEngineUnitTestBase {
 	/** @inheritDoc */
 	protected static $moduleName = 'HashLibraryTests';
 

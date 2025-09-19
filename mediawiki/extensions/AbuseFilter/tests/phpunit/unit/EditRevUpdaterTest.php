@@ -8,57 +8,56 @@ use MediaWiki\Extension\AbuseFilter\EditRevUpdater;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use MediaWikiUnitTestCase;
-use Title;
-use TitleValue;
-use Wikimedia\Rdbms\DBConnRef;
 use Wikimedia\Rdbms\IDatabase;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\LBFactory;
+use Wikimedia\Rdbms\UpdateQueryBuilder;
 use WikiPage;
 
 /**
  * @group Test
  * @group AbuseFilter
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\EditRevUpdater
+ * @covers \MediaWiki\Extension\AbuseFilter\EditRevUpdater
  */
 class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 
-	/**
-	 * @covers ::__construct
-	 */
 	public function testConstruct() {
 		$this->assertInstanceOf(
 			EditRevUpdater::class,
 			new EditRevUpdater(
 				$this->createMock( CentralDBManager::class ),
 				$this->createMock( RevisionLookup::class ),
-				$this->createMock( ILoadBalancer::class ),
+				$this->createMock( LBFactory::class ),
 				''
 			)
 		);
 	}
 
 	/**
-	 * @param DBConnRef|null $localDB
+	 * @param IDatabase|null $localDB
 	 * @param IDatabase|null $centralDB
 	 * @param RevisionLookup|null $revLookup
 	 * @return EditRevUpdater
 	 */
 	private function getUpdater(
-		DBConnRef $localDB = null,
-		IDatabase $centralDB = null,
-		RevisionLookup $revLookup = null
+		?IDatabase $localDB = null,
+		?IDatabase $centralDB = null,
+		?RevisionLookup $revLookup = null
 	): EditRevUpdater {
-		$localDB = $localDB ?? $this->createMock( DBConnRef::class );
-		$lb = $this->createMock( ILoadBalancer::class );
-		$lb->method( 'getConnectionRef' )->willReturn( $localDB );
-		$centralDB = $centralDB ?? $this->createMock( IDatabase::class );
+		$lbFactory = $this->createMock( LBFactory::class );
+		$lbFactory->method( 'getPrimaryDatabase' )
+			->willReturn( $localDB ?? $this->createMock( IDatabase::class ) );
+
 		$dbManager = $this->createMock( CentralDBManager::class );
-		$dbManager->method( 'getConnection' )->willReturn( $centralDB );
+		$dbManager->method( 'getConnection' )
+			->willReturn( $centralDB ?? $this->createMock( IDatabase::class ) );
+
 		return new EditRevUpdater(
 			$dbManager,
 			$revLookup ?? $this->createMock( RevisionLookup::class ),
-			$lb,
+			$lbFactory,
 			'fake-wiki-id'
 		);
 	}
@@ -78,21 +77,11 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		return [ $wikiPage, new MutableRevisionRecord( $title ) ];
 	}
 
-	/**
-	 * @covers ::updateRev
-	 * @covers ::getCacheKey
-	 */
 	public function testUpdateRev_noIDs() {
 		$titleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater' );
 		$this->assertFalse( $this->getUpdater()->updateRev( ...$this->getPageAndRev( $titleValue ) ) );
 	}
 
-	/**
-	 * @covers ::setLastEditPage
-	 * @covers ::setLogIdsForTarget
-	 * @covers ::updateRev
-	 * @covers ::getCacheKey
-	 */
 	public function testUpdateRev_differentPages() {
 		$titleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater' );
 		$updater = $this->getUpdater();
@@ -103,12 +92,6 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		$this->assertFalse( $updater->updateRev( ...$this->getPageAndRev( $titleValue ) ) );
 	}
 
-	/**
-	 * @covers ::setLastEditPage
-	 * @covers ::setLogIdsForTarget
-	 * @covers ::updateRev
-	 * @covers ::getCacheKey
-	 */
 	public function testUpdateRev_nullEdit() {
 		$titleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater' );
 		[ $page, $rev ] = $this->getPageAndRev( $titleValue );
@@ -124,19 +107,23 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @param array $ids
-	 * @covers ::setLastEditPage
-	 * @covers ::setLogIdsForTarget
-	 * @covers ::updateRev
-	 * @covers ::getCacheKey
 	 * @dataProvider provideIDsSuccess
 	 */
 	public function testUpdateRev_success( array $ids ) {
 		$titleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater' );
 		[ $page, $rev ] = $this->getPageAndRev( $titleValue );
-		$localDB = $this->createMock( DBConnRef::class );
+		$localDB = $this->createMock( IDatabase::class );
 		$localDB->expects( $ids['local'] ? $this->once() : $this->never() )->method( 'update' );
+		$localDB->expects( $ids['local'] ? $this->once() : $this->never() )->method( 'newUpdateQueryBuilder' )
+			->willReturnCallback( static function () use ( $localDB ) {
+				return new UpdateQueryBuilder( $localDB );
+			} );
 		$centralDB = $this->createMock( IDatabase::class );
 		$centralDB->expects( $ids['global'] ? $this->once() : $this->never() )->method( 'update' );
+		$centralDB->expects( $ids['global'] ? $this->once() : $this->never() )->method( 'newUpdateQueryBuilder' )
+			->willReturnCallback( static function () use ( $centralDB ) {
+				return new UpdateQueryBuilder( $centralDB );
+			} );
 		$updater = $this->getUpdater( $localDB, $centralDB );
 		$updater->setLastEditPage( $page );
 		$updater->setLogIdsForTarget( $titleValue, $ids );
@@ -144,7 +131,7 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		$this->assertTrue( $updater->updateRev( $page, $rev ) );
 	}
 
-	public function provideIDsSuccess(): array {
+	public static function provideIDsSuccess(): array {
 		return [
 			'local only' => [ [ 'local' => [ 1, 2 ], 'global' => [] ] ],
 			'global only' => [ [ 'local' => [], 'global' => [ 1, 2 ] ] ],
@@ -152,22 +139,19 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-	/**
-	 * @covers ::setLastEditPage
-	 * @covers ::setLogIdsForTarget
-	 * @covers ::updateRev
-	 * @covers ::getCacheKey
-	 */
 	public function testUpdateRev_multipleTitles() {
 		$goodTitleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater' );
 		$badTitleValue = new TitleValue( NS_PROJECT, 'These should not be used' );
 		$goodIDs = [ 'local' => [ 1, 2 ], 'global' => [] ];
 		$badIDs = [ 'local' => [], 'global' => [ 1, 2 ] ];
 		[ $page, $rev ] = $this->getPageAndRev( $goodTitleValue );
-		$localDB = $this->createMock( DBConnRef::class );
-		$localDB->expects( $this->once() )->method( 'update' );
+		$localDB = $this->createMock( IDatabase::class );
+		$localDB->expects( $this->once() )->method( 'newUpdateQueryBuilder' )
+			->willReturnCallback( static function () use ( $localDB ) {
+				return new UpdateQueryBuilder( $localDB );
+			} );
 		$centralDB = $this->createMock( IDatabase::class );
-		$centralDB->expects( $this->never() )->method( 'update' );
+		$centralDB->expects( $this->never() )->method( 'newUpdateQueryBuilder' );
 		$updater = $this->getUpdater( $localDB, $centralDB );
 		$updater->setLastEditPage( $page );
 		$updater->setLogIdsForTarget( $goodTitleValue, $goodIDs );
@@ -176,10 +160,6 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		$this->assertTrue( $updater->updateRev( $page, $rev ) );
 	}
 
-	/**
-	 * @covers ::clearLastEditPage
-	 * @covers ::updateRev
-	 */
 	public function testClearLastEditPage() {
 		$titleValue = new TitleValue( NS_PROJECT, 'EditRevUpdater-clear' );
 		[ $page, $revisionRecord ] = $this->getPageAndRev( $titleValue );
@@ -192,7 +172,6 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @param array $ids
-	 * @covers ::setLogIdsForTarget
 	 * @dataProvider provideInvalidIDs
 	 */
 	public function testSetLogIdsForTarget_invalid( array $ids ) {
@@ -201,7 +180,7 @@ class EditRevUpdaterTest extends MediaWikiUnitTestCase {
 		$updater->setLogIdsForTarget( new TitleValue( NS_MAIN, 'x' ), $ids );
 	}
 
-	public function provideInvalidIDs(): array {
+	public static function provideInvalidIDs(): array {
 		return [
 			'empty' => [ [] ],
 			'missing key' => [ [ 'local' => [ 1 ] ] ],

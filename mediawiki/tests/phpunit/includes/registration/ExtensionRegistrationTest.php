@@ -3,38 +3,56 @@
 namespace MediaWiki\Tests\Registration;
 
 use AutoLoader;
-use ExtensionRegistry;
 use Generator;
-use HashBagOStuff;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Settings\Config\ArrayConfigBuilder;
+use MediaWiki\Settings\Config\PhpIniSink;
+use MediaWiki\Settings\SettingsBuilder;
 use MediaWikiIntegrationTestCase;
+use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers ExtensionRegistry
+ * @covers \MediaWiki\Registration\ExtensionRegistry
  */
 class ExtensionRegistrationTest extends MediaWikiIntegrationTestCase {
 
+	/** @var array */
 	private $autoloaderState;
 
+	/** @var ?ExtensionRegistry */
+	private $originalExtensionRegistry = null;
+
 	protected function setUp(): void {
+		// phpcs:disable MediaWiki.Usage.DeprecatedGlobalVariables.Deprecated$wgHooks
+		global $wgHooks;
+
 		parent::setUp();
 
 		$this->autoloaderState = AutoLoader::getState();
 
 		// Make sure to restore globals
 		$this->stashMwGlobals( [
-			'wgAutoloadClasses',
 			'wgHooks',
+			'wgAutoloadClasses',
 			'wgNamespaceProtection',
 			'wgNamespaceModels',
 			'wgAvailableRights',
 			'wgAuthManagerAutoConfig',
 			'wgGroupPermissions',
 		] );
+
+		// For the purpose of this test, make $wgHooks behave like a real global config array.
+		$wgHooks = [];
 	}
 
 	protected function tearDown(): void {
 		AutoLoader::restoreState( $this->autoloaderState );
+
+		if ( $this->originalExtensionRegistry ) {
+			$this->setExtensionRegistry( $this->originalExtensionRegistry );
+		}
+
 		parent::tearDown();
 	}
 
@@ -67,27 +85,47 @@ class ExtensionRegistrationTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 1300, $GLOBALS['wgNamespaceContentModels'] );
 	}
 
+	private function setExtensionRegistry( ExtensionRegistry $registry ) {
+		$class = new \ReflectionClass( ExtensionRegistry::class );
+
+		if ( !$this->originalExtensionRegistry ) {
+			$this->originalExtensionRegistry = $class->getStaticPropertyValue( 'instance' );
+		}
+
+		$class->setStaticPropertyValue( 'instance', $registry );
+	}
+
+	public static function onAnEvent() {
+		// no-op
+	}
+
+	public static function onBooEvent() {
+		// no-op
+	}
+
 	public function testExportHooks() {
 		$manifest = [
 			'Hooks' => [
-				'AnEvent' => 'FooBarClass::onAnEvent',
+				'AnEvent' => self::class . '::onAnEvent',
 				'BooEvent' => 'main',
 			],
-			'HookHandler' => [
-				'main' => [ 'class' => 'Whatever' ]
+			'HookHandlers' => [
+				'main' => [ 'class' => self::class ]
 			],
 		];
 
 		$file = $this->makeManifestFile( $manifest );
 
 		$registry = new ExtensionRegistry();
+		$this->setExtensionRegistry( $registry );
+
 		$registry->queue( $file );
 		$registry->loadFromQueue();
 
 		$this->resetServices();
 		$hookContainer = $this->getServiceContainer()->getHookContainer();
-		$this->assertTrue( $hookContainer->isRegistered( 'AnEvent' ) );
-		$this->assertTrue( $hookContainer->isRegistered( 'BooEvent' ) );
+		$this->assertTrue( $hookContainer->isRegistered( 'AnEvent' ), 'AnEvent' );
+		$this->assertTrue( $hookContainer->isRegistered( 'BooEvent' ), 'BooEvent' );
 	}
 
 	public function testExportAutoload() {
@@ -137,7 +175,6 @@ class ExtensionRegistrationTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideExportAttributesToGlobals
 	 */
 	public function testExportGlobals( $desc, $before, $manifest, $expected ) {
-		$this->stashMwGlobals( array_keys( $expected ) );
 		$this->setMwGlobals( $before );
 
 		$file = $this->makeManifestFile( $manifest );
@@ -150,6 +187,43 @@ class ExtensionRegistrationTest extends MediaWikiIntegrationTestCase {
 			$this->assertArrayHasKey( $name, $GLOBALS, $desc );
 			$this->assertEquals( $expectedValue, $GLOBALS[$name], $desc );
 		}
+	}
+
+	private function newSettingsBuilder(): SettingsBuilder {
+		$settings = new SettingsBuilder(
+			__DIR__,
+			$this->createMock( ExtensionRegistry::class ),
+			new ArrayConfigBuilder(),
+			$this->createMock( PhpIniSink::class ),
+			null
+		);
+
+		return $settings;
+	}
+
+	public static function callbackForTest( array $ext, SettingsBuilder $settings ) {
+		$settings->overrideConfigValue( 'RunCallbacksTest', 'foo' );
+		self::assertSame( 'CallbackTest', $ext['name'] );
+	}
+
+	public function testRunCallbacks() {
+		$manifest = [
+			'name' => 'CallbackTest',
+			'callback' => [ __CLASS__, 'callbackForTest' ],
+		];
+
+		$file = $this->makeManifestFile( $manifest );
+
+		$settings = $this->newSettingsBuilder();
+
+		$registry = new ExtensionRegistry();
+		$registry->setSettingsBuilder( $settings );
+
+		$settings->enterRegistrationStage();
+		$registry->queue( $file );
+		$registry->loadFromQueue();
+
+		$this->assertSame( 'foo', $settings->getConfig()->get( 'RunCallbacksTest' ) );
 	}
 
 	/**
@@ -471,69 +545,6 @@ class ExtensionRegistrationTest extends MediaWikiIntegrationTestCase {
 					'secondaryauth' => [ 'default' => 'DefaultSecondaryAuth' ],
 				],
 			]
-		];
-
-		yield [
-			'No global already set, $wgHooks',
-			[
-				'wgHooks' => [],
-			],
-			[
-				'Hooks' => [ 'AnEvent' => 'FooBarClass::onAnEvent' ]
-			],
-			[
-				'wgHooks' => [
-					'AnEvent' => [
-						'FooBarClass::onAnEvent'
-					],
-				],
-			],
-		];
-
-		yield [
-			'Global already set, $wgHooks',
-			[
-				'wgHooks' => [
-					'AnEvent' => [
-						'FooBarClass::onAnEvent'
-					],
-					'BooEvent' => [
-						'FooBarClass::onBooEvent',
-					],
-				],
-			],
-			[
-				'Hooks' => [ 'AnEvent' => 'BazBarClass::onAnEvent' ]
-			],
-			[
-				'wgHooks' => [
-					'AnEvent' => [
-						'FooBarClass::onAnEvent',
-						'BazBarClass::onAnEvent',
-					],
-					'BooEvent' => [
-						'FooBarClass::onBooEvent',
-					],
-				],
-			],
-		];
-
-		yield [
-			'Entries from HookHandlers should not go into $wgHooks',
-			[
-				'wgHooks' => [],
-			],
-			[
-				'Hooks' => [ 'AnEvent' => 'main' ],
-				'HookHandlers' => [
-					'main' => [
-						'class' => 'FooBarClass',
-					]
-				],
-			],
-			[
-				'wgHooks' => [],
-			],
 		];
 
 		yield [

@@ -4,23 +4,25 @@ namespace MediaWiki\Tests\Unit\Permissions;
 
 use MediaWiki\Actions\ActionFactory;
 use MediaWiki\Block\BlockErrorFormatter;
+use MediaWiki\Block\BlockManager;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\RedirectLookup;
 use MediaWiki\Permissions\GroupPermissionsLookup;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Permissions\RestrictionStore;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFormatter;
 use MediaWiki\User\TempUser\RealTempUserConfig;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
+use MediaWiki\User\UserIdentityLookup;
 use MediaWikiUnitTestCase;
-use Title;
-use TitleFormatter;
-use User;
-use UserCache;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -47,58 +49,39 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 			MainConfigNames::NamespaceProtection => [ NS_MEDIAWIKI => 'editinterface' ],
 			MainConfigNames::RestrictionLevels => [ '', 'autoconfirmed', 'sysop' ],
 			MainConfigNames::DeleteRevisionsLimit => false,
+			MainConfigNames::RateLimits => [],
+			MainConfigNames::ImplicitRights => [],
 		];
 		$config = $overrideConfig + $baseConfig;
-		$specialPageFactory = $options['specialPageFactory'] ??
-			$this->createMock( SpecialPageFactory::class );
 
-		// DummyServicesTrait::getDummyNamespaceInfo
-		$namespaceInfo = $this->getDummyNamespaceInfo();
-
-		$groupPermissionsLookup = $options['groupPermissionsLookup'] ??
-			new GroupPermissionsLookup(
-				new ServiceOptions( GroupPermissionsLookup::CONSTRUCTOR_OPTIONS, $config )
-			);
-		$userGroupManager = $options['userGroupManager'] ??
-			$this->createMock( UserGroupManager::class );
-		$blockErrorFormatter = $options['blockErrorFormatter'] ??
-			$this->createMock( BlockErrorFormatter::class );
 		$hookContainer = $options['hookContainer'] ??
 			$this->createMock( HookContainer::class );
-		$userCache = $options['userCache'] ??
-			$this->createMock( UserCache::class );
 		$redirectLookup = $options['redirectLookup'] ??
 			$this->createMock( RedirectLookup::class );
 		$restrictionStore = $options['restrictionStore'] ??
 			$this->createMock( RestrictionStore::class );
-		$titleFormatter = $options['titleFormatter'] ??
-			$this->createMock( TitleFormatter::class );
-		$tempUserConfig = $options['tempUserConfig'] ??
-			new RealTempUserConfig( [] );
-		$userFactory = $options['userFactory'] ??
-			$this->createMock( UserFactory::class );
-		$actionFactory = $options['actionFactory'] ??
-			$this->createMock( ActionFactory::class );
 
 		$permissionManager = new PermissionManager(
 			new ServiceOptions( PermissionManager::CONSTRUCTOR_OPTIONS, $config ),
-			$specialPageFactory,
-			$namespaceInfo,
-			$groupPermissionsLookup,
-			$userGroupManager,
-			$blockErrorFormatter,
+			$this->createMock( SpecialPageFactory::class ),
+			$this->getDummyNamespaceInfo(),
+			new GroupPermissionsLookup(
+				new ServiceOptions( GroupPermissionsLookup::CONSTRUCTOR_OPTIONS, $config )
+			),
+			$this->createMock( UserGroupManager::class ),
+			$this->createMock( BlockManager::class ),
+			$this->createMock( BlockErrorFormatter::class ),
 			$hookContainer,
-			$userCache,
+			$this->createMock( UserIdentityLookup::class ),
 			$redirectLookup,
 			$restrictionStore,
-			$titleFormatter,
-			$tempUserConfig,
-			$userFactory,
-			$actionFactory
+			$this->createMock( TitleFormatter::class ),
+			new RealTempUserConfig( [] ),
+			$this->createMock( UserFactory::class ),
+			$this->createMock( ActionFactory::class )
 		);
 
-		$accessPermissionManager = TestingAccessWrapper::newFromObject( $permissionManager );
-		return $accessPermissionManager;
+		return TestingAccessWrapper::newFromObject( $permissionManager );
 	}
 
 	/**
@@ -133,18 +116,19 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		// Override user rights
 		$permissionManager->overrideUserRightsForTesting( $user, $rights );
 
-		$result = $permissionManager->checkUserConfigPermissions(
+		$result = PermissionStatus::newEmpty();
+		$permissionManager->checkUserConfigPermissions(
 			$action,
 			$user,
-			[], // starting errors
+			$result,
 			PermissionManager::RIGOR_QUICK, // unused
 			true, // $short, unused
 			$title
 		);
-		$this->assertEquals( $expectedErrors, $result );
+		$this->assertEquals( $expectedErrors, $result->toLegacyErrorArray() );
 	}
 
-	public function provideTestCheckUserConfigPermissions() {
+	public static function provideTestCheckUserConfigPermissions() {
 		yield 'Patrol ignored' => [ 'NameOfActingUser/subpage', [], 'patrol', false, [] ];
 		yield 'Own non-config' => [ 'NameOfActingUser/subpage', [], 'edit', false, [] ];
 		yield 'Other non-config' => [ 'NameOfAnotherUser/subpage', [], 'edit', false, [] ];
@@ -245,21 +229,22 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		}
 		$permissionManager->overrideUserRightsForTesting( $user, $rights );
 
-		$result = $permissionManager->checkUserConfigPermissions(
+		$result = PermissionStatus::newEmpty();
+		$permissionManager->checkUserConfigPermissions(
 			'edit',
 			$user,
-			[], // starting errors
+			$result,
 			PermissionManager::RIGOR_QUICK, // unused
 			true, // $short, unused
 			$title
 		);
 		$this->assertEquals(
 			$expectErrors ? [ [ 'mycustomjsredirectprotected', 'edit' ] ] : [],
-			$result
+			$result->toLegacyErrorArray()
 		);
 	}
 
-	public function provideTestCheckUserConfigPermissionsForRedirect() {
+	public static function provideTestCheckUserConfigPermissionsForRedirect() {
 		yield 'With `editmyuserjsredirect`' => [ true, true, NS_USER, 'NameOfActingUser/other.js', false ];
 		yield 'Not a redirect' => [ false, false, NS_USER, 'NameOfActingUser/other.js', false ];
 		yield 'Redirect out of user space' => [ false, true, NS_MAIN, 'MainPage.js', true ];
@@ -284,6 +269,10 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		$title = $this->createMock( Title::class );
 
 		$restrictionStore = $this->createMock( RestrictionStore::class );
+		$restrictionStore->expects( $this->any() )
+			->method( 'listApplicableRestrictionTypes' )
+			->with( $title )
+			->willReturn( [ 'other-action', $action ] );
 		$restrictionStore->expects( $this->once() )
 			->method( 'getRestrictions' )
 			->with( $title, $action )
@@ -295,18 +284,19 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		] );
 		$permissionManager->overrideUserRightsForTesting( $user, $rights );
 
-		$result = $permissionManager->checkPageRestrictions(
+		$result = PermissionStatus::newEmpty();
+		$permissionManager->checkPageRestrictions(
 			$action,
 			$user,
-			[], // starting errors
+			$result,
 			PermissionManager::RIGOR_QUICK, // unused
 			true, // $short, unused
 			$title
 		);
-		$this->assertEquals( $expectedErrors, $result );
+		$this->assertEquals( $expectedErrors, $result->toLegacyErrorArray() );
 	}
 
-	public function provideTestCheckPageRestrictions() {
+	public static function provideTestCheckPageRestrictions() {
 		yield 'No restrictions' => [ 'move', [], [], true, [] ];
 		yield 'Empty string' => [ 'edit', [ '' ], [], true, [] ];
 		yield 'Semi-protected, with rights' => [
@@ -368,7 +358,7 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		$hookContainer->method( 'run' )
 			->willReturn( true );
 
-		// Overrides needed in case `groupHasPermission` is called
+		// Overrides needed in case `GroupPermissionsLookup::groupHasPermission` is called
 		$config = [
 			MainConfigNames::GroupPermissions => [
 				'autoconfirmed' => [
@@ -391,18 +381,19 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		// which uses the global state
 		$short = true;
 
-		$result = $permissionManager->checkQuickPermissions(
+		$result = PermissionStatus::newEmpty();
+		$permissionManager->checkQuickPermissions(
 			$action,
 			$user,
-			[], // Starting errors
+			$result,
 			PermissionManager::RIGOR_QUICK, // unused
 			$short,
 			$title
 		);
-		$this->assertEquals( $expectedErrors, $result );
+		$this->assertEquals( $expectedErrors, $result->toLegacyErrorArray() );
 	}
 
-	public function provideTestCheckQuickPermissions() {
+	public static function provideTestCheckQuickPermissions() {
 		// $namespace, $pageTitle, $userIsAnon, $action, $rights, $expectedError
 
 		// Four different possible errors when trying to create
@@ -473,18 +464,21 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		];
 	}
 
-	public function testCheckQuickPermissionsHook() {
+	/**
+	 * @dataProvider provideTestCheckQuickPermissionsHook
+	 */
+	public function testCheckQuickPermissionsHook( array $hookErrors, array $expectedResult ) {
 		$title = $this->createMock( Title::class );
 		$user = $this->createMock( User::class );
 		$action = 'FakeActionGoesHere';
 
 		$hookCallback = function ( $hookTitle, $hookUser, $hookAction, &$errors, $doExpensiveQueries, $short )
-			use ( $user, $title, $action )
+			use ( $user, $title, $action, $hookErrors )
 		{
 			$this->assertSame( $title, $hookTitle );
 			$this->assertSame( $user, $hookUser );
 			$this->assertSame( $action, $hookAction );
-			$errors[] = [ 'Hook failure goes here' ];
+			$errors = $hookErrors;
 			return false;
 		};
 
@@ -493,18 +487,27 @@ class PermissionManagerTest extends MediaWikiUnitTestCase {
 		$permissionManager = $this->getPermissionManager( [
 			'hookContainer' => $hookContainer,
 		] );
-		$result = $permissionManager->checkQuickPermissions(
+		$result = PermissionStatus::newEmpty();
+		$permissionManager->checkQuickPermissions(
 			$action,
 			$user,
-			[], // Starting errors
+			$result,
 			PermissionManager::RIGOR_QUICK, // unused
 			true, // $short, unused,
 			$title
 		);
 		$this->assertEquals(
-			[ [ 'Hook failure goes here' ] ],
-			$result
+			$expectedResult,
+			$result->toLegacyErrorArray()
 		);
+	}
+
+	public function provideTestCheckQuickPermissionsHook() {
+		// test name => [ $result / $errors, $status->toLegacyErrorArray() ]
+		yield 'Hook returns false but no errors' => [ [], [] ];
+		yield 'One error' => [ [ 'error-key' ], [ [ 'error-key' ] ] ];
+		yield 'One error with params as array' => [ [ 'error-key', 'param' ], [ [ 'error-key', 'param' ] ] ];
+		yield 'Multiple errors' => [ [ [ 'error-key' ], [ 'error-key-2' ] ], [ [ 'error-key' ], [ 'error-key-2' ] ] ];
 	}
 
 }

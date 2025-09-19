@@ -3,10 +3,6 @@
 ( function ( mw, OO, ve ) {
 	'use strict';
 
-	// For MW < 1.32, the ve.init.sa.Target class is defined, so use that; otherwise
-	// use the class defined in VisualEditor itself.
-	var parentClass = ve.init.sa && ve.init.sa.Target ? ve.init.sa.Target : ve.init.mw.Target;
-
 	mw.veForAll = mw.veForAll || {
 		ui: {}
 	};
@@ -17,7 +13,7 @@
 	 * @param node
 	 * @param content
 	 * @class
-	 * @extends ve.init.sa.Target
+	 * @extends ve.init.mw.Target
 	 */
 	mw.veForAll.Target = function ( node, content ) {
 		var config = {};
@@ -34,7 +30,7 @@
 		if ( node.hasClass( 'toolbarOnTop' ) ) {
 			this.toolbarPosition = 'top';
 			this.toolbarAutoHide = false;
-			config.toolbarConfig.floatable = true;
+			config.toolbarConfig.floatable = false;
 		}
 
 		mw.veForAll.Target.parent.call( this, config );
@@ -45,7 +41,7 @@
 		this.init( content );
 	};
 
-	OO.inheritClass( mw.veForAll.Target, parentClass );
+	OO.inheritClass( mw.veForAll.Target, ve.init.mw.Target );
 
 	mw.veForAll.Target.prototype.init = function ( content ) {
 		this.convertToHtml( content );
@@ -159,6 +155,7 @@
 		// show or hide toolbar when lose focus
 		this.getSurface().getView().on( 'focus', function () {
 			target.updateToolbarVisibility();
+			target.$node.addClass( 've-for-all-waiting-for-update' );
 		} );
 		target.updateToolbarVisibility();
 		this.setDir();
@@ -184,9 +181,12 @@
 	 */
 	mw.veForAll.Target.prototype.updateContent = function () {
 		var surface = this.getSurface();
-		if ( surface !== null && !$( this.$node ).is( ':visible' ) ) {
+		if ( surface !== null &&
+			!$( this.$node ).is( ':visible' ) &&
+			this.$node.is( '.ve-for-all-waiting-for-update' ) ) {
 			return this.convertToWikiText( surface.getHtml() );
 		}
+		return $().promise();
 	};
 
 	mw.veForAll.Target.prototype.getPageName = function () {
@@ -214,6 +214,14 @@
 				lines[ i ] = curLine.replace( /\|/g, '{{!}}' );
 			} else if ( withinTable && curLine.indexOf( '|' ) === 0 ) {
 				lines[ i ] = curLine.replace( /\|/g, '{{!}}' );
+			}
+			// Table caption case (`|+`). See https://www.mediawiki.org/wiki/Help:Tables
+			if ( withinTable && curLine.indexOf( '|+' ) > -1 ) {
+				lines[ i ] = curLine.replace( /\|\+/g, '{{!}}+' );
+			}
+			// colspan/rowspan case (`|rowspan=`/`|colspan=`). See https://www.mediawiki.org/wiki/Help:Tables
+			if ( withinTable && ( curLine.indexOf( 'colspan' ) > -1 || curLine.indexOf( 'rowspan' ) > -1 ) ) {
+				lines[ i ] = curLine.replace( /(colspan|rowspan)="(\d+?)"\s{0,}\|/, '$1="$2" {{!}}' ).replace( /^\s{0,}\|/, '{{!}} ' );
 			}
 			if ( curLine.indexOf( '|}' ) === 0 ) {
 				withinTable = false;
@@ -254,7 +262,7 @@
 
 			$( target.$node )
 				.prop( 'disabled', false )
-				.removeClass( 'oo-ui-texture-pending' );
+				.removeClass( 'oo-ui-texture-pending ve-for-all-waiting-for-update' );
 
 			$( target.$element ).removeClass( 'oo-ui-texture-pending' );
 
@@ -289,7 +297,18 @@
 			content: content,
 			title: this.getPageName()
 		} ).then( function ( data ) {
-			target.createWithHtmlContent( data[ 'veforall-parsoid-utils' ].content );
+			var htmlContent = data[ 'veforall-parsoid-utils' ].content;
+			// For some reason, certain wikitext (like section names
+			// containing commas) sometimes leads to this strange
+			// <span> tag within the returned HTML, which in turn
+			// leads to the message "Sorry, this element can only be
+			// edited in source mode for now" showing up in the
+			// editor in those parts. So, just get rid of this tag.
+			// @todo - it would be better, of course, to figure out
+			// the underlying cause of this problem, and fix that.
+			var regex = /<span [^>]* typeof="mw:FallbackId" [^>]*><\/span>/g;
+			htmlContent = htmlContent.replace( regex, '' );
+			target.createWithHtmlContent( htmlContent );
 			$( target.$node )
 				.prop( 'disabled', false )
 				.removeClass( 'oo-ui-texture-pending' );
@@ -307,11 +326,6 @@
 		var textarea = this.$node,
 			target = this;
 
-		// Needed for MW <= 1.31 (?)
-		if ( this.surface === null ) {
-			return;
-		}
-
 		if ( $( textarea ).is( ':visible' ) ) {
 			// Switch to VE editor
 
@@ -328,12 +342,6 @@
 
 			$( textarea ).parent().find( '.oo-ui-tool-link' )
 				.attr( 'title', OO.ui.deferMsg( 'veforall-switch-editor-tool-title' ) );
-
-			// Check is needed for MW <= 1.31 (?)
-			if ( this.surface !== null ) {
-				this.setDir();
-			}
-
 		} else {
 			// Switch to markup editor
 

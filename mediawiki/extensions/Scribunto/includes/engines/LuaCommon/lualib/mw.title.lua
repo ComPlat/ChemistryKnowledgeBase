@@ -54,6 +54,9 @@ local function makeTitleObject( data )
 
 	local obj = {}
 	local checkSelf = util.makeCheckSelfFunction( 'mw.title', 'title', obj, 'title object' );
+	-- For external (interwiki) links, data.namespace is unknown and we'll
+	-- end up just using the properties for the default namespace here.
+	-- We'll fix it up below to avoid misleading the caller.
 	local ns = mw.site.namespaces[data.namespace]
 
 	local isCurrentTitle = data.isCurrentTitle
@@ -64,7 +67,24 @@ local function makeTitleObject( data )
 	data.isSpecialPage = data.namespace == mw.site.namespaces.Special.id
 	data.isTalkPage = ns.isTalk
 	data.subjectNsText = ns.subject.name
-	data.canTalk = ns.talk ~= nil
+
+	if ns.talk ~= nil then
+		data.canTalk = true
+		data.talkNsText = ns.talk.name
+	else
+		data.canTalk = false
+	end
+
+	if data.isExternal then
+		-- For interwiki links we don't know the true value of any of these
+		-- properties, so nil them out.
+		data.isContentPage = nil
+		data.isSpecialPage = nil
+		data.isTalkPage = nil
+		data.canTalk = nil
+		data.subjectNsText = nil
+		data.talkNsText = nil
+	end
 
 	data.prefixedText = data.text
 	if data.nsText ~= '' then
@@ -148,6 +168,7 @@ local function makeTitleObject( data )
 	end
 
 	function data:getContent()
+		-- deprecated: should use `title.content` instead
 		checkSelf( self, 'getContent' )
 		local content = php.getContent( self.fullText )
 		data.getContent = function ( self )
@@ -246,6 +267,14 @@ local function makeTitleObject( data )
 				end
 				return title.makeTitle( ns.id, data.text )
 			end
+			if k == 'pageLang' then
+				if data.pageLang == nil then
+					data.pageLang = mw.language.new(
+						php.getPageLangCode( data.prefixedText )
+					);
+				end
+				return data.pageLang
+			end
 			if k == 'file' then
 				if data.file == nil then
 					data.file = php.getFileInfo( data.prefixedText )
@@ -272,6 +301,18 @@ local function makeTitleObject( data )
 					data.redirectTarget = makeTitleObject( php.redirectTarget( data.prefixedText ) ) or false
 				end
 				return data.redirectTarget
+			end
+			if k == 'content' then
+				if data.content == nil then
+					data.content = php.getContent( data.prefixedText ) or false
+				end
+				return data.content
+			end
+			if k == 'categories' then
+				if data.categories == nil then
+					data.categories = php.getCategories( data.prefixedText )
+				end
+				return data.categories
 			end
 
 			return data[k]

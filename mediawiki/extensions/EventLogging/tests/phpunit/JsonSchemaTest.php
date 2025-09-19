@@ -9,6 +9,10 @@
  */
 
 use MediaWiki\Extension\EventLogging\JsonSchemaContent;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
 /**
  * @group EventLogging
@@ -77,14 +81,17 @@ class JsonSchemaTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Extension\EventLogging\JsonSchemaContent::getText
 	 */
 	public function testGetText() {
+		$this->clearHooks();
 		$content = new JsonSchemaContent( self::EVIL_JSON );
 		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
+		$title = Title::makeTitle( NS_MAIN, 'Test' );
+		$title->setContentModel( CONTENT_MODEL_WIKITEXT );
 		$parserOutput = $contentRenderer->getParserOutput(
 			$content,
-			Title::newFromText( 'Test' )
+			$title
 		);
 		$this->assertStringContainsString(
-			'&lt;script>',
+			'&lt;script',
 			$parserOutput->getText(),
 			'HTML output should be escaped'
 		);

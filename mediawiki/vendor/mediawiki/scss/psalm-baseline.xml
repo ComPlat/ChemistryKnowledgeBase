@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="5.23.1@8471a896ccea3526b26d082f4461eeea467f10a4">
+  <file src="src/ResourceLoaderSCSSModule.php">
+    <DocblockTypeContradiction>
+      <code><![CDATA[is_array( $value )]]></code>
+    </DocblockTypeContradiction>
+    <MixedAssignment>
+      <code><![CDATA[$cacheResult]]></code>
+      <code><![CDATA[$this->cacheTriggers]]></code>
+      <code><![CDATA[$this->paths]]></code>
+      <code><![CDATA[$this->variables]]></code>
+    </MixedAssignment>
+    <RedundantConditionGivenDocblockType>
+      <code><![CDATA[$triggerFile !== null]]></code>
+      <code><![CDATA[is_int( $key )]]></code>
+    </RedundantConditionGivenDocblockType>
+    <UnusedClass>
+      <code><![CDATA[ResourceLoaderSCSSModule]]></code>
+    </UnusedClass>
+  </file>
+</files>

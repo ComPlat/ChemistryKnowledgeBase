@@ -3,17 +3,16 @@
 namespace MediaWiki\Extension\Math;
 
 use Exception;
-use ExtensionRegistry;
-use Html;
 use InvalidArgumentException;
 use MediaWiki\Extension\Math\Widget\WikibaseEntitySelector;
+use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
-use Message;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\SpecialPage\SpecialPage;
 use OOUI\ButtonInputWidget;
 use OOUI\FormLayout;
-use OutputPage;
-use SpecialPage;
 
 class SpecialMathWikibase extends SpecialPage {
 	/**
@@ -24,16 +23,19 @@ class SpecialMathWikibase extends SpecialPage {
 	/**
 	 * @var MathWikibaseConnector Wikibase connection
 	 */
-	private $wikibase;
+	private MathWikibaseConnector $wikibase;
 
 	/**
 	 * @var \Psr\Log\LoggerInterface
 	 */
 	private $logger;
 
-	public function __construct() {
+	public function __construct(
+		MathWikibaseConnector $wikibase
+	) {
 		parent::__construct( 'MathWikibase' );
 
+		$this->wikibase = $wikibase;
 		$this->logger = LoggerFactory::getInstance( 'Math' );
 	}
 
@@ -41,24 +43,6 @@ class SpecialMathWikibase extends SpecialPage {
 	 * @inheritDoc
 	 */
 	public function execute( $par ) {
-		global $wgLanguageCode;
-
-		if ( !self::isWikibaseAvailable() ) {
-			$out = $this->getOutput();
-
-			$out->setPageTitle(
-				$this->getPlainText( 'math-wikibase-special-error-header' )
-			);
-			$out->addHTML(
-				$this->msg( 'math-wikibase-special-error-no-wikibase' )->inContentLanguage()->parse()
-			);
-			return;
-		}
-
-		if ( !$this->wikibase ) {
-			$this->wikibase = MediaWikiServices::getInstance()->get( 'Math.WikibaseConnector' );
-		}
-
 		$request = $this->getRequest();
 		$output = $this->getOutput();
 		$output->enableOOUI();
@@ -78,8 +62,9 @@ class SpecialMathWikibase extends SpecialPage {
 			$this->showForm();
 		} else {
 			$this->logger->debug( "Request qID: " . $requestId );
+			$languageCode = $this->getConfig()->get( MainConfigNames::LanguageCode );
 			try {
-				$info = $this->wikibase->fetchWikibaseFromId( $requestId, $wgLanguageCode );
+				$info = $this->wikibase->fetchWikibaseFromId( $requestId, $languageCode );
 				$this->logger->debug( "Successfully fetched information for qID: " . $requestId );
 				$this->buildPageRepresentation( $info, $requestId, $output );
 			} catch ( Exception $e ) {
@@ -240,18 +225,10 @@ class SpecialMathWikibase extends SpecialPage {
 	 * @return string Raw HTML
 	 */
 	private static function createHTMLHeader( string $header ): string {
-		return Html::rawElement(
+		return Html::element(
 			'h2',
 			[],
-			Html::element( 'span', [ 'class' => 'mw-headline' ], $header )
+			$header
 		);
-	}
-
-	/**
-	 * Check whether Wikibase is available or not
-	 * @return bool
-	 */
-	public static function isWikibaseAvailable(): bool {
-		return ExtensionRegistry::getInstance()->isLoaded( 'WikibaseClient' );
 	}
 }

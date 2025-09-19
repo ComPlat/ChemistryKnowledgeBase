@@ -10,7 +10,10 @@
 
 use MediaWiki\Extension\EventLogging\RemoteSchema;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Json\FormatJson;
 use PHPUnit\Framework\MockObject\MockObject;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -26,11 +29,12 @@ class RemoteSchemaTest extends MediaWikiIntegrationTestCase {
 	/** @var RemoteSchema */
 	private $schema;
 
+	/** @var string[][] */
 	public $statusSchema = [ 'status' => [ 'type' => 'string' ] ];
 
 	protected function setUp(): void {
-		$this->setMwGlobals( [
-			'wgEventLoggingSchemaApiUri' => 'https://schema.test/api',
+		$this->overrideConfigValues( [
+			'EventLoggingSchemaApiUri' => 'https://schema.test/api',
 		] );
 
 		parent::setUp();
@@ -95,11 +99,11 @@ class RemoteSchemaTest extends MediaWikiIntegrationTestCase {
 			->method( 'get' )
 			->with(
 				$this->stringContains( '?' ),
-				$this->equalTo( [
+				[
 					'timeout' => RemoteSchema::LOCK_TIMEOUT * 0.8
-				] )
+				]
 			)
-			->will( $this->returnValue( FormatJson::encode( $this->statusSchema ) ) );
+			->willReturn( FormatJson::encode( $this->statusSchema ) );
 
 		$this->assertEquals( $this->statusSchema, $this->schema->get() );
 	}

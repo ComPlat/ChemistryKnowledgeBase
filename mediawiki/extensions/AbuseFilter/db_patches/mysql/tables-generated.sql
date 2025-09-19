@@ -5,8 +5,7 @@
 CREATE TABLE /*_*/abuse_filter (
   af_id BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
   af_pattern BLOB NOT NULL,
-  af_user BIGINT UNSIGNED NOT NULL,
-  af_user_text VARBINARY(255) NOT NULL,
+  af_actor BIGINT UNSIGNED NOT NULL,
   af_timestamp BINARY(14) NOT NULL,
   af_enabled TINYINT(1) DEFAULT 1 NOT NULL,
   af_comments BLOB DEFAULT NULL,
@@ -18,7 +17,7 @@ CREATE TABLE /*_*/abuse_filter (
   af_actions VARCHAR(255) DEFAULT '' NOT NULL,
   af_global TINYINT(1) DEFAULT 0 NOT NULL,
   af_group VARBINARY(64) DEFAULT 'default' NOT NULL,
-  INDEX af_user (af_user),
+  INDEX af_actor (af_actor),
   INDEX af_group_enabled (af_group, af_enabled, af_id),
   PRIMARY KEY(af_id)
 ) /*$wgDBTableOptions*/;
@@ -70,8 +69,7 @@ CREATE TABLE /*_*/abuse_filter_log (
 CREATE TABLE /*_*/abuse_filter_history (
   afh_id BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
   afh_filter BIGINT UNSIGNED NOT NULL,
-  afh_user BIGINT UNSIGNED NOT NULL,
-  afh_user_text VARBINARY(255) NOT NULL,
+  afh_actor BIGINT UNSIGNED NOT NULL,
   afh_timestamp BINARY(14) NOT NULL,
   afh_pattern BLOB NOT NULL,
   afh_comments BLOB NOT NULL,
@@ -82,8 +80,7 @@ CREATE TABLE /*_*/abuse_filter_history (
   afh_changed_fields VARCHAR(255) DEFAULT '' NOT NULL,
   afh_group VARBINARY(64) DEFAULT NULL,
   INDEX afh_filter (afh_filter),
-  INDEX afh_user (afh_user),
-  INDEX afh_user_text (afh_user_text),
+  INDEX afh_actor (afh_actor),
   INDEX afh_timestamp (afh_timestamp),
   PRIMARY KEY(afh_id)
 ) /*$wgDBTableOptions*/;

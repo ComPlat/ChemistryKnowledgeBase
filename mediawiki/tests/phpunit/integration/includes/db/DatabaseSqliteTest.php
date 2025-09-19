@@ -1,13 +1,20 @@
 <?php
 
 use Psr\Log\NullLogger;
+use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\Rdbms\Blob;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\DatabaseSqlite;
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IResultWrapper;
+use Wikimedia\Rdbms\Query;
 use Wikimedia\Rdbms\ResultWrapper;
 use Wikimedia\Rdbms\TransactionProfiler;
 
 /**
+ * @covers \Wikimedia\Rdbms\Database
+ * @covers \Wikimedia\Rdbms\DatabaseSqlite
+ * @covers \Wikimedia\Rdbms\Platform\SqlitePlatform
  * @group sqlite
  * @group Database
  * @group medium
@@ -26,8 +33,8 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 			$this->markTestSkipped( 'No SQLite support detected' );
 		}
 		$this->db = $this->newMockDb();
-		if ( version_compare( $this->db->getServerVersion(), '3.6.0', '<' ) ) {
-			$this->markTestSkipped( "SQLite at least 3.6 required, {$this->db->getServerVersion()} found" );
+		if ( version_compare( $this->getDb()->getServerVersion(), '3.6.0', '<' ) ) {
+			$this->markTestSkipped( "SQLite at least 3.6 required, {$this->getDb()->getServerVersion()} found" );
 		}
 	}
 
@@ -54,9 +61,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 				'profiler' => null,
 				'topologyRole' => Database::ROLE_STREAMING_MASTER,
 				'trxProfiler' => new TransactionProfiler(),
-				'connLogger' => new NullLogger(),
-				'queryLogger' => new NullLogger(),
-				'replLogger' => new NullLogger(),
 				'errorLogger' => null,
 				'deprecationLogger' => new NullLogger(),
 				'srvCache' => new HashBagOStuff(),
@@ -69,6 +73,9 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 
 		$sqlDump = '';
 		$mock->method( 'query' )->willReturnCallback( static function ( $sql ) use ( &$sqlDump ) {
+			if ( $sql instanceof Query ) {
+				$sql = $sql->getSQL();
+			}
 			$sqlDump .= "$sql;";
 
 			return true;
@@ -123,7 +130,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider provideAddQuotes()
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::addQuotes
 	 */
 	public function testAddQuotes( $value, $expected ) {
 		// check quoting
@@ -133,7 +139,7 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		// ok, quoting works as expected, now try a round trip.
 		$re = $db->query( 'select ' . $db->addQuotes( $value ) );
 
-		$this->assertTrue( $re !== false, 'query failed' );
+		$this->assertInstanceOf( IResultWrapper::class, $re, 'query failed' );
 
 		$row = $re->fetchRow();
 		if ( $row ) {
@@ -147,9 +153,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		}
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::duplicateTableStructure
-	 */
 	public function testDuplicateTableStructure() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 		$db->query( 'CREATE TABLE foo(foo, barfoo)' );
@@ -158,7 +161,11 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 
 		$db->duplicateTableStructure( 'foo', 'bar' );
 		$this->assertEquals( 'CREATE TABLE "bar"(foo, barfoo)',
-			$db->selectField( 'sqlite_master', 'sql', [ 'name' => 'bar' ] ),
+			$db->newSelectQueryBuilder()
+				->select( 'sql' )
+				->from( 'sqlite_master' )
+				->where( [ 'name' => 'bar' ] )
+				->caller( __METHOD__ )->fetchField(),
 			'Normal table duplication'
 		);
 		$indexList = $db->query( 'PRAGMA INDEX_LIST("bar")' );
@@ -171,7 +178,11 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 
 		$db->duplicateTableStructure( 'foo', 'baz', true );
 		$this->assertEquals( 'CREATE TABLE "baz"(foo, barfoo)',
-			$db->selectField( 'sqlite_temp_master', 'sql', [ 'name' => 'baz' ] ),
+			$db->newSelectQueryBuilder()
+				->select( 'sql' )
+				->from( 'sqlite_temp_master' )
+				->where( [ 'name' => 'baz' ] )
+				->caller( __METHOD__ )->fetchField(),
 			'Creation of temporary duplicate'
 		);
 		$indexList = $db->query( 'PRAGMA INDEX_LIST("baz")' );
@@ -182,14 +193,15 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertEquals( 'baz_index2', $index->name );
 		$this->assertSame( '1', (string)$index->unique );
 		$this->assertSame( '0',
-			(string)$db->selectField( 'sqlite_master', 'COUNT(*)', [ 'name' => 'baz' ] ),
+			(string)$db->newSelectQueryBuilder()
+				->select( 'COUNT(*)' )
+				->from( 'sqlite_master' )
+				->where( [ 'name' => 'baz' ] )
+				->caller( __METHOD__ )->fetchField(),
 			'Create a temporary duplicate only'
 		);
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::duplicateTableStructure
-	 */
 	public function testDuplicateTableStructureVirtual() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 		if ( $db->getFulltextSearchModule() != 'FTS3' ) {
@@ -199,20 +211,25 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 
 		$db->duplicateTableStructure( 'foo', 'bar' );
 		$this->assertEquals( 'CREATE VIRTUAL TABLE "bar" USING FTS3(foobar)',
-			$db->selectField( 'sqlite_master', 'sql', [ 'name' => 'bar' ] ),
+			$db->newSelectQueryBuilder()
+				->select( 'sql' )
+				->from( 'sqlite_master' )
+				->where( [ 'name' => 'bar' ] )
+				->caller( __METHOD__ )->fetchField(),
 			'Duplication of virtual tables'
 		);
 
 		$db->duplicateTableStructure( 'foo', 'baz', true );
 		$this->assertEquals( 'CREATE VIRTUAL TABLE "baz" USING FTS3(foobar)',
-			$db->selectField( 'sqlite_master', 'sql', [ 'name' => 'baz' ] ),
+			$db->newSelectQueryBuilder()
+				->select( 'sql' )
+				->from( 'sqlite_master' )
+				->where( [ 'name' => 'baz' ] )
+				->caller( __METHOD__ )->fetchField(),
 			"Can't create temporary virtual tables, should fall back to non-temporary duplication"
 		);
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::deleteJoin
-	 */
 	public function testDeleteJoin() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 		$db->query( 'CREATE TABLE a (a_1)', __METHOD__ );
@@ -251,30 +268,22 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertTrue( $result, $result );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::insertId
-	 */
 	public function testInsertIdType() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 
 		$databaseCreation = $db->query( 'CREATE TABLE a ( a_1 )', __METHOD__ );
 		$this->assertInstanceOf( ResultWrapper::class, $databaseCreation, "Database creation" );
 
-		$insertion = $db->insert( 'a', [ 'a_1' => 10 ], __METHOD__ );
-		$this->assertTrue( $insertion, "Insertion worked" );
-
+		$db->insert( 'a', [ 'a_1' => 10 ], __METHOD__ );
 		$this->assertIsInt( $db->insertId(), "Actual typecheck" );
 		$this->assertTrue( $db->close(), "closing database" );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::insert
-	 */
 	public function testInsertAffectedRows() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 		$db->query( 'CREATE TABLE testInsertAffectedRows ( foo )', __METHOD__ );
 
-		$insertion = $db->insert(
+		$db->insert(
 			'testInsertAffectedRows',
 			[
 				[ 'foo' => 10 ],
@@ -283,7 +292,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 			],
 			__METHOD__
 		);
-		$this->assertTrue( $insertion, "Insertion worked" );
 
 		$this->assertSame( 3, $db->affectedRows() );
 		$this->assertTrue( $db->close(), "closing database" );
@@ -300,9 +308,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertFalse( (bool)$row['a'] );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::__toString
-	 */
 	public function testToString() {
 		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
 
@@ -311,16 +316,12 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'sqlite object', $toString );
 	}
 
-	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::getAttributes()
-	 */
 	public function testsAttributes() {
-		$attributes = Database::attributesFromType( 'sqlite' );
-		$this->assertTrue( $attributes[Database::ATTR_DB_LEVEL_LOCKING] );
+		$dbFactory = $this->getServiceContainer()->getDatabaseFactory();
+		$this->assertTrue( $dbFactory->attributesFromType( 'sqlite' )[Database::ATTR_DB_LEVEL_LOCKING] );
 	}
 
 	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::insert()
 	 * @param string $version
 	 * @param string $table
 	 * @param array $rows
@@ -337,7 +338,7 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expectedSql, $sqlDump );
 	}
 
-	public function provideNativeInserts() {
+	public static function provideNativeInserts() {
 		return [
 			[
 				'3.8.0',
@@ -358,7 +359,6 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \Wikimedia\Rdbms\DatabaseSqlite::replace()
 	 * @param string $version
 	 * @param string $table
 	 * @param array $ukeys
@@ -376,7 +376,7 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expectedSql, $sqlDump );
 	}
 
-	public function provideNativeReplaces() {
+	public static function provideNativeReplaces() {
 		return [
 			[
 				'3.8.0',
@@ -396,5 +396,231 @@ class DatabaseSqliteTest extends \MediaWikiIntegrationTestCase {
 				'REPLACE INTO "a" (a_1,a_2) VALUES (2,\'x\'),(3,\'y\');'
 			],
 		];
+	}
+
+	public function testInsertIdAfterInsert() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'k' => 'Luca', 'v' => mt_rand( 1, 100 ), 't' => time() ] ];
+
+		$db->insert( $dTable, $rows, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testInsertIdAfterInsertIgnore() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'k' => 'Luca', 'v' => mt_rand( 1, 100 ), 't' => time() ] ];
+
+		$db->insert( $dTable, $rows, __METHOD__, 'IGNORE' );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+
+		$db->insert( $dTable, $rows, __METHOD__, 'IGNORE' );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testInsertIdAfterReplace() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'k' => 'Luca', 'v' => mt_rand( 1, 100 ), 't' => time() ] ];
+
+		$db->replace( $dTable, 'k', $rows, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+
+		$db->replace( $dTable, 'k', $rows, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 2, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 2, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testInsertIdAfterUpsert() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'k' => 'Luca', 'v' => mt_rand( 1, 100 ), 't' => time() ] ];
+		$otherRows = [ [ 'k' => 'Skylar', 'v' => mt_rand( 1, 100 ), 't' => time() ] ];
+		$set = [
+			'v = ' . $db->buildExcludedValue( 'v' ),
+			't = ' . $db->buildExcludedValue( 't' ) . ' + 1'
+		];
+
+		$db->upsert( $dTable, $rows, 'k', $set, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+
+		$db->upsert( $dTable, $otherRows, 'k', $set, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 2, $db->insertId() );
+
+		$db->upsert( $dTable, $rows, 'k', $set, __METHOD__ );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testInsertIdAfterInsertSelect() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$sTable = $this->createSourceTable( $db );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'sk' => 'Luca', 'sv' => mt_rand( 1, 100 ), 'st' => time() ] ];
+		$db->insert( $sTable, $rows, __METHOD__, 'IGNORE' );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertSame( 1, (int)$db->newSelectQueryBuilder()
+			->select( 'sn' )
+			->from( $sTable )
+			->where( [ 'sk' => 'Luca' ] )
+			->fetchField() );
+
+		$db->insertSelect(
+			$dTable,
+			$sTable,
+			[ 'k' => 'sk', 'v' => 'sv', 't' => 'st' ],
+			[ 'sk' => 'Luca' ],
+			__METHOD__,
+			'IGNORE'
+		);
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testInsertIdAfterInsertSelectIgnore() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$sTable = $this->createSourceTable( $db );
+		$dTable = $this->createDestTable( $db );
+
+		$rows = [ [ 'sk' => 'Luca', 'sv' => mt_rand( 1, 100 ), 'st' => time() ] ];
+		$db->insert( $sTable, $rows, __METHOD__, 'IGNORE' );
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertSame( 1, (int)$db->newSelectQueryBuilder()
+			->select( 'sn' )
+			->from( $sTable )
+			->where( [ 'sk' => 'Luca' ] )
+			->fetchField() );
+
+		$db->insertSelect(
+			$dTable,
+			$sTable,
+			[ 'k' => 'sk', 'v' => 'sv', 't' => 'st' ],
+			[ 'sk' => 'Luca' ],
+			__METHOD__,
+			'IGNORE'
+		);
+		$this->assertSame( 1, $db->affectedRows() );
+		$this->assertSame( 1, $db->insertId() );
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+
+		$db->insertSelect(
+			$dTable,
+			$sTable,
+			[ 'k' => 'sk', 'v' => 'sv', 't' => 'st' ],
+			[ 'sk' => 'Luca' ],
+			__METHOD__,
+			'IGNORE'
+		);
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+
+		$this->assertNWhereKEqualsLuca( 1, $dTable, $db );
+		$this->assertSame( 0, $db->affectedRows() );
+		$this->assertSame( 0, $db->insertId() );
+	}
+
+	public function testFieldAndIndexInfo() {
+		$db = DatabaseSqlite::newStandaloneInstance( ':memory:' );
+		$db->query(
+			"CREATE TABLE tmp_schema_tbl (" .
+			"n integer not null primary key autoincrement, " .
+			"k text, " .
+			"v integer, " .
+			"t integer" .
+			")"
+		);
+		$db->query( "CREATE UNIQUE INDEX tmp_schema_tbl_k ON tmp_schema_tbl (k)" );
+		$db->query( "CREATE INDEX tmp_schema_tbl_t ON tmp_schema_tbl (t)" );
+
+		$this->assertTrue( $db->fieldExists( 'tmp_schema_tbl', 'n' ) );
+		$this->assertTrue( $db->fieldExists( 'tmp_schema_tbl', 'k' ) );
+		$this->assertTrue( $db->fieldExists( 'tmp_schema_tbl', 'v' ) );
+		$this->assertTrue( $db->fieldExists( 'tmp_schema_tbl', 't' ) );
+		$this->assertFalse( $db->fieldExists( 'tmp_schema_tbl', 'x' ) );
+
+		$this->assertTrue( $db->indexExists( 'tmp_schema_tbl', 'tmp_schema_tbl_k' ) );
+		$this->assertTrue( $db->indexExists( 'tmp_schema_tbl', 'tmp_schema_tbl_t' ) );
+		$this->assertFalse( $db->indexExists( 'tmp_schema_tbl', 'tmp_schema_tbl_x' ) );
+		$this->assertFalse( $db->indexExists( 'tmp_schema_tbl', 'PRIMARY' ) );
+
+		$this->assertTrue( $db->indexUnique( 'tmp_schema_tbl', 'tmp_schema_tbl_k' ) );
+		$this->assertFalse( $db->indexUnique( 'tmp_schema_tbl', 'tmp_schema_tbl_t' ) );
+		$this->assertNull( $db->indexUnique( 'tmp_schema_tbl', 'tmp_schema_tbl_x' ) );
+		$this->assertNull( $db->indexUnique( 'tmp_schema_tbl', 'PRIMARY' ) );
+	}
+
+	private function createSourceTable( IDatabase $db ) {
+		$db->query( "DROP TABLE IF EXISTS tmp_src_tbl" );
+		$db->query(
+			"CREATE TABLE tmp_src_tbl (" .
+			"sn integer not null primary key autoincrement, " .
+			"sk text, " .
+			"sv integer, " .
+			"st integer" .
+			")"
+		);
+		$db->query( "CREATE UNIQUE INDEX tmp_src_tbl_sk ON tmp_src_tbl (sk)" );
+
+		return "tmp_src_tbl";
+	}
+
+	private function createDestTable( IDatabase $db ) {
+		$db->query( "DROP TABLE IF EXISTS tmp_dst_tbl" );
+		$db->query(
+			"CREATE TABLE tmp_dst_tbl (" .
+			"n integer not null primary key autoincrement, " .
+			"k text, " .
+			"v integer, " .
+			"t integer" .
+			")"
+		);
+		$db->query( "CREATE UNIQUE INDEX tmp_dst_tbl_k ON tmp_dst_tbl (k)" );
+
+		return "tmp_dst_tbl";
+	}
+
+	private function assertNWhereKEqualsLuca( $expected, $table, $db ) {
+		$this->assertSame( $expected, (int)$db->newSelectQueryBuilder()
+			->select( 'n' )
+			->from( $table )
+			->where( [ 'k' => 'Luca' ] )
+			->fetchField() );
 	}
 }

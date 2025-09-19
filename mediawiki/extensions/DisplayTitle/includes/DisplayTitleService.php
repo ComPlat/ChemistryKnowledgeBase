@@ -133,13 +133,16 @@ class DisplayTitleService {
 			} elseif ( is_int( $html ) ) {
 				$text = (string)$html;
 			} elseif ( $html instanceof HtmlArmor ) {
-				$text = str_replace( '_', ' ', HtmlArmor::getHtml( $html ) );
+				$text = HtmlArmor::getHtml( $html );
+				// Remove html tags used for highlighting matched words in the title, see T355481
+				$text = strip_tags( $text );
+				$text = str_replace( '_', ' ', $text );
 			}
 
 			// handle named Semantic MediaWiki subobjects (see T275984) by removing trailing fragment
 			// skip fragment detection on category pages
 			$fragment = '#' . $target->getFragment();
-			if ( $fragment !== '#' && $target->getNamespace() != NS_CATEGORY ) {
+			if ( $text !== null && $fragment !== '#' && $target->getNamespace() !== NS_CATEGORY ) {
 				$fragmentLength = strlen( $fragment );
 				if ( substr( $text, -$fragmentLength ) === $fragment ) {
 					// Remove fragment text from the link text
@@ -156,15 +159,15 @@ class DisplayTitleService {
 					if ( $wrap ) {
 						$html = new HtmlArmor( $text );
 					}
-					$customized = $text != $target->getPrefixedText() && $text != $target->getText();
+					$customized = $text !== $target->getPrefixedText() && $text !== $target->getText();
 				}
 			} else {
 				$customized = $text !== null
-					&& $text != $target->getPrefixedText()
-					&& $text != $target->getSubpageText();
+					&& $text !== $target->getPrefixedText()
+					&& $text !== $target->getSubpageText();
 			}
 		}
-		if ( !$customized ) {
+		if ( !$customized && $html !== null ) {
 			$this->getDisplayTitle( $target, $html, $wrap );
 		}
 	}
@@ -194,7 +197,7 @@ class DisplayTitleService {
 			$redirectTarget = $this->redirectLookup->getRedirectTarget( $wikipage );
 			if ( $redirectTarget !== null ) {
 				$redirect = true;
-				$title = $redirectTarget;
+				$title = Title::newFromLinkTarget( $redirectTarget );
 			}
 		}
 		$id = $title->getArticleID();
@@ -205,6 +208,7 @@ class DisplayTitleService {
 				$value !== $originalPageName ) {
 				$displaytitle = $value;
 				if ( $wrap ) {
+					// @phan-suppress-next-line SecurityCheck-XSS
 					$displaytitle = new HtmlArmor( $displaytitle );
 				}
 				return true;

@@ -2,23 +2,26 @@
 
 namespace MediaWiki\Tests\User\CentralId;
 
-use CentralIdLookup;
-use HashConfig;
 use InvalidArgumentException;
-use LocalIdLookup;
+use MediaWiki\Block\HideUserUtils;
+use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
+use MediaWiki\User\CentralId\LocalIdLookup;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWikiUnitTestCase;
-use Wikimedia\ObjectFactory\ObjectFactory;
-use Wikimedia\Rdbms\ILoadBalancer;
-use Wikimedia\Services\ServiceContainer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * @coversDefaultClass \MediaWiki\User\CentralId\CentralIdLookupFactory
  */
 class CentralIdLookupFactoryTest extends MediaWikiUnitTestCase {
+	use DummyServicesTrait;
+
 	/** @var CentralIdLookup */
 	private $centralLookupMock;
 
@@ -28,22 +31,21 @@ class CentralIdLookupFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	private function makeFactory(): CentralIdLookupFactory {
-		$services = $this->createNoOpMock( ServiceContainer::class, [ 'get' ] );
-		$services
-			->method( 'get' )
-			->willReturnMap( [
-				[ 'DBLoadBalancer', $this->createMock( ILoadBalancer::class ) ],
-				[ 'MainConfig', new HashConfig( [
-					MainConfigNames::SharedDB => null,
-					MainConfigNames::SharedTables => [],
-					MainConfigNames::LocalDatabases => [],
-				] ) ],
-			] );
+		$services = [
+			'DBLoadBalancerFactory' => $this->createMock( IConnectionProvider::class ),
+			'MainConfig' => new HashConfig( [
+				MainConfigNames::SharedDB => null,
+				MainConfigNames::SharedTables => [],
+				MainConfigNames::LocalDatabases => [],
+			] ),
+			'HideUserUtils' => new HideUserUtils()
+		];
 		$localIdLookupTest = [
 			'class' => LocalIdLookup::class,
 			'services' => [
 				'MainConfig',
-				'DBLoadBalancer',
+				'DBLoadBalancerFactory',
+				'HideUserUtils',
 			]
 		];
 		return new CentralIdLookupFactory(
@@ -60,8 +62,9 @@ class CentralIdLookupFactoryTest extends MediaWikiUnitTestCase {
 					MainConfigNames::CentralIdLookupProvider => 'mock',
 				]
 			),
-			new ObjectFactory( $services ),
-			$this->createNoOpMock( UserIdentityLookup::class )
+			$this->getDummyObjectFactory( $services ),
+			$this->createNoOpMock( UserIdentityLookup::class ),
+			$this->createNoOpMock( UserFactory::class )
 		);
 	}
 

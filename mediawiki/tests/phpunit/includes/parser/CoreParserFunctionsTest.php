@@ -1,27 +1,35 @@
 <?php
 
+namespace MediaWiki\Tests\Parser;
+
+use MediaWiki\Language\RawMessage;
+use MediaWiki\Parser\CoreParserFunctions;
+use MediaWiki\User\User;
+use MediaWikiLangTestCase;
+
 /**
  * @group Database
- * @covers CoreParserFunctions
+ * @covers \MediaWiki\Parser\CoreParserFunctions
  */
 class CoreParserFunctionsTest extends MediaWikiLangTestCase {
 
 	public function testGender() {
 		$userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
 
-		$user = User::createNew( '*Female' );
+		$username = 'Female*';
+		$user = User::createNew( $username );
 		$userOptionsManager->setOption( $user, 'gender', 'female' );
 		$user->saveSettings();
 
-		$msg = ( new RawMessage( '{{GENDER:*Female|m|f|o}}' ) )->parse();
+		$msg = ( new RawMessage( '{{GENDER:' . $username . '|m|f|o}}' ) )->parse();
 		$this->assertEquals( 'f', $msg, 'Works unescaped' );
-		$escapedName = wfEscapeWikiText( '*Female' );
+		$escapedName = wfEscapeWikiText( $username );
 		$msg2 = ( new RawMessage( '{{GENDER:' . $escapedName . '|m|f|o}}' ) )
 			->parse();
 		$this->assertEquals( 'f', $msg2, 'Works escaped' );
 	}
 
-	public function provideTalkpagename() {
+	public static function provideTalkpagename() {
 		yield [ 'Talk:Foo bar', 'foo_bar' ];
 		yield [ 'Talk:Foo', ' foo ' ];
 		yield [ 'Talk:Foo', 'Talk:Foo' ];
@@ -47,7 +55,7 @@ class CoreParserFunctionsTest extends MediaWikiLangTestCase {
 		$this->assertSame( $expected, CoreParserFunctions::talkpagename( $parser, $title ) );
 	}
 
-	public function provideSubjectpagename() {
+	public static function provideSubjectpagename() {
 		yield [ 'Foo bar', 'Talk:foo_bar' ];
 		yield [ 'Foo', ' Talk:foo ' ];
 		yield [ 'User:Foo', 'User talk:foo' ];

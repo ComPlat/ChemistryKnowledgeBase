@@ -16,6 +16,7 @@
     "SpecialPages": {
         "Literature": "DIQA\\ChemExtension\\Literature\\SpecialLiterature",
         "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage",
+        "PublicationImportSpecialpage": "DIQA\\ChemExtension\\PublicationImport\\PublicationImportSpecialpage",
         "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper",
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
         "CheckServices": "DIQA\\ChemExtension\\Specials\\CheckServices",
@@ -183,6 +184,7 @@
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",
+        "PublicationImportJob": "DIQA\\ChemExtension\\Jobs\\PublicationImportJob",
         "RGroupMaterializationJob": "DIQA\\ChemExtension\\Jobs\\RGroupMaterializationJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageCreationJob",
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Jobs\\LiteratureResolverJob",

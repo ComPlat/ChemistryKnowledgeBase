@@ -8,48 +8,48 @@ console.log('ER: Loading scripts/FacetedSearch/Enhancements/fs_facetValueDialog.
     var xfs = window.XFS;
     xfs.registerAdditionalFacets = function (html, handlerData, facet, property) {
         html.find('.xfsAddFacetOperation').bind('click', handlerData, function (event) {
-
             event.stopPropagation();
             event.preventDefault();
+            openDialog(property, facet);
+        });
+    };
 
-            var dialog = new XFS.Dialogs.SelectFacetValueDialog();
-            dialog.openDialog(property, facet, function (selectedValues, metadata) {
+    var openDialog = function(property, facet){
+        var dialog = new XFS.Dialogs.SelectFacetValueDialog();
+        dialog.openDialog(property, facet, function (selectedValues, metadata){
 
-                // remove old facets
-                var fsm = FacetedSearch.singleton.FacetedSearchInstance.getAjaxSolrManager();
-                fsm.store.addByValue('facet', true);
-                var toRemove = JSON.parse(metadata.attr('toremove'));
-                for (var i = 0; i < toRemove.length; i++) {
-                    fsm.store.removeByValue('fq', new RegExp(toRemove[i]));
-                }
+            // remove old facets
+            var fsm = FacetedSearch.singleton.FacetedSearchInstance.getAjaxSolrManager();
+            fsm.store.addByValue('facet', true);
+            var toRemove = JSON.parse(metadata.attr('toremove'));
+            for (var i = 0; i < toRemove.length; i++) {
+                fsm.store.removeByValue('fq', new RegExp(toRemove[i]));
+            }
 
-                // add selected facet values
-                var queries = {};
-                selectedValues.each(function (i, e) {
-                    var property = $(e).attr('property');
-                    var value = $(e).val();
-                    queries[property] = queries[property] || [];
-                    queries[property].push(value);
-                });
-                for (var p in queries) {
-                    var q = queries[p].join(' OR ');
-                    fsm.store.addByValue('fq', q);
-                }
-
-                // add selected properties
-                var selectedPropetiesArray = selectedValues.map(function (i, e) {
-                    return $(e).attr('propertyFacet');
-                });
-
-                for (i = 0; i < selectedPropetiesArray.length; i++) {
-                    fsm.store.addByValue('fq', selectedPropetiesArray[i]);
-                }
-
-                FacetedSearch.singleton.FacetedSearchInstance.addExpandedFacet(facet);
-                fsm.doRequest(0);
-
-
+            // add selected facet values
+            var queries = {};
+            selectedValues.each(function (i, e) {
+                var property = $(e).attr('property');
+                var value = $(e).val();
+                queries[property] = queries[property] || [];
+                queries[property].push(value);
             });
+            for (var p in queries) {
+                var q = queries[p].join(' OR ');
+                fsm.store.addByValue('fq', q);
+            }
+
+            // add selected properties
+            var selectedPropetiesArray = selectedValues.map(function (i, e) {
+                return $(e).attr('propertyFacet');
+            });
+
+            for (i = 0; i < selectedPropetiesArray.length; i++) {
+                fsm.store.addByValue('fq', selectedPropetiesArray[i]);
+            }
+
+            FacetedSearch.singleton.FacetedSearchInstance.addExpandedFacet(facet);
+            fsm.doRequest(0);
         });
     };
 

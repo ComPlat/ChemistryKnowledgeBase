@@ -2,20 +2,19 @@
 
 namespace MediaWiki\Tests\ResourceLoader;
 
-use EmptyResourceLoader;
-use HashBagOStuff;
 use MediaWiki\ResourceLoader\MessageBlobStore;
 use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWikiCoversValidator;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use ResourceLoaderTestModule;
-use WANObjectCache;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @group ResourceLoader
  * @covers \MediaWiki\ResourceLoader\MessageBlobStore
  */
-class MessageBlobStoreTest extends \PHPUnit\Framework\TestCase {
+class MessageBlobStoreTest extends TestCase {
 
 	use MediaWikiCoversValidator;
 
@@ -29,8 +28,6 @@ class MessageBlobStoreTest extends \PHPUnit\Framework\TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		// MediaWiki's test wrapper sets $wgMainWANCache to CACHE_NONE.
-		// Use HashBagOStuff here so that we can observe caching.
 		$this->wanCache = new WANObjectCache( [
 			'cache' => new HashBagOStuff()
 		] );
@@ -136,7 +133,7 @@ class MessageBlobStoreTest extends \PHPUnit\Framework\TestCase {
 		// Arrange version 1 and 2
 		$blobStore->expects( $this->exactly( 2 ) )
 			->method( 'fetchMessage' )
-			->will( $this->onConsecutiveCalls( 'First', 'Second' ) );
+			->willReturnOnConsecutiveCalls( 'First', 'Second' );
 
 		// Assert
 		$blob = $blobStore->getBlob( $module, 'en' );

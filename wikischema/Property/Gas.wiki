@@ -15,6 +15,7 @@ The allowed values for this property are:
 * [[Allows value::CO]]
 * [[Allows value::O2]]
 * [[Allows value::H2]]
+* [[Allows value::N2]]
 * [[Allows value::none]]
 
 [[Imported from::chmo:CHMO_0002783]]

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +16,17 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @since 1.21
- *
- * @ingroup Site
- * @ingroup Test
- *
+ */
+
+namespace MediaWiki\Tests\Site;
+
+use MediaWiki\Site\Site;
+use MediaWiki\Site\SiteList;
+use MediaWikiIntegrationTestCase;
+
+/**
+ * @covers \MediaWiki\Site\SiteList
  * @group Site
- *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 class SiteListTest extends MediaWikiIntegrationTestCase {
@@ -65,7 +68,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::isEmpty
 	 */
 	public function testIsEmpty( SiteList $sites ) {
 		$this->assertEquals( count( $sites ) === 0, $sites->isEmpty() );
@@ -74,7 +76,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::getSite
 	 */
 	public function testGetSiteByGlobalId( SiteList $sites ) {
 		/**
@@ -90,7 +91,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::getSiteByInternalId
 	 */
 	public function testGetSiteByInternalId( $sites ) {
 		/**
@@ -108,7 +108,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::getSiteByNavigationId
 	 */
 	public function testGetSiteByNavigationId( $sites ) {
 		/**
@@ -127,7 +126,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::hasSite
 	 */
 	public function testHasGlobalId( $sites ) {
 		$this->assertFalse( $sites->hasSite( 'non-existing-global-id' ) );
@@ -146,7 +144,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::hasInternalId
 	 */
 	public function testHasInternallId( $sites ) {
 		/**
@@ -164,7 +161,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::hasNavigationId
 	 */
 	public function testHasNavigationId( $sites ) {
 		/**
@@ -183,7 +179,6 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider siteListProvider
 	 * @param SiteList $sites
-	 * @covers SiteList::getGlobalIdentifiers
 	 */
 	public function testGetGlobalIdentifiers( SiteList $sites ) {
 		$identifiers = $sites->getGlobalIdentifiers();
@@ -204,12 +199,7 @@ class SiteListTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider siteListProvider
-	 *
-	 * @since 1.21
-	 *
 	 * @param SiteList $list
-	 * @covers SiteList::getSerializationData
-	 * @covers SiteList::unserialize
 	 */
 	public function testSerialization( SiteList $list ) {
 		$serialization = serialize( $list );

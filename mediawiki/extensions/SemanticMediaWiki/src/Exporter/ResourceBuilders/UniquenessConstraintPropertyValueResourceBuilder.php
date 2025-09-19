@@ -9,7 +9,7 @@ use SMWExpData as ExpData;
 /**
  * @private
  *
- * @license GNU GPL v2+
+ * @license GPL-2.0-or-later
  * @since 2.5
  *
  * @author mwjames
@@ -31,7 +31,6 @@ class UniquenessConstraintPropertyValueResourceBuilder extends PropertyValueReso
 	 * {@inheritDoc}
 	 */
 	public function addResourceValue( ExpData $expData, DIProperty $property, DataItem $dataItem ) {
-
 		parent::addResourceValue( $expData, $property, $dataItem );
 
 		// https://www.w3.org/TR/2004/REC-owl-ref-20040210/#FunctionalProperty-def
@@ -40,8 +39,8 @@ class UniquenessConstraintPropertyValueResourceBuilder extends PropertyValueReso
 		// value y for each instance x ..."
 
 		$expData->addPropertyObjectValue(
-			$this->exporter->getSpecialNsResource( 'rdf', 'type' ),
-			$this->exporter->getSpecialNsResource( 'owl', 'FunctionalProperty' )
+			$this->exporter->newExpNsResourceById( 'rdf', 'type' ),
+			$this->exporter->newExpNsResourceById( 'owl', 'FunctionalProperty' )
 		);
 	}
 

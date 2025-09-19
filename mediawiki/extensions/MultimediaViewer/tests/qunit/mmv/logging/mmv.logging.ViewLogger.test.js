@@ -1,3 +1,5 @@
+const { ViewLogger } = require( 'mmv' );
+
 ( function () {
 	QUnit.module( 'mmv.logging.ViewLogger', QUnit.newMwEnvironment( {
 		beforeEach: function () {
@@ -8,7 +10,7 @@
 			// override that new behavior in order to run these tests...
 			// @see https://github.com/sinonjs/lolex/issues/76
 			this.oldNow = $.now;
-			$.now = function () { return Date.now(); };
+			$.now = () => Date.now();
 		},
 
 		afterEach: function () {
@@ -18,8 +20,8 @@
 	} ) );
 
 	QUnit.test( 'focus and blur', function ( assert ) {
-		var $fakeWindow = $( '<div>' ),
-			viewLogger = new mw.mmv.logging.ViewLogger( { recordVirtualViewBeaconURI: function () {} }, $fakeWindow, { log: function () {} } );
+		const $fakeWindow = $( '<div>' );
+		const viewLogger = new ViewLogger( $fakeWindow );
 
 		this.clock.tick( 1 ); // This is just so that the timer ticks up in the fake timer environment
 
@@ -43,7 +45,7 @@
 	} );
 
 	QUnit.test( 'stopViewDuration before startViewDuration', function ( assert ) {
-		var viewLogger = new mw.mmv.logging.ViewLogger( { recordVirtualViewBeaconURI: function () {} }, {}, { log: function () {} } );
+		const viewLogger = new ViewLogger( {} );
 
 		this.clock.tick( 1 ); // This is just so that the timer ticks up in the fake timer environment
 

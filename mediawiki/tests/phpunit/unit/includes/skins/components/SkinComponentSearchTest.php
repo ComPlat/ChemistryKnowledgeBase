@@ -1,26 +1,23 @@
 <?php
+
+use MediaWiki\Config\HashConfig;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
 use MediaWiki\Skin\SkinComponentSearch;
 
 /**
  * @covers \MediaWiki\Skin\SkinComponentSearch
- *
- * @group Output
- *
+ * @group Skin
  */
 class SkinComponentSearchTest extends MediaWikiUnitTestCase {
 	use MockTitleTrait;
 
-	/**
-	 * @covers \MediaWiki\Skin\SkinComponentSearch::getTemplateData
-	 */
 	public function testGetTemplateData() {
 		$config = new HashConfig( [
 			MainConfigNames::Script => '/w/index.php',
 			MainConfigNames::CapitalLinks => true,
 			MainConfigNames::WatchlistExpiry => false,
 		] );
-		$user = new User();
 		$msg = $this->createMock( Message::class );
 		$msg->method( 'isDisabled' )->willReturn( false );
 		$msg->method( 'text' )->willReturn( 'text' );
@@ -33,9 +30,8 @@ class SkinComponentSearchTest extends MediaWikiUnitTestCase {
 			$msg
 		);
 		$searchTitle = $this->makeMockTitle( 'Special:Search' );
-		$relevantTitle = $this->makeMockTitle( 'RelevantTitle' );
 		$component = new SkinComponentSearch(
-			$config, $user, $localizer, $searchTitle, $relevantTitle
+			$config, $localizer, $searchTitle
 		);
 
 		$data = $component->getTemplateData();
@@ -46,7 +42,7 @@ class SkinComponentSearchTest extends MediaWikiUnitTestCase {
 			'html-input-attributes'
 		];
 		foreach ( $expectedKeys as $key ) {
-			$this->assertArrayHasKey( $key, $data,  $key . ' is in array' );
+			$this->assertArrayHasKey( $key, $data, $key . ' is in array' );
 		}
 		$this->assertEquals( 'Search', $data['search-special-page-title'] );
 		$this->assertEquals( '/w/index.php', $data['form-action'] );

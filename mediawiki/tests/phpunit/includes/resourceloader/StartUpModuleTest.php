@@ -5,10 +5,10 @@ namespace MediaWiki\Tests\ResourceLoader;
 use Exception;
 use MediaWiki\ResourceLoader\Module;
 use MediaWiki\ResourceLoader\StartUpModule;
-use ResourceLoaderTestCase;
-use ResourceLoaderTestModule;
+use Psr\Log\NullLogger;
 
 /**
+ * @group ResourceLoader
  * @covers \MediaWiki\ResourceLoader\StartUpModule
  */
 class StartUpModuleTest extends ResourceLoaderTestCase {
@@ -19,7 +19,7 @@ class StartUpModuleTest extends ResourceLoaderTestCase {
 		] );
 	}
 
-	public function provideGetModuleRegistrations() {
+	public static function provideGetModuleRegistrations() {
 		return [
 			[ [
 				'msg' => 'Empty registry',
@@ -274,26 +274,6 @@ mw.loader.register([
 ]);'
 			] ],
 			[ [
-				'msg' => 'Different target (non-test should not be registered)',
-				'modules' => [
-					'test.blank' => [ 'class' => ResourceLoaderTestModule::class ],
-					'test.target.foo' => [
-						'class' => ResourceLoaderTestModule::class,
-						'targets' => [ 'x-foo' ],
-					],
-				],
-				'out' => '
-mw.loader.addSource({
-    "local": "/w/load.php"
-});
-mw.loader.register([
-    [
-        "test.blank",
-        ""
-    ]
-]);'
-			] ],
-			[ [
 				'msg' => 'Different skin (irrelevant skin modules should not be registered)',
 				'modules' => [
 					'test.blank' => [ 'class' => ResourceLoaderTestModule::class ],
@@ -492,7 +472,6 @@ mw.loader.register([
 				'modules' => [
 					'test.es6' => [
 						'class' => ResourceLoaderTestModule::class,
-						'es6' => true
 					],
 				],
 				'out' => '
@@ -502,7 +481,7 @@ mw.loader.addSource({
 mw.loader.register([
     [
         "test.es6",
-        "!"
+        ""
     ]
 ]);',
 			] ],
@@ -592,18 +571,8 @@ mw.loader.register([
 						'group' => 'x-bar',
 						'source' => 'example',
 					],
-					'test.target.foo' => [
-						'class' => ResourceLoaderTestModule::class,
-						'targets' => [ 'x-foo' ],
-					],
-					'test.target.bar' => [
-						'class' => ResourceLoaderTestModule::class,
-						'source' => 'example',
-						'targets' => [ 'x-foo' ],
-					],
 					'test.es6' => [
 						'class' => ResourceLoaderTestModule::class,
-						'es6' => true
 					]
 				],
 				'out' => '
@@ -677,7 +646,7 @@ mw.loader.register([
     ],
     [
         "test.es6",
-        "!"
+        ""
     ]
 ]);'
 			] ],
@@ -688,6 +657,8 @@ mw.loader.register([
 	 * @dataProvider provideGetModuleRegistrations
 	 */
 	public function testGetModuleRegistrations( $case ) {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$extraQuery = $case['extraQuery'] ?? [];
 		$context = $this->getResourceLoaderContext( $extraQuery );
 		$rl = $context->getResourceLoader();
@@ -697,11 +668,12 @@ mw.loader.register([
 		$rl->register( $case['modules'] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
 		$out = ltrim( $case['out'], "\n" );
 
 		// Disable log from getModuleRegistrations via MWExceptionHandler
 		// for case where getVersionHash() is expected to throw.
-		$this->setLogger( 'exception', new \Psr\Log\NullLogger() );
+		$this->setLogger( 'exception', new NullLogger() );
 
 		$this->assertEquals(
 			self::expandPlaceholders( $out ),
@@ -722,9 +694,7 @@ mw.loader.register([
 					'factory' => function () {
 						$mock = $this->getMockBuilder( ResourceLoaderTestModule::class )
 							->onlyMethods( [ 'getModuleContent' ] )->getMock();
-						$mock->method( 'getModuleContent' )->will(
-							$this->throwException( new Exception )
-						);
+						$mock->method( 'getModuleContent' )->willThrowException( new Exception );
 						return $mock;
 					}
 				]
@@ -744,9 +714,7 @@ mw.loader.register([
 							] )
 							->getMock();
 						$mock->method( 'enableModuleContentVersion' )->willReturn( false );
-						$mock->method( 'getDefinitionSummary' )->will(
-							$this->throwException( new Exception )
-						);
+						$mock->method( 'getDefinitionSummary' )->willThrowException( new Exception );
 						return $mock;
 					}
 				]
@@ -761,18 +729,43 @@ mw.loader.register([
 	 * @dataProvider provideGetModuleRegistrationsProduction
 	 */
 	public function testGetModuleRegistrationsProduction( array $case ) {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$context = $this->getResourceLoaderContext( [ 'debug' => 'false' ] );
 		$rl = $context->getResourceLoader();
 		$rl->register( $case['modules'] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
 		$out = ltrim( $case['out'], "\n" );
 
 		// Tolerate exception logs for cases that expect getVersionHash() to throw.
-		$this->setLogger( 'exception', new \Psr\Log\NullLogger() );
+		$this->setLogger( 'exception', new NullLogger() );
 
 		$this->assertEquals(
 			self::expandPlaceholders( $out ),
+			$module->getModuleRegistrations( $context )
+		);
+	}
+
+	public function testGetModuleRegistrations_hook() {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+		$this->setTemporaryHook( 'ResourceLoaderModifyEmbeddedSourceUrls', function ( &$urls ) {
+			$urlUtils = $this->getServiceContainer()->getUrlUtils();
+			$urls['local'] = $urlUtils->expand( $urls['local'] );
+		} );
+
+		$context = $this->getResourceLoaderContext();
+		$rl = $context->getResourceLoader();
+		$module = new StartUpModule();
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setConfig( $rl->getConfig() );
+		$out = 'mw.loader.addSource({
+    "local": "https://example.org/w/load.php"
+});
+mw.loader.register([]);';
+		$this->assertEquals(
+			$out,
 			$module->getModuleRegistrations( $context )
 		);
 	}
@@ -801,6 +794,8 @@ mw.loader.register([
 	 * @dataProvider provideRegistrations
 	 */
 	public function testRegistrationsMinified( $modules ) {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$context = $this->getResourceLoaderContext( [
 			'debug' => 'false',
 		] );
@@ -808,6 +803,7 @@ mw.loader.register([
 		$rl->register( $modules );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
 		$out = 'mw.loader.addSource({"local":"/w/load.php"});' . "\n"
 		. 'mw.loader.register(['
 		. '["test.blank","{blankVer}"],'
@@ -826,6 +822,8 @@ mw.loader.register([
 	 * @dataProvider provideRegistrations
 	 */
 	public function testRegistrationsUnminified( $modules ) {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$context = $this->getResourceLoaderContext( [
 			'debug' => 'true',
 		] );
@@ -833,6 +831,7 @@ mw.loader.register([
 		$rl->register( $modules );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
 		$out =
 'mw.loader.addSource({
     "local": "/w/load.php"
@@ -862,6 +861,7 @@ mw.loader.register([
 	}
 
 	public function testGetVersionHash_varyConfig() {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
 		$context = $this->getResourceLoaderContext();
 
 		$module = new StartUpModule();
@@ -870,6 +870,7 @@ mw.loader.register([
 
 		$module = new StartUpModule();
 		$module->setConfig( $context->getResourceLoader()->getConfig() );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
 		$version2 = $module->getVersionHash( $context );
 
 		$this->assertEquals(
@@ -880,6 +881,8 @@ mw.loader.register([
 	}
 
 	public function testGetVersionHash_varyModule() {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$context1 = $this->getResourceLoaderContext( [
 			'debug' => 'false',
 		] );
@@ -890,7 +893,8 @@ mw.loader.register([
 		] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl1->getConfig() );
-		$module->setName( "" );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setName( 'test' );
 		$version1 = $module->getVersionHash( $context1 );
 
 		$context2 = $this->getResourceLoaderContext();
@@ -901,7 +905,8 @@ mw.loader.register([
 		] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl2->getConfig() );
-		$module->setName( "" );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setName( 'test' );
 		$version2 = $module->getVersionHash( $context2 );
 
 		$context3 = $this->getResourceLoaderContext();
@@ -915,7 +920,8 @@ mw.loader.register([
 		] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl3->getConfig() );
-		$module->setName( "" );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setName( 'test' );
 		$version3 = $module->getVersionHash( $context3 );
 
 		// Module name *is* significant (T201686)
@@ -933,6 +939,8 @@ mw.loader.register([
 	}
 
 	public function testGetVersionHash_varyDeps() {
+		$this->clearHook( 'ResourceLoaderModifyEmbeddedSourceUrls' );
+
 		$context = $this->getResourceLoaderContext( [ 'debug' => 'false' ] );
 		$rl = $context->getResourceLoader();
 		$rl->register( [
@@ -943,7 +951,8 @@ mw.loader.register([
 		] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
-		$module->setName( "" );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setName( 'test' );
 		$version1 = $module->getVersionHash( $context );
 
 		$context = $this->getResourceLoaderContext();
@@ -956,7 +965,8 @@ mw.loader.register([
 		] );
 		$module = new StartUpModule();
 		$module->setConfig( $rl->getConfig() );
-		$module->setName( "" );
+		$module->setHookContainer( $this->getServiceContainer()->getHookContainer() );
+		$module->setName( 'test' );
 		$version2 = $module->getVersionHash( $context );
 
 		// Dependencies *are* significant (T201686)

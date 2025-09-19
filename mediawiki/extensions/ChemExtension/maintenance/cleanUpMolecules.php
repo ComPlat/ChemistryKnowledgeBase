@@ -64,7 +64,7 @@ class cleanUpMolecules extends \Maintenance
         try {
             print "\nRemoving unused molecules...";
             $this->initFormatter();
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
             $repo = new ChemFormRepository($dbr);
             $ids = $repo->getUnusedMoleculeIds();
             $services = MediaWikiServices::getInstance();

@@ -5,35 +5,30 @@ namespace MediaWiki\Tests\Rest;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
+use MediaWiki\Rest\Validator\Validator;
+use MediaWikiUnitTestCase;
+use Wikimedia\Message\ListParam;
+use Wikimedia\Message\ListType;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * @covers \MediaWiki\Rest\Validator\JsonBodyValidator
  */
-class JsonBodyValidatorTest extends \MediaWikiUnitTestCase {
+class JsonBodyValidatorTest extends MediaWikiUnitTestCase {
 
-	public function provideValidateBody() {
+	protected function setUp(): void {
+		parent::setUp();
+		$this->filterDeprecated( '/JsonBodyValidator/' );
+	}
+
+	public static function provideValidateBody() {
 		yield 'empty object' => [
 			[],
 			new RequestData( [
 				'bodyContents' => json_encode( (object)[] ),
 			] ),
 			[]
-		];
-
-		yield 'extra data' => [
-			[],
-			new RequestData( [
-				'bodyContents' => json_encode( (object)[
-					'kittens' => 'cute',
-					'number' => 5,
-				] ),
-			] ),
-			[
-				'kittens' => 'cute',
-				'number' => 5
-			]
 		];
 
 		yield 'missing optional' => [
@@ -44,12 +39,9 @@ class JsonBodyValidatorTest extends \MediaWikiUnitTestCase {
 				]
 			],
 			new RequestData( [
-				'bodyContents' => json_encode( (object)[
-					'kittens' => 'cute',
-				] ),
+				'bodyContents' => json_encode( (object)[] ),
 			] ),
 			[
-				'kittens' => 'cute',
 				'number' => null,
 			]
 		];
@@ -74,13 +66,13 @@ class JsonBodyValidatorTest extends \MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideValidateBody
 	 */
-	public function testValidateBody( $settings, RequestData $requestData, $expected ) {
+	public function testValidateBody( array $settings, RequestData $requestData, array $expected ) {
 		$validator = new JsonBodyValidator( $settings );
 		$actual = $validator->validateBody( $requestData );
 		$this->assertArrayEquals( $expected, $actual, false, true );
 	}
 
-	public function provideValidateBody_failure() {
+	public static function provideValidateBody_failure() {
 		yield 'empty body' => [
 			[],
 			new RequestData( [
@@ -119,6 +111,28 @@ class JsonBodyValidatorTest extends \MediaWikiUnitTestCase {
 			] ),
 			new LocalizedHttpException( new MessageValue( 'rest-missing-body-field' ), 400 ),
 		];
+
+		yield 'extraneous parameters' => [
+			[
+				'foo' => [
+					ParamValidator::PARAM_TYPE => 'integer',
+					ParamValidator::PARAM_REQUIRED => false,
+				]
+			],
+			new RequestData( [
+				'bodyContents' => json_encode( (object)[
+					'f00' => 123,
+					'bar' => 456,
+				] ),
+			] ),
+			new LocalizedHttpException(
+				new MessageValue(
+					'rest-extraneous-body-fields',
+					[ new ListParam( ListType::COMMA, [ 'f00', 'bar' ] ) ]
+				),
+				400
+			),
+		];
 	}
 
 	/**
@@ -130,4 +144,63 @@ class JsonBodyValidatorTest extends \MediaWikiUnitTestCase {
 		$this->expectExceptionObject( $expected );
 		$validator->validateBody( $requestData );
 	}
+
+	public function testOpenAPISpec() {
+		$settings = [
+			'first' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				Validator::PARAM_SOURCE => 'path',
+			],
+			'second' => [
+				ParamValidator::PARAM_TYPE => 'float',
+				Validator::PARAM_SOURCE => 'query',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+			'third' => [
+				ParamValidator::PARAM_TYPE => [ 'a', 'b', 'c' ],
+				Validator::PARAM_SOURCE => 'body',
+				Validator::PARAM_DESCRIPTION => 'just a test',
+				ParamValidator::PARAM_REQUIRED => true,
+			],
+			'fourth' => [
+				ParamValidator::PARAM_TYPE => 'timestamp',
+			],
+		];
+		$expected = [
+			'properties' => [
+				'first' => [
+					'type' => 'string',
+					'description' => 'first parameter',
+				],
+				'second' => [
+					'type' => 'number',
+					'format' => 'float',
+					'description' => 'second parameter',
+				],
+				'third' => [
+					'type' => 'string',
+					'enum' => [ 'a', 'b', 'c' ],
+					'description' => 'just a test',
+				],
+				'fourth' => [
+					'type' => 'string',
+					'format' => 'mw-timestamp',
+					'description' => 'fourth parameter',
+				],
+			],
+			'required' => [
+				'first', 'third'
+			]
+		];
+
+		$validator = new JsonBodyValidator( $settings );
+		$spec = $validator->getOpenAPISpec();
+		$this->assertArrayEquals( $expected, $spec, false, true );
+	}
+
+	public function testOpenAPISpec_empty() {
+		$validator = new JsonBodyValidator( [] );
+		$this->assertSame( [], $validator->getOpenAPISpec() );
+	}
+
 }

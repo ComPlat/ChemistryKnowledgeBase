@@ -3,20 +3,29 @@
 const Page = require( 'wdio-mediawiki/Page' );
 
 class ViewListPage extends Page {
-	get title() { return $( '#firstHeading' ); }
-	get newFilterButton() { return $( '.oo-ui-buttonElement a' ); }
+	get title() {
+		return $( '#firstHeading' );
+	}
 
-	get filterSavedNotice() { return $( '.mw-message-box-success' ); }
+	get newFilterButton() {
+		return $( '.oo-ui-buttonElement a' );
+	}
 
-	get savedFilterID() {
-		const succesMsg = this.filterSavedNotice.getHTML(),
-			regexp = /\/history\/(\d+)\//;
+	get filterSavedNotice() {
+		return $( '.cdx-message--success' );
+	}
+
+	async savedFilterID() {
+		const successElement = await this.filterSavedNotice;
+		const succesMsg = await successElement.getHTML();
+		const regexp = /\/history\/(\d+)\//;
 		return regexp.exec( succesMsg )[ 1 ];
 	}
 
-	get savedFilterHistoryID() {
-		const succesMsg = this.filterSavedNotice.getHTML(),
-			regexp = /\/diff\/prev\/(\d+)/;
+	async savedFilterHistoryID() {
+		const successElement = await this.filterSavedNotice;
+		const succesMsg = await successElement.getHTML();
+		const regexp = /\/diff\/prev\/(\d+)/;
 		return regexp.exec( succesMsg )[ 1 ];
 	}
 

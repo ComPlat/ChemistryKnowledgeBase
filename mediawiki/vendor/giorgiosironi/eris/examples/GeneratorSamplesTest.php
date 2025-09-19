@@ -1,8 +1,9 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class GeneratorSamplesTest extends PHPUnit_Framework_TestCase
+class GeneratorSamplesTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
 
@@ -10,9 +11,9 @@ class GeneratorSamplesTest extends PHPUnit_Framework_TestCase
     {
         $generators = [
             //"Gen\\int" => Generator\int(),
-            "Gen\\neg" => Generator\neg(),
+            "Gen\\neg" => Generators::neg(),
             //"Gen\\nat" => Generator\nat(),
-            "Gen\\pos" => Generator\pos(),
+            "Gen\\pos" => Generators::pos(),
             /*
             "Gen\\float" => Generator\float(),
             "Gen\\choose(30, 9000) - no size used" => Generator\choose(30, 9000),
@@ -35,7 +36,7 @@ class GeneratorSamplesTest extends PHPUnit_Framework_TestCase
         echo PHP_EOL;
         echo $description . " with size 10";
         $sample = $this->sample($generator);
-        $this->assertInternalType('array', $sample->collected());
+        \Eris\PHPUnitDeprecationHelper::assertIsArray($sample->collected());
         $this->prettyPrint($sample->collected());
     }
 

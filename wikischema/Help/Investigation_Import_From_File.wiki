@@ -1,7 +1,11 @@
 == What can be imported? ==
 Investigations are basically tables of data describing experiments. The columns represent the properties of the experiments, each row is a new experiment. That means they can be represented as Excel sheets.
 
-Each type of investigation needs a particular set of properties. The Excel templates of these properties for the different types are listed below. Important to note is the handling of molecules. They are represented by their InchI-Key as well as by (one of) their MOLFILE-representation. The latter is necessary to display the molecule. That means that the columns for molecules appear always as 2 columns in the excel file. First the column for the InchI-Key followed by the column of the MOLFILE. The latter has the suffix "_data". For example: The property "Catalyst" of the investigation would appear in the excel sheet with the column "Catalyst" and "Catalyst_data"
+Each type of investigation needs a particular set of properties. The Excel templates of these properties for the different types are listed below.
+
+'''Important to note on the handling of molecules''': They are represented by their InchI-Key as well as by their structual representation. The latter is necessary to display/render the molecule. That means that the columns for molecules appear always as 2 columns in the excel file. First the column for the InchI-Key followed by the column of the structual representation. The first has the suffix "_inchikey", the latter has the suffix "_molfile". For example: The property "Catalyst" of the investigation would appear in the excel sheet with the columns "Catalyst_inchikey" and "Catalyst_molfile".
+
+Despite the name "_inchikey", this column can also contain the abbreviation or trivial name of the molecule. In any case, it is checked if the molecule is already known to the wiki. If so, the molecule is used and the content of the "_molfile"-column is ignored. In case that the name is not unique, the first molecule found is used. It is also possible to specify an InchIKey and let the molfile-column empty. In this case, PubChem is requested to get a structual representation of the molecule. If none is found, the column remains empty.
 
 ;Example:
 {{#experimentlink:%5B%5BTurnover%20number%20CH4%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CH4 < 100}}
@@ -16,3 +20,5 @@ You have to select the type of the experiment and the name. At the bottom you ca
 == Templates for download==
 *[[Media:Photocatalytic CO2 conversion Template_New.xlsx|"Photocatalytic CO2 conversion"-Template]]
 *[[Media:Cyclic_Voltammetry_Template.xlsx|"Cyclic Voltammetry"-Template]]
+*[[Media:UV_vis_Template.xlsx|"UV_visuell"-Template]]
+*[[Media:Absorption_Emission_Spectroscopy_template.xlsx|"Absorption Emission Spectroscopy"-Template]]

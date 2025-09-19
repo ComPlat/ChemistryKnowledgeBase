@@ -8,6 +8,7 @@ use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
+use MediaWiki\MediaWikiServices;
 
 class ChemScannerImportJob extends Job {
 
@@ -33,7 +34,8 @@ class ChemScannerImportJob extends Job {
             $this->importChemScannerResult($chemScannerResult);
 
             WikiTools::createNotificationJobs($this->getTitle());
-            \Hooks::run('CleanupChemExtState');
+            $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hooksContainer->run('CleanupChemExtState');
         } catch (Exception $e) {
             $this->logger->error("ERROR: " . $e->getMessage());
 

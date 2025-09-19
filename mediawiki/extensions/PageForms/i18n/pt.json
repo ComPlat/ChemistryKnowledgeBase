@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"555",
 			"Athena in Wonderland",
 			"Hamilton Abreu",
 			"Imperadeiro98",
@@ -13,13 +14,11 @@
 			"SandroHc",
 			"Vitorvicentevalente",
 			"Waldir",
-			"Waldyrious",
-			555
+			"Waldyrious"
 		]
 	},
 	"pageforms-desc": "Formulários para criar e editar páginas da wiki",
 	"specialpages-group-pf_group": "Formulários de página",
-	"apihelp-pfautocomplete-description": "Preenchimento automático através da extensão Formulários de Página.",
 	"apihelp-pfautocomplete-summary": "Preenchimento automático através da extensão Formulários de Página.",
 	"apihelp-pfautocomplete-param-limit": "Um limite para o número de resultados devolvidos",
 	"apihelp-pfautocomplete-param-substr": "O subtexto sobre o qual realizar o preenchimento automático",
@@ -35,7 +34,6 @@
 	"apihelp-pfautocomplete-param-base_cargo_table": "A tabela Cargo para um campo anterior no formulário, contra a qual verificar",
 	"apihelp-pfautocomplete-param-base_cargo_field": "O campo Cargo para um campo anterior no formulário, contra o qual verificar",
 	"apihelp-pfautocomplete-param-basevalue": "O valor a verificar para o campo ou propriedade anterior",
-	"apihelp-pfautoedit-description": "Criar ou editar uma página usando um formulário definido pela extensão Formulários de Página.",
 	"apihelp-pfautoedit-summary": "Criar ou editar uma página usando um formulário definido pela extensão Formulários de Página.",
 	"apihelp-pfautoedit-param-form": "O formulário dos Formulários de página a utilizar",
 	"apihelp-pfautoedit-param-target": "O nome da página a ser criada ou editada",
@@ -216,7 +214,6 @@
 	"pf_autoedit_invalidtargetspecified": "A página de destino especificada '''$1''' não é válida.",
 	"pf_autoedit_invalidform": "'''$1''' não é um formulário válido.",
 	"pf_autoedit_redirectlimitexeeded": "Foi excedido o limite máximo de redirecionamentos para o formulário $1.",
-	"pf_autoedit_invalidredirecttarget": "$1 é um destino de redirecionamento inválido para o formulário $2.",
 	"pf_autoedit_invalidpreloadspecified": "A página de pré-carregamento especificada $1 é inválida.",
 	"pf_autoedit_redlinkexists": "$1 já existe.",
 	"pf_autoedit_noformfound": "Não foi especificado um formulário.",
@@ -228,7 +225,7 @@
 	"pf_autoedit_confirm": "Tem a certeza de que pretende modificar \"$1\"?",
 	"pf_autoedit_notsettogether": "'$1' e '$2' não podem ser definidos na mesma função.",
 	"runquery": "Executar consulta",
-	"pf_runquery_badurl": "Tem de especificar um nome de formulário na URL;\na URL deve ser parecida com 'Special:RunQuery/<form name>'.",
+	"pf_runquery_badurl": "Tem de especificar um nome de formulário no URL;\no URL deve ser parecido com 'Special:RunQuery/<form name>'.",
 	"pf_runquery_title": "Executar consulta: $1",
 	"pf_runquery_additionalquery": "Consulta adicional",
 	"pf_formerrors_header": "Houve erros nas entradas do seu formulário; veja abaixo",

@@ -15,24 +15,22 @@ use Wikimedia\ScopedCallback;
 class ParsoidTestFileSuite extends TestSuite {
 	use SuiteEventsTrait;
 
-	private $ptRunner;
-	private $ptFileName;
-	private $ptFileInfo;
+	private ParserTestRunner $ptRunner;
+	private TestFileReader $ptFileInfo;
 
 	/** @var ScopedCallback */
 	private $ptTeardownScope;
 
-	public function __construct( $runner, $name, $fileName ) {
+	public function __construct( ParserTestRunner $runner, string $name, string $fileName ) {
 		parent::__construct( $name );
 		$this->ptRunner = $runner;
-		$this->ptFileName = $fileName;
 		try {
 			$this->ptFileInfo = TestFileReader::read( $fileName, static function ( $msg ) {
 				wfDeprecatedMsg( $msg, '1.35', false, false );
 			} );
 		} catch ( \Exception $e ) {
 			// Friendlier wrapping for any syntax errors that might occur.
-			throw new MWException(
+			throw new RuntimeException(
 				$fileName . ': ' . $e->getMessage()
 			);
 		}
@@ -46,32 +44,22 @@ class ParsoidTestFileSuite extends TestSuite {
 		if ( $skipMessage !== null ) {
 			return;
 		}
-		$validTestModes = $this->ptRunner->getRequestedTestModes();
-		// Dummy mode, for the purpose of satisfying the signature of getTestSkipMessage
-		// Only used for an isLegacy check, which should always be false for this file
-		$skipMode = new ParserTestMode( 'not-legacy' );
 
 		// This is expected to be set at this point. $skipMessage above will have
 		// skipped the file if not.
-		$modeRestriction = $this->ptFileInfo->fileOptions['parsoid-compatible'];
-		// Treat 'parsoid-compatible' as enabling all modes.
-		if ( $modeRestriction !== '' ) {
-			if ( is_string( $modeRestriction ) ) {
-				// shorthand
-				$modeRestriction = [ $modeRestriction ];
-			}
-			$validTestModes = array_intersect( $validTestModes, $modeRestriction );
-		}
+		$validTestModes = $this->ptRunner->computeValidTestModes(
+			$this->ptRunner->getRequestedTestModes(), $this->ptFileInfo->fileOptions );
 
 		$suite = $this;
+		$runnerOpts = $this->ptRunner->getOptions();
 		foreach ( $this->ptFileInfo->testCases as $t ) {
-			$skipMessage = $this->ptRunner->getTestSkipMessage( $t, $skipMode );
+			$skipMessage = $this->ptRunner->getTestSkipMessage( $t, false );
 			if ( $skipMessage ) {
 				continue;
 			}
 			$testModes = $t->computeTestModes( $validTestModes );
 			$t->testAllModes( $testModes, $runner->getOptions(),
-				// $options is being ignored but it is identical to $runnerOpts
+				// $options is being ignored but it is identical to $runner->getOptions()
 				function ( ParserTest $test, string $modeStr, array $options ) use (
 					$t, $suite, $fileName, $skipMessage
 				) {
@@ -79,10 +67,8 @@ class ParsoidTestFileSuite extends TestSuite {
 						// $test could be a clone of $t
 						// Ensure that updates to knownFailures in $test are reflected in $t
 						$test->knownFailures = &$t->knownFailures;
-						$runner = $this->ptRunner;
-						$runnerOpts = $runner->getOptions();
 						$mode = new ParserTestMode( $modeStr, $test->changetree );
-						$pit = new ParserIntegrationTest( $runner, $fileName, $test, $mode, $skipMessage );
+						$pit = new ParserIntegrationTest( $this->ptRunner, $fileName, $test, $mode, $skipMessage );
 						$suite->addTest( $pit, [ 'Database', 'Parser', 'ParserTests' ] );
 					}
 				}

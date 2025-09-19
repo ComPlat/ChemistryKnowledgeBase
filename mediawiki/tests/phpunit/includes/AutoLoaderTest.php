@@ -1,29 +1,24 @@
 <?php
 
-use MediaWiki\MainConfigNames;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers AutoLoader
+ * @covers \AutoLoader
  */
 class AutoLoaderTest extends MediaWikiIntegrationTestCase {
 
+	/** @var string[] */
 	private $oldPsr4;
+	/** @var string[] */
 	private $oldClassFiles;
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		// Fancy dance to trigger a rebuild of AutoLoader::$autoloadLocalClassesLower
 		$this->mergeMwGlobalArrayValue( 'wgAutoloadLocalClasses', [
 			'TestAutoloadedLocalClass' =>
 				__DIR__ . '/../data/autoloader/TestAutoloadedLocalClass.php',
-			'TestAutoloadedCamlClass' =>
-				__DIR__ . '/../data/autoloader/TestAutoloadedCamlClass.php',
-			'TestAutoloadedSerializedClass' =>
-				__DIR__ . '/../data/autoloader/TestAutoloadedSerializedClass.php',
 		] );
-		AutoLoader::resetAutoloadLocalClassesLower();
 		$this->mergeMwGlobalArrayValue( 'wgAutoloadClasses', [
 			'TestAutoloadedClass' => __DIR__ . '/../data/autoloader/TestAutoloadedClass.php',
 		] );
@@ -61,24 +56,6 @@ class AutoLoaderTest extends MediaWikiIntegrationTestCase {
 
 	public function testLegacyExtensionClass() {
 		$this->assertTrue( class_exists( 'TestAutoloadedClass' ) );
-	}
-
-	public function testWrongCaseClass() {
-		$this->overrideConfigValue( MainConfigNames::AutoloadAttemptLowercase, true );
-
-		$this->assertTrue( class_exists( 'testautoLoadedcamlCLASS' ) );
-	}
-
-	public function testWrongCaseSerializedClass() {
-		$this->overrideConfigValue( MainConfigNames::AutoloadAttemptLowercase, true );
-
-		$dummySer = 'O:29:"testautoloadedserializedclass":0:{}';
-		$dummy = unserialize( $dummySer );
-		$this->assertSame(
-			get_class( $dummy ),
-			TestAutoloadedSerializedClass::class,
-			'load class case-insensitively'
-		);
 	}
 
 	public function testPsr4() {

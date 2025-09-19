@@ -1,6 +1,8 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * Static functions for Page Forms, for use by the Page Schemas
@@ -13,11 +15,6 @@ use MediaWiki\MediaWikiServices;
  */
 
 class PFPageSchemas extends PSExtensionHandler {
-	public static function registerClass() {
-		global $wgPageSchemasHandlerClasses;
-		$wgPageSchemasHandlerClasses[] = 'PFPageSchemas';
-		return true;
-	}
 
 	/**
 	 * Creates an object to hold form-wide information, based on an XML
@@ -287,7 +284,7 @@ class PFPageSchemas extends PSExtensionHandler {
 			$includeFreeText = true;
 		}
 
-		$freeTextLabel = html_entity_decode( PageSchemas::getValueFromObject( $form_array, 'freeTextLabel' ) );
+		$freeTextLabel = html_entity_decode( PageSchemas::getValueFromObject( $form_array, 'freeTextLabel' ) ?? '' );
 
 		$text = "\t<p>" . wfMessage( 'ps-namelabel' )->escaped() . ' ' . Html::input( 'pf_form_name', $formName, 'text', [ 'size' => 15 ] ) . "</p>\n";
 		// The checkbox isn't actually a field in the page schema -
@@ -652,14 +649,7 @@ class PFPageSchemas extends PSExtensionHandler {
 		$params['user_id'] = $user->getId();
 		$params['page_text'] = $formContents;
 		$job = new PSCreatePageJob( $formTitle, $params );
-
-		$jobs = [ $job ];
-		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
-			// MW 1.37+
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
-		} else {
-			JobQueueGroup::singleton()->push( $jobs );
-		}
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $job );
 	}
 
 	/**
@@ -788,12 +778,7 @@ class PFPageSchemas extends PSExtensionHandler {
 			}
 		}
 
-		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
-			// MW 1.37+
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
-		} else {
-			JobQueueGroup::singleton()->push( $jobs );
-		}
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
 
 		// Create form, if it's specified.
 		$formName = self::getFormName( $pageSchemaObj );

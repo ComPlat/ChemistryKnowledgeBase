@@ -112,7 +112,7 @@ class LicenseCommentSniff implements Sniff {
 			$fixable = null;
 			foreach ( self::REPLACEMENTS as $regex => $identifier ) {
 				// Make sure the entire license matches the regex, and
-				// then a sanity check that the new replacement is valid too
+				// then check that the new replacement is valid too
 				if ( preg_match( "/^$regex$/", $license ) === 1
 					&& $licenseValidator->validate( $identifier )
 				) {
@@ -138,7 +138,7 @@ class LicenseCommentSniff implements Sniff {
 			// Split list to check each license for deprecation
 			$singleLicenses = preg_split( '/\s+(?:AND|OR)\s+/i', $license );
 			foreach ( $singleLicenses as $singleLicense ) {
-				// Check if the splitted license is known to the validator - T195429
+				// Check if the split license is known to the validator - T195429
 				if ( !is_array( $licenseValidator->getLicenseByIdentifier( $singleLicense ) ) ) {
 					// @codeCoverageIgnoreStart
 					$phpcsFile->addWarning(

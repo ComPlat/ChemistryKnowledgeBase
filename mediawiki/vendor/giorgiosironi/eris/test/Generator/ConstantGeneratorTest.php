@@ -1,15 +1,27 @@
 <?php
 namespace Eris\Generator;
 
-class ConstantGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class ConstantGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->size = 0;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
-    public function testPicksAlwaysTheValue()
+    public function testPicksAlwaysTheValue(): void
     {
         $generator = new ConstantGenerator(true);
         for ($i = 0; $i < 50; $i++) {
@@ -17,7 +29,7 @@ class ConstantGeneratorTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testShrinkAlwaysToTheValue()
+    public function testShrinkAlwaysToTheValue(): void
     {
         $generator = new ConstantGenerator(true);
         $element = $generator($this->size, $this->rand);

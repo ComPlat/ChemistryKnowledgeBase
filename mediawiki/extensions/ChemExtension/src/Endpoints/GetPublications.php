@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Endpoints;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -19,7 +19,7 @@ class GetPublications extends SimpleHandler
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
     }
 
     public function run()
@@ -57,11 +57,11 @@ class GetPublications extends SimpleHandler
             $results[] = ['title' => $title ];
 
         }
-        $html = $this->blade->view()->make("navigation.publication-list",
+        $html = $this->blade->run("navigation.publication-list",
             [
                 'list' => $results,
             ]
-        )->render();
+        );
         return ['html' => $html];
     }
 

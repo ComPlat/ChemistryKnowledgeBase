@@ -1,6 +1,6 @@
 {
 	"name": "DisplayTitle",
-	"version": "4.0.2",
+	"version": "4.0.3",
 	"author": [
 		"[https://www.mediawiki.org/wiki/User:Cindy.cicalese Cindy Cicalese]",
 		"[https://www.semantic-mediawiki.org/wiki/User:Oetterer Tobias Oetterer]"
@@ -30,10 +30,12 @@
 		"main": {
 			"class": "MediaWiki\\Extension\\DisplayTitle\\DisplayTitleHooks",
 			"services": [
-				"MainConfig",
 				"DisplayTitleService",
 				"NamespaceInfo"
 			]
+		},
+		"scribunto": {
+			"class": "MediaWiki\\Extension\\DisplayTitle\\ScribuntoHooks"
 		}
 	},
 	"Hooks": {
@@ -43,7 +45,7 @@
 		"OutputPageParserOutput": "main",
 		"SelfLinkBegin": "main",
 		"SkinTemplateNavigation::Universal": "main",
-		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\DisplayTitle\\DisplayTitleHooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "scribunto"
 	},
 	"config": {
 		"DisplayTitleHideSubtitle": {

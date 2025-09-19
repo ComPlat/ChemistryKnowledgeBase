@@ -89,14 +89,21 @@ class FunctionAnnotationsSniff implements Sniff {
 		'@phan-assert' => true,
 		'@phan-assert-true-condition' => true,
 		'@phan-assert-false-condition' => true,
+		'@phan-side-effect-free' => true,
 		'@suppress' => true,
 		'@phan-template' => true,
+		'@phan-type' => true,
 		// No other consumers for now.
 		'@template' => '@phan-template',
 
 		// pseudo-tags from phan-taint-check-plugin
 		'@param-taint' => true,
 		'@return-taint' => true,
+
+		// psalm
+		'@psalm-template' => true,
+		'@psalm-param' => true,
+		'@psalm-return' => true,
 
 		// T263390
 		'@noinspection' => true,

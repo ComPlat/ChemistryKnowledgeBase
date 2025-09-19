@@ -1,14 +1,19 @@
 <?php
 
-class Scribunto_LuaTextLibrary extends Scribunto_LuaLibraryBase {
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
+
+use MediaWiki\Json\FormatJson;
+use MediaWiki\MainConfigNames;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\CoreTagHooks;
+
+class TextLibrary extends LibraryBase {
 	// Matches Lua mw.text constants
 	private const JSON_PRESERVE_KEYS = 1;
 	private const JSON_TRY_FIXING = 2;
 	private const JSON_PRETTY = 4;
 
 	public function register() {
-		global $wgUrlProtocols;
-
 		$lib = [
 			'unstrip' => [ $this, 'textUnstrip' ],
 			'unstripNoWiki' => [ $this, 'textUnstripNoWiki' ],
@@ -25,7 +30,8 @@ class Scribunto_LuaTextLibrary extends Scribunto_LuaLibraryBase {
 			'nowiki_protocols' => [],
 		];
 
-		foreach ( $wgUrlProtocols as $prot ) {
+		$urlProtocols = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::UrlProtocols );
+		foreach ( $urlProtocols as $prot ) {
 			if ( substr( $prot, -1 ) === ':' ) {
 				// To convert the protocol into a case-insensitive Lua pattern,
 				// we need to replace letters with a character class like [Xx]
@@ -57,14 +63,28 @@ class Scribunto_LuaTextLibrary extends Scribunto_LuaLibraryBase {
 	}
 
 	/**
+	 * @param string $text
+	 * @return string
+	 */
+	public function processNoWikis( string $text ): string {
+		$content = preg_replace( "#</?nowiki[^>]*>#i", '', $text );
+		return $content ? CoreTagHooks::nowiki( $content, [], $this->getParser() )[0] : '';
+	}
+
+	/**
 	 * Handler for textUnstripNoWiki
 	 * @internal
 	 * @param string $s
+	 * @param bool $getOrigTextWhenPreprocessing
 	 * @return string[]
 	 */
-	public function textUnstripNoWiki( $s ) {
+	public function textUnstripNoWiki( $s, $getOrigTextWhenPreprocessing ) {
 		$this->checkType( 'unstripNoWiki', 1, $s, 'string' );
-		return [ $this->getParser()->getStripState()->unstripNoWiki( $s ) ];
+		if ( !$getOrigTextWhenPreprocessing ) {
+			return [ $this->getParser()->getStripState()->replaceNoWikis( $s, [ $this, "processNowikis" ] ) ];
+		} else {
+			return [ $this->getParser()->getStripState()->unstripNoWiki( $s ) ];
+		}
 	}
 
 	/**
@@ -105,7 +125,7 @@ class Scribunto_LuaTextLibrary extends Scribunto_LuaLibraryBase {
 		}
 		$ret = FormatJson::encode( $value, (bool)( $flags & self::JSON_PRETTY ), FormatJson::ALL_OK );
 		if ( $ret === false ) {
-			throw new Scribunto_LuaError( 'mw.text.jsonEncode: Unable to encode value' );
+			throw new LuaError( 'mw.text.jsonEncode: Unable to encode value' );
 		}
 		return [ $ret ];
 	}
@@ -127,7 +147,7 @@ class Scribunto_LuaTextLibrary extends Scribunto_LuaLibraryBase {
 		}
 		$status = FormatJson::parse( $s, $opts );
 		if ( !$status->isOk() ) {
-			throw new Scribunto_LuaError( 'mw.text.jsonDecode: ' . $status->getMessage()->text() );
+			throw new LuaError( 'mw.text.jsonDecode: ' . $status->getMessage()->text() );
 		}
 		$val = $status->getValue();
 		if ( !( $flags & self::JSON_PRESERVE_KEYS ) && is_array( $val ) ) {

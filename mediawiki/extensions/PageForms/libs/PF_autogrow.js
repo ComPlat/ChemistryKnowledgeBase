@@ -12,34 +12,34 @@
  * @author Yaron Koren
  */
 
-var autoGrowColsDefault = [];
-var autoGrowRowsDefault = [];
+const autoGrowColsDefault = [];
+const autoGrowRowsDefault = [];
 
 function autoGrowSetDefaultValues(textArea) {
-	var id = textArea.id;
+	const id = textArea.id;
 	autoGrowColsDefault[id] = textArea.cols;
 	autoGrowRowsDefault[id] = textArea.rows;
 }
 
 function autoGrow(textArea) {
-    var linesCount = 0;
-    var lines = textArea.value.split('\n');
+	let linesCount = 0;
+	const lines = textArea.value.split('\n');
 
-    for (var i = lines.length-1; i >= 0; --i) {
-        linesCount += Math.floor((lines[i].length / autoGrowColsDefault[textArea.id]) + 1);
-    }
+	for (let i = lines.length-1; i >= 0; --i) {
+		linesCount += Math.floor((lines[i].length / autoGrowColsDefault[textArea.id]) + 1);
+	}
 
-    if (linesCount >= autoGrowRowsDefault[textArea.id]) {
-        textArea.rows = linesCount + 1;
-    } else {
-        textArea.rows = autoGrowRowsDefault[textArea.id];
-    }
+	if (linesCount >= autoGrowRowsDefault[textArea.id]) {
+		textArea.rows = linesCount + 1;
+	} else {
+		textArea.rows = autoGrowRowsDefault[textArea.id];
+	}
 }
 
 function autoGrowBindEvents(textArea) {
-    textArea.onkeyup = function() {
-        autoGrow(textArea);
-    };
+	textArea.onkeyup = function() {
+		autoGrow(textArea);
+	};
 }
 
 // jQuery method

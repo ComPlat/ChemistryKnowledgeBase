@@ -616,9 +616,9 @@
 		);
 
 		assert.strictEqual(
-			gt.defineTour( VALID_TOUR_SPEC ),
-			true,
-			'Valid tour is defined successfully'
+			gt.defineTour( VALID_TOUR_SPEC ).constructor,
+			gt.TourBuilder,
+			'Valid tour is defined successfully and returns a TourBuilder'
 		);
 
 		this.restoreWarnings();
@@ -675,7 +675,7 @@
 			1,
 			'step.listenMwHook should be called once if a single hook name is passed'
 		);
-		assert.assertTrue(
+		assert.true(
 			listenForMwHookSpy.calledWithExactly( 'StepBuilder.listenForMwHooks.happened' ),
 			'step.listenMwHook should be called once with the correct hook name if a single hook name is passed'
 		);
@@ -687,11 +687,11 @@
 			2,
 			'step.listenMwHook should be called twice if two hook names are passed'
 		);
-		assert.assertTrue(
+		assert.true(
 			listenForMwHookSpy.calledWithExactly( 'StepBuilder.listenForMwHooks.one' ),
 			'step.listenMwHook should be called with the first hook name if multiple are passed'
 		);
-		assert.assertTrue(
+		assert.true(
 			listenForMwHookSpy.calledWithExactly( 'StepBuilder.listenForMwHooks.another' ),
 			'step.listenMwHook should be called with the second hook name if multiple are passed'
 		);
@@ -983,44 +983,44 @@
 		];
 		var spy = this.spy( gt.Step.prototype, 'getButtons' );
 		var tourBuilder = new gt.TourBuilder( { name: 'buttonsTest' } );
-		var firstStepBuilder = tourBuilder.firstStep( $.extend( true, {}, { buttons: buttons }, VALID_BUILDER_STEP_SPEC ) );
-		var firstStep = firstStepBuilder.step;
+		firstStepBuilder = tourBuilder.firstStep( $.extend( true, {}, { buttons: buttons }, VALID_BUILDER_STEP_SPEC ) );
+		firstStep = firstStepBuilder.step;
 
 		tourBuilder.tour.showStep( firstStep );
 		var returnedButtons = spy.lastCall.args[ 0 ].buttons;
-		assert.ok(
-			returnedButtons[ 0 ].html.class.indexOf( 'mw-ui-destructive' ) !== -1 &&
-			returnedButtons[ 0 ].html.class.indexOf( 'mw-ui-button' ) !== -1,
+		assert.true(
+			returnedButtons[ 0 ].html.class.indexOf( 'cdx-button--action-destructive' ) !== -1 &&
+			returnedButtons[ 0 ].html.class.indexOf( 'cdx-button' ) !== -1,
 			'Destructive custom button'
 		);
-		assert.ok(
-			returnedButtons[ 1 ].html.class.indexOf( 'mw-ui-button' ) !== -1 &&
-			returnedButtons[ 1 ].html.class.indexOf( 'mw-ui-progressive' ) !== -1 &&
-			returnedButtons[ 1 ].html.class.indexOf( 'mw-ui-quiet' ) !== -1,
+		assert.true(
+			returnedButtons[ 1 ].html.class.indexOf( 'cdx-button' ) !== -1 &&
+			returnedButtons[ 1 ].html.class.indexOf( 'cdx-button--action-progressive' ) !== -1 &&
+			returnedButtons[ 1 ].html.class.indexOf( 'cdx-button--weight-quiet' ) !== -1,
 			'A quietly progressive custom button'
 		);
 		assert.notStrictEqual(
-			returnedButtons[ 2 ].html.class.indexOf( 'mw-ui-progressive' ),
+			returnedButtons[ 2 ].html.class.indexOf( 'cdx-button--action-progressive' ),
 			-1,
 			'Progressive internal link'
 		);
 		assert.strictEqual(
-			returnedButtons[ 3 ].html.class.indexOf( 'mw-ui-progressive' ),
+			returnedButtons[ 3 ].html.class.indexOf( 'cdx-button--action-progressive' ),
 			-1,
 			'External link button is not progressive by default'
 		);
 		assert.strictEqual(
-			returnedButtons[ 4 ].html.class.indexOf( 'mw-ui-progressive' ),
+			returnedButtons[ 4 ].html.class.indexOf( 'cdx-button--action-progressive' ),
 			-1,
 			'Back button is not progressive by default'
 		);
 		assert.notStrictEqual(
-			returnedButtons[ 5 ].html.class.indexOf( 'mw-ui-progressive' ),
+			returnedButtons[ 5 ].html.class.indexOf( 'cdx-button--action-progressive' ),
 			-1,
 			'Okay button is progressive by default'
 		);
 		assert.notStrictEqual(
-			returnedButtons[ 6 ].html.class.indexOf( 'mw-ui-progressive' ),
+			returnedButtons[ 6 ].html.class.indexOf( 'cdx-button--action-progressive' ),
 			-1,
 			'Next button is progressive by default'
 		);
@@ -1088,12 +1088,12 @@
 			'registerMwHookListener called once for each hook the step is listening for'
 		);
 
-		assert.assertTrue(
+		assert.true(
 			registerMwHookListenerSpy.calledWithExactly( 'Step.registerMwHooks.something' ),
 			'registerMwHookListener called with the first hook that is being listened for'
 		);
 
-		assert.assertTrue(
+		assert.true(
 			registerMwHookListenerSpy.calledWithExactly( 'Step.registerMwHooks.another' ),
 			'registerMwHookListener called with the second hook that is being listened for'
 		);
@@ -1117,8 +1117,6 @@
 		var updateUserStateSpy = this.spy( gt, 'updateUserStateForTour' );
 		var unregisterSpy = this.spy( gt.Step.prototype, 'unregisterMwHooks' );
 
-		// Use an empty jQuery context for elem since we're not testing the logging
-		// event registration currently.
 		firstStep.handleOnShow( { id: firstStep.specification.id, elem: $() } );
 		assert.strictEqual(
 			unregisterSpy.callCount,
@@ -1328,12 +1326,12 @@
 		var done = assert.async();
 
 		validTour.initialize().done( function () {
-			assert.assertTrue(
+			assert.true(
 				stepInitializeSpy.calledOn( firstStep ),
 				'Initializing tour first time initializes first step'
 			);
 
-			assert.assertTrue(
+			assert.true(
 				stepInitializeSpy.calledOn( previewStepBuilder.step ),
 				'Initializing tour first time initializes other steps'
 			);

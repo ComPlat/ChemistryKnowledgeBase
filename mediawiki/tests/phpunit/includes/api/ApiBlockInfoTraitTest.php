@@ -1,13 +1,27 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiBlockInfoTrait;
+use MediaWiki\Block\CompositeBlock;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\SystemBlock;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWikiIntegrationTestCase;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers ApiBlockInfoTrait
+ * @covers \MediaWiki\Api\ApiBlockInfoTrait
  */
 class ApiBlockInfoTraitTest extends MediaWikiIntegrationTestCase {
+	use DummyServicesTrait;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->setService( 'DBLoadBalancerFactory', $this->getDummyDBLoadBalancerFactory() );
+	}
+
 	/**
 	 * @dataProvider provideGetBlockDetails
 	 */
@@ -22,6 +36,8 @@ class ApiBlockInfoTraitTest extends MediaWikiIntegrationTestCase {
 			'blockedbyid' => 0,
 			'blockreason' => '',
 			'blockexpiry' => 'infinite',
+			'blockemail' => false,
+			'blockowntalk' => true,
 		], $expectedInfo );
 		$this->assertArraySubmapSame( $subset, $info, "Matching block details" );
 	}
@@ -36,9 +52,27 @@ class ApiBlockInfoTraitTest extends MediaWikiIntegrationTestCase {
 				new DatabaseBlock( [ 'sitewide' => false ] ),
 				[ 'blockpartial' => true ],
 			],
+			'Email block' => [
+				new DatabaseBlock( [ 'blockEmail' => true ] ),
+				[ 'blockemail' => true ]
+			],
 			'System block' => [
 				new SystemBlock( [ 'systemBlock' => 'proxy' ] ),
 				[ 'systemblocktype' => 'proxy' ]
+			],
+			'Composite block' => [
+				CompositeBlock::createFromBlocks(
+					new DatabaseBlock( [ 'blockEmail' => false ] ),
+					new DatabaseBlock( [ 'blockEmail' => true ] )
+				),
+				[
+					'blockemail' => true,
+					'blockreason' => 'There are multiple blocks against your account and/or IP address',
+					'blockcomponents' => [
+						[ 'blockemail' => false ],
+						[ 'blockemail' => true ],
+					],
+				],
 			],
 		];
 	}

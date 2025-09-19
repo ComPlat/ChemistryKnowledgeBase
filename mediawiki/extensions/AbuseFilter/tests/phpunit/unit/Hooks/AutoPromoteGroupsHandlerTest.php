@@ -2,16 +2,15 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Hooks;
 
-use HashBagOStuff;
 use MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesRegistry;
 use MediaWiki\Extension\AbuseFilter\Hooks\Handlers\AutoPromoteGroupsHandler;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
+use Wikimedia\ObjectCache\HashBagOStuff;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Hooks\Handlers\AutoPromoteGroupsHandler
- * @covers ::__construct
+ * @covers \MediaWiki\Extension\AbuseFilter\Hooks\Handlers\AutoPromoteGroupsHandler
  */
 class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 
@@ -22,7 +21,7 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 		return $registry;
 	}
 
-	public function provideOnGetAutoPromoteGroups_nothingToDo(): array {
+	public static function provideOnGetAutoPromoteGroups_nothingToDo(): array {
 		return [
 			[ true, [] ],
 			[ false, [] ],
@@ -31,7 +30,6 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::onGetAutoPromoteGroups
 	 * @dataProvider provideOnGetAutoPromoteGroups_nothingToDo
 	 */
 	public function testOnGetAutoPromoteGroups_nothingToDo( bool $enabled, array $groups ) {
@@ -39,7 +37,7 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 		$store = $this->createMock( BlockAutopromoteStore::class );
 		$store->expects( $this->never() )->method( $this->anything() );
 		$registry = $this->getConsequencesRegistry( $enabled );
-		$handler = new AutoPromoteGroupsHandler( $cache, $registry, $store );
+		$handler = new AutoPromoteGroupsHandler( $registry, $store, $cache );
 
 		$user = new UserIdentityValue( 1, 'User' );
 		$copy = $groups;
@@ -48,7 +46,7 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 		$this->assertFalse( $cache->hasKey( 'local:abusefilter:blockautopromote:quick:1' ) );
 	}
 
-	public function provideOnGetAutoPromoteGroups(): array {
+	public static function provideOnGetAutoPromoteGroups(): array {
 		return [
 			[ 0, [ 'autoconfirmed' ], [ 'autoconfirmed' ] ],
 			[ 1000, [ 'autoconfirmed' ], [] ],
@@ -56,7 +54,6 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::onGetAutoPromoteGroups
 	 * @dataProvider provideOnGetAutoPromoteGroups
 	 */
 	public function testOnGetAutoPromoteGroups_cacheHit(
@@ -69,14 +66,13 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 		$store->expects( $this->never() )->method( $this->anything() );
 		$registry = $this->getConsequencesRegistry();
 
-		$handler = new AutoPromoteGroupsHandler( $cache, $registry, $store );
+		$handler = new AutoPromoteGroupsHandler( $registry, $store, $cache );
 		$handler->onGetAutoPromoteGroups( $user, $groups );
 
 		$this->assertSame( $expected, $groups );
 	}
 
 	/**
-	 * @covers ::onGetAutoPromoteGroups
 	 * @dataProvider provideOnGetAutoPromoteGroups
 	 */
 	public function testOnGetAutoPromoteGroups_cacheMiss(
@@ -90,23 +86,10 @@ class AutoPromoteGroupsHandlerTest extends MediaWikiUnitTestCase {
 			->willReturn( $status );
 		$registry = $this->getConsequencesRegistry();
 
-		$handler = new AutoPromoteGroupsHandler( $cache, $registry, $store );
+		$handler = new AutoPromoteGroupsHandler( $registry, $store, $cache );
 		$handler->onGetAutoPromoteGroups( $user, $groups );
 
 		$this->assertSame( $expected, $groups );
 		$this->assertTrue( $cache->hasKey( 'local:abusefilter:blockautopromote:quick:1' ) );
-	}
-
-	/**
-	 * @covers ::factory
-	 */
-	public function testFactory() {
-		$this->assertInstanceOf(
-			AutoPromoteGroupsHandler::class,
-			AutoPromoteGroupsHandler::factory(
-				$this->createMock( ConsequencesRegistry::class ),
-				$this->createMock( BlockAutopromoteStore::class )
-			)
-		);
 	}
 }

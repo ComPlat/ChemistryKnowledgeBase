@@ -2,15 +2,15 @@
 
 namespace MediaWiki\Extension\CiteThisPage;
 
-use FormSpecialPage;
-use Html;
-use HTMLForm;
+use MediaWiki\Html\Html;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserFactory;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionLookup;
-use Parser;
-use ParserFactory;
-use ParserOptions;
+use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\Title\Title;
 use SearchEngineFactory;
-use Title;
 
 class SpecialCiteThisPage extends FormSpecialPage {
 
@@ -196,7 +196,7 @@ class SpecialCiteThisPage extends FormSpecialPage {
 	 * @return ParserOptions
 	 */
 	private function getParserOptions() {
-		$parserOptions = ParserOptions::newFromUser( $this->getUser() );
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
 		$parserOptions->setDateFormat( 'default' );
 		$parserOptions->setInterfaceMessage( true );
 		return $parserOptions;

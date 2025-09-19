@@ -19,10 +19,12 @@
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Status\Status;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
+use Wikimedia\Http\MultiHttpClient;
 
 /**
  * Trait for test cases that need to mock HTTP requests.
@@ -38,7 +40,7 @@ trait MockHttpTrait {
 	 * @phpcs:ignore MediaWiki.Commenting.FunctionComment.ObjectTypeHintParam
 	 * @param object|callable $service
 	 */
-	abstract protected function setService( $name, $service );
+	abstract protected function setService( string $name, $service );
 
 	/**
 	 * Install a mock HttpRequestFactory in MediaWikiServices, for the duration

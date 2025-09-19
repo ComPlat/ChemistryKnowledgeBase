@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Brettchenweber",
 			"Kghbln",
-			"Metalhead64",
-			"Brettchenweber"
+			"Metalhead64"
 		]
 	},
 	"eventlogging-desc": "Ergänzt ein Framework zum Protokollieren von Aktionen clientseitigen Codes",

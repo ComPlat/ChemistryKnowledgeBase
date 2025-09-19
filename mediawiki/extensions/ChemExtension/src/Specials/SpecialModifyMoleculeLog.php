@@ -10,7 +10,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\TextInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class SpecialModifyMoleculeLog extends SpecialPage {
@@ -23,7 +23,7 @@ class SpecialModifyMoleculeLog extends SpecialPage {
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->logger = new LoggerUtils('SpecialModifyMoleculeLog', 'ChemExtension');
         $this->addedJobs = [];
     }
@@ -44,11 +44,11 @@ class SpecialModifyMoleculeLog extends SpecialPage {
 
             global $wgRequest;
             $moleculeLog = $this->processRequest($wgRequest);
-            $html = $this->blade->view()->make("show-molecule-modification-log", [
+            $html = $this->blade->run("show-molecule-modification-log", [
                 'moleculeLog' => $moleculeLog,
                 'form' => $form,
                 'wgScriptPath' => $wgScriptPath
-            ])->render();
+            ]);
             $this->getOutput()->addHTML($html);
 
         } catch (Exception $e) {
@@ -105,6 +105,6 @@ class SpecialModifyMoleculeLog extends SpecialPage {
     }
 
     protected function showErrorHint($message) {
-        return $this->blade->view()->make("error", ['message' => $message])->render();
+        return $this->blade->run("error", ['message' => $message]);
     }
 }

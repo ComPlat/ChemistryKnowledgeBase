@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\Specials;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\TIB\TibClient;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 use Exception;
 
@@ -20,7 +20,7 @@ class CheckServices extends SpecialPage
         parent::__construct('CheckServices');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->initializeParameters();
     }
 
@@ -32,11 +32,11 @@ class CheckServices extends SpecialPage
         $output = $this->getOutput();
         $this->setHeaders();
 
-        $output->addHTML($this->blade->view()->make("check-services", [
+        $output->addHTML($this->blade->run("check-services", [
             'RGroupState' => $this->checkRGroupsService(),
             'renderState' => $this->checkRenderService(),
             'tibState' => $this->checkTIBService()])
-            ->render());
+            );
     }
 
     private function checkRGroupsService()

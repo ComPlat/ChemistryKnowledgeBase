@@ -1,18 +1,16 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
+use Wikimedia\Http\TelemetryHeadersInterface;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers MWHttpRequest
+ * @covers \MWHttpRequest
  */
 class MWHttpRequestTest extends PHPUnit\Framework\TestCase {
 
-	public function testFactory() {
-		$this->assertInstanceOf( MWHttpRequest::class, MWHttpRequest::factory( 'http://example.test' ) );
-	}
-
 	/**
-	 * Feeds URI to test a long regular expression in Http::isValidURI
+	 * Feeds URI to test a long regular expression in MWHttpRequest::isValidURI
 	 */
 	public static function provideURI() {
 		/** Format: 'boolean expectation', 'URI to test', 'Optional message' */
@@ -43,9 +41,9 @@ class MWHttpRequestTest extends PHPUnit\Framework\TestCase {
 
 			# (\S+) - host part is made of anything not whitespaces
 			// commented these out in order to remove @group Broken
-			// @todo are these valid tests? if so, fix Http::isValidURI so it can handle them
+			// @todo are these valid tests? if so, fix MWHttpRequest::isValidURI so it can handle them
 			// [ false, 'http://!"èèè¿¿¿~~\'', 'hostname is made of any non whitespace' ],
-			// [ false, 'http://exam:ple.org/', 'hostname can not use colons!' ],
+			// [ false, 'http://exam:ple.org/', 'hostname cannot use colons!' ],
 
 			# (:[0-9]+)? - port number
 			[ true, 'http://example.org:80/' ],
@@ -79,9 +77,9 @@ class MWHttpRequestTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * T29854 : Http::isValidURI is too lax
+	 * T29854 : MWHttpRequest::isValidURI is too lax
 	 * @dataProvider provideURI
-	 * @covers MWHttpRequest::isValidURI
+	 * @covers \MWHttpRequest::isValidURI
 	 */
 	public function testIsValidUri( $expect, $uri, $message = '' ) {
 		$this->assertSame( $expect, MWHttpRequest::isValidURI( $uri ), $message );
@@ -89,11 +87,40 @@ class MWHttpRequestTest extends PHPUnit\Framework\TestCase {
 
 	public function testSetReverseProxy() {
 		$req = TestingAccessWrapper::newFromObject(
-			MWHttpRequest::factory( 'https://example.org/path?query=string' )
+			MediaWikiServices::getInstance()->getHttpRequestFactory()->create( 'https://example.org/path?query=string' )
 		);
 		$req->setReverseProxy( 'http://localhost:1234' );
 		$this->assertSame( 'http://localhost:1234/path?query=string', $req->url );
 		$this->assertSame( 'example.org', $req->reqHeaders['Host'] );
 	}
 
+	public function testItInjectsTelemetryHeaders() {
+		$telemetry = $this->createMock( TelemetryHeadersInterface::class );
+		$telemetry->expects( $this->once() )
+			->method( 'getRequestHeaders' )
+			->willReturn( [
+				'X-Request-Id' => 'request_identifier',
+				'tracestate' => 'tracestate_value',
+				'traceparent' => 'traceparent_value',
+			] );
+
+		$httpRequest = $this->getMockForAbstractClass(
+			MWHttpRequest::class,
+			[
+				'http://localhost/test',
+				[
+					'timeout' => 30,
+					'connectTimeout' => 30
+				]
+			]
+		);
+		$httpRequest->addTelemetry( $telemetry );
+
+		$accessWrapper = TestingAccessWrapper::newFromObject( $httpRequest );
+		$requestHeaders = $accessWrapper->reqHeaders;
+
+		$this->assertEquals( 'request_identifier', $requestHeaders['X-Request-Id'] );
+		$this->assertEquals( 'tracestate_value', $requestHeaders['tracestate'] );
+		$this->assertEquals( 'traceparent_value', $requestHeaders['traceparent'] );
+	}
 }

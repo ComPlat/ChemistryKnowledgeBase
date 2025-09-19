@@ -1,11 +1,16 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Format;
+
+use MediaWiki\Api\ApiResult;
+
 /**
  * @group API
- * @covers ApiFormatPhp
+ * @covers MediaWiki\Api\ApiFormatPhp
  */
 class ApiFormatPhpTest extends ApiFormatTestBase {
 
+	/** @inheritDoc */
 	protected $printerName = 'php';
 
 	private static function addFormatVersion( $format, $arr ) {

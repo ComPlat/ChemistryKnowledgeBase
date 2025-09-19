@@ -2,19 +2,19 @@
 namespace DIQA\FacetedSearch;
 
 use Exception;
-use IDatabase;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
-use Sanitizer;
+use MediaWiki\Title\Title;
 use SMW\DataTypeRegistry;
-use SMW\DIProperty as SMWDIProperty;
-use SMW\DIWikiPage as SMWDIWikiPage;
+use SMW\DIProperty;
+use SMW\DIWikiPage;
 use SMW\PropertyRegistry;
-use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMWDataItem;
 use SMWDITime;
-use Title;
+use Wikimedia\Rdbms\IDatabase;
 use WikiPage;
 
 /*
@@ -90,7 +90,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
      *        Optional content of the article. If it is null, the content of $wikiPage is
      *        retrieved in this method.
      * @param array $messages
-     *      User readible messages (out)
+     *      User readable messages (out)
      * @param bool $debugMode
      *      Prints verbose output
      */
@@ -117,8 +117,9 @@ class FSSolrSMWDB extends FSSolrIndexer {
         $text = $rawText ?? $this->getText( $wikiPage, $doc, $messages );
 
         $extText = '';
-        \Hooks::run('FS_ExtendSearchFulltext', [& $extText]);
-        \Hooks::run('CleanupChemExtState');
+        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hookContainer->run('FS_ExtendSearchFulltext', [& $extText]);
+        $hookContainer->run('CleanupChemExtState');
         $text .= $extText;
 
         $doc['id'] = $pageID;
@@ -145,9 +146,15 @@ class FSSolrSMWDB extends FSSolrIndexer {
         return true;
     }
 
+    /**
+     * @throws Exception
+     */
     private function getText(WikiPage $wikiPage, array &$doc, array &$messages ) : string {
         $pageTitle = $wikiPage->getTitle();
         $pageNamespace = $pageTitle->getNamespace();
+
+        # DisplayTitle seems to fetch info from the request's page title ;( so we set it here ):
+        RequestContext::getMain()->setTitle( $pageTitle );
 
         if ($pageNamespace == NS_FILE) {
             $text = $this->getTextFromFile( $wikiPage, $doc, $messages );
@@ -158,7 +165,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
         global $egApprovedRevsBlankIfUnapproved, $egApprovedRevsNamespaces;
         if (defined('APPROVED_REVS_VERSION')
-                && $egApprovedRevsBlankIfUnapproved 
+                && $egApprovedRevsBlankIfUnapproved
                 && in_array( $pageNamespace, $egApprovedRevsNamespaces )) {
 
             // index the approved revision
@@ -167,18 +174,23 @@ class FSSolrSMWDB extends FSSolrIndexer {
                 throw new Exception( "unapproved $pageTitle" );
             }
             $content = $revision->getContent( SlotRecord::MAIN, RevisionRecord::RAW );
-            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wikiPage, $revision->getId() );
+            if ( !$content ) {
+                throw new Exception("Cannot find content for latest revision of $pageTitle");
+            }
+            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage, $revision);
         } else {
             // index latest revision
             $content = $wikiPage->getContent();
-            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wikiPage );
+            if ( !$content ) {
+                throw new Exception("Cannot find content for $pageTitle");
+            }
+            $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         }
 
-        if ( !$parserOut ) {
-            return '';
-        } else {
-            return Sanitizer::stripAllTags($parserOut->getText());
+        if ( $parserOut == null ) {
+            throw new Exception("Cannot find parser output for $pageTitle");
         }
+        return Sanitizer::stripAllTags($parserOut->getText() ?? '');
     }
 
     /**
@@ -270,13 +282,13 @@ class FSSolrSMWDB extends FSSolrIndexer {
     private function getApprovedRevision(WikiPage $wikiPage) {
         // get approved rev_id
         $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
-    
+
         $res = $db->newSelectQueryBuilder()
                 ->select( 'rev_id' )
                 ->from( 'approved_revs' )
-                ->where( 'page_id = ' . $wikiPage->getTitle()->getArticleID() )
+                ->where( ['page_id' => $wikiPage->getTitle()->getArticleID()] )
                 ->fetchResultSet();
-    
+
         $rev_id = null;
         if ( $res->numRows() > 0 ) {
             if( $row = $res->fetchRow() ) {
@@ -308,13 +320,13 @@ class FSSolrSMWDB extends FSSolrIndexer {
         if( $this->deleteDocument($oldid) ) {
             // The article with the new name has the same page id as before
             $wp = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID( $oldid );
-            
+
             $content = $wp->getContent(RevisionRecord::RAW);
             if($content == null) {
                 $text = '';
             } else  {
-                $text = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wp );
-                $text = $text->getText() ?? '';
+                $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput( $content, $wp );
+                $text = $parserOut->getText() ?? '';
                 $text = Sanitizer::stripAllTags( $text );
             }
 
@@ -348,28 +360,20 @@ class FSSolrSMWDB extends FSSolrIndexer {
      * @param int $pid
      *         The page ID.
      * @param array $doc
-     *
-     * @param $options
+     * @param array $options
+     * @return array
      */
     private function retrieveTemplates($db, $pid, array &$doc, array &$options) {
+        // TODO for MW 1.43 use an API: ParserOutput::getLinkList(ParserOutputLinkTypes::TEMPLATE)
         // MW >= 1.38
         $res = $db->newSelectQueryBuilder()
-                ->select( 'CAST(lt_title AS CHAR) AS template' )
+                ->select( ['template' => 'CAST(lt_title AS CHAR)'] )
                 ->from( 'templatelinks' )
                 ->join( 'page', null, [ 'page_id = tl_from' ] )
                 ->join( 'linktarget', null, [ 'lt_id = tl_target_id' ] )
-                ->where( "tl_from = $pid" )
+                ->where( ['tl_from' => $pid] )
                 ->caller( __METHOD__ )
                 ->fetchResultSet();
-    
-        // // MW < 1.38
-        // $templateLinksTable = $db->tableName('templatelinks');
-        // $sql = <<<SQL
-        //     SELECT CAST(t.tl_title AS CHAR) template
-        //     FROM $templateLinksTable t
-        //     WHERE t.tl_from=$pid
-        //     SQL;
-        // $res = $db->query($sql);
 
         $smwhTemplates = [];
         if ( $res->numRows() > 0 ) {
@@ -402,7 +406,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
     /**
      * Returns the SOLR field name for a property
-     * @param SMWDIProperty $property
+     * @param DIProperty $property
      *
      * @return string
      */
@@ -434,7 +438,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
     /**
      * Returns the SOLR field name for a property value constraint
-     * @param SMWDIProperty $property
+     * @param DIProperty $property
      *
      * @return string
      */
@@ -482,14 +486,13 @@ class FSSolrSMWDB extends FSSolrIndexer {
      */
     private function retrieveSMWID( $namespaceID, $title, array &$doc ) {
         $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-        $title = $db->addQuotes($title);
         $res = $db->newSelectQueryBuilder()
                 ->select( 'smw_id' )
                 ->from( 'smw_object_ids' )
-                ->where( ["smw_namespace = $namespaceID", "smw_title=$title"] )
+                ->where( ['smw_namespace' => $namespaceID, 'smw_title' => $title] )
                 ->caller( __METHOD__ )
                 ->fetchResultSet();
-    
+
         $found = false;
         if ( $res->numRows() > 0 ) {
             $row = $res->fetchObject();
@@ -524,7 +527,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
      * Retrieves the relations of the article with the SMW ID $smwID and adds
      * them to the document description $doc.
      *
-     * @param Title $title 
+     * @param Title $title
      * @param array $doc
      *         The document description. If the page has relations, all relations
      *         and their values are added to $doc. The key 'smwh_properties' will
@@ -538,7 +541,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
         $attributes = array();
         $relations = array();
 
-        $subject = SMWDIWikiPage::newFromTitle($title);
+        $subject = DIWikiPage::newFromTitle($title);
         $properties = $store->getProperties($subject);
 
         foreach($properties as $property) {
@@ -549,7 +552,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
 
             // check if particular pre-defined property should be indexed
             $predefPropType = PropertyRegistry::getInstance()->getPropertyValueTypeById($property->getKey());
-            $p = $property; //SMWDIProperty::newFromUserLabel($prop);
+            $p = $property; //DIProperty::newFromUserLabel($prop);
             if (!empty($predefPropType)) {
                 // This is a predefined property
                 if (isset($fsgIndexPredefinedProperties) && $fsgIndexPredefinedProperties === false) {
@@ -560,7 +563,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
             // check if property should be indexed
             $prop_ignoreasfacet = wfMessage('fs_prop_ignoreasfacet')->text();
 
-            $iafValues = $store->getPropertyValues($p->getDiWikiPage(), SMWDIProperty::newFromUserLabel($prop_ignoreasfacet));
+            $iafValues = $store->getPropertyValues($p->getDiWikiPage(), DIProperty::newFromUserLabel($prop_ignoreasfacet));
             if (count($iafValues) > 0) {
                 continue;
             }
@@ -623,29 +626,29 @@ class FSSolrSMWDB extends FSSolrIndexer {
     /**
      * Indexes categories. Either as member categories or super-categories
      *
-     * @param Title $title 
+     * @param Title $title
      * @param array $doc
      */
     private function indexCategories(Title $title, array &$doc) {
         $store = smwfGetStore();
-        $subject = SMWDIWikiPage::newFromTitle($title);
- 
+        $subject = DIWikiPage::newFromTitle($title);
+
         $categories = [];
         $properties = $store->getProperties($subject);
-        foreach($properties as $property) {
+        foreach ($properties as $property) {
             if ($property->getKey() == "_INST" || $property->getKey() == "_SUBC") {
                 $categories = array_merge($categories, $store->getPropertyValues($subject, $property));
             }
         }
 
         $prop_ignoreasfacet = wfMessage('fs_prop_ignoreasfacet')->text();
-        $ignoreAsFacetProp = SMWDIProperty::newFromUserLabel($prop_ignoreasfacet);
+        $ignoreAsFacetProp = DIProperty::newFromUserLabel($prop_ignoreasfacet);
 
         $doc['smwh_directcategories'] = [];
         $allParentCategories = [];
-        foreach($categories as $category) {
+        foreach ($categories as $category) {
             // do not index if ignored
-            $iafValues = $store->getPropertyValues(SMWDIWikiPage::newFromTitle($category->getTitle()), $ignoreAsFacetProp);
+            $iafValues = $store->getPropertyValues(DIWikiPage::newFromTitle($category->getTitle()), $ignoreAsFacetProp);
             if (count($iafValues) > 0) {
                 continue;
             }
@@ -658,7 +661,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
         // index all categories recursively
         $allCategories = $this->getAllSuperCategories($allParentCategories);
         $allCategories = array_unique($allCategories);
-        foreach($allCategories as $pc) {
+        foreach ($allCategories as $pc) {
             $doc['smwh_categories'][] = $pc;
         }
     }
@@ -698,10 +701,10 @@ class FSSolrSMWDB extends FSSolrIndexer {
     }
 
     /**
-     * Serialize SMWDIWikiPage into $doc array.
+     * Serialize DIWikiPage into $doc array.
      *
-     * @param SMWDIWikiPage $subject
-     * @param SMWDIProperty $property
+     * @param DIWikiPage $subject
+     * @param DIProperty $property
      * @param SMWDataItem $dataItem
      * @param array $doc
      *
@@ -722,7 +725,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
     }
 
     private function createPropertyValueWithLabel(SMWDataItem $dataItem) {
-        /** @var SMWDIWikiPage $dataItem */
+        /** @var DIWikiPage $dataItem */
         $title = $dataItem->getTitle();
         $valueId = $title->getPrefixedText();
         $valueLabel = FacetedSearchUtil::findDisplayTitle($title);
@@ -730,9 +733,9 @@ class FSSolrSMWDB extends FSSolrIndexer {
     }
 
     /**
-     * Serialize all other SMWDataItems into $doc array (non-SMWDIWikiPage).
+     * Serialize all other SMWDataItems into $doc array (non-DIWikiPage).
      *
-     * @param SMWDIProperty $property
+     * @param DIProperty $property
      * @param SMWDataItem $dataItem
      * @param array $doc
      *
@@ -815,7 +818,7 @@ class FSSolrSMWDB extends FSSolrIndexer {
     /**
      * Special handling for special SMW properties.
      *
-     * @param SMWDIProperty $property
+     * @param DIProperty $property
      * @param SMWDataItem $dataItem
      * @param array $doc
      */

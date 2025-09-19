@@ -1,5 +1,4 @@
 <?php
-
 namespace DIQA\FacetedSearch;
 
 use MediaWiki\MediaWikiServices;
@@ -36,7 +35,8 @@ class FacetedCategoryFilter {
             }
         }
         if( !$hasAllCategory ) {
-            $html .= "<option value=''$selected>Alle Wikiseiten</option>";
+            $allPages = wfMessage('fs_all_pages')->text();
+            $html .= "<option value=''$selected>$allPages</option>";
         }
         $html .= "</select>";
 

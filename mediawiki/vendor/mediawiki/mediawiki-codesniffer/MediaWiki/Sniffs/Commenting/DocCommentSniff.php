@@ -25,8 +25,8 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 
 class DocCommentSniff implements Sniff {
 
-	/** Do not report very long asteriks line, there are eye catchers for structure of the code */
-	private const COMMENT_START_ASTERIKS_MAX_LEN = 10;
+	/** Do not report very long asterisks line, there are eye-catchers for structure of the code */
+	private const COMMENT_START_ASTERISKS_MAX_LEN = 10;
 
 	/**
 	 * List of annotations where the spacing before is not checked.
@@ -64,8 +64,8 @@ class DocCommentSniff implements Sniff {
 		// Self-closing comments are tokenized also as open tag, but ignore them
 		if ( $tokens[$commentStart]['code'] === T_DOC_COMMENT_OPEN_TAG &&
 			$tokens[$commentStart]['content'] !== '/**' &&
-			$tokens[$commentStart]['length'] < self::COMMENT_START_ASTERIKS_MAX_LEN &&
-			substr( $tokens[$commentStart]['content'], -2 ) !== '*/'
+			$tokens[$commentStart]['length'] < self::COMMENT_START_ASTERISKS_MAX_LEN &&
+			!str_ends_with( $tokens[$commentStart]['content'], '*/' )
 		) {
 			$error = 'Comment open tag must be \'/**\'';
 			$fix = $phpcsFile->addFixableError( $error, $commentStart, 'SyntaxOpenTag' );
@@ -132,6 +132,7 @@ class DocCommentSniff implements Sniff {
 			// Ensure whitespace or tab after /** or *
 			if ( ( $tokens[$i]['code'] === T_DOC_COMMENT_OPEN_TAG ||
 				$tokens[$i]['code'] === T_DOC_COMMENT_STAR ) &&
+				$tokens[$i + 1]['code'] !== T_DOC_COMMENT_CLOSE_TAG &&
 				$tokens[$i + 1]['length'] > 0
 			) {
 				$commentStarSpacing = $i + 1;
@@ -284,7 +285,9 @@ class DocCommentSniff implements Sniff {
 					$phpcsFile->fixer->endChangeset();
 				}
 			}
-		} elseif ( $tokens[$commentEnd]['length'] > 0 ) {
+		} elseif ( $tokens[$commentEnd]['length'] > 0 &&
+			$tokens[$commentEnd - 1]['code'] !== T_DOC_COMMENT_OPEN_TAG
+		) {
 			// Ensure a whitespace before the token
 			$commentCloseSpacing = $commentEnd - 1;
 			$expectedSpaces = 1;

@@ -1,12 +1,13 @@
 <?php
 
 use MediaWiki\Actions\ActionFactory;
-use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\Title\Title;
 use PHPUnit\Framework\MockObject\MockObject;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
-use Wikimedia\ObjectFactory\ObjectFactory;
 
 /**
  * @coversDefaultClass \MediaWiki\Actions\ActionFactory
@@ -14,6 +15,7 @@ use Wikimedia\ObjectFactory\ObjectFactory;
  * @author DannyS712
  */
 class ActionFactoryTest extends MediaWikiUnitTestCase {
+	use DummyServicesTrait;
 
 	/**
 	 * @param array $overrides
@@ -21,20 +23,11 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 	 * @return ActionFactory|MockObject
 	 */
 	private function getFactory( $overrides = [], $hooks = [] ) {
-		// ContainerInterface needs to provide the services used in creating
-		// SpecialPageAction because we create instances of that in testing
-		// the 'revisiondelete' and 'editchangetags' actions
-		$containerInterface = $this->getMockForAbstractClass( ContainerInterface::class );
-		$containerInterface->method( 'get' )
-			->with( 'SpecialPageFactory' )
-			->willReturn( $this->createMock( SpecialPageFactory::class ) );
-		$objectFactory = new ObjectFactory( $containerInterface );
-
 		$mock = $this->getMockBuilder( ActionFactory::class )
 			->setConstructorArgs( [
 				$overrides['actions'] ?? [],
 				$overrides['logger'] ?? new NullLogger(),
-				$objectFactory,
+				$this->getDummyObjectFactory(),
 				$this->createHookContainer( $hooks )
 			] )
 			->onlyMethods( [ 'getArticle' ] )
@@ -60,17 +53,62 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::getAction
+	 * @covers ::getActionInfo
 	 */
-	public function testGetAction_simple() {
-		// Cases for undefined and disabled
-		$context = $this->createMock( IContextSource::class );
+	public function testGetActionInfo() {
 		$article = $this->getArticle();
+		$theAction = $this->createMock( Action::class );
+		$theAction->method( 'getName' )->willReturn( 'test' );
+		$theAction->method( 'getRestriction' )->willReturn( 'testing' );
+		$theAction->method( 'needsReadRights' )->willReturn( true );
+		$theAction->method( 'requiresWrite' )->willReturn( true );
+		$theAction->method( 'requiresUnblock' )->willReturn( true );
+
 		$factory = $this->getFactory( [
 			'actions' => [
+				'view' => $theAction,
 				'disabled' => false,
 			]
 		] );
+
+		$info = $factory->getActionInfo( 'view', $article );
+		$this->assertIsObject( $info );
+
+		$this->assertSame( 'test', $info->getName() );
+		$this->assertSame( 'testing', $info->getRestriction() );
+		$this->assertTrue( $info->needsReadRights() );
+		$this->assertTrue( $info->requiresWrite() );
+		$this->assertTrue( $info->requiresUnblock() );
+
+		$this->assertNull(
+			$factory->getActionInfo( 'missing', $article ),
+			'No ActionInfo should be returned for an unknown action'
+		);
+		$this->assertNull(
+			$factory->getActionInfo( 'disabled', $article ),
+			'No ActionInfo should be returned for a disabled action'
+		);
+	}
+
+	/**
+	 * @covers ::getAction
+	 */
+	public function testGetAction_simple() {
+		$context = $this->createMock( IContextSource::class );
+		$article = $this->getArticle();
+		$theAction = $this->createMock( Action::class );
+
+		$factory = $this->getFactory( [
+			'actions' => [
+				'known' => $theAction,
+				'disabled' => false,
+			]
+		] );
+		$this->assertSame(
+			$theAction,
+			$factory->getAction( 'known', $article, $context ),
+			'The `known` action is known'
+		);
 		$this->assertNull(
 			$factory->getAction( 'missing', $article, $context ),
 			'The `missing` action is not defined'
@@ -102,6 +140,26 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 			$theOverrideAction,
 			$factory->getAction( 'the-override', $article, $context ),
 			'Article::getActionOverrides can override configured actions'
+		);
+	}
+
+	/**
+	 * Regression test for T348451
+	 * @covers ::getAction
+	 */
+	public function testActionForSpecialPage() {
+		$context = $this->createMock( IContextSource::class );
+		$factory = $this->getFactory();
+
+		$article = Title::makeTitle( NS_SPECIAL, 'Blankpage' );
+
+		$this->assertNull(
+			$factory->getActionInfo( 'edit', $article ),
+			'Special pages do not support actions'
+		);
+		$this->assertNull(
+			$factory->getAction( 'edit', $article, $context ),
+			'Special pages do not support actions'
 		);
 	}
 
@@ -182,7 +240,9 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 		$factory = $this->getFactory( [
 			'actions' => [
 				'edit' => true,
-				'info' => [ $this, 'getInfoAction' ],
+				'info' => function ( Article $article, IContextSource $context ) {
+					return $this->createMock( InfoAction::class );
+				},
 			]
 		] );
 		$article = $this->getArticle();
@@ -200,59 +260,25 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * Callback for ObjectFactory
-	 *
-	 * @param Article $article
-	 * @param IContextSource $context
-	 * @return InfoAction
-	 */
-	public function getInfoAction( Article $article, IContextSource $context ) {
-		// Don't worry about all of the services that InfoAction really uses
-		return $this->createMock( InfoAction::class );
-	}
-
-	public function provideGetActionName() {
+	public static function provideGetActionName() {
 		yield 'Disabled action' => [
 			'disabled',
-			true,
-			true,
 			'nosuchaction',
-		];
-		yield 'historysubmit workaround - revision deletion' => [
-			'historysubmit',
-			true,
-			false,
-			'revisiondelete',
-		];
-		yield 'historysubmit workaround - change tags' => [
-			'historysubmit',
-			false,
-			true,
-			'editchangetags',
 		];
 		yield 'historysubmit falls back to view' => [
 			'historysubmit',
-			false,
-			false,
 			'view',
 		];
 		yield 'editredlink maps to edit' => [
 			'editredlink',
-			false,
-			false,
 			'edit',
 		];
 		yield 'unrecognized action' => [
 			'missing',
-			false,
-			false,
 			'nosuchaction',
 		];
 		yield 'hook overriding action' => [
 			'edit',
-			false,
-			false,
 			'view',
 			[
 				'GetActionName' => static function ( $context, &$action ) {
@@ -263,8 +289,6 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 		];
 		yield 'hook overriding to an unrecognized action' => [
 			'edit',
-			false,
-			false,
 			'nosuchaction',
 			[
 				'GetActionName' => static function ( $context, &$action ) {
@@ -278,16 +302,12 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideGetActionName
 	 * @covers ::getActionName
-	 * @param string $requestAction action requesting in &action= in the url
-	 * @param bool $revDel whether &revisiondelete= is in the url
-	 * @param bool $editTags whether $editchangetags= is in the url
+	 * @param string $requestAction Action requested in &action= in the URL
 	 * @param string $expectedActionName
 	 * @param array $hooks hooks to register
 	 */
 	public function testGetActionName(
 		string $requestAction,
-		bool $revDel,
-		bool $editTags,
 		string $expectedActionName,
 		array $hooks = []
 	) {
@@ -296,8 +316,6 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 
 		$request = new FauxRequest( [
 			'action' => $requestAction,
-			'revisiondelete' => $revDel,
-			'editchangetags' => $editTags,
 		] );
 		$context->method( 'getRequest' )->willReturn( $request );
 
@@ -322,30 +340,6 @@ class ActionFactoryTest extends MediaWikiUnitTestCase {
 			'view',
 			$factory->getActionName( $context ),
 			'For contexts where a wiki page cannot be used, the action is always `view`'
-		);
-	}
-
-	/**
-	 * @covers ::actionExists
-	 */
-	public function testActionExists() {
-		$this->hideDeprecated( ActionFactory::class . '::actionExists' );
-		$factory = $this->getFactory( [
-			'actions' => [
-				'extra' => true
-			]
-		] );
-		$this->assertTrue(
-			$factory->actionExists( 'VIEW' ),
-			'`view` is built into core, action name is normalized to lowercase'
-		);
-		$this->assertTrue(
-			$factory->actionExists( 'extra' ),
-			'`extra` is added via configuration'
-		);
-		$this->assertFalse(
-			$factory->actionExists( 'missing' ),
-			'`missing` action is not defined'
 		);
 	}
 

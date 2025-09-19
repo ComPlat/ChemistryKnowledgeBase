@@ -1,7 +1,10 @@
 <?php
 
 /**
- * PHPUnit bootstrap file.
+ * PHPUnit bootstrap file. This file loads MW classes, and optionally MW settings if integration tests
+ * are probably going to be run. Note that MW settings are not loaded for unit tests, but a settings
+ * file must still exist in order to determine what extensions should be loaded and to add any custom
+ * tests that they might add.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,75 +25,159 @@
  * @ingroup Testing
  */
 
+use MediaWiki\HookContainer\HookRunner;
 use MediaWiki\MainConfigSchema;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionProcessor;
+use MediaWiki\Registration\ExtensionRegistry;
+use PHPUnit\TextUI\CliArguments\Builder;
 
-if ( PHP_SAPI !== 'cli' ) {
-	die( 'This file is only meant to be executed indirectly by PHPUnit\'s bootstrap process!' );
-}
+require_once __DIR__ . '/bootstrap.common.php';
 
-define( 'MEDIAWIKI', true );
-define( 'MW_PHPUNIT_TEST', true );
-define( 'MW_ENTRY_POINT', 'cli' );
-
-/** @internal Should only be used in MediaWikiIntegrationTestCase::initializeForStandardPhpunitEntrypointIfNeeded() */
-define( 'MW_PHPUNIT_UNIT', true );
-
-$IP = realpath( __DIR__ . '/../../' );
-require_once "$IP/tests/common/TestSetup.php";
-
-// We don't use a settings file here but some code still assumes that one exists
-TestSetup::requireOnceInGlobalScope( "$IP/includes/BootstrapHelperFunctions.php" );
-
-$IP = wfDetectInstallPath(); // ensure MW_INSTALL_PATH is defined
-wfDetectLocalSettingsFile( $IP );
-
-// these variables must be defined before setup runs
-$GLOBALS['IP'] = $IP;
-
-TestSetup::snapshotGlobals();
-
-// Faking in lieu of Setup.php
-$GLOBALS['wgCommandLineMode'] = true;
-$GLOBALS['wgAutoloadClasses'] = [];
-$GLOBALS['wgBaseDirectory'] = MW_INSTALL_PATH;
-
-TestSetup::requireOnceInGlobalScope( "$IP/includes/AutoLoader.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/tests/common/TestsAutoLoader.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/includes/Defines.php" );
-TestSetup::requireOnceInGlobalScope( "$IP/includes/GlobalFunctions.php" );
-
-// Extract the defaults into global variables.
-// NOTE: this does not apply any dynamic defaults.
-foreach ( MainConfigSchema::listDefaultValues( 'wg' ) as $var => $value ) {
-	$GLOBALS[$var] = $value;
-}
-
-TestSetup::requireOnceInGlobalScope( "$IP/includes/DevelopmentSettings.php" );
-
-TestSetup::applyInitialConfig();
-MediaWikiCliOptions::initialize();
-
-// Since we do not load settings, expect to find extensions and skins
-// in their respective default locations.
-$GLOBALS['wgExtensionDirectory'] = "$IP/extensions";
-$GLOBALS['wgStyleDirectory'] = "$IP/skins";
-
-// Populate classes and namespaces from extensions and skins present in filesystem.
-$directoryToJsonMap = [
-	$GLOBALS['wgExtensionDirectory'] => 'extension*.json',
-	$GLOBALS['wgStyleDirectory'] => 'skin*.json'
-];
-
-$extensionProcessor = new ExtensionProcessor();
-
-foreach ( $directoryToJsonMap as $directory => $jsonFilePattern ) {
-	foreach ( new GlobIterator( $directory . '/*/' . $jsonFilePattern ) as $iterator ) {
-		$jsonPath = $iterator->getPathname();
-		$extensionProcessor->extractInfoFromFile( $jsonPath );
+// Try to determine if this entry point is being used to run integration tests (possibly together with
+// unit tests). If so, load all settings files. It's better to do this now, instead of later upon executing
+// an integration test, to avoid scenarios where unit tests that run before the first integration test would
+// run without the config being loaded, whereas the ones running after could potentially be affected by config.
+// TODO This check is obviously imperfect. Once we upgrade to PHPUnit 10 we might be able to use its events
+// (https://docs.phpunit.de/en/10.2/events.html) to get a list of tests that will be run, and check if there's
+// any integration test in there.
+/** @internal Only use this environment variable if you temporarily need it. */
+$envVar = getenv( 'MEDIAWIKI_HAS_INTEGRATION_TESTS' );
+if ( $envVar !== false ) {
+	// Allow the developer to override the detection if necessary.
+	if ( $envVar === 'true' || $envVar === '1' || $envVar === 'yes' ) {
+		$hasIntegrationTests = true;
+	} elseif ( $envVar === 'false' || $envVar === '0' || $envVar === 'no' ) {
+		$hasIntegrationTests = false;
+	} else {
+		fwrite( STDERR,
+			"Unsupported value in MEDIAWIKI_HAS_INTEGRATION_TESTS environment variable,\n" .
+			"assuming there are integration tests (but you should fix the environment variable)\n"
+		);
+		$hasIntegrationTests = true;
+	}
+} elseif ( $GLOBALS['argc'] === 1 ) {
+	// PHPUnit has been invoked with no arguments. We're going to execute all and every test (from core, and potentially
+	// extension tests too), which includes integration tests.
+	$hasIntegrationTests = true;
+} else {
+	// PHPUnit has been invoked with arguments. This can be very complex to handle, so the heuristic below is meant
+	// to cover just the most common use cases.
+	// Make PHPUnit not complain about unrecognized options when paratest options are passed in
+	$paratestArgs = [ 'runner', 'processes', 'passthru-php', 'write-to' ];
+	$phpunitArgs = ( new Builder )->fromParameters( $GLOBALS['argv'], $paratestArgs );
+	if ( $phpunitArgs->hasArgument() ) {
+		// A test or test directory was specified explicitly. Normalize line endings and case, and see if we likely
+		// got a directory of unit tests only (or a file therein).
+		$testArgument = strtolower( strtr( $phpunitArgs->argument(), '\\', '/' ) );
+		$hasIntegrationTests = !( str_contains( $testArgument, '/unit/' ) || str_ends_with( $testArgument, '/unit' ) );
+	} elseif ( $phpunitArgs->hasTestSuite() ) {
+		// If only unit test suites are being run, there can't be integration tests. Otherwise,
+		// there *might* be integration tests.
+		// See TestSuiteMapper for handling of the 'testsuites' argument.
+		$suites = explode( ',', $phpunitArgs->testSuite() );
+		$unitSuites = [ 'core:unit', 'extensions:unit', 'skins:unit' ];
+		$hasIntegrationTests = array_diff( $suites, $unitSuites ) !== [];
+	} else {
+		// Something more complex, just assume there might be integration tests
+		$hasIntegrationTests = true;
 	}
 }
 
-$autoload = $extensionProcessor->getExtractedAutoloadInfo( true );
-AutoLoader::loadFiles( $autoload['files'] );
-AutoLoader::registerClasses( $autoload['classes'] );
-AutoLoader::registerNamespaces( $autoload['namespaces'] );
+if ( !$hasIntegrationTests ) {
+	fwrite( STDERR, "Running without MediaWiki settings because there are no integration tests\n" );
+	// Faking in lieu of Setup.php
+	$GLOBALS['wgAutoloadClasses'] = [];
+	$GLOBALS['wgBaseDirectory'] = MW_INSTALL_PATH;
+
+	TestSetup::requireOnceInGlobalScope( MW_INSTALL_PATH . "/includes/AutoLoader.php" );
+	TestSetup::requireOnceInGlobalScope( MW_INSTALL_PATH . "/tests/common/TestsAutoLoader.php" );
+	TestSetup::requireOnceInGlobalScope( MW_INSTALL_PATH . "/includes/Defines.php" );
+	TestSetup::requireOnceInGlobalScope( MW_INSTALL_PATH . "/includes/GlobalFunctions.php" );
+
+	// Extract the defaults into global variables.
+	// NOTE: this does not apply any dynamic defaults.
+	foreach ( MainConfigSchema::listDefaultValues( 'wg' ) as $var => $value ) {
+		$GLOBALS[$var] = $value;
+	}
+
+	TestSetup::requireOnceInGlobalScope( MW_INSTALL_PATH . "/includes/DevelopmentSettings.php" );
+
+	TestSetup::applyInitialConfig();
+
+	// Shell out to another script that will give us a list of loaded extensions and skins. We need to do that in
+	// another process, not in this one, because loading setting files may have non-trivial side effects that could be
+	// hard to undo. This sucks, but there doesn't seem to be a way to get a list of extensions and skins without
+	// loading all of MediaWiki, which we don't want to do for unit tests.
+
+	// Disable XDEBUG, so it doesn't cause the sub-process to hang. T358097
+	$env = getenv();
+	unset( $env['XDEBUG_CONFIG'] );
+	unset( $env['XDEBUG_MODE'] );
+	unset( $env['XDEBUG_SESSION'] );
+
+	// phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.proc_open
+	$process = proc_open(
+		PHP_BINARY . ' ' . __DIR__ . '/getPHPUnitExtensionsAndSkins.php',
+		[
+			0 => [ 'pipe', 'r' ],
+			1 => [ 'pipe', 'w' ],
+			2 => [ 'pipe', 'w' ]
+		],
+		$pipes,
+		null,
+		$env
+	);
+
+	$extensionData = stream_get_contents( $pipes[1] );
+	fclose( $pipes[1] );
+	$cmdErr = stream_get_contents( $pipes[2] );
+	fclose( $pipes[2] );
+
+	$exitCode = proc_close( $process );
+	if ( $exitCode !== 0 ) {
+		echo "Cannot load list of extensions and skins. Output:\n$cmdErr\n";
+		exit( 1 );
+	}
+
+	// For simplicity, getPHPUnitExtensionsAndSkins uses `\n\nTESTPATHS\n\n` to separate the lists of JSON files and
+	// additional test paths, so split the output into the individual lists.
+	[ $pathsToJsonFilesStr, $testPathsStr ] = explode( "\n\nTESTPATHS\n\n", $extensionData );
+	$pathsToJsonFiles = explode( "\n", $pathsToJsonFilesStr );
+	$testPaths = explode( "\n", $testPathsStr );
+
+	$extensionProcessor = new ExtensionProcessor();
+	foreach ( $pathsToJsonFiles as $filePath ) {
+		$extensionProcessor->extractInfoFromFile( $filePath );
+	}
+
+	$autoload = $extensionProcessor->getExtractedAutoloadInfo( true );
+	AutoLoader::loadFiles( $autoload['files'] );
+	AutoLoader::registerClasses( $autoload['classes'] );
+	AutoLoader::registerNamespaces( $autoload['namespaces'] );
+
+	// More faking in lieu of Setup.php
+	Profiler::init( [] );
+} else {
+	fwrite( STDERR, "Running with MediaWiki settings because there might be integration tests\n" );
+	TestSetup::loadSettingsFiles();
+
+	$extensionRegistry = ExtensionRegistry::getInstance();
+	$extensionsAndSkins = $extensionRegistry->getQueue();
+
+	$pathsToJsonFiles = array_keys( $extensionsAndSkins );
+
+	$testPaths = [];
+	foreach ( $extensionRegistry->getAllThings() as $info ) {
+		$testPaths[] = dirname( $info['path'] ) . '/tests/phpunit';
+	}
+
+	( new HookRunner( MediaWikiServices::getInstance()->getHookContainer() ) )->onUnitTestsList( $testPaths );
+}
+
+/** @internal For use in ExtensionsUnitTestSuite and SkinsUnitTestSuite only */
+define( 'MW_PHPUNIT_EXTENSIONS_PATHS', array_map( 'dirname', $pathsToJsonFiles ) );
+/** @internal For use in ExtensionsTestSuite only */
+define( 'MW_PHPUNIT_EXTENSIONS_TEST_PATHS', $testPaths );
+
+TestSetup::maybeCheckComposerLockUpToDate();

@@ -1,8 +1,11 @@
 <?php
 
-namespace MediaWiki\Auth;
+namespace MediaWiki\Tests\Auth;
 
+use MediaWiki\Auth\AuthManager;
+use MediaWiki\Auth\TemporaryPasswordAuthenticationRequest;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
 
 /**
  * @group AuthManager
@@ -35,7 +38,6 @@ class TemporaryPasswordAuthenticationRequestTest extends AuthenticationRequestTe
 		];
 
 		$this->overrideConfigValues( [
-			MainConfigNames::MinimalPasswordLength => 10,
 			MainConfigNames::PasswordPolicy => $policy,
 		] );
 
@@ -61,7 +63,7 @@ class TemporaryPasswordAuthenticationRequestTest extends AuthenticationRequestTe
 		$this->assertNull( $ret->password );
 	}
 
-	public function provideLoadFromSubmission() {
+	public static function provideLoadFromSubmission() {
 		return [
 			'Empty request' => [
 				[ AuthManager::ACTION_REMOVE ],
@@ -82,16 +84,17 @@ class TemporaryPasswordAuthenticationRequestTest extends AuthenticationRequestTe
 	}
 
 	public function testDescribeCredentials() {
+		$username = 'TestDescribeCredentials';
 		$req = new TemporaryPasswordAuthenticationRequest;
 		$req->action = AuthManager::ACTION_LOGIN;
-		$req->username = 'UTSysop';
+		$req->username = $username;
 		$ret = $req->describeCredentials();
 		$this->assertIsArray( $ret );
 		$this->assertArrayHasKey( 'provider', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['provider'] );
+		$this->assertInstanceOf( Message::class, $ret['provider'] );
 		$this->assertSame( 'authmanager-provider-temporarypassword', $ret['provider']->getKey() );
 		$this->assertArrayHasKey( 'account', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['account'] );
-		$this->assertSame( [ 'UTSysop' ], $ret['account']->getParams() );
+		$this->assertInstanceOf( Message::class, $ret['account'] );
+		$this->assertSame( [ $username ], $ret['account']->getParams() );
 	}
 }

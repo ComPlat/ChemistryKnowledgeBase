@@ -1,7 +1,7 @@
 {
 	"name": "PageForms",
 	"namemsg": "pageforms-name",
-	"version": "5.6.1",
+	"version": "6.0.1",
 	"author": [
 		"Yaron Koren",
 		"Stephan Gambke",
@@ -30,7 +30,7 @@
 		"PFHooks::initialize"
 	],
 	"requires": {
-		"MediaWiki": ">= 1.35.0"
+		"MediaWiki": ">= 1.40"
 	},
 	"GroupPermissions": {
 		"*": {
@@ -96,7 +96,6 @@
 		"PFFormEdit": "specials/PF_FormEdit.php",
 		"PFRunQuery": "specials/PF_RunQuery.php",
 		"PFUploadForm": "specials/PF_UploadForm.php",
-		"PFUploadSourceField": "specials/PF_UploadSourceField.php",
 		"PFUploadWindow": "specials/PF_UploadWindow.php",
 		"PFTemplateField": "includes/PF_TemplateField.php",
 		"PFForm": "includes/PF_Form.php",
@@ -107,6 +106,7 @@
 		"PFFormUtils": "includes/PF_FormUtils.php",
 		"PFUtils": "includes/PF_Utils.php",
 		"PFValuesUtils": "includes/PF_ValuesUtils.php",
+		"PFMappingUtils": "includes/PF_MappingUtils.php",
 		"PFHooks": "includes/PF_Hooks.php",
 		"PFFormLinker": "includes/PF_FormLinker.php",
 		"PFPageSchemas": "includes/PF_PageSchemas.php",
@@ -162,7 +162,8 @@
 		"PFWikiPageTemplateParam": "includes/wikipage/PF_WikiPageTemplateParam.php",
 		"PFWikiPageSection": "includes/wikipage/PF_WikiPageSection.php",
 		"PFWikiPageFreeText": "includes/wikipage/PF_WikiPageFreeText.php",
-		"PFCreatePageJob": "includes/PF_CreatePageJob.php"
+		"PFCreatePageJob": "includes/PF_CreatePageJob.php",
+		"PFDateInputWidget": "includes/widgets/PFDateInputWidget.php"
 	},
 	"ResourceModules": {
 		"ext.pageforms.main": {
@@ -197,6 +198,8 @@
 				"pf_pipe_error",
 				"pf_start_end_date_error",
 				"pf_start_end_datetime_error",
+				"pf-datetimepicker-localtime",
+				"pf-formedit-nodata",
 				"pf-wizard-back",
 				"pf-wizard-continue"
 			],
@@ -219,19 +222,6 @@
 				"desktop",
 				"mobile"
 			]
-		},
-		"ext.pageforms.fancybox": {
-			"scripts": "libs/FancyBox/jquery.fancybox.js",
-			"dependencies": [
-				"ext.pageforms.browser"
-			],
-			"targets": [
-				"desktop",
-				"mobile"
-			]
-		},
-		"ext.pageforms.fancybox.styles": {
-			"styles": "skins/FancyBox/jquery.fancybox.css"
 		},
 		"ext.pageforms.jstree": {
 			"scripts": [
@@ -281,7 +271,8 @@
 			"messages": [
 				"pf-autoedit-wait",
 				"pf_autoedit_anoneditwarning",
-				"pf_autoedit_confirm"
+				"pf_autoedit_confirm",
+				"pf_autoedit_confirmcreate"
 			],
 			"targets": [
 				"desktop",
@@ -300,7 +291,8 @@
 			"messages": [
 				"pf-autoedit-wait",
 				"pf_autoedit_anoneditwarning",
-				"pf_autoedit_confirm"
+				"pf_autoedit_confirm",
+				"pf_autoedit_confirmcreate"
 			],
 			"targets": [
 				"desktop",
@@ -363,7 +355,7 @@
 		"ext.pageforms.datepicker": {
 			"scripts": "libs/PF_datepicker.js",
 			"dependencies": [
-				"mediawiki.widgets.DateInputWidget",
+				"ext.pageforms.widgets.PFDateInputWidget",
 				"ext.pageforms"
 			],
 			"targets": [
@@ -388,6 +380,12 @@
 			"targets": [
 				"desktop",
 				"mobile"
+			]
+		},
+		"ext.pageforms.widgets.PFDateInputWidget": {
+			"scripts": "libs/widgets/mw.widgets.PFDateInputWidget.js",
+			"dependencies": [
+				"mediawiki.widgets.DateInputWidget"
 			]
 		},
 		"ext.pageforms.regexp": {
@@ -476,6 +474,7 @@
 				"libs/PF_ComboBoxInput.js"
 			],
 			"dependencies": [
+				"ext.pageforms",
 				"oojs-ui-core",
 				"oojs-ui-widgets"
 			],
@@ -678,19 +677,22 @@
 		"ArticlePurge": "PFFormUtils::purgeCache",
 		"ParserFirstCallInit": "PFHooks::registerFunctions",
 		"MakeGlobalVariablesScript": "PFHooks::setGlobalJSVariables",
-		"PageSchemasRegisterHandlers": "PFPageSchemas::registerClass",
+		"PageSchemasRegisterHandlers": "PFHooks::registerPageSchemasClass",
 		"EditPage::importFormData": "PFHooks::showFormPreview",
 		"PageSaveComplete": "PFHooks::setPostEditCookie",
 		"MultiContentSave": "PFFormUtils::purgeCacheOnSave",
 		"HtmlPageLinkRendererEnd": "PFFormLinker::setBrokenLink",
+		"AdminLinks": "PFHooks::addToAdminLinks",
 		"CargoTablesActionLinks": "PFHooks::addToCargoTablesLinks",
 		"CargoTablesSetAllowedActions": "PFHooks::addToCargoTablesColumns",
 		"CargoTablesSetActionLinks": "PFHooks::addToCargoTablesRow",
 		"TinyMCEDisable": "PFHooks::disableTinyMCE",
 		"CanonicalNamespaces": "PFHooks::registerNamespaces",
-		"ResourceLoaderRegisterModules": "PFHooks::registerModules"
+		"ResourceLoaderRegisterModules": "PFHooks::registerModules",
+		"BeforePageDisplay": "PFHooks::handleForceReload"
 	},
 	"config": {
+		"PageFormsDefaultDateFormat": "YYYY-MM-DD;YYYY-MM;YYYY",
 		"PageFormsVisualEditorMaxHeight": 400,
 		"PageFormsUseDisplayTitle": true,
 		"PageFormsShowExpandAllLink": false,
@@ -703,6 +705,7 @@
 		"PageFormsAutocompleteCacheTimeout": null,
 		"PageFormsRenameEditTabs": false,
 		"PageFormsRenameMainEditTab": false,
+		"PageFormsMainFormsMinimum": 0.01,
 		"PageFormsListSeparator":  ",",
 		"PageForms24HourTime": false,
 		"PageFormsCacheFormDefinitions": false,
@@ -712,6 +715,7 @@
 		"PageFormsShowTabsForAllHelperForms": true,
 		"PageFormsRunQueryFormAtTop": false,
 		"PageFormsGoogleMapsKey": null,
+		"PageFormsDelayReload": false,
 		"PageFormsShowOnSelect": [],
 		"PageFormsAutocompleteValues": [],
 		"PageFormsCalendarParams": [],
@@ -733,5 +737,10 @@
 		"PageFormsEmbeddedTemplates": [],
 		"PageFormsEmbedQueryCacheTTL": 0
 	},
+	"ForeignResourcesDir": "libs",
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\PageForms\\": "includes/"
+	},
+
 	"manifest_version": 1
 }

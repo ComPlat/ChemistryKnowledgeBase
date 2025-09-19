@@ -128,6 +128,28 @@ class CausedByLines {
 	}
 
 	/**
+	 * For every line in this object, check if the line has links for $func, and if so, add $taintedness to the
+	 * line taintedness.
+	 *
+	 * @param Taintedness $taintedness
+	 * @param FunctionInterface $func
+	 * @param int $i Parameter index
+	 * @return self
+	 */
+	public function withTaintAddedToMethodArgLinks( Taintedness $taintedness, FunctionInterface $func, int $i ): self {
+		$ret = new self;
+		foreach ( $this->lines as [ $lineTaint, $lineLine, $lineLinks ] ) {
+			$newLinks = $lineLinks ? clone $lineLinks : null;
+			if ( $lineLinks && $lineLinks->hasDataForFuncAndParam( $func, $i ) ) {
+				$ret->lines[] = [ $lineTaint->asMergedWith( $taintedness ), $lineLine, $newLinks ];
+			} else {
+				$ret->lines[] = [ clone $lineTaint, $lineLine, $newLinks ];
+			}
+		}
+		return $ret;
+	}
+
+	/**
 	 * @note this isn't a merge operation like array_merge. What this method does is:
 	 * 1 - if $other is a subset of $this, leave $this as-is;
 	 * 2 - update taintedness values in $this if the *lines* (not taint values) in $other
@@ -195,7 +217,7 @@ class CausedByLines {
 			array_pop( $remaining );
 			$expectedIndex++;
 		} while ( $remaining );
-		$ret = $ret ?? array_merge( $this->lines, $other->lines );
+		$ret ??= array_merge( $this->lines, $other->lines );
 
 		$this->lines = array_slice( $ret, 0, self::LINES_HARD_LIMIT );
 	}
@@ -254,11 +276,11 @@ class CausedByLines {
 	 *   doing so would make phan emit a new issue for the same line whenever new caused-by
 	 *   lines are added to the array.
 	 *
-	 * @param Taintedness|null $taintedness
+	 * @param int $taintType Must only have normal flags, and no EXEC flags.
 	 * @return string
 	 */
-	public function toStringForIssue( ?Taintedness $taintedness ): string {
-		$filteredLines = $this->getRelevantLinesForTaintedness( $taintedness );
+	public function toStringForIssue( int $taintType ): string {
+		$filteredLines = $this->getRelevantLinesForTaintedness( $taintType );
 		if ( !$filteredLines ) {
 			return '';
 		}
@@ -272,39 +294,17 @@ class CausedByLines {
 	}
 
 	/**
-	 * @param Taintedness|null $taintedness
+	 * @param int $taintedness With only normal flags, and no EXEC flags.
 	 * @return string[]
 	 */
-	private function getRelevantLinesForTaintedness( ?Taintedness $taintedness ): array {
-		if ( $taintedness === null ) {
-			return array_column( $this->lines, 1 );
-		}
-
-		$taintedness = $this->normalizeTaintForCausedBy( $taintedness )->get();
+	private function getRelevantLinesForTaintedness( int $taintedness ): array {
 		$ret = [];
-		foreach ( $this->lines as [ $lineTaint, $lineText, $lineLinks ] ) {
-			// Don't check for equality, as that would fail with MultiTaint
-			if (
-				$lineTaint->has( $taintedness ) ||
-				( $lineLinks && $lineLinks->canPreserveTaintFlags( $taintedness ) )
-			) {
+		foreach ( $this->lines as [ $lineTaint, $lineText ] ) {
+			if ( $lineTaint->has( $taintedness ) ) {
 				$ret[] = $lineText;
 			}
 		}
 		return $ret;
-	}
-
-	/**
-	 * Normalize a taintedness value for caused-by lookup
-	 *
-	 * @param Taintedness $taintedness
-	 * @return Taintedness
-	 */
-	private function normalizeTaintForCausedBy( Taintedness $taintedness ): Taintedness {
-		$taintedness = $taintedness->withExecToYesTaint();
-		// Special case: we assume the bad case, preferring false positives over false negatives
-		$taintedness->addSqlToNumkey();
-		return $taintedness;
 	}
 
 	/**

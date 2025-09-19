@@ -2,7 +2,7 @@
 
 const { action, utils, assert, wiki } = require( 'api-testing' );
 
-describe( 'The tag action module', function () {
+describe( 'The tag action module', () => {
 
 	const tagName = 'foo-bar';
 	const tag2Name = 'foo-bar-baz';
@@ -64,7 +64,7 @@ describe( 'The tag action module', function () {
 		// Add 2 tags to recent change
 		await bob.action( 'tag', {
 			rcid: recentChangeId,
-			add: `${tagName}|${tag2Name}`,
+			add: `${ tagName }|${ tag2Name }`,
 			token: bob.tokens.csrftoken,
 			reason
 		}, 'POST' );

@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\NavigationBar;
 
 use OOUI\FieldLayout;
 use OOUI\TextInputWidget;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 class InvestigationList {
@@ -17,7 +17,7 @@ class InvestigationList {
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
         $this->title = $title;
     }
 

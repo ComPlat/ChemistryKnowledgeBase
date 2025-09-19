@@ -2,7 +2,6 @@
 namespace Eris\Generator;
 
 use ArrayIterator;
-use IteratorAggregate;
 use LogicException;
 
 /**
@@ -17,6 +16,9 @@ use LogicException;
  * backwards compatibility. So it can be used in context where a single
  * value is expected. The last of the options is usually the more conservative
  * in shrinking, for example subtracting 1 for the IntegerGenerator.
+ *
+ * @psalm-template T
+ * @template-implements GeneratedValue<T>
  */
 class GeneratedValueOptions implements GeneratedValue
 {
@@ -31,9 +33,8 @@ class GeneratedValueOptions implements GeneratedValue
     {
         if ($value instanceof GeneratedValueOptions) {
             return $value->last();
-        } else {
-            return $value;
         }
+        return $value;
     }
 
     public function first()
@@ -61,14 +62,7 @@ class GeneratedValueOptions implements GeneratedValue
     
     public function derivedIn($generatorName)
     {
-        throw new RuntimeException("GeneratedValueOptions::derivedIn() is needed, uncomment it");
-        /*
-         * Not sure this is needed.
-            return $this->map(
-                function ($value) { return $value; },
-                $generatorName
-            );
-         */
+        throw new \RuntimeException("GeneratedValueOptions::derivedIn() is needed, uncomment it");
     }
 
     /**
@@ -82,7 +76,7 @@ class GeneratedValueOptions implements GeneratedValue
         ));
     }
 
-    public function remove(GeneratedValueSingle $value)
+    public function remove(GeneratedValue $value)
     {
         $generatedValues = $this->generatedValues;
         $index = array_search($value, $generatedValues);
@@ -125,12 +119,12 @@ class GeneratedValueOptions implements GeneratedValue
         return $this->last()->generatorName();
     }
 
-    public function getIterator()
+    public function getIterator(): \Traversable
     {
         return new ArrayIterator($this->generatedValues);
     }
 
-    public function count()
+    public function count(): int
     {
         return count($this->generatedValues);
     }

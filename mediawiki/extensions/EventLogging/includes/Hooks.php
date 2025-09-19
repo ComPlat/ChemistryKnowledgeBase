@@ -12,26 +12,60 @@
 
 namespace MediaWiki\Extension\EventLogging;
 
-use Config;
-use ExtensionRegistry;
-use Hooks as MWHooks;
+use MediaWiki\Config\Config;
+use MediaWiki\Hook\CanonicalNamespacesHook;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader as RL;
-use OutputPage;
-use RuntimeException;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\User;
 use Skin;
-use User;
 
-class Hooks {
+class Hooks implements
+	CanonicalNamespacesHook,
+	BeforePageDisplayHook,
+	GetPreferencesHook
+{
+
+	/**
+	 * The list of stream config settings that should be sent to the client as part of the
+	 * ext.eventLogging RL module.
+	 *
+	 * @var string[]
+	 */
+	private const STREAM_CONFIG_SETTINGS_ALLOWLIST = [
+		'sample',
+		'producers',
+	];
+
+	private UserOptionsLookup $userOptionsLookup;
+
+	public function __construct(
+		UserOptionsLookup $userOptionsLookup
+	) {
+		$this->userOptionsLookup = $userOptionsLookup;
+	}
 
 	/**
 	 * Emit a debug log message for each invalid or unset
 	 * configuration variable (if any).
 	 */
 	public static function onSetup(): void {
-		global $wgEventLoggingBaseUri;
+		global $wgEventLoggingBaseUri, $wgEventLoggingStreamNames;
+
 		if ( $wgEventLoggingBaseUri === false ) {
 			EventLogging::getLogger()->debug( 'wgEventLoggingBaseUri has not been configured.' );
+		}
+
+		if ( $wgEventLoggingStreamNames !== false && !is_array( $wgEventLoggingStreamNames ) ) {
+			EventLogging::getLogger()->debug(
+				'wgEventLoggingStreamNames is configured but is not a list of stream names'
+			);
+
+			$wgEventLoggingStreamNames = [];
 		}
 	}
 
@@ -39,21 +73,12 @@ class Hooks {
 	 * @param OutputPage $out
 	 * @param Skin $skin
 	 */
-	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
+	public function onBeforePageDisplay( $out, $skin ): void {
 		$out->addModules( [ 'ext.eventLogging' ] );
 
-		$services = MediaWikiServices::getInstance();
-		if ( method_exists( $services, 'getUserOptionsLookup' ) ) {
-			// MW 1.35+
-			$lookup = $services->getUserOptionsLookup();
-			$eventloggingDebugMode = $lookup->getIntOption( $out->getUser(), 'eventlogging-display-web' )
-				|| $lookup->getIntOption( $out->getUser(), 'eventlogging-display-console' );
-		} else {
-			// Avoid Phan warning about User::getIntOption, removed in MW 1.37
-			$eventloggingDebugMode = (int)$out->getUser()->getOption( 'eventlogging-display-web' )
-				|| (int)$out->getUser()->getOption( 'eventlogging-display-console' );
-		}
-		if ( $eventloggingDebugMode ) {
+		if ( $this->userOptionsLookup->getIntOption( $out->getUser(), 'eventlogging-display-web' )
+			|| $this->userOptionsLookup->getIntOption( $out->getUser(), 'eventlogging-display-console' )
+		) {
 			$out->addModules( 'ext.eventLogging.debug' );
 		}
 	}
@@ -65,9 +90,6 @@ class Hooks {
 	 * for forward compatibility with Event Platform.
 	 * TODO: what happens when two extensions register the same schema with a different revision?
 	 *
-	 * @since 1.32 the EventLoggingRegisterSchemas hook is deprecated. Register
-	 * schemas in the extension.json file for your extension instead.
-	 *
 	 * @return array
 	 */
 	private static function getSchemas() {
@@ -75,8 +97,6 @@ class Hooks {
 
 		$extRegistry = ExtensionRegistry::getInstance();
 		$schemas = $wgEventLoggingSchemas + $extRegistry->getAttribute( 'EventLoggingSchemas' );
-
-		MWHooks::run( 'EventLoggingRegisterSchemas', [ &$schemas ], '1.32' );
 
 		return $schemas;
 	}
@@ -95,7 +115,7 @@ class Hooks {
 			'serviceUri' => $config->get( 'EventLoggingServiceUri' ),
 			'queueLingerSeconds' => $config->get( 'EventLoggingQueueLingerSeconds' ),
 			// If this is false, EventLogging will not use stream config.
-			'streamConfigs' => self::loadEventStreamConfigs( $config )
+			'streamConfigs' => self::loadEventStreamConfigs()
 		];
 	}
 
@@ -114,7 +134,7 @@ class Hooks {
 	 * @param User $user
 	 * @param array &$preferences
 	 */
-	public static function onGetPreferences( User $user, array &$preferences ): void {
+	public function onGetPreferences( $user, &$preferences ): void {
 		// See 'ext.eventLogging.debug' module.
 		$preferences['eventlogging-display-web'] = [
 			'type' => 'api',
@@ -124,7 +144,7 @@ class Hooks {
 		];
 	}
 
-	public static function onCanonicalNamespaces( &$namespaces ): void {
+	public function onCanonicalNamespaces( &$namespaces ): void {
 		if ( JsonSchemaHooks::isSchemaNamespaceEnabled() ) {
 			$namespaces[ NS_SCHEMA ] = 'Schema';
 			$namespaces[ NS_SCHEMA_TALK ] = 'Schema_talk';
@@ -152,30 +172,30 @@ class Hooks {
 	 * a list of streams to search for in $wgEventStreams.
 	 * $wgEventLoggingStreamNames is that list.
 	 *
-	 * @param Config $config
 	 * @return array|bool Selected stream name -> stream configs
 	 */
-	private static function loadEventStreamConfigs( Config $config ) {
+	private static function loadEventStreamConfigs() {
+		// FIXME: Does the following need to be logged?
 		if ( !ExtensionRegistry::getInstance()->isLoaded( 'EventStreamConfig' ) ) {
 			EventLogging::getLogger()->debug( 'EventStreamConfig is not installed' );
 			return false;
 		}
 
-		$streamConfigs = MediaWikiServices::getInstance()->getService(
-			'EventStreamConfig.StreamConfigs'
-		);
+		$streamConfigs = MediaWikiServices::getInstance()->getService( 'EventLogging.StreamConfigs' );
 
-		$targetStreams = $config->get( 'EventLoggingStreamNames' );
-		if ( $targetStreams === false ) {
+		if ( $streamConfigs === false ) {
 			return false;
 		}
-		if ( !is_array( $targetStreams ) ) {
-			throw new RuntimeException(
-				'Expected $wgEventLoggingStreamNames to be a list of stream names, got ' .
-				$targetStreams
-			);
-		}
 
-		return $streamConfigs->get( $targetStreams, false );
+		// Only send stream config settings that should be sent to the client as part of the
+		// ext.eventLogging RL module.
+		$settingsAllowList = array_flip( self::STREAM_CONFIG_SETTINGS_ALLOWLIST );
+
+		return array_map(
+			static function ( $streamConfig ) use ( $settingsAllowList ) {
+				return array_intersect_key( $streamConfig, $settingsAllowList );
+			},
+			$streamConfigs
+		);
 	}
 }

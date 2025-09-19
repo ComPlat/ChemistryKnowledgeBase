@@ -1,27 +1,28 @@
 <?php
-use Eris\Generator;
+
+use Eris\Generators;
 use Eris\TestTrait;
 
-class ShrinkingTest extends \PHPUnit_Framework_TestCase
+class ShrinkingTest extends \PHPUnit\Framework\TestCase
 {
     use TestTrait;
 
     public function testShrinkingAString()
     {
         $this->forAll(
-                Generator\string()
-            )
+            Generators::string()
+        )
             ->then(function ($string) {
                 var_dump($string);
-                $this->assertNotContains('B', $string);
+                \Eris\PHPUnitDeprecationHelper::assertStringNotContainsString('B', $string);
             });
     }
 
     public function testShrinkingRespectsAntecedents()
     {
         $this->forAll(
-                Generator\choose(0, 20)
-            )
+            Generators::choose(0, 20)
+        )
             ->when(function ($number) {
                 return $number > 10;
             })

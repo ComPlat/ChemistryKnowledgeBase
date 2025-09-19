@@ -1,12 +1,14 @@
 <?php
 
 use MediaWiki\MainConfigNames;
+use MediaWiki\Title\Title;
+use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * Tests for CategoryChangesAsRdf recent changes exporter.
- * @covers CategoryChangesAsRdf
+ * @covers \CategoryChangesAsRdf
  * @group Database
  */
 class CategoryChangesAsRdfTest extends MediaWikiLangTestCase {
@@ -16,11 +18,10 @@ class CategoryChangesAsRdfTest extends MediaWikiLangTestCase {
 		$this->overrideConfigValues( [
 			MainConfigNames::Server => 'http://acme.test',
 			MainConfigNames::CanonicalServer => 'http://acme.test',
-			MainConfigNames::ArticlePath => '/wiki/$1',
 		] );
 	}
 
-	public function provideCategoryData() {
+	public static function provideCategoryData() {
 		return [
 			'delete category' => [
 				__DIR__ . "/../data/categoriesrdf/delete.sparql",
@@ -233,7 +234,7 @@ class CategoryChangesAsRdfTest extends MediaWikiLangTestCase {
 		$processedProperty->setValue( $dumpScript, $preProcessed );
 
 		$output = fopen( "php://memory", "w+b" );
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = $this->getDb();
 		/** @var CategoryChangesAsRdf $dumpScript */
 		$dumpScript->initialize();
 		$dumpScript->getRdf();
@@ -274,10 +275,10 @@ class CategoryChangesAsRdfTest extends MediaWikiLangTestCase {
 		ConvertibleTimestamp::setFakeTime( "2020-07-31T10:00:00" );
 		$l1 = Title::makeTitle( NS_CATEGORY, __CLASS__ . "_L1" );
 		$l2 = Title::makeTitle( NS_CATEGORY, __CLASS__ . "_L2" );
-		$pageInL2 = Title::makeTitle( NS_MAIN, __CLASS__ . "_Page" );
-		$this->editPage( $l1->getPrefixedText(), "", "", NS_CATEGORY );
-		$this->editPage( $l2->getPrefixedText(), "[[{$l1->getPrefixedText()}]]", "", NS_CATEGORY );
-		$this->editPage( $pageInL2->getPrefixedText(), "[[{$l2->getPrefixedText()}]]", "", NS_CATEGORY );
+		$pageInL2 = Title::makeTitle( NS_CATEGORY, __CLASS__ . "_Page" );
+		$this->editPage( $l1, "" );
+		$this->editPage( $l2, "[[{$l1->getPrefixedText()}]]" );
+		$this->editPage( $pageInL2, "[[{$l2->getPrefixedText()}]]" );
 
 		$output = fopen( "php://memory", "w+b" );
 
@@ -285,7 +286,7 @@ class CategoryChangesAsRdfTest extends MediaWikiLangTestCase {
 			'type' => 'categoryMembershipChange'
 		] );
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = $this->getDb();
 		$categoryChangesAsRdf = new CategoryChangesAsRdf();
 
 		$ref = new ReflectionObject( $categoryChangesAsRdf );

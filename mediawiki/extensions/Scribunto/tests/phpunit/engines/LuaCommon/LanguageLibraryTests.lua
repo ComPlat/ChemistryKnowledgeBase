@@ -169,6 +169,26 @@ return testframework.getTestProvider( {
 		}
 	},
 
+	{ name = 'lang:toBcp47Code (sr-ec)', func = test_method_lang,
+		args = { 'sr-ec', 'toBcp47Code' },
+		expect = { 'sr-Cyrl' },
+	},
+
+	{ name = 'lang:toBcp47Code (sr-el)', func = test_method_lang,
+		args = { 'sr-el', 'toBcp47Code' },
+		expect = { 'sr-Latn' },
+	},
+
+	{ name = 'lang:toBcp47Code (en)', func = test_method_lang,
+		args = { 'en', 'toBcp47Code' },
+		expect = { 'en' },
+	},
+
+	{ name = 'lang:toBcp47Code (simple)', func = test_method_lang,
+		args = { 'simple', 'toBcp47Code' },
+		expect = { 'en-simple' },
+	},
+
 	{ name = 'lang:getFallbackLanguages', func = test_method,
 		args = { 'getFallbackLanguages' },
 		expect = {
@@ -293,7 +313,7 @@ return testframework.getTestProvider( {
 		args = { 'formatDuration', 86461 },
 		expect = {
 			{ "1 day, 1 minute and 1 second" },
-			{ "1 kún, 1 minut hám 1 секунд" },
+			{ "1 kún, 1 minut hám 1 sekund" },
 			{ "۱ روز، ۱ دقیقه و ۱ ثانیه" },
 			"language code '[[bogus]]' is invalid",
 		}
@@ -302,7 +322,7 @@ return testframework.getTestProvider( {
 		args = { 'formatDuration', 86461, { 'hours', 'minutes' } },
 		expect = {
 			{ "24 hours and 1 minute" },
-			{ "24 сағат hám 1 minut" },
+			{ "24 saat hám 1 minut" },
 			{ "۲۴ ساعت و ۱ دقیقه" },
 			"language code '[[bogus]]' is invalid",
 		}

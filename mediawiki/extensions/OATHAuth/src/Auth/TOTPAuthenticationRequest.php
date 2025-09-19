@@ -19,7 +19,7 @@
 namespace MediaWiki\Extension\OATHAuth\Auth;
 
 use MediaWiki\Auth\AuthenticationRequest;
-use RawMessage;
+use MediaWiki\Language\RawMessage;
 
 /**
  * AuthManager value object for the TOTP second factor of an authentication:
@@ -27,6 +27,7 @@ use RawMessage;
  * by the server and the client.
  */
 class TOTPAuthenticationRequest extends AuthenticationRequest {
+	/** @var string */
 	public $OATHToken;
 
 	public function describeCredentials() {

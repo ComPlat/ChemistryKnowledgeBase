@@ -2,32 +2,32 @@
 
 namespace MediaWiki\Tests\Parser;
 
-use BagOStuff;
-use HashBagOStuff;
 use InvalidArgumentException;
 use MediaWiki\Json\JsonCodec;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\RevisionOutputCache;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Tests\Json\JsonUnserializableSuperClass;
+use MediaWiki\Tests\Json\JsonDeserializableSuperClass;
+use MediaWiki\User\User;
+use MediaWiki\Utils\MWTimestamp;
 use MediaWikiIntegrationTestCase;
-use MWTimestamp;
-use NullStatsdDataFactory;
-use ParserOptions;
-use ParserOutput;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use TestLogger;
-use User;
-use WANObjectCache;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\TestingAccessWrapper;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
  * @covers \MediaWiki\Parser\RevisionOutputCache
- * @package MediaWiki\Tests\Parser
  */
 class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 
@@ -69,19 +69,22 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 	 * @return RevisionOutputCache
 	 */
 	private function createRevisionOutputCache(
-		BagOStuff $storage = null,
-		LoggerInterface $logger = null,
+		?BagOStuff $storage = null,
+		?LoggerInterface $logger = null,
 		$expiry = 3600,
 		$epoch = '19900220000000'
 	): RevisionOutputCache {
+		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
+		$globalIdGenerator->method( 'newUUIDv1' )->willReturn( 'uuid-uuid' );
 		return new RevisionOutputCache(
 			'test',
 			new WANObjectCache( [ 'cache' => $storage ?: new HashBagOStuff() ] ),
 			$expiry,
 			$epoch,
 			new JsonCodec(),
-			new NullStatsdDataFactory(),
-			$logger ?: new NullLogger()
+			StatsFactory::newNull(),
+			$logger ?: new NullLogger(),
+			$globalIdGenerator
 		);
 	}
 
@@ -101,7 +104,7 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function createDummyParserOutput(): ParserOutput {
 		$parserOutput = new ParserOutput();
-		$parserOutput->setText( 'TEST' );
+		$parserOutput->setRawText( 'TEST' );
 		foreach ( $this->getDummyUsedOptions() as $option ) {
 			$parserOutput->recordOption( $option );
 		}
@@ -154,7 +157,8 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 		$savedOutput = $cache->get( $this->revision, $options1 );
 		$this->assertInstanceOf( ParserOutput::class, $savedOutput );
 		// RevisionOutputCache adds a comment to the HTML, so check if the result starts with page content.
-		$this->assertStringStartsWith( 'TEST_TEXT', $savedOutput->getText() );
+		$this->assertStringStartsWith( 'TEST_TEXT',
+			$savedOutput->getRawText() );
 		$this->assertSame( $this->cacheTime, $savedOutput->getCacheTime() );
 		$this->assertSame( $this->revision->getId(), $savedOutput->getCacheRevisionId() );
 	}
@@ -282,12 +286,12 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function provideCorruptData() {
+	public static function provideCorruptData() {
 		yield 'JSON serialization, bad data' => [ 'bla bla' ];
 		yield 'JSON serialization, no _class_' => [ '{"test":"test"}' ];
 		yield 'JSON serialization, non-existing _class_' => [ '{"_class_":"NonExistentBogusClass"}' ];
 
-		$wrongInstance = new JsonUnserializableSuperClass( 'test' );
+		$wrongInstance = new JsonDeserializableSuperClass( 'test' );
 		yield 'JSON serialization, wrong class' => [ json_encode( $wrongInstance->jsonSerialize() ) ];
 	}
 
@@ -342,6 +346,7 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Parser\RevisionOutputCache::encodeAsJson
 	 */
 	public function testCyclicStructuresDoNotBlowUpInJson() {
+		$this->markTestSkipped( 'Temporarily disabled: T314338' );
 		$testLogger = new TestLogger( true );
 		$cache = $this->createRevisionOutputCache( null, $testLogger );
 
@@ -364,7 +369,7 @@ class RevisionOutputCacheTest extends MediaWikiIntegrationTestCase {
 		$unicodeCharacter = "Э";
 		$cache = $this->createRevisionOutputCache( new HashBagOStuff() );
 		$parserOutput = $this->createDummyParserOutput();
-		$parserOutput->setText( $unicodeCharacter );
+		$parserOutput->setRawText( $unicodeCharacter );
 		$cache->save( $parserOutput, $this->revision, ParserOptions::newFromAnon() );
 
 		$backend = TestingAccessWrapper::newFromObject( $cache )->cache;

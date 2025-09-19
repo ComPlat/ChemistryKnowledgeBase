@@ -2,6 +2,7 @@
 
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * Gets the form(s) used to edit a page, both for existing pages and for
@@ -16,7 +17,7 @@ class PFFormLinker {
 
 	private static $formPerNamespace = [];
 
-	static function getDefaultForm( $title ) {
+	static function getDefaultForm( ?Title $title ): ?string {
 		// The title passed in can be null in at least one
 		// situation: if the "namespace page" is being checked, and
 		// the project namespace alias contains any non-ASCII
@@ -26,25 +27,12 @@ class PFFormLinker {
 			return null;
 		}
 
+		$props = MediaWikiServices::getInstance()->getPageProps()
+			->getProperties( $title, [ 'PFDefaultForm', 'SFDefaultForm' ] );
 		$pageID = $title->getArticleID();
-		$dbr = wfGetDB( DB_REPLICA );
-		$res = $dbr->select( 'page_props',
-			[
-				'pp_value'
-			],
-			[
-				'pp_page' => $pageID,
-				// Keep backward compatibility with
-				// the page property name for
-				// Semantic Forms.
-				'pp_propname' => [ 'PFDefaultForm', 'SFDefaultForm' ]
-			]
-		);
 
-		$row = $res->fetchRow();
-		if ( $row ) {
-			return $row['pp_value'];
-		}
+		// Keep backward compatibility with the page property name for Semantic Forms.
+		return $props[$pageID]['PFDefaultForm'] ?? $props[$pageID]['SFDefaultForm'] ?? null;
 	}
 
 	public static function createPageWithForm( $title, $formName, $inQueryArr ) {
@@ -58,13 +46,13 @@ class PFFormLinker {
 		$preloadContent = null;
 
 		// Allow outside code to set/change the preloaded text.
-		Hooks::run( 'PageForms::EditFormPreloadText', [ &$preloadContent, $title, $formTitle ] );
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::EditFormPreloadText', [ &$preloadContent, $title, $formTitle ] );
 
-		list( $formText, $pageText, $formPageTitle, $generatedPageName ) =
+		[ $formText, $pageText, $formPageTitle, $generatedPageName ] =
 			$wgPageFormsFormPrinter->formHTML(
 				$formDefinition, false, false, null, $preloadContent,
 				'Some very long page name that will hopefully never get created ABCDEF123',
-				null, false, false, true, $inQueryArr
+				null, PFFormPrinter::CONTEXT_AUTOCREATE, $inQueryArr
 			);
 		$params = [];
 
@@ -81,14 +69,7 @@ class PFFormLinker {
 		$params['user_id'] = $userID;
 		$params['page_text'] = $pageText;
 		$job = new PFCreatePageJob( $title, $params );
-
-		$jobs = [ $job ];
-		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
-			// MW 1.37+
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
-		} else {
-			JobQueueGroup::singleton()->push( $jobs );
-		}
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $job );
 	}
 
 	/**

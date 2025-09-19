@@ -22,6 +22,7 @@ use MediaWiki\EditPage\Constraint\ContentModelChangeConstraint;
 use MediaWiki\EditPage\Constraint\IEditConstraint;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\Title;
 
 /**
  * Tests the ContentModelChangeConstraint
@@ -87,7 +88,7 @@ class ContentModelChangeConstraintTest extends MediaWikiUnitTestCase {
 
 		$performer = $this->mockRegisteredAuthority( function (
 			string $permission,
-			PageIdentity $page = null
+			?PageIdentity $page = null
 		) use ( $title ) {
 			if ( $permission === 'editcontentmodel' ) {
 				if ( $page ) {

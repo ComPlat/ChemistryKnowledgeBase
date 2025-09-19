@@ -22,7 +22,6 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit;
 
-use Generator;
 use MediaWiki\Extension\AbuseFilter\Parser\AFPData;
 use MediaWiki\Extension\AbuseFilter\Variables\LazyLoadedVariable;
 use MediaWiki\Extension\AbuseFilter\Variables\UnsetVariableException;
@@ -33,12 +32,9 @@ use MediaWikiUnitTestCase;
  * @group Test
  * @group AbuseFilter
  * @group AbuseFilterParser
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Variables\VariableHolder
+ * @covers \MediaWiki\Extension\AbuseFilter\Variables\VariableHolder
  */
 class VariableHolderTest extends MediaWikiUnitTestCase {
-	/**
-	 * @covers ::newFromArray
-	 */
 	public function testNewFromArray() {
 		$vars = [
 			'foo' => 12,
@@ -54,9 +50,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $expected, $actual );
 	}
 
-	/**
-	 * @covers ::setVar
-	 */
 	public function testVarsAreLowercased() {
 		$vars = new VariableHolder();
 		$this->assertCount( 0, $vars->getVars(), 'precondition' );
@@ -72,7 +65,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 	 *
 	 * @dataProvider provideSetVar
 	 *
-	 * @covers ::setVar
 	 */
 	public function testSetVar( string $name, $val, $expected ) {
 		$vars = new VariableHolder();
@@ -80,7 +72,7 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $expected, $vars->getVars()[$name] );
 	}
 
-	public function provideSetVar() {
+	public static function provideSetVar() {
 		yield 'native' => [ 'foo', 12, new AFPData( AFPData::DINT, 12 ) ];
 
 		$afpdata = new AFPData( AFPData::DSTRING, 'foobar' );
@@ -90,9 +82,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		yield 'lazy-loaded' => [ 'foo', $lazyloadVar, $lazyloadVar ];
 	}
 
-	/**
-	 * @covers ::getVars
-	 */
 	public function testGetVars() {
 		$vars = new VariableHolder();
 		$this->assertSame( [], $vars->getVars(), 'precondition' );
@@ -111,7 +100,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 	 * @param VariableHolder $vars
 	 * @param string $name
 	 * @param AFPData|LazyLoadedVariable $expected
-	 * @covers ::getVarThrow
 	 *
 	 * @dataProvider provideGetVarThrow
 	 */
@@ -119,10 +107,7 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $expected, $vars->getVarThrow( $name ) );
 	}
 
-	/**
-	 * @return Generator|array
-	 */
-	public function provideGetVarThrow() {
+	public static function provideGetVarThrow() {
 		$vars = new VariableHolder();
 
 		$name = 'foo';
@@ -136,9 +121,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		yield 'set, AFPData' => [ $vars, $name, $afpd ];
 	}
 
-	/**
-	 * @covers ::getVarThrow
-	 */
 	public function testGetVarThrow_unset() {
 		$vars = new VariableHolder();
 		$this->expectException( UnsetVariableException::class );
@@ -150,7 +132,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 	 * @param VariableHolder ...$holders
 	 * @dataProvider provideHoldersForAddition
 	 *
-	 * @covers ::addHolders
 	 */
 	public function testAddHolders( array $expected, VariableHolder ...$holders ) {
 		$actual = new VariableHolder();
@@ -159,7 +140,7 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $expected, $actual->getVars() );
 	}
 
-	public function provideHoldersForAddition() {
+	public static function provideHoldersForAddition() {
 		$v1 = VariableHolder::newFromArray( [ 'a' => 1, 'b' => 2 ] );
 		$v2 = VariableHolder::newFromArray( [ 'b' => 3, 'c' => 4 ] );
 		$v3 = VariableHolder::newFromArray( [ 'c' => 5, 'd' => 6 ] );
@@ -174,9 +155,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		return [ [ $expected, $v1, $v2, $v3 ] ];
 	}
 
-	/**
-	 * @covers ::varIsSet
-	 */
 	public function testVarIsSet() {
 		$vars = new VariableHolder();
 		$vars->setVar( 'foo', null );
@@ -184,9 +162,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertFalse( $vars->varIsSet( 'foobarbaz' ), 'Unset variable should be unset' );
 	}
 
-	/**
-	 * @covers ::setLazyLoadVar
-	 */
 	public function testLazyLoader() {
 		$var = 'foobar';
 		$method = 'compute-foo';
@@ -198,9 +173,6 @@ class VariableHolderTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $exp, $vars->getVars()[$var] );
 	}
 
-	/**
-	 * @covers ::removeVar
-	 */
 	public function testRemoveVar() {
 		$vars = new VariableHolder();
 		$varName = 'foo';

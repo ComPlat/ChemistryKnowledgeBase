@@ -9,7 +9,7 @@ use Exception;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ML\JsonLD\JsonLD;
-use SMW\ApplicationFactory;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\DIProperty;
 use SMW\DIWikiPage;
 use Title;

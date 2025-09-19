@@ -1,57 +1,77 @@
 <?php
 namespace Eris\Generator;
 
-class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class TupleGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var ChooseGenerator
+     */
+    private $generatorForSingleElement;
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->generatorForSingleElement = new ChooseGenerator(0, 100);
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
-    private function assertInSingleElementGenerator($value)
+    private function assertInSingleElementGenerator($value): void
     {
-        $this->assertInternalType('integer', $value);
+        \Eris\PHPUnitDeprecationHelper::assertIsInt($value);
         $this->assertGreaterThanOrEqual(0, $value);
         $this->assertLessThanOrEqual(100, $value);
     }
 
-    public function testConstructWithAnArrayOfGenerators()
+    public function testConstructWithAnArrayOfGenerators(): void
     {
         $generator = new TupleGenerator([
             $this->generatorForSingleElement,
             $this->generatorForSingleElement,
         ]);
 
+        /** @var GeneratedValue $generated */
         $generated = $generator($this->size, $this->rand);
+        self::assertInstanceOf(GeneratedValue::class, $generated);
 
-        $this->assertSame(2, count($generated->unbox()));
+        $this->assertCount(2, $generated->unbox());
         foreach ($generated->unbox() as $element) {
             $this->assertInSingleElementGenerator($element);
         }
     }
 
-    public function testConstructWithNonGenerators()
+    public function testConstructWithNonGenerators(): void
     {
         $aNonGenerator = 42;
         $generator = new TupleGenerator([$aNonGenerator]);
 
+        /** @var GeneratedValue $generated */
         $generated = $generator($this->size, $this->rand);
+        self::assertInstanceOf(GeneratedValue::class, $generated);
 
         foreach ($generated->unbox() as $element) {
             $this->assertEquals(42, $element);
         }
     }
 
-    public function testConstructWithNoArguments()
+    public function testConstructWithNoArguments(): void
     {
         $generator = new TupleGenerator([]);
 
         $this->assertSame([], $generator($this->size, $this->rand)->unbox());
     }
 
-    public function testShrink()
+    public function testShrink(): void
     {
         $generator = new TupleGenerator([
             $this->generatorForSingleElement,
@@ -59,7 +79,9 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $elements = $generator->__invoke($this->size, $this->rand);
+        /** @var GeneratedValue $elementsAfterShrink */
         $elementsAfterShrink = $generator->shrink($elements);
+        self::assertInstanceOf(GeneratedValue::class, $elementsAfterShrink);
 
         $this->assertInSingleElementGenerator($elementsAfterShrink->unbox()[0]);
         $this->assertInSingleElementGenerator($elementsAfterShrink->unbox()[1]);
@@ -77,7 +99,7 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testDoesNotShrinkSomethingAlreadyShrunkToTheMax()
+    public function testDoesNotShrinkSomethingAlreadyShrunkToTheMax(): void
     {
         $constants = [42, 42];
         $generator = new TupleGenerator($constants);
@@ -87,7 +109,7 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($constants, $elementsAfterShrink->unbox());
     }
 
-    public function testShrinkingMultipleOptionsOfOneGenerator()
+    public function testShrinkingMultipleOptionsOfOneGenerator(): void
     {
         $generator = new TupleGenerator([
             new IntegerGenerator()
@@ -102,15 +124,15 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         foreach ($shrunk as $option) {
             $this->assertEquals('tuple', $option->generatorName());
             $optionValue = $option->unbox();
-            $this->assertInternalType('array', $optionValue);
-            $this->assertEquals(1, count($optionValue));
+            \Eris\PHPUnitDeprecationHelper::assertIsArray($optionValue);
+            $this->assertCount(1, $optionValue);
         }
     }
 
     /**
      * @depends testShrinkingMultipleOptionsOfOneGenerator
      */
-    public function testShrinkingMultipleOptionsOfMoreThanOneSingleShrinkingGenerator()
+    public function testShrinkingMultipleOptionsOfMoreThanOneSingleShrinkingGenerator(): void
     {
         $generator = new TupleGenerator([
             new StringGenerator(),
@@ -130,8 +152,8 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         foreach ($shrunk as $option) {
             $this->assertEquals('tuple', $option->generatorName());
             $optionValue = $option->unbox();
-            $this->assertInternalType('array', $optionValue);
-            $this->assertEquals(2, count($optionValue));
+            \Eris\PHPUnitDeprecationHelper::assertIsArray($optionValue);
+            $this->assertCount(2, $optionValue);
             $elementsBeingShrunk =
                 (strlen($optionValue[0]) < 5 ? 1 : 0)
                 + (strlen($optionValue[1]) < 5 ? 1 : 0);
@@ -142,7 +164,7 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
     /**
      * @depends testShrinkingMultipleOptionsOfOneGenerator
      */
-    public function testShrinkingMultipleOptionsOfMoreThanOneMultipleShrinkingGenerator()
+    public function testShrinkingMultipleOptionsOfMoreThanOneMultipleShrinkingGenerator(): void
     {
         $generator = new TupleGenerator([
             new IntegerGenerator(),
@@ -161,8 +183,8 @@ class TupleGeneratorTest extends \PHPUnit_Framework_TestCase
         foreach ($shrunk as $option) {
             $this->assertEquals('tuple', $option->generatorName());
             $optionValue = $option->unbox();
-            $this->assertInternalType('array', $optionValue);
-            $this->assertEquals(2, count($optionValue));
+            \Eris\PHPUnitDeprecationHelper::assertIsArray($optionValue);
+            $this->assertCount(2, $optionValue);
             $this->assertNotEquals([100, 200], $optionValue);
             $elementsBeingShrunk =
                 ($optionValue[0] < 100 ? 1 : 0)

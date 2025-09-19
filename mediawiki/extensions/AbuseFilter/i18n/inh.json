@@ -2,22 +2,24 @@
 	"@metadata": {
 		"authors": [
 			"Adam-Yourist",
-			"Amire80",
 			"Sapral Mikail",
 			"Умар"
 		]
 	},
 	"right-abusefilter-view": "боарамал сов леладеш долча хIамай фильтрага хьажар",
-	"right-abusefilter-log": "боарамал сов леладеш долча хIамай тептарага хьажар",
+	"right-abusefilter-log": "Зуламий тептарага хьажар",
 	"right-abusefilter-view-private": "боарамал сов леладеш долча хIамай къайла фильтрага хьажар",
-	"action-abusefilter-view": "боарамал сов леладеш долча хIамай фильтрага хьажар",
-	"action-abusefilter-log": "боарамал сов леладеш долча хIамай тептарага хьажар",
+	"action-abusefilter-view": "зуламий фильтрашка хьажар",
+	"action-abusefilter-log": "харцахьа леладаьча хӀамай тептарага хьажар",
 	"abusefilter-log-search-user": "Доакъашхо:",
 	"abusefilter-log-search-filter": "Фильтрий ID:",
-	"abusefilter-log-search-submit": "Хьалаха",
+	"abusefilter-log-search-submit": "Лаха",
 	"abusefilter-log-detailedentry-local": "луттарг $1",
 	"abusefilter-log-linkoncontribs": "харцахьа даь хIамаш тIадола тептар",
+	"abusefilter-log-linkonhistory": "харцахьа леладаьча хӀамай тептарага хьажар",
+	"abusefilter-log-linkonundelete": "зуламий тептарага хьажар",
 	"abusefilter-log-hide-reason": "Бахьан:",
+	"abusefilter-log-hide-show": "Хьагойта",
 	"abusefilter-log-hide-hide": "Къовла",
 	"abusefilter-list-lastmodified": "ТӀеххьара хувцам",
 	"abusefilter-tools-reautoconfirm-user": "Доакъашхо:",
@@ -36,8 +38,9 @@
 	"abusefilter-history-diff": "Хувцамаш",
 	"abusefilter-action-tag": "Хьисап",
 	"abusefilter-revert-confirm": "Бакъде",
+	"abusefilter-revert-reasonfield": "Бахьан:",
 	"abusefilter-examine-submit": "Лаха",
 	"abusefilter-topnav-log": "Харцахьа даь хIамаш тIадола тептар",
 	"abusefilter-diff-info": "Керттера бола хоам",
-	"abusefilter-group-default": "Юххьанцара хиннача тайпара"
+	"abusefilter-group-default": "Юххьанца мо"
 }

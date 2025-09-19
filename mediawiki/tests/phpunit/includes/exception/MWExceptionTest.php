@@ -1,95 +1,31 @@
 <?php
 
-use Wikimedia\TestingAccessWrapper;
+use MediaWiki\MainConfigNames;
 
 /**
+ * @covers \MWException
  * @author Antoine Musso
- * @copyright Copyright © 2013, Antoine Musso
- * @copyright Copyright © 2013, Wikimedia Foundation Inc.
- * @file
  */
-
 class MWExceptionTest extends MediaWikiIntegrationTestCase {
 
-	/**
-	 * @covers MWException
-	 */
 	public function testMwexceptionThrowing() {
 		$this->expectException( MWException::class );
 		throw new MWException();
 	}
 
-	/**
-	 * @dataProvider provideTextUseOutputPage
-	 * @covers MWException::useOutputPage
-	 */
-	public function testUseOutputPage( $expected, $langObj, $fullyInitialised, $outputPage ) {
-		if ( $langObj !== null ) {
-			$this->setUserLang( $langObj );
-		} else {
-			// Reset the global to unset
-			$this->setMwGlobals( 'wgLang', $langObj );
-		}
-		$this->setMwGlobals( [
-			'wgFullyInitialised' => $fullyInitialised,
-			'wgOut' => $outputPage,
-		] );
-
-		$e = TestingAccessWrapper::newFromObject( new MWException() );
-		$this->assertEquals( $expected, $e->useOutputPage() );
-	}
-
-	public function provideTextUseOutputPage() {
-		return [
-			// expected, langObj, wgFullyInitialised, wgOut
-			[ false, null, null, null ],
-			[ false, $this->createMock( Language::class ), null, null ],
-			[ false, $this->createMock( Language::class ), true, null ],
-			[ false, null, true, null ],
-			[ false, null, null, true ],
-			[ true, $this->createMock( Language::class ), true, true ],
-		];
-	}
-
-	/**
-	 * @covers MWException::useMessageCache
-	 */
 	public function testUseMessageCache() {
 		$e = new MWException();
 		$this->assertTrue( $e->useMessageCache() );
 	}
 
-	/**
-	 * @covers MWException::isLoggable
-	 */
-	public function testIsLogable() {
+	public function testIsLoggable() {
 		$e = new MWException();
 		$this->assertTrue( $e->isLoggable() );
 	}
 
 	/**
-	 * @dataProvider provideIsCommandLine
-	 * @covers MWException::isCommandLine
-	 */
-	public function testisCommandLine( $expected, $commandLineMode ) {
-		$this->setMwGlobals( [
-			'wgCommandLineMode' => $commandLineMode,
-		] );
-		$e = new MWException();
-		$this->assertEquals( $expected, $e->isCommandLine() );
-	}
-
-	public static function provideIsCommandLine() {
-		return [
-			[ false, null ],
-			[ true, true ],
-		];
-	}
-
-	/**
 	 * Verify the exception classes are JSON serializabe.
 	 *
-	 * @covers MWExceptionHandler::jsonSerializeException
 	 * @dataProvider provideExceptionClasses
 	 */
 	public function testJsonSerializeExceptions( $exception_class ) {
@@ -105,6 +41,28 @@ class MWExceptionTest extends MediaWikiIntegrationTestCase {
 			[ Exception::class ],
 			[ MWException::class ],
 		];
+	}
+
+	/**
+	 * @covers \MWException::report
+	 */
+	public function testReport() {
+		// Turn off to keep mw-error.log file empty in CI (and thus avoid build failure)
+		$this->overrideConfigValue( MainConfigNames::DebugLogGroups, [] );
+
+		global $wgOut;
+		$wgOut->disable();
+
+		$e = new class( 'Uh oh!' ) extends MWException {
+			public function report() {
+				global $wgOut;
+				$wgOut->addHTML( 'Oh no!' );
+			}
+		};
+
+		MWExceptionHandler::handleException( $e );
+
+		$this->assertStringContainsString( 'Oh no!', $wgOut->getHTML() );
 	}
 
 }

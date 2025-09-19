@@ -18,8 +18,9 @@
  * @file
  */
 
-namespace MediaWiki\Logger;
+namespace MediaWiki\Tests\Logger;
 
+use MediaWiki\Logger\LegacyLogger;
 use MediaWiki\MainConfigNames;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\LogLevel;
@@ -35,7 +36,7 @@ class LegacyLoggerTest extends MediaWikiIntegrationTestCase {
 			$expect, LegacyLogger::interpolate( $message, $context ) );
 	}
 
-	public function provideInterpolate() {
+	public static function provideInterpolate() {
 		$e = new \Exception( 'boom!' );
 		$d = new \DateTime();
 		$err = new \Error( 'Test error' );
@@ -165,20 +166,17 @@ class LegacyLoggerTest extends MediaWikiIntegrationTestCase {
 				$dest + [ 'level' => LogLevel::CRITICAL ],
 				false,
 			],
-		];
-
-		if ( class_exists( \Monolog\Logger::class ) ) {
-			$tests[] = [
+			[
 				\Monolog\Logger::INFO,
 				$dest + [ 'level' => LogLevel::INFO ],
 				true,
-			];
-			$tests[] = [
+			],
+			[
 				\Monolog\Logger::WARNING,
 				$dest + [ 'level' => LogLevel::EMERGENCY ],
 				false,
-			];
-		}
+			]
+		];
 
 		return $tests;
 	}

@@ -17,6 +17,7 @@
 
 namespace MediaWiki\Sniffs\PHPUnit;
 
+use LogicException;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Util\Tokens;
@@ -90,10 +91,10 @@ class DeprecatedPHPUnitMethodsSniff implements Sniff {
 	];
 
 	/** @var File */
-	private $file;
+	private File $file;
 
 	/** @var array */
-	private $tokens;
+	private array $tokens;
 
 	/**
 	 * @inheritDoc
@@ -152,7 +153,7 @@ class DeprecatedPHPUnitMethodsSniff implements Sniff {
 							if ( in_array( $fname, self::FORBIDDEN_ATTRIBUTE_METHODS, true ) ) {
 								$this->handleAttributeMethod( $fname, $funcTok );
 							} else {
-								throw new \LogicException( "Unhandled case $fname" );
+								throw new LogicException( "Unhandled case $fname" );
 							}
 					}
 				}

@@ -2,33 +2,32 @@
 
 /**
  * @group Language
- * @covers LanguageKk
- * @covers LanguageKk_cyrl
- * @covers KkConverter
  */
 class LanguageKkTest extends LanguageClassesTestCase {
+
 	/**
-	 * @dataProvider provideAutoConvertToAllVariants
-	 * @covers Language::autoConvertToAllVariants
+	 * @dataProvider provideGrammar
+	 * @covers \MediaWiki\Language\Language::convertGrammar
 	 */
-	public function testAutoConvertToAllVariants( $result, $value ) {
-		$this->assertEquals( $result, $this->getLang()->autoConvertToAllVariants( $value ) );
+	public function testGrammar( $result, $word, $case ) {
+		$this->assertEquals( $result, $this->getLang()->convertGrammar( $word, $case ) );
 	}
 
-	public static function provideAutoConvertToAllVariants() {
-		return [
-			[
-				[
-					'kk'      => 'Адамдарға ақыл-парасат, ар-ождан берілген',
-					'kk-cyrl' => 'Адамдарға ақыл-парасат, ар-ождан берілген',
-					'kk-latn' => 'Adamdarğa aqıl-parasat, ar-ojdan berilgen',
-					'kk-arab' => 'ادامدارعا اقىل-پاراسات، ار-وجدان بەرىلگەن',
-					'kk-kz'   => 'Адамдарға ақыл-парасат, ар-ождан берілген',
-					'kk-tr'   => 'Adamdarğa aqıl-parasat, ar-ojdan berilgen',
-					'kk-cn'   => 'ادامدارعا اقىل-پاراسات، ار-وجدان بەرىلگەن'
-				],
-				'Адамдарға ақыл-парасат, ар-ождан берілген'
-			],
+	public static function provideGrammar() {
+		yield 'Wikipedia ablative' => [
+			'Уикипедияден',
+			'Уикипедия',
+			'ablative',
+		];
+		yield 'Wiktionary ablative' => [
+			'Уикисөздіктен',
+			'Уикисөздік',
+			'ablative',
+		];
+		yield 'Wikibooks ablative' => [
+			'Уикикітаптан',
+			'Уикикітап',
+			'ablative',
 		];
 	}
 }

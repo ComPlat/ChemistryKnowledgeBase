@@ -2,9 +2,10 @@
 
 namespace MediaWiki\Tests\Storage;
 
-use ChangeTags;
-use CommentStoreComment;
+use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
@@ -15,7 +16,6 @@ use MediaWikiIntegrationTestCase;
 use MockTitleTrait;
 use Wikimedia\Rdbms\IDatabase;
 use WikiPage;
-use WikitextContent;
 
 /**
  * @covers \MediaWiki\Storage\EditResultBuilder
@@ -55,7 +55,7 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 
 		$services = $this->getServiceContainer();
 		$this->revisionStore = $services->getRevisionStore();
-		$this->dbw = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$this->dbw = $this->getDb();
 
 		$this->wikiPage = $this->getExistingTestPage( self::PAGE_NAME );
 		$this->revisions = [];
@@ -91,23 +91,11 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 			self::CONTENT_B,
 			'20050101210041'
 		);
-
-		$this->tablesUsed = [
-			'page',
-			'revision',
-			'comment',
-			'text',
-			'content'
-		];
 	}
 
 	private function getLatestTestRevision(): RevisionRecord {
-		if ( $this->latestTestRevision !== null ) {
-			return $this->latestTestRevision;
-		}
-		return $this->revisionStore->getRevisionByPageId(
-			$this->wikiPage->getId()
-		);
+		return $this->latestTestRevision ??
+			$this->revisionStore->getRevisionByPageId( $this->wikiPage->getId() );
 	}
 
 	/**
@@ -162,7 +150,7 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 		return $revision;
 	}
 
-	public function provideManualReverts(): array {
+	public static function provideManualReverts(): array {
 		return [
 			'reverting a single edit' => [
 				self::CONTENT_A,
@@ -263,7 +251,7 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 
 		// test the newest reverted revision
 		$newestRevertedRev = $this->revisionStore->getRevisionById(
-			$er->getnewestRevertedRevisionId()
+			$er->getNewestRevertedRevisionId()
 		);
 		$expectedNewestRevertedRev = $this->revisions[$expectedNewestRevertedRevKey];
 		$this->assertSame(
@@ -273,7 +261,7 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function provideNotManualReverts(): array {
+	public static function provideNotManualReverts(): array {
 		return [
 			'edit not changing anything' => [
 				self::CONTENT_B,
@@ -338,12 +326,12 @@ class EditResultBuilderDbTest extends MediaWikiIntegrationTestCase {
 	private function getEditResultBuilder( int $manualRevertSearchRadius = 15 ) {
 		$options = new ServiceOptions(
 			EditResultBuilder::CONSTRUCTOR_OPTIONS,
-			[ 'ManualRevertSearchRadius' => $manualRevertSearchRadius ]
+			[ MainConfigNames::ManualRevertSearchRadius => $manualRevertSearchRadius ]
 		);
 
 		return new EditResultBuilder(
 			$this->getServiceContainer()->getRevisionStore(),
-			ChangeTags::listSoftwareDefinedTags(),
+			$this->getServiceContainer()->getChangeTagsStore()->listSoftwareDefinedTags(),
 			$options
 		);
 	}

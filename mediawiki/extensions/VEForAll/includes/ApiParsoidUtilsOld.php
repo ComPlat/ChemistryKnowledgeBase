@@ -4,19 +4,18 @@ namespace VEForAll;
 
 use ApiBase;
 use ApiMessage;
+use MediaWiki\Extension\VisualEditor\VisualEditorParsoidClient;
+use MediaWiki\Extension\VisualEditor\VisualEditorParsoidClientFactory;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use ParserOptions;
 use ParsoidVirtualRESTService;
 use RequestContext;
 use Title;
-use VirtualRESTServiceClient;
 
 /**
  * Heavily based on the ApiParsoidUtils and Utils classes from the
  * StructuredDiscussions extension.
- *
- * This class is used for MediaWiki versions 1.34 and lower.
  */
 class ApiParsoidUtilsOld extends ApiBase {
 
@@ -32,6 +31,9 @@ class ApiParsoidUtilsOld extends ApiBase {
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function getAllowedParams() {
 		return [
 			'from' => [
@@ -85,7 +87,10 @@ class ApiParsoidUtilsOld extends ApiBase {
 			return null;
 		}
 
+		// MW 1.39 or 1.40
 		$convertedContent = '';
+		// We don't actually use this object, but it's useful in
+		// determining which function to call.
 		$vrsObject = $this->getVRSObject();
 		if ( $vrsObject === null ) {
 			if ( $from !== 'wikitext' || $to !== 'html' ) {
@@ -95,8 +100,7 @@ class ApiParsoidUtilsOld extends ApiBase {
 			}
 			$convertedContent = $this->parser( $content, $title );
 		} else {
-			$convertedContent = $this->parsoid( $from, $to, $content, $title,
-				$vrsObject );
+			$convertedContent = $this->parsoid( $from, $to, $content, $title );
 		}
 
 		return $convertedContent;
@@ -109,56 +113,30 @@ class ApiParsoidUtilsOld extends ApiBase {
 	 * @param string $to Format to convert to: html|wikitext
 	 * @param string $content
 	 * @param Title $title
-	 * @param ParsoidVirtualRESTService $vrsObject
 	 * @return string Returns the converted content
 	 */
-	private function parsoid( $from, $to, $content, Title $title,
-		$vrsObject ) {
-		global $wgVersion;
-
-		$serviceClient = new VirtualRESTServiceClient(
-			MediaWikiServices::getInstance()->getHttpRequestFactory()->createMultiClient() );
-		$serviceClient->mount( '/restbase/', $vrsObject );
-
-		$prefixedDbTitle = $title->getPrefixedDBkey();
-		$params = [
-			$from => $content,
-			'body_only' => 'true',
-		];
-		if ( $from === 'html' ) {
-			$params['scrub_wikitext'] = 'true';
-		}
-		$url = '/restbase/local/v1/transform/' . $from . '/to/' . $to . '/' .
-			urlencode( $prefixedDbTitle );
-		$request = [
-			'method' => 'POST',
-			'url' => $url,
-			'body' => $params,
-			'headers' => [
-				'Accept' => 'text/html; charset=utf-8;',
-				'User-Agent' => "VEForAll-MediaWiki/$wgVersion",
-			],
-		];
-		$response = $serviceClient->run( $request );
-		if ( $response['code'] !== 200 ) {
-			if ( $response['error'] !== '' ) {
-				$statusMsg = $response['error'];
-			} else {
-				$statusMsg = $response['code'];
-			}
-			$vrsInfo = $serviceClient->getMountAndService( '/restbase/' );
-			$serviceName = $vrsInfo[1] ? $vrsInfo[1]->getName() : 'VRS service';
-			$this->dieCustomUsageMessage( 'veforall-api-error-parsoid-error',
-				[ $serviceName, $from, $to, $prefixedDbTitle, $statusMsg ] );
-			return null;
+	private function parsoid( $from, $to, $content, Title $title ) {
+		if ( class_exists( VisualEditorParsoidClient::class ) ) {
+			// MW 1.39
+			$client = VisualEditorParsoidClient::factory();
+		} else {
+			// MW 1.40
+			$parsoidClientFactory = MediaWikiServices::getInstance()
+				->getService( VisualEditorParsoidClientFactory::SERVICE_NAME );
+			$client = $parsoidClientFactory->createParsoidClient( false );
 		}
 
-		$content = $response['body'];
-		// HACK remove trailing newline inserted by Parsoid (T106925)
-		if ( $to === 'wikitext' ) {
-			$content = preg_replace( '/\\n$/', '', $content );
+		if ( $from == 'wikitext' ) {
+			$response = $client->transformWikitext(
+				$title, $title->getPageLanguage(), $content, $bodyOnly = false, $oldid = null, $stash = false
+			);
+		} else {
+			$response = $client->transformHtml(
+				$title, $title->getPageLanguage(), $content, $oldid = null, $etag = null
+			);
 		}
-		return $content;
+
+		return $response['body'];
 	}
 
 	/**
@@ -170,9 +148,19 @@ class ApiParsoidUtilsOld extends ApiBase {
 	private function parser( $content, Title $title ) {
 		$parser = MediaWikiServices::getInstance()->getParser();
 		$options = new ParserOptions( $this->getUser() );
-		$options->setTidy( true );
 		$output = $parser->parse( $content, $title, $options );
 		return $output->getText( [ 'enableSectionEditLinks' => false ] );
+	}
+
+	/**
+	 * Die with a custom usage message.
+	 * @param string $message_name the name of the custom message
+	 * @param array $params parameters to the custom message
+	 */
+	private function dieCustomUsageMessage( $message_name, $params = [] ) {
+		$errorMessage = $this->msg( $message_name, $params );
+		LoggerFactory::getInstance( 'VEForAll' )->error( $errorMessage );
+		$this->dieWithError( [ ApiMessage::create( $errorMessage ) ] );
 	}
 
 	/**
@@ -180,6 +168,7 @@ class ApiParsoidUtilsOld extends ApiBase {
 	 * @return ParsoidVirtualRESTService|null
 	 */
 	private function getVRSObject() {
+		// phpcs:ignore MediaWiki.Usage.ExtendClassUsage.FunctionConfigUsage
 		global $wgVirtualRestConfig, $wgVisualEditorParsoidAutoConfig;
 
 		// the params array to create the service object with
@@ -218,18 +207,4 @@ class ApiParsoidUtilsOld extends ApiBase {
 		return new ParsoidVirtualRESTService( $params );
 	}
 
-	/**
-	 * Die with a custom usage message.
-	 * @param string $message_name the name of the custom message
-	 * @param params $params parameters to the custom message
-	 */
-	private function dieCustomUsageMessage( $message_name, $params = [] ) {
-		$errorMessage = wfMessage( $message_name, $params );
-		LoggerFactory::getInstance( 'VEForAll' )->error( $errorMessage );
-		$this->dieWithError(
-			[
-				ApiMessage::create( $errorMessage )
-			]
-		);
-	}
 }

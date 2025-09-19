@@ -2,7 +2,8 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 /**
  * @param Generator $singleElementGenerator
@@ -10,9 +11,13 @@ use DomainException;
  */
 function set($singleElementGenerator)
 {
-    return new SetGenerator($singleElementGenerator);
+    return Generators::set($singleElementGenerator);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<list<T>>
+ */
 class SetGenerator implements Generator
 {
     private $singleElementGenerator;
@@ -22,7 +27,7 @@ class SetGenerator implements Generator
         $this->singleElementGenerator = $singleElementGenerator;
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         $setSize = rand(0, $size);
         $set = [];
@@ -40,7 +45,7 @@ class SetGenerator implements Generator
         return GeneratedValueSingle::fromValueAndInput($set, $input, 'set');
     }
 
-    public function shrink(GeneratedValueSingle $set)
+    public function shrink(GeneratedValue $set)
     {
         if (count($set->input()) === 0) {
             return $set;

@@ -20,7 +20,7 @@ class RemoveWikiEndpoint extends SimpleHandler {
         $params = $this->getValidatedParams();
 
         $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-        $db = $lb->getConnection(DB_MASTER);
+        $db = $lb->getConnection(DB_PRIMARY);
         (new WikiRepository($db))->removeWikiJob($params['wikiId'], $wgUser->getId());
 
         return ['result' => 'ok', 'wikiId' => $params['wikiId']];

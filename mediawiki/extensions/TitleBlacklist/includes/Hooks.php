@@ -8,25 +8,26 @@
 
 namespace MediaWiki\Extension\TitleBlacklist;
 
-use ApiMessage;
-use ApiResult;
-use EditPage;
-use Html;
 use ManualLogEntry;
+use MediaWiki\Api\ApiMessage;
+use MediaWiki\Api\ApiResult;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\EditPage\EditPage;
 use MediaWiki\Hook\EditFilterHook;
 use MediaWiki\Hook\MovePageCheckPermissionsHook;
 use MediaWiki\Hook\TitleGetEditNoticesHook;
+use MediaWiki\Html\Html;
+use MediaWiki\Permissions\GrantsInfo;
 use MediaWiki\Permissions\Hook\GetUserPermissionsErrorsExpensiveHook;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Status\Status;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use MessageSpecifier;
-use RequestContext;
-use Status;
 use StatusValue;
-use Title;
-use User;
+use Wikimedia\Message\MessageSpecifier;
 use WikiPage;
 
 /**
@@ -41,6 +42,16 @@ class Hooks implements
 	GetUserPermissionsErrorsExpensiveHook,
 	PageSaveCompleteHook
 {
+
+	public static function onRegistration() {
+		global $wgGrantRiskGroups;
+		// Make sure the risk rating is at least 'security'. TitleBlacklist adds the
+		// tboverride-account right to the createaccount grant, which makes it possible
+		// to use it for social engineering attacks with restricted usernames.
+		if ( $wgGrantRiskGroups['createaccount'] !== GrantsInfo::RISK_INTERNAL ) {
+			$wgGrantRiskGroups['createaccount'] = GrantsInfo::RISK_SECURITY;
+		}
+	}
 
 	/**
 	 * getUserPermissionsErrorsExpensive hook
@@ -59,39 +70,41 @@ class Hooks implements
 		if ( $action === 'createpage' || $action === 'createtalk' ) {
 			$action = 'create';
 		}
-		if ( $action == 'create' || $action == 'edit' || $action == 'upload' ) {
-			$blacklisted = TitleBlacklist::singleton()->userCannot( $title, $user, $action );
-			if ( $blacklisted instanceof TitleBlacklistEntry ) {
-				$errmsg = $blacklisted->getErrorMessage( 'edit' );
-				$params = [
-					$blacklisted->getRaw(),
-					$title->getFullText()
-				];
-				ApiResult::setIndexedTagName( $params, 'param' );
-				$result = ApiMessage::create(
-					wfMessage(
-						$errmsg,
-						htmlspecialchars( $blacklisted->getRaw() ),
-						$title->getFullText()
-					),
-					'titleblacklist-forbidden',
-					[
-						'message' => [
-							'key' => $errmsg,
-							'params' => $params,
-						],
-						'line' => $blacklisted->getRaw(),
-						// As $errmsg usually represents a non-default message here, and ApiBase
-						// uses ->inLanguage( 'en' )->useDatabase( false ) for all messages, it will
-						// never result in useful 'info' text in the API. Try this, extra data seems
-						// to override the default.
-						'info' => 'TitleBlacklist prevents this title from being created',
-					]
-				);
-				return false;
-			}
+		if ( $action !== 'create' && $action !== 'edit' && $action !== 'upload' ) {
+			return true;
 		}
-		return true;
+		$blacklisted = TitleBlacklist::singleton()->userCannot( $title, $user, $action );
+		if ( !$blacklisted ) {
+			return true;
+		}
+
+		$errmsg = $blacklisted->getErrorMessage( 'edit' );
+		$params = [
+			$blacklisted->getRaw(),
+			$title->getFullText()
+		];
+		ApiResult::setIndexedTagName( $params, 'param' );
+		$result = ApiMessage::create(
+			wfMessage(
+				$errmsg,
+				wfEscapeWikiText( $blacklisted->getRaw() ),
+				$title->getFullText()
+			),
+			'titleblacklist-forbidden',
+			[
+				'message' => [
+					'key' => $errmsg,
+					'params' => $params,
+				],
+				'line' => $blacklisted->getRaw(),
+				// As $errmsg usually represents a non-default message here, and ApiBase
+				// uses ->inLanguage( 'en' )->useDatabase( false ) for all messages, it will
+				// never result in useful 'info' text in the API. Try this, extra data seems
+				// to override the default.
+				'info' => 'TitleBlacklist prevents this title from being created',
+			]
+		);
+		return false;
 	}
 
 	/**
@@ -147,7 +160,7 @@ class Hooks implements
 		if ( $blacklisted instanceof TitleBlacklistEntry ) {
 			$status->fatal( ApiMessage::create( [
 				$blacklisted->getErrorMessage( 'move' ),
-				$blacklisted->getRaw(),
+				wfEscapeWikiText( $blacklisted->getRaw() ),
 				$oldTitle->getFullText(),
 				$newTitle->getFullText()
 			] ) );
@@ -174,31 +187,32 @@ class Hooks implements
 		$title = Title::makeTitleSafe( NS_USER, $userName );
 		$blacklisted = TitleBlacklist::singleton()->userCannot( $title, $creatingUser,
 			'new-account', $override );
-		if ( $blacklisted instanceof TitleBlacklistEntry ) {
-			if ( $log ) {
-				self::logFilterHitUsername( $creatingUser, $title, $blacklisted->getRaw() );
-			}
-			$message = $blacklisted->getErrorMessage( 'new-account' );
-			$params = [
-				$blacklisted->getRaw(),
-				$userName,
-			];
-			ApiResult::setIndexedTagName( $params, 'param' );
-			return StatusValue::newFatal( ApiMessage::create(
-				[ $message, $blacklisted->getRaw(), $userName ],
-				'titleblacklist-forbidden',
-				[
-					'message' => [
-						'key' => $message,
-						'params' => $params,
-					],
-					'line' => $blacklisted->getRaw(),
-					// The text of the message probably isn't useful API info, so do this instead
-					'info' => 'TitleBlacklist prevents this username from being created',
-				]
-			) );
+		if ( !$blacklisted ) {
+			return StatusValue::newGood();
 		}
-		return StatusValue::newGood();
+
+		if ( $log ) {
+			self::logFilterHitUsername( $creatingUser, $title, $blacklisted->getRaw() );
+		}
+		$message = $blacklisted->getErrorMessage( 'new-account' );
+		$params = [
+			$blacklisted->getRaw(),
+			$userName,
+		];
+		ApiResult::setIndexedTagName( $params, 'param' );
+		return StatusValue::newFatal( ApiMessage::create(
+			[ $message, wfEscapeWikiText( $blacklisted->getRaw() ), $userName ],
+			'titleblacklist-forbidden',
+			[
+				'message' => [
+					'key' => $message,
+					'params' => $params,
+				],
+				'line' => $blacklisted->getRaw(),
+				// The text of the message probably isn't useful API info, so do this instead
+				'info' => 'TitleBlacklist prevents this username from being created',
+			]
+		) );
 	}
 
 	/**
@@ -277,18 +291,6 @@ class Hooks implements
 			] );
 			$logid = $logEntry->insert();
 			$logEntry->publish( $logid );
-		}
-	}
-
-	/**
-	 * External Lua library for Scribunto
-	 *
-	 * @param string $engine
-	 * @param array &$extraLibraries
-	 */
-	public static function onScribuntoExternalLibraries( $engine, array &$extraLibraries ) {
-		if ( $engine == 'lua' ) {
-			$extraLibraries['mw.ext.TitleBlacklist'] = Scribunto_LuaTitleBlacklistLibrary::class;
 		}
 	}
 }

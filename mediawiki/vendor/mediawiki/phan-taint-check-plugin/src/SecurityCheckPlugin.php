@@ -94,15 +94,11 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	public const REGEX_TAINT = 1 << 14;
 	public const REGEX_EXEC_TAINT = 1 << 15;
 
-	// For stuff that doesn't fit another category
-	public const MISC_TAINT = 1 << 16;
-	public const MISC_EXEC_TAINT = 1 << 17;
-
 	// To allow people to add other application specific taints.
-	public const CUSTOM1_TAINT = 1 << 18;
-	public const CUSTOM1_EXEC_TAINT = 1 << 19;
-	public const CUSTOM2_TAINT = 1 << 20;
-	public const CUSTOM2_EXEC_TAINT = 1 << 21;
+	public const CUSTOM1_TAINT = 1 << 16;
+	public const CUSTOM1_EXEC_TAINT = 1 << 17;
+	public const CUSTOM2_TAINT = 1 << 18;
+	public const CUSTOM2_EXEC_TAINT = 1 << 19;
 
 	// Special purpose for supporting MediaWiki's IDatabase::select
 	// and friends. Like SQL_TAINT, but only applies to the numeric
@@ -112,12 +108,12 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	// The associative keys also have this flag if they are tainted.
 	// It is also assumed anything with this flag will also have
 	// the SQL_TAINT flag set.
-	public const SQL_NUMKEY_TAINT = 1 << 22;
-	public const SQL_NUMKEY_EXEC_TAINT = 1 << 23;
+	public const SQL_NUMKEY_TAINT = 1 << 20;
+	public const SQL_NUMKEY_EXEC_TAINT = 1 << 21;
 
 	// For double escaped variables
-	public const ESCAPED_TAINT = 1 << 24;
-	public const ESCAPED_EXEC_TAINT = 1 << 25;
+	public const ESCAPED_TAINT = 1 << 22;
+	public const ESCAPED_EXEC_TAINT = 1 << 23;
 
 	// Special purpose flags (Starting at 2^28)
 	// TODO Renumber these. Requires changing format of the hardcoded arrays
@@ -129,24 +125,17 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	// as normal taint flags.
 	public const NO_OVERRIDE = 1 << 29;
 
-	// Represents a parameter expecting a raw value, for which escaping should have already
-	// taken place. E.g. in MW this happens for Message::rawParams. In practice, this avoids
-	// backpropagation of EXEC flags.
-	// TODO Do we still need this?
-	public const RAW_PARAM = 1 << 30;
-
-	public const VARIADIC_PARAM = 1 << 31;
+	public const VARIADIC_PARAM = 1 << 30;
 
 	// *All* function flags
 	//TODO Add a structure test for this
-	public const FUNCTION_FLAGS = self::ARRAY_OK | self::NO_OVERRIDE | self::RAW_PARAM;
+	public const FUNCTION_FLAGS = self::ARRAY_OK | self::NO_OVERRIDE;
 
 	// Combination flags.
 
 	// YES_TAINT denotes all taint a user controlled variable would have
 	public const YES_TAINT = self::HTML_TAINT | self::SQL_TAINT | self::SHELL_TAINT | self::SERIALIZE_TAINT |
-		self::PATH_TAINT | self::CODE_TAINT | self::REGEX_TAINT | self::CUSTOM1_TAINT | self::CUSTOM2_TAINT |
-		self::MISC_TAINT;
+		self::PATH_TAINT | self::CODE_TAINT | self::REGEX_TAINT | self::CUSTOM1_TAINT | self::CUSTOM2_TAINT;
 	public const EXEC_TAINT = self::YES_TAINT << 1;
 	// @phan-suppress-next-line PhanUnreferencedPublicClassConstant
 	public const YES_EXEC_TAINT = self::YES_TAINT | self::EXEC_TAINT;
@@ -221,7 +210,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		 * @param Variable $variable
 		 * @param Scope[] $scopeList
 		 * @param bool $varExistsInAllScopes @phan-unused-param
-		 * @suppress PhanUnreferencedClosure, PhanUndeclaredProperty
+		 * @suppress PhanUnreferencedClosure, PhanUndeclaredProperty, UnusedSuppression
 		 */
 		return static function ( Variable $variable, array $scopeList, bool $varExistsInAllScopes ) {
 			$varName = $variable->getName();
@@ -299,6 +288,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * Print the taintedness of a variable, when requested
 	 * @see BlockAnalysisVisitor::analyzeSubstituteVarAssert()
 	 * @inheritDoc
+	 * @suppress PhanUndeclaredProperty, UnusedSuppression
 	 */
 	public function analyzeStringLiteralStatement( CodeBase $codeBase, Context $context, string $statement ): bool {
 		$found = false;
@@ -335,7 +325,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			$fqsen = FullyQualifiedMethodName::fromStringInContext( $funcName, $context );
 			$method = $codeBase->getMethodByFQSEN( $fqsen );
 			/** @var FunctionTaintedness|null $fTaint */
-			// @phan-suppress-next-line PhanUndeclaredProperty
 			$fTaint = $method->funcTaint ?? null;
 			if ( !$fTaint ) {
 				return false;
@@ -395,7 +384,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			self::CODE_TAINT => 'CODE',
 			self::PATH_TAINT => 'PATH',
 			self::REGEX_TAINT => 'REGEX',
-			self::MISC_TAINT => 'MISC',
 			self::SQL_NUMKEY_TAINT => 'SQL_NUMKEY',
 			self::ARRAY_OK => 'ARRAY_OK',
 			self::ALL_EXEC_TAINT => '*ALL',
@@ -409,7 +397,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			self::CODE_EXEC_TAINT => '*CODE',
 			self::PATH_EXEC_TAINT => '*PATH',
 			self::REGEX_EXEC_TAINT => '*REGEX',
-			self::MISC_EXEC_TAINT => '*MISC',
 			self::SQL_NUMKEY_EXEC_TAINT => '*SQL_NUMKEY',
 		];
 
@@ -458,43 +445,47 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 		}
 
 		if ( isset( $funcTaints[$name] ) ) {
-			$intTaint = $funcTaints[$name];
-			self::assertFunctionTaintArrayWellFormed( $intTaint );
-			// Note: for backcompat, we set NO_OVERRIDE everywhere.
-			$overallFlags = ( $intTaint['overall'] & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
-			$res = new FunctionTaintedness( new Taintedness( $intTaint['overall'] & ~$overallFlags ) );
-			$res->addOverallFlags( $overallFlags );
-			unset( $intTaint['overall'] );
-			foreach ( $intTaint as $i => $val ) {
-				assert( ( $val & self::UNKNOWN_TAINT ) === 0, 'Cannot set UNKNOWN' );
-				$paramFlags = ( $val & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
-				// TODO Split sink and preserve in the hardcoded arrays
-				if ( $val & self::VARIADIC_PARAM ) {
-					$pTaint = new Taintedness( $val & ~( self::VARIADIC_PARAM | $paramFlags ) );
-					$res->setVariadicParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
-					$res->setVariadicParamPreservedTaint(
-						$i,
-						$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
-					);
-					$res->addVariadicParamFlags( $paramFlags );
-				} else {
-					$pTaint = new Taintedness( $val & ~$paramFlags );
-					$res->setParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
-					$res->setParamPreservedTaint(
-						$i,
-						$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
-					);
-					$res->addParamFlags( $i, $paramFlags );
+			$rawFuncTaint = $funcTaints[$name];
+			if ( $rawFuncTaint instanceof FunctionTaintedness ) {
+				$funcTaint = $rawFuncTaint;
+			} else {
+				self::assertFunctionTaintArrayWellFormed( $rawFuncTaint );
+				// Note: for backcompat, we set NO_OVERRIDE everywhere.
+				$overallFlags = ( $rawFuncTaint['overall'] & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
+				$funcTaint = new FunctionTaintedness( new Taintedness( $rawFuncTaint['overall'] & ~$overallFlags ) );
+				$funcTaint->addOverallFlags( $overallFlags );
+				unset( $rawFuncTaint['overall'] );
+				foreach ( $rawFuncTaint as $i => $val ) {
+					assert( ( $val & self::UNKNOWN_TAINT ) === 0, 'Cannot set UNKNOWN' );
+					$paramFlags = ( $val & self::FUNCTION_FLAGS ) | self::NO_OVERRIDE;
+					// TODO Split sink and preserve in the hardcoded arrays
+					if ( $val & self::VARIADIC_PARAM ) {
+						$pTaint = new Taintedness( $val & ~( self::VARIADIC_PARAM | $paramFlags ) );
+						$funcTaint->setVariadicParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
+						$funcTaint->setVariadicParamPreservedTaint(
+							$i,
+							$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
+						);
+						$funcTaint->addVariadicParamFlags( $paramFlags );
+					} else {
+						$pTaint = new Taintedness( $val & ~$paramFlags );
+						$funcTaint->setParamSinkTaint( $i, $pTaint->withOnly( self::ALL_EXEC_TAINT ) );
+						$funcTaint->setParamPreservedTaint(
+							$i,
+							$pTaint->without( self::ALL_EXEC_TAINT )->asPreservedTaintedness()
+						);
+						$funcTaint->addParamFlags( $i, $paramFlags );
+					}
 				}
 			}
-			self::$builtinFuncTaintCache[$name] = $res;
+			self::$builtinFuncTaintCache[$name] = $funcTaint;
 			return self::$builtinFuncTaintCache[$name];
 		}
 		return null;
 	}
 
 	/**
-	 * Assert that a taintednes array is well formed, and fail hard if it isn't.
+	 * Assert that a taintedness array is well-formed, and fail hard if it isn't.
 	 *
 	 * @param int[] $taint
 	 */
@@ -519,9 +510,8 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	/**
 	 * Get an array of function taints custom for the application
 	 *
-	 * @return int[][] Array of function taints with 'overall' string key and numeric
-	 *   keys for parameters. This is the same format
-	 *   as FunctionTaintedness objects, except in array form.
+	 * @return array<string,int[]|FunctionTaintedness> Array of function taints. The keys are FQSENs. The values can be
+	 *   either FunctionTaintedness objects, or arrays with 'overall' string key and numeric keys for parameters.
 	 *
 	 *   For example: [ self::YES_TAINT, 'overall' => self::NO_TAINT ]
 	 *   means that the taint of the return value is the same as the taint
@@ -533,7 +523,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 *   [ 'overall' => self::YES_TAINT ]
 	 *   Means that it returns a tainted value (e.g. return $_POST['foo']; )
 	 * @see FunctionTaintedness for more details
-	 * @phan-return array<string,int[]>
 	 */
 	abstract protected function getCustomFuncTaints(): array;
 
@@ -573,7 +562,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * doesn't seem needed.
 	 *
 	 * The following keywords are supported where {type} can be
-	 * html, sql, shell, serialize, custom1, custom2, misc, sql_numkey,
+	 * html, sql, shell, serialize, custom1, custom2, sql_numkey,
 	 * escaped.
 	 *  * {type} - just set the flag. 99% you should only use 'none' or 'tainted'
 	 *  * exec_{type} - sets the exec flag.
@@ -601,9 +590,9 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 */
 	public static function parseTaintLine( string $line ): ?array {
 		$types = '(?P<type>htmlnoent|html|sql|shell|serialize|custom1|'
-			. 'custom2|misc|code|path|regex|sql_numkey|escaped|none|tainted)';
+			. 'custom2|code|path|regex|sql_numkey|escaped|none|tainted)';
 		$prefixes = '(?P<prefix>escapes|onlysafefor|exec)';
-		$taintExpr = "(?P<taint>(?:${prefixes}_)?$types|array_ok|allow_override|raw_param)";
+		$taintExpr = "(?P<taint>(?:{$prefixes}_)?$types|array_ok|allow_override)";
 
 		$filteredLine = preg_replace( "/((?:$taintExpr,? *)+)(?: .*)?$/", '$1', $line );
 		$taints = explode( ',', strtolower( $filteredLine ) );
@@ -624,10 +613,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			}
 			if ( $taintParts['taint'] === 'allow_override' ) {
 				$overallFlags &= ~self::NO_OVERRIDE;
-				continue;
-			}
-			if ( $taintParts['taint'] === 'raw_param' ) {
-				$overallFlags |= self::RAW_PARAM;
 				continue;
 			}
 			$taintAsInt = self::convertTaintNameToConstant( $taintParts['type'] );
@@ -655,6 +640,36 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			return null;
 		}
 		return [ $overallTaint, $overallFlags ];
+	}
+
+	/**
+	 * Hook to override the sink taintedness of a method parameter depending on the current argument.
+	 *
+	 * @internal This method is unstable and may be removed without prior notice.
+	 *
+	 * @param Taintedness $paramSinkTaint
+	 * @param Taintedness $curArgTaintedness
+	 * @param Node $argument Note: This hook is not called on literals
+	 * @param int $argIndex Which argument number is this
+	 * @param FunctionInterface $func The function/method being called
+	 * @param FunctionTaintedness $funcTaint Taint of method formal parameters
+	 * @param Context $context Context object
+	 * @param CodeBase $code_base CodeBase object
+	 * @return Taintedness The taint to use for actual parameter
+	 * @suppress PhanUnusedPublicMethodParameter
+	 */
+	public function modifyParamSinkTaint(
+		Taintedness $paramSinkTaint,
+		Taintedness $curArgTaintedness,
+		Node $argument,
+		int $argIndex,
+		FunctionInterface $func,
+		FunctionTaintedness $funcTaint,
+		Context $context,
+		CodeBase $code_base
+	): Taintedness {
+		// no-op
+		return $paramSinkTaint;
 	}
 
 	/**
@@ -688,7 +703,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 *
 	 * @note htmlnoent treated like self::HTML_TAINT.
 	 * @param string $name one of:
-	 *   html, sql, shell, serialize, custom1, custom2, code, path, regex, misc, sql_numkey,
+	 *   html, sql, shell, serialize, custom1, custom2, code, path, regex, sql_numkey,
 	 *   escaped, none (= self::NO_TAINT), tainted (= self::YES_TAINT)
 	 * @return int One of the TAINT constants
 	 */
@@ -713,8 +728,6 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				return self::PATH_TAINT;
 			case 'regex':
 				return self::REGEX_TAINT;
-			case 'misc':
-				return self::MISC_TAINT;
 			case 'sql_numkey':
 				return self::SQL_NUMKEY_TAINT;
 			case 'escaped':
@@ -734,18 +747,20 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 	 * @return int[][] List of func taints (See getBuiltinFuncTaint())
 	 * @phan-return array<string,int[]>
 	 */
-	protected function getPHPFuncTaints(): array {
+	private function getPHPFuncTaints(): array {
 		$pregMatchTaint = [
 			self::REGEX_EXEC_TAINT,
 			self::YES_TAINT,
-			self::NO_TAINT, // TODO Possibly unsafe pass-by-ref,
+			// TODO: Possibly unsafe pass-by-ref
+			self::NO_TAINT,
 			self::NO_TAINT,
 			self::NO_TAINT,
 			'overall' => self::NO_TAINT,
 		];
 		$pregReplaceTaint = [
 			self::REGEX_EXEC_TAINT,
-			self::YES_TAINT, // TODO This is used for strings (in preg_replace) and callbacks (in preg_replace_callback)
+			// TODO: This is used for strings (in preg_replace) and callbacks (in preg_replace_callback)
+			self::YES_TAINT,
 			self::YES_TAINT,
 			self::NO_TAINT,
 			self::NO_TAINT,
@@ -764,7 +779,7 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				~self::SHELL_TAINT & self::YES_TAINT,
 				'overall' => self::NO_TAINT
 			],
-			// TODO Perhaps we should distinguish arguments escape vs command escape
+			// TODO: Perhaps we should distinguish arguments escape vs command escape
 			'\escapeshellcmd' => [
 				~self::SHELL_TAINT & self::YES_TAINT,
 				'overall' => self::NO_TAINT
@@ -780,7 +795,8 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			],
 			'\exec' => [
 				self::SHELL_EXEC_TAINT,
-				self::NO_TAINT, // TODO: This is an unsafe passbyref
+				// TODO: This is an unsafe passbyref
+				self::NO_TAINT,
 				self::NO_TAINT,
 				'overall' => self::YES_TAINT
 			],
@@ -792,16 +808,19 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 			'\proc_open' => [
 				self::SHELL_EXEC_TAINT,
 				self::NO_TAINT,
-				self::NO_TAINT, // TODO Unsafe passbyref
+				// TODO: Unsafe passbyref
 				self::NO_TAINT,
 				self::NO_TAINT,
 				self::NO_TAINT,
-				'overall' => self::NO_TAINT  // TODO Perhaps not so safe
+				self::NO_TAINT,
+				// TODO: Perhaps not so safe
+				'overall' => self::NO_TAINT
 			],
 			'\popen' => [
 				self::SHELL_EXEC_TAINT,
 				self::NO_TAINT,
-				'overall' => self::NO_TAINT  // TODO Perhaps not so safe
+				// TODO: Perhaps not so safe
+				'overall' => self::NO_TAINT
 			],
 			// Or any time the serialized data comes from a trusted source.
 			'\serialize' => [
@@ -898,18 +917,20 @@ abstract class SecurityCheckPlugin extends PluginV3 implements
 				self::NO_TAINT,
 				'overall' => self::NO_TAINT
 			],
-			// TODO What about file_get_contents() and file() ?
+			// TODO: What about file_get_contents() and file() ?
 			'\fopen' => [
 				self::PATH_EXEC_TAINT,
 				self::NO_TAINT,
 				self::NO_TAINT,
 				self::NO_TAINT,
-				'overall' => self::NO_TAINT // TODO Perhaps not so safe
+				// TODO: Perhaps not so safe
+				'overall' => self::NO_TAINT
 			],
 			'\opendir' => [
 				self::PATH_EXEC_TAINT,
 				self::NO_TAINT,
-				'overall' => self::NO_TAINT // TODO Perhaps not so safe
+				// TODO: Perhaps not so safe
+				'overall' => self::NO_TAINT
 			],
 			'\rawurlencode' => [
 				self::YES_TAINT & ~self::PATH_TAINT,

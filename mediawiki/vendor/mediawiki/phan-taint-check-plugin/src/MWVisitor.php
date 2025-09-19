@@ -60,10 +60,11 @@ class MWVisitor extends TaintednessVisitor {
 
 		// Should this be getDefiningFQSEN() instead?
 		$methodName = (string)$method->getFQSEN();
+		$parserFQSEN = MediaWikiHooksHelper::getInstance()->getMwParserClassFQSEN( $this->code_base )->__toString();
 		// $this->debug( __METHOD__, "Checking to see if we should register $methodName" );
 		switch ( $methodName ) {
-			case '\Parser::setFunctionHook':
-			case '\Parser::setHook':
+			case "$parserFQSEN::setFunctionHook":
+			case "$parserFQSEN::setHook":
 				$type = $this->getHookTypeForRegistrationMethod( $methodName );
 				if ( $type === null ) {
 					break;
@@ -92,10 +93,7 @@ class MWVisitor extends TaintednessVisitor {
 	 * @param Node $node
 	 */
 	private function checkExternalLink( Node $node ): void {
-		$escapeArg = $node->children['args']->children[2] ?? true;
-		if ( is_object( $escapeArg ) && $escapeArg->kind === \ast\AST_CONST ) {
-			$escapeArg = $escapeArg->children['name']->children['name'] !== 'false';
-		}
+		$escapeArg = $this->resolveValue( $node->children['args']->children[2] ?? true );
 		$text = $node->children['args']->children[1] ?? null;
 		if ( !$escapeArg && $text instanceof Node ) {
 			$this->maybeEmitIssueSimplified(
@@ -110,7 +108,7 @@ class MWVisitor extends TaintednessVisitor {
 	/**
 	 * Special casing for complex format of IDatabase::select
 	 *
-	 * This handled the $options, and $join_cond. Other args are
+	 * This handles the $options, and $join_cond. Other args are
 	 * handled through normal means
 	 *
 	 * @param Node $node Either an AST_METHOD_CALL or AST_STATIC_CALL
@@ -276,10 +274,11 @@ class MWVisitor extends TaintednessVisitor {
 	 * @return string|null The name of the hook that gets registered
 	 */
 	private function getHookTypeForRegistrationMethod( string $method ): ?string {
+		$parserFQSEN = MediaWikiHooksHelper::getInstance()->getMwParserClassFQSEN( $this->code_base )->__toString();
 		switch ( $method ) {
-			case '\Parser::setFunctionHook':
+			case "$parserFQSEN::setFunctionHook":
 				return '!ParserFunctionHook';
-			case '\Parser::setHook':
+			case "$parserFQSEN::setHook":
 				return '!ParserHook';
 			default:
 				$this->debug( __METHOD__, "$method not a hook registerer" );
@@ -354,8 +353,8 @@ class MWVisitor extends TaintednessVisitor {
 	public function visitReturn( Node $node ): void {
 		parent::visitReturn( $node );
 		if (
+			!$node->children['expr'] instanceof Node ||
 			!$this->context->isInFunctionLikeScope()
-			|| !$node->children['expr'] instanceof Node
 		) {
 			return;
 		}
@@ -958,11 +957,13 @@ class MWVisitor extends TaintednessVisitor {
 		$raw = null;
 		$class = null;
 		$rawLabel = null;
+		$help = null;
 		$label = null;
 		$default = null;
 		$options = null;
 		$isInfo = false;
-		$isOptionsSafe = true; // options key is really messed up with escaping.
+		// options key is really messed up with escaping.
+		$isOptionsSafe = true;
 		foreach ( $node->children as $child ) {
 			if ( $child === null || $child->kind === \ast\AST_UNPACK ) {
 				// If we have list( , $x ) = foo(), or an in-place unpack, chances are this is not an HTMLForm.
@@ -1001,6 +1002,9 @@ class MWVisitor extends TaintednessVisitor {
 				case 'rawrow':
 					$raw = $this->resolveValue( $child->children['value'] );
 					break;
+				case 'help':
+					$help = $this->resolveValue( $child->children['value'] );
+					break;
 			}
 		}
 
@@ -1013,7 +1017,7 @@ class MWVisitor extends TaintednessVisitor {
 		}
 
 		if (
-			$raw === null && $label === null && $rawLabel === null
+			$raw === null && $label === null && $rawLabel === null && $help === null
 			&& $default === null && $options === null
 		) {
 			// e.g. [ 'class' => 'someCssClass' ] appears a lot
@@ -1087,11 +1091,17 @@ class MWVisitor extends TaintednessVisitor {
 			);
 		}
 		if ( $rawLabel !== null ) {
-			// double escape check for label.
 			$this->maybeEmitIssueSimplified(
 				new Taintedness( SecurityCheckPlugin::HTML_EXEC_TAINT ),
 				$rawLabel,
 				'HTMLForm label-raw needs to escape input'
+			);
+		}
+		if ( $help !== null ) {
+			$this->maybeEmitIssueSimplified(
+				new Taintedness( SecurityCheckPlugin::HTML_EXEC_TAINT ),
+				$help,
+				'HTMLForm help needs to escape input'
 			);
 		}
 		if ( $isInfo && $raw === true ) {

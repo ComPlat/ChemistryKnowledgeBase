@@ -2,17 +2,17 @@
 
 namespace MediaWiki\Extension\OATHAuth\HTMLForm;
 
-use IContextSource;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\OATHAuth\IModule;
 use MediaWiki\Extension\OATHAuth\OATHUser;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
+use MediaWiki\HTMLForm\OOUIHTMLForm;
 use MediaWiki\Logger\LoggerFactory;
 use OOUI\FieldsetLayout;
 use OOUI\HtmlSnippet;
 use OOUI\Layout;
 use OOUI\PanelLayout;
 use OOUI\Widget;
-use OOUIHTMLForm;
 use Psr\Log\LoggerInterface;
 
 abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm {
@@ -102,10 +102,7 @@ abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm 
 		return [];
 	}
 
-	/**
-	 * @return LoggerInterface
-	 */
-	private function getLogger() {
+	private function getLogger(): LoggerInterface {
 		return LoggerFactory::getInstance( 'authentication' );
 	}
 
@@ -114,15 +111,12 @@ abstract class OATHAuthOOUIHTMLForm extends OOUIHTMLForm implements IManageForm 
 	 */
 	protected function wrapFieldSetSection( $legend, $section, $attributes, $isRoot ) {
 		// to get a user visible effect, wrap the fieldset into a framed panel layout
-		$layout = new PanelLayout( array_merge( [
+		$layout = new PanelLayout( [
 			'expanded' => false,
-			'padded' => true,
-			'framed' => false,
 			'infusable' => false,
-		], [
 			'padded' => $this->panelPadded,
-			'framed' => $this->panelFramed
-		] ) );
+			'framed' => $this->panelFramed,
+		] );
 
 		$layout->appendContent(
 			new FieldsetLayout( [

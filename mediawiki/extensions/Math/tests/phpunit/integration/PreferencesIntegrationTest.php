@@ -2,12 +2,13 @@
 
 namespace MediaWiki\Extension\Math\Tests;
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use RequestContext;
-use Title;
 
 /**
  * @covers \MediaWiki\Extension\Math\HookHandlers\PreferencesHooksHandler
+ * @group Database
  */
 class PreferencesIntegrationTest extends MediaWikiIntegrationTestCase {
 

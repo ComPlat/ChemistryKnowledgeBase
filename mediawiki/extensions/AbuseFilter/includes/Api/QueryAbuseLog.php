@@ -1,12 +1,5 @@
 <?php
 /**
- * Created on Mar 28, 2009
- *
- * AbuseFilter extension
- *
- * Copyright © 2008 Alex Z. mrzmanwiki AT gmail DOT com
- * Based mostly on code by Bryan Tong Minh and Roan Kattouw
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -25,27 +18,32 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Api;
 
-use ApiBase;
-use ApiQuery;
-use ApiQueryBase;
 use InvalidArgumentException;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiQuery;
+use MediaWiki\Api\ApiQueryBase;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
+use MediaWiki\Extension\AbuseFilter\AbuseLoggerFactory;
 use MediaWiki\Extension\AbuseFilter\CentralDBNotAvailableException;
 use MediaWiki\Extension\AbuseFilter\Filter\FilterNotFoundException;
+use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\FilterLookup;
 use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
 use MediaWiki\Extension\AbuseFilter\Special\SpecialAbuseLog;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesBlobStore;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
-use MWTimestamp;
-use Title;
-use User;
+use MediaWiki\Title\Title;
+use MediaWiki\User\UserFactory;
+use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\IPUtils;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 /**
  * Query module to list abuse log entries.
+ *
+ * @copyright 2009 Alex Z. <mrzmanwiki AT gmail DOT com>
+ * Based mostly on code by Bryan Tong Minh and Roan Kattouw
  *
  * @ingroup API
  * @ingroup Extensions
@@ -64,6 +62,11 @@ class QueryAbuseLog extends ApiQueryBase {
 	/** @var VariablesManager */
 	private $afVariablesManager;
 
+	/** @var UserFactory */
+	private $userFactory;
+
+	private AbuseLoggerFactory $abuseLoggerFactory;
+
 	/**
 	 * @param ApiQuery $query
 	 * @param string $moduleName
@@ -71,6 +74,8 @@ class QueryAbuseLog extends ApiQueryBase {
 	 * @param AbuseFilterPermissionManager $afPermManager
 	 * @param VariablesBlobStore $afVariablesBlobStore
 	 * @param VariablesManager $afVariablesManager
+	 * @param UserFactory $userFactory
+	 * @param AbuseLoggerFactory $abuseLoggerFactory
 	 */
 	public function __construct(
 		ApiQuery $query,
@@ -78,13 +83,17 @@ class QueryAbuseLog extends ApiQueryBase {
 		FilterLookup $afFilterLookup,
 		AbuseFilterPermissionManager $afPermManager,
 		VariablesBlobStore $afVariablesBlobStore,
-		VariablesManager $afVariablesManager
+		VariablesManager $afVariablesManager,
+		UserFactory $userFactory,
+		AbuseLoggerFactory $abuseLoggerFactory
 	) {
 		parent::__construct( $query, $moduleName, 'afl' );
 		$this->afFilterLookup = $afFilterLookup;
 		$this->afPermManager = $afPermManager;
 		$this->afVariablesBlobStore = $afVariablesBlobStore;
 		$this->afVariablesManager = $afVariablesManager;
+		$this->userFactory = $userFactory;
+		$this->abuseLoggerFactory = $abuseLoggerFactory;
 	}
 
 	/**
@@ -117,6 +126,10 @@ class QueryAbuseLog extends ApiQueryBase {
 			$this->checkUserRightsAny( 'abusefilter-log-detail' );
 		}
 
+		$canViewPrivate = $this->afPermManager->canViewPrivateFiltersLogs( $performer );
+		$canViewProtected = $this->afPermManager->canViewProtectedVariables( $performer );
+		$canViewProtectedValues = $this->afPermManager->canViewProtectedVariableValues( $performer );
+
 		// Map of [ [ id, global ], ... ]
 		$searchFilters = [];
 		// Match permissions for viewing events on private filters to SpecialAbuseLog (bug 42814)
@@ -126,7 +139,6 @@ class QueryAbuseLog extends ApiQueryBase {
 			if ( !is_array( $params['filter'] ) ) {
 				$params['filter'] = [ $params['filter'] ];
 			}
-
 			$foundInvalid = false;
 			foreach ( $params['filter'] as $filter ) {
 				try {
@@ -136,20 +148,31 @@ class QueryAbuseLog extends ApiQueryBase {
 					continue;
 				}
 			}
-			if ( !$this->afPermManager->canViewPrivateFiltersLogs( $performer ) ) {
+
+			if ( !$canViewPrivate || !$canViewProtected || !$canViewProtectedValues ) {
 				foreach ( $searchFilters as [ $filterID, $global ] ) {
 					try {
-						$isHidden = $lookup->getFilter( $filterID, $global )->isHidden();
+						$privacyLevel = $lookup->getFilter( $filterID, $global )->getPrivacyLevel();
 					} catch ( CentralDBNotAvailableException $_ ) {
-						// Conservatively assume it's hidden, like in SpecialAbuseLog
-						$isHidden = true;
+						// Conservatively assume it's hidden and protected, like in AbuseLogPager::doFormatRow
+						$privacyLevel = Flags::FILTER_HIDDEN & Flags::FILTER_USES_PROTECTED_VARS;
 					} catch ( FilterNotFoundException $_ ) {
-						$isHidden = false;
+						$privacyLevel = Flags::FILTER_PUBLIC;
 						$foundInvalid = true;
 					}
-					if ( $isHidden ) {
+					if ( !$canViewPrivate && ( Flags::FILTER_HIDDEN & $privacyLevel ) ) {
 						$this->dieWithError(
 							[ 'apierror-permissiondenied', $this->msg( 'action-abusefilter-log-private' ) ]
+						);
+					}
+					if ( !$canViewProtected && ( Flags::FILTER_USES_PROTECTED_VARS & $privacyLevel ) ) {
+						$this->dieWithError(
+							[ 'apierror-permissiondenied', $this->msg( 'action-abusefilter-log-protected' ) ]
+						);
+					}
+					if ( !$canViewProtectedValues && ( Flags::FILTER_USES_PROTECTED_VARS & $privacyLevel ) ) {
+						$this->dieWithError(
+							[ 'apierror-permissiondenied', $this->msg( 'action-abusefilter-log-protected-access' ) ]
 						);
 					}
 				}
@@ -169,6 +192,7 @@ class QueryAbuseLog extends ApiQueryBase {
 		$this->addFields( 'afl_deleted' );
 		$this->addFields( 'afl_filter_id' );
 		$this->addFields( 'afl_global' );
+		$this->addFields( 'afl_ip' );
 		$this->addFieldsIf( 'afl_id', $fld_ids );
 		$this->addFieldsIf( 'afl_user_text', $fld_user );
 		$this->addFieldsIf( [ 'afl_namespace', 'afl_title' ], $fld_title );
@@ -199,7 +223,7 @@ class QueryAbuseLog extends ApiQueryBase {
 		$this->addWhereRange( 'afl_timestamp', $params['dir'], $params['start'], $params['end'] );
 
 		if ( isset( $params['user'] ) ) {
-			$u = User::newFromName( $params['user'] );
+			$u = $this->userFactory->newFromName( $params['user'] );
 			if ( $u ) {
 				// Username normalisation
 				$params['user'] = $u->getName();
@@ -232,22 +256,23 @@ class QueryAbuseLog extends ApiQueryBase {
 				$key = $isGlobal ? 'global' : 'local';
 				$filterConds[$key][] = $filter[0];
 			}
+			$dbr = $this->getDB();
 			$conds = [];
 			if ( $filterConds['local'] ) {
-				$conds[] = $this->getDB()->makeList(
-					[ 'afl_global' => 0, 'afl_filter_id' => $filterConds['local'] ],
-					LIST_AND
-				);
+				$conds[] = $dbr->andExpr( [
+					'afl_global' => 0,
+					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
+					'afl_filter_id' => $filterConds['local'],
+				] );
 			}
 			if ( $filterConds['global'] ) {
-				$conds[] = $this->getDB()->makeList(
-					[ 'afl_global' => 1, 'afl_filter_id' => $filterConds['global'] ],
-					LIST_AND
-				);
+				$conds[] = $dbr->andExpr( [
+					'afl_global' => 1,
+					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
+					'afl_filter_id' => $filterConds['global'],
+				] );
 			}
-			$conds = $this->getDB()->makeList( $conds, LIST_OR );
-
-			$this->addWhere( $conds );
+			$this->addWhere( $dbr->orExpr( $conds ) );
 		}
 
 		if ( isset( $params['wiki'] ) ) {
@@ -282,8 +307,8 @@ class QueryAbuseLog extends ApiQueryBase {
 			$filterID = $row->afl_filter_id;
 			$global = $row->afl_global;
 			$fullName = GlobalNameUtils::buildGlobalName( $filterID, $global );
-			$isHidden = $lookup->getFilter( $filterID, $global )->isHidden();
-			$canSeeDetails = $this->afPermManager->canSeeLogDetailsForFilter( $performer, $isHidden );
+			$privacyLevel = $lookup->getFilter( $filterID, $global )->getPrivacyLevel();
+			$canSeeDetails = $this->afPermManager->canSeeLogDetailsForFilter( $performer, $privacyLevel );
 
 			$entry = [];
 			if ( $fld_ids ) {
@@ -323,9 +348,49 @@ class QueryAbuseLog extends ApiQueryBase {
 			if ( $fld_details ) {
 				$entry['details'] = [];
 				if ( $canSeeDetails ) {
-					$vars = $this->afVariablesBlobStore->loadVarDump( $row->afl_var_dump );
+					$vars = $this->afVariablesBlobStore->loadVarDump( $row );
 					$varManager = $this->afVariablesManager;
 					$entry['details'] = $varManager->exportAllVars( $vars );
+
+					$usedProtectedVars = $this->afPermManager
+						->getUsedProtectedVariables( array_keys( $entry['details'] ) );
+					if ( $usedProtectedVars ) {
+						// Unset the variable if the user can't see protected variables
+						// Additionally, a protected variable is considered used if the key exists
+						// but since it can have a null value, check isset before logging access
+						$shouldLog = false;
+						foreach ( $usedProtectedVars as $protectedVariable ) {
+							if ( isset( $entry['details'][$protectedVariable] ) ) {
+								if ( $canViewProtectedValues ) {
+									$shouldLog = true;
+								} else {
+									$entry['details'][$protectedVariable] = '';
+								}
+							}
+						}
+
+						if ( $shouldLog ) {
+							// user_name or accountname should always exist -- just in case
+							// if it doesn't, unset the protected variables since they shouldn't be accessed if
+							// the access isn't logged
+							if ( isset( $entry['details']['user_name'] ) ||
+								isset( $entry['details']['accountname'] )
+							) {
+								$logger = $this->abuseLoggerFactory->getProtectedVarsAccessLogger();
+								$logger->logViewProtectedVariableValue(
+									$performer->getUser(),
+									$entry['details']['user_name'] ?? $entry['details']['accountname']
+								);
+							} else {
+								foreach ( $usedProtectedVars as $protectedVariable ) {
+									if ( isset( $entry['details'][$protectedVariable] ) ) {
+										$entry['details'][$protectedVariable] = '';
+									}
+								}
+							}
+
+						}
+					}
 				}
 			}
 

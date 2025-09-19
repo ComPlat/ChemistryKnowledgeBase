@@ -1,13 +1,27 @@
 <?php
 
 use MediaWiki\Block\BlockUser;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\JsonContent;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
+use MediaWiki\Extension\AbuseFilter\Filter\Flags;
 use MediaWiki\Extension\AbuseFilter\FilterRunnerFactory;
 use MediaWiki\Extension\AbuseFilter\Hooks\Handlers\FilteredActionsHandler;
 use MediaWiki\Extension\AbuseFilter\Parser\AFPData;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Status\Status;
 use MediaWiki\Storage\PageEditStash;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use MediaWiki\WikiMap\WikiMap;
 use Psr\Log\LoggerInterface;
+use Wikimedia\Rdbms\IDBAccessObject;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -43,7 +57,6 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  *
  * @covers \MediaWiki\Extension\AbuseFilter\FilterRunner
  * @covers \MediaWiki\Extension\AbuseFilter\Hooks\Handlers\FilteredActionsHandler
- * @covers \MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGenerator
  * @covers \MediaWiki\Extension\AbuseFilter\VariableGenerator\RunVariableGenerator
  * @covers \MediaWiki\Extension\AbuseFilter\AbuseFilterPreAuthenticationProvider
  * @covers \MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger
@@ -69,37 +82,10 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 * @var User The user performing actions
 	 */
 	private $user;
-	/** Prefix for tables to emulate an external DB */
-	public const DB_EXTERNAL_PREFIX = 'external_';
-	/** @var string[] Tables to create in the external DB */
-	public static $externalTables = [
-		'abuse_filter',
-		'abuse_filter_action',
-		'abuse_filter_log',
-		'text',
-	];
-
-	/**
-	 * @var array These tables will be deleted in parent::tearDown
-	 */
-	protected $tablesUsed = [
-		'abuse_filter',
-		'abuse_filter_action',
-		'abuse_filter_history',
-		'abuse_filter_log',
-		'page',
-		'ipblocks',
-		'logging',
-		'change_tag',
-		'user',
-		'text',
-		'image',
-		'oldimage',
-	];
 
 	// phpcs:disable Generic.Files.LineLength
 	/** @var array Filters that may be created, their key is the ID. */
-	protected static $filters = [
+	private const FILTERS = [
 		1 => [
 			'af_pattern' => 'added_lines irlike "foo"',
 			'af_public_comments' => 'Mock filter for edit',
@@ -115,7 +101,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		2 => [
 			'af_pattern' => 'action = "move" & moved_to_title contains "test" & moved_to_title === moved_to_text',
 			'af_public_comments' => 'Mock filter for move',
-			'af_hidden' => 1,
+			'af_hidden' => Flags::FILTER_HIDDEN,
 			'actions' => [
 				'disallow' => [],
 				'block' => [
@@ -134,7 +120,8 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			]
 		],
 		5 => [
-			'af_pattern' => 'user_name == "FilteredUser"',
+			// XXX Need to hardcode UTSysop here because this is a constant
+			'af_pattern' => 'user_name == "UTSysop"',
 			'af_public_comments' => 'Mock filter',
 			'actions' => [
 				'tag' => [
@@ -146,7 +133,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		6 => [
 			'af_pattern' => 'edit_delta === 7',
 			'af_public_comments' => 'Mock filter with edit_delta',
-			'af_hidden' => 1,
+			'af_hidden' => Flags::FILTER_HIDDEN,
 			'af_global' => 1,
 			'actions' => [
 				'disallow' => [
@@ -176,7 +163,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		9 => [
 			'af_pattern' => 'new_size > old_size',
 			'af_public_comments' => 'Mock filter with size',
-			'af_hidden' => 1,
+			'af_hidden' => Flags::FILTER_HIDDEN,
 			'actions' => [
 				'disallow' => [],
 				'block' => [
@@ -189,7 +176,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		10 => [
 			'af_pattern' => '1 == 1',
 			'af_public_comments' => 'Mock throttled filter',
-			'af_hidden' => 1,
+			'af_hidden' => Flags::FILTER_HIDDEN,
 			'af_throttled' => 1,
 			'actions' => [
 				'tag' => [
@@ -250,7 +237,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		15 => [
 			'af_pattern' => 'action contains "createaccount"',
 			'af_public_comments' => 'Catch-all for account creations',
-			'af_hidden' => 1,
+			'af_hidden' => Flags::FILTER_HIDDEN,
 			'actions' => [
 				'disallow' => []
 			]
@@ -267,7 +254,8 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			]
 		],
 		19 => [
-			'af_pattern' => 'user_name === "FilteredUser"',
+			// XXX Need to hardcode UTSysop here because this is a constant
+			'af_pattern' => 'user_name === "UTSysop"',
 			'af_public_comments' => 'Another global filter',
 			'af_global' => 1,
 			'actions' => [
@@ -324,39 +312,21 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	// phpcs:enable Generic.Files.LineLength
 
 	/**
-	 * Add tables for global filters to the list of used tables
-	 *
-	 * @inheritDoc
-	 */
-	public function __construct( $name = null, array $data = [], $dataName = '' ) {
-		$prefixedTables = array_map(
-			static function ( $table ) {
-				return self::DB_EXTERNAL_PREFIX . $table;
-			},
-			self::$externalTables
-		);
-		$this->tablesUsed = array_merge( $this->tablesUsed, $prefixedTables );
-		parent::__construct( $name, $data, $dataName );
-	}
-
-	/**
 	 * @inheritDoc
 	 */
 	protected function setUp(): void {
 		parent::setUp();
 		// Ensure that our user is a sysop
-		$this->user = $this->getServiceContainer()->getUserFactory()->newFromName( 'FilteredUser' );
-		$this->user->addToDatabase();
-		$this->getServiceContainer()->getUserGroupManager()->addUserToGroup( $this->user, 'sysop' );
+		$this->user = $this->getTestSysop()->getUser();
 
 		// Pin time to avoid time shifts on relative block duration
 		ConvertibleTimestamp::setFakeTime( time() );
 
 		// Make sure that the config we're using is the one we're expecting
-		$this->setMwGlobals( [
+		$this->overrideConfigValues( [
 			// Exclude noisy creation log
-			'wgPageCreationLog' => false,
-			'wgAbuseFilterActions' => [
+			MainConfigNames::PageCreationLog => false,
+			'AbuseFilterActions' => [
 				'throttle' => true,
 				'warn' => true,
 				'disallow' => true,
@@ -366,7 +336,6 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				'degroup' => true,
 				'tag' => true
 			],
-			'wgMainCacheType' => 'hash',
 		] );
 	}
 
@@ -379,42 +348,39 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Creates new filters with the given ids, referred to self::$filters
+	 * Creates new filters with the given ids, referred to self::FILTERS
 	 *
 	 * @param int[] $ids IDs of the filters to create
-	 * @param bool $external Whether to create filters in the external table
 	 */
-	private function createFilters( $ids, $external = false ) {
+	private function createFilters( $ids ) {
 		global $wgAbuseFilterActions;
-		$tablePrefix = $external ? self::DB_EXTERNAL_PREFIX : '';
+
+		$dbw = $this->getDb();
 		$defaultRowSection = [
-			'af_user_text' => 'FilterTester',
-			'af_user' => 0,
-			'af_timestamp' => $this->db->timestamp(),
+			'af_actor' => 1,
+			'af_timestamp' => $dbw->timestamp(),
 			'af_group' => 'default',
 			'af_comments' => '',
 			'af_hit_count' => 0,
 			'af_enabled' => 1,
-			'af_hidden' => 0,
+			'af_hidden' => Flags::FILTER_PUBLIC,
 			'af_throttled' => 0,
 			'af_deleted' => 0,
 			'af_global' => 0
 		];
 
+		$filterRows = [];
+		$actionsRows = [];
 		foreach ( $ids as $id ) {
-			$filter = self::$filters[$id] + $defaultRowSection;
+			$filter = self::FILTERS[$id] + $defaultRowSection;
 			$actions = $filter['actions'];
 			unset( $filter['actions'] );
 			$filter[ 'af_actions' ] = implode( ',', array_keys( $actions ) );
 			$filter[ 'af_id' ] = $id;
 
-			$this->db->insert(
-				"{$tablePrefix}abuse_filter",
-				$filter,
-				__METHOD__
-			);
+			ksort( $filter );
+			$filterRows[] = $filter;
 
-			$actionsRows = [];
 			foreach ( array_filter( $wgAbuseFilterActions ) as $action => $_ ) {
 				if ( isset( $actions[$action] ) ) {
 					$parameters = $actions[$action];
@@ -427,12 +393,19 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 					$actionsRows[] = $thisRow;
 				}
 			}
+		}
 
-			$this->db->insert(
-				"{$tablePrefix}abuse_filter_action",
-				$actionsRows,
-				__METHOD__
-			);
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'abuse_filter' )
+			->rows( $filterRows )
+			->caller( __METHOD__ )
+			->execute();
+		if ( $actionsRows ) {
+			$dbw->newInsertQueryBuilder()
+				->insertInto( 'abuse_filter_action' )
+				->rows( $actionsRows )
+				->caller( __METHOD__ )
+				->execute();
 		}
 	}
 
@@ -444,8 +417,9 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function stashEdit( Title $title, Content $content, string $summary ) {
 		$services = $this->getServiceContainer();
+		$pageUpdater = $services->getWikiPageFactory()->newFromTitle( $title )->newPageUpdater( $this->user );
 		return $services->getPageEditStash()->parseAndCache(
-			$services->getWikiPageFactory()->newFromTitle( $title ),
+			$pageUpdater,
 			$content,
 			$this->user,
 			$summary
@@ -471,7 +445,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				__METHOD__ . ' page creation'
 			);
 			if ( !$status->isGood() ) {
-				throw new Exception( "Could not create test page. $status" );
+				throw new RuntimeException( "Could not create test page. $status" );
 			}
 			$page->clear();
 			$title->resetArticleID( -1 );
@@ -487,7 +461,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			$stashContent = $stashText instanceof Content ? $stashText : new WikitextContent( $stashText );
 			$stashResult = $this->stashEdit( $title, $stashContent, $summary );
 			if ( $stashResult !== PageEditStash::ERROR_NONE ) {
-				throw new MWException( "The edit cannot be stashed, got the following error: $stashResult" );
+				throw new RuntimeException( "The edit cannot be stashed, got the following error: $stashResult" );
 			}
 		}
 
@@ -503,7 +477,9 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			$services->getStatsdDataFactory(),
 			AbuseFilterServices::getFilterRunnerFactory(),
 			AbuseFilterServices::getVariableGeneratorFactory(),
-			AbuseFilterServices::getEditRevUpdater()
+			AbuseFilterServices::getEditRevUpdater(),
+			AbuseFilterServices::getBlockedDomainFilter(),
+			$services->getPermissionManager()
 		);
 		$hooksHandler->onEditFilterMergedContent( $context, $content, $status, $summary,
 			$this->user, false );
@@ -606,30 +582,31 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 * @return string[] The applied tags
 	 */
 	private function getActionTags( $actionParams ) {
+		$dbw = $this->getDb();
 		$title = Title::newFromTextThrow( $actionParams['target'] );
+		$store = $this->getServiceContainer()->getChangeTagsStore();
 		if ( $actionParams['action'] === 'edit' || $actionParams['action'] === 'stashedit' ) {
-			return ChangeTags::getTags( $this->db, null, $title->getLatestRevID() );
+			return $store->getTags( $dbw, null, $title->getLatestRevID() );
 		}
 
 		$logType = $actionParams['action'] === 'createaccount' ? 'newusers' : $actionParams['action'];
 		$logAction = $logType === 'newusers' ? 'create2' : $logType;
-		$id = $this->db->selectField(
-			'logging',
-			'log_id',
-			[
+		$id = $dbw->newSelectQueryBuilder()
+			->select( 'log_id' )
+			->from( 'logging' )
+			->where( [
 				'log_namespace' => $title->getNamespace(),
 				'log_title' => $title->getDBkey(),
 				'log_type' => $logType,
 				'log_action' => $logAction
-			],
-			__METHOD__,
-			[],
-			[ 'ORDER BY' => 'log_id DESC' ]
-		);
+			] )
+			->orderBy( 'log_id', SelectQueryBuilder::SORT_DESC )
+			->caller( __METHOD__ )
+			->fetchField();
 		if ( !$id ) {
 			$this->fail( 'Could not find the action in the logging table.' );
 		}
-		return ChangeTags::getTags( $this->db, null, null, (int)$id );
+		return $store->getTags( $dbw, null, null, (int)$id );
 	}
 
 	/**
@@ -646,7 +623,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		$testErrorMessage = false;
 		foreach ( $expectedConsequences as $consequence => $ids ) {
 			foreach ( $ids as $id ) {
-				$params = self::$filters[$id]['actions'][$consequence];
+				$params = self::FILTERS[$id]['actions'][$consequence];
 				switch ( $consequence ) {
 					case 'warn':
 						// Aborts the hook with the warning message as error.
@@ -730,15 +707,10 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			}
 		}
 
-		$errors = $result->getErrors();
-
 		$actual = [];
-		foreach ( $errors as $error ) {
-			// We don't use any of the "API" stuff in ApiMessage here, but this is the most
-			// convenient way to get a Message from a StatusValue error structure.
-			$msg = ApiMessage::create( $error )->getKey();
-			if ( strpos( $msg, 'abusefilter' ) !== false ) {
-				$actual[] = $msg;
+		foreach ( $result->getMessages() as $msg ) {
+			if ( strpos( $msg->getKey(), 'abusefilter' ) !== false ) {
+				$actual[] = $msg->getKey();
 			}
 		}
 
@@ -766,16 +738,16 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			}
 			$title = Title::newFromTextThrow( $actionParams['target'] );
 
-			$row = $this->db->selectRow(
-				'abuse_filter_log',
-				'*',
-				[
+			$row = $this->getDb()->newSelectQueryBuilder()
+				->select( '*' )
+				->from( 'abuse_filter_log' )
+				->where( [
 					'afl_filter_id' => $filter,
 					'afl_global' => 0,
-				],
-				__METHOD__,
-				[ 'ORDER BY' => 'afl_id DESC' ]
-			);
+				] )
+				->orderBy( 'afl_id', SelectQueryBuilder::SORT_DESC )
+				->caller( __METHOD__ )
+				->fetchRow();
 			$this->assertNotFalse( $row );
 
 			$dumpStr = FormatJson::encode( $row );
@@ -785,7 +757,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				$this->assertSame( $actionParams['username'], $row->afl_user_text, $dumpStr );
 				$this->assertSame( -1, (int)$row->afl_namespace, $dumpStr );
 			} else {
-				$this->assertSame( 'FilteredUser', $row->afl_user_text, $dumpStr );
+				$this->assertSame( $this->user->getName(), $row->afl_user_text, $dumpStr );
 				$this->assertSame( $title->getNamespace(), (int)$row->afl_namespace, $dumpStr );
 				$this->assertSame( $title->getDBkey(), $row->afl_title, $dumpStr );
 			}
@@ -817,7 +789,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	public function testFilterConsequences( $createIds, $actionParams, $expectedConsequences ) {
 		$this->createFilters( $createIds );
 		$result = $this->doAction( $actionParams );
-		list( $expected, $actual ) = $this->checkConsequences( $result, $actionParams, $expectedConsequences );
+		[ $expected, $actual ] = $this->checkConsequences( $result, $actionParams, $expectedConsequences );
 
 		$this->assertEquals(
 			$expected,
@@ -830,7 +802,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Data provider for testFilterConsequences. For every test case, we pass
-	 *   - an array with the IDs of the filters to be created (listed in self::$filters),
+	 *   - an array with the IDs of the filters to be created (listed in self::FILTERS),
 	 *   - an array with details of the action to execute in order to trigger the filters,
 	 *   - an array of expected consequences of the form
 	 *       [ 'consequence name' => [ IDs of the filter to take its parameters from ] ]
@@ -838,7 +810,9 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideFilters() {
+	public static function provideFilters() {
+		// XXX Need to hardcode the username of $this->user here.
+		$username = 'UTSysop';
 		return [
 			'Basic test for "edit" action' => [
 				[ 1, 2 ],
@@ -890,7 +864,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				[ 5 ],
 				[
 					'action' => 'edit',
-					'target' => 'User:FilteredUser',
+					'target' => "User:$username",
 					'oldText' => 'Hey.',
 					'newText' => 'I am a very nice user, really!',
 					'summary' => ''
@@ -934,7 +908,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 				[ 1, 3, 7, 12 ],
 				[
 					'action' => 'edit',
-					'target' => 'User:FilteredUser',
+					'target' => "User:$username",
 					'oldText' => '',
 					'newText' => 'A couple of lines about me...',
 					'summary' => 'My user page'
@@ -1038,7 +1012,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		$results = $this->doActions( $actionsParams );
 		$res = $this->checkThrottleConsequence( $results );
 		$lastParams = array_pop( $actionsParams );
-		list( $expected, $actual ) = $this->checkConsequences( $res, $lastParams, $consequences );
+		[ $expected, $actual ] = $this->checkConsequences( $res, $lastParams, $consequences );
 
 		$this->assertEquals(
 			$expected,
@@ -1051,7 +1025,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Data provider for testThrottle. For every test case, we pass
-	 *   - an array with the IDs of the filters to be created (listed in self::$filters),
+	 *   - an array with the IDs of the filters to be created (listed in self::FILTERS),
 	 *   - an array of array, where every sub-array holds the details of the action to execute in
 	 *       order to trigger the filters, each one like in self::provideFilters
 	 *   - an array of expected consequences for the last action (i.e. after throttling) of the form
@@ -1061,7 +1035,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideThrottleFilters() {
+	public static function provideThrottleFilters() {
 		return [
 			'Basic test for throttling edits' => [
 				[ 11 ],
@@ -1146,9 +1120,9 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	public function testWarn( $createIds, $actionParams, $warnIDs, $consequences ) {
 		$this->createFilters( $createIds );
 		$params = [ $actionParams, $actionParams ];
-		list( $warnedStatus, $finalStatus ) = $this->doActions( $params );
+		[ $warnedStatus, $finalStatus ] = $this->doActions( $params );
 
-		list( $expectedWarn, $actualWarn ) = $this->checkConsequences(
+		[ $expectedWarn, $actualWarn ] = $this->checkConsequences(
 			$warnedStatus,
 			$actionParams,
 			[ 'warn' => $warnIDs ]
@@ -1160,7 +1134,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			'The error messages for the first action do not match.'
 		);
 
-		list( $expectedFinal, $actualFinal ) = $this->checkConsequences(
+		[ $expectedFinal, $actualFinal ] = $this->checkConsequences(
 			$finalStatus,
 			$actionParams,
 			$consequences
@@ -1177,7 +1151,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * Data provider for testWarn. For every test case, we pass
-	 *   - an array with the IDs of the filters to be created (listed in self::$filters),
+	 *   - an array with the IDs of the filters to be created (listed in self::FILTERS),
 	 *   - an array with action parameters, like in self::provideFilters. This will be executed twice.
 	 *   - an array of IDs of the filter which should give a warning
 	 *   - an array of expected consequences for the last action (i.e. after throttling) of the form
@@ -1186,7 +1160,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideWarnFilters() {
+	public static function provideWarnFilters() {
 		return [
 			'Basic test for warning and then tag' => [
 				[ 1 ],
@@ -1246,15 +1220,14 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		$this->doAction( $actionParams );
 
 		// We just take a dump from a single filters, as they're all identical for the same action
-		$dumpID = $this->db->selectField(
-			'abuse_filter_log',
-			'afl_var_dump',
-			'',
-			__METHOD__,
-			[ 'ORDER BY' => 'afl_timestamp DESC' ]
-		);
+		$row = $this->getDb()->newSelectQueryBuilder()
+			->select( 'afl_var_dump, afl_ip' )
+			->from( 'abuse_filter_log' )
+			->orderBy( 'afl_timestamp', SelectQueryBuilder::SORT_DESC )
+			->caller( __METHOD__ )
+			->fetchRow();
 
-		$vars = AbuseFilterServices::getVariablesBlobStore()->loadVarDump( $dumpID )->getVars();
+		$vars = AbuseFilterServices::getVariablesBlobStore()->loadVarDump( $row )->getVars();
 
 		$interestingVars = array_intersect_key( $vars, array_fill_keys( $usedVars, true ) );
 
@@ -1277,7 +1250,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideFiltersAndVariables() {
+	public static function provideFiltersAndVariables() {
 		return [
 			[
 				[ 1, 2 ],
@@ -1382,7 +1355,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			$this->fail( "Did not $type the cache as expected for a stashed edit." );
 		}
 
-		list( $expected, $actual ) = $this->checkConsequences( $result, $actionParams, $consequences );
+		[ $expected, $actual ] = $this->checkConsequences( $result, $actionParams, $consequences );
 
 		$this->assertEquals(
 			$expected,
@@ -1393,12 +1366,9 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		$this->assertAbuseLog( $actionParams, $consequences );
 	}
 
-	/**
-	 * Data provider for testStashedEdit
-	 *
-	 * @return array
-	 */
-	public function provideStashedEdits() {
+	public static function provideStashedEdits() {
+		// XXX Need to hardcode the username of $this->user here.
+		$username = 'UTSysop';
 		$sets = [
 			[
 				[ 1, 2 ],
@@ -1413,7 +1383,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			[
 				[ 5 ],
 				[
-					'target' => 'User:FilteredUser',
+					'target' => "User:$username",
 					'oldText' => 'Hey.',
 					'newText' => 'I am a very nice user, really!',
 					'summary' => ''
@@ -1463,7 +1433,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			[
 				[ 1, 3, 7, 12 ],
 				[
-					'target' => 'User:FilteredUser',
+					'target' => "User:$username",
 					'oldText' => '',
 					'newText' => 'A couple of lines about me...',
 					'summary' => 'My user page'
@@ -1492,20 +1462,18 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 			],
 		];
 
-		$finalSets = [];
 		foreach ( $sets as $set ) {
 			// Test both successfully saving a stashed edit and stashing the edit but re-executing filters
-			$finalSets[] = array_merge( [ 'miss' ], $set );
-			$finalSets[] = array_merge( [ 'hit' ], $set );
+			yield [ 'miss', ...$set ];
+			yield [ 'hit', ...$set ];
 		}
-		return $finalSets;
 	}
 
 	/**
 	 * Tests for global filters, defined on a central wiki and executed on another (e.g. a filter
-	 *   defined on meta but triggered on another wiki using meta's global filters).
-	 *   We emulate an external database by using different tables prefixed with
-	 *   self::DB_EXTERNAL_PREFIX
+	 * defined on meta but triggered on another wiki using meta's global filters).
+	 * For simplicity, this test creates filters in the local database but makes the extension believe that it's
+	 * actually external.
 	 *
 	 * @param int[] $createIds IDs of the filters to create
 	 * @param array $actionParams Details of the action we need to execute to trigger filters
@@ -1514,23 +1482,18 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Extension\AbuseFilter\AbuseLogger
 	 */
 	public function testGlobalFilters( $createIds, $actionParams, $consequences ) {
-		// cannot access temporary tables of other sessions
-		$this->markTestSkippedIfDbType( 'postgres' );
-		// Read from wrong table: unittest_external_abuse_filter
-		$this->markTestSkippedIfDbType( 'sqlite' );
-
-		$this->setMwGlobals( [
-			'wgAbuseFilterCentralDB' => $this->db->getDBname() . '-' . $this->dbPrefix() .
-				self::DB_EXTERNAL_PREFIX,
-			'wgAbuseFilterIsCentral' => false,
+		$this->overrideConfigValues( [
+			'AbuseFilterCentralDB' => WikiMap::getCurrentWikiId(),
+			'AbuseFilterIsCentral' => false,
 		] );
-		$this->createFilters( $createIds, true );
+		$this->createFilters( $createIds );
 
+		AbuseFilterServices::getFilterLookup( $this->getServiceContainer() )->hideLocalFiltersForTesting();
 		$result = $this->doAction( $actionParams );
 
-		list( $expected, $actual ) = $this->checkConsequences( $result, $actionParams, $consequences );
+		[ $expected, $actual ] = $this->checkConsequences( $result, $actionParams, $consequences );
 
-		// First check that the filter work as expected
+		// First check that the filters work as expected
 		$this->assertEquals(
 			$expected,
 			$actual,
@@ -1538,12 +1501,13 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		);
 
 		// Check that the hits were logged on the "external" DB
-		$loggedFilters = $this->db->selectFieldValues(
-			self::DB_EXTERNAL_PREFIX . 'abuse_filter_log',
-			'afl_filter_id',
-			[ 'afl_wiki IS NOT NULL' ],
-			__METHOD__
-		);
+		$dbr = $this->getDb();
+		$loggedFilters = $dbr->newSelectQueryBuilder()
+			->select( 'afl_filter_id' )
+			->from( 'abuse_filter_log' )
+			->where( $dbr->expr( 'afl_wiki', '!=', null ) )
+			->caller( __METHOD__ )
+			->fetchFieldValues();
 
 		// Use assertEquals because selectFieldValues returns an array of strings
 		$this->assertEquals(
@@ -1558,7 +1522,7 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideGlobalFilters() {
+	public static function provideGlobalFilters() {
 		return [
 			[
 				[ 18 ],
@@ -1634,10 +1598,10 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		$this->createFilters( [ 24 ] );
 
 		$targetTitle = Title::makeTitle( NS_MAIN, 'TestRevIdSet' );
-		$startingRevId = $targetTitle->getLatestRevID( Title::READ_LATEST );
+		$startingRevId = $targetTitle->getLatestRevID( IDBAccessObject::READ_LATEST );
 
 		$this->doEdit( $targetTitle, 'Old text', 'New text', 'Summary' );
-		$latestRevId = $targetTitle->getLatestRevID( Title::READ_LATEST );
+		$latestRevId = $targetTitle->getLatestRevID( IDBAccessObject::READ_LATEST );
 
 		$this->assertNotSame(
 			$startingRevId,
@@ -1648,13 +1612,13 @@ class AbuseFilterConsequencesTest extends MediaWikiIntegrationTestCase {
 		// Check the database for the filter hit
 		// We don't have an easy way to retrieve the afl_id for this relevant hit,
 		// so instead find the latest row for this filter
-		$filterHit = $this->db->selectRow(
-			'abuse_filter_log',
-			'*',
-			[ 'afl_filter_id' => 24 ],
-			__METHOD__,
-			[ 'ORDER BY' => 'afl_id DESC' ]
-		);
+		$filterHit = $this->getDb()->newSelectQueryBuilder()
+			->select( '*' )
+			->from( 'abuse_filter_log' )
+			->where( [ 'afl_filter_id' => 24 ] )
+			->orderBy( 'afl_id', SelectQueryBuilder::SORT_DESC )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		// Helpful for debugging
 		$filterHitStr = FormatJson::encode( $filterHit );

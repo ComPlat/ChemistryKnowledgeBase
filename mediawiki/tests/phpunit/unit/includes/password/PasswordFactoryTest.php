@@ -1,9 +1,15 @@
 <?php
 
+use MediaWiki\Config\HashConfig;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Password\InvalidPassword;
+use MediaWiki\Password\MWOldPassword;
+use MediaWiki\Password\MWSaltedPassword;
+use MediaWiki\Password\PasswordError;
+use MediaWiki\Password\PasswordFactory;
 
 /**
- * @covers PasswordFactory
+ * @covers \MediaWiki\Password\PasswordFactory
  */
 class PasswordFactoryTest extends MediaWikiUnitTestCase {
 	public function testConstruct() {
@@ -45,6 +51,7 @@ class PasswordFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testInit() {
+		$this->expectDeprecationAndContinue( '/deprecated in MediaWiki 1.32/' );
 		$config = new HashConfig( [
 			MainConfigNames::PasswordConfig => [
 				'foo' => [ 'class' => InvalidPassword::class ],
@@ -64,7 +71,7 @@ class PasswordFactoryTest extends MediaWikiUnitTestCase {
 		$this->assertInstanceOf( MWSaltedPassword::class, $pw );
 	}
 
-	public function provideNewFromCiphertextErrors() {
+	public static function provideNewFromCiphertextErrors() {
 		return [ [ 'blah' ], [ ':blah:' ] ];
 	}
 

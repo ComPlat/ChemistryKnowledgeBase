@@ -4,6 +4,7 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -20,14 +21,7 @@ class PFTokensInput extends PFFormInput {
 	}
 
 	public static function getOtherPropTypesHandled() {
-		$otherPropTypesHandled = [ '_wpg' ];
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			$otherPropTypesHandled[] = '_str';
-		} else {
-			$otherPropTypesHandled[] = '_txt';
-		}
-		return $otherPropTypesHandled;
+		return [ '_txt', '_wpg' ];
 	}
 
 	public static function getDefaultPropTypeLists() {
@@ -37,12 +31,7 @@ class PFTokensInput extends PFFormInput {
 	}
 
 	public static function getOtherPropTypeListsHandled() {
-		if ( defined( 'SMWDataItem::TYPE_STRING' ) ) {
-			// SMW < 1.9
-			return [ '_str' ];
-		} else {
-			return [ '_txt' ];
-		}
+		return [ '_txt' ];
 	}
 
 	public static function getDefaultCargoTypes() {
@@ -107,7 +96,7 @@ class PFTokensInput extends PFFormInput {
 				$delimiter = ',';
 			}
 		} else {
-			list( $autocompleteSettings, $remoteDataType, $delimiter ) = PFValuesUtils::setAutocompleteValues( $other_args, true );
+			[ $autocompleteSettings, $remoteDataType, $delimiter ] = PFValuesUtils::setAutocompleteValues( $other_args, true );
 		}
 
 		if ( is_array( $cur_value ) ) {
@@ -183,26 +172,9 @@ class PFTokensInput extends PFFormInput {
 			}
 		}
 
-		foreach ( $possible_values as $possible_value ) {
-			if (
-				array_key_exists( 'value_labels', $other_args ) &&
-				is_array( $other_args['value_labels'] ) &&
-				array_key_exists( $possible_value, $other_args['value_labels'] )
-			) {
-				$optionLabel = $other_args['value_labels'][$possible_value];
-			} else {
-				$optionLabel = $possible_value;
-			}
-			$optionAttrs = [ 'value' => $possible_value ];
-			if ( in_array( $possible_value, $cur_values ) ) {
-				$optionAttrs['selected'] = 'selected';
-			}
-			$optionsText .= Html::element( 'option', $optionAttrs, $optionLabel );
-		}
 		foreach ( $cur_values as $current_value ) {
-			if ( !in_array( $current_value, $possible_values ) && $current_value !== '' ) {
-				$optionAttrs = [ 'value' => $current_value ];
-				$optionAttrs['selected'] = 'selected';
+			if ( $current_value !== '' ) {
+				$optionAttrs = [ 'value' => $current_value, 'selected' => 'selected' ];
 				$optionLabel = $current_value;
 				$optionsText .= Html::element( 'option', $optionAttrs, $optionLabel );
 			}

@@ -4,16 +4,16 @@
 [#2974](https://github.com/SemanticMediaWiki/SemanticMediaWiki/issues/2974) Creating subobjects using the `PageContentSaveComplete` hook
 
 ```php
-use Hooks;
+use MediaWiki\MediaWikiServices;
 use ParserOutput;
 use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\DataModel\ContainerSemanticData;
 use SMW\DataValueFactory;
-use SMWContainerSemanticData as ContainerSemanticData;
 use SMWDIContainer as DIContainer;
 use SMW\DIWikiPage;
 use SMW\DIProperty;
 
-Hooks::register( 'PageContentSaveComplete', function( $wikiPage, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $revision, $status, $baseRevId, $undidRevId ) {
+MediaWikiServices::getInstance()->getHookContainer()->register( 'PageContentSaveComplete', function( $wikiPage, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $revision, $status, $baseRevId, $undidRevId ) {
 
         $applicationFactory = ApplicationFactory::getInstance();
         $mwCollaboratorFactory = $applicationFactory->newMwCollaboratorFactory();

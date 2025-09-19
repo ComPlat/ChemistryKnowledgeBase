@@ -71,8 +71,6 @@ Plugin output
 The plugin will output various issue types depending on what it
 detects. The issue types it outputs are:
 
-* `SecurityCheckMulti` - For when there are multiple types of security issues
-  involved
 * `SecurityCheck-XSS`
 * `SecurityCheck-SQLInjection`
 * `SecurityCheck-ShellInjection`
@@ -84,7 +82,6 @@ detects. The issue types it outputs are:
 * `SecurityCheck-RCE` - Remote code execution, e.g. `eval( $_GET['foo'] )`
 * `SecurityCheck-PathTraversal` - Path traversal, e.g. `require $_GET['foo']`
 * `SecurityCheck-ReDoS` - Regular expression denial of service (ReDoS), e.g. `preg_match( $_GET['foo'], 'foo')`
-* `SecurityCheck-OTHER` - Issues that don't fit another category
 * `SecurityCheck-LikelyFalsePositive` - A potential issue, but probably not.
   Mostly happens when the plugin gets confused.
 
@@ -177,6 +174,8 @@ function escapeHtml( $html ) {
 }
 ```
 
+Methods also inherit these directives from abstract definitions in ancestor interfaces, but not from concrete implementations in ancestor classes.
+
 Taint directives are prefixed with either `@param-taint $parametername` or `@return-taint`. If there are multiple directives they can be separated by a comma. `@param-taint` is used for either marking how taint is transmitted from the parameter to the methods return value, or when used with `exec_` directives, to mark places where parameters are outputted/executed. `@return-taint` is used to adjust the return value's taint regardless of the input parameters.
 
 The type of directives include:
@@ -187,13 +186,12 @@ The type of directives include:
 * `array_ok` - special purpose flag to say ignore tainted arguments if they are in an array.
 * `allow_override` - Special purpose flag to specify that that taint annotation should be overridden by phan-taint-check if it can detect a specific taint.
 
-The value for `$TYPE` can be one of `htmlnoent`, `html`, `sql`, `shell`, `serialize`, `custom1`, `custom2`, `code`, `path`, `regex`, `misc`, `sql_numkey`, `escaped`, `none`, `tainted`, `raw_param`. Most of these are taint categories, except:
+The value for `$TYPE` can be one of `htmlnoent`, `html`, `sql`, `shell`, `serialize`, `custom1`, `custom2`, `code`, `path`, `regex`, `sql_numkey`, `escaped`, `none`, `tainted`. Most of these are taint categories, except:
 * `htmlnoent` - like `html` but disable double escaping detection that gets used with `html`. When `escapes_html` is specified, escaped automatically gets added to `@return`, and `exec_escaped` is added to `@param`. Similarly `onlysafefor_html` is equivalent to `onlysafefor_htmlnoent,escaped`.
 * `none` - Means no taint
 * `tainted` - Means all taint categories except special categories (equivalent to `SecurityCheckPlugin::YES_TAINT`)
 * `escaped` - Is used to mean the value is already escaped (To track double escaping)
 * `sql_numkey` - Is fairly special purpose for MediaWiki. It ignores taint in arrays if they are for associative keys.
-* `raw_param` - To be used in conjunction with exec taint types. Means that the parameter's value is considered raw, hence all escaping should have already taken place, because it's not meant to happen afterwards. It behaves the same as normal exec, but it isn't backpropagated.
 
 The default value for `@param-taint` is `tainted` if it's a string (or other dangerous type), and `none` if it's something like an integer. The default value for `@return-taint` is `allow_override` (Which is equivalent to `none` unless something better can be autodetected).
 

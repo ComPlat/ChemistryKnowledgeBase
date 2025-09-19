@@ -19,6 +19,7 @@ class GeneralTools {
     }
 
     public static function roundNumber($number, $digits = 3) {
+        if (trim($number) === '') return '';
         if (abs($number) < 0.00000000001) {
             return 0;
         }

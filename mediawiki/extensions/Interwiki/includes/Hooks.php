@@ -2,12 +2,11 @@
 
 namespace MediaWiki\Extension\Interwiki;
 
-use Hooks as MWHooks;
-use Language;
 use MediaWiki\MediaWikiServices;
-use WikiMap;
+use MediaWiki\Permissions\Hook\UserGetAllRightsHook;
+use MediaWiki\WikiMap\WikiMap;
 
-class Hooks {
+class Hooks implements UserGetAllRightsHook {
 	/** @var bool */
 	private static $shouldSkipIWCheck = false;
 	/** @var bool */
@@ -42,7 +41,7 @@ class Hooks {
 			return;
 		}
 		// This will trigger a deprecation warning in MW 1.36+
-		MWHooks::register(
+		MediaWikiServices::getInstance()->getHookContainer()->register(
 			'InterwikiLoadPrefix', 'MediaWiki\Extension\Interwiki\Hooks::onInterwikiLoadPrefix'
 		);
 	}
@@ -50,7 +49,7 @@ class Hooks {
 	/**
 	 * @param array &$rights
 	 */
-	public static function onUserGetAllRights( array &$rights ) {
+	public function onUserGetAllRights( &$rights ) {
 		global $wgInterwikiViewOnly;
 		if ( !$wgInterwikiViewOnly ) {
 			// New user right, required to modify the interwiki table through Special:Interwiki
@@ -60,23 +59,27 @@ class Hooks {
 
 	public static function onInterwikiLoadPrefix( $prefix, &$iwData ) {
 		global $wgInterwikiCentralDB, $wgInterwikiCentralInterlanguageDB;
-		$isInterlanguageLink = Language::fetchLanguageName( $prefix );
+
+		$services = MediaWikiServices::getInstance();
+		$connectionProvider = $services->getConnectionProvider();
+		$isInterlanguageLink = $services->getLanguageNameUtils()->getLanguageName( $prefix );
 		if ( !$isInterlanguageLink && !self::$shouldSkipIWCheck ) {
 			// Check if prefix exists locally and skip
-			$lookup = MediaWikiServices::getInstance()->getInterwikiLookup();
+			$lookup = $services->getInterwikiLookup();
 			foreach ( $lookup->getAllPrefixes( null ) as $id => $localPrefixInfo ) {
 				if ( $prefix === $localPrefixInfo['iw_prefix'] ) {
 					return true;
 				}
 			}
-			// @phan-suppress-next-line PhanTypeMismatchArgument
-			$dbr = wfGetDB( DB_REPLICA, [], $wgInterwikiCentralDB );
-			$res = $dbr->selectRow(
-				'interwiki',
-				'*',
-				[ 'iw_prefix' => $prefix ],
-				__METHOD__
-			);
+
+			$dbrCentralDB = $connectionProvider->getReplicaDatabase( $wgInterwikiCentralDB ?? false );
+
+			$res = $dbrCentralDB->newSelectQueryBuilder()
+				->select( '*' )
+				->from( 'interwiki' )
+				->where( [ 'iw_prefix' => $prefix ] )
+				->caller( __METHOD__ )
+				->fetchRow();
 			if ( !$res ) {
 				return true;
 			}
@@ -86,14 +89,14 @@ class Hooks {
 			return false;
 		} elseif ( $isInterlanguageLink && !self::$shouldSkipILCheck ) {
 			// Global interlanguage link? Whoo!
-			// @phan-suppress-next-line PhanTypeMismatchArgument
-			$dbr = wfGetDB( DB_REPLICA, [], $wgInterwikiCentralInterlanguageDB );
-			$res = $dbr->selectRow(
-				'interwiki',
-				'*',
-				[ 'iw_prefix' => $prefix ],
-				__METHOD__
-			);
+			$dbrCentralLangDB = $connectionProvider->getReplicaDatabase( $wgInterwikiCentralInterlanguageDB ?? false );
+
+			$res = $dbrCentralLangDB->newSelectQueryBuilder()
+				->select( '*' )
+				->from( 'interwiki' )
+				->where( [ 'iw_prefix' => $prefix ] )
+				->caller( __METHOD__ )
+				->fetchRow();
 			if ( !$res ) {
 				return false;
 			}

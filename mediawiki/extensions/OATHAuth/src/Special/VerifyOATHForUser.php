@@ -2,26 +2,26 @@
 
 namespace MediaWiki\Extension\OATHAuth\Special;
 
-use ConfigException;
-use FormSpecialPage;
-use HTMLForm;
 use ManualLogEntry;
-use MediaWiki\Extension\OATHAuth\IModule;
+use MediaWiki\CheckUser\Hooks as CheckUserHooks;
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
+use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MWException;
+use UserBlockedError;
+use UserNotLoggedIn;
 
 class VerifyOATHForUser extends FormSpecialPage {
 
 	private const OATHAUTH_IS_ENABLED = 'enabled';
 	private const OATHAUTH_NOT_ENABLED = 'disabled';
-
-	/** @var OATHUserRepository */
-	private $userRepo;
-
-	/** @var UserFactory */
-	private $userFactory;
+	private OATHUserRepository $userRepo;
+	private UserFactory $userFactory;
 
 	/** @var string */
 	private $enabledStatus;
@@ -34,9 +34,18 @@ class VerifyOATHForUser extends FormSpecialPage {
 	 * @param UserFactory $userFactory
 	 */
 	public function __construct( $userRepo, $userFactory ) {
+		// messages used: verifyoathforuser (display "name" on Special:SpecialPages),
+		// right-oathauth-verify-user, action-oathauth-verify-user
 		parent::__construct( 'VerifyOATHForUser', 'oathauth-verify-user' );
 		$this->userRepo = $userRepo;
 		$this->userFactory = $userFactory;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getGroupName() {
+		return 'users';
 	}
 
 	public function doesWrites() {
@@ -55,7 +64,7 @@ class VerifyOATHForUser extends FormSpecialPage {
 	 */
 	public function alterForm( HTMLForm $form ) {
 		$form->setMessagePrefix( 'oathauth' );
-		$form->getOutput()->setPageTitle( $this->msg( 'oathauth-verify-for-user' ) );
+		$form->getOutput()->setPageTitleMsg( $this->msg( 'oathauth-verify-for-user' ) );
 	}
 
 	/**
@@ -70,6 +79,17 @@ class VerifyOATHForUser extends FormSpecialPage {
 	 */
 	public function requiresUnblock() {
 		return true;
+	}
+
+	/**
+	 * @param User $user
+	 * @throws UserBlockedError
+	 * @throws UserNotLoggedIn
+	 */
+	protected function checkExecutePermissions( User $user ) {
+		$this->requireNamedUser();
+
+		parent::checkExecutePermissions( $user );
 	}
 
 	/**
@@ -116,21 +136,20 @@ class VerifyOATHForUser extends FormSpecialPage {
 		}
 		$oathUser = $this->userRepo->findByUser( $user );
 
-		if ( !( $oathUser->getModule() instanceof IModule ) ||
-			!$oathUser->getModule()->isEnabled( $oathUser ) ) {
-			$result = self::OATHAUTH_NOT_ENABLED;
-		} else {
-			$result = self::OATHAUTH_IS_ENABLED;
-		}
+		$this->enabledStatus = $oathUser->isTwoFactorAuthEnabled()
+			? self::OATHAUTH_IS_ENABLED
+			: self::OATHAUTH_NOT_ENABLED;
 
-		$this->enabledStatus = $result;
-
-		// message used: logentry-oath-verify
+		// messages used: logentry-oath-verify, log-action-oath-verify
 		$logEntry = new ManualLogEntry( 'oath', 'verify' );
 		$logEntry->setPerformer( $this->getUser() );
 		$logEntry->setTarget( $user->getUserPage() );
 		$logEntry->setComment( $formData['reason'] );
 		$logEntry->insert();
+
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) ) {
+			CheckUserHooks::updateCheckUserData( $logEntry->getRecentChange() );
+		}
 
 		LoggerFactory::getInstance( 'authentication' )->info(
 			'OATHAuth status checked for {usertarget} by {user} from {clientip}', [

@@ -23,7 +23,7 @@ class UpdateUserOfWiki extends SimpleHandler {
             return $res;
         }
         $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-        $db = $lb->getConnection(DB_MASTER);
+        $db = $lb->getConnection(DB_PRIMARY);
         $userObjects = array_map(function($e) { return User::newFromName($e);}, $users);
         $wikiRepository = new WikiRepository($db);
         $wikiRepository->addUserToWiki($userObjects, $params['wikiId'], WikiRepository::USER);

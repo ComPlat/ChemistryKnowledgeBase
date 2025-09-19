@@ -4,20 +4,19 @@
  */
 'use strict';
 
-var core, debugMode,
-	// config contains:
-	// - baseUrl: corresponds to the $wgEventLoggingBaseUri configuration in PHP.
-	//            If set to false (default), then mw.eventLog.logEvent will not log events.
-	// - serviceUri: corresponds to $wgEventLoggingServiceUri configuration in PHP.
-	//               If set to false (default), then mw.eventLog.submit will not log events.
-	// - schemasInfo: Object mapping schema names to revision IDs or $schema URIs
-	// - streamConfigs: Object mapping stream name to stream config (sampling rate, etc.)
-	config = require( './data.json' ),
-	BackgroundQueue = require( './BackgroundQueue.js' ),
-	queue = ( new BackgroundQueue( config.queueLingerSeconds ) );
+// config contains:
+// - baseUrl: corresponds to the $wgEventLoggingBaseUri configuration in PHP.
+//            If set to false (default), then mw.eventLog.logEvent will not log events.
+// - serviceUri: corresponds to $wgEventLoggingServiceUri configuration in PHP.
+//               If set to false (default), then mw.eventLog.submit will not log events.
+// - schemasInfo: Object mapping schema names to revision IDs or $schema URIs
+// - streamConfigs: Object mapping stream name to stream config (sampling rate, etc.)
+let config = require( './data.json' );
+const BackgroundQueue = require( './BackgroundQueue.js' );
+const queue = ( new BackgroundQueue( config.queueLingerSeconds ) );
 
 // Support both 1 or "1" (T54542)
-debugMode = Number( mw.user.options.get( 'eventlogging-display-web' ) ) === 1 ||
+const debugMode = Number( mw.user.options.get( 'eventlogging-display-web' ) ) === 1 ||
 	Number( mw.user.options.get( 'eventlogging-display-console' ) ) === 1;
 
 /**
@@ -35,7 +34,7 @@ function makeLegacyStreamName( schemaName ) {
 }
 
 /**
- * Client-side EventLogging API, including pub/sub subscriber functionality.
+ * @classdesc Client-side EventLogging API, including pub/sub subscriber functionality.
  *
  * The main API is `mw.eventLog.logEvent`.  This is set up as a listener for
  * `event`-namespace topics in `mw.track`. Sampling utility methods are available
@@ -44,8 +43,11 @@ function makeLegacyStreamName( schemaName ) {
  *
  * @class mw.eventLog
  * @singleton
+ * @hideconstructor
+ * @borrows MetricsClient#submit as submit
+ * @borrows MetricsClient#dispatch as dispatch
  */
-core = {
+const core = {
 
 	/**
 	 * Maximum length in chars that a beacon URL can have.
@@ -95,7 +97,7 @@ core = {
 	 */
 	prepare: function ( schemaName, eventData ) {
 		// Wrap eventData in EventLogging's EventCapsule.
-		var
+		const
 			event = {
 				event: eventData,
 				schema: schemaName,
@@ -136,7 +138,7 @@ core = {
 	 * @return {string|boolean} The URI to log the event.
 	 */
 	makeBeaconUrl: function ( data ) {
-		var queryString = encodeURIComponent( JSON.stringify( data ) );
+		const queryString = encodeURIComponent( JSON.stringify( data ) );
 		return config.baseUrl + '?' + queryString + ';';
 	},
 
@@ -149,7 +151,7 @@ core = {
 	 * @return {string|undefined} The error message in case of error.
 	 */
 	checkUrlSize: function ( schemaName, url ) {
-		var message;
+		let message;
 		if ( url.length > core.maxUrlSize ) {
 			message = 'Url exceeds maximum length';
 			core.logFailure( schemaName, 'urlSize' );
@@ -165,6 +167,7 @@ core = {
 	 * this falls back to a detached Image request.
 	 *
 	 * @param {string} url URL to request from the server.
+	 * @memberof mw.eventLog
 	 */
 	sendBeacon: function ( url ) {
 		if ( navigator.sendBeacon ) {
@@ -180,10 +183,12 @@ core = {
 	},
 
 	/**
-	 * Add a pending callback to be flushed at a later time by the background queue
+	 * Add a pending callback to be flushed at a later time by the background queue.
 	 *
 	 * @param {Function} callback to enqueue and run when the queue is processed
 	 * @return undefined
+	 * @memberof mw.eventLog
+	 * @method
 	 */
 	enqueue: queue.add,
 
@@ -197,12 +202,11 @@ core = {
 	 * @param {string} schemaName Canonical schema name.
 	 * @param {Object} eventData Event object.
 	 * @return {jQuery.Promise} jQuery Promise object for the logging call.
+	 * @memberof mw.eventLog
 	 */
 	logEvent: function ( schemaName, eventData ) {
-		var url,
-			sizeError,
-			event = core.prepare( schemaName, eventData ),
-			deferred = $.Deferred();
+		const event = core.prepare( schemaName, eventData );
+		const deferred = $.Deferred();
 
 		// Assume that if $schema was set by core.prepare(), this
 		// event should be POSTed to EventGate.
@@ -210,8 +214,8 @@ core = {
 			core.submit( makeLegacyStreamName( schemaName ), event );
 			deferred.resolveWith( event, [ event ] );
 		} else {
-			url = core.makeBeaconUrl( event );
-			sizeError = core.checkUrlSize( schemaName, url );
+			const url = core.makeBeaconUrl( event );
+			const sizeError = core.checkUrlSize( schemaName, url );
 
 			if ( !sizeError ) {
 				if ( config.baseUrl || debugMode ) {
@@ -239,6 +243,7 @@ core = {
 	 *
 	 * @param {string} schemaName
 	 * @param {string} errorCode
+	 * @memberof mw.eventLog
 	 */
 	logFailure: function ( schemaName, errorCode ) {
 		// Record this failure as a simple counter. By default "counter.*" goes nowhere.
@@ -249,7 +254,7 @@ core = {
 	/**
 	 * Randomise inclusion based on population size and random token.
 	 *
-	 * Use #eventInSample or #sessionInSample instead.
+	 * Use #pageviewInSample or #sessionInSample instead.
 	 *
 	 * Note that token is coerced into 32 bits before calculating its mod  with
 	 * the population size, while this does not make possible to sample in a rate below
@@ -264,7 +269,7 @@ core = {
 	 * @return {boolean}
 	 */
 	randomTokenMatch: function ( populationSize, explicitToken ) {
-		var token = explicitToken || mw.user.generateRandomSessionId(),
+		const token = explicitToken || mw.user.generateRandomSessionId(),
 			rand = parseInt( token.slice( 0, 8 ), 16 );
 		return rand % populationSize === 0;
 	},
@@ -277,6 +282,7 @@ core = {
 	 * @param {number} populationSize One in how many should be included.
 	 *  0 means nobody, 1 is 100%, 2 is 50%, etc.
 	 * @return {boolean}
+	 * @memberof mw.eventLog
 	 */
 	sessionInSample: function ( populationSize ) {
 		// Use the same unique random identifier within the same  session
@@ -285,18 +291,10 @@ core = {
 	},
 
 	/**
-	 * @deprecated Use #eventInSample
-	 * @param {number} populationSize
-	 * @return {boolean}
-	 */
-	inSample: function ( populationSize ) {
-		return this.eventInSample( populationSize );
-	},
-
-	/**
 	 * Determine whether the current event is sampled given a sampling ratio
 	 * per pageview
 	 *
+	 * @deprecated Use #pageviewInSample
 	 * @param {number} populationSize One in how many should be included.
 	 *  0 means nobody, 1 is 100%, 2 is 50%, etc.
 	 * @return {boolean}
@@ -305,9 +303,29 @@ core = {
 		// Use the same unique random identifier within the same page load
 		// to allow correlation between multiple events.
 		return this.randomTokenMatch( populationSize, mw.user.getPageviewToken() );
+	},
+
+	/**
+	 * Determine whether the current event is sampled given a sampling ratio
+	 * per pageview.
+	 *
+	 * @param {number} populationSize One in how many should be included.
+	 *  0 means nobody, 1 is 100%, 2 is 50%, etc.
+	 * @return {boolean}
+	 * @memberof mw.eventLog
+	 */
+	pageviewInSample: function ( populationSize ) {
+		// Use the same unique random identifier within the same page load
+		// to allow correlation between multiple events.
+		return this.randomTokenMatch( populationSize, mw.user.getPageviewToken() );
 	}
 };
 
+// Deprecate the old core.inSample function and introduce a
+// replacement, core.pageviewInSample, to transition to the
+// new function for handling pageview sampling.
+// Apply mw.log.deprecate to the old inSample function.
+mw.log.deprecate( core, 'inSample', core.pageviewInSample, 'Use "mw.eventLog.pageviewInSample" instead.', 'mw.eventLog.inSample' );
 // ////////////////////////////////////////////////////////////////////
 // MEP Upgrade Zone
 //
@@ -315,15 +333,30 @@ core = {
 // code from above to here. https://phabricator.wikimedia.org/T238544
 // ////////////////////////////////////////////////////////////////////
 
-var MetricsClient = require( '../lib/metrics-platform/MetricsClient.js' );
-var MediaWikiMetricsClientIntegration = require( './MediaWikiMetricsClientIntegration.js' );
+const MediaWikiMetricsClientIntegration = require( './MediaWikiMetricsClientIntegration.js' );
+const EventSubmitter = require( './EventSubmitter.js' );
+const MetricsClient = require( '../lib/metrics-platform/MetricsClient.js' );
 
 function initMetricsClient() {
-	var integration = new MediaWikiMetricsClientIntegration( core, config );
-	var metricsClient = new MetricsClient( integration, config.streamConfigs );
+	const integration = new MediaWikiMetricsClientIntegration();
+	const eventSubmitter = new EventSubmitter(
+		config.serviceUri,
+		core.enqueue.bind( core ),
+		debugMode
+	);
+	const metricsClient = new MetricsClient(
+		integration,
+		config.streamConfigs,
+		eventSubmitter
+	);
 
+	// TODO (phuedx, 2024/09/09): DRY this up
 	core.submit = metricsClient.submit.bind( metricsClient );
 	core.dispatch = metricsClient.dispatch.bind( metricsClient );
+	core.submitInteraction = metricsClient.submitInteraction.bind( metricsClient );
+	core.submitClick = metricsClient.submitClick.bind( metricsClient );
+	core.newInstrument = metricsClient.newInstrument.bind( metricsClient );
+	core.isCurrentUserEnrolled = metricsClient.isCurrentUserEnrolled.bind( metricsClient );
 }
 initMetricsClient();
 
@@ -340,8 +373,8 @@ core.storage = {
 };
 
 core.id = ( function () {
-	var
-		UINT32_MAX = 4294967295, // (2^32) - 1
+	const UINT32_MAX = 4294967295; // (2^32) - 1
+	let
 		pageviewId = null,
 		sessionId = null;
 
@@ -399,13 +432,15 @@ core.id = ( function () {
 }() );
 
 /**
- * Provide the user's edit count as a low-granularity bucket name
+ * Provide the user's edit count as a low-granularity bucket name.
  *
  * @param {number|null} editCount User edit count, or null for anonymous performers.
  * @return {string|null} `null` for anonymous performers.
  *
  * Do not use this value in conjunction with other edit count
  * bucketing, or you will deanonymize users to some degree.
+ *
+ * @memberof mw.eventLog
  */
 function getUserEditCountBucket( editCount ) {
 	if ( editCount === null ) {
@@ -433,7 +468,7 @@ mw.config.set(
 // Not allowed outside unit tests
 if ( window.QUnit ) {
 	core.setOptionsForTest = function ( opts ) {
-		var originalOptions = config;
+		const originalOptions = config;
 		config = opts;
 
 		// Reinitialise the Metrics Platform client.
@@ -444,6 +479,10 @@ if ( window.QUnit ) {
 	core.BackgroundQueue = BackgroundQueue;
 	core.makeLegacyStreamName = makeLegacyStreamName;
 	core.getUserEditCountBucket = getUserEditCountBucket;
+	core.getQueue = function () {
+		return queue;
+	};
+	core.MediaWikiMetricsClientIntegration = MediaWikiMetricsClientIntegration;
 }
 
 module.exports = core;

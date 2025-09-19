@@ -4,37 +4,35 @@ use MediaWiki\MainConfigNames;
 
 /**
  * @group Media
+ * @requires extension exif
  */
 class TiffTest extends MediaWikiIntegrationTestCase {
+	private const FILE_PATH = __DIR__ . '/../../data/media/';
 
 	/** @var TiffHandler */
 	protected $handler;
-	/** @var string */
-	protected $filePath;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->checkPHPExtension( 'exif' );
 
 		$this->overrideConfigValue( MainConfigNames::ShowEXIF, true );
 
-		$this->filePath = __DIR__ . '/../../data/media/';
 		$this->handler = new TiffHandler;
 	}
 
 	/**
-	 * @covers TiffHandler::getSizeAndMetadata
+	 * @covers \TiffHandler::getSizeAndMetadata
 	 */
 	public function testInvalidFile() {
-		$res = $this->handler->getSizeAndMetadata( null, $this->filePath . 'README' );
+		$res = $this->handler->getSizeAndMetadata( null, self::FILE_PATH . 'README' );
 		$this->assertEquals( [ 'metadata' => [ '_error' => ExifBitmapHandler::BROKEN_FILE ] ], $res );
 	}
 
 	/**
-	 * @covers TiffHandler::getSizeAndMetadata
+	 * @covers \TiffHandler::getSizeAndMetadata
 	 */
 	public function testTiffMetadataExtraction() {
-		$res = $this->handler->getSizeAndMetadata( null, $this->filePath . 'test.tiff' );
+		$res = $this->handler->getSizeAndMetadata( null, self::FILE_PATH . 'test.tiff' );
 
 		$expected = [
 			'width' => 20,

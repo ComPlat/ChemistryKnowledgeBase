@@ -2,28 +2,33 @@
 
 namespace VEForAll;
 
-use ApiParsoidTrait;
+use ExtensionRegistry;
 use FatalError;
-use Hooks;
+use MediaWiki\MediaWikiServices;
 use MWException;
 use OutputPage;
-use ResourceLoader;
 use Skin;
 
 class VEForAllHooks {
 
 	public static function registerClasses() {
 		global $wgAutoloadClasses, $wgAPIModules;
-		if ( class_exists( ApiParsoidTrait::class ) ) {
-			// MW 1.35.? +
+		if ( class_exists( 'MediaWiki\Parser\Parsoid\ParsoidParserFactory' ) ) {
+			// MW 1.41+
 			$wgAutoloadClasses['VEForAll\\ApiParsoidUtils'] = __DIR__ . '/ApiParsoidUtils.php';
 			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtils';
-		} else {
+		} elseif ( trait_exists( 'MediaWiki\Extension\VisualEditor\ApiParsoidTrait' ) ) {
+			// MW 1.39-1.40
 			$wgAutoloadClasses['VEForAll\\ApiParsoidUtilsOld'] = __DIR__ . '/ApiParsoidUtilsOld.php';
 			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtilsOld';
+		} else {
+			// MW < 1.39
+			$wgAutoloadClasses['VEForAll\\ApiParsoidUtilsOld2'] = __DIR__ . '/ApiParsoidUtilsOld2.php';
+			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtilsOld2';
 		}
 	}
 
+	/** @var array[] */
 	private static $defaultConfig = [
 		'normal' => [
 			[
@@ -159,9 +164,22 @@ class VEForAllHooks {
 	 * @param Skin $skin Skin object that will be used to generate the page
 	 */
 	public static function onBeforePageDisplay( $output, $skin ) {
+		$services = MediaWikiServices::getInstance();
+		if ( !(
+			ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' ) &&
+			$services->getService( 'MobileFrontend.Context' )
+				->shouldDisplayMobileView()
+		) ) {
+			$output->addModules( [
+				'ext.veforall.core.desktop'
+			] );
+		}
+
 		$user = $output->getUser();
-		$vars = [];
-		$vars['VisualEditorEnable'] = $user->getOption( 'visualeditor-enable' );
+		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
+		$vars = [
+			'VisualEditorEnable' => $userOptionsLookup->getOption( $user, 'visualeditor-enable' )
+		];
 		$output->addJSConfigVars( 'VEForAll', $vars );
 	}
 
@@ -185,64 +203,9 @@ class VEForAllHooks {
 	 * @throws MWException
 	 */
 	public static function getVeToolbarConfig( $type = 'normal' ) {
-		Hooks::run( 'VEForAllToolbarConfig' . ucfirst( $type ), [ &self::$defaultConfig[ $type ] ] );
+		MediaWikiServices::getInstance()->getHookContainer()
+			->run( 'VEForAllToolbarConfig' . ucfirst( $type ), [ &self::$defaultConfig[ $type ] ] );
 		return array_values( self::$defaultConfig[ $type ] );
-	}
-
-	/**
-	 * ResourceLoaderRegisterModules hook handler
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderRegisterModules
-	 * @param ResourceLoader $resourceLoader The ResourceLoader object
-	 * @throws MWException
-	 */
-	public static function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ) {
-		global $wgVersion;
-
-		$dir = dirname( __DIR__ ) . DIRECTORY_SEPARATOR;
-
-		$info = [
-			'localBasePath' => $dir . 'resources',
-			'remoteExtPath' => 'VEForAll/resources',
-			'scripts' => [
-				'ui/ui.CommandRegistry.js',
-				'ui/ui.SwitchEditorAction.js',
-				'ui/ui.SwitchEditorTool.js',
-				'ext.veforall.target.js',
-				'ext.veforall.targetwide.js',
-				'ext.veforall.editor.js'
-			]
-		];
-
-		$mainDependencies = [
-			'ext.visualEditor.core',
-			'ext.visualEditor.core.desktop',
-			'ext.visualEditor.data',
-			'ext.visualEditor.icons',
-			'ext.visualEditor.mediawiki',
-			'ext.visualEditor.desktopTarget',
-			'ext.visualEditor.mwextensions.desktop',
-			'ext.visualEditor.mwimage',
-			'ext.visualEditor.mwlink',
-			'ext.visualEditor.mwtransclusion',
-			'oojs-ui.styles.icons-editing-advanced'
-		];
-
-		if ( version_compare( $wgVersion, '1.32', '<' ) ) {
-			// The local version of ve...Target.js is needed for backward
-			// compatibility with MediaWiki 1.31 and older.
-			$depInfo = [
-				'localBasePath' => $dir . 'resources',
-				'remoteExtPath' => 'VEForAll/resources',
-				'scripts' => 've/ve.init.sa.Target.js',
-				'dependencies' => $mainDependencies
-			];
-			$resourceLoader->register( 'ext.veforall.dep', $depInfo );
-			$info['dependencies'][] = 'ext.veforall.dep';
-		} else {
-			$info['dependencies'] = $mainDependencies;
-		}
-
-		$resourceLoader->register( 'ext.veforall.core', $info );
 	}
 
 }

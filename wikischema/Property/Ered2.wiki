@@ -5,8 +5,7 @@
 * [[Has type::Quantity]]
 
 ; Corresponds
-* [[Corresponds to::1 V]]
-* [[Corresponds to::1000 mV]]
+* [[Corresponds to::1 eV]]
 
 ; Unit
-* [[Display units::V]]
+* [[Display units::eV]]

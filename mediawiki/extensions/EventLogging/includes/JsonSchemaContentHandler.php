@@ -11,15 +11,15 @@
 
 namespace MediaWiki\Extension\EventLogging;
 
-use Content;
-use ExtensionRegistry;
-use Html;
-use JsonContentHandler;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
+use MediaWiki\Html\Html;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SyntaxHighlight\SyntaxHighlight;
-use ParserOutput;
-use Title;
-use Xml;
+use MediaWiki\Title\Title;
+use MediaWiki\Xml\Xml;
 
 class JsonSchemaContentHandler extends JsonContentHandler {
 

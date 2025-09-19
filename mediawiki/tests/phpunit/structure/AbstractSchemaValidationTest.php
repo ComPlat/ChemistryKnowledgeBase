@@ -21,6 +21,7 @@ use MediaWiki\DB\AbstractSchemaValidator;
 
 /**
  * Validates all abstract schemas against the abstract-schema schemas in the docs/ folder.
+ * @coversNothing
  */
 class AbstractSchemaValidationTest extends PHPUnit\Framework\TestCase {
 	use MediaWikiCoversValidator;
@@ -37,27 +38,9 @@ class AbstractSchemaValidationTest extends PHPUnit\Framework\TestCase {
 		$this->validator->checkDependencies();
 	}
 
-	public static function provideSchemas(): array {
-		return [
-			'maintenance/tables.json' => [ __DIR__ . '/../../../maintenance/tables.json' ]
-		];
-	}
+	public static function provideSchemas(): Generator {
+		yield 'maintenance/tables.json' => [ __DIR__ . '/../../../maintenance/tables.json' ];
 
-	/**
-	 * @dataProvider provideSchemas
-	 * @param string $path Path to tables.json file
-	 */
-	public function testSchemasPassValidation( string $path ): void {
-		try {
-			$this->validator->validate( $path );
-			// All good
-			$this->assertTrue( true );
-		} catch ( AbstractSchemaValidationError $e ) {
-			$this->fail( $e->getMessage() );
-		}
-	}
-
-	public static function provideSchemaChanges(): Generator {
 		foreach ( glob( __DIR__ . '/../../../maintenance/abstractSchemaChanges/*.json' ) as $schemaChange ) {
 			$fileName = pathinfo( $schemaChange, PATHINFO_BASENAME );
 
@@ -66,10 +49,10 @@ class AbstractSchemaValidationTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @dataProvider provideSchemaChanges
+	 * @dataProvider provideSchemas
 	 * @param string $path Path to tables.json file
 	 */
-	public function testSchemaChangesPassValidation( string $path ): void {
+	public function testSchemasPassValidation( string $path ): void {
 		try {
 			$this->validator->validate( $path );
 			// All good

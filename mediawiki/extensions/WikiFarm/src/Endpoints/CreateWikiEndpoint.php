@@ -20,7 +20,7 @@ class CreateWikiEndpoint extends SimpleHandler {
         $params = $this->getValidatedParams();
 
         $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-        $db = $lb->getConnection(DB_MASTER);
+        $db = $lb->getConnection(DB_PRIMARY);
         $wikiId = (new WikiRepository($db))->createWikiJob($params['wikiName'], $wgUser->getName());
 
         return ['result' => 'ok', 'wikiId' => $wikiId];

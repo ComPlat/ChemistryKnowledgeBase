@@ -23,9 +23,6 @@
 	function Tour( tourSpec ) {
 		var moduleName;
 
-		// Disable all logging from this extension per T288416
-		tourSpec.shouldLog = false;
-
 		/**
 		 * Name of tour
 		 *
@@ -54,15 +51,6 @@
 		 * @readonly
 		 */
 		this.showConditionally = tourSpec.showConditionally;
-
-		/**
-		 * Whether to log events for the tour
-		 *
-		 * @property {boolean}
-		 * @private
-		 * @readonly
-		 */
-		this.shouldLog = tourSpec.shouldLog;
 
 		internal.definedTours[ this.name ] = this;
 
@@ -143,6 +131,13 @@
 		 * @private
 		 */
 		this.initialized = null;
+
+		/**
+		 * Whether to omit transition events when clicking next or back
+		 *
+		 * @property {boolean}
+		 */
+		this.emitTransitionOnStep = tourSpec.emitTransitionOnStep;
 	}
 
 	// TODO: Change this to use before/after (T142267)

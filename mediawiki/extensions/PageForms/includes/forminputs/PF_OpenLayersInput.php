@@ -4,6 +4,8 @@
  * @ingroup PF
  */
 
+use MediaWiki\Html\Html;
+
 /**
  * @ingroup PFFormInput
  */
@@ -248,15 +250,16 @@ class PFOpenLayersInput extends PFFormInput {
 	}
 
 	/**
-	 * Parses a coordinate string in (hopefully) any standard format.
+	 * Parses a coordinate string in (hopefully) any standard format,
+	 * returning it as a "lat, lon" string.
 	 *
-	 * Copied from CargoStore::parseCoordinateString() in the Cargo
+	 * Copied from CargoUtils::parseCoordinatesString() in the Cargo
 	 * extension.
 	 * @param string $coordinatesString
 	 * @return string|null
 	 */
 	public static function parseCoordinatesString( $coordinatesString ) {
-		$coordinatesString = trim( $coordinatesString );
+		$coordinatesString = trim( $coordinatesString ?? '' );
 		if ( $coordinatesString === '' ) {
 			return null;
 		}
@@ -277,7 +280,7 @@ class PFOpenLayersInput extends PFFormInput {
 		if ( count( $latAndLonStrings ) != 2 ) {
 			throw new MWException( "Error parsing coordinates string: \"$coordinatesString\"." );
 		}
-		list( $latString, $lonString ) = $latAndLonStrings;
+		[ $latString, $lonString ] = $latAndLonStrings;
 
 		// Handle strings one at a time.
 		$latIsNegative = false;

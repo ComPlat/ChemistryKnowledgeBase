@@ -1,9 +1,0 @@
-array(1) {
-  ["C"]=>
-  string(14) "without motion"
-}
-array(0) {
-}
-NULL
-array(0) {
-}

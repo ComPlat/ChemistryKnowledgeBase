@@ -18,14 +18,14 @@
                 -
             @elseif(count($authors) === 1)
                 <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($authors[0]['name'])->getFullURL()}}">{{$authors[0]['name']}}</a> {{$authors[0]['afiliation']}}
-                @if($authors[0][orcidUrl] != '')
+                @if($authors[0]['orcidUrl'] != '')
                     <a href="{{$authors[0]['orcidUrl']}}">ORCID</a>
                 @endif
             @else
                 <ul>
                 @foreach($authors as $a)
                     <li> <a href="{{\DIQA\ChemExtension\Jobs\CreateAuthorPageJob::getAuthorPageTitle($a['name'])->getFullURL()}}">{{$a['name']}}</a> {{$a['afiliation']}}
-                        @if($a[orcidUrl] != '')
+                        @if($a['orcidUrl'] != '')
                             <a href="{{$a['orcidUrl']}}">ORCID</a>
                         @endif
                     </li>

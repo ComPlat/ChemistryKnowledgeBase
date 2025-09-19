@@ -7,7 +7,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use OOUI\Tag;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use RequestContext;
 use SpecialPage;
 use Title;
@@ -22,7 +22,7 @@ class PageCreationSpecial extends SpecialPage
         parent::__construct($title);
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ( $views, $cache );
+        $this->blade = new BladeOne ( $views, $cache );
     }
 
     protected function getHelpSection($title): Tag
@@ -99,7 +99,7 @@ class PageCreationSpecial extends SpecialPage
     protected function showErrorHint($message) {
         $parser = clone MediaWikiServices::getInstance()->getParser();
         $parserOutput = $parser->parse($message, RequestContext::getMain()->getTitle(), new \ParserOptions(RequestContext::getMain()->getUser()));
-        return $this->blade->view()->make("error", ['message' => $parserOutput->getText()])->render();
+        return $this->blade->run("error", ['message' => $parserOutput->getText()]);
     }
 
 }

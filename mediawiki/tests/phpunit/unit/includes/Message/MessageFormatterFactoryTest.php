@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Message\Message;
 use MediaWiki\Message\MessageFormatterFactory;
 
 /**
@@ -8,7 +9,7 @@ use MediaWiki\Message\MessageFormatterFactory;
 class MessageFormatterFactoryTest extends MediaWikiUnitTestCase {
 	use MediaWikiCoversValidator;
 
-	public function provideGetTextFormatter() {
+	public static function provideGetTextFormatter() {
 		yield [ 'en', null ];
 		yield [ 'en', Message::FORMAT_TEXT ];
 		yield [ 'ru', Message::FORMAT_PLAIN ];
@@ -20,7 +21,7 @@ class MessageFormatterFactoryTest extends MediaWikiUnitTestCase {
 	 * @param string $lang
 	 * @param string|null $format
 	 */
-	public function testGetTextFormatter( string $lang, string $format = null ) {
+	public function testGetTextFormatter( string $lang, ?string $format = null ) {
 		if ( $format ) {
 			$factory = new MessageFormatterFactory( $format );
 		} else {

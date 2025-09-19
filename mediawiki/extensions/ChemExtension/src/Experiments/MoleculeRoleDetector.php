@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Experiments;
 
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use OutputPage;
 
 class MoleculeRoleDetector {
@@ -66,14 +66,14 @@ QUERY;
         }
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
-        $html = $blade->view ()->make ( "molecule-role-matrix",
+        $blade = new BladeOne ($views, $cache);
+        $html = $blade->run ( "molecule-role-matrix",
             [
                 'distinctRoles' => $distinctRoles,
                 'matrix' => $matrix,
                 'wgScriptPath' => $wgScriptPath
             ]
-        )->render ();
+        );
         $out->addHTML($html);
     }
 }

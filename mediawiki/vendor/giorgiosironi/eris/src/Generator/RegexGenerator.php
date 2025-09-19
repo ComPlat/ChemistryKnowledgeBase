@@ -3,6 +3,8 @@ namespace Eris\Generator;
 
 use BadFunctionCallException;
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 use ReverseRegex\Lexer;
 use ReverseRegex\Random\SimpleRandom;
 use ReverseRegex\Parser;
@@ -18,9 +20,12 @@ use ReverseRegex\Generator\Scope;
  */
 function regex($expression)
 {
-    return new RegexGenerator($expression);
+    return Generators::regex($expression);
 }
 
+/**
+ * @template-implements Generator<string>
+ */
 class RegexGenerator implements Generator
 {
     private $expression;
@@ -33,10 +38,10 @@ class RegexGenerator implements Generator
         $this->expression = $expression;
     }
 
-    public function __invoke($_size, $rand)
+    public function __invoke($_size, RandomRange $rand)
     {
         $lexer = new Lexer($this->expression);
-        $gen   = new SimpleRandom($rand());
+        $gen   = new SimpleRandom($rand->rand());
         $result = null;
 
         $parser = new Parser($lexer, new Scope(), new Scope());
@@ -45,7 +50,7 @@ class RegexGenerator implements Generator
         return GeneratedValueSingle::fromJustValue($result, 'regex');
     }
 
-    public function shrink(GeneratedValueSingle $value)
+    public function shrink(GeneratedValue $value)
     {
         return $value;
     }

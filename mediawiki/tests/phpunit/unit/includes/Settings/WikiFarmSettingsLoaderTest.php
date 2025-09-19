@@ -1,22 +1,23 @@
 <?php
 
-namespace phpunit\unit\includes\Settings;
+namespace MediaWiki\Tests\Unit\Settings;
 
-use ExtensionRegistry;
-use HashConfig;
+use MediaWiki\Config\HashConfig;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Settings\Config\ArrayConfigBuilder;
 use MediaWiki\Settings\Config\PhpIniSink;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\Settings\WikiFarmSettingsLoader;
+use MediaWikiUnitTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \MediaWiki\Settings\WikiFarmSettingsLoader
  */
-class WikiFarmSettingsLoaderTest extends TestCase {
+class WikiFarmSettingsLoaderTest extends MediaWikiUnitTestCase {
 
+	/** @var array|null */
 	private $originalServerVars = null;
 
 	/**
@@ -62,7 +63,7 @@ class WikiFarmSettingsLoaderTest extends TestCase {
 		return $mock;
 	}
 
-	public function provideWikiFarmSettings() {
+	public static function provideWikiFarmSettings() {
 		yield [
 			[
 				'WikiFarmSettingsDirectory' => __DIR__ . '/fixtures/sites',
@@ -121,14 +122,15 @@ class WikiFarmSettingsLoaderTest extends TestCase {
 
 		$_SERVER['WIKI_NAME'] = 'test/FooBarWiki.yaml';
 
-		$this->expectNotice();
-		$this->expectNoticeMessage( 'The WIKI_NAME server variable has been deprecated' );
-
-		// NOTE: Would be nice if we could assert that the file is actually loaded after
-		//       the notice is triggered, but there doesn't seem to be a way.
-
-		$loader = $this->newLoader( $settings );
-		$loader->loadWikiFarmSettings();
+		$this->expectPHPError(
+			E_USER_NOTICE,
+			function () use ( $settings ) {
+				// TODO: Assert that the file is actually loaded after the notice is triggered
+				$loader = $this->newLoader( $settings );
+				$loader->loadWikiFarmSettings();
+			},
+			'The WIKI_NAME server variable has been deprecated'
+		);
 	}
 
 	/**

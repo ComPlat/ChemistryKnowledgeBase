@@ -6,15 +6,15 @@ use Generator;
 use MediaWiki\Extension\AbuseFilter\ActionSpecifier;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagsManager;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use RecentChange;
-use TitleValue;
 
 /**
  * @group Test
  * @group AbuseFilter
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger
+ * @covers \MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger
  */
 class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
@@ -46,17 +46,19 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 			'rc_namespace' => NS_MAIN,
 			'rc_title' => $titleText,
 			'rc_user' => 42,
-			'rc_user_text' => $userName
+			'rc_user_text' => $userName,
+			'rc_ip' => '127.0.0.1',
 		];
 		$specifierFromArray = static function ( array $specs ): ActionSpecifier {
 			return new ActionSpecifier(
 				$specs['action'],
 				$specs['target'],
 				new UserIdentityValue( 42, $specs['username'] ),
+				$specs['ip'],
 				$specs['accountname'] ?? null
 			);
 		};
-		$baseSpecs = [ 'username' => $userName, 'target' => $title ];
+		$baseSpecs = [ 'username' => $userName, 'target' => $title, 'ip' => '127.0.0.1' ];
 
 		$rcAttribs = [ 'rc_log_type' => null ] + $baseAttribs;
 		yield 'edit' => [
@@ -91,7 +93,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::bufferTagsToSetByAction
 	 * @dataProvider getActionData
 	 */
 	public function testTagsToSetWillNotContainDuplicates( ActionSpecifier $specifier, RecentChange $rc ) {
@@ -107,7 +108,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::clearBuffer
 	 * @dataProvider getActionData
 	 */
 	public function testClearBuffer( ActionSpecifier $specifier, RecentChange $rc ) {
@@ -121,7 +121,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::addConditionsLimitTag
 	 * @dataProvider getActionData
 	 */
 	public function testAddConditionsLimitTag( ActionSpecifier $specifier, RecentChange $rc ) {
@@ -134,12 +133,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::addTags
-	 * @covers ::getTagsForRecentChange
-	 * @covers ::getIDFromRecentChange
-	 * @covers ::getActionID
-	 * @covers ::getTagsForID
-	 * @covers ::bufferTagsToSetByAction
 	 * @dataProvider getActionData
 	 */
 	public function testAddGetTags( ActionSpecifier $specifier, RecentChange $rc ) {
@@ -153,9 +146,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::addTags
-	 * @covers ::getActionID
-	 * @covers ::bufferTagsToSetByAction
 	 * @dataProvider getActionData
 	 */
 	public function testAddTags_multiple( ActionSpecifier $specifier, RecentChange $rc ) {
@@ -171,10 +161,6 @@ class ChangeTaggerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @param ActionSpecifier $specifier
 	 * @param RecentChange $rc
-	 * @covers ::getTagsForRecentChange
-	 * @covers ::getIDFromRecentChange
-	 * @covers ::getActionID
-	 * @covers ::getTagsForID
 	 * @dataProvider getActionData
 	 */
 	public function testGetTags_clear( ActionSpecifier $specifier, RecentChange $rc ) {

@@ -1,33 +1,43 @@
 <?php
 
+namespace MediaWiki\Extension\Scribunto\Engines\LuaCommon;
+
+use Exception;
 use MediaWiki\Extension\Scribunto\Engines\LuaSandbox\LuaSandboxInterpreter;
 use MediaWiki\Extension\Scribunto\Scribunto;
+use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Extension\Scribunto\ScribuntoEngineBase;
 use MediaWiki\Extension\Scribunto\ScribuntoException;
+use MediaWiki\Html\Html;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\Title\Title;
+use RuntimeException;
 use Wikimedia\ScopedCallback;
 
-abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
+abstract class LuaEngine extends ScribuntoEngineBase {
 	/**
 	 * Libraries to load. See also the 'ScribuntoExternalLibraries' hook.
-	 * @var array Maps module names to PHP classes or definition arrays
+	 * @var array<string,class-string<LibraryBase>> Maps module names to PHP classes or definition arrays
 	 */
 	protected static $libraryClasses = [
-		'mw.site' => Scribunto_LuaSiteLibrary::class,
-		'mw.uri' => Scribunto_LuaUriLibrary::class,
-		'mw.ustring' => Scribunto_LuaUstringLibrary::class,
-		'mw.language' => Scribunto_LuaLanguageLibrary::class,
-		'mw.message' => Scribunto_LuaMessageLibrary::class,
-		'mw.title' => Scribunto_LuaTitleLibrary::class,
-		'mw.text' => Scribunto_LuaTextLibrary::class,
-		'mw.html' => Scribunto_LuaHtmlLibrary::class,
-		'mw.hash' => Scribunto_LuaHashLibrary::class,
+		'mw.site' => SiteLibrary::class,
+		'mw.uri' => UriLibrary::class,
+		'mw.ustring' => UstringLibrary::class,
+		'mw.language' => LanguageLibrary::class,
+		'mw.message' => MessageLibrary::class,
+		'mw.title' => TitleLibrary::class,
+		'mw.text' => TextLibrary::class,
+		'mw.html' => HtmlLibrary::class,
+		'mw.hash' => HashLibrary::class,
 	];
 
 	/**
 	 * Paths for modules that may be loaded from Lua. See also the
 	 * 'ScribuntoExternalLibraryPaths' hook.
-	 * @var array Paths
+	 * @var string[] Paths
 	 */
 	protected static $libraryPaths = [
 		'.',
@@ -39,7 +49,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	protected $loaded = false;
 
 	/**
-	 * @var Scribunto_LuaInterpreter|null
+	 * @var LuaInterpreter|null
 	 */
 	protected $interpreter;
 
@@ -49,15 +59,15 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	protected $mw;
 
 	/**
-	 * @var array
+	 * @var array<string,?PPFrame>
 	 */
 	protected $currentFrames = [];
 	/**
-	 * @var array|null
+	 * @var array<string,string>|null
 	 */
 	protected $expandCache = [];
 	/**
-	 * @var array
+	 * @var array<string,array|class-string<LibraryBase>>
 	 */
 	protected $availableLibraries = [];
 
@@ -68,46 +78,46 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * otherwise
 	 *
 	 * @param array $options
-	 * @return Scribunto_LuaEngine
+	 * @return LuaEngine
 	 */
 	public static function newAutodetectEngine( array $options ) {
-		global $wgScribuntoEngineConf;
+		$engineConf = MediaWikiServices::getInstance()->getMainConfig()->get( 'ScribuntoEngineConf' );
 		$engine = 'luastandalone';
 		try {
 			LuaSandboxInterpreter::checkLuaSandboxVersion();
 			$engine = 'luasandbox';
-		} catch ( Scribunto_LuaInterpreterNotFoundError | Scribunto_LuaInterpreterBadVersionError $e ) {
+		} catch ( LuaInterpreterNotFoundError | LuaInterpreterBadVersionError $e ) {
 			// pass
 		}
 
 		unset( $options['factory'] );
 
 		// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
-		return Scribunto::newEngine( $options + $wgScribuntoEngineConf[$engine] );
+		return Scribunto::newEngine( $options + $engineConf[$engine] );
 	}
 
 	/**
 	 * Create a new interpreter object
-	 * @return Scribunto_LuaInterpreter
+	 * @return LuaInterpreter
 	 */
 	abstract protected function newInterpreter();
 
 	/**
 	 * @param string $text
 	 * @param string|bool $chunkName
-	 * @return Scribunto_LuaModule
+	 * @return LuaModule
 	 */
 	protected function newModule( $text, $chunkName ) {
-		return new Scribunto_LuaModule( $this, $text, $chunkName );
+		return new LuaModule( $this, $text, $chunkName );
 	}
 
 	/**
 	 * @param string $message
 	 * @param array $params
-	 * @return Scribunto_LuaError
+	 * @return LuaError
 	 */
 	public function newLuaError( $message, $params = [] ) {
-		return new Scribunto_LuaError( $message, $this->getDefaultExceptionParams() + $params );
+		return new LuaError( $message, $this->getDefaultExceptionParams() + $params );
 	}
 
 	public function destroy() {
@@ -179,7 +189,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 *
 	 * @param string $moduleFileName The path to the Lua portion of the library
 	 *         (absolute, or relative to $this->getLuaLibDir())
-	 * @param array $interfaceFuncs Populates mw_interface
+	 * @param array<string,callable> $interfaceFuncs Populates mw_interface
 	 * @param array $setupOptions Passed to the modules setupInterface() method.
 	 * @return array Lua package
 	 */
@@ -229,7 +239,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 	/**
 	 * Get the current interpreter object
-	 * @return Scribunto_LuaInterpreter
+	 * @return LuaInterpreter
 	 */
 	public function getInterpreter() {
 		$this->load();
@@ -243,7 +253,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param PPFrame|null $frame If null, an empty frame with no parent will be used
 	 * @return ScopedCallback
 	 */
-	private function setupCurrentFrames( PPFrame $frame = null ) {
+	private function setupCurrentFrames( ?PPFrame $frame = null ) {
 		if ( !$frame ) {
 			$frame = $this->getParser()->getPreprocessor()->newFrame();
 		}
@@ -264,7 +274,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 	/**
 	 * Execute a module chunk in a new isolated environment, and return the specified function
-	 * @param mixed $chunk As accepted by Scribunto_LuaInterpreter::callFunction()
+	 * @param mixed $chunk As accepted by LuaInterpreter::callFunction()
 	 * @param string $functionName
 	 * @param PPFrame|null $frame
 	 * @return mixed
@@ -290,7 +300,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 	/**
 	 * Execute a module function chunk
-	 * @param mixed $chunk As accepted by Scribunto_LuaInterpreter::callFunction()
+	 * @param mixed $chunk As accepted by LuaInterpreter::callFunction()
 	 * @param PPFrame|null $frame
 	 * @return array
 	 */
@@ -351,13 +361,15 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	protected function loadLibraryFromFile( $fileName ) {
 		static $cache = null;
 
+		$objectcachefactory = MediaWikiServices::getInstance()->getObjectCacheFactory();
+
 		if ( !$cache ) {
-			$cache = ObjectCache::getLocalServerInstance( 'hash' );
+			$cache = $objectcachefactory->getLocalServerInstance( CACHE_HASH );
 		}
 
 		$mtime = filemtime( $fileName );
 		if ( $mtime === false ) {
-			throw new MWException( 'Lua file does not exist: ' . $fileName );
+			throw new RuntimeException( 'Lua file does not exist: ' . $fileName );
 		}
 
 		$cacheKey = $cache->makeGlobalKey( __CLASS__, $fileName );
@@ -365,7 +377,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 		$code = false;
 		if ( $fileData ) {
-			list( $code, $cachedMtime ) = $fileData;
+			[ $code, $cachedMtime ] = $fileData;
 			if ( $cachedMtime < $mtime ) {
 				$code = false;
 			}
@@ -373,7 +385,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 		if ( !$code ) {
 			$code = file_get_contents( $fileName );
 			if ( $code === false ) {
-				throw new MWException( 'Lua file does not exist: ' . $fileName );
+				throw new RuntimeException( 'Lua file does not exist: ' . $fileName );
 			}
 			$cache->set( $cacheKey, [ $code, $mtime ], 60 * 5 );
 		}
@@ -462,9 +474,9 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $funcName The Lua function name, for use in error messages
 	 * @param array $args The argument array
 	 * @param int $index0 The zero-based argument index
-	 * @param string|array $type The allowed type names as given by gettype()
+	 * @param string|string[] $type The allowed type names as given by gettype()
 	 * @param string $msgType The type name used in the error message
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function checkType( $funcName, $args, $index0, $type, $msgType ) {
 		if ( !is_array( $type ) ) {
@@ -472,7 +484,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 		}
 		if ( !isset( $args[$index0] ) || !in_array( gettype( $args[$index0] ), $type, true ) ) {
 			$index1 = $index0 + 1;
-			throw new Scribunto_LuaError( "bad argument #$index1 to '$funcName' ($msgType expected)" );
+			throw new LuaError( "bad argument #$index1 to '$funcName' ($msgType expected)" );
 		}
 	}
 
@@ -501,23 +513,24 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	/**
 	 * Instantiate and register a library.
 	 * @param string $name
-	 * @param array|string $def
+	 * @param array|class-string<LibraryBase> $def
 	 * @param bool $loadDeferred
-	 * @throws MWException
 	 * @return array|null
 	 */
 	private function instantiatePHPLibrary( $name, $def, $loadDeferred ) {
 		$def = $this->availableLibraries[$name];
 		if ( is_string( $def ) ) {
+			/** @var LibraryBase $class */
 			$class = new $def( $this );
 		} else {
 			if ( !$loadDeferred && !empty( $def['deferLoad'] ) ) {
 				return null;
 			}
 			if ( isset( $def['class'] ) ) {
+				/** @var LibraryBase $class */
 				$class = new $def['class']( $this );
 			} else {
-				throw new MWException( "No class for library \"$name\"" );
+				throw new RuntimeException( "No class for library \"$name\"" );
 			}
 		}
 		return $class->register();
@@ -590,15 +603,16 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $frameId
 	 * @return PPFrame
 	 *
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	protected function getFrameById( $frameId ) {
 		if ( $frameId === 'empty' ) {
 			return $this->getParser()->getPreprocessor()->newFrame();
 		} elseif ( isset( $this->currentFrames[$frameId] ) ) {
+			// @phan-suppress-next-line PhanTypeMismatchReturnNullable False positive
 			return $this->currentFrames[$frameId];
 		} else {
-			throw new Scribunto_LuaError( 'invalid frame ID' );
+			throw new LuaError( 'invalid frame ID' );
 		}
 	}
 
@@ -621,11 +635,11 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $title
 	 * @param array $args
 	 * @return array
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function newChildFrame( $frameId, $title, array $args ) {
 		if ( count( $this->currentFrames ) > 100 ) {
-			throw new Scribunto_LuaError( 'newChild: too many frames' );
+			throw new LuaError( 'newChild: too many frames' );
 		}
 
 		$frame = $this->getFrameById( $frameId );
@@ -634,7 +648,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 		} else {
 			$title = Title::newFromText( $title );
 			if ( !$title ) {
-				throw new Scribunto_LuaError( 'newChild: invalid title' );
+				throw new LuaError( 'newChild: invalid title' );
 			}
 		}
 		$args = $this->getParser()->getPreprocessor()->newPartNodeArray( $args );
@@ -710,28 +724,28 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $titleText
 	 * @param array $args
 	 * @return array
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function expandTemplate( $frameId, $titleText, $args ) {
 		$frame = $this->getFrameById( $frameId );
 		$title = Title::newFromText( $titleText, NS_TEMPLATE );
 		if ( !$title ) {
-			throw new Scribunto_LuaError( "expandTemplate: invalid title \"$titleText\"" );
+			throw new LuaError( "expandTemplate: invalid title \"$titleText\"" );
 		}
 
-		if ( $frame->depth >= $this->parser->mOptions->getMaxTemplateDepth() ) {
-			throw new Scribunto_LuaError( 'expandTemplate: template depth limit exceeded' );
+		if ( $frame->depth >= $this->parser->getOptions()->getMaxTemplateDepth() ) {
+			throw new LuaError( 'expandTemplate: template depth limit exceeded' );
 		}
 		if ( MediaWikiServices::getInstance()->getNamespaceInfo()->isNonincludable( $title->getNamespace() ) ) {
-			throw new Scribunto_LuaError( 'expandTemplate: template inclusion denied' );
+			throw new LuaError( 'expandTemplate: template inclusion denied' );
 		}
 
-		list( $dom, $finalTitle ) = $this->parser->getTemplateDom( $title );
+		[ $dom, $finalTitle ] = $this->parser->getTemplateDom( $title );
 		if ( $dom === false ) {
-			throw new Scribunto_LuaError( "expandTemplate: template \"$titleText\" does not exist" );
+			throw new LuaError( "expandTemplate: template \"$titleText\" does not exist" );
 		}
 		if ( !$frame->loopCheck( $finalTitle ) ) {
-			throw new Scribunto_LuaError( 'expandTemplate: template loop detected' );
+			throw new LuaError( 'expandTemplate: template loop detected' );
 		}
 
 		$fargs = $this->getParser()->getPreprocessor()->newPartNodeArray( $args );
@@ -751,8 +765,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $frameId
 	 * @param string $function
 	 * @param array $args
-	 * @throws MWException
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 * @return array
 	 * @suppress PhanImpossibleCondition
 	 */
@@ -782,7 +795,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 		if ( !isset( $args[0] ) ) {
 			# It's impossible to call a parser function from wikitext without
 			# supplying an arg 0. Insist that one be provided via Lua, too.
-			throw new Scribunto_LuaError( 'callParserFunction: At least one unnamed parameter ' .
+			throw new LuaError( 'callParserFunction: At least one unnamed parameter ' .
 				'(the parameter that comes after the colon in wikitext) ' .
 				'must be provided'
 			);
@@ -790,7 +803,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 		$result = $this->parser->callParserFunction( $frame, $function, $args );
 		if ( !$result['found'] ) {
-			throw new Scribunto_LuaError( "callParserFunction: function \"$function\" was not found" );
+			throw new LuaError( "callParserFunction: function \"$function\" was not found" );
 		}
 
 		# Set defaults for various flags
@@ -838,7 +851,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * @param string $frameId
 	 * @param string $text
 	 * @return array
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 */
 	public function preprocess( $frameId, $text ) {
 		$args = func_get_args();
@@ -847,7 +860,7 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 		$frame = $this->getFrameById( $frameId );
 
 		if ( !$frame ) {
-			throw new Scribunto_LuaError( 'attempt to call mw.preprocess with no frame' );
+			throw new LuaError( 'attempt to call mw.preprocess with no frame' );
 		}
 
 		// Don't count the time for expanding all the frame arguments against
@@ -868,12 +881,12 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 	 * Increment the expensive function count, and throw if limit exceeded
 	 *
 	 * @internal
-	 * @throws Scribunto_LuaError
+	 * @throws LuaError
 	 * @return null
 	 */
 	public function incrementExpensiveFunctionCount() {
 		if ( !$this->getParser()->incrementExpensiveFunctionCount() ) {
-			throw new Scribunto_LuaError( "too many expensive function calls" );
+			throw new LuaError( "too many expensive function calls" );
 		}
 		return null;
 	}
@@ -948,20 +961,79 @@ abstract class Scribunto_LuaEngine extends ScribuntoEngineBase {
 
 		$titleObj = Title::newFromText( $title );
 		if ( !$titleObj || !$titleObj->exists() || !$titleObj->hasContentModel( CONTENT_MODEL_JSON ) ) {
-			throw new Scribunto_LuaError(
+			throw new LuaError(
 				"bad argument #1 to 'mw.loadJsonData' ('$title' is not a valid JSON page)"
 			);
 		}
 
 		$parser = $this->getParser();
-		list( $text, $finalTitle ) = $parser->fetchTemplateAndTitle( $titleObj );
+		[ $text, $finalTitle ] = $parser->fetchTemplateAndTitle( $titleObj );
 
 		$json = FormatJson::decode( $text, true );
 		if ( is_array( $json ) ) {
-			$json = Scribunto_LuaTextLibrary::reindexArrays( $json, false );
+			$json = TextLibrary::reindexArrays( $json, false );
 		}
 		// We'll throw an error for non-tables on the Lua side
 
 		return [ $json ];
 	}
+
+	/**
+	 * @see Content::updateRedirect
+	 *
+	 * @param ScribuntoContent $content
+	 * @param Title $target
+	 * @return ScribuntoContent
+	 */
+	public function updateRedirect( ScribuntoContent $content, Title $target ): ScribuntoContent {
+		if ( !$content->isRedirect() ) {
+			return $content;
+		}
+		return $this->makeRedirectContent( $target );
+	}
+
+	/**
+	 * @see Content::getRedirectTarget
+	 *
+	 * @param ScribuntoContent $content
+	 * @return Title|null
+	 */
+	public function getRedirectTarget( ScribuntoContent $content ) {
+		$text = $content->getText();
+		preg_match( '/^return require \[\[(.*?)\]\]/', $text, $matches );
+		if ( isset( $matches[1] ) ) {
+			$title = Title::newFromText( $matches[1] );
+			// Can only redirect to other Scribunto pages
+			if ( $title && $title->hasContentModel( CONTENT_MODEL_SCRIBUNTO ) ) {
+				// Have a title, check that the current content equals what
+				// the redirect content should be
+				if ( $content->equals( $this->makeRedirectContent( $title ) ) ) {
+					return $title;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * @see ContentHandler::makeRedirectContent
+	 * @param Title $destination
+	 * @param string $text
+	 * @return ScribuntoContent
+	 */
+	public function makeRedirectContent( Title $destination, $text = '' ) {
+		$targetPage = $destination->getPrefixedText();
+		$redirectText = "return require [[$targetPage]]";
+		return new ScribuntoContent( $redirectText );
+	}
+
+	/**
+	 * @see ContentHandler::supportsRedirects
+	 * @return bool true
+	 */
+	public function supportsRedirects(): bool {
+		return true;
+	}
 }
+
+class_alias( LuaEngine::class, 'Scribunto_LuaEngine' );

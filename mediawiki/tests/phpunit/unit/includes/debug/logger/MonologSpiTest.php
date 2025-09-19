@@ -18,15 +18,17 @@
  * @file
  */
 
-namespace MediaWiki\Logger;
+namespace MediaWiki\Tests\Logger;
 
+use MediaWiki\Logger\Monolog\WikiProcessor;
+use MediaWiki\Logger\MonologSpi;
 use Wikimedia\TestingAccessWrapper;
 
+/**
+ * @covers \MediaWiki\Logger\MonologSpi
+ */
 class MonologSpiTest extends \MediaWikiUnitTestCase {
 
-	/**
-	 * @covers \MediaWiki\Logger\MonologSpi::mergeConfig
-	 */
 	public function testMergeConfig() {
 		$base = [
 			'loggers' => [
@@ -132,14 +134,6 @@ class MonologSpiTest extends \MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @covers \MediaWiki\Logger\MonologSpi::__construct
-	 * @covers \MediaWiki\Logger\MonologSpi::reset
-	 * @covers \MediaWiki\Logger\MonologSpi::getLogger
-	 * @covers \MediaWiki\Logger\MonologSpi::createLogger
-	 * @covers \MediaWiki\Logger\MonologSpi::getProcessor
-	 * @covers \MediaWiki\Logger\MonologSpi::getHandler
-	 */
 	public function testDefaultChannel() {
 		$base = [
 			'loggers' => [
@@ -150,7 +144,7 @@ class MonologSpiTest extends \MediaWikiUnitTestCase {
 			],
 			'processors' => [
 				'myprocessor' => [
-					'class' => Monolog\WikiProcessor::class,
+					'class' => WikiProcessor::class,
 				],
 			],
 			'handlers' => [
@@ -165,13 +159,12 @@ class MonologSpiTest extends \MediaWikiUnitTestCase {
 		$logger = $monologSpi->getLogger( 'mychannel' );
 		$wrapperMonologSpi = TestingAccessWrapper::newFromObject( $monologSpi );
 		$this->assertInstanceOf( \Psr\Log\LoggerInterface::class, $logger );
-		$this->assertInstanceOf( \Monolog\Logger::class, $logger );
 		$this->assertCount( 1, $wrapperMonologSpi->singletons['loggers'] );
 		$this->assertArrayHasKey( 'mychannel', $wrapperMonologSpi->singletons['loggers'] );
 
 		$actualProcessors = $logger->getProcessors();
 		$this->assertArrayHasKey( 0, $actualProcessors );
-		$this->assertInstanceOf( Monolog\WikiProcessor::class, $actualProcessors[0] );
+		$this->assertInstanceOf( WikiProcessor::class, $actualProcessors[0] );
 		$this->assertCount( 1, $wrapperMonologSpi->singletons['processors'] );
 		$this->assertArrayHasKey( 'myprocessor', $wrapperMonologSpi->singletons['processors'] );
 
@@ -185,9 +178,6 @@ class MonologSpiTest extends \MediaWikiUnitTestCase {
 		$this->assertCount( 0, $wrapperMonologSpi->singletons['formatters'] );
 	}
 
-	/**
-	 * @covers \MediaWiki\Logger\MonologSpi::createLogger
-	 */
 	public function testEmptyChannel() {
 		$base = [
 			'loggers' => [
@@ -213,7 +203,6 @@ class MonologSpiTest extends \MediaWikiUnitTestCase {
 		$logger = $monologSpi->getLogger( 'emptychannel' );
 		$wrapperMonologSpi = TestingAccessWrapper::newFromObject( $monologSpi );
 		$this->assertInstanceOf( \Psr\Log\LoggerInterface::class, $logger );
-		$this->assertInstanceOf( \Monolog\Logger::class, $logger );
 		$this->assertCount( 1, $wrapperMonologSpi->singletons['loggers'] );
 		$this->assertArrayHasKey( 'emptychannel', $wrapperMonologSpi->singletons['loggers'] );
 		$actualHandlers = $logger->getHandlers();

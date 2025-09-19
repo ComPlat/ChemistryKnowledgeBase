@@ -24,7 +24,7 @@ class MoleculePageCreator
     public function createNewMoleculePage(ChemForm $chemForm, Title $publicationPage, ?Title $parent = null, $async = false): array
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_MASTER
+            DB_PRIMARY
         );
 
         $chemFormRepository = new ChemFormRepository($dbr);

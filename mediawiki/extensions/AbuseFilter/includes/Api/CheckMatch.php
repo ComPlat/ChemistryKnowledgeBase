@@ -2,19 +2,20 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Api;
 
-use ApiBase;
-use ApiMain;
-use ApiResult;
-use FormatJson;
 use LogEventsList;
 use LogicException;
 use LogPage;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
+use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
 use MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerFactory;
 use MediaWiki\Extension\AbuseFilter\Special\SpecialAbuseLog;
 use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesBlobStore;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Revision\RevisionRecord;
 use RecentChange;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -102,15 +103,24 @@ class CheckMatch extends ApiBase {
 			$varGenerator = $this->afVariableGeneratorFactory->newRCGenerator( $rc, $this->getUser() );
 			$vars = $varGenerator->getVars();
 		} elseif ( $params['logid'] ) {
-			$row = $this->getDB()->selectRow(
-				'abuse_filter_log',
-				'*',
-				[ 'afl_id' => $params['logid'] ],
-				__METHOD__
-			);
+			$row = $this->getDB()->newSelectQueryBuilder()
+				->select( '*' )
+				->from( 'abuse_filter_log' )
+				->where( [ 'afl_id' => $params['logid'] ] )
+				->caller( __METHOD__ )
+				->fetchRow();
 
 			if ( !$row ) {
 				$this->dieWithError( [ 'apierror-abusefilter-nosuchlogid', $params['logid'] ], 'nosuchlogid' );
+			}
+
+			// TODO: Replace with dependency injection once security patch is uploaded publicly.
+			$afFilterLookup = AbuseFilterServices::getFilterLookup();
+			$privacyLevel = $afFilterLookup->getFilter( $row->afl_filter_id, $row->afl_global )
+				->getPrivacyLevel();
+			$canSeeDetails = $this->afPermManager->canSeeLogDetailsForFilter( $performer, $privacyLevel );
+			if ( !$canSeeDetails ) {
+				$this->dieWithError( 'apierror-permissiondenied-generic', 'cannotseedetails' );
 			}
 
 			$visibility = SpecialAbuseLog::getEntryVisibilityForUser( $row, $performer, $this->afPermManager );
@@ -120,7 +130,7 @@ class CheckMatch extends ApiBase {
 				$this->dieWithError( 'apierror-permissiondenied-generic', 'deletedabuselog' );
 			}
 
-			$vars = $this->afVariablesBlobStore->loadVarDump( $row->afl_var_dump );
+			$vars = $this->afVariablesBlobStore->loadVarDump( $row );
 		}
 		if ( $vars === null ) {
 			// @codeCoverageIgnoreStart

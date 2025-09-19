@@ -15,31 +15,45 @@
  * along with MediaViewer.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { createLocalStorage, getFakeLocalStorage, getUnsupportedLocalStorage } = require( '../mmv.testhelpers.js' );
+const { MetadataPanelScroller } = require( 'mmv' );
+const storage = mw.storage;
+
 ( function () {
 	QUnit.module( 'mmv.ui.metadataPanelScroller', QUnit.newMwEnvironment( {
 		beforeEach: function () {
 			this.clock = this.sandbox.useFakeTimers();
+		},
+		afterEach: function () {
+			mw.storage = storage;
 		}
 	} ) );
 
-	QUnit.test( 'empty()', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			localStorage = mw.mmv.testHelpers.getFakeLocalStorage(),
-			scroller = new mw.mmv.ui.MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ), localStorage );
+	QUnit.test( 'empty()', ( assert ) => {
+		const $qf = $( '#qunit-fixture' );
+		mw.storage = getFakeLocalStorage();
+		const scroller = new MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ) );
 
 		scroller.empty();
 		assert.strictEqual( scroller.$container.hasClass( 'invite' ), false, 'We successfully reset the invite' );
 	} );
 
-	QUnit.test( 'Metadata div is only animated once', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			displayCount = null, // pretend it doesn't exist at first
-			localStorage = mw.mmv.testHelpers.createLocalStorage( {
-				// We simulate localStorage to avoid test side-effects
-				getItem: function () { return displayCount; },
-				setItem: function ( _, val ) { displayCount = val; }
-			} ),
-			scroller = new mw.mmv.ui.MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ), localStorage );
+	QUnit.test( 'Metadata div is only animated once', ( assert ) => {
+		const $qf = $( '#qunit-fixture' );
+		let displayCount = null; // pretend it doesn't exist at first
+		mw.storage = createLocalStorage( {
+			// We simulate localStorage to avoid test side-effects
+			getItem: function () {
+				return displayCount;
+			},
+			setItem: function ( _, val ) {
+				displayCount = val;
+			},
+			removeItem: function () {
+				displayCount = null;
+			}
+		} );
+		const scroller = new MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ) );
 
 		scroller.attach();
 
@@ -70,11 +84,11 @@
 	} );
 
 	QUnit.test( 'No localStorage', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			localStorage = mw.mmv.testHelpers.getUnsupportedLocalStorage(),
-			scroller = new mw.mmv.ui.MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ), localStorage );
+		const $qf = $( '#qunit-fixture' );
+		mw.storage = getUnsupportedLocalStorage();
+		const scroller = new MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ) );
 
-		this.sandbox.stub( $.fn, 'scrollTop', function () { return 10; } );
+		this.sandbox.stub( $.fn, 'scrollTop', () => 10 );
 
 		scroller.scroll();
 
@@ -82,14 +96,15 @@
 	} );
 
 	QUnit.test( 'localStorage is full', function ( assert ) {
-		var $qf = $( '#qunit-fixture' ),
-			localStorage = mw.mmv.testHelpers.createLocalStorage( {
-				getItem: this.sandbox.stub().returns( null ),
-				setItem: this.sandbox.stub().throwsException( 'I am full' )
-			} ),
-			scroller = new mw.mmv.ui.MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ), localStorage );
+		const $qf = $( '#qunit-fixture' );
+		mw.storage = createLocalStorage( {
+			getItem: this.sandbox.stub().returns( null ),
+			setItem: this.sandbox.stub().throwsException( 'I am full' ),
+			removeItem: this.sandbox.stub()
+		} );
+		const scroller = new MetadataPanelScroller( $qf, $( '<div>' ).appendTo( $qf ) );
 
-		this.sandbox.stub( $.fn, 'scrollTop', function () { return 10; } );
+		this.sandbox.stub( $.fn, 'scrollTop', () => 10 );
 
 		scroller.attach();
 
@@ -99,7 +114,7 @@
 
 		scroller.scroll();
 
-		assert.true( localStorage.store.setItem.calledOnce, 'localStorage only written once' );
+		assert.true( mw.storage.store.setItem.calledOnce, 'localStorage only written once' );
 
 		scroller.unattach();
 	} );
@@ -110,10 +125,10 @@
 	 * as if the scroll happened.
 	 *
 	 * @param {sinon.sandbox} sandbox
-	 * @param {mw.mmv.ui.MetadataPanelScroller} scroller
+	 * @param {MetadataPanelScroller} scroller
 	 */
 	function stubScrollFunctions( sandbox, scroller ) {
-		var memorizedScrollTop = 0;
+		let memorizedScrollTop = 0;
 
 		sandbox.stub( $.fn, 'scrollTop', function ( scrollTop ) {
 			if ( scrollTop !== undefined ) {
@@ -134,20 +149,21 @@
 	}
 
 	QUnit.test( 'Metadata scrolling', function ( assert ) {
-		var $window = $( window ),
-			$qf = $( '#qunit-fixture' ),
-			$container = $( '<div>' ).css( 'height', 100 ).appendTo( $qf ),
-			$aboveFold = $( '<div>' ).css( 'height', 50 ).appendTo( $container ),
-			fakeLocalStorage = mw.mmv.testHelpers.createLocalStorage( {
-				getItem: this.sandbox.stub().returns( null ),
-				setItem: function () {}
-			} ),
-			scroller = new mw.mmv.ui.MetadataPanelScroller( $container, $aboveFold, fakeLocalStorage ),
-			keydown = $.Event( 'keydown' );
+		const $window = $( window );
+		const $qf = $( '#qunit-fixture' );
+		const $container = $( '<div>' ).css( 'height', 100 ).appendTo( $qf );
+		const $aboveFold = $( '<div>' ).css( 'height', 50 ).appendTo( $container );
+		mw.storage = createLocalStorage( {
+			getItem: this.sandbox.stub().returns( null ),
+			setItem: function () {},
+			removeItem: function () {}
+		} );
+		const scroller = new MetadataPanelScroller( $container, $aboveFold );
+		const keydown = $.Event( 'keydown' );
 
 		stubScrollFunctions( this.sandbox, scroller );
 
-		this.sandbox.stub( fakeLocalStorage.store, 'setItem' );
+		this.sandbox.stub( mw.storage.store, 'setItem' );
 
 		// First phase of the test: up and down arrows
 
@@ -157,12 +173,12 @@
 
 		assert.strictEqual( $window.scrollTop(), 0, 'scrollTop should be set to 0' );
 
-		assert.strictEqual( fakeLocalStorage.store.setItem.called, false, 'The metadata hasn\'t been open yet, no entry in localStorage' );
+		assert.strictEqual( mw.storage.store.setItem.called, false, 'The metadata hasn\'t been open yet, no entry in localStorage' );
 
 		keydown.which = 38; // Up arrow
 		scroller.keydown( keydown );
 
-		assert.strictEqual( fakeLocalStorage.store.setItem.calledWithExactly( 'mmv.hasOpenedMetadata', '1' ), true, 'localStorage knows that the metadata has been open' );
+		assert.strictEqual( mw.storage.store.setItem.calledWithExactly( 'mmv.hasOpenedMetadata', '1' ), true, 'localStorage knows that the metadata has been open' );
 
 		keydown.which = 40; // Down arrow
 		scroller.keydown( keydown );

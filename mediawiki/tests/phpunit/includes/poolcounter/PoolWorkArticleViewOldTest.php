@@ -1,12 +1,20 @@
 <?php
 
 use MediaWiki\Json\JsonCodec;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\RevisionOutputCache;
+use MediaWiki\PoolCounter\PoolWorkArticleViewOld;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Status\Status;
 use Psr\Log\NullLogger;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\Stats\StatsFactory;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
- * @covers PoolWorkArticleViewOld
+ * @covers \MediaWiki\PoolCounter\PoolWorkArticleViewOld
  * @group Database
  */
 class PoolWorkArticleViewOldTest extends PoolWorkArticleViewTest {
@@ -23,7 +31,7 @@ class PoolWorkArticleViewOldTest extends PoolWorkArticleViewTest {
 	 */
 	protected function newPoolWorkArticleView(
 		WikiPage $page,
-		RevisionRecord $rev = null,
+		?RevisionRecord $rev = null,
 		$options = null
 	) {
 		if ( !$options ) {
@@ -56,14 +64,17 @@ class PoolWorkArticleViewOldTest extends PoolWorkArticleViewTest {
 	 * @return RevisionOutputCache
 	 */
 	private function installRevisionOutputCache( $bag = null ) {
+		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
+		$globalIdGenerator->method( 'newUUIDv1' )->willReturn( 'uuid-uuid' );
 		$this->cache = new RevisionOutputCache(
 			'test',
 			new WANObjectCache( [ 'cache' => $bag ?: new HashBagOStuff() ] ),
 			60 * 60,
 			'20200101223344',
 			new JsonCodec(),
-			new NullStatsdDataFactory(),
-			new NullLogger()
+			StatsFactory::newNull(),
+			new NullLogger(),
+			$globalIdGenerator
 		);
 
 		return $this->cache;
@@ -78,11 +89,12 @@ class PoolWorkArticleViewOldTest extends PoolWorkArticleViewTest {
 		$work = $this->newPoolWorkArticleView( $page, null, $options );
 		/** @var Status $status */
 		$status = $work->execute();
-		$this->assertTrue( $status->isGood() );
+		$this->assertStatusGood( $status );
 
 		$cachedOutput = $cache->get( $page->getRevisionRecord(), $options );
 		$this->assertNotEmpty( $cachedOutput );
-		$this->assertSame( $status->getValue()->getText(), $cachedOutput->getText() );
+		$this->assertSame( $status->getValue()->getRawText(),
+			$cachedOutput->getRawText() );
 	}
 
 	public function testDoesNotCacheNotSafe() {
@@ -96,7 +108,7 @@ class PoolWorkArticleViewOldTest extends PoolWorkArticleViewTest {
 		$work = $this->newPoolWorkArticleView( $page, null, $parserOptions );
 		/** @var Status $status */
 		$status = $work->execute();
-		$this->assertTrue( $status->isGood() );
+		$this->assertStatusGood( $status );
 
 		$this->assertFalse( $cache->get( $page->getRevisionRecord(), $parserOptions ) );
 	}

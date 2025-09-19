@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Api;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore;
 use MediaWiki\ParamValidator\TypeDef\UserDef;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -36,7 +36,7 @@ class UnblockAutopromote extends ApiBase {
 		$params = $this->extractRequestParams();
 		$target = $params['user'];
 
-		$block = $this->getUser()->getBlock();
+		$block = $this->getAuthority()->getBlock();
 		if ( $block && $block->isSitewide() ) {
 			$this->dieBlocked( $block );
 		}

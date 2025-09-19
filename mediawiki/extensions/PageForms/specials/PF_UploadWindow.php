@@ -11,6 +11,7 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * @ingroup PFSpecialPages
@@ -19,17 +20,13 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	/**
 	 * Constructor : initialise object
 	 * Get data POSTed through the form and assign them to the object
-	 * @param WebRequest|null $request Data posted.
 	 */
-	public function __construct( $request = null ) {
+	public function __construct() {
 		parent::__construct( 'UploadWindow', 'upload' );
-		$this->loadRequest( $request instanceof WebRequest ? $request : $this->getRequest() );
+		$this->loadRequest();
 	}
 
 	/** Misc variables */
-
-	/** @var WebRequest|FauxRequest The request this form is supposed to handle */
-	public $mRequest;
 	public $mSourceType;
 
 	/** @var UploadBase */
@@ -73,11 +70,9 @@ class PFUploadWindow extends UnlistedSpecialPage {
 
 	/**
 	 * Initialize instance variables from request and create an Upload handler
-	 *
-	 * @param WebRequest $request The request to extract variables from
 	 */
-	protected function loadRequest( $request ) {
-		$this->mRequest = $request;
+	protected function loadRequest() {
+		$request = $this->getRequest();
 		$this->mSourceType	= $request->getVal( 'wpSourceType', 'file' );
 		$this->mUpload	    = UploadBase::createFromRequest( $request );
 		$this->mUploadClicked     = $request->wasPosted()
@@ -171,7 +166,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 			# Backwards compatibility hook
 			// Avoid PHP 7.1 warning from passing $this by reference
 			$page = $this;
-			if ( !Hooks::run( 'UploadForm:initial', [ &$page ] ) ) {
+			if ( !MediaWikiServices::getInstance()->getHookContainer()->run( 'UploadForm:initial', [ &$page ] ) ) {
 				wfDebug( "Hook 'UploadForm:initial' broke output of the upload form" );
 				return;
 			}
@@ -226,21 +221,17 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		if ( !$this->mTokenOk && !$this->mCancelUpload
 			&& ( $this->mUpload && $this->mUploadClicked )
 		) {
-			$form->addPreText( $this->msg( 'session_fail_preview' )->parse() );
+			$form->addPreHtml( $this->msg( 'session_fail_preview' )->parse() );
 		}
 
 		# Add upload error message
-		$form->addPreText( $message );
+		$form->addPreHtml( $message );
 
 		# Add footer to form
 		if ( !$this->msg( 'uploadfooter' )->isDisabled() ) {
 			$output = $this->getOutput();
-			if ( method_exists( $output, 'parseAsInterface' ) ) {
-				$uploadFooter = $output->parseAsInterface( $this->msg( 'uploadfooter' )->plain() );
-			} else {
-				$uploadFooter = $output->parse( $this->msg( 'uploadfooter' )->plain() );
-			}
-			$form->addPostText( '<div id="mw-upload-footer-message">' . $uploadFooter . "</div>\n" );
+			$uploadFooter = $output->parseAsInterface( $this->msg( 'uploadfooter' )->plain() );
+			$form->addPostHtml( '<div id="mw-upload-footer-message">' . $uploadFooter . "</div>\n" );
 		}
 
 		return $form;
@@ -298,32 +289,58 @@ class PFUploadWindow extends UnlistedSpecialPage {
 	protected function uploadWarning( $warnings ) {
 		$sessionKey = $this->mUpload->tryStashFile( $this->getUser() )->getStatusValue()->getValue()->getFileKey();
 
+		$linkRenderer = $this->getLinkRenderer();
 		$warningHtml = '<h2>' . $this->msg( 'uploadwarning' )->escaped() . "</h2>\n"
 			. '<ul class="warningbox">';
 		foreach ( $warnings as $warning => $args ) {
-				// Unlike the other warnings, this one can be worked around.
-				if ( $warning == 'badfilename' ) {
-					$this->mDesiredDestName = Title::makeTitle( NS_FILE, $args )->getText();
-				}
+			// Unlike the other warnings, this one can be worked around.
+			if ( $warning == 'badfilename' ) {
+				$this->mDesiredDestName = Title::makeTitle( NS_FILE, $args )->getText();
+			}
 
-				if ( $warning == 'exists' ) {
-					$msg = self::getExistsWarning( $args );
-				} elseif ( $warning == 'duplicate' ) {
-					$msg = $this->getDupeWarning( $args );
-				} elseif ( $warning == 'duplicate-archive' ) {
-					$msg = "\t<li>" . $this->msg(
-						'file-deleted-duplicate',
-						[ Title::makeTitle( NS_FILE, $args )->getPrefixedText() ]
-					)->parse() . "</li>\n";
-				} else {
-					if ( is_bool( $args ) ) {
-						$args = [];
-					} elseif ( !is_array( $args ) ) {
-						$args = [ $args ];
-					}
-					$msg = "\t<li>" . $this->msg( $warning, $args )->parse() . "</li>\n";
+			if ( $warning == 'exists' ) {
+				$msg = self::getExistsWarning( $args );
+			} elseif ( $warning == 'no-change' ) {
+				$file = $args;
+				$filename = $file->getTitle()->getPrefixedText();
+				$msg = "\t<li>" . $this->msg( 'fileexists-no-change', $filename )->parse() . "</li>\n";
+			} elseif ( $warning == 'duplicate-version' ) {
+				$file = $args[0];
+				$count = count( $args );
+				$filename = $file->getTitle()->getPrefixedText();
+				$message = $this->msg( 'fileexists-duplicate-version' )
+					->params( $filename )
+					->numParams( $count );
+				$msg = "\t<li>" . $message->parse() . "</li>\n";
+			} elseif ( $warning == 'was-deleted' ) {
+				# If the file existed before and was deleted, warn the user of this
+				$ltitle = SpecialPage::getTitleFor( 'Log' );
+				$llink = $linkRenderer->makeKnownLink(
+					$ltitle,
+					$this->msg( 'deletionlog' )->text(),
+					[],
+					[
+						'type' => 'delete',
+						'page' => Title::makeTitle( NS_FILE, $args )->getPrefixedText(),
+					]
+				);
+				$msg = "\t<li>" . $this->msg( 'filewasdeleted' )->rawParams( $llink )->parse() . "</li>\n";
+			} elseif ( $warning == 'duplicate' ) {
+				$msg = $this->getDupeWarning( $args );
+			} elseif ( $warning == 'duplicate-archive' ) {
+				$msg = "\t<li>" . $this->msg(
+					'file-deleted-duplicate',
+					[ Title::makeTitle( NS_FILE, $args )->getPrefixedText() ]
+				)->parse() . "</li>\n";
+			} else {
+				if ( is_bool( $args ) ) {
+					$args = [];
+				} elseif ( !is_array( $args ) ) {
+					$args = [ $args ];
 				}
-				$warningHtml .= $msg;
+				$msg = "\t<li>" . $this->msg( $warning, $args )->parse() . "</li>\n";
+			}
+			$warningHtml .= $msg;
 		}
 		$warningHtml .= "</ul>\n";
 		$warningHtml .= $this->msg( 'uploadwarning-text' )->parseAsBlock();
@@ -363,17 +380,14 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		$status = $this->mUpload->fetchFile();
 		$output = $this->getOutput();
 		if ( !$status->isOK() ) {
-			if ( method_exists( $output, 'parseAsInterface' ) ) {
-				$statusText = $output->parseAsInterface( $status->getWikiText() );
-			} else {
-				$statusText = $output->parse( $status->getWikiText() );
-			}
+			$statusText = $output->parseAsInterface( $status->getWikiText() );
 			return $this->showUploadForm( $this->getUploadForm( $statusText ) );
 		}
 
+		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$page = $this;
-		if ( !Hooks::run( 'UploadForm:BeforeProcessing', [ &$page ] ) ) {
+		if ( !$hookContainer->run( 'UploadForm:BeforeProcessing', [ &$page ] ) ) {
 			wfDebug( "Hook 'UploadForm:BeforeProcessing' broke processing the file.\n" );
 			// This code path is deprecated. If you want to break upload processing
 			// do so by hooking into the appropriate hooks in UploadBase::verifyUpload
@@ -408,11 +422,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 		}
 		$status = $this->mUpload->performUpload( $this->mComment, $pageText, $this->mWatchThis, $this->getUser() );
 		if ( !$status->isGood() ) {
-			if ( method_exists( $output, 'parseAsInterface' ) ) {
-				$statusText = $output->parseAsInterface( $status->getWikiText() );
-			} else {
-				$statusText = $output->parse( $status->getWikiText() );
-			}
+			$statusText = $output->parseAsInterface( $status->getWikiText() );
 			return $this->uploadError( $statusText );
 		}
 
@@ -433,7 +443,7 @@ class PFUploadWindow extends UnlistedSpecialPage {
 
 		$basename = str_replace( '_', ' ', $basename );
 
-		$output = <<<END
+		$text = <<<END
 		<script type="text/javascript">
 		var input = parent.window.jQuery( parent.document.getElementById( "{$this->mInputID}" ) );
 		var classes = input.attr( "class" ).split( /\s+/ );
@@ -469,16 +479,20 @@ class PFUploadWindow extends UnlistedSpecialPage {
 			}
 			input.change();
 		}
-		parent.jQuery.fancybox.close( true );
+
+		// Close the upload window, now that everything is completed.
+		// A little bit of a @hack - instead of calling all of the
+		// window-closing code, we just "click" on the close button,
+		// which takes care of the rest.
+		parent.window.jQuery( '.popupform-close' ).click();
 	</script>
 
 END;
-		// $this->getOutput()->addHTML( $output );
-		print $output;
+		print $text;
 
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$page = $this;
-		Hooks::run( 'SpecialUploadComplete', [ &$page ] );
+		$hookContainer->run( 'SpecialUploadComplete', [ &$page ] );
 	}
 
 	/**
@@ -525,28 +539,26 @@ END;
 	 * @return bool
 	 */
 	protected function watchCheck() {
-		if ( MediaWikiServices::getInstance()->getUserOptionsLookup()
-			->getOption( $this->getUser(), 'watchdefault' ) ) {
+		$services = MediaWikiServices::getInstance();
+		$lookup = $services->getUserOptionsLookup();
+		$user = $this->getUser();
+
+		if ( $lookup->getOption( $user, 'watchdefault' ) ) {
 			// Watch all edits!
 			return true;
 		}
 
-		$local = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()
+		$local = $services->getRepoGroup()->getLocalRepo()
 			->newFile( $this->mDesiredDestName );
 		if ( $local && $local->exists() ) {
 			// We're uploading a new version of an existing file.
 			// No creation, so don't watch it if we're not already.
-			if ( method_exists( \MediaWiki\Watchlist\WatchlistManager::class, 'isWatched' ) ) {
-				// MediaWiki 1.37+
-				return MediaWikiServices::getInstance()->getWatchlistManager()
-					->isWatched( $this->getUser(), $local->getTitle() );
-			} else {
-				return $this->getUser()->isWatched( $local->getTitle() );
-			}
+			return $services->getWatchlistManager()
+				->isWatched( $user, $local->getTitle() );
 		}
+
 		// New page should get watched if that's our option.
-		return MediaWikiServices::getInstance()->getUserOptionsLookup()
-			->getOption( $this->getUser(), 'watchcreations' );
+		return $lookup->getOption( $user, 'watchcreations' );
 	}
 
 	/**
@@ -566,9 +578,6 @@ END;
 			case UploadBase::ILLEGAL_FILENAME:
 				$this->recoverableUploadError( $this->msg( 'illegalfilename',
 					$details['filtered'] )->parse() );
-				break;
-			case UploadBase::OVERWRITE_EXISTING_FILE:
-				$this->recoverableUploadError( $this->msg( $details['overwrite'] )->parse() );
 				break;
 			case UploadBase::FILETYPE_MISSING:
 				$this->recoverableUploadError( $this->msg( 'filetype-missing' )->parse() );
@@ -598,10 +607,6 @@ END;
 				unset( $details['status'] );
 				$code = array_shift( $details['details'] );
 				$this->uploadError( $this->msg( $code, $details['details'] )->parse() );
-				break;
-			case UploadBase::HOOK_ABORTED:
-				$error = $details['error'];
-				$this->uploadError( $this->msg( $error )->parse() );
 				break;
 			default:
 				throw new MWException( __METHOD__ . ": Unknown value `{$details['status']}`" );
@@ -713,4 +718,7 @@ END;
 		}
 	}
 
+	public function doesWrites() {
+		return true;
+	}
 }

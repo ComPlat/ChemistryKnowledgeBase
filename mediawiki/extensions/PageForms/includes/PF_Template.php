@@ -10,6 +10,7 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class PFTemplate {
 	private $mTemplateName;
@@ -50,14 +51,7 @@ class PFTemplate {
 		if ( $templateTitle === null ) {
 			return;
 		}
-		$services = MediaWikiServices::getInstance();
-		if ( method_exists( $services, 'getPageProps' ) ) {
-			// MW 1.36+
-			$pageProps = $services->getPageProps();
-		} else {
-			$pageProps = PageProps::getInstance();
-		}
-		$properties = $pageProps->getProperties(
+		$properties = MediaWikiServices::getInstance()->getPageProps()->getProperties(
 			[ $templateTitle ], [ 'PageFormsTemplateParams' ]
 		);
 		if ( count( $properties ) == 0 ) {
@@ -126,26 +120,25 @@ class PFTemplate {
 		// get the #arraymap check regexp to find both kinds of SMW
 		// property tags seemed too hard to do.
 		$this->mTemplateText = preg_replace( '/#arraymap.*{{\s*#set:\s*([^=]*)=([^}]*)}}/', '[[$1:$2]]', $this->mTemplateText );
-        
-        // Patch by DIQA to fix weird forms rendering problem. https://phabricator.wikimedia.org/T338753
-		// // Look for "arraymap" parser function calls that map a
-		// // property onto a list.
-		// $ret = preg_match_all( '/{{#arraymap:{{{([^|}]*:?[^|}]*)[^\[]*\[\[([^:]*:?[^:]*)::/mis', $this->mTemplateText, $matches );
-		// if ( $ret ) {
-		// 	foreach ( $matches[1] as $i => $field_name ) {
-		// 		if ( !in_array( $field_name, $fieldNamesArray ) ) {
-		// 			$propertyName = $matches[2][$i];
-		// 			$this->loadPropertySettingInTemplate( $field_name, $propertyName, true );
-		// 			$fieldNamesArray[] = $field_name;
-		// 		}
-		// 	}
-		// } elseif ( $ret === false ) {
-		// 	// There was an error in the preg_match_all()
-		// 	// call - let the user know about it.
-		// 	if ( preg_last_error() == PREG_BACKTRACK_LIMIT_ERROR ) {
-		// 		print 'Page Forms error: backtrace limit exceeded during parsing! Please increase the value of <a href="http://www.php.net/manual/en/pcre.configuration.php#ini.pcre.backtrack-limit">pcre.backtrack_limit</a> in php.ini or LocalSettings.php.';
-		// 	}
-		// }
+
+		// Look for "arraymap" parser function calls that map a
+		// property onto a list.
+		$ret = preg_match_all( '/{{#arraymap:{{{([^|}]*:?[^|}]*)[^\[]*\[\[([^:]*:?[^:]*)::/mis', $this->mTemplateText, $matches );
+		if ( $ret ) {
+			foreach ( $matches[1] as $i => $field_name ) {
+				if ( !in_array( $field_name, $fieldNamesArray ) ) {
+					$propertyName = $matches[2][$i];
+					$this->loadPropertySettingInTemplate( $field_name, $propertyName, true );
+					$fieldNamesArray[] = $field_name;
+				}
+			}
+		} elseif ( $ret === false ) {
+			// There was an error in the preg_match_all()
+			// call - let the user know about it.
+			if ( preg_last_error() == PREG_BACKTRACK_LIMIT_ERROR ) {
+				print 'Page Forms error: backtrace limit exceeded during parsing! Please increase the value of <a href="http://www.php.net/manual/en/pcre.configuration.php#ini.pcre.backtrack-limit">pcre.backtrack_limit</a> in php.ini or LocalSettings.php.';
+			}
+		}
 
 		// Look for normal property calls.
 		if ( preg_match_all( '/\[\[([^:|\[\]]*:*?[^:|\[\]]*)::{{{([^\]\|}]*).*?\]\]/mis', $this->mTemplateText, $matches ) ) {
@@ -250,7 +243,7 @@ class PFTemplate {
 
 		// First, get the table name, and fields, declared for this
 		// template, if any.
-		list( $tableName, $tableSchema ) = $this->getCargoTableAndSchema( $templateTitle );
+		[ $tableName, $tableSchema ] = $this->getCargoTableAndSchema( $templateTitle );
 		if ( $tableName == null ) {
 			$fieldDescriptions = [];
 		} else {
@@ -373,7 +366,7 @@ class PFTemplate {
 		if ( $tableSchemaString === null ) {
 			// There's no declared table - but see if there's an
 			// attached table.
-			list( $tableName, $isDeclared ) = CargoUtils::getTableNameForTemplate( $templateTitle );
+			[ $tableName, $isDeclared ] = CargoUtils::getTableNameForTemplate( $templateTitle );
 			if ( $tableName == null ) {
 				return [ null, null ];
 			}
@@ -481,7 +474,7 @@ class PFTemplate {
 	public function createText() {
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$template = $this;
-		Hooks::run( 'PageForms::CreateTemplateText', [ &$template ] );
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::CreateTemplateText', [ &$template ] );
 		// Check whether the user needs the full wikitext instead of #template_display
 		if ( $this->mFullWikiText ) {
 			$templateHeader = wfMessage( 'pf_template_docu', $this->mTemplateName )->inContentLanguage()->text();
@@ -561,30 +554,18 @@ END;
 		// Before text
 		$text .= $this->mTemplateStart;
 
-		// $internalObjText can be either a call to #set_internal
-		// or to #subobject (or null); which one we go with
-		// depends on whether Semantic Internal Objects is installed,
-		// and on the SMW version.
-		// Thankfully, the syntaxes of #set_internal and #subobject
-		// are quite similar, so we don't need too much extra logic.
+		// $internalObjText can be either a call to #subobject, or null.
 		$internalObjText = null;
 		if ( $this->mConnectingProperty ) {
-			global $smwgDefaultStore;
-			if ( defined( 'SIO_VERSION' ) ) {
-				$useSubobject = false;
-				$internalObjText = '{{#set_internal:' . $this->mConnectingProperty;
-			} elseif ( $smwgDefaultStore == "SMWSQLStore3" ) {
-				$useSubobject = true;
-				$internalObjText = '{{#subobject:-|' . $this->mConnectingProperty . '={{PAGENAME}}';
-			}
+			$internalObjText = '{{#subobject:-|' . $this->mConnectingProperty . '={{PAGENAME}}';
 		}
 		$setText = '';
 
 		// Topmost part of table depends on format.
 		if ( !$this->mTemplateFormat ) {
-			$this->mTemplateFormat = 'standard';
+			$this->mTemplateFormat = 'table';
 		}
-		if ( $this->mTemplateFormat == 'standard' ) {
+		if ( $this->mTemplateFormat == 'table' ) {
 			$tableText = '{| class="wikitable"' . "\n";
 		} elseif ( $this->mTemplateFormat == 'infobox' ) {
 			// A CSS style can't be used, unfortunately, since most
@@ -623,7 +604,7 @@ END;
 
 			// Header/field label column
 			if ( $fieldDisplay === null ) {
-				if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+				if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 					if ( $i > 0 ) {
 						$tableText .= "|-\n";
 					}
@@ -638,7 +619,7 @@ END;
 					$tableText .= "\n";
 				}
 				$tableText .= '{{#if:' . $fieldParam . '|';
-				if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+				if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 					if ( $i > 0 ) {
 						$tableText .= "\n{{!}}-\n";
 					}
@@ -655,7 +636,7 @@ END;
 				// If it's 'hidden', do nothing
 			}
 			// Value column
-			if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+			if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 				if ( $fieldDisplay == 'hidden' ) {
 				} elseif ( $fieldDisplay == 'nonempty' ) {
 					// $tableText .= "{{!}} ";
@@ -688,11 +669,7 @@ END;
 				}
 				$tableText .= "\n";
 				if ( $field->isList() ) {
-					if ( $useSubobject ) {
-						$internalObjText .= '|' . $fieldProperty . '=' . $fieldString . '|+sep=,';
-					} else {
-						$internalObjText .= '|' . $fieldProperty . '#list=' . $fieldString;
-					}
+					$internalObjText .= '|' . $fieldProperty . '=' . $fieldString . '|+sep=,';
 				} else {
 					$internalObjText .= '|' . $fieldProperty . '=' . $fieldString;
 				}
@@ -703,7 +680,7 @@ END;
 					$setText .= $fieldProperty . '=' . $fieldString . '|';
 				}
 			} elseif ( $fieldDisplay == 'nonempty' ) {
-				if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+				if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 					$tableText .= '{{!}} ';
 				}
 				$tableText .= $this->createTextForField( $field ) . "\n}}\n";
@@ -715,7 +692,7 @@ END;
 		// Add an inline query to the output text, for
 		// aggregation, if a property was specified.
 		if ( $this->mAggregatingProperty !== null && $this->mAggregatingProperty !== '' ) {
-			if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+			if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 				if ( count( $this->mTemplateFields ) > 0 ) {
 					$tableText .= "|-\n";
 				}
@@ -730,14 +707,14 @@ END;
 			}
 			$tableText .= "{{#ask:[[" . $this->mAggregatingProperty . "::{{SUBJECTPAGENAME}}]]|format=list}}\n";
 		}
-		if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+		if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 			$tableText .= "|}";
 		}
 		// Leave out newlines if there's an internal property
 		// set here (which would mean that there are meant to be
 		// multiple instances of this template.)
 		if ( $internalObjText === null ) {
-			if ( $this->mTemplateFormat == 'standard' || $this->mTemplateFormat == 'infobox' ) {
+			if ( $this->mTemplateFormat == 'table' || $this->mTemplateFormat == 'infobox' ) {
 				$tableText .= "\n";
 			}
 		} else {
@@ -765,7 +742,8 @@ END;
 	function createTextForField( $field ) {
 		$text = '';
 		$fieldStart = $this->mFieldStart;
-		Hooks::run( 'PageForms::TemplateFieldStart', [ $field, &$fieldStart ] );
+		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+		$hookContainer->run( 'PageForms::TemplateFieldStart', [ $field, &$fieldStart ] );
 		if ( $fieldStart != '' ) {
 			$text .= "$fieldStart ";
 		}
@@ -774,7 +752,7 @@ END;
 		$text .= $field->createText( $cargoInUse );
 
 		$fieldEnd = $this->mFieldEnd;
-		Hooks::run( 'PageForms::TemplateFieldEnd', [ $field, &$fieldEnd ] );
+		$hookContainer->run( 'PageForms::TemplateFieldEnd', [ $field, &$fieldEnd ] );
 		if ( $fieldEnd != '' ) {
 			$text .= " $fieldEnd";
 		}

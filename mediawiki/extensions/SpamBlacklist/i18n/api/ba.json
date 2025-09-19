@@ -1,9 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Янмурза Баки"
+			"З. ӘЙЛЕ"
 		]
 	},
-	"apihelp-spamblacklist-description": "SpamBlacklist ярҙамында бер йәки бер-нисә URL-адрестарҙы тикшерергә",
-	"apihelp-spamblacklist-param-url": "Ҡара исемлектә тикшерә торған URL-адрестар."
+	"apihelp-spamblacklist-param-url": "Бикләнгән исемлеккә эләгеү-эләкмәүен тикшерергә кәрәкле URL-адрестар."
 }

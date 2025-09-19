@@ -6,7 +6,7 @@ use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use MediaWiki\MediaWikiServices;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 use Exception;
 
@@ -20,7 +20,7 @@ class FindUnusedMolecules extends SpecialPage
         parent::__construct('FindUnusedMolecules');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 
@@ -39,7 +39,7 @@ class FindUnusedMolecules extends SpecialPage
         $output->addWikiTextAsContent("This page shows molecules/reactions which are not used in the wiki.");
         $this->addPagination($output, $offset, $limit);
 
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $ids = $repo->getUnusedMoleculeIds($limit, $offset);
 
@@ -53,12 +53,12 @@ class FindUnusedMolecules extends SpecialPage
             }
             return $title;
         }, $ids);
-        $output->addHTML($this->blade->view()->make("findUnusedMolecules.results", [
+        $output->addHTML($this->blade->run("findUnusedMolecules.results", [
 
             'moleculeTitles' => $moleculeTitles,
             'startIndex' => $offset
         ])
-            ->render());
+            );
 
         $this->addPagination($output, $offset, $limit);
     }
@@ -71,13 +71,13 @@ class FindUnusedMolecules extends SpecialPage
     private function addPagination(\OutputPage $output, ?string $offset, ?string $limit): void
     {
         global $wgScriptPath;
-        $output->addHTML($this->blade->view()->make("findUnusedMolecules.pagination", [
+        $output->addHTML($this->blade->run("findUnusedMolecules.pagination", [
             'wgScriptPath' => $wgScriptPath,
             'limits' => self::$AVAILABLE_LIMITS,
             'offset' => $offset,
             'limit' => $limit
         ])
-            ->render());
+            );
     }
 
 }

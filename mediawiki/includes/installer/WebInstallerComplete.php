@@ -19,22 +19,18 @@
  * @ingroup Installer
  */
 
+namespace MediaWiki\Installer;
+
+use HtmlArmor;
+use MediaWiki\Message\Message;
+
 class WebInstallerComplete extends WebInstallerPage {
 
 	public function execute() {
 		// Pop up a dialog box, to make it difficult for the user to forget
 		// to download the file
 		$lsUrl = $this->getVar( 'wgServer' ) . $this->parent->getUrl( [ 'localsettings' => 1 ] );
-		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) &&
-			strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE' ) !== false
-		) {
-			// JS appears to be the only method that works consistently with IE7+
-			$this->addHTML( "\n<script>jQuery( function () { location.href = " .
-				Xml::encodeJsVar( $lsUrl ) . "; } );</script>\n" );
-		} else {
-			$this->parent->request->response()->header( "Refresh: 0;url=$lsUrl" );
-		}
-
+		$this->parent->request->response()->header( "Refresh: 0;url=$lsUrl" );
 		$this->startForm();
 		$this->parent->disableLinkPopups();
 		$location = $this->parent->getLocalSettingsLocation();

@@ -10,7 +10,6 @@ The following components and modifications are available:
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
 - [`Structure`](#structure)
 - [`Grid`](#grid)
 - [`Row`](#row)
@@ -38,6 +37,7 @@ The following components and modifications are available:
 - [Component `Silent`](#component-silent)
 - [Component `SiteNotice`](#component-sitenotice)
 - [Component `Toolbox`](#component-toolbox)
+- [Component `Toc`](#component-toc)
 - [Modification `HideFor`](#modification-hidefor)
 - [Modification `ShowOnlyFor`](#modification-showonlyfor)
 - [Modification `Sticky`](#modification-sticky)
@@ -94,7 +94,7 @@ recommended.
 
   Use `fixedwidth` for a responsive fixed width layout. Use `fluid` for a full
   width layout, spanning the entire width of the viewport.
-  
+
   Use a breakpoint name for a responsive container (since Chameleon 4.1.0).
 
 * `id`:
@@ -265,7 +265,7 @@ assign a CSS id or class for styling purposes.
 -------------------------------------------------------------------------------
 ### Component `ContentBody`
 
-Allows to display the content body independently of the [MainContent](#component-maincontent). 
+Allows to display the content body independently of the [MainContent](#component-maincontent).
 
 Since Chameleon 4.2.0
 
@@ -783,6 +783,13 @@ Using the message _MediaWiki:Secondary-menu_:
   both attributes in the same `NavMenu` instance, but it can make sense to use
   them separately in complementary instances.
 
+* `showActive`:
+  * Allowed values: Boolean (`yes`|`no`)
+  * Default: `no`
+  * Optional.
+
+  If set the menu link for the current page will be highlighted.
+
 #### Allowed Parent Elements:
 * [Structure](#structure)
 * [Cell](#cell)
@@ -989,6 +996,27 @@ applicable.
   This attribute applies only when used inside the
   [NavbarHorizontal](#component-navbarhorizontal) component.
 
+* `showUserAvatar`:
+  * Since Chameleon 4.4.0
+  * Allowed values: Boolean (`yes`|`no`)
+  * Default: `no`
+  * Optional.
+
+  Whether to show a user avatar instead of a generic icon for the dropdown. This will look for an image file on the
+  wiki with a title matching `USERNAME.EXTENSION`. The supported extensions are: `png`, `jpg`, `jpeg`.
+
+  Alternatively, the avatar URL can be provided by implementing the `ChameleonNavbarHorizontalPersonalToolsAvatarUrl`
+  hook. Example:
+  ```php
+  $wgHooks['ChameleonNavbarHorizontalPersonalToolsAvatarUrl'][] = function ( &$avatarUrl, $skin ) {
+    avatarUrl = 'https://upload.wikimedia.org/wikipedia/mediawiki/thumb/3/31/Chameleon.svg/170px-Chameleon.svg.png';
+    return false;
+  };
+  ```
+
+  This attribute applies only when used inside the
+  [NavbarHorizontal](#component-navbarhorizontal) component.
+
 #### Allowed Parent Elements:
 * [Structure](#structure)
 * [Cell](#cell)
@@ -1125,6 +1153,25 @@ and a link to a list of pages linking to the current page.
 
 #### Allowed Child Elements:
 * Any modification
+
+-------------------------------------------------------------------------------
+### Component `Toc`
+
+The table of contents. This removes the table of contents from the main content and allows it to be placed elsewhere.
+Subsections are collapsed, and it tracks the user's position on the page.
+
+This component is experimental. Additional styling is required depending on where the component is placed.
+
+Since Chameleon 4.4.0
+
+#### Example usage
+
+``` xml
+<component type="Toc" />
+```
+
+#### Attributes:
+None
 
 -------------------------------------------------------------------------------
 ### Modification `HideFor`

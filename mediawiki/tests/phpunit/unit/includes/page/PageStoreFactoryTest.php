@@ -1,17 +1,17 @@
 <?php
 namespace MediaWiki\Tests\Page;
 
-use LinkCache;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
+use MediaWiki\Cache\LinkCache;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageStore;
 use MediaWiki\Page\PageStoreFactory;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\TitleParser;
 use MediaWikiUnitTestCase;
-use NamespaceInfo;
-use TitleParser;
 use Wikimedia\Rdbms\LBFactory;
 use Wikimedia\Rdbms\LoadBalancer;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \MediaWiki\Page\PageStoreFactory
@@ -35,7 +35,7 @@ class PageStoreFactoryTest extends MediaWikiUnitTestCase {
 			$this->createNoOpMock( NamespaceInfo::class ),
 			$this->createNoOpMock( TitleParser::class ),
 			$this->createNoOpMock( LinkCache::class ),
-			$this->createNoOpMock( StatsdDataFactoryInterface::class )
+			$this->createNoOpMock( StatsFactory::class )
 		);
 
 		// Just check that nothing explodes.

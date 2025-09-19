@@ -33,6 +33,9 @@
  * |query string=namespace=User&preload=UserStub}}
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
+
 class PFFormInputParserFunction {
 	/**
 	 * static variable to guarantee that JavaScript for autocompletion
@@ -77,42 +80,57 @@ class PFFormInputParserFunction {
 				$value = null;
 			}
 
-			if ( $paramName == 'form' ) {
-				$inFormName = $value;
-			} elseif ( $paramName == 'size' ) {
-				$inSize = $value;
-			} elseif ( $paramName == 'default value' ) {
-				$inValue = $value;
-			} elseif ( $paramName == 'button text' ) {
-				$inButtonStr = $value;
-			} elseif ( $paramName == 'query string' ) {
-				$inQueryArr = PFAutoEdit::convertQueryString( $value, $inQueryArr );
-			} elseif ( $paramName == 'autocomplete on category' ) {
-				$inAutocompletionSource = $value;
-				$autocompletionType = 'category';
-			} elseif ( $paramName == 'autocomplete on namespace' ) {
-				$inAutocompletionSource = $value;
-				$autocompletionType = 'namespace';
-			} elseif ( $paramName == 'namespace selector' ) {
-				$inNamespaceSelector = explode( ',', $value );
-			} elseif ( $paramName == 'placeholder' ) {
-				$inPlaceholder = $value;
-			} elseif ( $paramName == 'popup' ) {
-				PFFormLink::loadScriptsForPopupForm( $parser );
-				$classStr .= ' popupforminput';
-				$hasPopup = true;
-			} elseif ( $paramName == 'reload' ) {
-				$classStr .= ' reload';
-				$inQueryArr['reload'] = '1';
-			} elseif ( $paramName == 'no autofocus' ) {
-				$inAutofocus = false;
-			} else {
-				$value = urlencode( $value );
-				parse_str( "$paramName=$value", $arr );
-				$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
-				if ( $paramName == 'returnto' ) {
-					$hasReturnTo = true;
-				}
+			switch ( $paramName ) {
+				case 'form':
+					$inFormName = $value;
+					break;
+				case 'size':
+					$inSize = $value;
+					break;
+				case 'default value':
+					$inValue = $value;
+					break;
+				case 'button text':
+					$inButtonStr = $value;
+					break;
+				case 'query string':
+					$inQueryArr = PFAutoEdit::convertQueryString( $value, $inQueryArr );
+					break;
+				case 'autocomplete on category':
+					$inAutocompletionSource = $value;
+					$autocompletionType = 'category';
+					break;
+				case 'autocomplete on namespace':
+					$inAutocompletionSource = $value;
+					$autocompletionType = 'namespace';
+					break;
+				case 'namespace selector':
+					$inNamespaceSelector = explode( ',', $value );
+					break;
+				case 'placeholder':
+					$inPlaceholder = $value;
+					break;
+				case 'popup':
+					PFFormLink::loadScriptsForPopupForm( $parser );
+					$classStr .= ' popupforminput';
+					$hasPopup = true;
+					break;
+				case 'reload':
+					$classStr .= ' reload';
+					$inQueryArr['reload'] = '1';
+					break;
+				case 'no autofocus':
+					$inAutofocus = false;
+					break;
+				default:
+					if ( $value !== null ) {
+						$value = urlencode( $value );
+						parse_str( "$paramName=$value", $arr );
+						$inQueryArr = PFUtils::arrayMergeRecursiveDistinct( $inQueryArr, $arr );
+						if ( $paramName === 'returnto' ) {
+							$hasReturnTo = true;
+						}
+					}
 			}
 		}
 
@@ -188,13 +206,13 @@ class PFFormInputParserFunction {
 				return Html::element( 'div', [ 'class' => 'error' ], $e->getMessage() );
 			}
 			$formInputAttrs['data-possible-forms'] = implode( '|', $allForms );
-			$formInputAttrs['data-form-label'] = PFUtils::getFormDropdownLabel();
+			$formInputAttrs['data-form-label'] = wfMessage( 'pf-formstart-formlabel' )->escaped();
 		} elseif ( count( $listOfForms ) == 1 ) {
 			$inFormName = str_replace( '\,', ',', $inFormName );
 			$formContents .= Html::hidden( "form", $inFormName );
 		} else {
 			$formInputAttrs['data-possible-forms'] = implode( '|', $listOfForms );
-			$formInputAttrs['data-form-label'] = PFUtils::getFormDropdownLabel();
+			$formInputAttrs['data-form-label'] = wfMessage( 'pf-formstart-formlabel' )->escaped();
 		}
 
 		// Recreate the passed-in query string as a set of hidden
@@ -214,7 +232,7 @@ class PFFormInputParserFunction {
 		$formInputAttrs['data-button-label'] = ( $inButtonStr != '' ) ? $inButtonStr : wfMessage( 'pf_formstart_createoredit' )->escaped();
 		$formContents .= Html::element( 'div', $formInputAttrs, null );
 
-		Hooks::run( 'PageForms::FormInputEnd', [ $params, &$formContents ] );
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::FormInputEnd', [ $params, &$formContents ] );
 
 		$str = "\t" . Html::rawElement( 'form', [
 				'name' => 'createbox',

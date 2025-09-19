@@ -1,6 +1,8 @@
 <?php
 
-namespace MediaWiki\Logger\Monolog;
+namespace MediaWiki\Tests\Logger\Monolog;
+
+use MediaWiki\Logger\Monolog\LogstashFormatter;
 
 class LogstashFormatterTest extends \MediaWikiUnitTestCase {
 	/**
@@ -22,7 +24,7 @@ class LogstashFormatterTest extends \MediaWikiUnitTestCase {
 		}
 	}
 
-	public function provideV1() {
+	public static function provideV1() {
 		return [
 			[
 				[ 'extra' => [ 'foo' => 1 ], 'context' => [ 'bar' => 2 ] ],

@@ -7,6 +7,7 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
 use PHPUnit\TextUI\Command;
 
 class PHPUnitMaintClass {
@@ -28,8 +29,6 @@ class PHPUnitMaintClass {
 	}
 
 	public function prepareEnvironment() {
-		global $wgCommandLineMode;
-
 		# Disable the memory limit as it's not needed for tests.
 		ini_set( 'memory_limit', -1 );
 
@@ -37,8 +36,6 @@ class PHPUnitMaintClass {
 		# "When running PHP from the command line the default setting is 0."
 		# But sometimes this doesn't seem to be the case.
 		ini_set( 'max_execution_time', 0 );
-
-		$wgCommandLineMode = true;
 
 		# Turn off output buffering if it's on
 		while ( ob_get_level() > 0 ) {
@@ -98,9 +95,20 @@ class PHPUnitMaintClass {
 			// or when T227900 is resolved.
 			$args[] = '--configuration=' . __DIR__ . '/suite.xml';
 		}
+		$args[] = '--bootstrap=' . __DIR__ . '/bootstrap.maintenance.php';
 		$command->run( $args, true );
 	}
 }
+
+$deprecationMsg = <<<EOT
+*******************************************************************************
+DEPRECATED: The tests/phpunit/phpunit.php entry point has been deprecated. Use
+            `composer phpunit` instead.
+*******************************************************************************
+
+EOT;
+
+fwrite( STDERR, $deprecationMsg );
 
 if ( defined( 'MEDIAWIKI' ) ) {
 	exit( 'Wrong entry point?' );
@@ -127,6 +135,8 @@ if ( getenv( 'PHPUNIT_WIKI' ) ) {
 // Define the MediaWiki entrypoint
 define( 'MEDIAWIKI', true );
 
+define( 'PHPUNIT_LEGACY_ENTRYPOINT', true );
+
 $IP = getenv( 'MW_INSTALL_PATH' );
 
 $wrapper = new PHPUnitMaintClass();
@@ -149,5 +159,12 @@ require_once "$IP/includes/Setup.php";
 // Deregister handler from MWExceptionHandler::installHandle so that PHPUnit's own handler
 // stays in tact. Needs to happen after including Setup.php, which calls MWExceptionHandler::installHandle().
 restore_error_handler();
+
+// Check that composer dependencies are up-to-date
+if ( !getenv( 'MW_SKIP_EXTERNAL_DEPENDENCIES' ) ) {
+	$composerLockUpToDate = new CheckComposerLockUpToDate();
+	$composerLockUpToDate->loadParamsAndArgs( 'phpunit', [ 'quiet' => true ] );
+	$composerLockUpToDate->execute();
+}
 
 $wrapper->execute();

@@ -3,40 +3,46 @@
 namespace MediaWiki\Extension\AbuseFilter\Special;
 
 use DifferenceEngine;
-use ExtensionRegistry;
-use Html;
-use HTMLForm;
 use InvalidArgumentException;
-use Linker;
-use ListToggle;
 use ManualLogEntry;
 use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
+use MediaWiki\Extension\AbuseFilter\AbuseLoggerFactory;
 use MediaWiki\Extension\AbuseFilter\CentralDBNotAvailableException;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesRegistry;
 use MediaWiki\Extension\AbuseFilter\Filter\FilterNotFoundException;
+use MediaWiki\Extension\AbuseFilter\Filter\Flags;
+use MediaWiki\Extension\AbuseFilter\FilterUtils;
 use MediaWiki\Extension\AbuseFilter\GlobalNameUtils;
 use MediaWiki\Extension\AbuseFilter\Pager\AbuseLogPager;
 use MediaWiki\Extension\AbuseFilter\SpecsFormatter;
 use MediaWiki\Extension\AbuseFilter\Variables\UnsetVariableException;
+use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesBlobStore;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesFormatter;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
 use MediaWiki\Extension\AbuseFilter\View\HideAbuseLog;
+use MediaWiki\Html\Html;
+use MediaWiki\Html\ListToggle;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Status\Status;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
+use MediaWiki\WikiMap\WikiMap;
 use OOUI\ButtonInputWidget;
-use SpecialPage;
-use Status;
 use stdClass;
-use Title;
-use WikiMap;
-use Xml;
+use Wikimedia\Rdbms\IExpression;
+use Wikimedia\Rdbms\LBFactory;
+use Wikimedia\Rdbms\LikeValue;
 
 class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	public const PAGE_NAME = 'AbuseLog';
@@ -51,55 +57,58 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	/**
 	 * @var string|null The user whose AbuseLog entries are being searched
 	 */
-	protected $mSearchUser;
+	private $mSearchUser;
 
 	/**
 	 * @var string The start time of the search period
 	 */
-	protected $mSearchPeriodStart;
+	private $mSearchPeriodStart;
 
 	/**
 	 * @var string The end time of the search period
 	 */
-	protected $mSearchPeriodEnd;
+	private $mSearchPeriodEnd;
 
 	/**
 	 * @var string The page of which AbuseLog entries are being searched
 	 */
-	protected $mSearchTitle;
+	private $mSearchTitle;
 
 	/**
 	 * @var string The action performed by the user
 	 */
-	protected $mSearchAction;
+	private $mSearchAction;
 
 	/**
 	 * @var string The action taken by AbuseFilter
 	 */
-	protected $mSearchActionTaken;
+	private $mSearchActionTaken;
 
 	/**
 	 * @var string The wiki name where we're performing the search
 	 */
-	protected $mSearchWiki;
+	private $mSearchWiki;
 
 	/**
 	 * @var string|null The filter IDs we're looking for. Either a single one, or a pipe-separated list
 	 */
-	protected $mSearchFilter;
+	private $mSearchFilter;
 
 	/**
 	 * @var string The visibility of entries we're interested in
 	 */
-	protected $mSearchEntries;
+	private $mSearchEntries;
 
 	/**
 	 * @var string The impact of the user action, i.e. if the change has been saved
 	 */
-	protected $mSearchImpact;
+	private $mSearchImpact;
 
 	/** @var string|null The filter group to search, as defined in $wgAbuseFilterValidGroups */
-	protected $mSearchGroup;
+	private $mSearchGroup;
+
+	/** @var LBFactory */
+	private $lbFactory;
 
 	/** @var LinkBatchFactory */
 	private $linkBatchFactory;
@@ -125,7 +134,10 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	/** @var VariablesManager */
 	private $varManager;
 
+	private AbuseLoggerFactory $abuseLoggerFactory;
+
 	/**
+	 * @param LBFactory $lbFactory
 	 * @param LinkBatchFactory $linkBatchFactory
 	 * @param PermissionManager $permissionManager
 	 * @param UserIdentityLookup $userIdentityLookup
@@ -135,8 +147,10 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	 * @param SpecsFormatter $specsFormatter
 	 * @param VariablesFormatter $variablesFormatter
 	 * @param VariablesManager $varManager
+	 * @param AbuseLoggerFactory $abuseLoggerFactory
 	 */
 	public function __construct(
+		LBFactory $lbFactory,
 		LinkBatchFactory $linkBatchFactory,
 		PermissionManager $permissionManager,
 		UserIdentityLookup $userIdentityLookup,
@@ -145,9 +159,11 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		VariablesBlobStore $varBlobStore,
 		SpecsFormatter $specsFormatter,
 		VariablesFormatter $variablesFormatter,
-		VariablesManager $varManager
+		VariablesManager $varManager,
+		AbuseLoggerFactory $abuseLoggerFactory
 	) {
 		parent::__construct( self::PAGE_NAME, 'abusefilter-log', $afPermissionManager );
+		$this->lbFactory = $lbFactory;
 		$this->linkBatchFactory = $linkBatchFactory;
 		$this->permissionManager = $permissionManager;
 		$this->userIdentityLookup = $userIdentityLookup;
@@ -158,6 +174,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		$this->variablesFormatter = $variablesFormatter;
 		$this->variablesFormatter->setMessageLocalizer( $this );
 		$this->varManager = $varManager;
+		$this->abuseLoggerFactory = $abuseLoggerFactory;
 	}
 
 	/**
@@ -189,7 +206,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	 * An array of size 1: either the URL is like Special:AbuseLog/id where
 	 * the id is log identifier, in which case the details of the log except for
 	 * private bits (e.g. IP address) are shown, or Special:AbuseLog/hide for hiding entries,
-	 * or the URL is incomplete as in Special:AbuseLog/private (without speciying id),
+	 * or the URL is incomplete as in Special:AbuseLog/private (without specifying id),
 	 * in which case a warning is shown to the user
 	 *
 	 * An array of size 0 when URL is like Special:AbuseLog or an array of size
@@ -230,6 +247,13 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			$this->searchForm();
 			$this->showList();
 		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getShortDescription( string $path = '' ): string {
+		return $this->msg( 'abusefilter-topnav-log' )->text();
 	}
 
 	/**
@@ -405,6 +429,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 	private function showHideView() {
 		$view = new HideAbuseLog(
+			$this->lbFactory,
 			$this->afPermissionManager,
 			$this->getContext(),
 			$this->getLinkRenderer(),
@@ -435,15 +460,15 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			}
 		}
 
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = $this->lbFactory->getReplicaDatabase();
 		if ( $this->mSearchPeriodStart ) {
-			$conds[] = 'afl_timestamp >= ' .
-				$dbr->addQuotes( $dbr->timestamp( strtotime( $this->mSearchPeriodStart ) ) );
+			$conds[] = $dbr->expr( 'afl_timestamp', '>=',
+				$dbr->timestamp( strtotime( $this->mSearchPeriodStart ) ) );
 		}
 
 		if ( $this->mSearchPeriodEnd ) {
-			$conds[] = 'afl_timestamp <= ' .
-				$dbr->addQuotes( $dbr->timestamp( strtotime( $this->mSearchPeriodEnd ) ) );
+			$conds[] = $dbr->expr( 'afl_timestamp', '<=',
+				$dbr->timestamp( strtotime( $this->mSearchPeriodEnd ) ) );
 		}
 
 		if ( $this->mSearchWiki ) {
@@ -456,12 +481,12 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		$groupFilters = [];
 		if ( $this->mSearchGroup ) {
-			$groupFilters = $dbr->selectFieldValues(
-				'abuse_filter',
-				'af_id',
-				[ 'af_group' => $this->mSearchGroup ],
-				__METHOD__
-			);
+			$groupFilters = $dbr->newSelectQueryBuilder()
+				->select( 'af_id' )
+				->from( 'abuse_filter' )
+				->where( [ 'af_group' => $this->mSearchGroup ] )
+				->caller( __METHOD__ )
+				->fetchFieldValues();
 		}
 
 		$searchFilters = [];
@@ -501,7 +526,28 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 				}
 			}
 
-			// @phan-suppress-next-line PhanImpossibleCondition
+			// if a filter is protected, users who can't view protected filters should
+			// not be able to find log entries generated by it.
+			if ( !$this->afPermissionManager->canViewProtectedVariables( $performer ) ) {
+				$searchedForProtected = false;
+				foreach ( $filtersList as $index => $filterData ) {
+					try {
+						$filter = AbuseFilterServices::getFilterLookup()->getFilter( ...$filterData );
+					} catch ( FilterNotFoundException $_ ) {
+						unset( $filtersList[$index] );
+						$foundInvalid = true;
+						continue;
+					}
+					if ( $filter->isProtected() ) {
+						unset( $filtersList[$index] );
+						$searchedForProtected = true;
+					}
+				}
+				if ( $searchedForProtected ) {
+					$out->addWikiMsg( 'abusefilter-log-protected-not-included' );
+				}
+			}
+
 			if ( $foundInvalid ) {
 				// @todo Tell what the invalid IDs are
 				$out->addHTML(
@@ -535,24 +581,26 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 			$filterConds = [ 'local' => [], 'global' => [] ];
 			foreach ( $searchIDs as $filter ) {
-				list( $filterID, $isGlobal ) = GlobalNameUtils::splitGlobalName( $filter );
+				[ $filterID, $isGlobal ] = GlobalNameUtils::splitGlobalName( $filter );
 				$key = $isGlobal ? 'global' : 'local';
 				$filterConds[$key][] = $filterID;
 			}
 			$filterWhere = [];
 			if ( $filterConds['local'] ) {
-				$filterWhere[] = $dbr->makeList(
-					[ 'afl_global' => 0, 'afl_filter_id' => $filterConds['local'] ],
-					LIST_AND
-				);
+				$filterWhere[] = $dbr->andExpr( [
+					'afl_global' => 0,
+					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
+					'afl_filter_id' => $filterConds['local'],
+				] );
 			}
 			if ( $filterConds['global'] ) {
-				$filterWhere[] = $dbr->makeList(
-					[ 'afl_global' => 1, 'afl_filter_id' => $filterConds['global'] ],
-					LIST_AND
-				);
+				$filterWhere[] = $dbr->andExpr( [
+					'afl_global' => 1,
+					// @phan-suppress-previous-line PhanTypeMismatchArgument Array is non-empty
+					'afl_filter_id' => $filterConds['global'],
+				] );
 			}
-			$conds[] = $dbr->makeList( $filterWhere, LIST_OR );
+			$conds[] = $dbr->orExpr( $filterWhere );
 		}
 
 		$searchTitle = Title::newFromText( $this->mSearchTitle );
@@ -569,28 +617,26 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			}
 		}
 
-		if ( in_array( $this->mSearchImpact, [ '1', '2' ] ) ) {
-			$unsuccessfulActionConds = 'afl_rev_id IS NULL';
-			if ( $this->mSearchImpact === '1' ) {
-				$conds[] = "NOT ( $unsuccessfulActionConds )";
-			} else {
-				$conds[] = $unsuccessfulActionConds;
-			}
+		if ( $this->mSearchImpact === '1' ) {
+			$conds[] = $dbr->expr( 'afl_rev_id', '!=', null );
+		} elseif ( $this->mSearchImpact === '2' ) {
+			$conds[] = $dbr->expr( 'afl_rev_id', '=', null );
 		}
 
 		if ( $this->mSearchActionTaken ) {
 			if ( in_array( $this->mSearchActionTaken, $this->consequencesRegistry->getAllActionNames() ) ) {
-				$list = [ 'afl_actions' => $this->mSearchActionTaken ];
-				$list[] = 'afl_actions' . $dbr->buildLike(
-					$this->mSearchActionTaken, ',', $dbr->anyString() );
-				$list[] = 'afl_actions' . $dbr->buildLike(
-					$dbr->anyString(), ',', $this->mSearchActionTaken );
-				$list[] = 'afl_actions' . $dbr->buildLike(
-					$dbr->anyString(),
-					',', $this->mSearchActionTaken, ',',
-					$dbr->anyString()
-				);
-				$conds[] = $dbr->makeList( $list, LIST_OR );
+				$conds[] = $dbr->expr( 'afl_actions', '=', $this->mSearchActionTaken )
+					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
+						$this->mSearchActionTaken, ',', $dbr->anyString()
+					) )
+					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
+						$dbr->anyString(), ',', $this->mSearchActionTaken
+					) )
+					->or( 'afl_actions', IExpression::LIKE, new LikeValue(
+						$dbr->anyString(),
+						',', $this->mSearchActionTaken, ',',
+						$dbr->anyString()
+					) );
 			} elseif ( $this->mSearchActionTaken === 'noactions' ) {
 				$conds['afl_actions'] = '';
 			}
@@ -601,8 +647,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			if ( in_array( $this->mSearchAction, $filterableActions ) ) {
 				$conds['afl_action'] = $this->mSearchAction;
 			} elseif ( $this->mSearchAction === 'other' ) {
-				$list = $dbr->makeList( [ 'afl_action' => $filterableActions ], LIST_OR );
-				$conds[] = "NOT ( $list )";
+				$conds[] = $dbr->expr( 'afl_action', '!=', $filterableActions );
 			}
 		}
 
@@ -618,18 +663,19 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		$pager->doQuery();
 		$result = $pager->getResult();
 
-		$form = Xml::tags(
+		$form = Html::rawElement(
 			'form',
 			[
 				'method' => 'GET',
 				'action' => $this->getPageTitle( 'hide' )->getLocalURL()
 			],
 			$this->getDeleteButton() . $this->getListToggle() .
-				Xml::tags( 'ul', [ 'class' => 'plainlinks' ], $pager->getBody() ) .
+				Html::rawElement( 'ul', [ 'class' => 'plainlinks' ], $pager->getBody() ) .
 				$this->getListToggle() . $this->getDeleteButton()
 		);
 
 		if ( $result && $result->numRows() !== 0 ) {
+			$out->addModuleStyles( 'mediawiki.interface.helpers.styles' );
 			$out->addHTML( $pager->getNavigationBar() . $form . $pager->getNavigationBar() );
 		} else {
 			$out->addWikiMsg( 'abusefilter-log-noresults' );
@@ -688,36 +734,35 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			'join_conds' => $join_conds,
 		] = $pager->getQueryInfo();
 
-		$dbr = wfGetDB( DB_REPLICA );
-		$row = $dbr->selectRow(
-			$tables,
-			$fields,
-			[ 'afl_id' => $id ],
-			__METHOD__,
-			[],
-			$join_conds
-		);
+		$dbr = $this->lbFactory->getReplicaDatabase();
+		$row = $dbr->newSelectQueryBuilder()
+			->tables( $tables )
+			->fields( $fields )
+			->where( [ 'afl_id' => $id ] )
+			->caller( __METHOD__ )
+			->joinConds( $join_conds )
+			->fetchRow();
 
 		$error = null;
+		$privacyLevel = Flags::FILTER_PUBLIC;
 		if ( !$row ) {
 			$error = 'abusefilter-log-nonexistent';
 		} else {
 			$filterID = $row->afl_filter_id;
 			$global = $row->afl_global;
 
+			$privacyLevel = $row->af_hidden;
 			if ( $global ) {
 				try {
-					$filter_hidden = AbuseFilterServices::getFilterLookup()->getFilter( $filterID, $global )
-						->isHidden();
+					$privacyLevel = AbuseFilterServices::getFilterLookup()->getFilter( $filterID, $global )
+						->getPrivacyLevel();
 				} catch ( CentralDBNotAvailableException $_ ) {
-					// Conservatively assume that it's hidden, like in formatRow
-					$filter_hidden = true;
+					// Conservatively assume that it's hidden and protected, like in AbuseLogPager::doFormatRow
+					$privacyLevel = Flags::FILTER_HIDDEN & Flags::FILTER_USES_PROTECTED_VARS;
 				}
-			} else {
-				$filter_hidden = $row->af_hidden;
 			}
 
-			if ( !$this->afPermissionManager->canSeeLogDetailsForFilter( $performer, $filter_hidden ) ) {
+			if ( !$this->afPermissionManager->canSeeLogDetailsForFilter( $performer, $privacyLevel ) ) {
 				$error = 'abusefilter-log-cannot-see-details';
 			} else {
 				$visibility = self::getEntryVisibilityForUser( $row, $performer, $this->afPermissionManager );
@@ -727,6 +772,16 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 					$error = 'abusefilter-log-details-hidden-implicit';
 				}
 			}
+
+			// Only show the preference error if another error isn't already set
+			// as this error shouldn't take precedence over a view permission error
+			if (
+				FilterUtils::isProtected( $privacyLevel ) &&
+				!$this->afPermissionManager->canViewProtectedVariableValues( $performer ) &&
+				!$error
+			) {
+				$error = 'abusefilter-examine-protected-vars-permission';
+			}
 		}
 
 		if ( $error ) {
@@ -734,18 +789,62 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			return;
 		}
 
-		$output = Xml::element(
+		$output = Html::element(
 			'legend',
-			null,
+			[],
 			$this->msg( 'abusefilter-log-details-legend' )
-				->numParams( $id )
+				->params( $this->getLanguage()->formatNumNoSeparators( $id ) )
 				->text()
 		);
-		$output .= Xml::tags( 'p', null, $pager->doFormatRow( $row, false ) );
+		$output .= Html::rawElement( 'p', [], $pager->doFormatRow( $row, false ) );
 
 		// Load data
-		$vars = $this->varBlobStore->loadVarDump( $row->afl_var_dump );
-		$out->addJsConfigVars( 'wgAbuseFilterVariables', $this->varManager->dumpAllVars( $vars, true ) );
+		$vars = $this->varBlobStore->loadVarDump( $row );
+		$varsArray = $this->varManager->dumpAllVars( $vars, true );
+		$shouldLogProtectedVarAccess = false;
+
+		// If a non-protected filter and a protected filter have overlapping conditions,
+		// it's possible for a hit to contain a protected variable and for that variable
+		// to be dumped and displayed on a detail page that wouldn't be considered
+		// protected (because it caught on the public filter).
+		// We shouldn't block access to the details of an otherwise public filter hit so
+		// instead only check for access to the protected variables and redact them if the user
+		// shouldn't see them.
+		$userAuthority = $this->getAuthority();
+		$canViewProtectedVars = $this->afPermissionManager->canViewProtectedVariableValues( $userAuthority );
+		foreach ( $this->afPermissionManager->getProtectedVariables() as $protectedVariable ) {
+			if ( isset( $varsArray[$protectedVariable] ) ) {
+				if ( !$canViewProtectedVars ) {
+					$varsArray[$protectedVariable] = '';
+				} else {
+					// Protected variables in protected filters logs access in the general permission check
+					// Log access to non-protected filters that happen to expose protected variables here
+					if ( !FilterUtils::isProtected( $privacyLevel ) ) {
+						$shouldLogProtectedVarAccess = true;
+					}
+				}
+			}
+		}
+		$vars = VariableHolder::newFromArray( $varsArray );
+
+		// Log if protected variables are accessed
+		if (
+			FilterUtils::isProtected( $privacyLevel ) &&
+			$canViewProtectedVars
+		) {
+			$shouldLogProtectedVarAccess = true;
+		}
+
+		if ( $shouldLogProtectedVarAccess ) {
+			$logger = $this->abuseLoggerFactory->getProtectedVarsAccessLogger();
+			$logger->logViewProtectedVariableValue(
+				$userAuthority->getUser(),
+				$varsArray['user_name'] ?? $varsArray['accountname']
+			);
+		}
+
+		$out->addJsConfigVars( 'wgAbuseFilterVariables', $varsArray );
+		$out->addModuleStyles( 'mediawiki.interface.helpers.styles' );
 
 		// Diff, if available
 		if ( $row->afl_action === 'edit' ) {
@@ -772,16 +871,16 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			);
 
 			$output .=
-				Xml::tags(
+				Html::rawElement(
 					'h3',
-					null,
+					[],
 					$this->msg( 'abusefilter-log-details-diff' )->parse()
 				);
 
 			$output .= $formattedDiff;
 		}
 
-		$output .= Xml::element( 'h3', null, $this->msg( 'abusefilter-log-details-vars' )->text() );
+		$output .= Html::element( 'h3', [], $this->msg( 'abusefilter-log-details-vars' )->text() );
 
 		// Build a table.
 		$output .= $this->variablesFormatter->buildVarDumpTable( $vars );
@@ -804,14 +903,13 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 			$output .= $htmlForm->getHTML( false );
 		}
 
-		// TODO Clarify whether TextSlotDiffRenderer::getTextDiff can return unsafe stuff
-		// @phan-suppress-next-line SecurityCheck-XSS
-		$out->addHTML( Xml::tags( 'fieldset', null, $output ) );
+		$out->addHTML( Html::rawElement( 'fieldset', [], $output ) );
 	}
 
 	/**
 	 * Helper function to select a row with private details and some more context
 	 * for an AbuseLog entry.
+	 * @todo Create a service for this
 	 *
 	 * @param Authority $authority The user who's trying to view the row
 	 * @param int $id The ID of the log entry
@@ -819,18 +917,17 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	 *  or an error and no row.
 	 */
 	public static function getPrivateDetailsRow( Authority $authority, $id ) {
-		$afPermManager = AbuseFilterServices::getPermissionManager();
-		$dbr = wfGetDB( DB_REPLICA );
+		$afPermissionManager = AbuseFilterServices::getPermissionManager();
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 
-		$row = $dbr->selectRow(
-			[ 'abuse_filter_log', 'abuse_filter' ],
-			[ 'afl_id', 'afl_user_text', 'afl_filter_id', 'afl_global', 'afl_timestamp', 'afl_ip',
-				'af_id', 'af_public_comments', 'af_hidden' ],
-			[ 'afl_id' => $id ],
-			__METHOD__,
-			[],
-			[ 'abuse_filter' => [ 'LEFT JOIN', [ 'af_id=afl_filter_id', 'afl_global' => 0 ] ] ]
-		);
+		$row = $dbr->newSelectQueryBuilder()
+			->select( [ 'afl_id', 'afl_user_text', 'afl_filter_id', 'afl_global', 'afl_timestamp', 'afl_ip',
+				'af_id', 'af_public_comments', 'af_hidden' ] )
+			->from( 'abuse_filter_log' )
+			->leftJoin( 'abuse_filter', null, [ 'af_id=afl_filter_id', 'afl_global' => 0 ] )
+			->where( [ 'afl_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		$status = Status::newGood();
 		if ( !$row ) {
@@ -843,12 +940,12 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		if ( $global ) {
 			$lookup = AbuseFilterServices::getFilterLookup();
-			$filterHidden = $lookup->getFilter( $filterID, $global )->isHidden();
+			$privacyLevel = $lookup->getFilter( $filterID, $global )->getPrivacyLevel();
 		} else {
-			$filterHidden = $row->af_hidden;
+			$privacyLevel = $row->af_hidden;
 		}
 
-		if ( !$afPermManager->canSeeLogDetailsForFilter( $authority, $filterHidden ) ) {
+		if ( !$afPermissionManager->canSeeLogDetailsForFilter( $authority, $privacyLevel ) ) {
 			$status->fatal( 'abusefilter-log-cannot-see-details' );
 			return $status;
 		}
@@ -862,93 +959,71 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	 * @param stdClass $row The row, as returned by self::getPrivateDetailsRow()
 	 * @return string The HTML output
 	 */
-	protected function buildPrivateDetailsTable( $row ) {
-		$output = Xml::element(
-			'legend',
-			null,
-			$this->msg( 'abusefilter-log-details-privatedetails' )->text()
-		);
-
-		$header =
-			Xml::element( 'th', null, $this->msg( 'abusefilter-log-details-var' )->text() ) .
-			Xml::element( 'th', null, $this->msg( 'abusefilter-log-details-val' )->text() );
-
-		$output .=
-			Xml::openElement( 'table',
-				[
-					'class' => 'wikitable mw-abuselog-private',
-					'style' => 'width: 80%;'
-				]
-			) .
-			Xml::openElement( 'tbody' );
-		$output .= $header;
+	private function buildPrivateDetailsTable( $row ) {
+		$output = '';
 
 		// Log ID
 		$linkRenderer = $this->getLinkRenderer();
 		$output .=
-			Xml::tags( 'tr', null,
-				Xml::element( 'td',
+			Html::rawElement( 'tr', [],
+				Html::element( 'td',
 					[ 'style' => 'width: 30%;' ],
 					$this->msg( 'abusefilter-log-details-id' )->text()
 				) .
-				Xml::openElement( 'td' ) .
-				$linkRenderer->makeKnownLink(
+				Html::rawElement( 'td', [], $linkRenderer->makeKnownLink(
 					$this->getPageTitle( $row->afl_id ),
-					$this->getLanguage()->formatNum( $row->afl_id )
-				) .
-				Xml::closeElement( 'td' )
+					$this->getLanguage()->formatNumNoSeparators( $row->afl_id )
+				) )
 			);
 
 		// Timestamp
 		$output .=
-			Xml::tags( 'tr', null,
-				Xml::element( 'td',
+			Html::rawElement( 'tr', [],
+				Html::element( 'td',
 					[ 'style' => 'width: 30%;' ],
 					$this->msg( 'abusefilter-edit-builder-vars-timestamp-expanded' )->text()
 				) .
-				Xml::element( 'td',
-					null,
+				Html::element( 'td',
+					[],
 					$this->getLanguage()->userTimeAndDate( $row->afl_timestamp, $this->getUser() )
 				)
 			);
 
 		// User
 		$output .=
-			Xml::tags( 'tr', null,
-				Xml::element( 'td',
+			Html::rawElement( 'tr', [],
+				Html::element( 'td',
 					[ 'style' => 'width: 30%;' ],
 					$this->msg( 'abusefilter-edit-builder-vars-user-name' )->text()
 				) .
-				Xml::element( 'td',
-					null,
+				Html::element( 'td',
+					[],
 					$row->afl_user_text
 				)
 			);
 
 		// Filter ID
 		$output .=
-			Xml::tags( 'tr', null,
-				Xml::element( 'td',
+			Html::rawElement( 'tr', [],
+				Html::element( 'td',
 					[ 'style' => 'width: 30%;' ],
 					$this->msg( 'abusefilter-list-id' )->text()
 				) .
-				Xml::openElement( 'td' ) .
-				$linkRenderer->makeKnownLink(
+				Html::rawElement( 'td', [], $linkRenderer->makeKnownLink(
 					SpecialPage::getTitleFor( 'AbuseFilter', $row->af_id ),
 					$this->getLanguage()->formatNum( $row->af_id )
-				) .
-				Xml::closeElement( 'td' )
+				) )
 			);
 
 		// Filter description
 		$output .=
-			Xml::tags( 'tr', null,
-				Xml::element( 'td',
+			Html::rawElement( 'tr', [],
+				Html::element( 'td',
 					[ 'style' => 'width: 30%;' ],
 					$this->msg( 'abusefilter-list-public' )->text()
 				) .
-				Xml::element( 'td',
-					null,
+				Html::element( 'td',
+					[],
 					$row->af_public_comments
 				)
 			);
@@ -969,36 +1044,54 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 				$CULink = '';
 			}
 			$output .=
-				Xml::tags( 'tr', null,
-					Xml::element( 'td',
+				Html::rawElement( 'tr', [],
+					Html::element( 'td',
 						[ 'style' => 'width: 30%;' ],
 						$this->msg( 'abusefilter-log-details-ip' )->text()
 					) .
-					Xml::tags(
+					Html::rawElement(
 						'td',
-						null,
+						[],
 						self::getUserLinks( 0, $row->afl_ip ) . $CULink
 					)
 				);
 		} else {
 			$output .=
-				Xml::tags( 'tr', null,
-					Xml::element( 'td',
+				Html::rawElement( 'tr', [],
+					Html::element( 'td',
 						[ 'style' => 'width: 30%;' ],
 						$this->msg( 'abusefilter-log-details-ip' )->text()
 					) .
-					Xml::element(
+					Html::element(
 						'td',
-						null,
+						[],
 						$this->msg( 'abusefilter-log-ip-not-available' )->text()
 					)
 				);
 		}
 
-		$output .= Xml::closeElement( 'tbody' ) . Xml::closeElement( 'table' );
-
-		$output = Xml::tags( 'fieldset', null, $output );
-		return $output;
+		return Html::rawElement( 'fieldset', [],
+			Html::element( 'legend', [],
+				$this->msg( 'abusefilter-log-details-privatedetails' )->text()
+			) .
+			Html::rawElement( 'table',
+				[
+					'class' => 'wikitable mw-abuselog-private',
+					'style' => 'width: 80%;'
+				],
+				Html::rawElement( 'thead', [],
+					Html::rawElement( 'tr', [],
+						Html::element( 'th', [],
+							$this->msg( 'abusefilter-log-details-var' )->text()
+						) .
+						Html::element( 'th', [],
+							$this->msg( 'abusefilter-log-details-val' )->text()
+						)
+					)
+				) .
+				Html::rawElement( 'tbody', [], $output )
+			)
+		);
 	}
 
 	/**
@@ -1020,9 +1113,9 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		$token = $request->getVal( 'wpEditToken' );
 		if ( !$request->wasPosted() || !$user->matchEditToken( $token ) ) {
 			$out->addHTML(
-				Xml::tags(
+				Html::rawElement(
 					'p',
-					null,
+					[],
 					Html::errorBox( $this->msg( 'abusefilter-invalid-request' )->params( $id )->parse() )
 				)
 			);
@@ -1039,7 +1132,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		$status = self::getPrivateDetailsRow( $user, $id );
 		if ( !$status->isGood() ) {
-			$out->addWikiMsg( $status->getErrors()[0] );
+			$out->addWikiMsg( $status->getMessages()[0] );
 			return;
 		}
 		$row = $status->getValue();
@@ -1105,15 +1198,15 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 	/**
 	 * @param stdClass $row
 	 * @param Authority $authority
-	 * @param AbuseFilterPermissionManager $afPermManager
+	 * @param AbuseFilterPermissionManager $afPermissionManager
 	 * @return string One of the self::VISIBILITY_* constants
 	 */
 	public static function getEntryVisibilityForUser(
 		stdClass $row,
 		Authority $authority,
-		AbuseFilterPermissionManager $afPermManager
+		AbuseFilterPermissionManager $afPermissionManager
 	): string {
-		if ( $row->afl_deleted && !$afPermManager->canSeeHiddenLogEntries( $authority ) ) {
+		if ( $row->afl_deleted && !$afPermissionManager->canSeeHiddenLogEntries( $authority ) ) {
 			return self::VISIBILITY_HIDDEN;
 		}
 		if ( !$row->afl_rev_id ) {

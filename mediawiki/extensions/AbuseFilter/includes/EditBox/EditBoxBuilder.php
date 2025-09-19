@@ -4,6 +4,8 @@ namespace MediaWiki\Extension\AbuseFilter\EditBox;
 
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
 use MediaWiki\Extension\AbuseFilter\KeywordsManager;
+use MediaWiki\Html\Html;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MessageLocalizer;
 use OOUI\ButtonWidget;
@@ -11,8 +13,6 @@ use OOUI\DropdownInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FieldsetLayout;
 use OOUI\Widget;
-use OutputPage;
-use Xml;
 
 /**
  * Base class for classes responsible for building filter edit boxes
@@ -81,10 +81,10 @@ abstract class EditBoxBuilder {
 		$output = $this->getEditBox( $rules, $isUserAllowed, $externalForm );
 
 		if ( $isUserAllowed ) {
-			$dropDown = $this->getSuggestionsDropdown();
+			$dropdown = $this->getSuggestionsDropdown();
 
 			$formElements = [
-				new FieldLayout( $dropDown ),
+				new FieldLayout( $dropdown ),
 				new FieldLayout( $this->getEditorControls() )
 			];
 
@@ -97,10 +97,9 @@ abstract class EditBoxBuilder {
 		}
 
 		if ( $addResultDiv ) {
-			$output .= Xml::element(
+			$output .= Html::element(
 				'div',
-				[ 'id' => 'mw-abusefilter-syntaxresult', 'style' => 'display: none;' ],
-				'&#160;'
+				[ 'id' => 'mw-abusefilter-syntaxresult', 'style' => 'display: none;' ]
 			);
 		}
 
@@ -111,37 +110,52 @@ abstract class EditBoxBuilder {
 	 * @return DropdownInputWidget
 	 */
 	private function getSuggestionsDropdown(): DropdownInputWidget {
-		$rawDropDown = $this->keywordsManager->getBuilderValues();
+		$rawDropdown = $this->keywordsManager->getBuilderValues();
 
 		// The array needs to be rearranged to be understood by OOUI. It comes with the format
 		// [ group-msg-key => [ text-to-add => text-msg-key ] ] and we need it as
 		// [ group-msg => [ text-msg => text-to-add ] ]
 		// Also, the 'other' element must be the first one.
-		$dropDownOptions = [ $this->localizer->msg( 'abusefilter-edit-builder-select' )->text() => 'other' ];
-		foreach ( $rawDropDown as $group => $values ) {
+		$dropdownOptions = [ $this->localizer->msg( 'abusefilter-edit-builder-select' )->text() => 'other' ];
+		foreach ( $rawDropdown as $group => $values ) {
 			// Give grep a chance to find the usages:
-			// abusefilter-edit-builder-group-op-arithmetic, abusefilter-edit-builder-group-op-comparison,
-			// abusefilter-edit-builder-group-op-bool, abusefilter-edit-builder-group-misc,
-			// abusefilter-edit-builder-group-funcs, abusefilter-edit-builder-group-vars
+			// abusefilter-edit-builder-group-op-arithmetic
+			// abusefilter-edit-builder-group-op-comparison
+			// abusefilter-edit-builder-group-op-bool
+			// abusefilter-edit-builder-group-misc
+			// abusefilter-edit-builder-group-funcs
+			// abusefilter-edit-builder-group-vars
 			$localisedGroup = $this->localizer->msg( "abusefilter-edit-builder-group-$group" )->text();
-			$dropDownOptions[ $localisedGroup ] = array_flip( $values );
+			$dropdownOptions[ $localisedGroup ] = array_flip( $values );
 			$newKeys = array_map(
-				function ( $key ) use ( $group ) {
-					return $this->localizer->msg( "abusefilter-edit-builder-$group-$key" )->text();
+				function ( $key ) use ( $group, $dropdownOptions, $localisedGroup ) {
+					// Force all operators and functions to be always shown as left to right text
+					// with the help of control characters:
+					// * 202A is LEFT-TO-RIGHT EMBEDDING (LRE)
+					// * 202C is POP DIRECTIONAL FORMATTING (PDF)
+					// This has to be done with control characters because
+					// markup cannot be used within <option> elements.
+					$operatorExample = "\u{202A}" .
+						$dropdownOptions[ $localisedGroup ][ $key ] .
+						"\u{202C}";
+					return $this->localizer->msg(
+						"abusefilter-edit-builder-$group-$key",
+						$operatorExample
+					)->text();
 				},
-				array_keys( $dropDownOptions[ $localisedGroup ] )
+				array_keys( $dropdownOptions[ $localisedGroup ] )
 			);
-			$dropDownOptions[ $localisedGroup ] = array_combine(
+			$dropdownOptions[ $localisedGroup ] = array_combine(
 				$newKeys,
-				$dropDownOptions[ $localisedGroup ]
+				$dropdownOptions[ $localisedGroup ]
 			);
 		}
 
-		$dropDownList = Xml::listDropDownOptionsOoui( $dropDownOptions );
+		$dropdownList = Html::listDropdownOptionsOoui( $dropdownOptions );
 		return new DropdownInputWidget( [
 			'name' => 'wpFilterBuilder',
 			'inputId' => 'wpFilterBuilder',
-			'options' => $dropDownList
+			'options' => $dropdownList
 		] );
 	}
 

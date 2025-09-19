@@ -5,13 +5,12 @@ use Article;
 use SMW\Query\QueryContext;
 use Title;
 use SMWDataItem;
-use SMWDIWikiPage;
+use SMW\DIWikiPage;
 use SMWDITime;
 use SMWQueryProcessor;
 use SMW\DataValueFactory;
 use SMW\DataValues\PropertyChainValue;
 use SMW\DIProperty;
-use SMW\DIWikiPage;
 use SMW\Query\PrintRequest;
 use SMW\Query\QueryResult;
 use SMW\Services\ServicesFactory;
@@ -255,7 +254,25 @@ class QueryUtils {
 
     public static function getUnitForProperty($property) {
         $value = self::getPropertyValue(Title::newFromText($property, SMW_NS_PROPERTY), "_UNIT");
-        return is_null($value) ? null : $value;
+        return is_null($value) ? null : $value->getString();
+    }
+
+
+    public static function getTitleFromDisplayTitle($displayTitle) {
+        $store = StoreFactory::getStore ();
+
+        $property = new DIProperty( "_DTITLE" );
+        $values = $store->getPropertySubjects( $property,  new \SMWDIBlob($displayTitle));
+
+        if(! $values) {
+            return $displayTitle;
+        } else if(count($values) > 0) {
+            foreach ($values as $subj) {
+                return $subj->getTitle()->getText();
+            }
+
+        }
+        return $displayTitle;
     }
 
     /**
@@ -311,22 +328,21 @@ class QueryUtils {
 
     /**
      * 
-     * @param String|Title $page
+     * @param Title $page
      * @return string the page's displayTitle
      */
-    public static function getDisplayTitle( $page ) {
-        $title = self::getTitle($page);
+    public static function getDisplayTitle( Title $title ) {
 
         $titleProperty = new DIProperty( DIProperty::TYPE_DISPLAYTITLE );
         $store = StoreFactory::getStore();
 
-        $subject = SMWDIWikiPage::newFromTitle( $title );
+        $subject = DIWikiPage::newFromTitle( $title );
         $values = $store->getPropertyValues( $subject, $titleProperty );
         $first = reset( $values );
         if ($first !== false) {
             return  $first->getString();
         } else {
-            return $page;
+            return $title->getText();
         }
     }
 }

@@ -1,7 +1,8 @@
 # Eris
-[![Build Status](https://travis-ci.org/giorgiosironi/eris.svg?branch=master)](https://travis-ci.org/giorgiosironi/eris)
+[![CI](https://github.com/giorgiosironi/eris/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/giorgiosironi/eris/actions/workflows/ci.yml)
+[![Static analysis](https://github.com/giorgiosironi/eris/actions/workflows/static-analysis.yml/badge.svg?branch=master)](https://github.com/giorgiosironi/eris/actions/workflows/static-analysis.yml)
 [![Documentation Status](https://readthedocs.org/projects/eris/badge/?version=latest)](http://eris.readthedocs.org/en/latest/?badge=latest)
- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Eris is a porting of [QuickCheck](https://hackage.haskell.org/package/QuickCheck) and property-based testing tools to the PHP and PHPUnit ecosystem.
 
@@ -9,9 +10,8 @@ In property-based testing, several properties that the System Under Test must re
 
 ## Compatibility
 
-- PHP 5.5, 5.6, 7.0, 7.1
-- HHVM (without `purePhpMtRand`)
-- PHPUnit 5.x, 6.x, 7.x
+- PHP 7.4, 8.0, 8.1, 8.2
+- PHPUnit 8.x, 9.x
 
 ## Installation
 
@@ -33,16 +33,16 @@ This test tries to verify that natural numbers from 0 to 1000 are all smaller th
 
 ```php
 <?php
-use Eris\Generator;
+use Eris\Generators;
 
-class ReadmeTest extends \PHPUnit_Framework_TestCase
+class ReadmeTest extends \PHPUnit\Framework\TestCase
 {
     use \Eris\TestTrait;
 
     public function testNaturalNumbersMagnitude()
     {
         $this->forAll(
-            Generator\choose(0, 1000)
+            Generators::choose(0, 1000)
         )
             ->then(function($number) {
                 $this->assertTrue(
@@ -92,9 +92,9 @@ Eris also tries to shrink the input after a failure, giving you the simplest inp
 
 On ReadTheDocs you can find [the reference documentation for the Eris project](http://eris.readthedocs.org/en/latest/).
 
-## ChangeLog
+## Changelog
 
-Consult [the ChangeLog file](https://github.com/giorgiosironi/eris/blob/master/ChangeLog.md) to know the latest new features.
+Consult [the Changelog file](https://github.com/giorgiosironi/eris/blob/master/CHANGELOG.md) to know the latest new features.
 
 ## Support and contributing
 

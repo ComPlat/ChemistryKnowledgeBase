@@ -1,13 +1,17 @@
 <?php
 
-namespace MediaWiki\Api\Validator;
+namespace MediaWiki\Tests\Api\Validator;
 
-use ApiBase;
-use ApiMain;
-use ApiMessage;
-use ApiQueryBase;
-use ApiUploadTestCase;
-use FauxRequest;
+use Generator;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiMessage;
+use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\Api\Validator\ApiParamValidatorCallbacks;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Api\ApiUploadTestCase;
+use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use Psr\Http\Message\UploadedFileInterface;
 use Wikimedia\Message\DataMessageValue;
 use Wikimedia\TestingAccessWrapper;
 
@@ -17,9 +21,10 @@ use Wikimedia\TestingAccessWrapper;
  * @group medium
  */
 class ApiParamValidatorCallbacksTest extends ApiUploadTestCase {
+	use MockAuthorityTrait;
 
 	private function getCallbacks( FauxRequest $request ): array {
-		$context = $this->apiContext->newTestContext( $request, $this->getTestUser()->getAuthority() );
+		$context = $this->apiContext->newTestContext( $request, $this->mockRegisteredUltimateAuthority() );
 		$main = new ApiMain( $context );
 		return [ new ApiParamValidatorCallbacks( $main ), $main ];
 	}
@@ -74,7 +79,7 @@ class ApiParamValidatorCallbacksTest extends ApiUploadTestCase {
 		$this->assertSame( [ 'test' ], TestingAccessWrapper::newFromObject( $main )->getParamsUsed() );
 	}
 
-	public function provideGetValue() {
+	public static function provideGetValue() {
 		$obj = (object)[];
 		return [
 			'Basic test' => [ 'foo', 'bar', 'foo', false ],
@@ -147,16 +152,16 @@ class ApiParamValidatorCallbacksTest extends ApiUploadTestCase {
 		$this->assertNull( $callbacks->getUploadedFile( 'baz', [] ) );
 
 		$file = $callbacks->getUploadedFile( 'file', [] );
-		$this->assertInstanceOf( \Psr\Http\Message\UploadedFileInterface::class, $file );
+		$this->assertInstanceOf( UploadedFileInterface::class, $file );
 		$this->assertSame( UPLOAD_ERR_OK, $file->getError() );
 		$this->assertSame( 'TestUploadStash.jpg', $file->getClientFilename() );
 
 		$file = $callbacks->getUploadedFile( 'file2', [] );
-		$this->assertInstanceOf( \Psr\Http\Message\UploadedFileInterface::class, $file );
+		$this->assertInstanceOf( UploadedFileInterface::class, $file );
 		$this->assertSame( UPLOAD_ERR_NO_FILE, $file->getError() );
 
 		$file = $callbacks->getUploadedFile( 'file3', [] );
-		$this->assertInstanceOf( \Psr\Http\Message\UploadedFileInterface::class, $file );
+		$this->assertInstanceOf( UploadedFileInterface::class, $file );
 		$this->assertSame( UPLOAD_ERR_INI_SIZE, $file->getError() );
 	}
 
@@ -209,7 +214,7 @@ class ApiParamValidatorCallbacksTest extends ApiUploadTestCase {
 		);
 	}
 
-	public function provideRecordCondition(): \Generator {
+	public static function provideRecordCondition(): Generator {
 		yield 'Deprecated param' => [
 			DataMessageValue::new(
 				'paramvalidator-param-deprecated', [],
@@ -278,13 +283,13 @@ class ApiParamValidatorCallbacksTest extends ApiUploadTestCase {
 	}
 
 	public function testUseHighLimits(): void {
-		$context = $this->apiContext->newTestContext( new FauxRequest, $this->getTestUser()->getAuthority() );
+		$context = $this->apiContext->newTestContext( new FauxRequest, $this->mockRegisteredUltimateAuthority() );
 		$main = $this->getMockBuilder( ApiMain::class )
 			->setConstructorArgs( [ $context ] )
 			->onlyMethods( [ 'canApiHighLimits' ] )
 			->getMock();
 
-		$main->method( 'canApiHighLimits' )->will( $this->onConsecutiveCalls( true, false ) );
+		$main->method( 'canApiHighLimits' )->willReturnOnConsecutiveCalls( true, false );
 
 		$callbacks = new ApiParamValidatorCallbacks( $main );
 		$this->assertTrue( $callbacks->useHighLimits( [] ) );

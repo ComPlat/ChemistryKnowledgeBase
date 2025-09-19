@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Utils\MolfileProcessor;
 use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Job;
+use MediaWiki\MediaWikiServices;
 
 class MoleculePageUpdateJob extends Job
 {
@@ -56,7 +57,8 @@ class MoleculePageUpdateJob extends Job
         if ($wikitext !== $te->getWikiText()) {
             WikiTools::doEditContent($this->title, $te->getWikiText(), "auto-generated", EDIT_UPDATE);
         }
-        \Hooks::run('CleanupChemExtState');
+        $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hooksContainer->run('CleanupChemExtState');
         $this->logger->log("done");
     }
 

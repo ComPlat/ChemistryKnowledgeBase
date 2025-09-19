@@ -1,11 +1,15 @@
 <?php
 
+use MediaWiki\Content\Content;
+use MediaWiki\Content\CssContent;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\MainConfigNames;
 
 /**
  * @group ContentHandler
  * @group Database
  *        ^--- needed, because we do need the database to test link updates
+ * @covers \MediaWiki\Content\CssContent
  */
 class CssContentTest extends TextContentTest {
 
@@ -39,18 +43,12 @@ class CssContentTest extends TextContentTest {
 		];
 	}
 
-	/**
-	 * @covers CssContent::getModel
-	 */
 	public function testGetModel() {
 		$content = $this->newContent( 'hello world.' );
 
 		$this->assertEquals( CONTENT_MODEL_CSS, $content->getModel() );
 	}
 
-	/**
-	 * @covers CssContent::getContentHandler
-	 */
 	public function testGetContentHandler() {
 		$content = $this->newContent( 'hello world.' );
 
@@ -70,7 +68,6 @@ class CssContentTest extends TextContentTest {
 	}
 
 	/**
-	 * @covers CssContent::getRedirectTarget
 	 * @dataProvider provideGetRedirectTarget
 	 */
 	public function testGetRedirectTarget( $title, $text ) {
@@ -91,7 +88,6 @@ class CssContentTest extends TextContentTest {
 		return [
 			[ 'MediaWiki:MonoBook.css', "/* #REDIRECT */@import url(//example.org/w/index.php?title=MediaWiki:MonoBook.css&action=raw&ctype=text/css);" ],
 			[ 'User:FooBar/common.css', "/* #REDIRECT */@import url(//example.org/w/index.php?title=User:FooBar/common.css&action=raw&ctype=text/css);" ],
-			[ 'Gadget:FooBaz.css', "/* #REDIRECT */@import url(//example.org/w/index.php?title=Gadget:FooBaz.css&action=raw&ctype=text/css);" ],
 			[
 				'User:😂/unicode.css',
 				'/* #REDIRECT */@import url(//example.org/w/index.php?title=User:%F0%9F%98%82/unicode.css&action=raw&ctype=text/css);'
@@ -115,9 +111,8 @@ class CssContentTest extends TextContentTest {
 
 	/**
 	 * @dataProvider dataEquals
-	 * @covers CssContent::equals
 	 */
-	public function testEquals( Content $a, Content $b = null, $equal = false ) {
+	public function testEquals( Content $a, ?Content $b = null, $equal = false ) {
 		$this->assertEquals( $equal, $a->equals( $b ) );
 	}
 }

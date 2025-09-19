@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestFailure;
 use PHPUnit\Framework\TestResult;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
-use PHPUnit\TextUI\ResultPrinter;
+use PHPUnit\TextUI\DefaultResultPrinter;
 use PHPUnit\Util\Exception;
 use PHPUnit\Util\Filter;
 use ReflectionClass;
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class TeamCity extends ResultPrinter
+final class TeamCity extends DefaultResultPrinter
 {
     /**
      * @var bool
@@ -59,9 +59,6 @@ final class TeamCity extends ResultPrinter
      */
     private $flowId;
 
-    /**
-     * @throws \SebastianBergmann\Timer\RuntimeException
-     */
     public function printResult(TestResult $result): void
     {
         $this->printHeader($result);
@@ -80,7 +77,7 @@ final class TeamCity extends ResultPrinter
                 'message'  => self::getMessage($t),
                 'details'  => self::getDetails($t),
                 'duration' => self::toMilliseconds($time),
-            ]
+            ],
         );
     }
 
@@ -163,7 +160,7 @@ final class TeamCity extends ResultPrinter
         }
     }
 
-    public function printIgnoredTest($testName, Throwable $t, float $time): void
+    public function printIgnoredTest(string $testName, Throwable $t, float $time): void
     {
         $this->printEvent(
             'testIgnored',
@@ -172,7 +169,7 @@ final class TeamCity extends ResultPrinter
                 'message'  => self::getMessage($t),
                 'details'  => self::getDetails($t),
                 'duration' => self::toMilliseconds($time),
-            ]
+            ],
         );
     }
 
@@ -192,7 +189,7 @@ final class TeamCity extends ResultPrinter
 
             $this->printEvent(
                 'testCount',
-                ['count' => count($suite)]
+                ['count' => count($suite)],
             );
         }
 
@@ -274,7 +271,7 @@ final class TeamCity extends ResultPrinter
             [
                 'name'     => $test->getName(),
                 'duration' => self::toMilliseconds($time),
-            ]
+            ],
         );
     }
 
@@ -354,7 +351,7 @@ final class TeamCity extends ResultPrinter
         return str_replace(
             ['|', "'", "\n", "\r", ']', '['],
             ['||', "|'", '|n', '|r', '|]', '|['],
-            $text
+            $text,
         );
     }
 
@@ -370,7 +367,7 @@ final class TeamCity extends ResultPrinter
             throw new Exception(
                 $e->getMessage(),
                 $e->getCode(),
-                $e
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd

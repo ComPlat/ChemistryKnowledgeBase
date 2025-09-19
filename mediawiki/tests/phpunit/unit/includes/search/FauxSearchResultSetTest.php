@@ -1,8 +1,10 @@
 <?php
 
+use MediaWiki\Title\Title;
+
 /**
  * @group Search
- * @covers FauxSearchResultSet
+ * @covers \FauxSearchResultSet
  */
 class FauxSearchResultSetTest extends MediaWikiUnitTestCase {
 

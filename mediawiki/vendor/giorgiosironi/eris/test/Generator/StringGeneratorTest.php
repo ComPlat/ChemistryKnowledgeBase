@@ -1,11 +1,19 @@
 <?php
 namespace Eris\Generator;
 
-class StringGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class StringGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    public function setUp()
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    public function setUp(): void
     {
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
     
     public function testRandomlyPicksLengthAndCharacters()
@@ -61,7 +69,7 @@ class StringGeneratorTest extends \PHPUnit_Framework_TestCase
     private function accumulateUsedChars(array $usedChars, $value)
     {
         for ($j = 0; $j < strlen($value); $j++) {
-            $char = $value{$j};
+            $char = $value[$j];
             if (!isset($usedChars[$char])) {
                 $usedChars[$char] = 0;
             }

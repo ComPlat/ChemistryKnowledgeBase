@@ -427,12 +427,12 @@ $specialPageAliases['sk'] = [
 ];
 
 /** Serbian Cyrillic (српски (ћирилица)) */
-$specialPageAliases['sr-ec'] = [
+$specialPageAliases['sr-cyrl'] = [
 	'CategoryTree' => [ 'СтаблоКатегорија' ],
 ];
 
 /** Serbian Latin (srpski (latinica)) */
-$specialPageAliases['sr-el'] = [
+$specialPageAliases['sr-latn'] = [
 	'CategoryTree' => [ 'StabloKategorija' ],
 ];
 
@@ -508,10 +508,5 @@ $specialPageAliases['zh-hans'] = [
 
 /** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
-	'CategoryTree' => [ '分類樹' ],
-];
-
-/** Chinese (Taiwan) (中文（台灣）) */
-$specialPageAliases['zh-tw'] = [
 	'CategoryTree' => [ '分類樹' ],
 ];

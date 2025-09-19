@@ -24,7 +24,6 @@
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit\Parser;
 
 use Generator;
-use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Extension\AbuseFilter\KeywordsManager;
 use MediaWiki\Extension\AbuseFilter\Parser\AbuseFilterTokenizer;
 use MediaWiki\Extension\AbuseFilter\Parser\Exception\UserVisibleException;
@@ -59,10 +58,7 @@ class ParserTest extends ParserTestCase {
 		$this->assertTrue( $this->getParser()->parse( $rule ) );
 	}
 
-	/**
-	 * @return Generator|array
-	 */
-	public function readTests() {
+	public static function readTests() {
 		$testPath = __DIR__ . "/../../../parserTests";
 		$testFiles = glob( $testPath . "/*.t" );
 
@@ -91,7 +87,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideExpressions() {
+	public static function provideExpressions() {
 		return [
 			[ '1 === 1', true ],
 			[ 'rescape( "abc* (def)" )', 'abc\* \(def\)' ],
@@ -114,12 +110,7 @@ class ParserTest extends ParserTestCase {
 		$this->assertFalse( $this->getParser()->parse( $code ) );
 	}
 
-	/**
-	 * Data provider for testEmptySyntax
-	 *
-	 * @return array
-	 */
-	public function provideEmptySyntax() {
+	public static function provideEmptySyntax() {
 		return [
 			[ '' ],
 			[ ';;;;' ]
@@ -148,7 +139,7 @@ class ParserTest extends ParserTestCase {
 			AbuseFilterTokenizer::OPERATORS
 		);
 		$operatorRe = '/(' . implode( '|', $quotedOps ) . ')/A';
-		$this->assertEquals( $operatorRe, AbuseFilterTokenizer::OPERATOR_RE );
+		$this->assertEquals( AbuseFilterTokenizer::OPERATOR_RE, $operatorRe );
 	}
 
 	/**
@@ -162,11 +153,7 @@ class ParserTest extends ParserTestCase {
 		$this->assertEquals( $expected, $this->getParser()->checkConditions( $rule )->getCondsUsed(), "Rule: $rule" );
 	}
 
-	/**
-	 * Data provider for testCondCount method.
-	 * @return array
-	 */
-	public function condCountCases() {
+	public static function condCountCases() {
 		return [
 			[ '((("a" == "b")))', 1 ],
 			[ 'contains_any("a", "b", "c")', 1 ],
@@ -211,7 +198,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function expectedNotFound() {
+	public static function expectedNotFound() {
 		return [
 			[ 'a:= [1,2,3]; a[1 = 4', 'doLevelSet' ],
 			[ "if 1 = 1 'foo'", 'doLevelConditions' ],
@@ -247,7 +234,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function unexpectedAtEnd() {
+	public static function unexpectedAtEnd() {
 		return [
 			[ "'a' = 1 )", 'doLevelEntry' ],
 		];
@@ -272,7 +259,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function unrecognisedVar() {
+	public static function unrecognisedVar() {
 		return [
 			[ 'a[1] := 5', 'getVarValue' ],
 			[ 'a[] := 5', 'getVarValue' ],
@@ -302,7 +289,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function notArray() {
+	public static function notArray() {
 		return [
 			[ 'a := 5; a[1] = 5', 'doLevelSet' ],
 			[ 'a := 1; 3 = a[5]', 'doLevelArrayElements' ],
@@ -330,7 +317,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function outOfBounds() {
+	public static function outOfBounds() {
 		return [
 			[ 'a := [2]; a[5] = 9', 'doLevelSet' ],
 			[ 'a := [1,2,3]; 3 = a[5]', 'doLevelArrayElements' ],
@@ -357,7 +344,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function negativeIndex() {
+	public static function negativeIndex() {
 		return [
 			[ '[0][-1]', '' ],
 			[ "x := ['foo']; x[-1]", '' ],
@@ -385,7 +372,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function unrecognisedKeyword() {
+	public static function unrecognisedKeyword() {
 		return [
 			[ '5 = rlike', 'doLevelAtom' ],
 			[ 'then := 45', 'doLevelAtom' ],
@@ -411,7 +398,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function unexpectedToken() {
+	public static function unexpectedToken() {
 		return [
 			[ '1 =? 1', 'doLevelAtom' ],
 		];
@@ -436,7 +423,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function disabledVar() {
+	public static function disabledVar() {
 		return [
 			[ 'old_text = 1', 'getVarValue' ],
 		];
@@ -459,7 +446,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function variableVariable() {
+	public static function variableVariable() {
 		return [
 			[ "set( 'x' + 'y', 1 )", 'doLevelFunction' ],
 			[ "set( 'x' + page_title, 1 )", 'doLevelFunction' ],
@@ -485,7 +472,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function overrideBuiltin() {
+	public static function overrideBuiltin() {
 		return [
 			[ 'added_lines := 1', 'setUserVariable' ],
 			[ 'added_lines[] := 1', 'doLevelSet' ],
@@ -515,7 +502,7 @@ class ParserTest extends ParserTestCase {
 	 * Data provider for testUseBuiltinException
 	 * @return array
 	 */
-	public function useBuiltin() {
+	public static function useBuiltin() {
 		return [
 			[ 'contains_any[1] := "foo"' ],
 			[ '1 + lcase + 2' ]
@@ -549,7 +536,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function regexFailure() {
+	public static function regexFailure() {
 		return [
 			[ "rcount('(','a')", 'funcRCount' ],
 			[ "get_matches('this (should fail', 'any haystack')", 'funcGetMatches' ],
@@ -575,7 +562,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function invalidIPRange() {
+	public static function invalidIPRange() {
 		return [
 			[ "ip_in_range('0.0.0.0', 'lol')", 'funcIPInRange' ],
 			[ "ip_in_ranges('0.0.0.0', ':', '0.0.0.256')", 'funcIPInRanges' ],
@@ -601,7 +588,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function oneParamFuncs() {
+	public static function oneParamFuncs() {
 		return [
 			[ 'lcase' ],
 			[ 'ucase' ],
@@ -645,7 +632,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function twoParamsFuncs() {
+	public static function twoParamsFuncs() {
 		return [
 			[ 'get_matches' ],
 			[ 'ip_in_range' ],
@@ -682,7 +669,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function threeParamsFuncs() {
+	public static function threeParamsFuncs() {
 		return [
 			[ 'str_replace' ],
 			[ 'str_replace_regexp' ],
@@ -701,7 +688,7 @@ class ParserTest extends ParserTestCase {
 	/**
 	 * @return array
 	 */
-	public function tooManyArgsFuncs() {
+	public static function tooManyArgsFuncs() {
 		return [
 			[ "lcase( 'a', 'b' )" ],
 			[ "norm( 'a', 'b', 'c' )" ],
@@ -728,7 +715,7 @@ class ParserTest extends ParserTestCase {
 	/**
 	 * @return array
 	 */
-	public function variadicFuncs() {
+	public static function variadicFuncs() {
 		return [
 			[ 'contains_any' ],
 			[ 'contains_all' ],
@@ -763,7 +750,7 @@ class ParserTest extends ParserTestCase {
 	 * Data provider for testCheckArgCountInConditional
 	 * @return array
 	 */
-	public function provideFuncsForConditional() {
+	public static function provideFuncsForConditional() {
 		return [
 			[ 'count()', 'noparams' ],
 			[ 'bool()', 'noparams' ],
@@ -781,8 +768,8 @@ class ParserTest extends ParserTestCase {
 	 * @param string $new The new name of the variable
 	 * @dataProvider provideDeprecatedVars
 	 *
-	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator::getVarValue
-	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\AFPTreeParser::checkLogDeprecatedVar
+	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator
+	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\AFPTreeParser
 	 */
 	public function testDeprecatedVars( $old, $new ) {
 		// Set it under the new name, and check that the old name points to it
@@ -812,13 +799,8 @@ class ParserTest extends ParserTestCase {
 		$this->assertTrue( $actual );
 	}
 
-	/**
-	 * Data provider for testDeprecatedVars
-	 * @return Generator|array
-	 */
-	public function provideDeprecatedVars() {
-		$keywordsManager = new KeywordsManager( $this->createMock( AbuseFilterHookRunner::class ) );
-		foreach ( $keywordsManager->getDeprecatedVariables() as $old => $new ) {
+	public static function provideDeprecatedVars() {
+		foreach ( TestingAccessWrapper::constant( KeywordsManager::class, 'DEPRECATED_VARS' ) as $old => $new ) {
 			yield $old => [ $old, $new ];
 		}
 	}
@@ -847,7 +829,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return Generator
 	 */
-	public function provideConsecutiveComparisons() {
+	public static function provideConsecutiveComparisons() {
 		$eqOps = [ '==', '===', '!=', '!==', '=' ];
 		$ordOps = [ '<', '>', '<=', '>=' ];
 		$ops = array_merge( $eqOps, $ordOps );
@@ -887,7 +869,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideArrayAssignmentShortCircuit() {
+	public static function provideArrayAssignmentShortCircuit() {
 		return [
 			[ 'a := [true]; false & (a[] := 2); a[0]' ],
 			[ 'a := [true]; false & (a[1] := 2); a[0]' ],
@@ -909,7 +891,7 @@ class ParserTest extends ParserTestCase {
 	 * Data provider for testVarDeclarationInSkippedBlock
 	 * @return array
 	 */
-	public function provideVarDeclarationInSkippedBlock() {
+	public static function provideVarDeclarationInSkippedBlock() {
 		return [
 			[ "x := [5]; false & (1 == 1; y := 'b'; x[1] := 'x'; 3 < 4); y != 'b' & x[1] != 'x'" ],
 			[ "false & (set('myvar', 1)); myvar contains 1" ],
@@ -950,7 +932,7 @@ class ParserTest extends ParserTestCase {
 	 *
 	 * @return array
 	 */
-	public function provideDUNDEFINED() {
+	public static function provideDUNDEFINED() {
 		return [
 			[ "5 / length( new_wikitext ) !== 3 ** edit_delta & " .
 				"float( timestamp / (user_age + 0.000001) ) !== 0.0" ],
@@ -1004,7 +986,7 @@ class ParserTest extends ParserTestCase {
 	 * Data provider for testBuiltinArrays
 	 * @return array
 	 */
-	public function provideBuiltinArrays() {
+	public static function provideBuiltinArrays() {
 		return [
 			[ "removed_lines[1] == 2" ],
 			[ "added_lines[0] contains 'x'" ],
@@ -1028,7 +1010,7 @@ class ParserTest extends ParserTestCase {
 	/**
 	 * @return array
 	 */
-	public function provideEmptyOperands() {
+	public static function provideEmptyOperands() {
 		return [
 			[ '(0 |)', 'bool operand' ],
 			[ '(1 |)', 'bool operand' ],
@@ -1081,7 +1063,7 @@ class ParserTest extends ParserTestCase {
 	/**
 	 * @return array
 	 */
-	public function provideDanglingCommasInVariargs() {
+	public static function provideDanglingCommasInVariargs() {
 		return [
 			[ "contains_any('a','b','c',)" ],
 			[ "contains_all(1,1,1,1,1,1,1,)" ],
@@ -1104,7 +1086,7 @@ class ParserTest extends ParserTestCase {
 	/**
 	 * @return array
 	 */
-	public function provideExtraCommas() {
+	public static function provideExtraCommas() {
 		return [
 			[ "norm(,,,)" ],
 			[ "str_replace(,'x','y')" ],
@@ -1129,10 +1111,7 @@ class ParserTest extends ParserTestCase {
 		$this->exceptionTestInSkippedBlock( $expID, $code, $caller );
 	}
 
-	/**
-	 * @return array
-	 */
-	public function provideArgsErrorsInSyntaxCheck() {
+	public static function provideArgsErrorsInSyntaxCheck() {
 		return [
 			[ 'accountname rlike "("', 'regexfailure' ],
 			[ 'contains_any( new_wikitext, "foo", 3/0 )', 'dividebyzero' ],
@@ -1158,25 +1137,45 @@ class ParserTest extends ParserTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator::toggleConditionLimit
+	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator
 	 */
 	public function testToggleConditionLimit() {
-		$parser = TestingAccessWrapper::newFromObject( $this->getParser() );
+		/** @var FilterEvaluator $wrapper */
+		$parser = $this->getParser();
+		$wrapper = TestingAccessWrapper::newFromObject( $parser );
 
 		$parser->toggleConditionLimit( false );
-		$this->assertFalse( $parser->condLimitEnabled );
+		$this->assertFalse( $wrapper->condLimitEnabled );
 
 		$parser->toggleConditionLimit( true );
-		$this->assertTrue( $parser->condLimitEnabled );
+		$this->assertTrue( $wrapper->condLimitEnabled );
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator::setVariables
+	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator
 	 */
 	public function testSetVariables() {
-		$parser = TestingAccessWrapper::newFromObject( $this->getParser() );
+		$parser = $this->getParser();
 		$vars = new VariableHolder();
 		$parser->setVariables( $vars );
-		$this->assertSame( $vars, $parser->mVariables );
+		/** @var FilterEvaluator $wrapper */
+		$wrapper = TestingAccessWrapper::newFromObject( $parser );
+		$this->assertSame( $vars, $wrapper->mVariables );
+	}
+
+	public static function provideGetUsedVars() {
+		yield [ [ 'action', 'user_name' ], 'action = "edit" & ip_in_range( user_name, "1.2.3.4" )' ];
+		yield [ [ 'action', 'user_name' ], 'action = "edit" & ip_in_range( USER_NAME, "1.2.3.4" )' ];
+		yield [ [ 'added_lines' ], "added_lines[0] !== ''" ];
+		yield [ [ 'old_size', 'new_size' ], 'old_size > 0 & new_size / old_size < 0.5' ];
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\AbuseFilter\Parser\FilterEvaluator
+	 * @dataProvider provideGetUsedVars
+	 */
+	public function testGetUsedVars( $expected, $conditions ) {
+		$parser = $this->getParser();
+		$this->assertSame( $expected, $parser->getUsedVars( $conditions ) );
 	}
 }

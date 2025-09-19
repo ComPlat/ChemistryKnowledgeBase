@@ -2,8 +2,6 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
-use BagOStuff;
-use IBufferingStatsdDataFactory;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesExecutorFactory;
@@ -14,13 +12,15 @@ use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
 use MediaWiki\Extension\AbuseFilter\Watcher\EmergencyWatcher;
 use MediaWiki\Extension\AbuseFilter\Watcher\UpdateHitCountWatcher;
-use NullStatsdDataFactory;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use Psr\Log\LoggerInterface;
-use Title;
-use User;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\NullStatsdDataFactory;
 
 class FilterRunnerFactory {
-	public const SERVICE_NAME = 'AbuseFilterRunnerFactory';
+	public const SERVICE_NAME = 'AbuseFilterFilterRunnerFactory';
 
 	/** @var AbuseFilterHookRunner */
 	private $hookRunner;

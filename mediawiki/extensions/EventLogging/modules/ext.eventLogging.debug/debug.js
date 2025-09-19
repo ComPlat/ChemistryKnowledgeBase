@@ -27,15 +27,8 @@
  */
 'use strict';
 
-var dialogPromise,
-	schemaApiQueryUrl,
-	schemaApiQueryParams,
-	baseUrl,
-	handleEventLoggingDebug,
-	handleEventSubmitDebug;
-
-schemaApiQueryUrl = require( './data.json' ).EventLoggingSchemaApiUri;
-schemaApiQueryParams = {
+const schemaApiQueryUrl = require( './data.json' ).EventLoggingSchemaApiUri;
+const schemaApiQueryParams = {
 	action: 'query',
 	prop: 'revisions',
 	rvprop: 'content',
@@ -45,7 +38,7 @@ schemaApiQueryParams = {
 	origin: '*',
 	indexpageids: ''
 };
-baseUrl = ( schemaApiQueryUrl || '' ).replace( 'api.php', 'index.php' );
+const baseUrl = ( schemaApiQueryUrl || '' ).replace( 'api.php', 'index.php' );
 
 /**
  * Whether to show a popup notice as part of the debug output, or just write to console.
@@ -69,7 +62,7 @@ function shouldShowNotice() {
  */
 function isInstanceOf( value, type ) {
 	// eslint-disable-next-line no-jquery/no-type
-	var jsType = $.type( value );
+	const jsType = $.type( value );
 	switch ( type ) {
 		case 'integer':
 			return jsType === 'number' && value % 1 === 0;
@@ -91,22 +84,21 @@ function isInstanceOf( value, type ) {
  * @return {Array} An array of validation errors (empty if valid).
  */
 function validate( obj, schema ) {
-	var key, val, prop,
-		errors = [];
+	const errors = [];
 
 	if ( !schema || !schema.properties ) {
 		errors.push( 'Missing or empty schema' );
 		return errors;
 	}
 
-	for ( key in obj ) {
+	for ( const key in obj ) {
 		if ( !Object.hasOwnProperty.call( schema.properties, key ) ) {
 			errors.push( mw.format( 'Undeclared property "$1"', key ) );
 		}
 	}
 
-	for ( key in schema.properties ) {
-		prop = schema.properties[ key ];
+	for ( const key in schema.properties ) {
+		const prop = schema.properties[ key ];
 
 		if ( !Object.hasOwnProperty.call( obj, key ) ) {
 			if ( prop.required ) {
@@ -114,7 +106,7 @@ function validate( obj, schema ) {
 			}
 			continue;
 		}
-		val = obj[ key ];
+		const val = obj[ key ];
 
 		if ( !( isInstanceOf( val, prop.type ) ) ) {
 			errors.push( mw.format(
@@ -141,7 +133,7 @@ function validate( obj, schema ) {
  */
 function makeDialogPromise() {
 	return mw.loader.using( 'oojs-ui-windows' ).then( function () {
-		var manager = new OO.ui.WindowManager(),
+		const manager = new OO.ui.WindowManager(),
 			dialog = new OO.ui.MessageDialog();
 		$( document.body ).append( manager.$element );
 		manager.addWindows( [ dialog ] );
@@ -162,13 +154,15 @@ function makeDialogPromise() {
 	} );
 }
 
+let dialogPromise;
+
 /**
  * @private
  * @param {Object} event As formatted by mw.eventLog.prepare()
  * @param {Object} errors found during validation
  */
 function displayLoggedEvent( event, errors ) {
-	var hasErrors = errors && errors.length,
+	const hasErrors = errors && errors.length,
 		eventWithAnyErrors = mw.format(
 			'$1$2',
 			JSON.stringify( event, null, 2 ),
@@ -208,7 +202,7 @@ function displayLoggedEvent( event, errors ) {
 }
 
 function validateAndDisplay( event, schema ) {
-	var errors = validate( event.event, schema );
+	const errors = validate( event.event, schema );
 
 	errors.forEach( function ( error ) {
 		mw.track( 'eventlogging.error', mw.format( '[$1] $2', event.schema, error ) );
@@ -219,7 +213,7 @@ function validateAndDisplay( event, schema ) {
 	} );
 }
 
-handleEventLoggingDebug = !schemaApiQueryUrl ?
+const handleEventLoggingDebug = !schemaApiQueryUrl ?
 	function () {} :
 	function ( topic, event ) {
 		$.ajax( {
@@ -232,7 +226,7 @@ handleEventLoggingDebug = !schemaApiQueryUrl ?
 			dataType: 'json'
 		} ).then(
 			function ( data ) {
-				var page;
+				let page;
 				try {
 					page = data.query.pages[ data.query.pageids[ 0 ] ];
 					validateAndDisplay(
@@ -269,7 +263,7 @@ mw.trackSubscribe( 'eventlogging.error', function ( topic, error ) {
  * @param {Object} eventData submitted
  */
 function displaySubmittedEvent( streamName, eventData ) {
-	var
+	const
 		formatted = mw.format(
 			mw.html.escape( 'Submitted event to stream $1 $2' ),
 			streamName,
@@ -289,7 +283,7 @@ function displaySubmittedEvent( streamName, eventData ) {
 	}
 }
 
-handleEventSubmitDebug = function ( topic, params ) {
+const handleEventSubmitDebug = function ( topic, params ) {
 	mw.loader.using( [ 'mediawiki.notification', 'oojs-ui-windows' ] ).then( function () {
 		displaySubmittedEvent( params.streamName, params.eventData );
 	} );

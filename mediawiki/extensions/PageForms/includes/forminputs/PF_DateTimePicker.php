@@ -8,10 +8,7 @@
  * @ingroup PageForms
  */
 
-/**
- * @ingroup PageForms
- */
-
+use MediaWiki\Html\Html;
 use MediaWiki\Widget\DateTimeInputWidget;
 
 class PFDateTimePicker extends PFFormInput {
@@ -30,7 +27,7 @@ class PFDateTimePicker extends PFFormInput {
 	 */
 	public function __construct( $input_number, $cur_value, $input_name, $disabled, array $other_args ) {
 		if ( $cur_value != '' ) {
-			list( $year, $month, $day, $time ) = PFDateInput::parseDate( $cur_value, true );
+			[ $year, $month, $day, $time ] = PFDateInput::parseDate( $cur_value, true );
 			$cur_value = sprintf( '%04d-%02d-%02dT%sZ', $year, $month, $day, $time );
 		}
 		parent::__construct( $input_number, $cur_value, $input_name, $disabled, $other_args );
@@ -52,7 +49,8 @@ class PFDateTimePicker extends PFFormInput {
 			'value' => $this->mCurrentValue,
 			'id' => $inputID,
 			'classes' => [ 'pfDateTimePicker', 'pfPicker' ],
-			'infusable' => true
+			'infusable' => true,
+			'disabled' => $this->mIsDisabled
 		] );
 		$text = $widget->toString();
 
@@ -65,7 +63,7 @@ class PFDateTimePicker extends PFFormInput {
 		$text .= Html::element( 'label',
 			[
 				'for' => $inputID,
-				'class' => 'oo-ui-labelWidget oo-ui-inline-help',
+				'class' => 'pf-datetimepicker-help oo-ui-labelWidget oo-ui-inline-help',
 				'style' => 'margin-top: 4px;'
 			],
 			wfMessage( 'pf-datetimepicker-24hour' )->parse()

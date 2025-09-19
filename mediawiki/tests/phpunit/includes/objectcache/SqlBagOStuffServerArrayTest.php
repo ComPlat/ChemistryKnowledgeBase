@@ -6,16 +6,16 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group BagOStuff
  * @group Database
- * @covers SqlBagOStuff
+ * @covers \SqlBagOStuff
  */
 class SqlBagOStuffServerArrayTest extends BagOStuffTestBase {
 	protected function newCacheInstance() {
 		// Extract server config from main load balancer
 		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		$servers = TestingAccessWrapper::newFromObject( $lb )->servers;
-		return ObjectCache::newFromParams( [
+		$serverInfo = TestingAccessWrapper::newFromObject( $lb )->serverInfo;
+		return $this->getServiceContainer()->getObjectCacheFactory()->newFromParams( [
 			'class' => SqlBagOStuff::class,
-			'servers' => [ $servers[0] ]
+			'servers' => [ $serverInfo->getServerInfo( 0 ) ]
 		] );
 	}
 }

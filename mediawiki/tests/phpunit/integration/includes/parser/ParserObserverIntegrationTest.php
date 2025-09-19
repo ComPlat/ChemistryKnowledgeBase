@@ -1,6 +1,10 @@
 <?php
 
+namespace MediaWiki\Tests\Parser;
+
 use MediaWiki\Parser\ParserObserver;
+use MediaWikiIntegrationTestCase;
+use TestLogger;
 
 /**
  * @covers \MediaWiki\Parser\ParserObserver
@@ -29,7 +33,7 @@ class ParserObserverIntegrationTest extends MediaWikiIntegrationTestCase {
 		$this->assertCount( $count, $logger->getBuffer() );
 	}
 
-	public function provideDuplicateParse() {
+	public static function provideDuplicateParse() {
 		yield [ true, 1 ];
 		yield [ false, 0 ];
 	}

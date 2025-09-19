@@ -80,7 +80,8 @@ class AdjustMoleculeReferencesJob extends Job
                  }
             }
             $modificationLog->saveLog();
-            \Hooks::run('CleanupChemExtState');
+            $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hooksContainer->run('CleanupChemExtState');
             $this->logger->log("done.");
 
         } catch (Exception $e) {

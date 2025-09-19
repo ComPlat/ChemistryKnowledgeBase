@@ -2,14 +2,14 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
-use IBufferingStatsdDataFactory;
 use MediaWiki\Auth\AbstractPreAuthenticationProvider;
 use MediaWiki\Auth\AuthenticationRequest;
 use MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGeneratorFactory;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
-use SpecialPage;
 use StatusValue;
-use User;
+use Wikimedia\Stats\IBufferingStatsdDataFactory;
 
 /**
  * AuthenticationProvider used to filter account creations. This runs after normal preauth providers
@@ -61,7 +61,7 @@ class AbuseFilterPreAuthenticationProvider extends AbstractPreAuthenticationProv
 	 */
 	public function testUserForCreation( $user, $autocreate, array $options = [] ): StatusValue {
 		// if this is not an autocreation, testForAccountCreation already handled it
-		if ( $autocreate ) {
+		if ( $autocreate && !( $options['canAlwaysAutocreate'] ?? false ) ) {
 			// Make sure to use an anon as the creator, see T272244
 			return $this->testUser( $user, $this->userFactory->newAnonymous(), true );
 		}

@@ -1,6 +1,9 @@
 <?php
 
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * Defines the #template_display parser function.
@@ -19,6 +22,7 @@ class PFTemplateDisplay {
 
 		$templateFields = [];
 		$format = 'infobox';
+		$infoboxTitle = null;
 		$tableFieldValues = [];
 
 		$templateTitle = $frame->title;
@@ -39,6 +43,8 @@ class PFTemplateDisplay {
 				$value = trim( $parts[1] );
 				if ( $key == '_format' ) {
 					$format = $value;
+				} elseif ( $key == '_title' ) {
+					$infoboxTitle = $value;
 				} else {
 					$tableFieldValues[$key] = $value;
 				}
@@ -60,7 +66,18 @@ class PFTemplateDisplay {
 			$text = '<table class="wikitable">' . "\n";
 		} elseif ( $format == 'infobox' ) {
 			$text = '<table class="infoboxTable">' . "\n";
-			$text .= '<tr><th colspan="2" class="infoboxTitle">' . $title->getFullText() . '</th></tr>' . "\n";
+			// If it's blank (as opposed to null), it means the
+			// infobox title was deliberately set to empty, to avoid
+			// displaying a title row.
+			if ( $infoboxTitle !== '' ) {
+				if ( $infoboxTitle === null ) {
+					$pageProps = MediaWikiServices::getInstance()->getPageProps()
+						->getProperties( $title, 'displaytitle' );
+					$infoboxTitle = array_shift( $pageProps ) ??
+						htmlspecialchars( $title->getFullText(), ENT_NOQUOTES );
+				}
+				$text .= '<tr><th colspan="2" class="infoboxTitle">' . $infoboxTitle . '</th></tr>' . "\n";
+			}
 		} else {
 			$text = '';
 		}
@@ -157,8 +174,8 @@ class PFTemplateDisplay {
 		$mappingFormat = new CargoMapsFormat( $parser->getOutput() );
 
 		try {
-			list( $lat, $lon ) = CargoUtils::parseCoordinatesString( $coordinatesStr );
-		} catch ( MWException $e ) {
+			[ $lat, $lon ] = CargoUtils::parseCoordinatesString( $coordinatesStr );
+		} catch ( MWException ) {
 			return '';
 		}
 		$valuesTable = [ [ 'Coords  lat' => $lat, 'Coords  lon' => $lon ] ];
@@ -176,7 +193,7 @@ class PFTemplateDisplay {
 			$text = $mappingFormat->display( $valuesTable,
 				$formattedValuesTable, $fieldDescriptions,
 				$displayParams );
-		} catch ( MWException $e ) {
+		} catch ( MWException ) {
 			return '';
 		}
 		return $text;
@@ -202,6 +219,9 @@ class PFTemplateDisplay {
 		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 		$namespace = $templateField->getNamespace();
 		$title = Title::makeTitleSafe( $namespace, $value );
+		if ( $title == null ) {
+			return $value;
+		}
 		if ( $title->exists() ) {
 			return PFUtils::makeLink( $linkRenderer, $title );
 		}
@@ -209,6 +229,7 @@ class PFTemplateDisplay {
 		if ( $form == null ) {
 			return PFUtils::makeLink( $linkRenderer, $title );
 		}
+
 		// The page doesn't exist, and a form has been found for this
 		// template field - link to this form for this page.
 		$formSpecialPage = PFUtils::getSpecialPage( 'FormEdit' );
@@ -237,10 +258,7 @@ class PFTemplateDisplay {
 
 	private static function fileText( $value ) {
 		$title = Title::newFromText( $value, NS_FILE );
-		if ( $title == null || !$title->exists() ) {
-			return $value;
-		}
-		$file = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()->newFile( $title );
+		$file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $title );
 		return Linker::makeThumbLinkObj(
 			$title,
 			$file,

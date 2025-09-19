@@ -1,11 +1,19 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Format;
+
+use MediaWiki\Api\ApiFormatJson;
+use MediaWiki\Api\ApiFormatRaw;
+use MediaWiki\Api\ApiMain;
+use MWException;
+
 /**
  * @group API
- * @covers ApiFormatRaw
+ * @covers \MediaWiki\Api\ApiFormatRaw
  */
 class ApiFormatRawTest extends ApiFormatTestBase {
 
+	/** @inheritDoc */
 	protected $printerName = 'raw';
 
 	/**

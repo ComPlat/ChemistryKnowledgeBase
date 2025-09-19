@@ -2,15 +2,18 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function bind(Generator $innerGenerator, callable $outerGeneratorFactory)
 {
-    return new BindGenerator(
-        $innerGenerator,
-        $outerGeneratorFactory
-    );
+    return Generators::bind($innerGenerator, $outerGeneratorFactory);
 }
 
+/**
+ * @psalm-template T
+ * @template-implements Generator<T>
+ */
 class BindGenerator implements Generator
 {
     private $innerGenerator;
@@ -22,7 +25,7 @@ class BindGenerator implements Generator
         $this->outerGeneratorFactory = $outerGeneratorFactory;
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
         $innerGeneratorValue = $this->innerGenerator->__invoke($size, $rand);
         $outerGenerator = call_user_func($this->outerGeneratorFactory, $innerGeneratorValue->unbox());
@@ -33,7 +36,7 @@ class BindGenerator implements Generator
         );
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         list($outerGeneratorValue, $innerGeneratorValue) = $element->input();
         // TODO: shrink also the second generator

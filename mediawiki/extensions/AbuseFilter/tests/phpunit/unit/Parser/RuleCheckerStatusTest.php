@@ -14,18 +14,10 @@ use MediaWikiUnitTestCase;
  * @group AbuseFilter
  * @group AbuseFilterParser
  *
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerStatus
+ * @covers \MediaWiki\Extension\AbuseFilter\Parser\RuleCheckerStatus
  */
 class RuleCheckerStatusTest extends MediaWikiUnitTestCase {
 
-	/**
-	 * @covers ::__construct
-	 * @covers ::getResult
-	 * @covers ::getWarmCache
-	 * @covers ::getException
-	 * @covers ::getWarnings
-	 * @covers ::getCondsUsed
-	 */
 	public function testGetters() {
 		$result = true;
 		$warm = false;
@@ -40,15 +32,13 @@ class RuleCheckerStatusTest extends MediaWikiUnitTestCase {
 		$this->assertSame( $condsUsed, $status->getCondsUsed() );
 	}
 
-	public function provideToArrayException() {
+	public static function provideToArrayException() {
 		yield 'exception instance' => [ new InternalException() ];
 		yield 'null' => [ null ];
 	}
 
 	/**
 	 * @dataProvider provideToArrayException
-	 * @covers ::toArray
-	 * @covers ::fromArray
 	 */
 	public function testToArrayRoundTrip( ?ExceptionBase $exception ) {
 		$status = new RuleCheckerStatus(

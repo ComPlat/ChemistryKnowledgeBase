@@ -28,7 +28,7 @@ $DIR = str_replace( '\\', '/', __DIR__ );
 $baseCfg = new ConfigBuilder();
 setBaseOptions( $DIR, $baseCfg );
 
-$baseCfg = $baseCfg
+$baseCfg
 	->setDirectoryList( filterDirs( [
 		'includes/',
 		'src/',
@@ -61,13 +61,7 @@ $baseCfg = $baseCfg
 		// Would probably have many false positives
 		'PhanPluginMixedKeyNoKey',
 	] )
-	->enableTaintCheck( $DIR, 'vendor/' )
-	->suppressIssueTypes(
-	// PHP 7.4 functionality; suppress by default until we no longer support PHP < 7.4.
-	// In reality, this means when MW 1.35 is EOL, expected September 2023.
-	// This will hopefully prevent some issues with backporting.
-		'PhanPluginDuplicateExpressionAssignmentOperation',
-	);
+	->enableTaintCheck( $DIR, 'vendor/' );
 
 // BC: We're not ready to use the ConfigBuilder everywhere
 return $baseCfg->make();

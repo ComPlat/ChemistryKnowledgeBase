@@ -12,11 +12,19 @@
  * @file
  */
 
+namespace MediaWiki\Tests\Parser;
+
+use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use MediaWikiIntegrationTestCase;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group Database
- * @covers Parser::expandMagicVariable
+ * @covers \MediaWiki\Parser\Parser::expandMagicVariable
  */
 class MagicVariableTest extends MediaWikiIntegrationTestCase {
 	/**
@@ -30,7 +38,14 @@ class MagicVariableTest extends MediaWikiIntegrationTestCase {
 
 		$services = $this->getServiceContainer();
 		$contLang = $services->getLanguageFactory()->getLanguage( 'en' );
-		$this->setContentLang( $contLang );
+		$this->setService( 'ContentLanguage', $contLang );
+		$this->overrideConfigValues( [
+			MainConfigNames::LanguageCode => $contLang->getCode(),
+			// NOTE: Europe/Stockholm DST applies Sun, Mar 26, 2023 2:00 - Sun, Oct 29, 2023 3:00AM
+			MainConfigNames::Localtimezone => 'Europe/Stockholm',
+			MainConfigNames::MiserMode => false,
+			MainConfigNames::ParserCacheExpireTime => 86400 * 7,
+		] );
 
 		$this->testParser = $services->getParserFactory()->create();
 		$this->testParser->setOptions( ParserOptions::newFromUserAndLang( new User, $contLang ) );
@@ -147,6 +162,102 @@ class MagicVariableTest extends MediaWikiIntegrationTestCase {
 		$this->assertUnPadded( 'revisionmonth1', $month );
 	}
 
+	public static function provideCurrentUnitTimestampWords() {
+		return [
+			// Afternoon
+			[ 'currentmonth', '20200208153011', '02', 604800 ],
+			[ 'currentmonth1', '20200208153011', '2', 604800 ],
+			[ 'currentmonthname', '20200208153011', 'February', 604800 ],
+			[ 'currentmonthnamegen', '20200208153011', 'February', 604800 ],
+			[ 'currentmonthabbrev', '20200208153011', 'Feb', 604800 ],
+			[ 'currentday', '20200208153011', '8', 30601 ],
+			[ 'currentday2', '20200208153011', '08', 30601 ],
+			[ 'currentdayname', '20200208153011', 'Saturday', 30601 ],
+			[ 'currentyear', '20200208153011', '2020', 604800 ],
+			[ 'currenthour', '20200208153011', '15', 1801 ],
+			[ 'currentweek', '20200208153011', '6', 30601 ],
+			[ 'currentdow', '20200208153011', '6', 30601 ],
+			[ 'currenttime', '20200208153011', '15:30', 3600 ],
+			// Night
+			[ 'currentmonth', '20200208223011', '02', 604800 ],
+			[ 'currentmonth1', '20200208223011', '2', 604800 ],
+			[ 'currentmonthname', '20200208223011', 'February', 604800 ],
+			[ 'currentmonthnamegen', '20200208223011', 'February', 604800 ],
+			[ 'currentmonthabbrev', '20200208223011', 'Feb', 604800 ],
+			[ 'currentday', '20200208223011', '8', 5401 ],
+			[ 'currentday2', '20200208223011', '08', 5401 ],
+			[ 'currentdayname', '20200208223011', 'Saturday', 5401 ],
+			[ 'currentyear', '20200208223011', '2020', 604800 ],
+			[ 'currenthour', '20200208223011', '22', 1801 ],
+			[ 'currentweek', '20200208223011', '6', 5401 ],
+			[ 'currentdow', '20200208223011', '6', 5401 ],
+			[ 'currenttime', '20200208223011', '22:30', 3600 ]
+		];
+	}
+
+	public static function provideLocalUnitTimestampWords() {
+		// NOTE: Europe/Stockholm DST applies Sun, Mar 26, 2023 2:00 - Sun, Oct 29, 2023 3:00AM
+		return [
+			// Afternoon
+			[ 'localmonth', '20200208153011', '02', 604800 ],
+			[ 'localmonth1', '20200208153011', '2', 604800 ],
+			[ 'localmonthname', '20200208153011', 'February', 604800 ],
+			[ 'localmonthnamegen', '20200208153011', 'February', 604800 ],
+			[ 'localmonthabbrev', '20200208153011', 'Feb', 604800 ],
+			[ 'localday', '20200208153011', '8', 27001 ],
+			[ 'localday2', '20200208153011', '08', 27001 ],
+			[ 'localdayname', '20200208153011', 'Saturday', 27001 ],
+			[ 'localyear', '20200208153011', '2020', 604800 ],
+			[ 'localhour', '20200208153011', '16', 1801 ],
+			[ 'localweek', '20200208153011', '6', 27001 ],
+			[ 'localdow', '20200208153011', '6', 27001 ],
+			[ 'localtime', '20200208153011', '16:30', 3600 ],
+			// Night
+			[ 'localmonth', '20200208223011', '02', 604800 ],
+			[ 'localmonth1', '20200208223011', '2', 604800 ],
+			[ 'localmonthname', '20200208223011', 'February', 604800 ],
+			[ 'localmonthnamegen', '20200208223011', 'February', 604800 ],
+			[ 'localmonthabbrev', '20200208223011', 'Feb', 604800 ],
+			[ 'localday', '20200208223011', '8', 1801 ],
+			[ 'localday2', '20200208223011', '08', 1801 ],
+			[ 'localdayname', '20200208223011', 'Saturday', 1801 ],
+			[ 'localyear', '20200208223011', '2020', 604800 ],
+			[ 'localhour', '20200208223011', '23', 1801 ],
+			[ 'localweek', '20200208223011', '6', 1801 ],
+			[ 'localdow', '20200208223011', '6', 1801 ],
+			[ 'localtime', '20200208223011', '23:30', 3600 ],
+			// Late night / early morning
+			[ 'localmonth', '20200208233011', '02', 604800 ],
+			[ 'localmonth1', '20200208233011', '2', 604800 ],
+			[ 'localmonthname', '20200208233011', 'February', 604800 ],
+			[ 'localmonthnamegen', '20200208233011', 'February', 604800 ],
+			[ 'localmonthabbrev', '20200208233011', 'Feb', 604800 ],
+			[ 'localday', '20200208233011', '9', 84601 ],
+			[ 'localday2', '20200208233011', '09', 84601 ],
+			[ 'localdayname', '20200208233011', 'Sunday', 84601 ],
+			[ 'localyear', '20200208233011', '2020', 604800 ],
+			[ 'localhour', '20200208233011', '00', 1801 ],
+			[ 'localweek', '20200208233011', '6', 84601 ],
+			[ 'localdow', '20200208233011', '0', 84601 ],
+			[ 'localtime', '20200208233011', '00:30', 3600 ]
+		];
+	}
+
+	/**
+	 * @param string $word
+	 * @param string $ts
+	 * @param string $expOutput
+	 * @param int $expTTL
+	 * @dataProvider provideCurrentUnitTimestampWords
+	 * @dataProvider provideLocalUnitTimestampWords
+	 */
+	public function testCurrentUnitTimestampExpiry( $word, $ts, $expOutput, $expTTL ) {
+		$this->setParserTimestamp( $ts );
+
+		$this->assertMagic( $expOutput, $word );
+		$this->assertSame( $expTTL, $this->testParser->getOutput()->getCacheExpiry() );
+	}
+
 	# ############## HELPERS ############################################
 
 	/**
@@ -182,7 +293,7 @@ class MagicVariableTest extends MediaWikiIntegrationTestCase {
 			$month = $value;
 		}
 
-		$this->setParserTS(
+		$this->setParserTimestamp(
 			sprintf( '2010%02d%02d123456', $month, $value )
 		);
 
@@ -198,7 +309,7 @@ class MagicVariableTest extends MediaWikiIntegrationTestCase {
 	 * helper to set the parser timestamp and revision timestamp
 	 * @param string $ts
 	 */
-	private function setParserTS( $ts ) {
+	private function setParserTimestamp( $ts ) {
 		$this->testParser->getOptions()->setTimestamp( $ts );
 		TestingAccessWrapper::newFromObject( $this->testParser )->mRevisionTimestamp = $ts;
 	}
@@ -213,7 +324,7 @@ class MagicVariableTest extends MediaWikiIntegrationTestCase {
 		$msg = sprintf( "Magic %s should be <%s:%s>",
 			$magic,
 			$expected,
-			gettype( $expected )
+			get_debug_type( $expected )
 		);
 
 		$this->assertSame(

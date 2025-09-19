@@ -6,7 +6,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use OutputPage;
 use ParserOptions;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use RequestContext;
 use Title;
 
@@ -23,7 +23,7 @@ class NavigationBar
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
         $this->title = $title;
 
@@ -31,11 +31,11 @@ class NavigationBar
 
     public function getCollapsedNavigationBar($navBarStatus) {
 
-        $html = $this->blade->view()->make("navigation.navigation-bar-collapsed",
+        $html = $this->blade->run("navigation.navigation-bar-collapsed",
             [
                 'navBarExpanded' => $navBarStatus === 'expanded'
             ]
-        )->render();
+        );
         return str_replace("\n", "", $html);
     }
 
@@ -60,7 +60,7 @@ class NavigationBar
         $investigationList = new InvestigationList($this->title);
         $moleculesList = new MoleculesList(self::getCssType($this->title));
 
-        $html = $this->blade->view()->make("navigation.navigation-bar",
+        $html = $this->blade->run("navigation.navigation-bar",
             [
                 'title' => $this->title,
                 'type' => self::getCssType($this->title),
@@ -76,7 +76,7 @@ class NavigationBar
                 'imgPath' => "$wgScriptPath/extensions/ChemExtension/skins/images",
                 'navBarExpanded' =>  $navBarStatus === 'expanded'
             ]
-        )->render();
+        );
 
         return str_replace("\n", "", $html);
     }
@@ -106,13 +106,13 @@ class NavigationBar
 
         global $wgScriptPath;
         $type = self::getCssType($this->title);
-        return $this->blade->view()->make("page-type",
+        return $this->blade->run("page-type",
             [
                 'wgScriptPath' => $wgScriptPath,
                 'type' => $type,
                 'text' => $type
             ]
-        )->render();
+        );
     }
 
     private function makeBreadcrumb() {

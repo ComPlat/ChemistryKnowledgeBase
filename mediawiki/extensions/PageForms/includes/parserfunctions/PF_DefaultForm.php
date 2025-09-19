@@ -9,6 +9,8 @@
  * it specifies that the relevant page(s) should have no form.
  */
 
+use MediaWiki\Title\Title;
+
 class PFDefaultForm {
 	public static function run( Parser $parser ) {
 		$curTitle = $parser->getTitle();
@@ -19,13 +21,7 @@ class PFDefaultForm {
 		}
 		$defaultForm = $params[1];
 
-		$parserOutput = $parser->getOutput();
-		if ( method_exists( $parserOutput, 'setPageProperty' ) ) {
-			// MW 1.38+
-			$parserOutput->setPageProperty( 'PFDefaultForm', $defaultForm );
-		} else {
-			$parserOutput->setProperty( 'PFDefaultForm', $defaultForm );
-		}
+		$parser->getOutput()->setPageProperty( 'PFDefaultForm', $defaultForm );
 
 		// Display information on the page, if this is a category.
 		if ( $curTitle->getNamespace() == NS_CATEGORY ) {

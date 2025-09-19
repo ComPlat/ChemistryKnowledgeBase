@@ -2,18 +2,16 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit;
 
-use BagOStuff;
-use Generator;
-use HashBagOStuff;
 use MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use Psr\Log\NullLogger;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\HashBagOStuff;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore
- * @covers ::__construct
+ * @covers \MediaWiki\Extension\AbuseFilter\BlockAutopromoteStore
  */
 class BlockAutopromoteStoreTest extends MediaWikiUnitTestCase {
 
@@ -25,50 +23,36 @@ class BlockAutopromoteStoreTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function provideBlockAutopromote(): Generator {
+	public function testBlockAutopromote_success() {
+		$store = $this->getStore( new HashBagOStuff() );
+		$target = new UserIdentityValue( 1, 'Blocked user' );
+		$this->assertTrue( $store->blockAutoPromote( $target, '', 1 ) );
+	}
+
+	public function testBlockAutopromote_cannotSet() {
 		$cache = $this->createMock( BagOStuff::class );
 		$cache->expects( $this->once() )->method( 'set' )->willReturn( false );
 		$cache->method( 'makeKey' )->willReturn( 'foo' );
-		yield 'cannot set' => [ $cache, false ];
-
-		yield 'success' => [ new HashBagOStuff(), true ];
-	}
-
-	/**
-	 * @covers ::blockAutoPromote
-	 * @dataProvider provideBlockAutopromote
-	 */
-	public function testBlockAutopromote( BagOStuff $cache, bool $expected ) {
 		$store = $this->getStore( $cache );
 		$target = new UserIdentityValue( 1, 'Blocked user' );
-		$this->assertSame( $expected, $store->blockAutoPromote( $target, '', 1 ) );
+		$this->assertFalse( $store->blockAutoPromote( $target, '', 1 ) );
 	}
 
-	public function provideUnblockAutopromote(): Generator {
-		yield 'not blocked' => [ new HashBagOStuff(), false ];
-
+	public function testUnblockAutopromote_success() {
 		$cache = $this->createMock( BagOStuff::class );
 		$cache->expects( $this->once() )->method( 'changeTTL' )->willReturn( true );
 		$cache->method( 'makeKey' )->willReturn( 'foo' );
-		yield 'success' => [ $cache, true ];
-	}
-
-	/**
-	 * @covers ::unblockAutoPromote
-	 * @dataProvider provideUnblockAutopromote
-	 */
-	public function testUnblockAutopromote( BagOStuff $cache, bool $expected ) {
 		$store = $this->getStore( $cache );
 		$target = new UserIdentityValue( 1, 'Blocked user' );
-		$this->assertSame( $expected, $store->unblockAutoPromote( $target, $target, '' ) );
+		$this->assertTrue( $store->unblockAutoPromote( $target, $target, '' ) );
 	}
 
-	/**
-	 * @covers ::blockAutoPromote
-	 * @covers ::getAutoPromoteBlockStatus
-	 * @covers ::unblockAutopromote
-	 * @covers ::getAutoPromoteBlockKey
-	 */
+	public function testUnblockAutopromote_notBlocked() {
+		$store = $this->getStore( new HashBagOStuff() );
+		$target = new UserIdentityValue( 1, 'Blocked user' );
+		$this->assertFalse( $store->unblockAutoPromote( $target, $target, '' ) );
+	}
+
 	public function testRoundTrip() {
 		$cache = new HashBagOStuff();
 		$store = $this->getStore( $cache );

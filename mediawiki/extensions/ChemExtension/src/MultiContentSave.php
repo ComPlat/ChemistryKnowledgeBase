@@ -47,7 +47,7 @@ class MultiContentSave
 
     public static function onArticleDeleteComplete( &$article, User &$user, $reason, $id, $content, \LogEntry
         $logEntry, $archivedRevisionCount ) {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($article->getTitle());
         $repo->deleteAllConcreteMoleculeByMoleculePage($article->getTitle());
@@ -109,7 +109,7 @@ class MultiContentSave
 
                     self::collectMolecules($moleculePage['chemformId'], $pageTitle);
                 } else {
-                    $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+                    $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
 
                     $repo = new ChemFormRepository($dbr);
                     $moleculeKey = $chemForm->getMoleculeKey();
@@ -129,7 +129,7 @@ class MultiContentSave
 
     private static function removeAllMoleculesFromChemFormIndex($pageTitle)
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $repo->deleteAllChemFormIndexByPage($pageTitle);
     }
@@ -146,7 +146,7 @@ class MultiContentSave
         $logger = new LoggerUtils('MultiContentSave', 'ChemExtension');
         $parser = new ParserFunctionParser();
         $moleculeLinks = $parser->parseFunction('moleculelink', $wikitext);
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
 
         foreach ($moleculeLinks as $f) {
@@ -196,7 +196,7 @@ class MultiContentSave
      */
     private static function addMoleculesToIndex(Title $pageTitle): void
     {
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $uniqueListOfMolecules = self::$MOLECULES_FOUND;
 
@@ -208,7 +208,7 @@ class MultiContentSave
     private static function addToCategoryIndex(Title $pageTitle)
     {
         $categories = [];
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new CategoryIndexRepository($dbr);
         $repo->deleteCategoryFromIndex($pageTitle);
         WikiTools::getReversedCategoryList($pageTitle->getParentCategoryTree(), $categories);
@@ -218,7 +218,7 @@ class MultiContentSave
     private static function addMoleculesFromInvestigation(string $wikitext, Title $pageTitle)
     {
         $moleculesAlreadyFound = [];
-        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $templateParser = new TemplateParser($wikitext);
         $ast = $templateParser->parse();

@@ -7,7 +7,7 @@ use DIQA\ChemExtension\Utils\ChemTools;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use Title;
 
 class RenderMoleculeLink
@@ -51,7 +51,7 @@ class RenderMoleculeLink
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ($views, $cache);
+        $blade = new BladeOne ($views, $cache);
 
 
         global $wgScriptPath;
@@ -59,7 +59,7 @@ class RenderMoleculeLink
         if (WikiTools::isInVisualEditor()) {
             $namesOfMolecule .= " ({$page->getText()})";
         }
-        $html = $blade->view()->make("molecule-link",
+        $html = $blade->run("molecule-link",
             [
                 'url' => $page->getFullURL(),
                 'label' => $page->getText(),
@@ -71,7 +71,7 @@ class RenderMoleculeLink
                 'height' => $parameters['height'] ?? 200,
                 'toggleImage' => ($parameters['toggleImage'] ?? false) === "true",
             ]
-        )->render();
+        );
 
 
         $html = str_replace("\n", "", $html);

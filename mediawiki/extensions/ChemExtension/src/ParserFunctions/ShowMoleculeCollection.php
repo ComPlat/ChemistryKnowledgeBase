@@ -4,9 +4,9 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\Utils\ArrayTools;
+use eftec\bladeone\BladeOne;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
 use Title;
 
 class ShowMoleculeCollection {
@@ -23,7 +23,7 @@ class ShowMoleculeCollection {
 
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
-        $blade = new Blade ( $views, $cache );
+        $blade = new BladeOne( $views, $cache );
 
         if (is_null($wgTitle)) return;
         $molecules = $chemFormRepo->getConcreteMolecules($wgTitle);
@@ -50,12 +50,12 @@ class ShowMoleculeCollection {
             ];
 
         }
-        $html = $blade->view ()->make ( "molecule-collection-table",
+        $html = $blade->run ( "molecule-collection-table",
             [
                 'rGroups' => $rGroups,
                 'rows' => $rows,
             ]
-        )->render ();
+        );
 
         return [str_replace("\n", "", $html), 'noparse' => true, 'isHTML' => true];
     }

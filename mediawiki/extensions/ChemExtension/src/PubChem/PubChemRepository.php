@@ -2,8 +2,8 @@
 
 namespace DIQA\ChemExtension\PubChem;
 
-use IMaintainableDatabase;
 
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 class PubChemRepository
 {

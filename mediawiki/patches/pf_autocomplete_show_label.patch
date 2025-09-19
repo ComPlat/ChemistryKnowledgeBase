@@ -1,17 +1,17 @@
-Index: mediawiki/extensions/PageForms/libs/ext.pf.select2.combobox.js
+Index: mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
-diff --git a/mediawiki/extensions/PageForms/libs/ext.pf.select2.combobox.js b/mediawiki/extensions/PageForms/libs/ext.pf.select2.combobox.js
---- a/mediawiki/extensions/PageForms/libs/ext.pf.select2.combobox.js	(revision faf2dd17463db26e0eaafdf02e525f147a5ae53e)
-+++ b/mediawiki/extensions/PageForms/libs/ext.pf.select2.combobox.js	(date 1667576086086)
-@@ -81,7 +81,7 @@
- 			if ( term === undefined ) {
- 				term = "";
+diff --git a/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js b/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js
+--- a/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js	(revision 45b7dc0bd4c6a9fb6c344cf33ed4ed13903616e7)
++++ b/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js	(date 1756465320688)
+@@ -225,7 +225,7 @@
+ 				const htmlElements = inputData.$selection[0].children[0].children;
+ 				term = htmlElements[htmlElements.length - 1].children[0].value;
  			}
 -			return pf.select2.base.prototype.textHighlight( result.id, term );
 +			return pf.select2.base.prototype.textHighlight( result.label ? result.label : result.id, term );
- 		}
+ 		};
  		opts.language.searching = function() {
- 			return mw.msg( "pf-select2-searching" );
+ 			return mw.msg( "pf-autocomplete-searching" );

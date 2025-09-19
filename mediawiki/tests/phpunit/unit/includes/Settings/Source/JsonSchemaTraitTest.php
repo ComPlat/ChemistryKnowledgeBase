@@ -4,6 +4,7 @@ namespace MediaWiki\Tests\Unit\Settings\Source;
 
 use InvalidArgumentException;
 use MediaWiki\Settings\Source\JsonSchemaTrait;
+use MediaWiki\Settings\Source\RefLoopException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -12,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 class JsonSchemaTraitTest extends TestCase {
 	use JsonSchemaTrait;
 
-	public function providePhpDocToJson() {
+	public static function providePhpDocToJson() {
 		yield 'int' => [ 'int', 'integer' ];
 		yield 'nullable int' => [ '?int', [ 'integer', 'null' ] ];
 		yield 'array input' => [ [ 'list', 'number' ], [ 'array', 'number' ] ];
@@ -38,7 +39,7 @@ class JsonSchemaTraitTest extends TestCase {
 		$this->assertSame( $json, $actual );
 	}
 
-	public function provideNormalizeJsonSchema() {
+	public static function provideNormalizeJsonSchema() {
 		yield 'nullable int' => [
 			[ 'type' => '?int' ],
 			[ 'type' => [ 'integer', 'null' ] ]
@@ -103,19 +104,138 @@ class JsonSchemaTraitTest extends TestCase {
 				]
 			]
 		];
+
+		yield 'references' => [
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [
+						'$ref' => [
+							'class' => ExampleDefinitionsClass::class,
+							'field' => 'SOME_SCHEMA',
+						]
+					],
+				]
+			],
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [ '$ref' => '#/$defs/MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::SOME_SCHEMA' ],
+				]
+			],
+			[
+				'MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::SOME_SCHEMA' => [
+					'type' => 'string',
+				]
+			]
+		];
+
+		yield 'definitions' => [
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [
+						'$ref' => [
+							'class' => ExampleDefinitionsClass::class,
+							'field' => 'REFERENCING_SCHEMA',
+						]
+					],
+				]
+			],
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [ '$ref' => '#/$defs/MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::REFERENCING_SCHEMA' ],
+				]
+			],
+			[
+				'MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::REFERENCING_SCHEMA' => [
+					'$ref' => '#/$defs/MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::SOME_SCHEMA',
+				],
+				'MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::SOME_SCHEMA' => [
+					'type' => 'string',
+				]
+			]
+		];
+
+		yield 'inlined' => [
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [
+						'$ref' => [
+							'class' => ExampleDefinitionsClass::class,
+							'field' => 'REFERENCING_SCHEMA',
+						]
+					],
+				]
+			],
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [ 'type' => 'string' ],
+				]
+			],
+			[],
+			true
+		];
 	}
 
 	/**
 	 * @dataProvider provideNormalizeJsonSchema
 	 * @param array $schema
-	 * @param array $expected
+	 * @param array $expectedSchema
+	 * @param array $expectedDefs
+	 * @param bool $inlinedReferences
 	 */
-	public function testNormalizeJsonSchema( $schema, $expected ) {
-		$actual = self::normalizeJsonSchema( $schema );
-		$this->assertSame( $expected, $actual );
+	public function testNormalizeJsonSchema( $schema, $expectedSchema, $expectedDefs = [], $inlinedReferences = false ) {
+		$actualDefs = [];
+		$actual = self::normalizeJsonSchema(
+			$schema,
+			$actualDefs,
+			'provideNormalizeJsonSchema',
+			'foo',
+			$inlinedReferences
+		);
+		$this->assertSame( $expectedSchema, $actual );
+		$this->assertEquals( $expectedDefs, $actualDefs );
 	}
 
-	public function provideJsonToPhpDoc() {
+	public static function provideCycleDetection() {
+		yield 'cycle' => [
+			[
+				'type' => 'object',
+				'properties' => [
+					'foo' => [
+						'$ref' => [
+							'class' => ExampleDefinitionsClass::class,
+							'field' => 'CYCLED_SCHEMA',
+						]
+					]
+				]
+			]
+		];
+	}
+
+	/**
+	 * @dataProvider provideCycleDetection
+	 * @param array $schema
+	 */
+	public function testCycleDetection( $schema ) {
+		$actualDefs = [];
+		$this->expectException( RefLoopException::class );
+		$this->expectExceptionMessage(
+			'Found a loop while resolving reference MediaWiki.Tests.Unit.Settings.Source.ExampleDefinitionsClass::CYCLED_SCHEMA in foo. Root schema location: provideCycleDetection-cycle'
+		);
+		self::normalizeJsonSchema(
+			$schema,
+			$actualDefs,
+			'provideCycleDetection-cycle',
+			'foo'
+		);
+	}
+
+	public static function provideJsonToPhpDoc() {
 		yield 'integer' => [ 'integer', 'int' ];
 		yield 'double' => [ 'double', 'float' ]; // For good measure.
 		yield 'integer or null' => [ [ 'integer', 'null' ], '?int' ];
@@ -139,7 +259,7 @@ class JsonSchemaTraitTest extends TestCase {
 		$this->assertSame( $phpDoc, $actual );
 	}
 
-	public function provideJsonToPhpDoc_invalidArgument() {
+	public static function provideJsonToPhpDoc_invalidArgument() {
 		yield 'null' => [ null ];
 		yield 'list with null' => [ [ 'int', null ] ];
 	}
@@ -158,7 +278,7 @@ class JsonSchemaTraitTest extends TestCase {
 		self::phpDocToJson( null );
 	}
 
-	public function provideGetDefaultFromJsonSchema() {
+	public static function provideGetDefaultFromJsonSchema() {
 		yield 'empty' => [ [], null ];
 
 		yield 'no default, no properties' => [

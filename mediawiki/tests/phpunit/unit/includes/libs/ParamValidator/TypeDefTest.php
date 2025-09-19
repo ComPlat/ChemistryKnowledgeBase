@@ -1,14 +1,20 @@
 <?php
 
-namespace Wikimedia\ParamValidator;
+namespace Wikimedia\Tests\ParamValidator;
 
+use PHPUnit\Framework\TestCase;
 use Wikimedia\Message\DataMessageValue;
+use Wikimedia\ParamValidator\Callbacks;
+use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\SimpleCallbacks;
+use Wikimedia\ParamValidator\TypeDef;
+use Wikimedia\ParamValidator\ValidationException;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers Wikimedia\ParamValidator\TypeDef
+ * @covers \Wikimedia\ParamValidator\TypeDef
  */
-class TypeDefTest extends \PHPUnit\Framework\TestCase {
+class TypeDefTest extends TestCase {
 
 	public function testMisc() {
 		$typeDef = $this->getMockBuilder( TypeDef::class )
@@ -61,7 +67,7 @@ class TypeDefTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	/** @dataProvider provideFailureMessage */
-	public function testFailureMessage( $expect, $code, array $data = null, $suffix = null ) {
+	public function testFailureMessage( $expect, $code, ?array $data = null, $suffix = null ) {
 		$typeDef = $this->getMockBuilder( TypeDef::class )
 			->setConstructorArgs( [ new SimpleCallbacks( [] ) ] )
 			->getMockForAbstractClass();

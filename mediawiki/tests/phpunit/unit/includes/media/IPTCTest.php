@@ -6,7 +6,7 @@
 class IPTCTest extends \MediaWikiUnitTestCase {
 
 	/**
-	 * @covers IPTC::getCharset
+	 * @covers \IPTC::getCharset
 	 */
 	public function testRecognizeUtf8() {
 		// utf-8 is the only one used in practise.
@@ -14,7 +14,7 @@ class IPTCTest extends \MediaWikiUnitTestCase {
 		$this->assertEquals( 'UTF-8', $res );
 	}
 
-	public function provideParse() {
+	public static function provideParse() {
 		// $rawData, $expectedKeywords
 
 		// basically IPTC for keyword with value of 0xBC which is 1/4 in iso-8859-1
@@ -26,7 +26,7 @@ class IPTCTest extends \MediaWikiUnitTestCase {
 		];
 
 		/* This one contains a sequence that's valid iso 8859-1 but not valid utf8 */
-		/* \xC3 = Ã, \xB8 = ¸  */
+		/* \xC3 = Ã, \xB8 = ¸ */
 		yield 'No charset 88591b' => [
 			"Photoshop 3.0\08BIM\4\4\0\0\0\0\0\x09\x1c\x02\x19\x00\x04\xC3\xC3\xC3\xB8",
 			[ 'ÃÃÃ¸' ]
@@ -62,7 +62,7 @@ class IPTCTest extends \MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers IPTC::parse
+	 * @covers \IPTC::parse
 	 * @dataProvider provideParse
 	 */
 	public function testIPTCParseUTF8( $rawData, $expectedKeywords ) {

@@ -4,20 +4,37 @@ namespace MediaWiki\Tests\Integration\CommentFormatter;
 
 use LinkCacheTestTrait;
 use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\CommentFormatter\CommentParser;
+use MediaWiki\CommentFormatter\CommentParserFactory;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Config\SiteConfiguration;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Revision\MutableRevisionRecord;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
-use SiteConfiguration;
-use Title;
+use MediaWiki\Title\Title;
+use RepoGroup;
 
 /**
  * @group Database
  * @covers \MediaWiki\CommentFormatter\CommentParser
+ * @group Database
  */
 class CommentParserTest extends \MediaWikiIntegrationTestCase {
 	use DummyServicesTrait;
 	use LinkCacheTestTrait;
+
+	/**
+	 * @return RepoGroup
+	 */
+	private function getRepoGroup() {
+		$repoGroup = $this->createNoOpMock( RepoGroup::class, [ 'findFiles' ] );
+		$repoGroup->method( 'findFiles' )->willReturn( [] );
+		return $repoGroup;
+	}
 
 	private function getParser() {
 		$services = $this->getServiceContainer();
@@ -25,7 +42,7 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 			$services->getLinkRenderer(),
 			$services->getLinkBatchFactory(),
 			$services->getLinkCache(),
-			$services->getRepoGroup(),
+			$this->getRepoGroup(),
 			$services->getContentLanguage(),
 			$services->getContentLanguage(),
 			$services->getTitleParser(),
@@ -34,49 +51,54 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 		);
 	}
 
-	private function setupInterwiki() {
-		$this->overrideMwServices( null, [
-			'InterwikiLookup' => function () {
-				return $this->getDummyInterwikiLookup( [
-					'interwiki' => [
-						'iw_prefix' => 'interwiki',
-						'iw_url' => 'https://interwiki/$1',
-					]
-				] );
-			}
-		] );
+	private function getFormatter() {
+		$parserFactory = $this->createNoOpMock( CommentParserFactory::class, [ 'create' ] );
+		$parserFactory->method( 'create' )->willReturnCallback( function () {
+			return $this->getParser();
+		} );
+		return new CommentFormatter( $parserFactory );
 	}
 
-	private function setupConf() {
+	/**
+	 * @before
+	 */
+	public function interwikiSetUp() {
+		$this->setService( 'InterwikiLookup', function () {
+			return $this->getDummyInterwikiLookup( [
+				'interwiki' => [
+					'iw_prefix' => 'interwiki',
+					'iw_url' => 'https://interwiki/$1',
+				]
+			] );
+		} );
+	}
+
+	/**
+	 * @before
+	 */
+	public function configSetUp() {
 		$conf = new SiteConfiguration();
 		$conf->settings = [
 			'wgServer' => [
-				'enwiki' => '//en.example.org'
+				'foowiki' => '//foo.example.org'
 			],
 			'wgArticlePath' => [
-				'enwiki' => '/w/$1',
+				'foowiki' => '/foo/$1',
 			],
 		];
 		$conf->suffixes = [ 'wiki' ];
 		$this->setMwGlobals( 'wgConf', $conf );
 		$this->overrideConfigValues( [
-			MainConfigNames::Script => '/wiki/index.php',
+			MainConfigNames::Script => '/w/index.php',
 			MainConfigNames::ArticlePath => '/wiki/$1',
 			MainConfigNames::CapitalLinks => true,
 			MainConfigNames::LanguageCode => 'en',
 		] );
 	}
 
-	/**
-	 * Copied from LinkerTest so that LinkerTest can be deleted once deprecation
-	 * and removal of Linker::formatComment() is complete.
-	 *
-	 * @return array[]
-	 */
-	public function provideFormatComment() {
-		$wikiId = 'enwiki'; // $wgConf has a fake entry for this
+	public static function provideFormatComment() {
 		return [
-			// Linker::formatComment
+			// MediaWiki\CommentFormatter\CommentFormatter::format
 			[
 				'a&lt;script&gt;b',
 				'a<script>b',
@@ -93,60 +115,60 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				"try &lt;script&gt;evil&lt;/scipt&gt; things",
 				"try <script>evil</scipt> things",
 			],
-			// Linker::formatAutocomments
+			// MediaWiki\CommentFormatter\CommentParser::doSectionLinks
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a></span>',
 				"/* autocomment */",
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#linkie.3F" title="Special:BlankPage">→‎&#91;[linkie?]]</a></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#linkie.3F" title="Special:BlankPage">→<bdi dir="ltr">&#91;[linkie?]]</bdi></a></span>',
 				"/* [[linkie?]] */",
 			],
 			[
-				'<span dir="auto"><span class="autocomment">: </span> // Edit via via</span>',
+				'<span class="autocomment">: </span> // Edit via via',
 				// Regression test for T222857
 				"/*  */ // Edit via via",
 			],
 			[
-				'<span dir="auto"><span class="autocomment">: </span> foobar</span>',
+				'<span class="autocomment">: </span> foobar',
 				// Regression test for T222857
 				"/**/ foobar",
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a>: </span> post</span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a>: </span> post',
 				"/* autocomment */ post",
 			],
 			[
-				'pre <span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a></span></span>',
+				'pre <span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a></span>',
 				"pre /* autocomment */",
 			],
 			[
-				'pre <span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a>: </span> post</span>',
+				'pre <span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a>: </span> post',
 				"pre /* autocomment */ post",
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a>: </span> multiple? <span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment2" title="Special:BlankPage">→‎autocomment2</a></span></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a>: </span> multiple? <span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment2" title="Special:BlankPage">→<bdi dir="ltr">autocomment2</bdi></a></span>',
 				"/* autocomment */ multiple? /* autocomment2 */",
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.2F.2A" title="Special:BlankPage">→‎autocomment containing /*</a>: </span> T70361</span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.2F.2A" title="Special:BlankPage">→<bdi dir="ltr">autocomment containing /*</bdi></a>: </span> T70361',
 				"/* autocomment containing /* */ T70361"
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.22quotes.22" title="Special:BlankPage">→‎autocomment containing &quot;quotes&quot;</a></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.22quotes.22" title="Special:BlankPage">→<bdi dir="ltr">autocomment containing &quot;quotes&quot;</bdi></a></span>',
 				"/* autocomment containing \"quotes\" */"
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.3Cscript.3Etags.3C.2Fscript.3E" title="Special:BlankPage">→‎autocomment containing &lt;script&gt;tags&lt;/script&gt;</a></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment_containing_.3Cscript.3Etags.3C.2Fscript.3E" title="Special:BlankPage">→<bdi dir="ltr">autocomment containing &lt;script&gt;tags&lt;/script&gt;</bdi></a></span>',
 				"/* autocomment containing <script>tags</script> */"
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="#autocomment">→‎autocomment</a></span></span>',
+				'<span class="autocomment"><a href="#autocomment">→<bdi dir="ltr">autocomment</bdi></a></span>',
 				"/* autocomment */",
 				false, true
 			],
 			[
-				'<span dir="auto"><span class="autocomment">autocomment</span></span>',
+				'<span class="autocomment">autocomment</span>',
 				"/* autocomment */",
 				null
 			],
@@ -161,42 +183,42 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				null
 			],
 			[
-				'<span dir="auto"><span class="autocomment">[[</span></span>',
+				'<span class="autocomment">[[</span>',
 				"/* [[ */",
 				false, true
 			],
 			[
-				'<span dir="auto"><span class="autocomment">[[</span></span>',
+				'<span class="autocomment">[[</span>',
 				"/* [[ */",
 				null
 			],
 			[
-				"foo <span dir=\"auto\"><span class=\"autocomment\"><a href=\"#.23\">→‎&#91;[#_\t_]]</a></span></span>",
+				"foo <span class=\"autocomment\"><a href=\"#.23\">→<bdi dir=\"ltr\">&#91;[#_\t_]]</bdi></a></span>",
 				"foo /* [[#_\t_]] */",
 				false, true
 			],
 			[
-				"foo <span dir=\"auto\"><span class=\"autocomment\"><a href=\"#_.09\">#_\t_</a></span></span>",
+				"foo <span class=\"autocomment\"><a href=\"#_.09\">#_\t_</a></span>",
 				"foo /* [[#_\t_]] */",
 				null
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→‎autocomment</a></span></span>',
+				'<span class="autocomment"><a href="/wiki/Special:BlankPage#autocomment" title="Special:BlankPage">→<bdi dir="ltr">autocomment</bdi></a></span>',
 				"/* autocomment */",
 				false, false
 			],
 			[
-				'<span dir="auto"><span class="autocomment"><a class="external" rel="nofollow" href="//en.example.org/w/Special:BlankPage#autocomment">→‎autocomment</a></span></span>',
+				'<span class="autocomment"><a class="external" rel="nofollow" href="//foo.example.org/foo/Special:BlankPage#autocomment">→<bdi dir="ltr">autocomment</bdi></a></span>',
 				"/* autocomment */",
-				false, false, $wikiId
+				false, false, 'foowiki'
 			],
-			// Linker::formatLinksInComment
+			// MediaWiki\CommentFormatter\CommentParser::doWikiLinks
 			[
-				'abc <a href="/wiki/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">link</a> def',
+				'abc <a href="/w/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">link</a> def',
 				"abc [[link]] def",
 			],
 			[
-				'abc <a href="/wiki/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">text</a> def',
+				'abc <a href="/w/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">text</a> def',
 				"abc [[link|text]] def",
 			],
 			[
@@ -204,7 +226,7 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				"abc [[Special:BlankPage|]] def",
 			],
 			[
-				'abc <a href="/wiki/index.php?title=%C4%84%C5%9B%C5%BC&amp;action=edit&amp;redlink=1" class="new" title="Ąśż (page does not exist)">ąśż</a> def',
+				'abc <a href="/w/index.php?title=%C4%84%C5%9B%C5%BC&amp;action=edit&amp;redlink=1" class="new" title="Ąśż (page does not exist)">ąśż</a> def',
 				"abc [[%C4%85%C5%9B%C5%BC]] def",
 			],
 			[
@@ -212,11 +234,11 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				"abc [[#section]] def",
 			],
 			[
-				'abc <a href="/wiki/index.php?title=/subpage&amp;action=edit&amp;redlink=1" class="new" title="/subpage (page does not exist)">/subpage</a> def',
+				'abc <a href="/w/index.php?title=/subpage&amp;action=edit&amp;redlink=1" class="new" title="/subpage (page does not exist)">/subpage</a> def',
 				"abc [[/subpage]] def",
 			],
 			[
-				'abc <a href="/wiki/index.php?title=%22evil!%22&amp;action=edit&amp;redlink=1" class="new" title="&quot;evil!&quot; (page does not exist)">&quot;evil!&quot;</a> def',
+				'abc <a href="/w/index.php?title=%22evil!%22&amp;action=edit&amp;redlink=1" class="new" title="&quot;evil!&quot; (page does not exist)">&quot;evil!&quot;</a> def',
 				"abc [[\"evil!\"]] def",
 			],
 			[
@@ -228,17 +250,17 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				"abc [[|]] def",
 			],
 			[
-				'abc <a href="/wiki/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">link</a> def',
+				'abc <a href="/w/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">link</a> def',
 				"abc [[link]] def",
 				false, false
 			],
 			[
-				'abc <a class="external" rel="nofollow" href="//en.example.org/w/Link">link</a> def',
+				'abc <a class="external" rel="nofollow" href="//foo.example.org/foo/Link">link</a> def',
 				"abc [[link]] def",
-				false, false, $wikiId
+				false, false, 'foowiki'
 			],
 			[
-				'<a href="/wiki/index.php?title=Special:Upload&amp;wpDestFile=LinkerTest.jpg" class="new" title="LinkerTest.jpg">Media:LinkerTest.jpg</a>',
+				'<a href="/w/index.php?title=Special:Upload&amp;wpDestFile=LinkerTest.jpg" class="new" title="LinkerTest.jpg">Media:LinkerTest.jpg</a>',
 				'[[Media:LinkerTest.jpg]]'
 			],
 			[
@@ -246,7 +268,7 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				'[[:Special:BlankPage]]'
 			],
 			[
-				'<a href="/wiki/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">linktrail</a>...',
+				'<a href="/w/index.php?title=Link&amp;action=edit&amp;redlink=1" class="new" title="Link (page does not exist)">linktrail</a>...',
 				'[[link]]trail...'
 			],
 			[
@@ -266,8 +288,6 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Adapted from LinkerTest
-	 *
 	 * @dataProvider provideFormatComment
 	 */
 	public function testFormatComment(
@@ -276,19 +296,17 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 		$conf = new SiteConfiguration();
 		$conf->settings = [
 			'wgServer' => [
-				'enwiki' => '//en.example.org',
-				'dewiki' => '//de.example.org',
+				'foowiki' => '//foo.example.org',
 			],
 			'wgArticlePath' => [
-				'enwiki' => '/w/$1',
-				'dewiki' => '/w/$1',
+				'foowiki' => '/foo/$1',
 			],
 		];
 		$conf->suffixes = [ 'wiki' ];
 
 		$this->setMwGlobals( 'wgConf', $conf );
 		$this->overrideConfigValues( [
-			MainConfigNames::Script => '/wiki/index.php',
+			MainConfigNames::Script => '/w/index.php',
 			MainConfigNames::ArticlePath => '/wiki/$1',
 			MainConfigNames::CapitalLinks => true,
 			// TODO: update tests when the default changes
@@ -296,12 +314,11 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 			MainConfigNames::LanguageCode => 'en',
 		] );
 
-		$this->setupInterwiki();
-		$this->addGoodLinkObject( 1, Title::newFromText( 'Present' ) );
+		$this->addGoodLinkObject( 1, Title::makeTitle( NS_MAIN, 'Present' ) );
 
 		if ( $title === false ) {
 			// We need a page title that exists
-			$title = Title::newFromText( 'Special:BlankPage' );
+			$title = Title::makeTitle( NS_SPECIAL, 'BlankPage' );
 		}
 
 		$parser = $this->getParser();
@@ -317,9 +334,6 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expected, $result );
 	}
 
-	/**
-	 * Adapted from LinkerTest
-	 */
 	public static function provideFormatLinksInComment() {
 		return [
 			[
@@ -338,33 +352,118 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 				null,
 			],
 			[
-				'<a class="external" rel="nofollow" href="//en.example.org/w/Foo%27bar">Foo&#039;bar</a>',
+				'<a class="external" rel="nofollow" href="//foo.example.org/foo/Foo%27bar">Foo&#039;bar</a>',
 				"[[Foo'bar]]",
-				'enwiki',
+				'foowiki',
 			],
 			[
-				'foo bar <a class="external" rel="nofollow" href="//en.example.org/w/Special:BlankPage">Special:BlankPage</a>',
+				'<a class="external" rel="nofollow" href="//foo.example.org/foo/Foo$100bar">Foo$100bar</a>',
+				'[[Foo$100bar]]',
+				'foowiki',
+			],
+			[
+				'foo bar <a class="external" rel="nofollow" href="//foo.example.org/foo/Special:BlankPage">Special:BlankPage</a>',
 				'foo bar [[Special:BlankPage]]',
-				'enwiki',
+				'foowiki',
 			],
 			[
-				'foo bar <a class="external" rel="nofollow" href="//en.example.org/w/File:Example">Image:Example</a>',
+				'foo bar <a class="external" rel="nofollow" href="//foo.example.org/foo/File:Example">Image:Example</a>',
 				'foo bar [[Image:Example]]',
-				'enwiki',
+				'foowiki',
 			],
 		];
 		// phpcs:enable
 	}
 
 	/**
-	 * Adapted from LinkerTest. Note that we test the new HTML escaping variant.
+	 * @covers \MediaWiki\CommentFormatter\CommentFormatter
+	 * @covers \MediaWiki\CommentFormatter\CommentParser
+	 * @dataProvider provideCommentBlock
+	 */
+	public function testCommentBlock(
+		$expected, $comment, $title = null, $local = false, $wikiId = null, $useParentheses = true
+	) {
+		$conf = new SiteConfiguration();
+		$conf->settings = [
+			'wgServer' => [
+				'foowiki' => '//foo.example.org'
+			],
+			'wgArticlePath' => [
+				'foowiki' => '/foo/$1',
+			],
+		];
+		$conf->suffixes = [ 'wiki' ];
+		$this->setMwGlobals( 'wgConf', $conf );
+		$this->overrideConfigValues( [
+			MainConfigNames::Script => '/w/index.php',
+			MainConfigNames::ArticlePath => '/wiki/$1',
+			MainConfigNames::CapitalLinks => true,
+		] );
+
+		$formatter = $this->getFormatter();
+		$this->assertEquals(
+			$expected,
+			$formatter->formatBlock( $comment, $title, $local, $wikiId, $useParentheses )
+		);
+	}
+
+	public static function provideCommentBlock() {
+		return [
+			[
+				' <span class="comment">(Test)</span>',
+				'Test'
+			],
+			'Empty comment' => [ '', '' ],
+			'Backwards compatibility empty comment' => [ '', '*' ],
+			'No parenthesis' => [
+				' <span class="comment comment--without-parentheses">Test</span>',
+				'Test',
+				null, false, null,
+				false
+			],
+			'Page exist link' => [
+				' <span class="comment">(<a href="/wiki/Special:BlankPage" title="Special:BlankPage">Special:BlankPage</a>)</span>',
+				'[[Special:BlankPage]]'
+			],
+			'Page does not exist link' => [
+				' <span class="comment">(<a href="/w/index.php?title=Test&amp;action=edit&amp;redlink=1" class="new" title="Test (page does not exist)">Test</a>)</span>',
+				'[[Test]]'
+			],
+			'Link to other page section' => [
+				' <span class="comment">(<a href="/wiki/Special:BlankPage#Test" title="Special:BlankPage">#Test</a>)</span>',
+				'[[#Test]]',
+				Title::makeTitle( NS_SPECIAL, 'BlankPage' )
+			],
+			'$local is true' => [
+				' <span class="comment">(<a href="#Test">#Test</a>)</span>',
+				'[[#Test]]',
+				Title::makeTitle( NS_SPECIAL, 'BlankPage' ),
+				true
+			],
+			'Given wikiId' => [
+				' <span class="comment">(<a class="external" rel="nofollow" href="//foo.example.org/foo/Test">Test</a>)</span>',
+				'[[Test]]',
+				null, false,
+				'foowiki'
+			],
+			'Section link to external wiki page' => [
+				' <span class="comment">(<a class="external" rel="nofollow" href="//foo.example.org/foo/Special:BlankPage#Test">#Test</a>)</span>',
+				'[[#Test]]',
+				Title::makeTitle( NS_SPECIAL, 'BlankPage' ),
+				false,
+				'foowiki'
+			],
+		];
+	}
+
+	/**
+	 * Note that we test the new HTML escaping variant.
 	 *
 	 * @dataProvider provideFormatLinksInComment
 	 */
 	public function testFormatLinksInComment( $expected, $input, $wiki ) {
-		$this->setupConf();
 		$parser = $this->getParser();
-		$title = Title::newFromText( 'Special:BlankPage' );
+		$title = Title::makeTitle( NS_SPECIAL, 'BlankPage' );
 		$result = $parser->finalize(
 			$parser->preprocess(
 				$input, $title, false, $wiki, false
@@ -375,15 +474,10 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	public function testLinkCacheInteraction() {
-		$this->tablesUsed[] = 'page';
-		$this->setupConf();
 		$services = $this->getServiceContainer();
-		$present = Title::newFromText( 'Present' );
-		$absent = Title::newFromText( 'Absent' );
-		$this->editPage(
-			$present,
-			'content'
-		);
+		$present = $this->getExistingTestPage( 'Present' )->getTitle();
+		$absent = $this->getNonexistingTestPage( 'Absent' )->getTitle();
+
 		$parser = $this->getParser();
 		$linkCache = $services->getLinkCache();
 		$result = $parser->finalize( [
@@ -392,7 +486,7 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 		] );
 		$expected = [
 			'<a href="/wiki/Present" title="Present">Present</a>',
-			'<a href="/wiki/index.php?title=Absent&amp;action=edit&amp;redlink=1" class="new" title="Absent (page does not exist)">Absent</a>'
+			'<a href="/w/index.php?title=Absent&amp;action=edit&amp;redlink=1" class="new" title="Absent (page does not exist)">Absent</a>'
 		];
 		$this->assertSame( $expected, $result );
 		$this->assertGreaterThan( 0, $linkCache->getGoodLinkID( $present ) );
@@ -402,15 +496,13 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 		// to execute a query. This is a CommentParser responsibility since
 		// LinkBatch does not provide a transparent read-through cache.
 		// TODO: Generic $this->assertQueryCount() would do the job.
-		$lbf = $services->getDBLoadBalancerFactory();
-		$fakeLB = $lbf->newMainLB();
-		$fakeLB->disable( __METHOD__ );
+		$dbProvider = $services->getConnectionProvider();
 		$linkBatchFactory = new LinkBatchFactory(
 			$services->getLinkCache(),
 			$services->getTitleFormatter(),
 			$services->getContentLanguage(),
 			$services->getGenderCache(),
-			$fakeLB,
+			$dbProvider,
 			$services->getLinksMigration(),
 			LoggerFactory::getInstance( 'LinkBatch' )
 		);
@@ -418,7 +510,7 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 			$services->getLinkRenderer(),
 			$linkBatchFactory,
 			$linkCache,
-			$services->getRepoGroup(),
+			$this->getRepoGroup(),
 			$services->getContentLanguage(),
 			$services->getContentLanguage(),
 			$services->getTitleParser(),
@@ -436,14 +528,8 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 	 * Regression test for T300311
 	 */
 	public function testInterwikiLinkCachePollution() {
-		$this->tablesUsed[] = 'page';
-		$this->setupConf();
-		$this->setupInterwiki();
-		$present = Title::newFromText( 'Template:Present' );
-		$this->editPage(
-			$present,
-			'content'
-		);
+		$present = $this->getExistingTestPage( 'Template:Present' )->getTitle();
+
 		$this->getServiceContainer()->getLinkCache()->clear();
 		$parser = $this->getParser();
 		$result = $parser->finalize(
@@ -460,14 +546,13 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 	 * Regression test for T293665
 	 */
 	public function testAlwaysKnownPages() {
-		$this->setupConf();
 		$this->setTemporaryHook( 'TitleIsAlwaysKnown',
 			static function ( $target, &$isKnown ) {
 				$isKnown = $target->getText() == 'AlwaysKnownFoo';
 			}
 		);
 
-		$title = Title::newFromText( 'User:AlwaysKnownFoo' );
+		$title = Title::makeTitle( NS_USER, 'AlwaysKnownFoo' );
 		$this->assertFalse( $title->exists() );
 
 		$parser = $this->getParser();
@@ -477,6 +562,69 @@ class CommentParserTest extends \MediaWikiIntegrationTestCase {
 			'test <a href="/wiki/User:AlwaysKnownFoo" title="User:AlwaysKnownFoo">User:AlwaysKnownFoo</a>',
 			$result
 		);
+	}
+
+	/**
+	 * @dataProvider provideRevComment
+	 */
+	public function testRevComment(
+		string $expected,
+		bool $isSysop = false,
+		int $visibility = 0,
+		bool $local = false,
+		bool $isPublic = false,
+		bool $useParentheses = true,
+		?string $comment = 'Some comment!'
+	) {
+		$pageData = $this->insertPage( 'RevCommentTestPage' );
+		$revisionRecord = new MutableRevisionRecord( $pageData['title'] );
+		if ( $comment ) {
+			$revisionRecord->setComment( CommentStoreComment::newUnsavedComment( $comment ) );
+		}
+		$revisionRecord->setVisibility( $visibility );
+
+		$context = RequestContext::getMain();
+		$user = $isSysop ? $this->getTestSysop()->getUser() : $this->getTestUser()->getUser();
+		$context->setUser( $user );
+
+		$formatter = $this->getFormatter();
+		$authority = RequestContext::getMain()->getAuthority();
+		$this->assertEquals( $expected, $formatter->formatRevision( $revisionRecord, $authority, $local, $isPublic, $useParentheses ) );
+	}
+
+	public static function provideRevComment() {
+		return [
+			'Should be visible' => [
+				' <span class="comment">(Some comment!)</span>'
+			],
+			'Should not have parenthesis' => [
+				' <span class="comment comment--without-parentheses">Some comment!</span>',
+				false, 0, false, false,
+				false
+			],
+			'Should be empty' => [
+				'',
+				false, 0, false, false, true,
+				null
+			],
+			'Deleted comment should not be visible to normal users' => [
+				' <span class="history-deleted comment"> <span class="comment">(edit summary removed)</span></span>',
+				false,
+				RevisionRecord::DELETED_COMMENT
+			],
+			'Deleted comment should not be visible to normal users even if public' => [
+				' <span class="history-deleted comment"> <span class="comment">(edit summary removed)</span></span>',
+				false,
+				RevisionRecord::DELETED_COMMENT,
+				false,
+				true
+			],
+			'Deleted comment should be visible to sysops' => [
+				' <span class="history-deleted comment"> <span class="comment">(Some comment!)</span></span>',
+				true,
+				RevisionRecord::DELETED_COMMENT
+			],
+		];
 	}
 
 }

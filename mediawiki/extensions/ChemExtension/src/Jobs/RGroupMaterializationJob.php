@@ -83,7 +83,8 @@ class RGroupMaterializationJob extends Job
                     $this->createNewMoleculePage($concreteMolecule, $collection, $rGroups);
                 }
             }
-            \Hooks::run('CleanupChemExtState');
+            $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hooksContainer->run('CleanupChemExtState');
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }

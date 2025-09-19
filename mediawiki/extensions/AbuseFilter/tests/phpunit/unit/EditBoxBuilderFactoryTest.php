@@ -2,19 +2,19 @@
 
 namespace MediaWiki\Extension\AbuseFilter\Tests\Unit;
 
-use BadMethodCallException;
+use LogicException;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterPermissionManager;
-use MediaWiki\Extension\AbuseFilter\EditBox\AceEditBoxBuiler;
+use MediaWiki\Extension\AbuseFilter\EditBox\AceEditBoxBuilder;
 use MediaWiki\Extension\AbuseFilter\EditBox\EditBoxBuilderFactory;
-use MediaWiki\Extension\AbuseFilter\EditBox\PlainEditBoxBuiler;
+use MediaWiki\Extension\AbuseFilter\EditBox\PlainEditBoxBuilder;
 use MediaWiki\Extension\AbuseFilter\KeywordsManager;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MediaWikiUnitTestCase;
 use MessageLocalizer;
-use OutputPage;
 
 /**
- * @coversDefaultClass \MediaWiki\Extension\AbuseFilter\Editbox\EditBoxBuilderFactory
+ * @covers \MediaWiki\Extension\AbuseFilter\Editbox\EditBoxBuilderFactory
  */
 class EditBoxBuilderFactoryTest extends MediaWikiUnitTestCase {
 
@@ -31,9 +31,7 @@ class EditBoxBuilderFactoryTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @covers ::__construct
-	 * @covers ::newEditBoxBuilder
-	 * @covers \MediaWiki\Extension\AbuseFilter\EditBox\EditBoxBuilder::__construct
+	 * @covers \MediaWiki\Extension\AbuseFilter\EditBox\EditBoxBuilder
 	 * @dataProvider provideNewEditBoxBuilder
 	 * @param bool $isCodeEditorLoaded
 	 */
@@ -44,23 +42,20 @@ class EditBoxBuilderFactoryTest extends MediaWikiUnitTestCase {
 			$this->createMock( OutputPage::class )
 		);
 		$isCodeEditorLoaded
-			? $this->assertInstanceOf( AceEditBoxBuiler::class, $builder )
-			: $this->assertInstanceOf( PlainEditBoxBuiler::class, $builder );
+			? $this->assertInstanceOf( AceEditBoxBuilder::class, $builder )
+			: $this->assertInstanceOf( PlainEditBoxBuilder::class, $builder );
 	}
 
-	public function provideNewEditBoxBuilder(): array {
+	public static function provideNewEditBoxBuilder(): array {
 		return [
 			[ true ],
 			[ false ]
 		];
 	}
 
-	/**
-	 * @covers ::newPlainBoxBuilder
-	 */
 	public function testNewPlainBoxBuilder() {
 		$this->assertInstanceOf(
-			PlainEditBoxBuiler::class,
+			PlainEditBoxBuilder::class,
 			$this->getFactory( false )->newPlainBoxBuilder(
 				$this->createMock( MessageLocalizer::class ),
 				$this->createMock( Authority::class ),
@@ -69,12 +64,9 @@ class EditBoxBuilderFactoryTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::newAceBoxBuilder
-	 */
 	public function testNewAceBoxBuilder() {
 		$this->assertInstanceOf(
-			AceEditBoxBuiler::class,
+			AceEditBoxBuilder::class,
 			$this->getFactory( true )->newAceBoxBuilder(
 				$this->createMock( MessageLocalizer::class ),
 				$this->createMock( Authority::class ),
@@ -83,11 +75,8 @@ class EditBoxBuilderFactoryTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::newAceBoxBuilder
-	 */
 	public function testNewAceBoxBuilder__invalid() {
-		$this->expectException( BadMethodCallException::class );
+		$this->expectException( LogicException::class );
 		$this->getFactory( false )->newAceBoxBuilder(
 			$this->createMock( MessageLocalizer::class ),
 			$this->createMock( Authority::class ),

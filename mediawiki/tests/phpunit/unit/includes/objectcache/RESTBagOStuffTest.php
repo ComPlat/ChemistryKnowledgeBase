@@ -1,8 +1,13 @@
 <?php
+
+use Wikimedia\Http\MultiHttpClient;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\RESTBagOStuff;
+
 /**
  * @group BagOStuff
  *
- * @covers RESTBagOStuff
+ * @covers \Wikimedia\ObjectCache\RESTBagOStuff
  */
 class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 
@@ -43,7 +48,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'method' => 'GET',
 			'url' => 'http://test/rest/42xyz42',
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 200, 'OK', [], $data, 0 ] );
 		$result = $this->bag->get( '42xyz42' );
 		$this->assertEquals( 'somedata', $result );
@@ -64,7 +69,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'method' => 'GET',
 			'url' => 'http://test/rest/42xyz42',
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 404, 'Not found', [], 'Nothing to see here', 0 ] );
 		$result = $this->bag->get( '42xyz42' );
 		$this->assertFalse( $result );
@@ -75,7 +80,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'method' => 'GET',
 			'url' => 'http://test/rest/42xyz42',
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 0, '', [], '', 'cURL has failed you today' ] );
 		$result = $this->bag->get( '42xyz42' );
 		$this->assertFalse( $result );
@@ -87,7 +92,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'method' => 'GET',
 			'url' => 'http://test/rest/42xyz42',
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 500, 'Too busy', [], 'Server is too busy', '' ] );
 		$result = $this->bag->get( '42xyz42' );
 		$this->assertFalse( $result );
@@ -95,7 +100,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @dataProvider dataPut
+	 * @dataProvider dataGet
 	 */
 	public function testPut( $serializationType, $hmacKey, $data ) {
 		$classReflect = new ReflectionClass( RESTBagOStuff::class );
@@ -113,20 +118,10 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'url' => 'http://test/rest/42xyz42',
 			'body' => $data,
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 200, 'OK', [], 'Done', 0 ] );
 		$result = $this->bag->set( '42xyz42', 'somedata' );
 		$this->assertTrue( $result );
-	}
-
-	public static function dataPut() {
-		// Make sure the defaults are last, so the $bag is left as expected for the next test
-		return [
-			[ 'JSON', '12345', 'JSON.Us1wli82zEJ6DNQnCG//w+MShOFrdx9wCdfTUhPPA2w=."somedata"' ],
-			[ 'JSON', '', 'JSON.."somedata"' ],
-			[ 'PHP', '12345', 'PHP.t2EKhUF4l65kZqWhoAnKW8ZPzekDYfrDxTkQcVmGsuM=.s:8:"somedata";' ],
-			[ 'PHP', '', 'PHP..s:8:"somedata";' ],
-		];
 	}
 
 	public function testDelete() {
@@ -134,7 +129,7 @@ class RESTBagOStuffTest extends \MediaWikiUnitTestCase {
 			'method' => 'DELETE',
 			'url' => 'http://test/rest/42xyz42',
 			'headers' => []
-			// list( $rcode, $rdesc, $rhdrs, $rbody, $rerr )
+			// [ $rcode, $rdesc, $rhdrs, $rbody, $rerr ]
 		] )->willReturn( [ 200, 'OK', [], 'Done', 0 ] );
 		$result = $this->bag->delete( '42xyz42' );
 		$this->assertTrue( $result );

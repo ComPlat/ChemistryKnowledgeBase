@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Abijeet Patro",
 			"Kaustubh",
 			"Saurmandal",
 			"Siddhartha Ghai"
@@ -8,7 +9,6 @@
 	},
 	"pageforms-desc": "विकि पृष्ठों को बनाने और संपादित करने के लिए फ़ॉर्म्स",
 	"specialpages-group-pf_group": "पृष्ठ फ़ॉर्म्स",
-	"apihelp-pfautocomplete-description": "Page Forms एक्सटेंशन द्वारा प्रयुक्त स्वतः पूर्णकरण।",
 	"apihelp-pfautocomplete-summary": "Page Forms एक्सटेंशन द्वारा प्रयुक्त स्वतः पूर्णकरण।",
 	"apihelp-pfautocomplete-param-limit": "लौटाए गए परिणामों की संख्या की सीमा",
 	"apihelp-pfautocomplete-param-substr": "सबस्ट्रिंग जिसपर स्वतः पूर्ण करना है",
@@ -23,7 +23,6 @@
 	"apihelp-pfautocomplete-param-base_cargo_table": "फ़ॉर्म में एक पूर्व फ़ील्ड के लिए कार्गो टेबल जिसके साथ मिलाकर देखना है",
 	"apihelp-pfautocomplete-param-base_cargo_field": "फ़ॉर्म में एक पूर्व फ़ील्ड के लिए कार्गो फ़ील्ड जिसके साथ मिलाकर देखना है",
 	"apihelp-pfautocomplete-param-basevalue": "पूर्व गुणधर्म या फ़ील्ड के लिए वैल्यू जिसे जाँचना है",
-	"apihelp-pfautoedit-description": "Page Forms एक्सटेंशन द्वारा परिभाषित एक फ़ॉर्म की मदद से पृष्ठ बनाएँ या संपादित करें।",
 	"apihelp-pfautoedit-summary": "Page Forms एक्सटेंशन द्वारा परिभाषित एक फ़ॉर्म की मदद से पृष्ठ बनाएँ या संपादित करें।",
 	"apihelp-pfautoedit-param-form": "Page Forms फ़ॉर्म जिसका इस्तेमाल करना है",
 	"apihelp-pfautoedit-param-target": "पृष्ठ का नाम जिसे संपादित करना या बनाना है",
@@ -186,6 +185,7 @@
 	"pf_formedit_remove": "यह उदाहरण हटाएँ",
 	"pf_formedit_addanotherabove": "इस उदाहरण के ऊपर एक और उदाहरण जोड़ें",
 	"pf_formedit_addanother": "दूसरा फ़ील्ड जोड़ें",
+	"pf-formedit-nodata": "कोई आंकड़ा नहीं",
 	"pf_formedit_none": "कोई नहीं",
 	"pf_formedit_emptytitle": "त्रुटि: जोड़े गए डेटा से पृष्ठ का शीर्षक खाली नज़र आता है।",
 	"pf_formedit_hookerror": "त्रुटि: एक मीडियाविकि एक्सटेंशन की वजह से लक्ष्य पृष्ठ में बदलाव न किए जा सके।",
@@ -202,7 +202,6 @@
 	"pf_autoedit_invalidtargetspecified": "निर्दिष्ट लक्ष्य पृष्ठ '''$1''' अमान्य है।",
 	"pf_autoedit_invalidform": "'''$1''' को मान्य फ़ॉर्म नहीं है।",
 	"pf_autoedit_redirectlimitexeeded": "फ़ॉर्म $1 के लिए अनुप्रेषणों की अधिकतम सीमा पार हो गई।",
-	"pf_autoedit_invalidredirecttarget": "$1, $2 के लिए एक अमान्य अनुप्रेषण पृष्ठ है।",
 	"pf_autoedit_invalidpreloadspecified": "निर्दिष्ट प्रीलोड पृष्ठ $1 अमान्य है।",
 	"pf_autoedit_redlinkexists": "$1 पहले से मौजूद है।",
 	"pf_autoedit_noformfound": "कोई फ़ॉर्म निर्दिष्ट नहीं किया गया।",

@@ -39,12 +39,12 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	public function testWriteCacheSkip() {
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
-					'writeToDatabase',
+				'writeToCache',
 					'render',
 					'getMathTableName',
 					'getHtmlOutput'
 				] )->getMock();
-		$renderer->expects( $this->never() )->method( 'writeToDatabase' );
+		$renderer->expects( $this->never() )->method( 'writeToCache' );
 		/** @var MathRenderer $renderer */
 		$renderer->writeCache();
 	}
@@ -56,12 +56,12 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	public function testWriteCache() {
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
-					'writeToDatabase',
+				'writeToCache',
 					'render',
 					'getMathTableName',
 					'getHtmlOutput'
 				] )->getMock();
-		$renderer->expects( $this->never() )->method( 'writeToDatabase' );
+		$renderer->expects( $this->never() )->method( 'writeToCache' );
 		/** @var MathRenderer $renderer */
 		$renderer->writeCache();
 	}
@@ -81,16 +81,16 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	public function testDisableCheckingAlways() {
 		$this->setupGoodMathRestBaseMockHttp();
 
-		$this->setMwGlobals( "wgMathDisableTexFilter", 'never' );
+		$this->overrideConfigValue( 'MathDisableTexFilter', 'never' );
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
 					'render',
 					'getMathTableName',
 					'getHtmlOutput',
-					'readFromDatabase',
+				'readFromCache',
 					'setTex'
 				] )->setConstructorArgs( [ self::TEXVCCHECK_INPUT ] )->getMock();
-		$renderer->expects( $this->never() )->method( 'readFromDatabase' );
+		$renderer->expects( $this->never() )->method( 'readFromCache' );
 		$renderer->expects( $this->once() )->method( 'setTex' )->with( self::TEXVCCHECK_OUTPUT );
 
 		/** @var MathRenderer $renderer */
@@ -100,16 +100,16 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testDisableCheckingNever() {
-		$this->setMwGlobals( "wgMathDisableTexFilter", 'always' );
+		$this->overrideConfigValue( 'MathDisableTexFilter', 'always' );
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
 					'render',
 					'getMathTableName',
 					'getHtmlOutput',
-					'readFromDatabase',
+				'readFromCache',
 					'setTex'
 				] )->setConstructorArgs( [ self::TEXVCCHECK_INPUT ] )->getMock();
-		$renderer->expects( $this->never() )->method( 'readFromDatabase' );
+		$renderer->expects( $this->never() )->method( 'readFromCache' );
 		$renderer->expects( $this->never() )->method( 'setTex' );
 
 		/** @var MathRenderer $renderer */
@@ -119,17 +119,17 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	public function testCheckingNewUnknown() {
 		$this->setupGoodMathRestBaseMockHttp();
 
-		$this->setMwGlobals( "wgMathDisableTexFilter", 'new' );
+		$this->overrideConfigValue( 'MathDisableTexFilter', 'new' );
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
 					'render',
 					'getMathTableName',
 					'getHtmlOutput',
-					'readFromDatabase',
+				'readFromCache',
 					'setTex'
 				] )->setConstructorArgs( [ self::TEXVCCHECK_INPUT ] )->getMock();
-		$renderer->expects( $this->once() )->method( 'readFromDatabase' )
-			->will( $this->returnValue( false ) );
+		$renderer->expects( $this->once() )->method( 'readFromCache' )
+			->willReturn( false );
 		$renderer->expects( $this->once() )->method( 'setTex' )->with( self::TEXVCCHECK_OUTPUT );
 
 		/** @var MathRenderer $renderer */
@@ -141,17 +141,17 @@ class MathRendererTest extends MediaWikiIntegrationTestCase {
 	public function testCheckingNewKnown() {
 		$this->setupGoodMathRestBaseMockHttp();
 
-		$this->setMwGlobals( "wgMathDisableTexFilter", 'new' );
+		$this->overrideConfigValue( 'MathDisableTexFilter', 'new' );
 		$renderer =
 			$this->getMockBuilder( MathRenderer::class )->onlyMethods( [
 					'render',
 					'getMathTableName',
 					'getHtmlOutput',
-					'readFromDatabase',
+				'readFromCache',
 					'setTex'
 				] )->setConstructorArgs( [ self::TEXVCCHECK_INPUT ] )->getMock();
-		$renderer->expects( $this->exactly( 1 ) )->method( 'readFromDatabase' )
-			->will( $this->returnValue( true ) );
+		$renderer->expects( $this->once() )->method( 'readFromCache' )
+			->willReturn( true );
 		$renderer->expects( $this->never() )->method( 'setTex' );
 
 		/** @var MathRenderer $renderer */

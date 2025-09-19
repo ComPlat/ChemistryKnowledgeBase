@@ -126,7 +126,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
             label: 'Add/edit experiments'
         });
         let editButton = new OO.ui.ButtonWidget({
-            label: 'Edit description'
+            label: 'Edit'
         });
 
         let refreshButton = new OO.ui.ButtonWidget({

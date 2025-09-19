@@ -1,8 +1,13 @@
 <?php
 
+use MediaWiki\Title\Title;
+
 class FakeDimensionFile extends File {
+	/** @var bool */
 	public $mustRender = false;
+	/** @var string */
 	public $mime;
+	/** @var int[] */
 	public $dimensions;
 
 	public function __construct( $dimensions, $mime = 'unknown/unknown' ) {

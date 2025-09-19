@@ -1,9 +1,15 @@
 <?php
 
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\Page\PageAssertionException;
+use MediaWiki\Title\Title;
+use Wikimedia\Rdbms\Platform\ISQLPlatform;
+use Wikimedia\Stats\StatsFactory;
 
 /**
- * @covers RefreshLinksJob
+ * @covers \RefreshLinksJob
  *
  * @group JobQueue
  * @group Database
@@ -12,15 +18,13 @@ use MediaWiki\Page\PageAssertionException;
  * @author Addshore
  */
 class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
+	/** @var StatsFactory */
+	private $statsFactory;
 
 	protected function setUp(): void {
 		parent::setUp();
-
-		$this->tablesUsed[] = 'page';
-		$this->tablesUsed[] = 'revision';
-
-		$this->tablesUsed[] = 'pagelinks';
-		$this->tablesUsed[] = 'categorylinks';
+		$this->statsFactory = StatsFactory::newNull();
+		$this->setService( 'StatsFactory', $this->statsFactory );
 	}
 
 	/**
@@ -31,7 +35,7 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function createPage( $name, array $content ) {
 		$title = Title::makeTitle( $this->getDefaultWikitextNS(), $name );
-		$page = WikiPage::factory( $title );
+		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
 
 		$updater = $page->newPageUpdater( $this->getTestUser()->getUser() );
 
@@ -55,11 +59,51 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		new RefreshLinksJob( $specialBlankPage, [] );
 	}
 
+	public function testRunForNonexistentPage() {
+		$nonexistentPage = $this->getNonexistingTestPage();
+		$job = new RefreshLinksJob( $nonexistentPage, [] );
+		$totalFailuresCounter = $this->statsFactory->getCounter( 'refreshlinks_failures_total' );
+
+		$result = $job->run();
+
+		$this->assertFalse( $result );
+		$this->assertSame( 1, $totalFailuresCounter->getSampleCount() );
+	}
+
+	public function testUpdateSuperseded() {
+		$page = $this->getExistingTestPage();
+		$job = new RefreshLinksJob( $page->getTitle(), [ 'rootJobTimestamp' => '20240101000000' ] );
+		$supersededUpdatesCounter = $this->statsFactory->getCounter( 'refreshlinks_superseded_updates_total' );
+
+		$result = $job->run();
+
+		$this->assertTrue( $result );
+		$this->assertSame( 1, $supersededUpdatesCounter->getSampleCount() );
+	}
+
+	public function testStaleRevision() {
+		$page = $this->getExistingTestPage();
+		$prevRev = $page->getRevisionRecord();
+		$this->editPage( $page, 'New content' );
+
+		$job = new RefreshLinksJob( $page->getTitle(), [ 'triggeringRevisionId' => $prevRev->getId() ] );
+		$totalFailuresCounter = $this->statsFactory->getCounter( 'refreshlinks_failures_total' );
+
+		$result = $job->run();
+
+		// We don't want to retry the job so it is returned with true.
+		$this->assertTrue( $result );
+		$this->assertSame( 1, $totalFailuresCounter->getSampleCount() );
+		$this->assertSame( "Revision {$prevRev->getId()} is not current", $job->getLastError() );
+	}
+
 	public function testRunForSinglePage() {
 		$this->getServiceContainer()->getSlotRoleRegistry()->defineRoleWithModel(
 			'aux',
 			CONTENT_MODEL_WIKITEXT
 		);
+
+		$cacheOpsCounter = $this->statsFactory->getCounter( 'refreshlinks_parsercache_operations_total' );
 
 		$mainContent = new WikitextContent( 'MAIN [[Kittens]]' );
 		$auxContent = new WikitextContent( 'AUX [[Category:Goats]]' );
@@ -69,25 +113,35 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$parserCache = $this->getServiceContainer()->getParserCache();
 		$parserCache->deleteOptionsKey( $page );
 
-		$this->db->delete( 'pagelinks', '*', __METHOD__ );
-		$this->db->delete( 'categorylinks', '*', __METHOD__ );
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'pagelinks' )
+			->where( ISQLPlatform::ALL_ROWS )
+			->caller( __METHOD__ )
+			->execute();
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'categorylinks' )
+			->where( ISQLPlatform::ALL_ROWS )
+			->caller( __METHOD__ )
+			->execute();
 
 		// run job
 		$job = new RefreshLinksJob( $page->getTitle(), [ 'parseThreshold' => 0 ] );
-		$job->run();
+		$result = $job->run();
 
-		$this->assertSelect(
-			'pagelinks',
-			'pl_title',
-			[ 'pl_from' => $page->getId() ],
-			[ [ 'Kittens' ] ]
-		);
-		$this->assertSelect(
-			'categorylinks',
-			'cl_to',
-			[ 'cl_from' => $page->getId() ],
-			[ [ 'Goats' ] ]
-		);
+		$this->newSelectQueryBuilder()
+			->select( 'lt_title' )
+			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
+			->where( [ 'pl_from' => $page->getId() ] )
+			->assertFieldValue( 'Kittens' );
+		$this->newSelectQueryBuilder()
+			->select( 'cl_to' )
+			->from( 'categorylinks' )
+			->where( [ 'cl_from' => $page->getId() ] )
+			->assertFieldValue( 'Goats' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 1, $cacheOpsCounter->getSampleCount() );
 	}
 
 	public function testRunForMultiPage() {
@@ -111,8 +165,16 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		$parserCache->deleteOptionsKey( $page1 );
 		$parserCache->deleteOptionsKey( $page2 );
 
-		$this->db->delete( 'pagelinks', '*', __METHOD__ );
-		$this->db->delete( 'categorylinks', '*', __METHOD__ );
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'pagelinks' )
+			->where( ISQLPlatform::ALL_ROWS )
+			->caller( __METHOD__ )
+			->execute();
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'categorylinks' )
+			->where( ISQLPlatform::ALL_ROWS )
+			->caller( __METHOD__ )
+			->execute();
 
 		// run job
 		$job = new RefreshLinksJob(
@@ -121,29 +183,27 @@ class RefreshLinksJobTest extends MediaWikiIntegrationTestCase {
 		);
 		$job->run();
 
-		$this->assertSelect(
-			'pagelinks',
-			'pl_title',
-			[ 'pl_from' => $page1->getId() ],
-			[ [ 'Kittens' ] ]
-		);
-		$this->assertSelect(
-			'categorylinks',
-			'cl_to',
-			[ 'cl_from' => $page1->getId() ],
-			[ [ 'Goats' ] ]
-		);
-		$this->assertSelect(
-			'pagelinks',
-			'pl_title',
-			[ 'pl_from' => $page2->getId() ],
-			[ [ 'Dogs' ] ]
-		);
-		$this->assertSelect(
-			'categorylinks',
-			'cl_to',
-			[ 'cl_from' => $page2->getId() ],
-			[ [ 'Hamsters' ] ]
-		);
+		$this->newSelectQueryBuilder()
+			->select( 'lt_title' )
+			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
+			->where( [ 'pl_from' => $page1->getId() ] )
+			->assertFieldValue( 'Kittens' );
+		$this->newSelectQueryBuilder()
+			->select( 'cl_to' )
+			->from( 'categorylinks' )
+			->where( [ 'cl_from' => $page1->getId() ] )
+			->assertFieldValue( 'Goats' );
+		$this->newSelectQueryBuilder()
+			->select( 'lt_title' )
+			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
+			->where( [ 'pl_from' => $page2->getId() ] )
+			->assertFieldValue( 'Dogs' );
+		$this->newSelectQueryBuilder()
+			->select( 'cl_to' )
+			->from( 'categorylinks' )
+			->where( [ 'cl_from' => $page2->getId() ] )
+			->assertFieldValue( 'Hamsters' );
 	}
 }

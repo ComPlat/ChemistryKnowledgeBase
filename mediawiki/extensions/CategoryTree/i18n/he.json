@@ -19,7 +19,7 @@
 	"categorytree-mode-pages": "דפים שאינם קבצים",
 	"categorytree-mode-all": "כל הדפים",
 	"categorytree-collapse": "כיווץ",
-	"categorytree-expand": "הרחבה",
+	"categorytree-expand": "הצגה",
 	"categorytree-member-counts": "מכילה {{PLURAL:$1|קטגוריית־משנה אחת|$1 קטגוריות־משנה}}, {{PLURAL:$2|דף אחד|$2 דפים}}, {{PLURAL:$3|וקובץ אחד|ו־$3 קבצים}}",
 	"categorytree-num-categories": "{{PLURAL:$1|קט' אחת|$1 קט'}}",
 	"categorytree-num-pages": "{{PLURAL:$1|דף אחד|$1 דפים}}",
@@ -33,5 +33,9 @@
 	"categorytree-no-pages": "אין דפים או קטגוריות־משנה",
 	"categorytree-not-found": "הקטגוריה <i>$1</i> לא נמצאה",
 	"categorytree-error": "בעיה בטעינת הנתונים.",
-	"categorytree-retry": "נא להמתין מעט ולנסות שוב."
+	"categorytree-retry": "נא להמתין מעט ולנסות שוב.",
+	"categorytree-onlyroot-message": "[https://phabricator.wikimedia.org/T290062 T290062]: הפרמטר <code>onlyroot</code> הוכרז בתור מיושן. יש להשתמש במקום זאת <code dir=\"ltr\">depth=\"0\"</code>.",
+	"categorytree-deprecation-warning": "'''אזהרה:''' הדף הזה משתמש בתג <code>&lt;categorytree&gt;</code> עם פרמטר שהוכרז בתור מיושן.",
+	"categorytree-deprecation-category": "דפים שמשתמשים בפרמטרים מיושנים של categorytree",
+	"categorytree-deprecation-category-desc": "הדף משתמש בפרמטרים מיושנים של categorytree כגון <code>onlyroot</code>."
 }

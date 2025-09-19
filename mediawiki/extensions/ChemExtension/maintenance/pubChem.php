@@ -49,7 +49,7 @@ class pubChem extends \Maintenance
     {
         print "\nRequest PubChem...";
         try {
-            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_MASTER);
+            $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
             $repo = new PubChemRepository($dbr);
             $result = $repo->getPubChemResult($this->getOption('inchikey'));
             $record = $result['record'];

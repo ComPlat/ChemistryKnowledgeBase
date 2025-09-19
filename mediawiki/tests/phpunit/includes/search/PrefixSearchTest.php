@@ -1,11 +1,12 @@
 <?php
 
 use MediaWiki\MainConfigNames;
+use MediaWiki\Title\Title;
 
 /**
  * @group Search
  * @group Database
- * @covers PrefixSearch
+ * @covers \PrefixSearch
  */
 class PrefixSearchTest extends MediaWikiLangTestCase {
 	private const NS_NONCAP = 12346;
@@ -62,7 +63,7 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 		] );
 	}
 
-	protected function searchProvision( array $results = null ) {
+	protected function searchProvision( ?array $results = null ) {
 		if ( $results === null ) {
 			$this->overrideConfigValue( MainConfigNames::Hooks, [] );
 		} else {
@@ -117,11 +118,11 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 				'results' => [
 					'Special:ActiveUsers',
 					'Special:AllMessages',
-					'Special:AllMyUploads',
+					'Special:AllPages',
 				],
 				// Third result when testing offset
 				'offsetresult' => [
-					'Special:AllPages',
+					'Special:AncientPages',
 				],
 			] ],
 			[ [
@@ -140,9 +141,7 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 			[ [
 				'Special page name',
 				'query' => 'Special:EditWatchlist',
-				'results' => [
-					'Special:EditWatchlist',
-				],
+				'results' => [],
 			] ],
 			[ [
 				'Special page subpages',
@@ -187,8 +186,8 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideSearch
-	 * @covers PrefixSearch::search
-	 * @covers PrefixSearch::searchBackend
+	 * @covers \PrefixSearch::search
+	 * @covers \PrefixSearch::searchBackend
 	 */
 	public function testSearch( array $case ) {
 		$this->searchProvision( null );
@@ -206,8 +205,8 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideSearch
-	 * @covers PrefixSearch::search
-	 * @covers PrefixSearch::searchBackend
+	 * @covers \PrefixSearch::search
+	 * @covers \PrefixSearch::searchBackend
 	 */
 	public function testSearchWithOffset( array $case ) {
 		$this->searchProvision( null );
@@ -305,7 +304,7 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 				],
 			] ],
 			[ [
-				"Exact match shouldn't override already found match if " .
+				"Exact match should override already found match if " .
 					"both exact match and found match are redirect",
 				'provision' => [
 					// Another redirect to the same target as the exact match
@@ -317,7 +316,7 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 				'results' => [
 					// Found redirect is pulled to the top and exact match isn't
 					// added
-					'Redirect test2',
+					'Redirect TEST2',
 					'Redirect Test2 Worse Result',
 				],
 			] ],
@@ -343,9 +342,10 @@ class PrefixSearchTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @dataProvider provideSearchBackend
-	 * @covers PrefixSearch::searchBackend
+	 * @covers \PrefixSearch::searchBackend
 	 */
 	public function testSearchBackend( array $case ) {
+		$this->filterDeprecated( '/Use of PrefixSearchBackend hook/' );
 		$this->searchProvision( $case['provision'] );
 		$searcher = new StringPrefixSearch;
 		$results = $searcher->search( $case['query'], 3 );

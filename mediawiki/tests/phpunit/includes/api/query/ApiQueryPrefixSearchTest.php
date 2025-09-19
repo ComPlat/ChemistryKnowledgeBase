@@ -1,13 +1,17 @@
 <?php
 
+namespace MediaWiki\Tests\Api\Query;
+
 use MediaWiki\MainConfigNames;
+use MediaWiki\Tests\Api\ApiTestCase;
+use MockCompletionSearchEngine;
 
 /**
  * @group API
  * @group medium
  * @group Database
  *
- * @covers ApiQueryPrefixSearch
+ * @covers MediaWiki\Api\ApiQueryPrefixSearch
  */
 class ApiQueryPrefixSearchTest extends ApiTestCase {
 	private const TEST_QUERY = 'unittest';
@@ -25,7 +29,7 @@ class ApiQueryPrefixSearchTest extends ApiTestCase {
 		MockCompletionSearchEngine::addMockResults( self::TEST_QUERY, $results );
 	}
 
-	public function offsetContinueProvider() {
+	public static function offsetContinueProvider() {
 		return [
 			'no offset' => [ 2, 2, 0, 2 ],
 			'with offset' => [ 7, 2, 5, 2 ],
@@ -38,6 +42,7 @@ class ApiQueryPrefixSearchTest extends ApiTestCase {
 	 * @dataProvider offsetContinueProvider
 	 */
 	public function testOffsetContinue( $expectedOffset, $expectedResults, $offset, $limit ) {
+		$this->overrideConfigValue( MainConfigNames::UsePigLatinVariant, false );
 		$response = $this->doApiRequest( [
 			'action' => 'query',
 			'list' => 'prefixsearch',

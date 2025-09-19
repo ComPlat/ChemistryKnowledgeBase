@@ -34,7 +34,7 @@ class runSetupForAllWikis extends \Maintenance
 
     private function getConnection()
     {
-        return $this->getDB(DB_MASTER);
+        return $this->getDB(DB_PRIMARY);
     }
 
     /**

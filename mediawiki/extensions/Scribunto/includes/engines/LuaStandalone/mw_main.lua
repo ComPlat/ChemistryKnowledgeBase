@@ -1,5 +1,5 @@
-package.path = arg[1] .. '/engines/LuaStandalone/?.lua;' ..
-	arg[1] .. '/engines/LuaCommon/lualib/?.lua'
+package.path = arg[1] .. '/Engines/LuaStandalone/?.lua;' ..
+	arg[1] .. '/Engines/LuaCommon/lualib/?.lua'
 
 require('MWServer')
 require('mwInit')

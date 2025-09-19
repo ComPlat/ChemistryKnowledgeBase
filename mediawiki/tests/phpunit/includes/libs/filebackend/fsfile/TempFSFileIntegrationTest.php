@@ -1,7 +1,9 @@
 <?php
 
 use MediaWiki\MainConfigNames;
+use Wikimedia\FileBackend\FSFile\TempFSFile;
 use Wikimedia\TestingAccessWrapper;
+use Wikimedia\Tests\FileBackend\FSFile\TempFSFileTestTrait;
 
 /**
  * Just to test one deprecated method and one line of ServiceWiring code.

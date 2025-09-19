@@ -26,6 +26,13 @@ src/Tesa/.phpunit.result.cache
 
 composer
 installer
+.env
 .envrc
 conf
 expected
+
+# Operating systems
+## Mac OS X
+.DS_Store
+## Windows
+Thumbs.db

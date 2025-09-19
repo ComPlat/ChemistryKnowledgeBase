@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Tests\Page;
 
-use CommentStoreComment;
-use Content;
-use ContentHandler;
-use DeferredUpdates;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\DeletePage;
@@ -14,10 +14,9 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\UltimateAuthority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
-use PageArchive;
-use Title;
-use User;
 use Wikimedia\ScopedCallback;
 use WikiPage;
 
@@ -27,22 +26,6 @@ use WikiPage;
  * @note Permission-related tests are in \MediaWiki\Tests\Unit\Page\DeletePageTest
  */
 class DeletePageTest extends MediaWikiIntegrationTestCase {
-	protected $tablesUsed = [
-		'page',
-		'revision',
-		'redirect',
-		'archive',
-		'text',
-		'slots',
-		'content',
-		'slot_roles',
-		'content_models',
-		'recentchanges',
-		'logging',
-		'pagelinks',
-		'change_tag',
-		'change_tag_def',
-	];
 
 	private const PAGE_TEXT = "[[Stuart Little]]\n" .
 		"{{Multiple issues}}\n" .
@@ -66,12 +49,12 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 		$title = Title::newFromText( $titleText, $ns );
 		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
 
-		$performer = static::getTestUser()->getUser();
+		$performer = $this->getTestUser()->getAuthority();
 
 		$content = ContentHandler::makeContent( $content, $page->getTitle(), CONTENT_MODEL_WIKITEXT );
 
 		$updater = $page->newPageUpdater( $performer )
-			->setContent( 'main', $content );
+			->setContent( SlotRecord::MAIN, $content );
 
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( "testing" ) );
 		if ( !$updater->wasSuccessful() ) {
@@ -85,6 +68,7 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 
 	private function assertDeletionLogged(
 		ProperPageIdentity $title,
+		int $pageID,
 		User $deleter,
 		string $reason,
 		bool $suppress,
@@ -92,28 +76,29 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 		int $logID
 	): void {
 		$commentQuery = $this->getServiceContainer()->getCommentStore()->getJoin( 'log_comment' );
-		$this->assertSelect(
-			[ 'logging' ] + $commentQuery['tables'],
-			[
+		$this->newSelectQueryBuilder()
+			->select( [
 				'log_type',
 				'log_action',
 				'log_comment' => $commentQuery['fields']['log_comment_text'],
 				'log_actor',
 				'log_namespace',
 				'log_title',
-			],
-			[ 'log_id' => $logID ],
-			[ [
+				'log_page',
+			] )
+			->from( 'logging' )
+			->tables( $commentQuery['tables'] )
+			->where( [ 'log_id' => $logID ] )
+			->joinConds( $commentQuery['joins'] )
+			->assertRowValue( [
 				$suppress ? 'suppress' : 'delete',
 				$logSubtype,
 				$reason,
 				(string)$deleter->getActorId(),
 				(string)$title->getNamespace(),
 				$title->getDBkey(),
-			] ],
-			[],
-			$commentQuery['joins']
-		);
+				$pageID,
+			] );
 	}
 
 	private function assertArchiveVisibility( Title $title, bool $suppression ): void {
@@ -122,8 +107,8 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 			// in case of normal deletion.
 			return;
 		}
-		$archive = new PageArchive( $title, $this->getServiceContainer()->getMainConfig() );
-		$archivedRevs = $archive->listRevisions();
+		$lookup = $this->getServiceContainer()->getArchivedRevisionLookup();
+		$archivedRevs = $lookup->listRevisions( $title );
 		if ( !$archivedRevs || $archivedRevs->numRows() !== 1 ) {
 			$this->fail( 'Unexpected number of archived revisions' );
 		}
@@ -159,7 +144,7 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertNotNull(
-			$getContentForUser( static::getTestUser( [ 'suppress' ] )->getUser() ),
+			$getContentForUser( static::getTestUser( [ 'suppress', 'sysop' ] )->getUser() ),
 			"Archived content should be visible after the page was suppressed for an oversighter"
 		);
 	}
@@ -191,30 +176,27 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 		$linkTarget = MediaWikiServices::getInstance()->getLinkTargetLookup()->getLinkTargetId(
 			Title::makeTitle( NS_TEMPLATE, 'Multiple_issues' )
 		);
-		$this->assertSelect(
-			'pagelinks',
-			[ 'pl_namespace', 'pl_title' ],
-			[ 'pl_from' => $pageID ],
-			[ [ 0, 'Stuart_Little' ], [ NS_TEMPLATE, 'Multiple_issues' ] ]
-		);
-		$this->assertSelect(
-			'templatelinks',
-			[ 'tl_target_id' ],
-			[ 'tl_from' => $pageID ],
-			[ [ $linkTarget ] ]
-		);
-		$this->assertSelect(
-			'categorylinks',
-			'cl_to',
-			[ 'cl_from' => $pageID ],
-			[ [ 'Felis_catus' ] ]
-		);
-		$this->assertSelect(
-			'category',
-			'cat_pages',
-			[ 'cat_title' => 'Felis_catus' ],
-			[ [ 1 ] ]
-		);
+		$this->newSelectQueryBuilder()
+			->select( [ 'lt_namespace', 'lt_title' ] )
+			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
+			->where( [ 'pl_from' => $pageID ] )
+			->assertResultSet( [ [ 0, 'Stuart_Little' ], [ NS_TEMPLATE, 'Multiple_issues' ] ] );
+		$this->newSelectQueryBuilder()
+			->select( 'tl_target_id' )
+			->from( 'templatelinks' )
+			->where( [ 'tl_from' => $pageID ] )
+			->assertFieldValue( $linkTarget );
+		$this->newSelectQueryBuilder()
+			->select( 'cl_to' )
+			->from( 'categorylinks' )
+			->where( [ 'cl_from' => $pageID ] )
+			->assertFieldValue( 'Felis_catus' );
+		$this->newSelectQueryBuilder()
+			->select( 'cat_pages' )
+			->from( 'category' )
+			->where( [ 'cat_title' => 'Felis_catus' ] )
+			->assertFieldValue( 1 );
 	}
 
 	private function assertPageLinksUpdate( int $pageID, bool $shouldRunJobs ): void {
@@ -222,41 +204,38 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 			$this->runJobs();
 		}
 
-		$this->assertSelect(
-			'pagelinks',
-			[ 'pl_namespace', 'pl_title' ],
-			[ 'pl_from' => $pageID ],
-			[]
-		);
-		$this->assertSelect(
-			'templatelinks',
-			[ 'tl_target_id' ],
-			[ 'tl_from' => $pageID ],
-			[]
-		);
-		$this->assertSelect(
-			'categorylinks',
-			'cl_to',
-			[ 'cl_from' => $pageID ],
-			[]
-		);
-		$this->assertSelect(
-			'category',
-			'cat_pages',
-			[ 'cat_title' => 'Felis_catus' ],
-			[]
-		);
+		$this->newSelectQueryBuilder()
+			->select( [ 'lt_namespace', 'lt_title' ] )
+			->from( 'pagelinks' )
+			->join( 'linktarget', null, 'pl_target_id=lt_id' )
+			->where( [ 'pl_from' => $pageID ] )
+			->assertEmptyResult();
+		$this->newSelectQueryBuilder()
+			->select( 'tl_target_id' )
+			->from( 'templatelinks' )
+			->where( [ 'tl_from' => $pageID ] )
+			->assertEmptyResult();
+		$this->newSelectQueryBuilder()
+			->select( 'cl_to' )
+			->from( 'categorylinks' )
+			->where( [ 'cl_from' => $pageID ] )
+			->assertEmptyResult();
+		$this->newSelectQueryBuilder()
+			->select( 'cat_pages' )
+			->from( 'category' )
+			->where( [ 'cat_title' => 'Felis_catus' ] )
+			->assertEmptyResult();
 	}
 
 	private function assertDeletionTags( int $logId, array $tags ): void {
 		if ( !$tags ) {
 			return;
 		}
-		$actualTags = wfGetDB( DB_REPLICA )->selectFieldValues(
-			'change_tag',
-			'ct_tag_id',
-			[ 'ct_log_id' => $logId ]
-		);
+		$actualTags = $this->getDb()->newSelectQueryBuilder()
+			->select( 'ct_tag_id' )
+			->from( 'change_tag' )
+			->where( [ 'ct_log_id' => $logId ] )
+			->fetchFieldValues();
 		$changeTagDefStore = $this->getServiceContainer()->getChangeTagDefStore();
 		$expectedTags = array_map( [ $changeTagDefStore, 'acquireId' ], $tags );
 		$this->assertArrayEquals( $expectedTags, array_map( 'intval', $actualTags ) );
@@ -301,15 +280,11 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 			$this->assertTrue( $deletePage->deletionsWereScheduled()[DeletePage::PAGE_BASE] );
 			$this->assertNull( $deletePage->getSuccessfulDeletionsIDs()[DeletePage::PAGE_BASE] );
 			$this->runJobs();
-			$logID = wfGetDB( DB_REPLICA )->selectField(
-				'logging',
-				'log_id',
-				[
-					'log_type' => $suppress ? 'suppress' : 'delete',
-					'log_namespace' => $page->getNamespace(),
-					'log_title' => $page->getDBkey()
-				]
-			);
+			$logID = $this->getDb()->newSelectQueryBuilder()
+				->select( 'log_id' )
+				->from( 'logging' )
+				->where( [ 'log_type' => $suppress ? 'suppress' : 'delete', 'log_namespace' => $page->getNamespace(), 'log_title' => $page->getDBkey() ] )
+				->fetchField();
 			$this->assertNotFalse( $logID, 'Should have a log ID now' );
 			$logID = (int)$logID;
 			// Clear caches.
@@ -319,14 +294,14 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertPageObjectsConsistency( $page );
 		$this->assertArchiveVisibility( $page->getTitle(), $suppress );
-		$this->assertDeletionLogged( $page, $deleterUser, $reason, $suppress, $logSubtype, $logID );
+		$this->assertDeletionLogged( $page, $id, $deleterUser, $reason, $suppress, $logSubtype, $logID );
 		$this->assertDeletionTags( $logID, $tags );
 		$this->assertPageLinksUpdate( $id, $immediate );
 
 		ScopedCallback::consume( $teardownScope );
 	}
 
-	public function provideDeleteUnsafe(): iterable {
+	public static function provideDeleteUnsafe(): iterable {
 		// Note that we're using immediate deletion as default
 		yield 'standard deletion' => [ false, [], true, 'delete' ];
 		yield 'suppression' => [ true, [], true, 'delete' ];
@@ -335,23 +310,58 @@ class DeletePageTest extends MediaWikiIntegrationTestCase {
 		yield 'queued deletion' => [ false, [], false, 'delete' ];
 	}
 
-	/**
-	 * @todo This test should go away if we don't want doDeleteUpdates to be public
-	 */
-	public function testDoDeleteUpdates() {
-		$teardownScope = DeferredUpdates::preventOpportunisticUpdates();
-		$user = static::getTestUser()->getUser();
-		$page = $this->createPage( __METHOD__, self::PAGE_TEXT );
-		$id = $page->getId();
-		// make sure the current revision is cached.
-		$page->loadPageData();
-		$deletePage = $this->getDeletePage( $page, $user );
+	public function testDeletionHooks() {
+		$deleterUser = static::getTestSysop()->getUser();
+		$deleter = new UltimateAuthority( $deleterUser );
 
-		// Similar to MovePage logic
-		wfGetDB( DB_PRIMARY )->delete( 'page', [ 'page_id' => $id ], __METHOD__ );
-		$deletePage->doDeleteUpdates( $page, $page->getRevisionRecord() );
-		$this->assertPageLinksUpdate( $id, true );
+		$status = $this->editPage( __METHOD__, '#REDIRECT[[Foo]]' );
+		$id = $status->getNewRevision()->getPageId();
+		$wikiPage = $this->getServiceContainer()->getWikiPageFactory()->newFromID( $id );
 
-		ScopedCallback::consume( $teardownScope );
+		$this->assertTrue( $wikiPage->exists(), 'WikiPage exists before deletion' );
+		$this->assertTrue( $wikiPage->isRedirect(), 'WikiPage is redirect before deletion' );
+		// Clear internal WikiPage state, to ensure that DeletePage loads it if it's missing
+		$wikiPage->clear();
+
+		// Set up hook handlers for testing
+		$oldHookCalled = 0;
+		$newHookCalled = 0;
+
+		$this->setTemporaryHook( 'ArticleDeleteComplete', function (
+			WikiPage $wikiPage, ...$unused
+		) use ( &$oldHookCalled ) {
+			$this->assertTrue( $wikiPage->exists(), 'WikiPage exists in ArticleDeleteComplete hook' );
+			$this->assertTrue( $wikiPage->isRedirect(), 'WikiPage is redirect in ArticleDeleteComplete hook' );
+
+			$oldHookCalled++;
+		} );
+
+		$this->setTemporaryHook( 'PageDeleteComplete', function (
+			ProperPageIdentity $page, ...$unused
+		) use ( &$newHookCalled ) {
+			$this->assertTrue( $page->exists(), 'ProperPageIdentity exists in PageDeleteComplete hook' );
+
+			// This works because $page is actually a WikiPage, and WikiPageFactory::newFromTitle() returns
+			// the same object. Shouldn't have done that, some extension probably depends on this now…
+			$wikiPage = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $page );
+			$this->assertTrue( $wikiPage->exists(), 'WikiPage exists in PageDeleteComplete hook' );
+			$this->assertTrue( $wikiPage->isRedirect(), 'WikiPage is redirect in PageDeleteComplete hook' );
+
+			$newHookCalled++;
+		} );
+
+		// Do the deletion
+		$reason = "testing deletion";
+		$deletePage = $this->getDeletePage( $wikiPage, $deleter );
+		$status = $deletePage
+			->forceImmediate( true )
+			->deleteUnsafe( $reason );
+
+		$this->assertStatusGood( $status, 'Deletion should succeed' );
+		$this->assertSame( 1, $oldHookCalled, 'Old hook was called' );
+		$this->assertSame( 1, $newHookCalled, 'New hook was called' );
+
+		$this->assertFalse( $wikiPage->exists(), 'WikiPage does not exist after deletion' );
+		$this->assertFalse( $wikiPage->isRedirect(), 'WikiPage is not a redirect after deletion' );
 	}
 }

@@ -10,8 +10,7 @@ use MockTitleTrait;
 
 /**
  * @group Database
- * @coversDefaultClass LogPage
- * @package MediaWiki\Tests\Log
+ * @coversDefaultClass \LogPage
  */
 class LogPageTest extends \MediaWikiIntegrationTestCase {
 	use MockTitleTrait;
@@ -30,7 +29,6 @@ class LogPageTest extends \MediaWikiIntegrationTestCase {
 				'test_test' => 'testing-log-restriction'
 			]
 		] );
-		$this->tablesUsed[] = 'logging';
 	}
 
 	/**
@@ -56,7 +54,7 @@ class LogPageTest extends \MediaWikiIntegrationTestCase {
 	 */
 	public function testAddEntrySetsProperties() {
 		$logPage = new LogPage( 'test_test' );
-		$user = new UserIdentityValue( 0, '127.0.0.1' );
+		$user = new UserIdentityValue( 1, 'Bar' );
 		$logPage->addEntry(
 			'test_action',
 			$this->makeMockTitle( __METHOD__ ),
@@ -74,7 +72,7 @@ class LogPageTest extends \MediaWikiIntegrationTestCase {
 	 */
 	public function testAddEntrySave() {
 		$logPage = new LogPage( 'test_test' );
-		$user = new UserIdentityValue( 0, '127.0.0.1' );
+		$user = new UserIdentityValue( 1, 'Foo' );
 		$title = $this->makeMockTitle( __METHOD__ );
 		$id = $logPage->addEntry(
 			'test_action',
@@ -84,7 +82,7 @@ class LogPageTest extends \MediaWikiIntegrationTestCase {
 			$user
 		);
 
-		$savedLogEntry = DatabaseLogEntry::newFromId( $id, $this->db );
+		$savedLogEntry = DatabaseLogEntry::newFromId( $id, $this->getDb() );
 		$this->assertNotNull( $savedLogEntry );
 		$this->assertSame( 'test_test', $savedLogEntry->getType() );
 		$this->assertSame( 'test_action', $savedLogEntry->getSubtype() );
@@ -92,5 +90,14 @@ class LogPageTest extends \MediaWikiIntegrationTestCase {
 		$this->assertArrayEquals( [ 'param_one', 'param_two' ], $savedLogEntry->getParameters() );
 		$this->assertTrue( $title->equals( $savedLogEntry->getTarget() ) );
 		$this->assertTrue( $user->equals( $savedLogEntry->getPerformerIdentity() ) );
+	}
+
+	/**
+	 * @covers ::actionText
+	 */
+	public function testUnknownAction() {
+		$title = $this->makeMockTitle( 'Test Title' );
+		$text = LogPage::actionText( 'unknown', 'action', $title, null, [ 'discarded' ] );
+		$this->assertSame( 'performed unknown action &quot;unknown/action&quot; on [[Test Title]]', $text );
 	}
 }

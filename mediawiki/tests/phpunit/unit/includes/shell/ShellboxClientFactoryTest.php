@@ -6,7 +6,7 @@ use Shellbox\RPC\RpcClient;
 
 /**
  * @group Shell
- * @covers MediaWiki\Shell\ShellboxClientFactory
+ * @covers \MediaWiki\Shell\ShellboxClientFactory
  */
 class ShellboxClientFactoryTest extends MediaWikiUnitTestCase {
 
@@ -23,7 +23,7 @@ class ShellboxClientFactoryTest extends MediaWikiUnitTestCase {
 		$this->assertSame( $expected, $actual );
 	}
 
-	public function provideEnabledArgs(): iterable {
+	public static function provideEnabledArgs(): iterable {
 		yield 'not configured, default service' => [
 			'urls' => null,
 			'service' => null,

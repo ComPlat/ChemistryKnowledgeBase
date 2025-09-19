@@ -1,10 +1,11 @@
 <?php
 
-namespace MediaWiki\Session;
+namespace MediaWiki\Tests\Session;
 
+use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\LogLevel;
-use User;
+use TestLogger;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -61,7 +62,7 @@ class SessionTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testSecrets() {
-		$logger = new \TestLogger;
+		$logger = new TestLogger;
 		$session = TestUtils::getDummySession( null, -1, $logger );
 
 		// Simple defaulting
@@ -91,7 +92,7 @@ class SessionTest extends MediaWikiIntegrationTestCase {
 
 		// Unserializable data
 		$iv = random_bytes( 16 );
-		list( $encKey, $hmacKey ) = TestingAccessWrapper::newFromObject( $session )->getSecretKeys();
+		[ $encKey, $hmacKey ] = TestingAccessWrapper::newFromObject( $session )->getSecretKeys();
 		$ciphertext = openssl_encrypt( 'foobar', 'aes-256-ctr', $encKey, OPENSSL_RAW_DATA, $iv );
 		$sealed = base64_encode( $iv ) . '.' . base64_encode( $ciphertext );
 		$hmac = hash_hmac( 'sha256', $sealed, $hmacKey, true );

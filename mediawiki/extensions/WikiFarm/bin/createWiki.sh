@@ -53,7 +53,7 @@ fi
 mysql -u $DB_USER_ADMIN -p$DB_PASS_ADMIN -e "CREATE DATABASE chem$1;" >> $BASE/$1/creation.log
 mysql -u $DB_USER_ADMIN -p$DB_PASS_ADMIN -e "GRANT ALL PRIVILEGES ON chem$1.* TO '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';" >> $BASE/$1/creation.log
 
-mysql -u $DB_USER_ADMIN -p$DB_PASS_ADMIN --database=chem$1 < $MEDIAWIKI/database.sql
+mysql -u $DB_USER_ADMIN -p$DB_PASS_ADMIN --database=chem$1 < $MEDIAWIKI/maintenance/tables-generated.sql
 export REQUEST_URI="/$1/mediawiki"
 php $MEDIAWIKI/maintenance/update.php --quick >> $BASE/$1/creation.log
 echo 'done.'

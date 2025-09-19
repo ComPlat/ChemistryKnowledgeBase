@@ -20,6 +20,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.ChooseExperimentDialog.prototype.getActionProcess = function (action) {
         if (action === 'insert' || action === 'done') {
             return new OO.ui.Process(() => {
+                let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
+                let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
+
                 if (this.chooseExperimentsWidget.isEditMode()) {
                     let description = this.chooseExperimentsWidget.getDescription();
                     let experimentType = this.chooseExperimentsWidget.getSelectedExperiment();
@@ -27,6 +30,8 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     let params = node.element.attributes.mw.parts[0].template.params;
                     params.description = params.description || {};
                     params.description.wt = description;
+                    let importFile = this.chooseExperimentsWidget.getImportFile();
+                    if (importFile && importFile.length > 0) this.uploadFileAndCreateJob(importFile, selectedExperiment, selectedExperimentName);
                     let tools = new OO.VisualEditorTools();
                     tools.refreshVENode((node) => {
                         if (node.type === 'mwTransclusionBlock' || node.type === 'mwTransclusionInline') {
@@ -42,37 +47,13 @@ mw.loader.using('ext.visualEditor.core').then(function () {
                     ve.ui.MWMediaDialog.super.prototype.close.call(this);
                     return;
                 }
-                let selectedExperiment = this.chooseExperimentsWidget.getSelectedExperiment();
-                let selectedExperimentName = this.chooseExperimentsWidget.getSelectedExperimentName();
+
                 let importFile = this.chooseExperimentsWidget.getImportFile();
                 let description = this.chooseExperimentsWidget.getDescription();
                 if (importFile.length > 0) {
-                    var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Uploading...' });
-                    var windowManager = new OO.ui.WindowManager();
-                    $( document.body ).append( windowManager.$element );
-                    windowManager.addWindows( [ progressDialog ] );
-                    windowManager.openWindow( progressDialog);
-                    let file = importFile[0], read = new FileReader();
-                    read.readAsArrayBuffer(file);
-                    read.onloadend = () => {
-                        let ajax = new window.ChemExtension.AjaxEndpoints();
-                        ajax.uploadFile(importFile[0].name, read.result).done(() => {
-                            progressDialog.close();
-                            this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name, description);
-                            ajax.importExperiment({
-                                'publicationPage': mw.config.get('wgPageName'),
-                                'filename': importFile[0].name,
-                                'selectedExperiment': selectedExperiment,
-                                'selectedExperimentName': selectedExperimentName
-                            }).done((e) => {
-                                mw.notify('Importjob successfully created.')
-                            })
-                        }).fail((e) => {
-                            progressDialog.close();
-                            mw.notify('Error occured on file upload')
-                            console.log(e);
-                        });
-                    }
+                    this.uploadFileAndCreateJob(importFile, selectedExperiment, selectedExperimentName, () => {
+                        this.insertExperiment(selectedExperiment, selectedExperimentName, importFile[0].name, description);
+                    });
                 } else {
                     this.insertExperiment(selectedExperiment, selectedExperimentName, '', description);
                 }
@@ -81,6 +62,35 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         }
         return ve.ui.MWMediaDialog.super.prototype.getActionProcess.call(this, action);
     }
+
+    ve.ui.ChooseExperimentDialog.prototype.uploadFileAndCreateJob = function(importFile, selectedExperiment, selectedExperimentName, onPostUpload) {
+        var progressDialog = new ve.ui.IndefiniteProgressDialog({ showText: 'Uploading...' });
+        var windowManager = new OO.ui.WindowManager();
+        $( document.body ).append( windowManager.$element );
+        windowManager.addWindows( [ progressDialog ] );
+        windowManager.openWindow( progressDialog);
+        let file = importFile[0], read = new FileReader();
+        read.readAsArrayBuffer(file);
+        read.onloadend = () => {
+            let ajax = new window.ChemExtension.AjaxEndpoints();
+            ajax.uploadFile(importFile[0].name, read.result).done(() => {
+                progressDialog.close();
+                if (onPostUpload) onPostUpload();
+                ajax.importExperiment({
+                    'publicationPage': mw.config.get('wgPageName'),
+                    'filename': importFile[0].name,
+                    'selectedExperiment': selectedExperiment,
+                    'selectedExperimentName': selectedExperimentName
+                }).done((e) => {
+                    mw.notify('Importjob successfully created.')
+                })
+            }).fail((e) => {
+                progressDialog.close();
+                mw.notify('Error occured on file upload')
+                console.log(e);
+            });
+        }
+    };
 
     ve.ui.ChooseExperimentDialog.prototype.insertExperiment = function(selectedExperiment, selectedExperimentName, importFileName, description) {
         let toInsert = [ [

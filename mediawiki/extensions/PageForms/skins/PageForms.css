@@ -110,7 +110,7 @@ form input.formInput,
 }
 
 #pfForm select,
-#pfForm input[type="checkbox"] {
+#pfForm span.checkboxesSpan input[type="checkbox"] {
     max-width: 100%;
     width: auto !important;
 }
@@ -333,14 +333,6 @@ input.pfComboBoxActual {
 	color: #777;
 	background-color: #f7f7f7 !important;
 	border: 1px solid #ddd !important;
-}
-
-/**
- * The box-sizing in the DateTimeInputWidget is incorrectly set to
- * "border-box" for MW versions before 1.38, which leads to too-narrow inputs.
- */
-.mw-widgets-datetime-dateTimeInputWidget-field {
-	box-sizing: content-box !important;
 }
 
 /* The standard MediaWiki editOptions class lacks a top border. */

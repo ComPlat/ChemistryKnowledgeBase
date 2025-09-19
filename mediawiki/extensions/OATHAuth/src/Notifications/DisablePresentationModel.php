@@ -20,11 +20,12 @@
 
 namespace MediaWiki\Extension\OATHAuth\Notifications;
 
-use EchoEventPresentationModel;
-use SpecialPage;
-use Title;
+use MediaWiki\Extension\Notifications\Formatters\EchoEventPresentationModel;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 
 class DisablePresentationModel extends EchoEventPresentationModel {
+
 	/**
 	 * @inheritDoc
 	 */
@@ -32,12 +33,19 @@ class DisablePresentationModel extends EchoEventPresentationModel {
 		return 'site';
 	}
 
+	/** @inheritDoc */
+	protected function getHeaderMessageKey() {
+		return $this->event->getExtraParam( 'activeDevices', 0 ) === 0
+			? 'notification-header-oathauth-disable'
+			: 'notification-header-oathauth-remove-device';
+	}
+
 	/**
 	 * @inheritDoc
 	 */
 	public function getPrimaryLink() {
 		return [
-			'url' => SpecialPage::getTitleFor( 'Preferences' )->getLocalURL(),
+			'url' => SpecialPage::getTitleFor( 'OATHManage' )->getLocalURL(),
 			'label' => $this->msg( 'oathauth-notifications-disable-primary' )->text()
 		];
 	}
@@ -63,9 +71,22 @@ class DisablePresentationModel extends EchoEventPresentationModel {
 	 * @inheritDoc
 	 */
 	public function getBodyMessage() {
-		$message = $this->event->getExtraParam( 'self', true )
+		$helpMessageKey = $this->event->getExtraParam( 'self', true )
 			? 'notification-body-oathauth-disable'
 			: 'notification-body-oathauth-disable-other';
-		return $this->getMessageWithAgent( $message );
+		$message = $this->getMessageWithAgent( $helpMessageKey );
+
+		if ( $this->event->getExtraParam( 'activeDevices', 0 ) >= 1 ) {
+			$remainingMessage = $this->getMessageWithAgent( 'notification-body-oathauth-disable-remaining' );
+			$remainingMessage->params( $this->event->getExtraParam( 'activeDevices', 0 ) );
+
+			$message = $this->msg( 'rawmessage' )->rawParams(
+				$message->escaped()
+				. $this->msg( 'word-separator' )->escaped()
+				. $remainingMessage->escaped()
+			);
+		}
+
+		return $message;
 	}
 }

@@ -9,7 +9,6 @@ use MediaWikiUnitTestCase;
 
 /**
  * @covers \MediaWiki\User\ActorCache
- * @package MediaWiki\Tests\Unit\User
  */
 class ActorCacheTest extends MediaWikiUnitTestCase {
 
@@ -48,7 +47,7 @@ class ActorCacheTest extends MediaWikiUnitTestCase {
 		$this->assertNull( $cache->getActorId( ActorCache::KEY_USER_ID, $userId ) );
 	}
 
-	public function provideGetActor() {
+	public static function provideGetActor() {
 		yield 'local' => [
 			'actor' => new UserIdentityValue( 10, 'Hello' ),
 		];
@@ -66,7 +65,7 @@ class ActorCacheTest extends MediaWikiUnitTestCase {
 		$this->assertCacheContains( $cache, 1, $actor );
 	}
 
-	public function provideRemove() {
+	public static function provideRemove() {
 		yield 'Same actor' => [
 			'addedActor' => new UserIdentityValue( 10, 'Hello' ),
 			'removedActor' => new UserIdentityValue( 10, 'Hello' )

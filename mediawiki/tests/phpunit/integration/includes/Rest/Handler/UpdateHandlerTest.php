@@ -2,59 +2,69 @@
 
 namespace MediaWiki\Tests\Rest\Handler;
 
-use ApiUsageException;
-use FormatJson;
-use HashConfig;
-use MediaWiki\Content\IContentHandlerFactory;
+use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Config\HashConfig;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Content\WikitextContentHandler;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
+use MediaWiki\Parser\MagicWordFactory;
+use MediaWiki\Parser\ParserFactory;
+use MediaWiki\Parser\Parsoid\ParsoidParserFactory;
 use MediaWiki\Rest\Handler\UpdateHandler;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Session\Token;
+use MediaWiki\Status\Status;
 use MediaWiki\Tests\Unit\DummyServicesTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use MediaWikiLangTestCase;
 use MockTitleTrait;
 use PHPUnit\Framework\MockObject\MockObject;
-use Status;
-use Title;
+use Wikimedia\Message\DataMessageValue;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\Message\ParamType;
 use Wikimedia\Message\ScalarParam;
-use WikitextContent;
-use WikitextContentHandler;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
+ * @group Database
  * @covers \MediaWiki\Rest\Handler\UpdateHandler
  */
-class UpdateHandlerTest extends \MediaWikiLangTestCase {
+class UpdateHandlerTest extends MediaWikiLangTestCase {
 	use ActionModuleBasedHandlerTestTrait;
 	use DummyServicesTrait;
 	use MockTitleTrait;
 
 	private function newHandler( $resultData, $throwException = null, $csrfSafe = false ) {
 		$config = new HashConfig( [
-			'RightsUrl' => 'https://creativecommons.org/licenses/by-sa/4.0/',
-			'RightsText' => 'CC-BY-SA 4.0'
+			MainConfigNames::RightsUrl => 'https://creativecommons.org/licenses/by-sa/4.0/',
+			MainConfigNames::RightsText => 'CC-BY-SA 4.0'
 		] );
 
-		/** @var IContentHandlerFactory|MockObject $contentHandlerFactory */
-		$contentHandlerFactory =
-			$this->createNoOpMock(
-				IContentHandlerFactory::class,
-				[ 'isDefinedModel', 'getContentHandler' ]
-			);
+		$wikitextContentHandler = new WikitextContentHandler(
+			CONTENT_MODEL_WIKITEXT,
+			$this->createMock( TitleFactory::class ),
+			$this->createMock( ParserFactory::class ),
+			$this->createMock( GlobalIdGenerator::class ),
+			$this->createMock( LanguageNameUtils::class ),
+			$this->createMock( LinkRenderer::class ),
+			$this->createMock( MagicWordFactory::class ),
+			$this->createMock( ParsoidParserFactory::class )
+		);
 
-		$contentHandlerFactory
-			->method( 'isDefinedModel' )
-			->willReturnMap( [
-				[ CONTENT_MODEL_WIKITEXT, true ],
-			] );
+		// Only wikitext is defined, returns specific handler instance
+		$contentHandlerFactory = $this->getDummyContentHandlerFactory(
+			[ CONTENT_MODEL_WIKITEXT => $wikitextContentHandler ]
+		);
 
-		$contentHandlerFactory
-			->method( 'getContentHandler' )
-			->willReturn( new WikitextContentHandler() );
-
-		// DummyServicesTrait::getDummyMediaWikiTitleCodec
 		$titleCodec = $this->getDummyMediaWikiTitleCodec();
 
 		/** @var RevisionLookup|MockObject $revisionLookup */
@@ -101,7 +111,9 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 		return $handler;
 	}
 
-	public function provideExecute() {
+	public static function provideExecute() {
+		$token = strval( new Token( 'TOKEN', '' ) );
+
 		yield "create with token" => [
 			[ // Request data received by UpdateHandler
 				'method' => 'PUT',
@@ -110,7 +122,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'Content-Type' => 'application/json',
 				],
 				'bodyContents' => json_encode( [
-					'token' => 'TOKEN',
+					'token' => $token,
 					'source' => 'Lorem Ipsum',
 					'comment' => 'Testing'
 				] ),
@@ -120,7 +132,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				'text' => 'Lorem Ipsum',
 				'summary' => 'Testing',
 				'createonly' => '1',
-				'token' => 'TOKEN',
+				'token' => $token,
 			],
 			[ // Mock response returned by ApiEditPage
 				"edit" => [
@@ -149,7 +161,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				],
 				'source' => 'Content of revision 371707'
 			],
-			false
+			false,
+			true,
 		];
 
 		yield "create with model" => [
@@ -160,7 +173,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'Content-Type' => 'application/json',
 				],
 				'bodyContents' => json_encode( [
-					'token' => 'TOKEN',
+					'token' => $token,
 					'source' => 'Lorem Ipsum',
 					'comment' => 'Testing',
 					'content_model' => CONTENT_MODEL_WIKITEXT,
@@ -172,7 +185,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				'summary' => 'Testing',
 				'contentmodel' => 'wikitext',
 				'createonly' => '1',
-				'token' => 'TOKEN',
+				'token' => $token,
 			],
 			[ // Mock response returned by ApiEditPage
 				"edit" => [
@@ -201,7 +214,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				],
 				'source' => 'Content of revision 371707'
 			],
-			false
+			false,
+			true,
 		];
 
 		yield "update with token" => [
@@ -212,7 +226,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'Content-Type' => 'application/json',
 				],
 				'bodyContents' => json_encode( [
-					'token' => 'TOKEN',
+					'token' => $token,
 					'source' => 'Lorem Ipsum',
 					'comment' => 'Testing',
 					'latest' => [ 'id' => 789123 ],
@@ -224,7 +238,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				'summary' => 'Testing',
 				'nocreate' => '1',
 				'baserevid' => '789123',
-				'token' => 'TOKEN',
+				'token' => $token,
 			],
 			[ // Mock response returned by ApiEditPage
 				"edit" => [
@@ -252,7 +266,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				],
 				'source' => 'Content of revision 371707'
 			],
-			false
+			false,
+			true,
 		];
 
 		yield "update with model" => [
@@ -304,7 +319,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 				],
 				'source' => 'Content of revision 371707'
 			],
-			true
+			true,
+			false,
 		];
 
 		yield "update without token" => [
@@ -353,7 +369,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'title' => 'CC-BY-SA 4.0'
 				],
 			],
-			true
+			true,
+			false,
 		];
 
 		yield "null-edit (unchanged)" => [
@@ -386,7 +403,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					"title" => "Foo",
 					"contentmodel" => "wikitext",
 					"nochange" => "", // null-edit!
-			]
+				]
 			],
 			[ // Response expected to be generated by UpdateHandler
 				'id' => 94542,
@@ -400,7 +417,8 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'title' => 'CC-BY-SA 4.0'
 				],
 			],
-			true
+			true,
+			false,
 		];
 	}
 
@@ -412,14 +430,21 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 		$expectedActionParams,
 		$actionResult,
 		$expectedResponse,
-		$csrfSafe
+		$csrfSafe,
+		$hasToken
 	) {
 		$request = new RequestData( $requestData );
 
 		$handler = $this->newHandler( $actionResult, null, $csrfSafe );
 
+		$session = $this->getSession( $csrfSafe );
+
+		$session->method( 'hasToken' )->willReturn( $hasToken );
+
+		$session->method( 'getToken' )->willReturn( new Token( 'TOKEN', '' ) );
+
 		$responseData = $this->executeHandlerAndGetBodyData(
-			$handler, $request, [], [], [], [], null, $csrfSafe
+			$handler, $request, [], [], [], [], null, $session
 		);
 
 		// Check parameters passed to ApiEditPage by UpdateHandler based on $requestData
@@ -442,7 +467,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 		}
 	}
 
-	public function provideBodyValidation() {
+	public static function provideBodyValidation() {
 		yield "missing source field" => [
 			[ // Request data received by UpdateHandler
 				'method' => 'PUT',
@@ -456,7 +481,10 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'content_model' => CONTENT_MODEL_WIKITEXT,
 				] ),
 			],
-			new MessageValue( 'rest-missing-body-field', [ 'source' ] ),
+			MessageValue::new( 'rest-body-validation-error', [
+				DataMessageValue::new( 'paramvalidator-missingparam', [], 'missingparam' )
+					->plaintextParams( 'source' )
+			] ),
 		];
 		yield "missing comment field" => [
 			[ // Request data received by UpdateHandler
@@ -471,7 +499,10 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 					'content_model' => CONTENT_MODEL_WIKITEXT,
 				] ),
 			],
-			new MessageValue( 'rest-missing-body-field', [ 'comment' ] ),
+			MessageValue::new( 'rest-body-validation-error', [
+				DataMessageValue::new( 'paramvalidator-missingparam', [], 'missingparam' )
+					->plaintextParams( 'comment' )
+			] ),
 		];
 	}
 
@@ -492,7 +523,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 		$this->assertEquals( $expectedMessage, $exception->getMessageValue() );
 	}
 
-	public function provideHeaderValidation() {
+	public static function provideHeaderValidation() {
 		yield "bad content type" => [
 			[ // Request data received by UpdateHandler
 				'method' => 'PUT',
@@ -527,7 +558,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 	/**
 	 * FIXME: Can't access MW services in a dataProvider.
 	 */
-	public function provideErrorMapping() {
+	public static function provideErrorMapping() {
 		yield "missingtitle" => [
 			new ApiUsageException( null, Status::newFatal( 'apierror-missingtitle' ) ),
 			new LocalizedHttpException( new MessageValue( 'apierror-missingtitle' ), 404 ),
@@ -554,7 +585,7 @@ class UpdateHandlerTest extends \MediaWikiLangTestCase {
 		yield "badtoken" => [
 			new ApiUsageException(
 				null,
-				Status::newFatal( 'apierror-badtoken', [ 'plaintext' => 'BAD' ] )
+				Status::newFatal( 'apierror-badtoken', Message::plaintextParam( 'BAD' ) )
 			),
 			new LocalizedHttpException(
 				new MessageValue(

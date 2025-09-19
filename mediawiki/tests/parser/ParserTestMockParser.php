@@ -1,6 +1,9 @@
 <?php
 
 use MediaWiki\Page\PageReference;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\User\UserIdentity;
 
 /**

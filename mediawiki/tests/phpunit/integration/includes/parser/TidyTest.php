@@ -1,8 +1,13 @@
 <?php
 
+namespace MediaWiki\Tests\Parser;
+
+use MediaWiki\Parser\MWTidy;
+use MediaWiki\Parser\Sanitizer;
+
 /**
  * @group Parser
- * @covers MWTidy
+ * @covers \MediaWiki\Parser\MWTidy
  */
 class TidyTest extends \MediaWikiIntegrationTestCase {
 
@@ -45,11 +50,10 @@ MathML;
 				'<mw:editsection> should survive tidy'
 			],
 			[
-				'<editsection page="foo" section="bar">foo</editsection>',
-				'<editsection page="foo" section="bar">foo</editsection>',
-				'<editsection> should survive tidy'
+				'<meta property="mw:PageProp/toc" />',
+				'<meta property="mw:PageProp/toc" />',
+				'TOC_PLACEHOLDER should survive tidy',
 			],
-			[ '<mw:toc>foo</mw:toc>', '<mw:toc>foo</mw:toc>', '<mw:toc> should survive tidy' ],
 			[ "<link foo=\"bar\" />foo", '<link foo="bar"/>foo', '<link> should survive tidy' ],
 			[ "<meta foo=\"bar\" />foo", '<meta foo="bar"/>foo', '<meta> should survive tidy' ],
 			[ $testMathML, $testMathML, '<math> should survive tidy' ],

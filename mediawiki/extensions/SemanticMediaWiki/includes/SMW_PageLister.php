@@ -1,9 +1,14 @@
 <?php
 
-use SMW\Query\PrintRequest;
-use SMW\Localizer\Localizer;
-use SMW\StoreFactory;
 use SMW\DataValueFactory;
+use SMW\DIWikiPage;
+use SMW\Localizer\Localizer;
+use SMW\Query\Language\Conjunction;
+use SMW\Query\Language\Description;
+use SMW\Query\Language\ValueDescription;
+use SMW\Query\PrintRequest;
+use SMW\RequestOptions;
+use SMW\StoreFactory;
 
 /**
  * Helper class to generate HTML lists of wiki pages, with support for paged
@@ -32,8 +37,8 @@ class SMWPageLister {
 	/**
 	 * Constructor
 	 *
-	 * @param $diWikiPages array of SMWDIWikiPage
-	 * @param $diProperty mixed SMWDIProperty that the wikipages are values of, or null
+	 * @param $diWikiPages array of DIWikiPage
+	 * @param $diProperty mixed \SMW\DIProperty that the wikipages are values of, or null
 	 * @param $limit integer maximal amount of items to display
 	 * @param $from string if the results were selected starting from this string
 	 * @param $until string if the results were selected reaching until this string
@@ -58,13 +63,12 @@ class SMWPageLister {
 	 * @return string
 	 */
 	public function getNavigationLinks( Title $title, $query = [] ) {
-
 		$limitText = Localizer::getInstance()->getUserLanguage()->formatNum( $this->mLimit );
 
 		$resultCount = count( $this->mDiWikiPages );
 		$beyondLimit = ( $resultCount > $this->mLimit );
 
-		if ( !is_null( $this->mUntil ) && $this->mUntil !== '' ) {
+		if ( $this->mUntil !== null && $this->mUntil !== '' ) {
 			if ( $beyondLimit ) {
 				$first = StoreFactory::getStore()->getWikiPageSortKey( $this->mDiWikiPages[1] );
 			} else {
@@ -72,7 +76,7 @@ class SMWPageLister {
 			}
 
 			$last = $this->mUntil;
-		} elseif ( $beyondLimit || ( !is_null( $this->mFrom ) && $this->mFrom !== '' ) ) {
+		} elseif ( $beyondLimit || ( $this->mFrom !== null && $this->mFrom !== '' ) ) {
 			$first = $this->mFrom;
 
 			if ( $beyondLimit ) {
@@ -107,7 +111,7 @@ class SMWPageLister {
 	}
 
 	/**
-	 * Make SMWRequestOptions suitable for obtaining a list of results for
+	 * Make RequestOptions suitable for obtaining a list of results for
 	 * the given limit, and from or until string. One more result than the
 	 * limit will be created, and the results may have to be reversed in
 	 * order if ascending is set to false in the resulting object.
@@ -115,10 +119,10 @@ class SMWPageLister {
 	 * @param $limit integer
 	 * @param $from string can be empty if no from condition is desired
 	 * @param $until string can be empty if no until condition is desired
-	 * @return SMWRequestOptions
+	 * @return RequestOptions
 	 */
 	public static function getRequestOptions( $limit, $from, $until ) {
-		$options = new SMWRequestOptions();
+		$options = new RequestOptions();
 		$options->limit = $limit + 1;
 		$options->sort = true;
 
@@ -141,22 +145,22 @@ class SMWPageLister {
 	 * than the limit will be created, and the results may have to be
 	 * reversed in order if $until is nonempty.
 	 *
-	 * @param $description SMWDescription main query description
+	 * @param $description Description main query description
 	 * @param $limit integer
 	 * @param $from string can be empty if no from condition is desired
 	 * @param $until string can be empty if no until condition is desired
 	 * @return SMWQuery
 	 */
-	public static function getQuery( SMWDescription $description, $limit, $from, $until ) {
+	public static function getQuery( Description $description, $limit, $from, $until ) {
 		if ( $from !== '' ) {
-			$diWikiPage = new SMWDIWikiPage( $from, NS_MAIN, '' ); // make a dummy wiki page as boundary
-			$fromDescription = new SMWValueDescription( $diWikiPage, null, SMW_CMP_GEQ );
-			$queryDescription = new SMWConjunction( [ $description, $fromDescription ] );
+			$diWikiPage = new DIWikiPage( $from, NS_MAIN, '' ); // make a dummy wiki page as boundary
+			$fromDescription = new ValueDescription( $diWikiPage, null, SMW_CMP_GEQ );
+			$queryDescription = new Conjunction( [ $description, $fromDescription ] );
 			$order = 'ASC';
 		} elseif ( $until !== '' ) {
-			$diWikiPage = new SMWDIWikiPage( $until, NS_MAIN, '' ); // make a dummy wiki page as boundary
-			$untilDescription = new SMWValueDescription( $diWikiPage, null, SMW_CMP_LESS ); // do not include boundary in this case
-			$queryDescription = new SMWConjunction( [ $description, $untilDescription ] );
+			$diWikiPage = new DIWikiPage( $until, NS_MAIN, '' ); // make a dummy wiki page as boundary
+			$untilDescription = new ValueDescription( $diWikiPage, null, SMW_CMP_LESS ); // do not include boundary in this case
+			$queryDescription = new Conjunction( [ $description, $untilDescription ] );
 			$order = 'DESC';
 		} else {
 			$queryDescription = $description;
@@ -190,7 +194,7 @@ class SMWPageLister {
 			}
 		}
 
-		if ( count ( $this->mDiWikiPages ) > $cutoff ) {
+		if ( count( $this->mDiWikiPages ) > $cutoff ) {
 			return self::getColumnList( $start, $end, $this->mDiWikiPages, $this->mDiProperty );
 		} elseif ( count( $this->mDiWikiPages ) > 0 ) {
 			return self::getShortList( $start, $end, $this->mDiWikiPages, $this->mDiProperty );
@@ -200,24 +204,23 @@ class SMWPageLister {
 	}
 
 	/**
-	 * Format a list of SMWDIWikiPage objects chunked by letter in a three-column
+	 * Format a list of DIWikiPage objects chunked by letter in a three-column
 	 * list, ordered vertically.
 	 *
 	 * @param $start integer
 	 * @param $end integer
-	 * @param $diWikiPages array of SMWDIWikiPage
-	 * @param $diProperty SMWDIProperty that the wikipages are values of, or null
+	 * @param $diWikiPages array of DIWikiPage
+	 * @param $diProperty \SMW\DIProperty that the wikipages are values of, or null
 	 *
 	 * @return string
 	 */
 	public static function getColumnList( $start, $end, $diWikiPages, $diProperty, $moreCallback = null ) {
-
 		if ( $diWikiPages instanceof \Iterator ) {
 			$diWikiPages = iterator_to_array( $diWikiPages );
 		}
 
 		// Divide list into three equal chunks.
-		$chunk = (int) ( ( $end - $start + 1 ) / 3 );
+		$chunk = (int)( ( $end - $start + 1 ) / 3 );
 
 		// Get and display header.
 		$r = '<table width="100%"><tr valign="top">';
@@ -289,12 +292,11 @@ class SMWPageLister {
 	 * @param $start integer
 	 * @param $end integer
 	 * @param $diWikiPages array of SMWDataItem
-	 * @param $diProperty SMWDIProperty that the wikipages are values of, or null
+	 * @param $diProperty \SMW\DIProperty that the wikipages are values of, or null
 	 *
 	 * @return string
 	 */
 	public static function getShortList( $start, $end, $diWikiPages, $diProperty, $moreCallback = null ) {
-
 		if ( $diWikiPages instanceof \Iterator ) {
 			$diWikiPages = iterator_to_array( $diWikiPages );
 		}
@@ -310,7 +312,7 @@ class SMWPageLister {
 		$startChar = self::getFirstChar( $diWikiPages[$start] );
 
 		$r = '<h3>' . htmlspecialchars( $startChar ) . "</h3>\n" .
-		     '<ul><li>' . $startDv->getLongHTMLText( smwfGetLinker() ) . '&#160;' . $searchlink->getHTML( smwfGetLinker() ) . '</li>';
+			 '<ul><li>' . $startDv->getLongHTMLText( smwfGetLinker() ) . '&#160;' . $searchlink->getHTML( smwfGetLinker() ) . '</li>';
 
 		$prevStartChar = $startChar;
 		for ( $index = $start + 1; $index < $end; $index++ ) {

@@ -13,6 +13,10 @@ class Multiple implements Shrinker
     private $assertion;
     private $goodShrinkConditions = [];
     private $onAttempt = [];
+    /**
+     * @var NoTimeLimit
+     */
+    private $timeLimit;
 
     public function __construct(array $generators, callable $assertion)
     {
@@ -71,7 +75,7 @@ class Multiple implements Shrinker
             if ($this->timeLimit->hasBeenReached()) {
                 throw new \RuntimeException(
                     "Eris has reached the time limit for shrinking ($this->timeLimit), here it is presenting the simplest failure case." . PHP_EOL
-                    . "If you can afford to spend more time to find a simpler failing input, increase it with \$this->shrinkingTimeLimit(\$seconds).",
+                    . "If you can afford to spend more time to find a simpler failing input, increase it with the annotation \'@eris-shrink {seconds}\'.",
                     -1,
                     $exception
                 );

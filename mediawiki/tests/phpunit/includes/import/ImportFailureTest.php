@@ -1,10 +1,13 @@
 <?php
 
+use MediaWiki\Config\HashConfig;
+use MediaWiki\MainConfigNames;
+
 /**
  * Import failure test.
  *
  * @group Database
- * @covers WikiImporter
+ * @covers \WikiImporter
  */
 class ImportFailureTest extends MediaWikiLangTestCase {
 
@@ -20,16 +23,16 @@ class ImportFailureTest extends MediaWikiLangTestCase {
 
 	/**
 	 * @param ImportSource $source
-	 *
 	 * @return WikiImporter
 	 */
 	private function getImporter( ImportSource $source ) {
 		$config = new HashConfig( [
-			'CommandLineMode' => true,
+			MainConfigNames::MaxArticleSize => 2048,
 		] );
 		$services = $this->getServiceContainer();
 		$importer = new WikiImporter(
 			$source,
+			$this->getTestSysop()->getAuthority(),
 			$config,
 			$services->getHookContainer(),
 			$services->getContentLanguage(),
@@ -37,7 +40,6 @@ class ImportFailureTest extends MediaWikiLangTestCase {
 			$services->getTitleFactory(),
 			$services->getWikiPageFactory(),
 			$services->getWikiRevisionUploadImporter(),
-			$services->getPermissionManager(),
 			$services->getContentHandlerFactory(),
 			$services->getSlotRoleRegistry()
 		);
@@ -47,7 +49,7 @@ class ImportFailureTest extends MediaWikiLangTestCase {
 	/**
 	 * @param string $testName
 	 *
-	 * @return string[]
+	 * @return string
 	 */
 	private function getFileToImport( string $testName ) {
 		return __DIR__ . "/../../data/import/$testName.xml";
@@ -87,14 +89,14 @@ class ImportFailureTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	public function provideImportFailure() {
-		yield [ 'BadXML', 'warning', '/^XMLReader::read\(\): .*$/' ];
-		yield [ 'MissingMediaWikiTag', MWException::class, '/^Expected <mediawiki> tag, got .*$/' ];
-		yield [ 'MissingMainTextField', MWException::class, '/^Missing text field in import.$/' ];
-		yield [ 'MissingSlotTextField', MWException::class, '/^Missing text field in import.$/' ];
-		yield [ 'MissingSlotRole', MWException::class, '/^Missing role for imported slot.$/' ];
-		yield [ 'UndefinedSlotRole', MWException::class, '/^Undefined slot role .*$/' ];
-		yield [ 'UndefinedContentModel', MWException::class, '/not registered on this wiki/' ];
+	public static function provideImportFailure() {
+		yield [ 'BadXML', RuntimeException::class, '/^XML error at line 3: Opening and ending tag mismatch:.*$/' ];
+		yield [ 'MissingMediaWikiTag', UnexpectedValueException::class, "/^Expected '<mediawiki>' tag, got .*$/" ];
+		yield [ 'MissingMainTextField', InvalidArgumentException::class, '/^Missing text field in import.$/' ];
+		yield [ 'MissingSlotTextField', InvalidArgumentException::class, '/^Missing text field in import.$/' ];
+		yield [ 'MissingSlotRole', RuntimeException::class, '/^Missing role for imported slot.$/' ];
+		yield [ 'UndefinedSlotRole', RuntimeException::class, '/^Undefined slot role .*$/' ];
+		yield [ 'UndefinedContentModel', MWUnknownContentModelException::class, '/not registered on this wiki/' ];
 	}
 
 	/**
@@ -111,13 +113,8 @@ class ImportFailureTest extends MediaWikiLangTestCase {
 
 		$source = new ImportStringSource( $xmlData );
 		$importer = $this->getImporter( $source );
-		if ( $exceptionName === 'warning' ) {
-			$this->expectWarning();
-			$this->expectWarningMessageMatches( $exceptionMessage );
-		} else {
-			$this->expectException( $exceptionName );
-			$this->expectExceptionMessageMatches( $exceptionMessage );
-		}
+		$this->expectException( $exceptionName );
+		$this->expectExceptionMessageMatches( $exceptionMessage );
 		$importer->doImport();
 	}
 }

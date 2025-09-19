@@ -1,7 +1,8 @@
 <?php
 
 use SMW\Encoder;
-use SMW\Message;
+use SMW\Exception\DataItemException;
+use SMW\Localizer\Message;
 
 /**
  * @ingroup SMWDataValues
@@ -36,12 +37,12 @@ class SMWURIValue extends SMWDataValue {
 	/**
 	 * One of the basic modes of operation for this class (emails, URL,
 	 * telephone number URI, ...).
-	 * @var integer
+	 * @var int
 	 */
 	private $m_mode;
 
 	/**
-	 * @var boolean
+	 * @var bool
 	 */
 	private $showUrlContextInRawFormat = true;
 
@@ -55,19 +56,19 @@ class SMWURIValue extends SMWDataValue {
 		switch ( $typeid ) {
 			case '_ema':
 				$this->m_mode = SMW_URI_MODE_EMAIL;
-			break;
+				break;
 			case '_anu':
 				$this->m_mode = SMW_URI_MODE_ANNOURI;
-			break;
+				break;
 			case '_tel':
 				$this->m_mode = SMW_URI_MODE_TEL;
-			break;
+				break;
 			case '__spu':
 			case '_uri':
 			case '_url':
 			default:
 				$this->m_mode = SMW_URI_MODE_URI;
-			break;
+				break;
 		}
 
 		$this->schemeList = array_flip( $GLOBALS['smwgURITypeSchemeList'] );
@@ -89,7 +90,6 @@ class SMWURIValue extends SMWDataValue {
 		switch ( $this->m_mode ) {
 			case SMW_URI_MODE_URI:
 			case SMW_URI_MODE_ANNOURI:
-
 				// Whether the url value was externally encoded or not
 				if ( strpos( $value, "%" ) === false ) {
 					$this->showUrlContextInRawFormat = false;
@@ -191,7 +191,7 @@ class SMWURIValue extends SMWDataValue {
 		// Now create the URI data item:
 		try {
 			$this->m_dataitem = new SMWDIUri( $scheme, $hierpart, $query, $fragment, !$this->getOption( self::OPT_QUERY_CONTEXT ) );
-		} catch ( SMWDataItemException $e ) {
+		} catch ( DataItemException $e ) {
 			$this->addErrorMsg( [ 'smw_baduri', $this->m_wikitext ] );
 		}
 	}
@@ -203,16 +203,15 @@ class SMWURIValue extends SMWDataValue {
 	 */
 	protected static function isValidTelURI( $s ) {
 		$tel_uri_regex = '<^tel:\+[0-9./-]*[0-9][0-9./-]*(;[0-9a-zA-Z-]+=(%[0-9a-zA-Z][0-9a-zA-Z]|[0-9a-zA-Z._~:/?#[\]@!$&\'()*+,;=-])*)*$>';
-		return (bool) preg_match( $tel_uri_regex, $s );
+		return (bool)preg_match( $tel_uri_regex, $s );
 	}
 
 	/**
 	 * @see SMWDataValue::loadDataItem()
-	 * @param $dataitem SMWDataItem
-	 * @return boolean
+	 * @param $dataItem SMWDataItem
+	 * @return bool
 	 */
 	protected function loadDataItem( SMWDataItem $dataItem ) {
-
 		if ( $dataItem->getDIType() !== SMWDataItem::TYPE_URI ) {
 			return false;
 		}
@@ -233,10 +232,9 @@ class SMWURIValue extends SMWDataValue {
 	}
 
 	public function getShortWikiText( $linked = null ) {
+		[ $url, $caption ] = $this->decodeUriContext( $this->m_caption, $linked );
 
-		list( $url, $caption ) = $this->decodeUriContext( $this->m_caption, $linked );
-
-		if ( is_null( $linked ) || ( $linked === false ) || ( $url === '' ) ||
+		if ( $linked === null || ( $linked === false ) || ( $url === '' ) ||
 			( $this->m_outformat == '-' ) || ( $this->m_caption === '' ) ) {
 			return $caption;
 		} elseif ( $this->m_outformat == 'nowiki' ) {
@@ -247,10 +245,9 @@ class SMWURIValue extends SMWDataValue {
 	}
 
 	public function getShortHTMLText( $linker = null ) {
+		[ $url, $caption ] = $this->decodeUriContext( $this->m_caption, $linker );
 
-		list( $url, $caption ) = $this->decodeUriContext( $this->m_caption, $linker );
-
-		if ( is_null( $linker ) || ( !$this->isValid() ) || ( $url === '' ) ||
+		if ( $linker === null || ( !$this->isValid() ) || ( $url === '' ) ||
 			( $this->m_outformat == '-' ) || ( $this->m_outformat == 'nowiki' ) ||
 			( $this->m_caption === '' ) || $linker === false ) {
 			return $caption;
@@ -264,7 +261,7 @@ class SMWURIValue extends SMWDataValue {
 			return $this->getErrorText();
 		}
 
-		list( $url, $wikitext ) = $this->decodeUriContext( $this->m_wikitext, $linker );
+		[ $url, $wikitext ] = $this->decodeUriContext( $this->m_wikitext, $linker );
 
 		if ( $linker === null || $linker === false || $url === '' || $this->m_outformat == '-' ) {
 			return $wikitext;
@@ -282,9 +279,9 @@ class SMWURIValue extends SMWDataValue {
 			return $this->getErrorText();
 		}
 
-		list( $url, $wikitext ) = $this->decodeUriContext( $this->m_wikitext, $linker );
+		[ $url, $wikitext ] = $this->decodeUriContext( $this->m_wikitext, $linker );
 
-		if ( is_null( $linker ) || $linker === false || $url === '' ||
+		if ( $linker === null || $linker === false || $url === '' ||
 			$this->m_outformat == '-' || $this->m_outformat == 'nowiki' ) {
 			return $wikitext;
 		}
@@ -293,7 +290,6 @@ class SMWURIValue extends SMWDataValue {
 	}
 
 	public function getWikiValue() {
-
 		if ( $this->getOption( self::VALUE_RAW ) ) {
 			return rawurldecode( $this->m_wikitext );
 		}
@@ -358,7 +354,6 @@ class SMWURIValue extends SMWDataValue {
 	}
 
 	private function decodeUriContext( $context, $linker ) {
-
 		// Prior to decoding turn any `-` into an internal representation to avoid
 		// potential breakage
 		if ( !$this->showUrlContextInRawFormat ) {

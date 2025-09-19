@@ -2,13 +2,24 @@
 namespace Eris\Generator;
 
 use DateTime;
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
 
-class DateGeneratorTest extends \PHPUnit_Framework_TestCase
+class DateGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
 
     public function testGenerateDateTimeObjectsInTheGivenInterval()

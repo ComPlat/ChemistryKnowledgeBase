@@ -1,18 +1,24 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Status\Status;
+use MediaWiki\Title\Title;
+use Wikimedia\Rdbms\IDBAccessObject;
+
 /**
  * Integration test that checks import success and
  * LinkCache integration.
  *
  * @group large
  * @group Database
- * @covers ImportStreamSource
- * @covers ImportReporter
+ * @covers \ImportStreamSource
+ * @covers \ImportReporter
  *
  * @author mwjames
  */
 class ImportLinkCacheIntegrationTest extends MediaWikiIntegrationTestCase {
 
+	/** @var Status */
 	private $importStreamSource;
 
 	protected function setUp(): void {
@@ -23,7 +29,7 @@ class ImportLinkCacheIntegrationTest extends MediaWikiIntegrationTestCase {
 		$this->importStreamSource = ImportStreamSource::newFromFile( $file );
 
 		if ( !$this->importStreamSource->isGood() ) {
-			throw new Exception( "Import source for {$file} failed" );
+			$this->fail( "Import source for {$file} failed" );
 		}
 	}
 
@@ -35,14 +41,14 @@ class ImportLinkCacheIntegrationTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			$loremIpsum->getArticleID(),
-			$loremIpsum->getArticleID( Title::GAID_FOR_UPDATE )
+			$loremIpsum->getArticleID( IDBAccessObject::READ_LATEST )
 		);
 
 		$categoryLoremIpsum = Title::makeTitle( NS_CATEGORY, 'Lorem ipsum' );
 
 		$this->assertSame(
 			$categoryLoremIpsum->getArticleID(),
-			$categoryLoremIpsum->getArticleID( Title::GAID_FOR_UPDATE )
+			$categoryLoremIpsum->getArticleID( IDBAccessObject::READ_LATEST )
 		);
 	}
 
@@ -57,40 +63,36 @@ class ImportLinkCacheIntegrationTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			$loremIpsum->getArticleID(),
-			$loremIpsum->getArticleID( Title::GAID_FOR_UPDATE )
+			$loremIpsum->getArticleID( IDBAccessObject::READ_LATEST )
 		);
 
 		$categoryLoremIpsum = Title::makeTitle( NS_CATEGORY, 'Lorem ipsum' );
 
 		$this->assertSame(
 			$categoryLoremIpsum->getArticleID(),
-			$categoryLoremIpsum->getArticleID( Title::GAID_FOR_UPDATE )
+			$categoryLoremIpsum->getArticleID( IDBAccessObject::READ_LATEST )
 		);
 	}
 
 	private function doImport( $importStreamSource ) {
 		$importer = $this->getServiceContainer()
 			->getWikiImporterFactory()
-			->getWikiImporter( $importStreamSource->value );
+			->getWikiImporter( $importStreamSource->value, $this->getTestSysop()->getAuthority() );
 		$importer->setDebug( true );
 
+		$context = RequestContext::getMain();
+		$context->setUser( $this->getTestUser()->getUser() );
 		$reporter = new ImportReporter(
 			$importer,
 			false,
 			'',
-			false
+			false,
+			$context
 		);
 
-		$reporter->setContext( new RequestContext() );
 		$reporter->open();
-
 		$importer->doImport();
-
-		$result = $reporter->close();
-
-		$this->assertTrue(
-			$result->isGood()
-		);
+		$this->assertStatusGood( $reporter->close() );
 	}
 
 }

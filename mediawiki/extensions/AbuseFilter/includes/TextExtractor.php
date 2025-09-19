@@ -2,15 +2,16 @@
 
 namespace MediaWiki\Extension\AbuseFilter;
 
-use Content;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterHookRunner;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
-use TextContent;
 
 /**
  * This service provides an interface to convert RevisionRecord and Content objects to some text
  * suitable for running abuse filters.
+ *
  * @internal No external code should rely on this representation
  */
 class TextExtractor {
@@ -90,7 +91,6 @@ class TextExtractor {
 		}
 
 		// T22310
-		$text = TextContent::normalizeLineEndings( (string)$text );
-		return $text;
+		return TextContent::normalizeLineEndings( (string)$text );
 	}
 }

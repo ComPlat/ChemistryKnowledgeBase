@@ -1,12 +1,19 @@
 <?php
 
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Language\RawMessage;
+use MediaWiki\Specials\SpecialUncategorizedCategories;
+use Wikimedia\Rdbms\Expression;
+
 /**
  * Tests for Special:UncategorizedCategories
+ *
+ * @group Database
  */
 class SpecialUncategorizedCategoriesTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @dataProvider provideTestGetQueryInfoData
-	 * @covers SpecialUncategorizedCategories::getQueryInfo
+	 * @covers \MediaWiki\Specials\SpecialUncategorizedCategories::getQueryInfo
 	 */
 	public function testGetQueryInfo( $msgContent, $expected ) {
 		$msg = new RawMessage( $msgContent );
@@ -15,7 +22,7 @@ class SpecialUncategorizedCategoriesTest extends MediaWikiIntegrationTestCase {
 		$services = $this->getServiceContainer();
 		$special = new SpecialUncategorizedCategories(
 			$services->getNamespaceInfo(),
-			$services->getDBLoadBalancer(),
+			$services->getConnectionProvider(),
 			$services->getLinkBatchFactory(),
 			$services->getLanguageConverterFactory()
 		);
@@ -30,7 +37,7 @@ class SpecialUncategorizedCategoriesTest extends MediaWikiIntegrationTestCase {
 				'title' => 'page_title',
 			],
 			'conds' => [
-				0 => 'cl_from IS NULL',
+				'cl_from' => null,
 				'page_namespace' => 14,
 				'page_is_redirect' => 0,
 			] + $expected,
@@ -43,26 +50,26 @@ class SpecialUncategorizedCategoriesTest extends MediaWikiIntegrationTestCase {
 		], $special->getQueryInfo() );
 	}
 
-	public function provideTestGetQueryInfoData() {
+	public static function provideTestGetQueryInfoData() {
 		return [
 			[
 				"* Stubs\n* Test\n* *\n* * test123",
-				[ 1 => "page_title not in ( 'Stubs','Test','*','*_test123' )" ]
+				[ 0 => new Expression( 'page_title', '!=', [ 'Stubs', 'Test', '*', '*_test123' ] ) ]
 			],
 			[
 				"Stubs\n* Test\n* *\n* * test123",
-				[ 1 => "page_title not in ( 'Test','*','*_test123' )" ]
+				[ 0 => new Expression( 'page_title', '!=', [ 'Test', '*', '*_test123' ] ) ],
 			],
 			[
 				"* StubsTest\n* *\n* * test123",
-				[ 1 => "page_title not in ( 'StubsTest','*','*_test123' )" ]
+				[ 0 => new Expression( 'page_title', '!=', [ 'StubsTest', '*', '*_test123' ] ) ],
 			],
 			[ "", [] ],
 			[ "\n\n\n", [] ],
 			[ "\n", [] ],
-			[ "Test\n*Test2", [ 1 => "page_title not in ( 'Test2' )" ] ],
+			[ "Test\n*Test2", [ 0 => new Expression( 'page_title', '!=', [ 'Test2' ] ) ] ],
 			[ "Test", [] ],
-			[ "*Test\nTest2", [ 1 => "page_title not in ( 'Test' )" ] ],
+			[ "*Test\nTest2", [ 0 => new Expression( 'page_title', '!=', [ 'Test' ] ) ] ],
 			[ "Test\nTest2", [] ],
 		];
 	}

@@ -1,14 +1,16 @@
 <?php
 
-namespace Wikimedia\ParamValidator\TypeDef;
+namespace Wikimedia\Tests\ParamValidator\TypeDef;
 
 use Wikimedia\Message\DataMessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\SimpleCallbacks;
+use Wikimedia\ParamValidator\TypeDef;
+use Wikimedia\ParamValidator\TypeDef\FloatDef;
 use Wikimedia\ParamValidator\ValidationException;
 
 /**
- * @covers Wikimedia\ParamValidator\TypeDef\FloatDef
+ * @covers \Wikimedia\ParamValidator\TypeDef\FloatDef
  */
 class FloatDefTest extends TypeDefTestCase {
 
@@ -17,6 +19,8 @@ class FloatDefTest extends TypeDefTestCase {
 	}
 
 	public function provideValidate() {
+		$enforceType = [ TypeDef::OPT_ENFORCE_JSON_TYPES => true ];
+
 		return [
 			[ '123', 123.0 ],
 			[ '123.4', 123.4 ],
@@ -51,6 +55,20 @@ class FloatDefTest extends TypeDefTestCase {
 			'Weird, but ok' => [ '-0', 0 ],
 			'Underflow is ok' => [ '1e-9999', 0 ],
 
+			'Native int' => [ 2, 2.0 ],
+			'Native float' => [ 1.25, 1.25 ],
+			'Native int with OPT_ENFORCE_JSON_TYPES' =>
+				[ 2, 2.0, [], $enforceType ],
+			'Native float with OPT_ENFORCE_JSON_TYPES' =>
+				[ 1.25, 1.25, [], $enforceType ],
+
+			'String "1.25" with OPT_ENFORCE_JSON_TYPES' => [ '1.25', new ValidationException(
+				DataMessageValue::new( 'paramvalidator-badfloat-type', [], 'badfloat-type' ),
+					'test', '1.25', []
+				),
+				[], $enforceType
+			],
+
 			'Empty decimal part' => [ '1.', new ValidationException(
 				DataMessageValue::new( 'paramvalidator-badfloat', [], 'badfloat' ),
 				'test', '1.', []
@@ -79,7 +97,7 @@ class FloatDefTest extends TypeDefTestCase {
 				DataMessageValue::new( 'paramvalidator-notfinite', [], 'badfloat' ),
 				'test', 'foo', []
 			) ],
-			'Bogus value' => [ '123f4', new ValidationException(
+			'Bogus value 2' => [ '123f4', new ValidationException(
 				DataMessageValue::new( 'paramvalidator-notfinite', [], 'badfloat' ),
 				'test', '123f4', []
 			) ],

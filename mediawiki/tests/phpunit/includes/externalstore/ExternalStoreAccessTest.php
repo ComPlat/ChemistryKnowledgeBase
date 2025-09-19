@@ -1,11 +1,13 @@
 <?php
 
+use MediaWiki\Tests\Unit\DummyServicesTrait;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
- * @covers ExternalStoreAccess
+ * @covers \ExternalStoreAccess
  */
 class ExternalStoreAccessTest extends MediaWikiIntegrationTestCase {
+	use DummyServicesTrait;
 
 	public function testBasic() {
 		$active = [ 'memory' ];
@@ -24,7 +26,7 @@ class ExternalStoreAccessTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers ExternalStoreAccess::isReadOnly
+	 * @covers \ExternalStoreAccess::isReadOnly
 	 */
 	public function testReadOnly() {
 		/** @var  ExternalStoreMedium|MockObject $medium */
@@ -42,14 +44,15 @@ class ExternalStoreAccessTest extends MediaWikiIntegrationTestCase {
 		$access = new ExternalStoreAccess( $esFactory );
 		$this->assertTrue( $access->isReadOnly() );
 
-		$this->expectExceptionObject( new ReadOnlyError() );
+		$this->setService( 'ReadOnlyMode', $this->getDummyReadOnlyMode( 'Some absurd reason' ) );
+		$this->expectException( ReadOnlyError::class );
 		$access->insert( 'Lorem Ipsum' );
 	}
 
 	/**
-	 * @covers ExternalStoreAccess::fetchFromURL
-	 * @covers ExternalStoreAccess::fetchFromURLs
-	 * @covers ExternalStoreAccess::insert
+	 * @covers \ExternalStoreAccess::fetchFromURL
+	 * @covers \ExternalStoreAccess::fetchFromURLs
+	 * @covers \ExternalStoreAccess::insert
 	 */
 	public function testReadWrite() {
 		$active = [ 'memory' ]; // active store types

@@ -9,7 +9,7 @@ use OOUI\FieldLayout;
 use OOUI\FormLayout;
 use OOUI\SelectFileInputWidget;
 use OutputPage;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SpecialPage;
 
 class ChemScannerSpecialpage extends SpecialPage
@@ -26,7 +26,7 @@ class ChemScannerSpecialpage extends SpecialPage
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        $this->blade = new Blade ($views, $cache);
+        $this->blade = new BladeOne ($views, $cache);
 
     }
 
@@ -66,11 +66,11 @@ class ChemScannerSpecialpage extends SpecialPage
     {
         global $wgServer, $wgScriptPath;
 
-        return $this->blade->view()->make("chemscanner-upload",
+        return $this->blade->run("chemscanner-upload",
             ['wikiUrl' => "$wgServer$wgScriptPath/index.php",
                 'jobId' => $jobId
             ]
-        )->render();
+        );
     }
 
     /**

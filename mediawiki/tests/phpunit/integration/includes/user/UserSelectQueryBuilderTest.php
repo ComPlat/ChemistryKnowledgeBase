@@ -2,6 +2,8 @@
 
 namespace MediaWiki\Tests\User;
 
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\User\UserIdentityValue;
 use MediaWiki\User\UserSelectQueryBuilder;
 use Wikimedia\Rdbms\SelectQueryBuilder;
@@ -10,10 +12,12 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  * @group Database
  * @covers \MediaWiki\User\UserSelectQueryBuilder
  * @coversDefaultClass \MediaWiki\User\UserSelectQueryBuilder
- * @package MediaWiki\Tests\User
  */
 class UserSelectQueryBuilderTest extends ActorStoreTestBase {
-	public function provideFetchUserIdentitiesByNamePrefix() {
+
+	use TempUserTestTrait;
+
+	public static function provideFetchUserIdentitiesByNamePrefix() {
 		yield 'nothing found' => [
 			'z_z_Z_Z_z_Z_z_z', // $prefix
 			[ 'limit' => 100 ], // $options
@@ -58,13 +62,13 @@ class UserSelectQueryBuilderTest extends ActorStoreTestBase {
 			->caller( __METHOD__ )
 			->orderByName( $options['sort'] ?? SelectQueryBuilder::SORT_ASC );
 		$actors = iterator_to_array( $queryBuilder->fetchUserIdentities() );
-		$this->assertCount( count( $expected ), $actors );
+		$this->assertSameSize( $expected, $actors );
 		foreach ( $expected as $idx => $expectedActor ) {
 			$this->assertSameActors( $expectedActor, $actors[$idx] );
 		}
 	}
 
-	public function provideFetchUserIdentitiesByUserIds() {
+	public static function provideFetchUserIdentitiesByUserIds() {
 		yield 'default parameters' => [
 			[ 24, 25 ], // ids
 			[], // $options
@@ -95,13 +99,13 @@ class UserSelectQueryBuilderTest extends ActorStoreTestBase {
 				->orderByUserId( $options['sort'] ?? SelectQueryBuilder::SORT_ASC )
 				->fetchUserIdentities()
 		);
-		$this->assertCount( count( $expected ), $actors );
+		$this->assertSameSize( $expected, $actors );
 		foreach ( $expected as $idx => $expectedActor ) {
 			$this->assertSameActors( $expectedActor, $actors[$idx] );
 		}
 	}
 
-	public function provideFetchUserIdentitiesByNames() {
+	public static function provideFetchUserIdentitiesByNames() {
 		yield 'default parameters' => [
 			[ 'TestUser', 'TestUser1' ], // $names
 			[], // $options
@@ -146,7 +150,7 @@ class UserSelectQueryBuilderTest extends ActorStoreTestBase {
 				->orderByUserId( $options['sort'] ?? SelectQueryBuilder::SORT_ASC )
 				->fetchUserIdentities()
 		);
-		$this->assertCount( count( $expected ), $actors );
+		$this->assertSameSize( $expected, $actors );
 		foreach ( $expected as $idx => $expectedActor ) {
 			$this->assertSameActors( $expectedActor, $actors[$idx] );
 		}
@@ -216,6 +220,99 @@ class UserSelectQueryBuilderTest extends ActorStoreTestBase {
 	}
 
 	/**
+	 * @covers ::anon
+	 * @covers ::named
+	 * @dataProvider provideNamedAndTempMethodNames
+	 */
+	public function testNamedAndTempWhenTempUserAutoCreateDisabled( $methodName ) {
+		$this->enableAutoCreateTempUser();
+		// Add a temporary accounts for the test
+		$tempUserCreateStatus = $this->getServiceContainer()->getTempUserCreator()
+			->create( null, new FauxRequest() );
+		$this->assertStatusOK( $tempUserCreateStatus );
+		$tempUser = $tempUserCreateStatus->getUser();
+
+		$this->resetServices();
+		$this->disableAutoCreateTempUser();
+
+		$actors = iterator_to_array(
+			$this->getStore()
+				->newSelectQueryBuilder()
+				->limit( 100 )
+				->whereUserNamePrefix( '' )
+				->$methodName()
+				->fetchUserIdentities()
+		);
+		if ( $methodName === 'temp' ) {
+			$this->assertCount( 0, $actors );
+		} else {
+			// With temp users disabled, the temp user is treated as a normal user and included.
+			$this->assertArrayEquals(
+				array_merge(
+					array_map( fn ( $userRow ) => $userRow['actor_user'], self::TEST_USERS ),
+					[ $tempUser->getId() ]
+				),
+				array_map( fn ( $actor ) => $actor->getId(), $actors )
+			);
+		}
+	}
+
+	public static function provideNamedAndTempMethodNames() {
+		return [
+			'::temp' => [ 'temp' ],
+			'::named' => [ 'named' ],
+		];
+	}
+
+	/**
+	 * @covers ::named
+	 */
+	public function testNamed() {
+		$this->enableAutoCreateTempUser();
+		// Add a temporary accounts for the test
+		$tempUserCreateStatus = $this->getServiceContainer()->getTempUserCreator()
+			->create( null, new FauxRequest() );
+		$this->assertStatusOK( $tempUserCreateStatus );
+		$tempUser = $tempUserCreateStatus->getUser();
+		$actors = iterator_to_array(
+			$this->getStore()
+				->newSelectQueryBuilder()
+				->limit( 100 )
+				->whereUserNamePrefix( '' )
+				->named()
+				->fetchUserIdentities()
+		);
+		// The temp user should not appear in the results list.
+		$this->assertCount( 5, $actors );
+		foreach ( $actors as $actor ) {
+			$this->assertNotSame( $tempUser->getId(), $actor->getId() );
+		}
+	}
+
+	/**
+	 * @covers ::temp
+	 */
+	public function testTemp() {
+		$this->enableAutoCreateTempUser();
+		// Add a temporary accounts for the test
+		$tempUserCreateStatus = $this->getServiceContainer()->getTempUserCreator()
+			->create( null, new FauxRequest() );
+		$this->assertStatusOK( $tempUserCreateStatus );
+		$tempUser = $tempUserCreateStatus->getUser();
+		$actors = iterator_to_array(
+			$this->getStore()
+				->newSelectQueryBuilder()
+				->limit( 100 )
+				->whereUserNamePrefix( '' )
+				->temp()
+				->fetchUserIdentities()
+		);
+		// The temp user should be the only user identity returned.
+		$this->assertCount( 1, $actors );
+		$this->assertSameActors( $tempUser, $actors[0] );
+	}
+
+	/**
 	 * @covers ::hidden
 	 */
 	public function testHidden() {
@@ -234,14 +331,14 @@ class UserSelectQueryBuilderTest extends ActorStoreTestBase {
 		// hidden set to true
 		$actors = iterator_to_array(
 			$this->getStore()
-			->newSelectQueryBuilder()
-			->limit( 100 )
-			->whereUserIds( [
-				$hiddenUser->getId(),
-				$normalUser->getId()
-			] )
-			->hidden( true )
-			->fetchUserIdentities()
+				->newSelectQueryBuilder()
+				->limit( 100 )
+				->whereUserIds( [
+					$hiddenUser->getId(),
+					$normalUser->getId()
+				] )
+				->hidden( true )
+				->fetchUserIdentities()
 		);
 		$this->assertCount( 1, $actors );
 		$this->assertSameActors(

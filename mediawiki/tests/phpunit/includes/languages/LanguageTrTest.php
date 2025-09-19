@@ -7,7 +7,7 @@
 
 /**
  * @group Language
- * @covers LanguageTr
+ * @covers \LanguageTr
  */
 class LanguageTrTest extends LanguageClassesTestCase {
 
@@ -19,8 +19,8 @@ class LanguageTrTest extends LanguageClassesTestCase {
 	 *  - Emperyan
 	 * @see https://en.wikipedia.org/wiki/Dotted_and_dotless_I
 	 * @dataProvider provideDottedAndDotlessI
-	 * @covers Language::ucfirst
-	 * @covers Language::lcfirst
+	 * @covers \MediaWiki\Language\Language::ucfirst
+	 * @covers \MediaWiki\Language\Language::lcfirst
 	 */
 	public function testDottedAndDotlessI( $func, $input, $inputCase, $expected ) {
 		if ( $func == 'ucfirst' ) {
@@ -28,7 +28,7 @@ class LanguageTrTest extends LanguageClassesTestCase {
 		} elseif ( $func == 'lcfirst' ) {
 			$res = $this->getLang()->lcfirst( $input );
 		} else {
-			throw new MWException( __METHOD__ . " given an invalid function name '$func'" );
+			throw new InvalidArgumentException( __METHOD__ . " given an invalid function name '$func'" );
 		}
 
 		$msg = "Converting $inputCase case '$input' with $func should give '$expected'";

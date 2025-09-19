@@ -1,38 +1,51 @@
 <?php
 
+namespace MediaWiki\Tests\Api;
+
+use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
+use RevisionDeleter;
 
 /**
  * @group API
  * @group Database
  * @group medium
- * @covers ApiComparePages
+ * @covers \MediaWiki\Api\ApiComparePages
  */
 class ApiComparePagesTest extends ApiTestCase {
 
+	use TempUserTestTrait;
+
+	/** @var array */
 	protected static $repl = [];
 
 	protected function addPage( $page, $text, $model = CONTENT_MODEL_WIKITEXT ) {
-		$title = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest ' . $page );
+		$page = $this->getServiceContainer()->getWikiPageFactory()
+			->newFromLinkTarget( new TitleValue( NS_MAIN, 'ApiComparePagesTest ' . $page ) );
 		$content = $this->getServiceContainer()->getContentHandlerFactory()
 			->getContentHandler( $model )
 			->unserializeContent( $text );
 		$performer = static::getTestSysop()->getAuthority();
 		$status = $this->editPage(
-			$title,
+			$page,
 			$content,
 			'Test for ApiComparePagesTest: ' . $text,
 			NS_MAIN,
 			$performer
 		);
 		if ( !$status->isOK() ) {
-			$this->fail( "Failed to create $title: " . $status->getWikiText( false, false, 'en' ) );
+			$this->fail( 'Failed to create ' . $page->getTitle()->getPrefixedText() . ': ' . $status->getWikiText( false, false, 'en' ) );
 		}
-		return $status->value['revision-record']->getId();
+		return $status->getNewRevision()->getId();
 	}
 
 	public function addDBDataOnce() {
+		$this->disableAutoCreateTempUser();
 		$user = static::getTestSysop()->getUser();
 		self::$repl['creator'] = $user->getName();
 		self::$repl['creatorid'] = $user->getId();
@@ -41,13 +54,13 @@ class ApiComparePagesTest extends ApiTestCase {
 		self::$repl['revA2'] = $this->addPage( 'A', 'A 2' );
 		self::$repl['revA3'] = $this->addPage( 'A', 'A 3' );
 		self::$repl['revA4'] = $this->addPage( 'A', 'A 4' );
-		self::$repl['pageA'] = Title::newFromText( 'ApiComparePagesTest A' )->getArticleID();
+		self::$repl['pageA'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest A' )->getArticleID();
 
 		self::$repl['revB1'] = $this->addPage( 'B', 'B 1' );
 		self::$repl['revB2'] = $this->addPage( 'B', 'B 2' );
 		self::$repl['revB3'] = $this->addPage( 'B', 'B 3' );
 		self::$repl['revB4'] = $this->addPage( 'B', 'B 4' );
-		self::$repl['pageB'] = Title::newFromText( 'ApiComparePagesTest B' )->getArticleID();
+		self::$repl['pageB'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest B' )->getArticleID();
 		$updateTimestamps = [
 			self::$repl['revB1'] => '20010101011101',
 			self::$repl['revB2'] => '20020202022202',
@@ -55,46 +68,53 @@ class ApiComparePagesTest extends ApiTestCase {
 			self::$repl['revB4'] => '20040404044404',
 		];
 		foreach ( $updateTimestamps as $id => $ts ) {
-			$this->db->update(
-				'revision',
-				[ 'rev_timestamp' => $this->db->timestamp( $ts ) ],
-				[ 'rev_id' => $id ],
-				__METHOD__
-			);
+			$this->getDb()->newUpdateQueryBuilder()
+				->update( 'revision' )
+				->set( [ 'rev_timestamp' => $this->getDb()->timestamp( $ts ) ] )
+				->where( [ 'rev_id' => $id ] )
+				->caller( __METHOD__ )
+				->execute();
 		}
 
 		self::$repl['revC1'] = $this->addPage( 'C', 'C 1' );
 		self::$repl['revC2'] = $this->addPage( 'C', 'C 2' );
 		self::$repl['revC3'] = $this->addPage( 'C', 'C 3' );
-		self::$repl['pageC'] = Title::newFromText( 'ApiComparePagesTest C' )->getArticleID();
+		self::$repl['pageC'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest C' )->getArticleID();
 
 		$id = $this->addPage( 'D', 'D 1' );
-		self::$repl['pageD'] = Title::newFromText( 'ApiComparePagesTest D' )->getArticleID();
-		wfGetDB( DB_PRIMARY )->delete( 'revision', [ 'rev_id' => $id ] );
+		self::$repl['pageD'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest D' )->getArticleID();
+		$this->getDb()->newDeleteQueryBuilder()
+			->deleteFrom( 'revision' )
+			->where( [ 'rev_id' => $id ] )
+			->caller( __METHOD__ )
+			->execute();
 
 		self::$repl['revE1'] = $this->addPage( 'E', 'E 1' );
 		self::$repl['revE2'] = $this->addPage( 'E', 'E 2' );
 		self::$repl['revE3'] = $this->addPage( 'E', 'E 3' );
 		self::$repl['revE4'] = $this->addPage( 'E', 'E 4' );
-		self::$repl['pageE'] = Title::newFromText( 'ApiComparePagesTest E' )->getArticleID();
-		wfGetDB( DB_PRIMARY )->update(
-			'page', [ 'page_latest' => 0 ], [ 'page_id' => self::$repl['pageE'] ]
-		);
+		self::$repl['pageE'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest E' )->getArticleID();
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'page' )
+			->set( [ 'page_latest' => 0 ] )
+			->where( [ 'page_id' => self::$repl['pageE'] ] )
+			->caller( __METHOD__ )
+			->execute();
 
 		self::$repl['revF1'] = $this->addPage( 'F', "== Section 1 ==\nF 1.1\n\n== Section 2 ==\nF 1.2" );
-		self::$repl['pageF'] = Title::newFromText( 'ApiComparePagesTest F' )->getArticleID();
+		self::$repl['pageF'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest F' )->getArticleID();
 
 		self::$repl['revG1'] = $this->addPage( 'G', "== Section 1 ==\nG 1.1", CONTENT_MODEL_TEXT );
-		self::$repl['pageG'] = Title::newFromText( 'ApiComparePagesTest G' )->getArticleID();
+		self::$repl['pageG'] = Title::makeTitle( NS_MAIN, 'ApiComparePagesTest G' )->getArticleID();
 
 		$page = $this->getServiceContainer()->getWikiPageFactory()
-			->newFromTitle( Title::newFromText( 'ApiComparePagesTest C' ) );
+			->newFromTitle( Title::makeTitle( NS_MAIN, 'ApiComparePagesTest C' ) );
 		$this->deletePage( $page, 'Test for ApiComparePagesTest', $user );
 
 		RevisionDeleter::createList(
 			'revision',
 			RequestContext::getMain(),
-			Title::newFromText( 'ApiComparePagesTest B' ),
+			Title::makeTitle( NS_MAIN, 'ApiComparePagesTest B' ),
 			[ self::$repl['revB2'] ]
 		)->setVisibility( [
 			'value' => [
@@ -108,7 +128,7 @@ class ApiComparePagesTest extends ApiTestCase {
 		RevisionDeleter::createList(
 			'revision',
 			RequestContext::getMain(),
-			Title::newFromText( 'ApiComparePagesTest B' ),
+			Title::makeTitle( NS_MAIN, 'ApiComparePagesTest B' ),
 			[ self::$repl['revB3'] ]
 		)->setVisibility( [
 			'value' => [
@@ -160,7 +180,7 @@ class ApiComparePagesTest extends ApiTestCase {
 				$this->doApiRequest( $params, null, false, $performer );
 				$this->fail( 'Expected exception not thrown' );
 			} catch ( ApiUsageException $ex ) {
-				$this->assertTrue( $this->apiExceptionHasCode( $ex, $exceptionCode ),
+				$this->assertApiErrorCode( $exceptionCode, $ex,
 					"Exception with code $exceptionCode" );
 			}
 		} else {
@@ -438,7 +458,7 @@ class ApiComparePagesTest extends ApiTestCase {
 							. '<td colspan="2" class="diff-lineno">Line 1:</td></tr>' . "\n"
 							. '<tr><td class="diff-marker"></td><td class="diff-context diff-side-deleted"><div>== Section 1 ==</div></td><td class="diff-marker"></td><td class="diff-context diff-side-added"><div>== Section 1 ==</div></td></tr>' . "\n"
 							. '<tr><td class="diff-marker" data-marker="−"></td><td class="diff-deletedline diff-side-deleted"><div><del class="diffchange diffchange-inline">F 1.1</del></div></td><td class="diff-marker" data-marker="+"></td><td class="diff-addedline diff-side-added"><div><ins class="diffchange diffchange-inline">To text?</ins></div></td></tr>' . "\n"
-							. '<tr><td class="diff-marker"></td><td class="diff-context diff-side-deleted"><br/></td><td class="diff-marker"></td><td class="diff-context diff-side-added"><br/></td></tr>' . "\n"
+							. '<tr><td class="diff-marker"></td><td class="diff-context diff-side-deleted"><br></td><td class="diff-marker"></td><td class="diff-context diff-side-added"><br></td></tr>' . "\n"
 							. '<tr><td class="diff-marker"></td><td class="diff-context diff-side-deleted"><div>== Section 2 ==</div></td><td class="diff-marker"></td><td class="diff-context diff-side-added"><div>== Section 2 ==</div></td></tr>' . "\n"
 							. '<tr><td class="diff-marker" data-marker="−"></td><td class="diff-deletedline diff-side-deleted"><div><del class="diffchange diffchange-inline">From text?</del></div></td><td class="diff-marker" data-marker="+"></td><td class="diff-addedline diff-side-added"><div><ins class="diffchange diffchange-inline">F 1.2</ins></div></td></tr>' . "\n",
 					]

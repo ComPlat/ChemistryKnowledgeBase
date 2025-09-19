@@ -11,7 +11,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "skin",
 	"requires": {
-		"MediaWiki": ">= 1.39.0"
+		"MediaWiki": ">= 1.43"
 	},
 	"ValidSkinNames": {
 		"monobook": {
@@ -19,6 +19,7 @@
 			"args": [
 				{
 					"name": "monobook",
+					"supportsMwHeading": true,
 					"responsive": true,
 					"templateDirectory": "templates/",
 					"scripts": [
@@ -67,7 +68,7 @@
 	},
 	"ResourceModules": {
 		"skins.monobook.styles": {
-			"class": "ResourceLoaderSkinModule",
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
 			"features": {
 				"normalize": true,
 				"elements": true,
@@ -76,10 +77,8 @@
 				"content-links": true,
 				"content-tables": true,
 				"interface": true,
-				"interface-message-box": true,
 				"interface-category": true,
 				"i18n-ordered-lists": true,
-				"i18n-all-lists-margins": true,
 				"i18n-headings": true
 			},
 			"styles": [
@@ -88,10 +87,6 @@
 			]
 		},
 		"skins.monobook.scripts": {
-			"targets": [
-				"desktop",
-				"mobile"
-			],
 			"packageFiles": [
 				"resources/skin.js",
 				"resources/mobile-uls.js",
@@ -115,8 +110,11 @@
 	},
 	"ResourceModuleSkinStyles": {
 		"monobook": {
+			"ext.echo.styles.badge": "resources/skinStyles/ext.echo.styles.badge.less",
+			"+mediawiki.action.view.filepage": "resources/skinStyles/mediawiki.action.view.filepage.less",
 			"+mediawiki.action.view.redirectPage": "resources/skinStyles/mediawiki.action.view.redirectPage.css",
 			"+mediawiki.notification": "resources/skinStyles/mediawiki.notification.less",
+			"+mediawiki.page.ready": "resources/skinStyles/teleportTarget.less",
 			"+oojs-ui-core.styles": "resources/skinStyles/ooui.less",
 			"+ext.uls.interface": "resources/skinStyles/ext.uls.interface.less",
 			"+ext.relatedArticles.readMore": "resources/skinStyles/ext.relatedArticles.readMore.less"

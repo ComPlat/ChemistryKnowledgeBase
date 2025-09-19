@@ -11,7 +11,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use Philo\Blade\Blade;
+use eftec\bladeone\BladeOne;
 use SMW\DataValueFactory;
 use Title;
 use SMWDataItem;
@@ -47,7 +47,7 @@ class ExperimentLink
 
             return [WikiTools::sanitizeHTML($html), 'noparse' => true, 'isHTML' => true];
         } catch (Exception $e) {
-            $html = self::getBlade()->view()->make("error", ['message' => $e->getMessage()])->render();
+            $html = self::getBlade()->run("error", ['message' => $e->getMessage()]);
             return [$html, 'noparse' => true, 'isHTML' => true];
         }
     }
@@ -83,14 +83,14 @@ class ExperimentLink
     /**
      * @throws Exception
      */
-    private static function getBlade(): Blade
+    private static function getBlade(): BladeOne
     {
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         if (!is_writable($cache)) {
             throw new Exception("cache folder for blade engine is not writeable: $cache");
         }
-        return new Blade ($views, $cache);
+        return new BladeOne ($views, $cache);
     }
 
     /**
@@ -115,8 +115,13 @@ class ExperimentLink
         $experimentType = ExperimentRepository::getInstance()->getExperimentType($parameters['form']);
         $printRequests = [];
         $properties = $experimentType->getProperties();
+        $convertedUnits = [];
         foreach ($properties as $p => $templateParam) {
-            $printRequests[] = QueryUtils::newPropertyPrintRequest($p);
+            $defaultUnit = ConvertQuantity::getDefaultUnit($p, $parameters['form']);
+            if (!is_null($defaultUnit)) {
+                $convertedUnits[$templateParam] = $defaultUnit;
+            }
+            $printRequests[] = QueryUtils::newPropertyPrintRequest($p,  $defaultUnit ?? null);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
         $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);
@@ -125,7 +130,8 @@ class ExperimentLink
             $column = reset($row);
             $oneRow = [];
             while ($column !== false) {
-                $templateParam = $properties[$column->getPrintRequest()->getLabel()] ?? null;
+                $property = $column->getPrintRequest()->getLabel();
+                $templateParam = $properties[$property] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $currentColumn = $column;
                 $column = next($row);
@@ -136,7 +142,11 @@ class ExperimentLink
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
                     $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
-                    $oneRow[$templateParam] = $dataItem->getNumber();
+                    if (isset($convertedUnits[$templateParam])) {
+                        $oneRow[$templateParam] = ConvertQuantity::convert($property, $dataItem->getNumber(),$convertedUnits[$templateParam]);
+                    } else {
+                        $oneRow[$templateParam] = $dataItem->getNumber();
+                    }
 
                 } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
                     $oneRow[$templateParam] = $dataItem->getBoolean();

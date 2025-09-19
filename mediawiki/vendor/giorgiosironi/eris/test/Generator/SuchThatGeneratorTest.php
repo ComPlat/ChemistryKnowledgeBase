@@ -1,15 +1,27 @@
 <?php
 namespace Eris\Generator;
 
-class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
+use Eris\Random\RandomRange;
+use Eris\Random\RandSource;
+
+class SuchThatGeneratorTest extends \PHPUnit\Framework\TestCase
 {
-    protected function setUp()
+    /**
+     * @var int
+     */
+    private $size;
+    /**
+     * @var RandomRange
+     */
+    private $rand;
+
+    protected function setUp(): void
     {
         $this->size = 10;
-        $this->rand = 'rand';
+        $this->rand = new RandomRange(new RandSource());
     }
     
-    public function testGeneratesAGeneratedValueObject()
+    public function testGeneratesAGeneratedValueObject(): void
     {
         $generator = new SuchThatGenerator(
             function ($n) {
@@ -23,7 +35,7 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testAcceptsPHPUnitConstraints()
+    public function testAcceptsPHPUnitConstraints(): void
     {
         $generator = new SuchThatGenerator(
             $this->callback(function ($n) {
@@ -37,7 +49,7 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testShrinksTheOriginalInput()
+    public function testShrinksTheOriginalInput(): void
     {
         $generator = new SuchThatGenerator(
             function ($n) {
@@ -48,18 +60,17 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         $element = $generator->__invoke($this->size, $this->rand);
         for ($i = 0; $i < 100; $i++) {
             $element = $generator->shrink($element)->last();
-            $this->assertTrue(
-                $element->unbox() % 2 === 0,
+            $this->assertSame(
+                $element->unbox() % 2,
+                0,
                 "Element should still be filtered while shrinking: " . var_export($element, true)
             );
         }
     }
 
-    /**
-     * @expectedException Eris\Generator\SkipValueException
-     */
-    public function testGivesUpGenerationIfTheFilterIsNotSatisfiedTooManyTimes()
+    public function testGivesUpGenerationIfTheFilterIsNotSatisfiedTooManyTimes(): void
     {
+        $this->expectException(\Eris\Generator\SkipValueException::class);
         $generator = new SuchThatGenerator(
             function ($n) {
                 return $n % 2 == 0;
@@ -69,7 +80,7 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         $generator->__invoke($this->size, $this->rand);
     }
 
-    public function testGivesUpShrinkingIfTheFilterIsNotSatisfiedTooManyTimes()
+    public function testGivesUpShrinkingIfTheFilterIsNotSatisfiedTooManyTimes(): void
     {
         $generator = new SuchThatGenerator(
             function ($n) {
@@ -84,7 +95,7 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         );
     }
     
-    public function testShrinksMultipleOptionsButFiltersTheOnesThatSatisfyTheCondition()
+    public function testShrinksMultipleOptionsButFiltersTheOnesThatSatisfyTheCondition(): void
     {
         $generator = new SuchThatGenerator(
             function ($n) {
@@ -95,14 +106,15 @@ class SuchThatGeneratorTest extends \PHPUnit_Framework_TestCase
         $element = GeneratedValueSingle::fromJustValue(100);
         $options = $generator->shrink($element);
         foreach ($options as $option) {
-            $this->assertTrue(
-                $option->unbox() % 2 === 0,
+            $this->assertSame(
+                $option->unbox() % 2,
+                0,
                 "Option should still be filtered while shrinking: " . var_export($option, true)
             );
         }
     }
 
-    public function testThanksToMultipleShrinkingItCanBeLikelyToFindShrunkValuesWithRespectToOnlyFollowingThePessimistRoute()
+    public function testThanksToMultipleShrinkingItCanBeLikelyToFindShrunkValuesWithRespectToOnlyFollowingThePessimistRoute(): void
     {
         $generator = new SuchThatGenerator(
             function ($n) {

@@ -28,7 +28,8 @@ class ExtractFromTable {
         }
         $rows = explode(";", $parameters['']);
 
-        $content = trim($rows[$parameters['row']]) ?? '';
+        $content = $rows[$parameters['row']] ?? '';
+        $content = trim($content);
         if ($content === '') {
             return ['', 'noparse' => true, 'isHTML' => true];
         }

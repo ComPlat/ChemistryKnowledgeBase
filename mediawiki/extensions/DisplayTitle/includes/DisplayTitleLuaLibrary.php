@@ -27,11 +27,11 @@ class DisplayTitleLuaLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	public function register(): array {
 		$lib = [
-			'get'   => [ $this, 'getDisplayTitle' ],
-			'set'   => [ $this, 'setDisplayTitle' ],
+			'get' => [ $this, 'getDisplayTitle' ],
+			'set' => [ $this, 'setDisplayTitle' ],
 		];
 
-		return $this->getEngine()->registerInterface( __DIR__ . '/' . 'displaytitle.lua',	$lib, [] );
+		return $this->getEngine()->registerInterface( __DIR__ . '/' . 'displaytitle.lua', $lib, [] );
 	}
 
 	/**
@@ -83,8 +83,8 @@ class DisplayTitleLuaLibrary extends Scribunto_LuaLibraryBase {
 	 */
 	private function convertToLuaValue( $valueToConvert ) {
 		$type = $this->getLuaType( $valueToConvert );
-		if ( $type == 'nil'
-			|| $type == 'function'
+		if ( $type === 'nil'
+			|| $type === 'function'
 			|| preg_match( '/^PHP .*/', $valueToConvert )
 		) {
 			return null;

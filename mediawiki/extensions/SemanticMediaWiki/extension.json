@@ -1,11 +1,11 @@
 {
 	"name": "SemanticMediaWiki",
-	"version": "4.1.2",
+	"version": "5.1.0",
 	"author": [
 		"[https://korrekt.org Markus Krötzsch]",
 		"[https://EntropyWins.wtf/mediawiki Jeroen De Dauw]",
 		"James Hong Kong",
-		"[https://professional.wiki/ Professional Wiki]",
+		"[https://Professional.Wiki Professional Wiki]",
 		"[https://www.semantic-mediawiki.org/wiki/Contributors ...]"
 	],
 	"url": "https://www.semantic-mediawiki.org",
@@ -14,7 +14,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "semantic",
 	"requires": {
-		"MediaWiki": ">= 1.35"
+		"MediaWiki": ">= 1.39"
 	},
 	"MessagesDirs": {
 		"SemanticMediaWiki": [
@@ -22,14 +22,18 @@
 		]
 	},
 	"AutoloadNamespaces": {
-		"SMW\\": "src/"
+		"SMW\\": "src/",
+		"SMW\\Maintenance": "maintenance/",
+		"Onoi\\Tesa\\": "Tesa/src/"
 	},
 	"Hooks": {
 		"CanonicalNamespaces": "SMW\\MediaWiki\\Hooks::onCanonicalNamespaces",
 		"ApiMain::moduleManager": "SMW\\MediaWiki\\Hooks::onApiModuleManager"
 	},
 	"AutoloadClasses": {
-		"SemanticMediaWiki": "includes/SemanticMediaWiki.php"
+		"SemanticMediaWiki": "includes/SemanticMediaWiki.php",
+		"SMWElasticStore": "src/Elastic/ElasticStore.php",
+		"SMWSearch": "src/MediaWiki/Search/ExtendedSearchEngine.php"
 	},
 	"callback": "SemanticMediaWiki::initExtension",
 	"ExtensionFunctions": [
@@ -46,7 +50,6 @@
 		"ext.smw.tests": {
 			"scripts": [
 				"tests/qunit/smw/ext.smw.test.js",
-				"tests/qunit/smw/util/ext.smw.util.tooltip.test.js",
 				"tests/qunit/smw/data/ext.smw.dataItem.wikiPage.test.js",
 				"tests/qunit/smw/data/ext.smw.dataItem.uri.test.js",
 				"tests/qunit/smw/data/ext.smw.dataItem.time.test.js",
@@ -76,6 +79,7 @@
 		"SMWAdmin": "SMW\\MediaWiki\\Specials\\SpecialAdmin",
 		"PendingTaskList": "SMW\\MediaWiki\\Specials\\SpecialPendingTaskList",
 		"Ask": "SMW\\MediaWiki\\Specials\\SpecialAsk",
+		"FacetedSearch": "SMW\\MediaWiki\\Specials\\SpecialFacetedSearch",
 		"Browse": "SMW\\MediaWiki\\Specials\\SpecialBrowse",
 		"Concepts": "SMW\\SpecialConcepts",
 		"PageProperty": "SMW\\MediaWiki\\Specials\\SpecialPageProperty",
@@ -122,5 +126,5 @@
 		"smw-prefs-general-options-show-entity-issue-panel": true
 	},
 	"load_composer_autoloader": true,
-	"manifest_version": 1
+	"manifest_version": 2
 }

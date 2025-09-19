@@ -2,32 +2,36 @@
 namespace Eris\Generator;
 
 use Eris\Generator;
-use DomainException;
+use Eris\Generators;
+use Eris\Random\RandomRange;
 
 function float()
 {
-    return new FloatGenerator();
+    return Generators::float();
 }
 
+/**
+ * @template-implements Generator<float>
+ */
 class FloatGenerator implements Generator
 {
     public function __construct()
     {
     }
 
-    public function __invoke($size, $rand)
+    public function __invoke($size, RandomRange $rand)
     {
-        $denominator = $rand(1, $size) ?: 1;
+        $denominator = $rand->rand(1, $size) ?: 1;
 
-        $value = (float) $rand(0, $size) / (float) $denominator;
+        $value = (float) $rand->rand(0, $size) / (float) $denominator;
 
-        $signedValue = $rand(0, 1) === 0
+        $signedValue = $rand->rand(0, 1) === 0
             ? $value
             : $value * (-1);
         return GeneratedValueSingle::fromJustValue($signedValue, 'float');
     }
 
-    public function shrink(GeneratedValueSingle $element)
+    public function shrink(GeneratedValue $element)
     {
         $value = $element->unbox();
 

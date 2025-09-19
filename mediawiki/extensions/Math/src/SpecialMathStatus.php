@@ -2,13 +2,12 @@
 
 namespace MediaWiki\Extension\Math;
 
-use ExtensionRegistry;
 use MediaWiki\Extension\Math\Render\RendererFactory;
+use MediaWiki\Extension\Math\Widget\MathTestInputForm;
 use MediaWiki\Logger\LoggerFactory;
-use MWException;
-use PermissionsError;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\SpecialPage;
 use Psr\Log\LoggerInterface;
-use SpecialPage;
 
 /**
  * MediaWiki math extension
@@ -41,27 +40,47 @@ class SpecialMathStatus extends SpecialPage {
 
 	/**
 	 * @param null|string $query
-	 *
-	 * @throws MWException
-	 * @throws PermissionsError
 	 */
 	public function execute( $query ) {
 		$this->setHeaders();
 
 		$out = $this->getOutput();
 		$enabledMathModes = $this->mathConfig->getValidRenderingModeNames();
-		$out->addWikiMsg( 'math-status-introduction', count( $enabledMathModes ) );
+		$req = $this->getRequest();
+		$tex = $req->getText( 'wptex' );
 
-		foreach ( $enabledMathModes as $modeNr => $modeName ) {
-			$out->wrapWikiMsg( '=== $1 ===', $modeName );
-			switch ( $modeNr ) {
-				case MathConfig::MODE_MATHML:
-					$this->runMathMLTest( $modeName );
-					break;
-				case MathConfig::MODE_LATEXML:
-					$this->runMathLaTeXMLTest( $modeName );
+		if ( $tex === '' ) {
+			$out->addWikiMsg( 'math-status-introduction', count( $enabledMathModes ) );
+
+			foreach ( $enabledMathModes as $modeNr => $modeName ) {
+				$out->wrapWikiMsg( '=== $1 ===', $modeName );
+				switch ( $modeNr ) {
+					case MathConfig::MODE_MATHML:
+						$this->runMathMLTest( $modeName );
+						break;
+					case MathConfig::MODE_LATEXML:
+						$this->runMathLaTeXMLTest( $modeName );
+						break;
+					case MathConfig::MODE_NATIVE_MML:
+						$this->runNativeTest( $modeName );
+				}
 			}
 		}
+
+		$form = new MathTestInputForm( $this, $enabledMathModes, $this->rendererFactory );
+		$form->show();
+	}
+
+	private function runNativeTest( $modeName ) {
+		$this->getOutput()->addWikiMsgArray( 'math-test-start', [ $modeName ] );
+		$renderer = $this->rendererFactory->getRenderer( "a+b", [], MathConfig::MODE_NATIVE_MML );
+		if ( !$this->assertTrue( $renderer->render(), "Rendering of a+b in $modeName" ) ) {
+			return;
+		}
+		$real = str_replace( "\n", '', $renderer->getHtmlOutput() );
+		$expected = '<mo>+</mo>';
+		$this->assertContains( $expected, $real, "Checking the presence of '+' in the MathML output" );
+		$this->getOutput()->addWikiMsgArray( 'math-test-end', [ $modeName ] );
 	}
 
 	private function runMathMLTest( $modeName ) {
@@ -82,7 +101,9 @@ class SpecialMathStatus extends SpecialPage {
 	public function testSpecialCaseText() {
 		$renderer = $this->rendererFactory->getRenderer( 'x^2+\text{a sample Text}', [], MathConfig::MODE_MATHML );
 		$expected = 'a sample Text</mtext>';
-		$this->assertTrue( $renderer->render(), 'Rendering the input "x^2+\text{a sample Text}"' );
+		if ( !$this->assertTrue( $renderer->render(), 'Rendering the input "x^2+\text{a sample Text}"' ) ) {
+			return;
+		}
 		$this->assertContains(
 			$expected, $renderer->getHtmlOutput(), 'Comparing to the reference rendering'
 		);
@@ -93,15 +114,17 @@ class SpecialMathStatus extends SpecialPage {
 	 * i.e. if the span element is generated right.
 	 */
 	public function testMathMLIntegration() {
-		$svgRef = file_get_contents( __DIR__ . '/../images/reference.svg' );
-		$svgRefNoSpeech = file_get_contents( __DIR__ . '/../images/reference-nospeech.svg' );
 		$renderer = $this->rendererFactory->getRenderer( "a+b", [], MathConfig::MODE_MATHML );
-		$this->assertTrue( $renderer->render(), "Rendering of a+b in plain MathML mode" );
+		if ( !$this->assertTrue( $renderer->render(), "Rendering of a+b in plain MathML mode" ) ) {
+			return;
+		}
 		$real = str_replace( "\n", '', $renderer->getHtmlOutput() );
 		$expected = '<mo>+</mo>';
 		$this->assertContains( $expected, $real, "Checking the presence of '+' in the MathML output" );
-		$this->assertEquals( [ $svgRef, $svgRefNoSpeech ], $renderer->getSvg(),
-			"Comparing the generated SVG with the reference"
+		$this->assertContains(
+			'<svg xmlns:xlink="http://www.w3.org/1999/xlink" ',
+			$renderer->getSvg(),
+			"Check that the generated SVG image contains the xlink namespace"
 		);
 	}
 
@@ -116,12 +139,13 @@ class SpecialMathStatus extends SpecialPage {
 		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$inputSample = '<msub>  <mrow>  <mi> P</mi> </mrow>  <mrow>  <mi> i</mi>  <mi> j</mi> </mrow> </msub>  <mo> =</mo>  <mfrac>  <mrow>  <mn> 100</mn>  <msub>  <mrow>  <mi> d</mi> </mrow>  <mrow>  <mi> i</mi>  <mi> j</mi> </mrow> </msub> </mrow>  <mrow>  <mn> 6.75</mn>  <msub>  <mrow>  <mi> r</mi> </mrow>  <mrow>  <mi> j</mi> </mrow> </msub> </mrow> </mfrac>  <mo> ,</mo> </math>';
 		$attribs = [ 'type' => 'pmml' ];
-		$renderer = new MathMathML( $inputSample, $attribs );
+		$renderer = $this->rendererFactory->getRenderer( $inputSample, $attribs, MathConfig::MODE_MATHML );
 		$this->assertEquals( 'pmml', $renderer->getInputType(), 'Checking if MathML input is supported' );
-		$this->assertTrue( $renderer->render(), 'Rendering Presentation MathML sample' );
+		if ( !$this->assertTrue( $renderer->render(), 'Rendering Presentation MathML sample' ) ) {
+			return;
+		}
 		$real = $renderer->getHtmlOutput();
-		$expected = 'hash=5628b8248b79267ecac656102334d5e3&amp;mode=mathml';
-		$this->assertContains( $expected, $real, 'Checking if the link to SVG image is correct' );
+		$this->assertContains( 'mode=mathml', $real, 'Checking if the link to SVG image is in correct mode' );
 	}
 
 	/**
@@ -130,9 +154,11 @@ class SpecialMathStatus extends SpecialPage {
 	 */
 	public function testLaTeXMLIntegration() {
 		$renderer = $this->rendererFactory->getRenderer( "a+b", [], MathConfig::MODE_LATEXML );
-		$this->assertTrue( $renderer->render(), "Rendering of a+b in LaTeXML mode" );
+		if ( !$this->assertTrue( $renderer->render(), "Rendering of a+b in LaTeXML mode" ) ) {
+			return;
+		}
 		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$expected = '<math xmlns="http://www.w3.org/1998/Math/MathML" id="p1.m1" class="ltx_Math" alttext="{\displaystyle a+b}" ><semantics><mrow id="p1.m1.4" xref="p1.m1.4.cmml"><mi id="p1.m1.1" xref="p1.m1.1.cmml">a</mi><mo id="p1.m1.2" xref="p1.m1.2.cmml">+</mo><mi id="p1.m1.3" xref="p1.m1.3.cmml">b</mi></mrow><annotation-xml encoding="MathML-Content"><apply id="p1.m1.4.cmml" xref="p1.m1.4"><plus id="p1.m1.2.cmml" xref="p1.m1.2"/><ci id="p1.m1.1.cmml" xref="p1.m1.1">a</ci><ci id="p1.m1.3.cmml" xref="p1.m1.3">b</ci></apply></annotation-xml><annotation encoding="application/x-tex">{\displaystyle a+b}</annotation></semantics></math>';
+		$expected = '<math xmlns="http://www.w3.org/1998/Math/MathML" ';
 		$real = preg_replace( "/\n\\s*/", '', $renderer->getHtmlOutput() );
 		$this->assertContains( $expected, $real,
 			"Comparing the output to the MathML reference rendering" .
@@ -145,16 +171,18 @@ class SpecialMathStatus extends SpecialPage {
 	 * http://www.w3.org/TR/REC-MathML/chap3_5.html#sec3.5.2
 	 */
 	public function testLaTeXMLLinebreak() {
-		global $wgMathDefaultLaTeXMLSetting;
+		$mathDefaultLaTeXMLSetting = $this->getConfig()->get( 'MathDefaultLaTeXMLSetting' );
 		$tex = '';
-		$testMax = ceil( $wgMathDefaultLaTeXMLSetting[ 'linelength' ] / 2 );
+		$testMax = ceil( $mathDefaultLaTeXMLSetting[ 'linelength' ] / 2 );
 		for ( $i = 0; $i < $testMax; $i++ ) {
 			$tex .= "$i+";
 		}
 		$tex .= $testMax;
 		$renderer = new MathLaTeXML( $tex, [ 'display' => 'linebreak' ] );
 		$renderer->setPurge();
-		$this->assertTrue( $renderer->render(), "Rendering of linebreak test in LaTeXML mode" );
+		if ( !$this->assertTrue( $renderer->render(), "Rendering of linebreak test in LaTeXML mode" ) ) {
+			return;
+		}
 		$expected = 'mtr';
 		$real = preg_replace( "/\n\\s*/", '', $renderer->getHtmlOutput() );
 		$this->assertContains( $expected, $real, "Checking for linebreak" .

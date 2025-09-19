@@ -1,0 +1,11 @@
+;Purpose
+* maximum of the main relevant absorption feature of the analyte
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 nm]]
+
+; Unit
+* [[Display units::nm]]

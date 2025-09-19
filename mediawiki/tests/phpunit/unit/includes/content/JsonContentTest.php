@@ -2,18 +2,18 @@
 
 namespace MediaWiki\Tests\Unit;
 
-use JsonContent;
+use MediaWiki\Content\JsonContent;
 use MediaWikiUnitTestCase;
 
 /**
  * Split from \JsonContentTest integration tests
  *
  * @author Addshore
- * @covers \JsonContent
+ * @covers \MediaWiki\Content\JsonContent
  */
 class JsonContentTest extends MediaWikiUnitTestCase {
 
-	public function provideValidConstruction() {
+	public static function provideValidConstruction() {
 		return [
 			[ 'foo', false, null ],
 			[ '[]', true, [] ],
@@ -35,7 +35,7 @@ class JsonContentTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( $expected, $obj->getData()->getValue() );
 	}
 
-	public function provideDataToEncode() {
+	public static function provideDataToEncode() {
 		return [
 			[
 				// Round-trip empty array
@@ -50,19 +50,19 @@ class JsonContentTest extends MediaWikiUnitTestCase {
 			[
 				// Round-trip empty array/object (nested)
 				'{ "foo": {}, "bar": [] }',
-				"{\n    \"foo\": {},\n    \"bar\": []\n}",
+				"{\n\t\"foo\": {},\n\t\"bar\": []\n}",
 			],
 			[
 				'{ "foo": "bar" }',
-				"{\n    \"foo\": \"bar\"\n}",
+				"{\n\t\"foo\": \"bar\"\n}",
 			],
 			[
 				'{ "foo": 1000 }',
-				"{\n    \"foo\": 1000\n}",
+				"{\n\t\"foo\": 1000\n}",
 			],
 			[
 				'{ "foo": 1000, "0": "bar" }',
-				"{\n    \"foo\": 1000,\n    \"0\": \"bar\"\n}",
+				"{\n\t\"foo\": 1000,\n\t\"0\": \"bar\"\n}",
 			],
 		];
 	}
