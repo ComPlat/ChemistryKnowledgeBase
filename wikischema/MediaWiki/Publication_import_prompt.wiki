@@ -6,13 +6,9 @@ Additional Remarks: Important contextual comments (e.g., sustainability, relevan
 Content of the Published Article in Detail: A clear explanation of the scientific process, mechanism (in words), and setup
 Catalyst: Describe the type of catalyst used, including structure class, function, and unique properties
 Photosensitizer: Describe the photosensitizer used and its role in the system
-Investigation: Summarize core experiments in the following table structure:
-{|
-|-
-! cat !! cat conc [µM] !! PS !! PS conc [mM] !! e-D !! e-D conc [M] !! solvent A !! λexc [nm] !! TON CO
-|-
-| [fill] || [fill] || [fill] || [fill] || [fill] || [fill] || [fill] || [fill] || [fill]
-|-
-|}
+Investigation: Summarize core experiments in the following table structure as CSV data:
+----
+cat , cat conc [µM] , PS , PS conc [mM] , e-D , e-D conc [M] , solvent A , λexc [nm] , TON CO
+----
 Use accessible but precise scientific language suitable for advanced undergraduate chemistry students. Avoid excessive jargon, but remain technically correct. Do not include author names, journal, or citation metadata in the summary.
 Focus purely on the content and results. Please use Mediawiki markup to format the text properly.

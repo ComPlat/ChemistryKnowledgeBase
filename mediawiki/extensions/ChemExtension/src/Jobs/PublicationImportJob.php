@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\ExperimentWikitextImporter;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
@@ -83,6 +84,16 @@ $aiText
 
 $topicsCategoryAnnotations
 WIKITEXT;
+
+        $wikitextImporter = new ExperimentWikitextImporter($wikitext);
+        $result = $wikitextImporter->createInvestigationsFromCSV('Photocatalytic_CO2_conversion_experiments');
+        $wikitext = $result['wikitext'];
+        foreach($result['investigationPages'] as $page => $content) {
+            $invPage = Title::newFromText($this->getTitle()->getPrefixedText() . "/$page");
+            WikiTools::doEditContent($invPage->getPrefixedText(), $content,
+                "auto-generated", $invPage->exists() ? EDIT_UPDATE : EDIT_NEW);
+            $this->logger->log("created investigation page: " . $invPage->getPrefixedText());
+        }
 
         $this->logger->log("generated text from AI: " . $wikitext);
         $oldText = WikiTools::getText($this->getTitle());
