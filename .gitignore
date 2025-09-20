@@ -53,6 +53,7 @@ Thumbs.db
 /mediawiki/extensions/WikiFarm/cache/*.php
 /mediawiki/extensions/ChemExtension/cache/*.php
 /mediawiki/extensions/ChemExtension/cache/*.bladec
+/mediawiki/extensions/WikiFarm/cache/*.bladec
 mediawiki/extensions/InvestigationImport/maintenance/test1.txt
 .vscode/launch.json
 mediawiki/extensions/InvestigationImport/resources/~$CV_generic_dataset_withExValues.xlsx
