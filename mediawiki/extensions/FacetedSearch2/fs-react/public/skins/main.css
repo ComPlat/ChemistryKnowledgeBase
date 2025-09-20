@@ -1,0 +1,162 @@
+/**
+ General layout
+ */
+#fs-content {
+    display: flex;
+}
+
+#fs-header, #fs-namespaces {
+    background: lightgrey;
+    padding: 15px;
+    border-radius: 5px;
+    width: 100%;
+}
+
+#fs-facets > div {
+    margin: 5px;
+}
+div.fs-boxes {
+    margin-top: 3px;
+    display: flex;
+}
+
+
+@media (min-width: 1000px) {
+
+    #fs-content {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    #fs-facets {
+        width: 34%;
+    }
+
+    #fs-results {
+        width: 65%;
+    }
+
+    #fs-searchbar {
+        width: 75%;
+        margin-left: 10px;
+    }
+
+    #fs-searchbar-button {
+        margin-left: 10px;
+    }
+
+    #fs-searchbar div.MuiTextField-root {
+        width: 45%
+    }
+}
+
+@media (max-width: 999px) {
+    #fs-header {
+        flex-direction: column;
+    }
+
+    #fs-header > div {
+        margin-top: 10px;
+    }
+
+    #fs-content {
+        flex-direction: column;
+    }
+
+    #fs-facets {
+        width: 100%;
+    }
+
+    #fs-results {
+        width: 100%;
+    }
+    #fs-searchbar {
+        width: 100%;
+        flex-direction: column;
+    }
+}
+
+/**
+ * Searchbar
+ */
+div.fs-create-article {
+    margin-left: 20px;
+}
+
+
+/**
+ * Results
+ */
+
+#fs-results {
+    margin-top: 20px;
+}
+
+.fs-search-result {
+    margin-top: 10px;
+}
+
+.fs-search-result-title {
+    font-weight: bold;
+
+}
+
+.fs-annotation-snippet {
+    border: grey solid 1px;
+    margin-top: 10px;
+    max-width: 800px;
+}
+
+#fs-results nav {
+    margin-top: 15px;
+}
+
+div.promoted {
+    background: lightpink;
+}
+
+div.demoted {
+    background: lightgray;
+}
+
+#fs-result-view-number {
+    color: #666;
+}
+
+/**
+ * Facets
+ */
+#fs-facets {
+    display: flex;
+    flex-direction: column;
+}
+
+.fs-facet-title {
+    color: #1B599B;
+    font-size: 1rem;
+}
+
+.fs-facet-count {
+    color: #666;
+    font-size: 1rem;
+}
+
+#fs-no-facet-selected {
+    color: #666;
+}
+
+/*
+ Dialogs
+ */
+div.fs-or-content {
+    width: 800px;
+    height: 500px;
+    padding: 20px;
+    overflow: auto;
+}
+
+
+/* global */
+#root a {
+    color: #1B599B;
+}

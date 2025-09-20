@@ -419,6 +419,65 @@ $fsgShowArticleProperties=false;
 $fsgCreateNewPageLink = "/{article}?veaction=edit";
 wfLoadExtension( 'EnhancedRetrieval' );
 
+
+#################################################################
+# Faceted Search 2
+#################################################################
+#
+# Boosting
+# changing these values will only take effect after RECREATING the index of the Wiki
+# additionally, set this in env.php: $fsgActivateBoosting = true;
+#
+$fs2gActivateBoosting = true;
+$fs2gDefaultBoost = 5.0;
+$fs2gCategoryBoosts = [
+    'Topic' => 2
+];
+$fs2gTemplateBoosts = [
+    // empty
+];
+$fs2gNamespaceBoosts = [
+    0    => 2.0,   // Main
+    6    => 0.001, // Bild
+    8    => 0.001, // Mediawiki
+    10   => 0.001, // Vorlage
+    12   => 2.0,   // Hilfe
+    14   => 2.0, // Kategorie
+    102  => 0.001, // Attribut
+    106  => 0.001, // Formular
+    108  => 0.001, // Konzept
+    3300 => 1.5,    // Molekül
+    3302 => 1.5,    // Reaction
+];
+$fs2gCategoryFilter = [
+    '' => 'All pages',
+    'Topic' => 'Topic',
+    'Publication' => 'Publication',
+    'Molecule' => 'Molecule',
+    'Molecule_collection' => 'Molecule collection',
+    'Investigation' => 'Investigation',
+    'Author' => 'Author'
+];
+
+$fs2gShownFacets = [
+    'Investigation' => ['Tag', 'Additives', 'Turnover_number', 'Solvent', 'PH_value',
+        'Catalyst', 'Analyte', 'Temperature',
+    ],
+    'Molecule' => [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
+    'Molecule_collection' =>  [ 'Tag', 'MolecularMass', 'ContainsElement', 'HasVendors', 'LogP', 'MolecularFormula'],
+    'Publication' => [ 'Tag', 'Author', 'Publication date', 'Journal', "Publisher" ],
+    'Topic' => ['Tag']
+];
+
+$fs2gExtraPropertiesToRequest = ['AuthorPage'];
+
+$fs2gNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION ];
+$fs2gShowNamespaces=false;
+$fs2gShowArticleProperties=false;
+$fs2gCreateNewPageLink = "/{article}?veaction=edit";
+$fs2gFacetedSearchForMW = false;
+wfLoadExtension( 'FacetedSearch2' );
+
 #################################################################
 # PageForms
 #################################################################

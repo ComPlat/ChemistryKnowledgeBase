@@ -1,0 +1,267 @@
+{
+	"name": "FacetedSearch2",
+	"author": [
+		"[http://www.diqa-pm.com DIQA]"
+	],
+	"url": "https://github.com/kkthek/faceted-search2",
+	"descriptionmsg": "facetedsearch2-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"version": "2.3",
+	"requires": {
+		"MediaWiki": ">= 1.35",
+		"platform": {
+			"php": ">= 7.3"
+		}
+	},
+	"callback" : "DIQA\\FacetedSearch2\\Setup::initModules",
+	"SpecialPages": {
+		"FacetedSearch2": "DIQA\\FacetedSearch2\\Specials\\SpecialFacetedSearch",
+		"Search": "DIQA\\FacetedSearch2\\Specials\\SpecialFacetedSearch"
+	},
+	"AutoloadNamespaces": {
+		"DIQA\\FacetedSearch2\\": "src/FacetedSearch2/",
+		"DIQA\\FacetedSearch2\\Maintenance\\": "maintenance/"
+	},
+	"ExtensionFunctions": [
+		"DIQA\\FacetedSearch2\\Setup::setupFacetedSearch"
+	],
+	"Hooks": {
+		"BeforePageDisplay": "DIQA\\FacetedSearch2\\Setup::onBeforePageDisplay",
+		"ParserFirstCallInit": "DIQA\\FacetedSearch2\\Setup::initializeBeforeParserInit",
+		"GetPreferences": "DIQA\\FacetedSearch2\\UserPreference::setupPreferences"
+	},
+	"DefaultUserOptions": {
+		"fs2-sort-order-preferences": "sort-alphabetically"
+	},
+	"ExtensionMessagesFiles": {
+		"FacetedSearch2Magic": "i18n/MagicWords.php"
+	},
+	"MessagesDirs": {
+		"FacetedSearch2": [
+			"i18n"
+		]
+	},
+	"JobClasses": {
+		"UpdateIndexJob": "DIQA\\FacetedSearch2\\Update\\UpdateIndexJob"
+	},
+	"RestRoutes": [
+		{
+			"path": "/FacetedSearch2/v1/proxy/documents",
+			"method": "POST",
+			"class": "DIQA\\FacetedSearch2\\Endpoints\\DocumentsSearchEndpoint"
+		},
+		{
+			"path": "/FacetedSearch2/v1/proxy/document-by-id",
+			"method": "POST",
+			"class": "DIQA\\FacetedSearch2\\Endpoints\\DocumentByIdEndpoint"
+		},
+		{
+			"path": "/FacetedSearch2/v1/proxy/stats",
+			"method": "POST",
+			"class": "DIQA\\FacetedSearch2\\Endpoints\\StatsSearchEndpoint"
+		},
+		{
+			"path": "/FacetedSearch2/v1/proxy/facets",
+			"method": "POST",
+			"class": "DIQA\\FacetedSearch2\\Endpoints\\FacetQueryEndpoint"
+		}
+	],
+	"config_prefix": "fs2g",
+	"config": {
+		"SolrCore": {
+			"value": "mw",
+			"description": "The name of the SOLR core which stores the index data of the wiki. (1 per each wiki)"
+		},
+		"SolrHost": {
+			"value": "localhost",
+			"description": "The hostname of the SOLR server. Default is localhost. It is recommended that SOLR listens only on localhost."
+		},
+		"SolrPort": {
+			"value": 8983,
+			"description": "The port of the SOLR server. Default is 8983"
+		},
+		"SolrUser": {
+			"value": "",
+			"description": "The user of the SOLR server (usually required in multi-tenant environments or if the SOLR server is accessible via internet"
+		},
+		"SolrPass": {
+			"value": "",
+			"description": "The password of the SOLR user (see SolrUser setting)"
+		},
+		"SolrProxyDebug": {
+			"value": false,
+			"description": "Activates maximum PHP error reporting. DO NOT use this for production but only for debugging purposes."
+		},
+		"AnnotationsInSnippet": {
+			"value": [],
+			"description": "Annotations can be shown in the snippet. This config maps category names to lists of property names. Articles from these categories show the values of the given properties in the snippets (if values exist). E.g. $fs2gAnnotationsInSnippet[ 'Dokument'=>['Abteilung','Dokumentart' ] ]"
+		},
+		"FacetValueLimit": {
+			"value": 20,
+			"description": "Maximum number of facets values per facet which forces a search field to appear"
+		},
+		"CreateUpdateJob": {
+			"value": true,
+			"description": "Creates async index update job after a page was saved. If false, update is done synchronously."
+		},
+		"BlacklistPages": {
+			"value": [],
+			"description": "All pages listed here are ignored by EnhancedRetrieval. Specify prefixed page titles, e.g. Property:Name or Category:People"
+		},
+		"CategoriesToShowInTitle": {
+			"value": [],
+			"description": "List of categories which should be shown in the title of search hit"
+		},
+		"CategoryFilter": {
+			"value": [],
+			"description": "Configuration for the category drop-down list of the form ['category'=>'label'] The first entry determines the default. The entry with an empty key '' represents 'no selected category filter'"
+		},
+		"DefaultSortOrder": {
+			"value": "score",
+			"description": "Default sort order. Possible values: score, newest, oldest, ascending, descending"
+		},
+		"HitsPerPage": {
+			"value": 10,
+			"description": "Maximum number of search hits to show at once on the search page."
+		},
+		"PlaceholderText": {
+			"value": "",
+			"description": "Place holder used in the search box of Special:Search."
+		},
+		"ShowCategories": {
+			"value": true,
+			"description": "Show/hide categories in the facets section"
+		},
+		"ShowSortOrder": {
+			"value": true,
+			"description": "Show/hide UI element for selecting the sort order of search hits"
+		},
+		"ShowNamespaces": {
+			"value": true,
+			"description": "Show/hide UI element for selecting namespace filters"
+		},
+		"NamespacesToShow": {
+			"value": [],
+			"description": "IDs of namespaces to show. Empty means all namespaces."
+		},
+		"NamespaceConstraint": {
+			"value": [],
+			"description": "Allows certain groups to see only some namespaces"
+		},
+		"ShowArticleProperties": {
+			"value": true,
+			"description": "Show the article properties button under each search hit."
+		},
+		"ShownFacets": {
+			"value": [],
+			"description": "This config maps category names to lists of property names. If the category is selected in the category drop-down, (only) the configured facets are shown in the facet list (even if other values exist), e.g. $fsgShownFacets[ 'Person'=>['Name','Country','Age'], 'Company'=>['CEO','City','BusinessArea'] ]"
+		},
+		"ShownCategoryFacets": {
+			"value": [],
+			"description": "List of categories to show in the category facet (if empty, all categories are shown)"
+		},
+		"PromotionProperty": {
+			"value": false,
+			"description": "Boolean property indicating that a search hit should be highlighted (promoted). Use the Wiki property names here, e.g. 'HatInventarbeschrieb' or false to turn it off."
+		},
+		"DemotionProperty": {
+			"value": false,
+			"description": "Boolean property indicating that a search hit should be greyed out (demoted). Use the Wiki property names here, e.g. 'HatInventarbeschrieb' or false to turn it off."
+		},
+		"NumericPropertyClusters": {
+			"value": [],
+			"description": "Configures grouping of numeric facets. Example: $fs2gNumericPropertyClusters['BaujahrMin'] = ['min'=>-9999, 'max'=>9999, 'lowerBound'=>1700, 'upperBound'=>2030, 'interval'=>10]; means that the given property gets a minimum cluster value of -9999, a maximum of 9999 and 33*10 year-clusters from 1700 to 2030. min and max is optional."
+		},
+		"DateTimePropertyClusters": {
+			"value": [],
+			"description": "Configures grouping of dateTime facets. Example: $fs2gDateTimePropertyClusters['Freigegeben am']=['min'=>'1990-01-01-00:00:00','max'=>'2030-12-31-23:59:59']"
+		},
+		"NamespaceConstraint": {
+			"value": [],
+			"description": "Specifies the visible namespace for groups. group => array of namespaces-IDs, e.g. $fs2gNamespaceConstraint = ['sysop' => [ 0, 10, 14 ] ]; sysop users may only see Main, Template and Category pages. 'user' is default group if a user is in no other group."
+		},
+		"ActivateBoosting": {
+			"value": false,
+			"description": "Activates boosting, yes or no"
+		},
+		"DefaultBoost": {
+			"value": 1.0,
+			"description": "The default boost factor for all pages that are not boosted otherwise"
+		},
+		"CategoryBoosts": {
+			"value": [],
+			"description": "All pages belonging to the categories are boosted by the given value, e.g. $fs2gCategoryBoosts=['People'=>2.0]. Do not add category prefix before the page title."
+		},
+		"NamespaceBoosts": {
+			"value": [],
+			"description": "All pages in the namespaces are boosted by the given value, e.g. $fs2gNamespaceBoosts=[0=>2.0]. Use the namespace numbers here, not their names."
+		},
+		"TemplateBoosts": {
+			"value": [],
+			"description": "All pages using one of the templates are boosted by the given value, e.g. $fs2gTemplateBoosts=['MyTemplate'=>2.0]"
+		},
+		"FacetsWithOR": {
+			"value": [],
+			"description": "List of properties for which EnhancedRetrieval will offer a selection dialog for 'OR'."
+		},
+		"IndexImageURL": {
+			"value": false,
+			"description": "Indexes the image URL as separate attribute"
+		},
+		"IndexPredefinedProperties": {
+			"value": true,
+			"description": "If TRUE, SMW's pre-defined properties will be indexed too. Single properties can be excluded from the facets via [[Ignore as facet::true]]"
+		},
+		"IndexSubobjects": {
+			"value": true,
+			"description": "Also index SMW subobjects (not only full wiki articles)."
+		},
+		"EnableIncrementalIndexer": {
+			"value": true,
+			"description": "If TRUE, changed pages will be indexed incrementally i.e. when they are saved, moved or deleted. Setting it to FALSE can make sense for example during the installation when SOLR is not yet running."
+		},
+		"ShowSolrScore": {
+			"value": false,
+			"description": "Show the SOLR search score as a tooltip for the SHOW DETAILS link of each search hit."
+		},
+		"CreateNewPageLink": {
+			"value": "?action=edit",
+			"description": "This is the pattern for the link that leads to the creation of new pages. EnhancedRetrieval checks if the entered search term is the name of an existing article. If this is not the case it offers a link for creating this article. The variable {article} will be replaced by the actual article name. The link will be appended to the base URL like \"http://localhost/mediawiki/index.php\""
+		},
+		"FacetedSearchForMW": {
+			"value": true,
+			"description": "If TRUE, a search in the MediaWiki search field is redirected to the faceted search special page."
+		},
+		"ShowFileInOverlay": {
+			"value": false,
+			"description": "Show some files in an overlay. Either 'false' or array of file types ['pdf', 'png',...]"
+		},
+		"HeaderControlOrder": {
+			"value": ["sortView", "searchView", "saveSearchLink"],
+			"description": "Order of controls in header"
+		},
+		"FacetControlOrder": {
+			"value": ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
+				"facetView", "categoryLabel", "categoryDropDown", "categoryView"],
+			"description": "Order of controls in left-hand view"
+		},
+		"PropertyGrouping": {
+			"value": [],
+			"description": "Groups property values in OR-Dialog by a statically configured set of groups and values. eg. 'Property name' => ['Group1'=>['value1','value2], 'Group2'=>['value3','value4], ...]"
+		},
+		"PropertyGroupingBySeparator": {
+			"value": [],
+			"description": "Groups property values in OR-Dialog by a separator in the value. eg. ['Property name' => '/', ...]"
+		},
+		"PropertyGroupingByUrl": {
+			"value": [],
+			"description": "Groups property values in OR-Dialog by a request to the wiki. ['Property name' => 'https://host/path/to/endpoint', ...]"
+		},
+		"AdditionalLinks": {
+			"value": [],
+			"description": "Shows additional configurable links under a search result depending on a category."
+		}
+	},
+	"manifest_version": 2
+}

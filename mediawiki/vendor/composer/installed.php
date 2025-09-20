@@ -10,6 +10,15 @@
         'dev' => true,
     ),
     'versions' => array(
+        'carbonphp/carbon-doctrine-types' => array(
+            'pretty_version' => '2.1.0',
+            'version' => '2.1.0.0',
+            'reference' => '99f76ffa36cce3b70a4a6abce41dba15ca2e84cb',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../carbonphp/carbon-doctrine-types',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'composer/installers' => array(
             'pretty_version' => 'v2.3.0',
             'version' => '2.3.0.0',
@@ -127,6 +136,17 @@
             'reference' => 'cbc2d477ee220d154b0fc3461b79309985572d73',
             'type' => 'mediawiki-extension',
             'install_path' => __DIR__ . '/../../extensions/EnhancedRetrieval',
+            'aliases' => array(
+                0 => '9999999-dev',
+            ),
+            'dev_requirement' => false,
+        ),
+        'diqa/faceted-search-2' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '7efe6cced36033764da62591eddd9daee7cbb03d',
+            'type' => 'mediawiki-extension',
+            'install_path' => __DIR__ . '/../../extensions/FacetedSearch2',
             'aliases' => array(
                 0 => '9999999-dev',
             ),
@@ -543,6 +563,15 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'nesbot/carbon' => array(
+            'pretty_version' => '2.73.0',
+            'version' => '2.73.0.0',
+            'reference' => '9228ce90e1035ff2f0db84b40ec2e023ed802075',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../nesbot/carbon',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'netresearch/jsonmapper' => array(
             'pretty_version' => 'v4.5.0',
             'version' => '4.5.0.0',
@@ -550,7 +579,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../netresearch/jsonmapper',
             'aliases' => array(),
-            'dev_requirement' => true,
+            'dev_requirement' => false,
         ),
         'nikic/php-parser' => array(
             'pretty_version' => 'v4.19.4',
@@ -920,6 +949,21 @@
             'install_path' => __DIR__ . '/../psr/cache',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'psr/clock' => array(
+            'pretty_version' => '1.0.0',
+            'version' => '1.0.0.0',
+            'reference' => 'e41a24703d4560fd0acb709162f73b8adfc3aa0d',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../psr/clock',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'psr/clock-implementation' => array(
+            'dev_requirement' => false,
+            'provided' => array(
+                0 => '1.0',
+            ),
         ),
         'psr/container' => array(
             'pretty_version' => '1.1.2',
@@ -1326,6 +1370,30 @@
             'install_path' => __DIR__ . '/../symfony/string',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'symfony/translation' => array(
+            'pretty_version' => 'v6.4.24',
+            'version' => '6.4.24.0',
+            'reference' => '300b72643e89de0734d99a9e3f8494a3ef6936e1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/translation',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'symfony/translation-contracts' => array(
+            'pretty_version' => 'v3.6.0',
+            'version' => '3.6.0.0',
+            'reference' => 'df210c7a2573f1913b2d17cc95f90f53a73d8f7d',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/translation-contracts',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'symfony/translation-implementation' => array(
+            'dev_requirement' => false,
+            'provided' => array(
+                0 => '2.3|3.0',
+            ),
         ),
         'symfony/var-dumper' => array(
             'pretty_version' => 'v7.3.2',

@@ -95,7 +95,8 @@
 		"mediawiki/chameleon-skin": "^5.0",
 		"mediawiki/display-title": "^4.0",
 		"diqa/enhanced-retrieval": "dev-master",
-		"ml/json-ld": "^1.2"
+		"ml/json-ld": "^1.2",
+		"diqa/faceted-search-2": "dev-main"
 	},
 	"require-dev": {
 		"composer/spdx-licenses": "1.5.8",

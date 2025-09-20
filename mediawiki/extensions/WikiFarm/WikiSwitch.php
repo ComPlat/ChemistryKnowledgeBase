@@ -28,7 +28,7 @@ if (is_null($wiki)) {
     exit(0);
 }
 
-global $fsgSolrCore, $wgSharedDB;
+global $fsgSolrCore, $fs2gSolrCore, $wgSharedDB;
 if ($wiki == 'main') {
     $wgDBname = $wgSharedDB;
     $wgScriptPath = "/main/mediawiki";
@@ -36,6 +36,7 @@ if ($wiki == 'main') {
     $wgUploadDirectory = "/var/www/html/main/images";
     $wgUploadPath = "/main/images";
     $fsgSolrCore = 'main';
+    $fs2gSolrCore = 'main';
 } else {
     $wgDBname = "chem$wiki";
     $wgScriptPath = "/$wiki/mediawiki";
@@ -43,6 +44,7 @@ if ($wiki == 'main') {
     $wgUploadDirectory = "/var/www/html/$wiki/images";
     $wgUploadPath = "/$wiki/images";
     $fsgSolrCore = $wiki;
+    $fs2gSolrCore = $wiki;
 
     global $wgServer;
     $wgForeignFileRepos[] = [

@@ -19,6 +19,7 @@ return array(
     '94e265ce14c952a920a4ea5f7e8e9baa' => $vendorDir . '/mediawiki/parser-hooks/ParserHooks.php',
     '6124b4c8570aa390c21fafd04a26c69f' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
     '23c18046f52bef3eea034657bafda50f' => $vendorDir . '/symfony/polyfill-php81/bootstrap.php',
+    'a1105708a18b76903365ca1c4aa61b02' => $vendorDir . '/symfony/translation/Resources/functions.php',
     '37a3dc5111fe8f707ab4c132ef1dbc62' => $vendorDir . '/guzzlehttp/guzzle/src/functions_include.php',
     'b132fa83088803c4ec005da9be2cb320' => $baseDir . '/extensions/SemanticMediaWiki/includes/GlobalFunctions.php',
     'ec07570ca5a812141189b1fa81503674' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert/Functions.php',

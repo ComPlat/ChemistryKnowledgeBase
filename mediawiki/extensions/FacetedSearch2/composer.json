@@ -1,0 +1,63 @@
+{
+	"name": "diqa/faceted-search-2",
+	"type": "mediawiki-extension",
+	"description": "Enhanced retrieval provides a faceted search for Mediawiki and SMW. It requires a SOLR server as backend.",
+	"keywords": [
+		"Faceted search",
+		"Drilldown",
+		"Enhanced retrieval",
+		"Wiki",
+		"MediaWiki",
+		"SOLR"
+	],
+	"homepage": "https://www.semantic-mediawiki.org/wiki/Enhanced_Retrieval",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Kai Kühn",
+			"homepage": "https://diqa.de",
+			"role": "Core developer"
+		}
+	],
+	"support": {
+		"email": "kuehn@diqa-pm.com",
+		"issues": "https://bugs.diqa-pm.com/"
+	},
+	"require": {
+		"php": ">=7.4.0",
+		"composer/installers": "1.*,>=1.0.1|2.*",
+		"netresearch/jsonmapper": ">=v4.4.1",
+		"nesbot/carbon": "^2.72"
+	},
+	"suggest": {
+
+	},
+	"extra": {
+
+	},
+	"config": {
+		"process-timeout": 0,
+		"allow-plugins": {
+			"composer/installers": true
+		}
+	},
+	"scripts": {
+		"update": "php maintenance/updateBackend.php -v"
+	},
+	"autoload": {
+	"psr-4": {
+		"DIQA\\FacetedSearch2\\": [
+			"src/", "test/"]
+	  }
+    },
+	"require-dev": {
+		"phpunit/phpunit": "^7"
+	},
+	"archive": {
+		"exclude": [
+			"/.git", "/.idea", "/vm-ubuntu", "/test",
+			"/fs-react", "!/fs-react/dist", "/vendor",
+			"/rest.php", "/runTests.sh", "/phpunit", "/composer.lock"
+		]
+	}
+}

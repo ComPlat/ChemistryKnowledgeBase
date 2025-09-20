@@ -1,0 +1,36 @@
+{
+	"@metadata": {
+		"authors": [
+			"DIQA Projektmanagement GmbH"
+		]
+	},
+	"facetedsearch2-desc": "Faceted search",
+	"facetedsearch2": "Faceted search",
+
+	"fs-sort-order": 		"Suchreihenfolge",
+	"fs-score": 			"Relevanz",
+	"fs-newest": 			"Neuester Artikel zuerst",
+	"fs-oldest":  			"Ältester Artikel zuerst",
+	"fs-descending": 	"Artikelname absteigend",
+	"fs-ascending": 	"Artikelname aufsteigend",
+	"fs-results-from-to": 		"Ergebnisse $1 bis $2 von $3",
+	"fs-search-placeholder": 	"Suche...",
+	"fs-search-button": 		"Suche",
+	"fs-link-to-search": 		"Link zur Suche",
+	"fs-no-facets-selected": 	"keine Facetten selektiert",
+	"fs-selected-facets": 		"Selektierte Facetten",
+	"fs-available-properties": 	"Verfügbare Property-Facetten",
+	"fs-available-categories": 	"Verfügbare Kategorie-Facetten",
+	"fs-show-properties": 		"Zeige alle Eigenschaften...",
+	"fs-show-all": 				"Zeige alle...",
+	"fs-is-in-category": 		"liegt in Kategorie",
+	"fs-facet-values":	 		"Facettenwerte",
+	"fs-preview":	 			"Vorschau",
+	"fs-facet-ored-values": 	"Selektieren Sie alle Werte die im Ergebnis auftauchen sollen",
+	"fs-create-article": 		"Erzeuge neue Seite",
+	"fs-remove-all-facets": 	"Entferne all selektierten Facetten",
+	"sort-by-count": 			"Sortiere nach Häufigkeit",
+	"sort-alphabetically": 		"Sortiere alphabetisch",
+	"prefs-Standard-Sortierung-Facetten": "Standard-Sortierung",
+	"prefs-facetedsearch2": 	"FacetedSearch2"
+}
