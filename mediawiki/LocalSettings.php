@@ -476,6 +476,10 @@ $fs2gShowNamespaces=false;
 $fs2gShowArticleProperties=false;
 $fs2gCreateNewPageLink = "/{article}?veaction=edit";
 $fs2gFacetedSearchForMW = false;
+$fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
+    "categoryLabel", "categoryDropDown", "categoryView", "facetView"];
+
+$fs2gDateTimeOffset = 2;
 wfLoadExtension( 'FacetedSearch2' );
 
 #################################################################

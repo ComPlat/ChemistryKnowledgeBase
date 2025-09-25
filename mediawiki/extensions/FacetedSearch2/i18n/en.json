@@ -32,5 +32,6 @@
 	"sort-by-count": "Sort by count",
 	"sort-alphabetically": "Sort alphabetically",
 	"prefs-Standard-Sortierung-Facetten": "Standard sorting",
-	"prefs-facetedsearch2": "FacetedSearch2"
+	"prefs-facetedsearch2": "FacetedSearch2",
+	"fs-copy-search-link": 		"Copy link to clipboard"
 }

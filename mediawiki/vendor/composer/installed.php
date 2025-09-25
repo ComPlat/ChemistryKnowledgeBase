@@ -144,7 +144,7 @@
         'diqa/faceted-search-2' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '7efe6cced36033764da62591eddd9daee7cbb03d',
+            'reference' => '9f8c3e20b4b0e99a54c5235a7ead308db1adbd04',
             'type' => 'mediawiki-extension',
             'install_path' => __DIR__ . '/../../extensions/FacetedSearch2',
             'aliases' => array(

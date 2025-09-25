@@ -168,6 +168,11 @@ class SolrResponseParser {
             if ($property->getType() === Datatype::DATETIME) {
                 $from = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $range[1][0]);
                 $to = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $range[2][0]);
+                global $fs2gDateTimeOffset;
+                if ($fs2gDateTimeOffset > 0) {
+                    $from = $from->addHours($fs2gDateTimeOffset);
+                    $to = $to->addHours($fs2gDateTimeOffset);
+                }
                 $r = new ValueCount(null, null, new Range($from->toIso8601ZuluString(), $to->toIso8601ZuluString()), $count);
             } else if ($property->getType() === Datatype::NUMBER) {
                 $r = new ValueCount(null, null, new Range($range[1][0], $range[2][0]), $count);
@@ -218,6 +223,15 @@ class SolrResponseParser {
                     return new MWTitleWithURL($parts[0], $parts[1], WikiTools::createURLForPage($parts[0]));
                 }, $values));
         } else {
+            global $fs2gDateTimeOffset;
+            if ($type === Datatype::DATETIME) {
+                if ($fs2gDateTimeOffset > 0) {
+                    $values = array_map(function ($v) use ($fs2gDateTimeOffset) {
+                        $datetime = Carbon::createFromIsoFormat("YYYY-MM-DDTHH:mm:ssZ", $v);
+                        return $datetime->addHours($fs2gDateTimeOffset)->toIso8601ZuluString();
+                    }, $values);
+                }
+            }
             return new PropertyFacetValues(
                 new PropertyWithURL($name, $displayTitle,
                     $type,

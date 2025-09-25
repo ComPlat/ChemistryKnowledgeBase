@@ -87,5 +87,10 @@ abstract class BaseQuery {
         return $this;
     }
 
-
+    public function updateQuery(BaseQuery $query) {
+        $this->searchText = $query->getSearchText();
+        $this->propertyFacets = $query->getPropertyFacets();
+        $this->categoryFacets = $query->getCategoryFacets();
+        $this->namespaceFacets = $query->getNamespaceFacets();
+    }
 }

@@ -79,6 +79,7 @@ class SolrRequestClient implements FacetedSearchClient
         }
 
         $statsQuery = new StatsQuery();
+        $statsQuery->updateQuery($q);
         $statsQuery->setStatsProperties($q->getRangeQueries());
         $statsResponse = $this->requestStats($statsQuery);
 
@@ -311,11 +312,18 @@ class SolrRequestClient implements FacetedSearchClient
                     }
                 }
             }
-            if (count($valueConstraints) > 1) {
-                $result = array_merge($result, $propertyConstraints, ["(" . implode(' OR ', $valueConstraints) . ")"]);
+
+            if (count($valueConstraints) > 0) {
+                global $fs2gFacetsWithOR;
+                if (in_array($f->property->getTitle(), $fs2gFacetsWithOR)) {
+                    $result = array_merge($result, $propertyConstraints, ["(" . implode(' OR ', $valueConstraints) . ")"]);
+                } else {
+                    $result = array_merge($result, $propertyConstraints, ["(" . implode(' AND ', $valueConstraints) . ")"]);
+                }
             } else {
                 $result = array_merge($result, $propertyConstraints, $valueConstraints);
             }
+
         }
         return $result;
     }
