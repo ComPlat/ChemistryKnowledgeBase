@@ -16,7 +16,33 @@ class NumericClusterer implements Clusterer
     }
 
 
-    public function makeClusters(int $min, int $max, int $numSteps): array
+    public function makeClusters(float $min, float $max, int $numSteps): array
+    {
+        if ($min === $max) {
+            return [new Range($min, $max)];
+        }
+        if ($this->isInteger) {
+            return $this->makeClustersInteger($min, $max, $numSteps);
+        }
+        $diff =  $max - $min;
+        $values = [];
+        $currVal = $min;
+        $incr =  $diff / $numSteps;
+
+        for ($i = 0; $i < $numSteps; ++$i) {
+            $values[$i] = round($currVal, 2);
+            $currVal += $incr;
+        }
+        $values[$i] = $max;
+        for ($i = 0; $i < count($values) - 1; ++$i) {
+            $values[$i] = new Range($values[$i], $values[$i + 1]);
+        }
+        array_splice($values, count($values) - 1, 1);
+
+        return $values;
+    }
+
+    public function makeClustersInteger(int $min, int $max, int $numSteps): array
     {
         $diff = $max - $min;
         $values = [];
@@ -24,7 +50,7 @@ class NumericClusterer implements Clusterer
         $incr = $diff / $numSteps;
 
         for ($i = 0; $i < $numSteps; ++$i) {
-            $values[$i] = round($currVal, $this->isInteger ? 0 : 2);
+            $values[$i] = round($currVal);
             $currVal += $incr;
         }
         $values[$i] = $max + 1;

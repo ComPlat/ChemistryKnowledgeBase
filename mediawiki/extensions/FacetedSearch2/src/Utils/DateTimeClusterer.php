@@ -19,7 +19,7 @@ class DateTimeClusterer implements Clusterer
 
     private const DATETIME_FORMAT = 'Y-m-d\TH:i:s\Z';
 
-    public function makeClusters(int $min, int $max, int $numSteps): array
+    public function makeClusters(float $min, float $max, int $numSteps): array
     {
         $this->numSteps = $numSteps;
         $this->currentStep = 0;

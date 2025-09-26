@@ -36,12 +36,12 @@ class ConfigTools {
         $fs2gNamespacesToShow = array_intersect($fs2gNamespacesToShow, $allowedNamespaces);
 
         global $fs2gFacetControlOrder;
-        if (count($fs2gFacetControlOrder) === 0) {
+        if (!isset($fs2gFacetControlOrder)) {
             $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
                 "facetView", "categoryLabel", "categoryDropDown", "categoryView"];
         }
         global $fs2gHeaderControlOrder;
-        if (count($fs2gHeaderControlOrder) === 0) {
+        if (!isset($fs2gHeaderControlOrder)) {
             $fs2gHeaderControlOrder = ["sortView", "searchView", "saveSearchLink"];
         }
     }
