@@ -14,13 +14,18 @@ class ParserFunctionParser {
 
         $results = [];
         foreach ($parserFunctionCalls as $c) {
-            $parametersAsStringArray = explode('|', $c);
-            $parametersAsStringArray = array_map(function($e) { return trim($e);}, $parametersAsStringArray);
-            $parameters = self::parseArguments($parametersAsStringArray);
+            $parameters = self::parseArgumentsFromString($c);
             $results[] = $parameters;
         }
 
         return $results;
+    }
+
+    public static function parseArgumentsFromString($parametersAsString): array
+    {
+        $parametersAsStringArray = explode('|', $parametersAsString);
+        $parametersAsStringArray = array_map(function($e) { return trim($e);}, $parametersAsStringArray);
+        return self::parseArguments($parametersAsStringArray);
     }
 
     public static function parseArguments($parametersAsStringArray): array
@@ -42,14 +47,20 @@ class ParserFunctionParser {
         return $parameters;
     }
 
-    public static function serializeFunction($fnName, $params) {
-        $firstParam = $params[''] ?? '';
-        unset($params['']);
+    public static function serializeArguments($parameters): string
+    {
         $keyValues = [];
-        foreach($params as $key => $value) {
+        foreach($parameters as $key => $value) {
             $keyValues[] = "$key=$value";
         }
-        return "{{#$fnName: $firstParam|".join('|', $keyValues)."}}";
+        return join("\n|", $keyValues);
+    }
+
+    public static function serializeFunction($fnName, $params): string
+    {
+        $firstParam = $params[''] ?? '';
+        unset($params['']);
+        return "{{#$fnName: $firstParam|".self::serializeArguments($params)."}}";
     }
 
     public function replaceFunction($wikitext, $fnName, $param, $value, $newParams): string {

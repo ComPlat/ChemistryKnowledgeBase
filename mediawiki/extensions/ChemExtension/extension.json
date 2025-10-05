@@ -179,7 +179,11 @@
             "path": "/ChemExtension/v1/renamePage",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\RenamePage"
-        }
+        },{
+            "path": "/ChemExtension/v1/edit-experiment",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\EditExperiment"
+      }
 
     ],
     "JobClasses": {

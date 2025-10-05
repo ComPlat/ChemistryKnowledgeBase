@@ -33,7 +33,7 @@ class TemplateParser
                     $textInCurrentNode = '';
                 }
                 $newNode = new TemplateNode();
-                $templateName = $this->getTemplateName($i + 2);
+                $templateName = trim($this->getTemplateName($i + 2));
                 $templateIndex = $this->incrementTemplateIndex($templateIndices, $templateName);
                 $newNode->setTemplateName($templateName);
                 $newNode->setTemplateIndex($templateIndex);

@@ -1,3 +1,4 @@
+<div class="experiment-list-container">
 <div>{{$description}}</div>
 @if($htmlTableEditor->getNumberOfRows() == 1)
     <div>No experiment found</div>
@@ -5,7 +6,8 @@
     {!! $htmlTableEditor->toHtml(!$inVisualEditor) !!}
 @endif
 @if(isset($experimentName))
-<div>Investigation-Name: <a target="_blank" href="{{$experimentPageTitle->getFullURL()}}">{{$experimentName}}</a>{!! $exportButton !!}{!! $renameButton !!}{!! $refreshButton !!}
+<div>Investigation-Name: <a target="_blank" href="{{$experimentPageTitle->getFullURL()}}">{{$experimentName}}</a>{!! $exportButton !!}{!! $renameButton !!}{!! $refreshButton !!}{!! $saveButton !!}
 <img class="experiment-help" src="{{$wgScriptPath}}/extensions/ChemExtension/skins/images/question.png" />
 </div>
 @endif
+</div>
