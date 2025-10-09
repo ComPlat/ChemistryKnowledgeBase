@@ -5,6 +5,8 @@ namespace DIQA\ChemExtension\Endpoints;
 use DIQA\ChemExtension\Experiments\ExperimentEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Title\Title;
@@ -15,6 +17,14 @@ class EditExperiment extends SimpleHandler
     public function run()
     {
         try {
+            $user = RequestContext::getMain()->getUser();
+            $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
+            if (!$user->isAllowed('edit') || !in_array('editor', $groups)) {
+                $res = new Response("edit experiment is not allowed");
+                $res->setStatus(403);
+                return $res;
+            }
+
             $jsonBody = $this->getRequest()->getBody();
 
             if (is_null($jsonBody) || trim($jsonBody->__toString()) === '') {
@@ -47,9 +57,13 @@ class EditExperiment extends SimpleHandler
             $wikitext = WikiTools::getText($investigationPageTitle);
             $expEditor = new ExperimentEditor($wikitext, $body->investigationType);
             foreach ($changes as $change) {
-                $expEditor->setValue($change->row, $change->property, $change->value);
+                $property = $change->property;
+                if (str_starts_with($property, "molecule:")) {
+                    $property = substr($property, 9);
+                }
+                $expEditor->setValue($change->row, $property, $change->value);
             }
-            //WikiTools::doEditContent($expPageTitle, $expEditor->serialize(), "auto-updated", EDIT_UPDATE);
+            WikiTools::doEditContent($investigationPageTitle, $expEditor->serialize(), "auto-updated", EDIT_UPDATE);
 
 
             $res = new Response($expEditor->serialize());

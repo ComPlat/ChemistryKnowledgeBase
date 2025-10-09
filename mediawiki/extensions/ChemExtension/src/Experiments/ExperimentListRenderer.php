@@ -164,6 +164,8 @@ class ExperimentListRenderer extends ExperimentRenderer
     }
 
     function userHasEditRights() {
-        return RequestContext::getMain()->getUser()->isAllowed('edit');
+        $user = RequestContext::getMain()->getUser();
+        $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
+        return $user->isAllowed('edit') && in_array('editor', $groups);
     }
 }

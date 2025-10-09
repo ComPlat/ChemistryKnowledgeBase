@@ -78,6 +78,7 @@ class Setup {
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
                 $baseScript . '/ve.oo-ui.title-multi-select-input.js',
+                $baseScript . '/ve.oo-ui.molecule-select-input.js',
                 $baseScript . '/ve.oo.ui.molecule-layout-dialog.js',
 
             ],
