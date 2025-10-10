@@ -150,11 +150,11 @@ class FSIncrementalUpdater  {
      *                   a fatal error to $status.
      */
     public static function onPageDelete(
-            ProperPageIdentity $page,
-            Authority $deleter,
-            string $reason,
-            StatusValue $status,
-            bool $suppress ) {
+        ProperPageIdentity $page,
+        Authority $deleter,
+        string $reason,
+        StatusValue $status,
+        bool $suppress ) {
 
         try {
             FSIndexer::deleteArticleFromIndex($page->getID());

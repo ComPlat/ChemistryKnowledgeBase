@@ -3,8 +3,8 @@
 namespace DIQA\FacetedSearch2\SolrClient;
 
 use Carbon\Carbon;
+use Carbon\CarbonTimeZone;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
-use DIQA\FacetedSearch2\Model\Common\Property;
 use DIQA\FacetedSearch2\Model\Common\Range;
 use DIQA\FacetedSearch2\Model\Response\CategoryFacetCount;
 use DIQA\FacetedSearch2\Model\Response\CategoryFacetValue;
@@ -168,10 +168,13 @@ class SolrResponseParser {
             if ($property->getType() === Datatype::DATETIME) {
                 $from = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $range[1][0]);
                 $to = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $range[2][0]);
-                global $fs2gDateTimeOffset;
-                if ($fs2gDateTimeOffset > 0) {
-                    $from = $from->addHours($fs2gDateTimeOffset);
-                    $to = $to->addHours($fs2gDateTimeOffset);
+                global $fs2gDateTimeZone;
+                if ($fs2gDateTimeZone !== '') {
+                    $tz = CarbonTimeZone::create($fs2gDateTimeZone);
+                    $offsetFromInHours = $tz->getOffset($from)/3600;
+                    $offsetToInHours = $tz->getOffset($to)/3600;
+                    $from = $from->addHours($offsetFromInHours);
+                    $to = $to->addHours($offsetToInHours);
                 }
                 $r = new ValueCount(null, null, new Range($from->toIso8601ZuluString(), $to->toIso8601ZuluString()), $count);
             } else if ($property->getType() === Datatype::NUMBER) {
@@ -223,12 +226,14 @@ class SolrResponseParser {
                     return new MWTitleWithURL($parts[0], $parts[1], WikiTools::createURLForPage($parts[0]));
                 }, $values));
         } else {
-            global $fs2gDateTimeOffset;
+            global $fs2gDateTimeZone;
             if ($type === Datatype::DATETIME) {
-                if ($fs2gDateTimeOffset > 0) {
-                    $values = array_map(function ($v) use ($fs2gDateTimeOffset) {
+                if ($fs2gDateTimeZone !== '') {
+                    $values = array_map(function ($v) use ($fs2gDateTimeZone) {
                         $datetime = Carbon::createFromIsoFormat("YYYY-MM-DDTHH:mm:ssZ", $v);
-                        return $datetime->addHours($fs2gDateTimeOffset)->toIso8601ZuluString();
+                        $tz = CarbonTimeZone::create($fs2gDateTimeZone);
+                        $offsetInHours = $tz->getOffset($datetime)/3600;
+                        return $datetime->addHours($offsetInHours)->toIso8601ZuluString();
                     }, $values);
                 }
             }
