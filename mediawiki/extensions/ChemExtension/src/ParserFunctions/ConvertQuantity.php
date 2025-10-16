@@ -42,7 +42,7 @@ class ConvertQuantity
                 return [GeneralTools::roundNumber($value), 'noparse' => true, 'isHTML' => false];
             }
 
-            $convertedValue = self::convert($parameters['property'], $value, $unit->getString());
+            $convertedValue = self::convert($parameters['property'], $value, $unit);
             return [$convertedValue, 'noparse' => true, 'isHTML' => false];
         } catch (Exception $e) {
             return ['-error on calculation-', 'noparse' => true, 'isHTML' => false];
