@@ -3,20 +3,20 @@ This is the Absorption Emission Spectroscopy experiments template.
 </noinclude>
 <includeonly><table class="wikitable" title="">
 <tr>
-<th title="absorber/emitter">Absorber/Emitter</th>
-<th title="experiment type">experiment type</th>
-<th title="absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Absorption_Emission_Spectroscopy experiments}}]">absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]">absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="emission maximum [{{#defaultQuantity:property=Emission Max|form=Absorption_Emission_Spectroscopy experiments}}]">emission maximum [{{#defaultQuantity:property=Emission Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]">emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="intersection [{{#defaultQuantity:property=Intersection|form=Absorption_Emission_Spectroscopy experiments}}]">intersection [{{#defaultQuantity:property=Intersection|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="solvent">solvent</th>
-<th title="solvent_conc [{{#defaultQuantity:property=Solvent concentration|form=Absorption_Emission_Spectroscopy experiments}}]">solvent concentration [{{#defaultQuantity:property=Solvent concentration|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="temperature [{{#defaultQuantity:property=TemperatureP|form=Absorption_Emission_Spectroscopy experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="E0,0 [{{#defaultQuantity:property=E0|form=Absorption_Emission_Spectroscopy experiments}}]">*E0,0 [{{#defaultQuantity:property=E0|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="absorption coefficient [{{#defaultQuantity:property=Absorption Coefficient|form=Absorption_Emission_Spectroscopy experiments}}]">absorption coefficient [{{#defaultQuantity:property=Absorption Coefficient|form=Absorption_Emission_Spectroscopy experiments}}]</th>
-<th title="details" property="hidden">Details</th>
-<th title="include" property="hidden">include</th>
+<th about="molecule:absorber_emitter" title="absorber/emitter">Absorber/Emitter</th>
+<th about="experiment_type" title="experiment type">experiment type</th>
+<th about="absorption_max" title="absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Absorption_Emission_Spectroscopy experiments}}]">absorption maximum [{{#defaultQuantity:property=Absorption Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="absorption_intensity_max" title="absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]">absorption intensity maximum [{{#defaultQuantity:property=Absorption Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="emission_max" title="emission maximum [{{#defaultQuantity:property=Emission Max|form=Absorption_Emission_Spectroscopy experiments}}]">emission maximum [{{#defaultQuantity:property=Emission Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="emission_intensity_max" title="emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]">emission intensity maximum [{{#defaultQuantity:property=Emission Intensity Max|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="intersection" title="intersection [{{#defaultQuantity:property=Intersection|form=Absorption_Emission_Spectroscopy experiments}}]">intersection [{{#defaultQuantity:property=Intersection|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="molecule:solvent" title="solvent">solvent</th>
+<th about="solvent_conc" title="solvent_conc [{{#defaultQuantity:property=Solvent concentration|form=Absorption_Emission_Spectroscopy experiments}}]">solvent concentration [{{#defaultQuantity:property=Solvent concentration|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="temp" title="temperature [{{#defaultQuantity:property=TemperatureP|form=Absorption_Emission_Spectroscopy experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="-" title="E0,0 [{{#defaultQuantity:property=E0|form=Absorption_Emission_Spectroscopy experiments}}]">*E0,0 [{{#defaultQuantity:property=E0|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="absorption_coefficient" title="absorption coefficient [{{#defaultQuantity:property=Absorption Coefficient|form=Absorption_Emission_Spectroscopy experiments}}]">absorption coefficient [{{#defaultQuantity:property=Absorption Coefficient|form=Absorption_Emission_Spectroscopy experiments}}]</th>
+<th about="details" title="details" property="hidden">Details</th>
+<th about="include" title="include" property="hidden">include</th>
 </tr>
 {{{experiments|}}}
 </table>
