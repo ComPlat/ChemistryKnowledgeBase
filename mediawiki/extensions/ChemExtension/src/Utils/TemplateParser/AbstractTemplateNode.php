@@ -59,6 +59,12 @@ abstract class AbstractTemplateNode
         }
     }
 
+    public function countNodes($templateName): int {
+        $count = 0;
+        $this->visitTemplateNodesWithName(function () use(& $count) { $count++; }, $templateName);
+        return $count;
+    }
+
     public function getFirstNodeOfType($templateName)
     {
         for ($i = 0; $i < count($this->childNodes); $i++) {

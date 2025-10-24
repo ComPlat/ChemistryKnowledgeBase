@@ -54,47 +54,74 @@
             });
         }
 
+        function registerEditFunctionality(e) {
+            let table = $(e.target).closest('table.experiment-list');
+            let td = $(e.target).closest('td');
+            let cellIndex = td.prop('cellIndex');
+            let property = table.find('th').eq(cellIndex).attr('about');
+            if (property === '-') return;
+            let isMolecule = property.startsWith('molecule:');
+            let value = $(e.target).text();
+            $(e.target).empty();
+            let input;
+            if (isMolecule) {
+                let widget = new OO.ui.MoleculeSelectWidget({'value': value});
+                widget.menu.on('choose', (item) => {
+                    editMoleculeValue(item, widget, false);
+                });
+                widget.$input.on('blur', (e) => {
+                    let sameValue = $(e.target).val() === value;
+                    editMoleculeValue({data: value, 'label': value}, widget, sameValue);
+                });
+                input = widget.$element;
+                $(e.target).append(input);
+                widget.$input.focus();
+                widget.$input.select();
+            } else {
+                input = $('<input type="text">').val(value);
+                input.blur((e) => {
+                    editValue(e);
+                });
+                input.keypress((e) => {
+                    if (e.which === 13) {
+                        editValue(e);
+
+                    }
+                });
+                $(e.target).append(input);
+            }
+            input.focus().select();
+        }
+
         $('.experiment-list td')
             .off('click')
             .click((e) => {
-                let table = $(e.target).closest('table.experiment-list');
-                let td = $(e.target).closest('td');
-                let cellIndex = td.prop('cellIndex');
-                let property = table.find('th').eq(cellIndex).attr('about');
-                if (property === '-') return;
-                let isMolecule = property.startsWith('molecule:');
-                let value = $(e.target).text();
-                $(e.target).empty();
-                let input;
-                if (isMolecule) {
-                    let widget = new OO.ui.MoleculeSelectWidget({'value': value});
-                    widget.menu.on('choose', (item) => {
-                        editMoleculeValue(item, widget, false);
-                    });
-                    widget.$input.on('blur', (e) => {
-                        let sameValue = $(e.target).val() === value;
-                        editMoleculeValue({data: value, 'label': value}, widget, sameValue);
-                    });
-                    input = widget.$element;
-                    $(e.target).append(input);
-                    widget.$input.focus();
-                    widget.$input.select();
-                } else {
-                    input = $('<input type="text">').val(value);
-                    input.blur((e) => {
-                        editValue(e);
-                    });
-                    input.keypress((e) => {
-                        if (e.which === 13) {
-                            editValue(e);
-
-                        }
-                    });
-                    $(e.target).append(input);
-                }
-                input.focus().select();
+                registerEditFunctionality(e);
             });
 
+        $('.experiment-list-container').each((i, container) => {
+
+            let newLine = $("<a>").text('Add new line...');
+            let table =  $(container).find('table.experiment-list');
+            newLine.click((e) => {
+                let tr = $('<tr>');
+
+                for (let i = 0; i < table.find('th').length+1; i++) {
+
+                    let cell = $('<td>');
+                    if (i === 0) {
+                        cell.text("-new line-");
+                    }
+                    tr.append(cell);
+                }
+                table.append(tr);
+                activateSaveButton(table.closest('.experiment-list-container'));
+                table.off('click').click((e) => { registerEditFunctionality(e); });
+            });
+
+            table.parent().append(newLine);
+
+        });
     };
 
     let deleteChanges = function (container) {

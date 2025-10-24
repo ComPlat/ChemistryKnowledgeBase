@@ -41,17 +41,32 @@ class ExperimentEditor
         $exp = ExperimentRepository::getInstance()->getExperimentType($this->experimentType);
         $rowTemplateName = str_replace("_", " ", $exp->getRowTemplate());
 
-        $this->experimentNode->visitTemplateNodesWithName(function (TemplateNode $node, $index) use ($row, $property, $value) {
+        $count = $this->experimentNode->countNodes($rowTemplateName);
 
-            if ($index !== $row) {
-                return;
-            }
-            $arguments = ParserFunctionParser::parseArgumentsFromString($node->getTextContent());
+        if ($row > $count-1) {
+
+            // new node
             $arguments[$property] = $value;
             $newText = ParserFunctionParser::serializeArguments($arguments);
-            $node->replaceNode(new TemplateTextNode("\n|$newText\n"), 0);
+            $templateNode = new TemplateNode(false);
+            $templateNode->setTemplateName($rowTemplateName);
+            $templateNode->addNode(new TemplateTextNode("\n|$newText\n"));
+            $this->experimentNode->addNode($templateNode);
 
-        }, $rowTemplateName);
+        } else {
 
+            // existing node
+            $this->experimentNode->visitTemplateNodesWithName(function (TemplateNode $node, $index) use ($row, $property, $value) {
+
+                if ($index !== $row) {
+                    return;
+                }
+                $arguments = ParserFunctionParser::parseArgumentsFromString($node->getTextContent());
+                $arguments[$property] = $value;
+                $newText = ParserFunctionParser::serializeArguments($arguments);
+                $node->replaceNode(new TemplateTextNode("\n|$newText\n"), 0);
+
+            }, $rowTemplateName);
+        }
     }
 }
