@@ -151,7 +151,7 @@
                 }
                 table.append(tr);
                 activateSaveButton(table.closest('.experiment-list-container'));
-                table.off('click').click((e) => { registerEditFunctionality(e); });
+                registerEditors();
             });
 
             table.parent().append(newLine);
