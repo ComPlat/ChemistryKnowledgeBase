@@ -54,6 +54,19 @@
             });
         }
 
+        $('table.wikitable:not(.infobox) th').dblclick((e) => {
+            registerEditors();
+        });
+
+        function selectNext(td, e) {
+            let next = td.next();
+            while (next.hasClass('collapsed-column')) {
+                next = next.next();
+            }
+            next.trigger("click");
+            if(e) e.preventDefault();
+        }
+
         function registerEditFunctionality(e) {
             let table = $(e.target).closest('table.experiment-list');
             let td = $(e.target).closest('td');
@@ -68,10 +81,18 @@
                 let widget = new OO.ui.MoleculeSelectWidget({'value': value});
                 widget.menu.on('choose', (item) => {
                     editMoleculeValue(item, widget, false);
+                    selectNext(td, null);
                 });
                 widget.$input.on('blur', (e) => {
                     let sameValue = $(e.target).val() === value;
                     editMoleculeValue({data: value, 'label': value}, widget, sameValue);
+                });
+                widget.$input.on('keydown', (e) => {
+                    if (e.which === 9 /* tab */) {
+                        let sameValue = $(e.target).val() === value;
+                        editMoleculeValue({data: value, 'label': value}, widget, sameValue);
+                        selectNext(td, e);
+                    }
                 });
                 input = widget.$element;
                 $(e.target).append(input);
@@ -83,9 +104,15 @@
                     editValue(e);
                 });
                 input.keypress((e) => {
-                    if (e.which === 13) {
+                    if (e.which === 13 /* enter */) {
                         editValue(e);
-
+                        selectNext(td, e);
+                    }
+                });
+                input.keydown((e) => {
+                    if (e.which === 9 /* tab */) {
+                        editValue(e);
+                        selectNext(td, e);
                     }
                 });
                 $(e.target).append(input);
@@ -93,11 +120,16 @@
             input.focus().select();
         }
 
-        $('.experiment-list td')
-            .off('click')
-            .click((e) => {
-                registerEditFunctionality(e);
-            });
+        function registerEditors() {
+            $('.experiment-list td')
+                .not('.collapsed-column')
+                .off('click')
+                .click((e) => {
+                    registerEditFunctionality(e);
+                });
+        }
+
+        registerEditors();
 
         $('.experiment-list-container').each((i, container) => {
 
