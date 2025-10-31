@@ -103,7 +103,7 @@
 
             let newLine = $("<img>")
                 .addClass('ce-insert-new-line')
-                .attr('src', mw.config.get('wgScript') + '/extensions/ChemExtension/skins/images/plus.png');
+                .attr('src', mw.config.get('wgScriptPath') + '/extensions/ChemExtension/skins/images/plus.png');
 
             let table =  $(container).find('table.experiment-list');
             newLine.click((e) => {
