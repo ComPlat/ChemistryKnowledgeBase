@@ -176,7 +176,7 @@ mw.loader.using('ext.visualEditor.core').then(function () {
         ve.ui.ChooseExperimentDialog.super.prototype.initialize.call(this);
 
         this.panel = new OO.ui.PanelLayout({'$': this.$, 'scrollable': true, 'padded': true});
-        this.chooseExperimentsWidget = new OO.ui.ChooseExperimentsWidget(this);
+        this.chooseExperimentsWidget = new OO.ui.ChooseExperimentsWidget(this, {mode: 'list'});
         this.panel.$element.append(this.chooseExperimentsWidget.$element);
 
         this.$body.append(this.panel.$element);
