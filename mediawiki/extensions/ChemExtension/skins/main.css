@@ -622,3 +622,9 @@ li.ce-inv-record-item {
     border-radius: 10px;
     border: 3px solid darkblue;
 }
+
+.ce-insert-new-line {
+    margin-top: -10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}

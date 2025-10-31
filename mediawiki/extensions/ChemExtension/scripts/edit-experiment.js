@@ -101,7 +101,10 @@
 
         $('.experiment-list-container').each((i, container) => {
 
-            let newLine = $("<a>").text('Add new line...');
+            let newLine = $("<img>")
+                .addClass('ce-insert-new-line')
+                .attr('src', mw.config.get('wgScript') + '/extensions/ChemExtension/skins/images/plus.png');
+
             let table =  $(container).find('table.experiment-list');
             newLine.click((e) => {
                 let tr = $('<tr>');
