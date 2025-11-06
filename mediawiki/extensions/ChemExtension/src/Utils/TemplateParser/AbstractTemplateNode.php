@@ -20,6 +20,11 @@ abstract class AbstractTemplateNode
         $this->childNodes[] = $node;
     }
 
+    public function replaceNode($node, $index): void
+    {
+        $this->childNodes[$index] = $node;
+    }
+
     public function getFirstChild()
     {
         return reset($this->childNodes);
@@ -42,6 +47,22 @@ abstract class AbstractTemplateNode
             $this->childNodes[$i]->visitNodes($action);
             $action($this->childNodes[$i]);
         }
+    }
+
+    public function visitTemplateNodesWithName(callable $action, $name, & $index = 0): void
+    {
+        for ($i = 0; $i < count($this->childNodes); $i++) {
+            if (($this->childNodes[$i] instanceof TemplateNode) && $this->childNodes[$i]->getTemplateName() === $name) {
+                $this->childNodes[$i]->visitTemplateNodesWithName($action, $name, $index);
+                $action($this->childNodes[$i], $index++);
+            }
+        }
+    }
+
+    public function countNodes($templateName): int {
+        $count = 0;
+        $this->visitTemplateNodesWithName(function () use(& $count) { $count++; }, $templateName);
+        return $count;
     }
 
     public function getFirstNodeOfType($templateName)

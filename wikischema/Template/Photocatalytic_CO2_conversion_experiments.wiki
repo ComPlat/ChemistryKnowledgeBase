@@ -3,46 +3,46 @@ This is the Photocatalytic CO2 conversion experiments template.
 </noinclude>
 <includeonly><table class="wikitable" title="">
 <tr>
-<th title="catalyst">cat</th>
-<th title="catalyst concentration [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]">cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th title="photosensitizer">PS</th>
-<th title="photosensitizer concentration [{{#defaultQuantity:property=Photosensitizer concentration|form=Photocatalytic_CO2_conversion_experiments}}]">PS conc [{{#defaultQuantity:property=Photosensitizer concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th title="electron donor">e-D</th>
-<th title="electron donor concentration [{{#defaultQuantity:property=Electron donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]">e-D conc [{{#defaultQuantity:property=Electron donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="hydrogen donor">H-D</th>
-<th property="hidden" title="hydrogen donor concentration [{{#defaultQuantity:property=Hydrogen donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]">H-D conc [{{#defaultQuantity:property=Hydrogen donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th title="solvent A">solvent A</th>
-<th property="hidden" title="solvent B">solvent B</th>
-<th property="hidden" title="solvent C">solvent C</th>
-<th property="hidden" title="solvent ratio">solv A/B/C</th>
-<th title="additives">additives</th>
-<th property="hidden" title="additives concentration [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]">additives conc [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="feedstock gas">feedstock gas</th>
-<th property="hidden" title="volume of feedstock gas [{{#defaultQuantity:property=Feedstock volume|form=Photocatalytic_CO2_conversion_experiments}}]">feedstock volume [{{#defaultQuantity:property=Feedstock volume|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="light intensity [{{#defaultQuantity:property=Intensity|form=Photocatalytic_CO2_conversion_experiments}}]">intensity [{{#defaultQuantity:property=Intensity|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="pH">pH</th>
-<th property="hidden" title="temperature [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]">T [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th title="irradiation wavelength [{{#defaultQuantity:property=Excitation wavelength|form=Photocatalytic_CO2_conversion_experiments}}]">λexc [{{#defaultQuantity:property=Excitation wavelength|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="irradiation time [{{#defaultQuantity:property=Irradiation_time|form=Photocatalytic_CO2_conversion_experiments}}]">t [{{#defaultQuantity:property=Irradiation_time|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th title="turnover number CO">TON CO</th>
-<th property="hidden" title="turnover frequency CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]">TOF CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="quantum yield CO">Φ CO [%]</th>
-<th title="turnover number CH4">TON CH4</th>
-<th property="hidden" title="turnover frequency CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]">TOF CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="quantum yield CH4">Φ CH4 [%]</th>
-<th title="turnover number H2">TON H2</th>
-<th property="hidden" title="turnover frequency H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]">TOF H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="quantum yield H2">Φ H2 [%]</th>
-<th title="turnover number HCOOH">TON HCOOH</th>
-<th property="hidden" title="turnover frequency HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]">TOF HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="quantum yield HCOOH">Φ HCOOH [%]</th>
-<th title="turnover number MeOH">TON MeOH</th>
-<th property="hidden" title="turnover frequency MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]">TOF MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th property="hidden" title="quantum yield MeOH">Φ MeOH [%]</th>
-<th property="hidden" title="selectivity">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
-<th property="hidden" title="total quantum yield">Φ all [%]</th>
-<th title="details" property="hidden">Details</th>
-<th resource="include" property="hidden" title="include">include</th>
+<th about="molecule:catalyst" title="catalyst">cat</th>
+<th about="cat conc" title="catalyst concentration [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]">cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="molecule:PS" title="photosensitizer">PS</th>
+<th about="PS conc" title="photosensitizer concentration [{{#defaultQuantity:property=Photosensitizer concentration|form=Photocatalytic_CO2_conversion_experiments}}]">PS conc [{{#defaultQuantity:property=Photosensitizer concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="molecule:e-D" title="electron donor">e-D</th>
+<th about="e-D conc" title="electron donor concentration [{{#defaultQuantity:property=Electron donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]">e-D conc [{{#defaultQuantity:property=Electron donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="molecule:H-D" property="hidden" title="hydrogen donor">H-D</th>
+<th about="H-D conc" property="hidden" title="hydrogen donor concentration [{{#defaultQuantity:property=Hydrogen donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]">H-D conc [{{#defaultQuantity:property=Hydrogen donor concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="molecule:solvent A" title="solvent A">solvent A</th>
+<th about="molecule:solvent B" property="hidden" title="solvent B">solvent B</th>
+<th about="molecule:solvent C" property="hidden" title="solvent C">solvent C</th>
+<th about="solvent-ratio" property="hidden" title="solvent ratio">solv A/B/C</th>
+<th about="additives" title="additives">additives</th>
+<th about="additives conc" property="hidden" title="additives concentration [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]">additives conc [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="feedstock gas" property="hidden" title="feedstock gas">feedstock gas</th>
+<th about="feedstock volume" property="hidden" title="volume of feedstock gas [{{#defaultQuantity:property=Feedstock volume|form=Photocatalytic_CO2_conversion_experiments}}]">feedstock volume [{{#defaultQuantity:property=Feedstock volume|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="intensity" property="hidden" title="light intensity [{{#defaultQuantity:property=Intensity|form=Photocatalytic_CO2_conversion_experiments}}]">intensity [{{#defaultQuantity:property=Intensity|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="pH" property="hidden" title="pH">pH</th>
+<th about="Temperature" property="hidden" title="temperature [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]">T [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="λexc" title="irradiation wavelength [{{#defaultQuantity:property=Excitation wavelength|form=Photocatalytic_CO2_conversion_experiments}}]">λexc [{{#defaultQuantity:property=Excitation wavelength|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="irr time" property="hidden" title="irradiation time [{{#defaultQuantity:property=Irradiation_time|form=Photocatalytic_CO2_conversion_experiments}}]">t [{{#defaultQuantity:property=Irradiation_time|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="TON CO" title="turnover number CO">TON CO</th>
+<th about="TOF CO" property="hidden" title="turnover frequency CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]">TOF CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="Φ CO" property="hidden" title="quantum yield CO">Φ CO [%]</th>
+<th about="TON CH4" title="turnover number CH4">TON CH4</th>
+<th about="TOF CH4" property="hidden" title="turnover frequency CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]">TOF CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="Φ CH4" property="hidden" title="quantum yield CH4">Φ CH4 [%]</th>
+<th about="TON H2" title="turnover number H2">TON H2</th>
+<th about="TOF H2" property="hidden" title="turnover frequency H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]">TOF H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="Φ H2" property="hidden" title="quantum yield H2">Φ H2 [%]</th>
+<th about="TON HCOOH" title="turnover number HCOOH">TON HCOOH</th>
+<th about="TOF HCOOH" property="hidden" title="turnover frequency HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]">TOF HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="Φ HCOOH" property="hidden" title="quantum yield HCOOH">Φ HCOOH [%]</th>
+<th about="TON MeOH" title="turnover number MeOH">TON MeOH</th>
+<th about="TOF MeOH" property="hidden" title="turnover frequency MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]">TOF MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="Φ MeOH" property="hidden" title="quantum yield MeOH">Φ MeOH [%]</th>
+<th about="-" property="hidden" title="selectivity">selectivity [%] [CO;CH4;H2;HCOOH;MeOH]</th>
+<th about="-" property="hidden" title="total quantum yield">Φ all [%]</th>
+<th about="details" title="details" property="hidden">Details</th>
+<th about="include" resource="include" property="hidden" title="include">include</th>
 </tr>
 {{{experiments|}}}
 </table>

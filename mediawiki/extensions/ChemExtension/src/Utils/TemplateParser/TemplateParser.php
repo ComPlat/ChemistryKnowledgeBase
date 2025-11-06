@@ -27,13 +27,23 @@ class TemplateParser
         $templateIndices = [];
         $textInCurrentNode = '';
         for ($i = $startIndex; $i < strlen($this->text) - 1; $i++) {
-            if ($this->isTemplateStart($i)) {
+            if ($this->isTemplateParamStart($i)) {
+                $textInCurrentNode .= "{{{";
+                for($j = $i+3; $j < strlen($this->text) - 1; $j++) {
+                    if ($this->isTemplateParamEnd($j)) {
+                        break;
+                    }
+                    $textInCurrentNode .= $this->text[$j];
+                }
+                $textInCurrentNode .= "}}}";
+                $i = $j+2;
+            } else if ($this->isTemplateStart($i)) {
                 if (strlen($textInCurrentNode) > 0) {
                     $node->addNode(new TemplateTextNode($textInCurrentNode));
                     $textInCurrentNode = '';
                 }
                 $newNode = new TemplateNode();
-                $templateName = $this->getTemplateName($i + 2);
+                $templateName = trim($this->getTemplateName($i + 2));
                 $templateIndex = $this->incrementTemplateIndex($templateIndices, $templateName);
                 $newNode->setTemplateName($templateName);
                 $newNode->setTemplateIndex($templateIndex);
@@ -50,6 +60,22 @@ class TemplateParser
 
     }
 
+    private function isTemplateParamStart($i): bool
+    {
+        return $this->text[$i] == '{'
+            && ($this->text[$i + 1] ?? '') == '{'
+            && ($this->text[$i + 2] ?? '') == '{'
+            ;
+    }
+
+    private function isTemplateParamEnd($i): bool
+    {
+        return $this->text[$i] == '}'
+            && ($this->text[$i + 1] ?? '') == '}'
+            && ($this->text[$i + 2] ?? '') == '}'
+            ;
+    }
+
     /**
      * @param $i
      * @return bool
@@ -58,8 +84,6 @@ class TemplateParser
     {
         return $this->text[$i] == '{'
             && ($this->text[$i + 1] ?? '') == '{'
-            && $this->text[$i - 1] !== '{'
-            && ($this->text[$i + 2] ?? '') !== '{'
             ;
     }
 
@@ -71,8 +95,6 @@ class TemplateParser
     {
         return  $this->text[$i] == '}'
             && ($this->text[$i + 1] ?? '') == '}'
-            &&  $this->text[$i - 1] !== '}'
-            && ($this->text[$i + 2] ?? '') !== '}'
             ;
     }
 

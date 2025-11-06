@@ -1,6 +1,8 @@
 <?php
 namespace DIQA\FacetedSearch2\Model\Common;
 
+use DIQA\FacetedSearch2\Utils\WikiTools;
+
 class MWTitle {
 
     public string $title;
@@ -14,7 +16,7 @@ class MWTitle {
     public function __construct(string $title, string $displayTitle)
     {
         $this->title = $title;
-        $this->displayTitle = $displayTitle;
+        $this->displayTitle = WikiTools::stripHtml($displayTitle);
     }
 
     /**

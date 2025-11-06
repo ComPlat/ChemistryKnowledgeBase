@@ -35,7 +35,12 @@
         let experiments = mw.config.get('experiments');
         this.allExperiments = [];
         for (let e in experiments) {
-            this.allExperiments.push({data: e, label: experiments[e].label, type: experiments[e].type});
+            this.allExperiments.push({
+                data: e,
+                label: experiments[e].label,
+                type: experiments[e].type,
+                mode: experiments[e].mode
+            });
         }
 
 
@@ -244,8 +249,8 @@
     }
 
     OO.ui.ChooseExperimentsWidget.prototype.findMenuOptionsOfType = function (type) {
-        return $.grep(this.allExperiments, function (e) {
-            return e.type === type
+        return $.grep(this.allExperiments, (e) => {
+            return e.type === type && e.mode.includes(this.mode);
         });
     }
 

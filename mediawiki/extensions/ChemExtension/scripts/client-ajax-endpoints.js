@@ -9,6 +9,20 @@
 
     };
 
+    window.ChemExtension.AjaxEndpoints.prototype.editExperiment = function (request) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/edit-experiment";
+
+        return $.ajax({
+            method: "POST",
+            datatype: 'json',
+            contentType: "application/json",
+            url: url,
+            data: JSON.stringify(request)
+
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.renamePage = function (oldPageTitle, newPageTitle) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/renamePage";

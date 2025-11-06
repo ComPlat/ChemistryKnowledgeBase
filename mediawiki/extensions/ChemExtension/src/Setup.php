@@ -47,6 +47,7 @@ class Setup {
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
             'scripts' => [
+                $baseScript . '/edit-experiment.js',
                 $baseScript . '/faceted_search.js',
                 $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
@@ -77,6 +78,7 @@ class Setup {
                 $baseScript . '/tagging-selector.js',
                 $baseScript . '/ve.oo-ui.annotate-tool.js',
                 $baseScript . '/ve.oo-ui.title-multi-select-input.js',
+                $baseScript . '/ve.oo-ui.molecule-select-input.js',
                 $baseScript . '/ve.oo.ui.molecule-layout-dialog.js',
 
             ],

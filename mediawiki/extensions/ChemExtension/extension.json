@@ -179,12 +179,17 @@
             "path": "/ChemExtension/v1/renamePage",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\RenamePage"
-        }
+        },{
+            "path": "/ChemExtension/v1/edit-experiment",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\EditExperiment"
+      }
 
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",
         "PublicationImportJob": "DIQA\\ChemExtension\\Jobs\\PublicationImportJob",
+        "PublicationTaggingJob": "DIQA\\ChemExtension\\Jobs\\PublicationTaggingJob",
         "RGroupMaterializationJob": "DIQA\\ChemExtension\\Jobs\\RGroupMaterializationJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageCreationJob",
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Jobs\\LiteratureResolverJob",

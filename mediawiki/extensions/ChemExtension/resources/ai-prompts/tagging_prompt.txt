@@ -1,0 +1,1 @@
+Read the document from the chemistry domain and give a list of tags that describe it properly. This list should be comma-separated.

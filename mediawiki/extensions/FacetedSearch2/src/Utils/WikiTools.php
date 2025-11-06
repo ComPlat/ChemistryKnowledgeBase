@@ -70,4 +70,23 @@ class WikiTools {
         return $userGroups;
     }
 
+    /**
+     * Strip all HTML tags except <b>, <sub>, <sup>, and remove attributes from them.
+     */
+    public static function stripHtml(string $html): string {
+        // Keep only the allowed tags; everything else is stripped
+        $allowed = '<b><sub><sup>';
+        $stripped = strip_tags($html, $allowed);
+
+        // Remove attributes from allowed tags to prevent XSS via attributes
+        $normalized = preg_replace('/<(b|sub|sup)\b[^>]*>/i', '<$1>', $stripped);
+
+        // Optional: decode dangerous entities that could reintroduce tags, then re-strip
+        // (defense-in-depth if input might contain encoded tags like &lt;script&gt;)
+        $decoded = html_entity_decode($normalized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = strip_tags($decoded, $allowed);
+        $decoded = preg_replace('/<(b|sub|sup)\b[^>]*>/i', '<$1>', $decoded);
+
+        return $decoded;
+    }
 }

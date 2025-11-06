@@ -28,7 +28,8 @@ class ExperimentRepository
                 ],
                 'defaultUnits' => [
                     'Additives concentration' => 'M'
-                ]
+                ],
+                'mode' => ['list', 'link']
 
             ],
             'Cyclic_Voltammetry_experiments' => [
@@ -43,7 +44,8 @@ class ExperimentRepository
                 ],
                 'defaultUnits' => [
 
-                ]
+                ],
+                'mode' => ['list', 'link']
             ],
             'Absorption_Emission_Spectroscopy_experiments' => [
                 'label' => 'Absorption Emission Spectroscopy experiments',
@@ -54,7 +56,8 @@ class ExperimentRepository
                 ],
                 'defaultUnits' => [
 
-                ]
+                ],
+                'mode' => ['list', 'link']
             ],
             'Ultraviolett_Visuell_experiments' => [
                 'label' => 'Ultraviolett-Visuell experiments',
@@ -65,7 +68,8 @@ class ExperimentRepository
                 ],
                 'defaultUnits' => [
                     'Additives concentration' => 'mM'
-                ]
+                ],
+                'mode' => ['list', 'link']
             ]
         ];
 

@@ -454,7 +454,7 @@ iframe#mp-ketcher-editor {
 }
 
 span.experiment-link-show-button, span.experiment-link-refresh-button, span.experiment-list-refresh-button, span.experiment-link-export-button,
-span.experiment-list-rename-button
+span.experiment-list-rename-button, span.experiment-list-save-button
 {
     margin-top: 0px;
     margin-left: 10px;
@@ -477,11 +477,10 @@ div.experiment-link-control-bar div:nth-child(2){
 }
 
 span.experiment-link-show-button button, span.experiment-link-refresh-button button, span.experiment-list-refresh-button button, span.experiment-link-export-button button,
-span.experiment-list-rename-button button {
+span.experiment-list-rename-button button,span.experiment-list-save-button button {
     min-height: 1.8em !important;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
-    background: mediumseagreen !important;
     border-color: grey !important;
 }
 
@@ -622,4 +621,10 @@ li.ce-inv-record-item {
     margin-top: 15px;
     border-radius: 10px;
     border: 3px solid darkblue;
+}
+
+.ce-insert-new-line {
+    margin-top: -10px;
+    margin-bottom: 10px;
+    cursor: pointer;
 }

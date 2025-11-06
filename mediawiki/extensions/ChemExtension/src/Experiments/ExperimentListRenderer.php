@@ -109,6 +109,21 @@ class ExperimentListRenderer extends ExperimentRenderer
             ])
         ]);
 
+        $saveButton = new ButtonInputWidget([
+            'classes' => ['chemext-button', 'experiment-list-save-button'],
+            'id' => 'ce-save-investigation-' . $uniqueId,
+            'type' => 'button',
+            'label' => 'Save',
+            'flags' => ['primary', 'progressive'],
+            'title' => 'Save changes to investigation',
+            'disabled' => true,
+            'infusable' => true,
+            'value' => json_encode([
+                'investigationPageTitle' => $experimentPageTitle->getPrefixedText(),
+                'investigationType' =>  $this->context['form'],
+            ])
+        ]);
+
         $refreshButton = new ButtonInputWidget([
             'classes' => ['chemext-button', 'experiment-list-refresh-button'],
             'id' => 'ce-refresh-investigation-' . $uniqueId,
@@ -139,11 +154,18 @@ class ExperimentListRenderer extends ExperimentRenderer
             'exportButton' => WikiTools::isInVisualEditor() ? '' : $exportButton->toString(),
             'refreshButton' => WikiTools::isInVisualEditor() ? '' : $refreshButton->toString(),
             'renameButton' => WikiTools::isInVisualEditor() || !$this->userHasMoveRights() ? '' : $renameButton->toString(),
+            'saveButton' => WikiTools::isInVisualEditor() || !$this->userHasEditRights() ? '' : $saveButton->toString(),
         ]);
 
     }
 
     function userHasMoveRights() {
         return RequestContext::getMain()->getUser()->isAllowed('move');
+    }
+
+    function userHasEditRights() {
+        $user = RequestContext::getMain()->getUser();
+        $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
+        return $user->isAllowed('edit') && in_array('editor', $groups);
     }
 }

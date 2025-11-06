@@ -3,39 +3,39 @@ This is the Cyclic Voltammetry experiments template.
 </noinclude>
 <includeonly><table class="wikitable" title="">
 <tr>
-<th title="analyte (catalyst)">analyte</th>
-<th title="analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Cyclic_Voltammetry_experiments}}]">anl conc [{{#defaultQuantity:property=Analyte concentration|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="E0,0 [{{#defaultQuantity:property=E0|form=Cyclic_Voltammetry_experiments}}]">E<sub>0/0</sub> [{{#defaultQuantity:property=E0|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="E0,0 Type">E<sub>0/0</sub> type</th>
-<th title="E1,2 [eV]">E<sub>1/2</sub> [eV]</th>
-<th title="*ERed [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]">*E<sup>red</sup> [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="*EOx [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]">*E<sup>ox</sup> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="*Redox type">*Redox type</th>
-<th title="ERed1 [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>1</sub> [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="ERed2 [{{#defaultQuantity:property=Ered2|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>2</sub> [{{#defaultQuantity:property=Ered2|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="ERed3 [{{#defaultQuantity:property=Ered3|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>3</sub> [{{#defaultQuantity:property=Ered3|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="EOx1 [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>1</sub> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="EOx2 [{{#defaultQuantity:property=Eox2|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>2</sub> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="EOx3 [{{#defaultQuantity:property=Eox3|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>3</sub> [{{#defaultQuantity:property=Eox3|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="solvent">solvent</th>
-<th title="solvent volume [{{#defaultQuantity:property=Solvent volume|form=Cyclic_Voltammetry_experiments}}]" property="hidden">solvent vol [{{#defaultQuantity:property=Solvent volume|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="electrolyte">electrolyte</th>
-<th title="electrolyte purity">electrolyte purity</th>
-<th title="electrolyte concentration [{{#defaultQuantity:property=Electrolyte concentration|form=Cyclic_Voltammetry_experiments}}]" property="hidden">el conc [{{#defaultQuantity:property=Electrolyte concentration|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="internal reference compound">int ref comp</th>
-<th title="scan rate [{{#defaultQuantity:property=Scan rate|form=Cyclic_Voltammetry_experiments}}]" property="hidden">scan rate [{{#defaultQuantity:property=Scan rate|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="scan number">scan number</th>
-<th title="potential window" property="hidden">potential window</th>
-<th title="scan direction" property="hidden">scan dir</th>
-<th title="gas (atmosphere)">gas</th>
-<th title="temperature [{{#defaultQuantity:property=TemperatureP|form=Cyclic_Voltammetry_experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
-<th title="working electrode (type and material)">WE</th>
-<th title="WE SA [{{#defaultQuantity:property=Working electrode surface area|form=Cyclic_Voltammetry_experiments}}]" property="hidden">WE SA [{{#defaultQuantity:property=Working electrode surface area|form=Cyclic_Voltammetry_experiments}}]</th>
-<th title="counter electrode" property="hidden">CE</th>
-<th title="reference electrode">RE</th>
-<th title="details" property="hidden">Details</th>
-<th title="include" property="hidden">include</th>
+<th about="molecule:anl" title="analyte (catalyst)">analyte</th>
+<th about="anl conc" title="analyte concentration [{{#defaultQuantity:property=Analyte concentration|form=Cyclic_Voltammetry_experiments}}]">anl conc [{{#defaultQuantity:property=Analyte concentration|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e0" title="E0,0 [{{#defaultQuantity:property=E0|form=Cyclic_Voltammetry_experiments}}]">E<sub>0/0</sub> [{{#defaultQuantity:property=E0|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e0_type" title="E0,0 Type">E<sub>0/0</sub> type</th>
+<th about="-" title="E1,2 [eV]">E<sub>1/2</sub> [eV]</th>
+<th about="-" title="*ERed [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]">*E<sup>red</sup> [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="-" title="*EOx [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]">*E<sup>ox</sup> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="redox_type" title="*Redox type">*Redox type</th>
+<th about="e_red1" title="ERed1 [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>1</sub> [{{#defaultQuantity:property=Ered1|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e_red2" title="ERed2 [{{#defaultQuantity:property=Ered2|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>2</sub> [{{#defaultQuantity:property=Ered2|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e_red3" title="ERed3 [{{#defaultQuantity:property=Ered3|form=Cyclic_Voltammetry_experiments}}]">E<sup>red</sup><sub>3</sub> [{{#defaultQuantity:property=Ered3|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e_ox1" title="EOx1 [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>1</sub> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e_ox2" title="EOx2 [{{#defaultQuantity:property=Eox2|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>2</sub> [{{#defaultQuantity:property=Eox1|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="e_ox3" title="EOx3 [{{#defaultQuantity:property=Eox3|form=Cyclic_Voltammetry_experiments}}]">E<sup>ox</sup><sub>3</sub> [{{#defaultQuantity:property=Eox3|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="molecule:solv" title="solvent">solvent</th>
+<th about="solv vol" title="solvent volume [{{#defaultQuantity:property=Solvent volume|form=Cyclic_Voltammetry_experiments}}]" property="hidden">solvent vol [{{#defaultQuantity:property=Solvent volume|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="molecule:electrolyte" title="electrolyte">electrolyte</th>
+<th about="electrolyte purity" title="electrolyte purity">electrolyte purity</th>
+<th about="el conc" title="electrolyte concentration [{{#defaultQuantity:property=Electrolyte concentration|form=Cyclic_Voltammetry_experiments}}]" property="hidden">el conc [{{#defaultQuantity:property=Electrolyte concentration|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="molecule:int ref comp" title="internal reference compound">int ref comp</th>
+<th about="scan rate" title="scan rate [{{#defaultQuantity:property=Scan rate|form=Cyclic_Voltammetry_experiments}}]" property="hidden">scan rate [{{#defaultQuantity:property=Scan rate|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="scan number" title="scan number">scan number</th>
+<th about="potential window" title="potential window" property="hidden">potential window</th>
+<th about="scan dir" title="scan direction" property="hidden">scan dir</th>
+<th about="gas" title="gas (atmosphere)">gas</th>
+<th about="temp" title="temperature [{{#defaultQuantity:property=TemperatureP|form=Cyclic_Voltammetry_experiments}}]" property="hidden">T [{{#defaultQuantity:property=TemperatureP|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="cond" title="condition (wavelength [nm] or dark)" property="hidden">condition [nm]</th>
+<th about="WE" title="working electrode (type and material)">WE</th>
+<th about="WE area" title="WE SA [{{#defaultQuantity:property=Working electrode surface area|form=Cyclic_Voltammetry_experiments}}]" property="hidden">WE SA [{{#defaultQuantity:property=Working electrode surface area|form=Cyclic_Voltammetry_experiments}}]</th>
+<th about="CE" title="counter electrode" property="hidden">CE</th>
+<th about="RE" title="reference electrode">RE</th>
+<th about="details" title="details" property="hidden">Details</th>
+<th about="include" title="include" property="hidden">include</th>
 </tr>
 {{{experiments|}}}
 </table>

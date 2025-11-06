@@ -261,9 +261,9 @@
 			"value": [],
 			"description": "Shows additional configurable links under a search result depending on a category."
 		},
-		"DateTimeOffset": {
-			"value": 0,
-			"description": "Adds an offset in hours to the datatime values"
+		"DateTimeZone": {
+			"value": "Europe/Berlin",
+			"description": "Adds/Subtracts an offset regarding the timezone to the datatime values which are stored in UTC"
 		}
 	},
 	"manifest_version": 2
