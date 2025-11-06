@@ -38,12 +38,12 @@ class AIClient
                     'file' => $fileHandle,
                 ]);
                 if (!isset($response->id) || $response->status !== 'processed') {
-                    $this->logger->error("Could not upload file to OpenAI: $file\n". print_r($response, true));
+                    $this->logger->error("Could not upload file to OpenAI: $file\n" . print_r($response, true));
                     continue;
                 }
                 $ids[] = $response->id;
                 $this->logger->log(sprintf("Uploaded file: %s, id: %s", $response->filename, $response->id));
-            } catch(Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error("Could not upload file to OpenAI: $file");
                 $this->logger->error($e->getMessage());
             }
@@ -51,8 +51,32 @@ class AIClient
         return $ids;
     }
 
-    public function deleteFiles(array $files) {
-        foreach($files as $fileId) {
+    public function uploadTextAsFile($text)
+    {
+        $ids = [];
+
+        $file = tempnam(sys_get_temp_dir(), 'text') . ".txt";
+        file_put_contents($file, $text);
+        print $text;
+        $fileHandle = fopen($file, 'r');
+        $response = $this->client->files()->upload([
+            'purpose' => 'user_data',
+            'file' => $fileHandle,
+        ]);
+        if (!isset($response->id) || $response->status !== 'processed') {
+            $msg = "Could not upload file to OpenAI: $file\n" . print_r($response, true);
+            $this->logger->error($msg);
+            throw new Exception($msg);
+        }
+        $ids[] = $response->id;
+        $this->logger->log(sprintf("Uploaded file: %s, id: %s", $response->filename, $response->id));
+
+        return $ids;
+    }
+
+    public function deleteFiles(array $files)
+    {
+        foreach ($files as $fileId) {
             $response = $this->client->files()->delete($fileId);
             if (!$response->deleted) {
                 $this->logger->warn("File could not be deleted in OpenAI repo: $fileId");
@@ -62,9 +86,36 @@ class AIClient
         }
     }
 
-    public function callAI(array $fileIds, string $prompt) {
+    public function callAI(array $fileIds, string $prompt)
+    {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($fileIds) . "]");
         $content = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        $content[] = [
+            "type" => "input_text",
+            "text" => $prompt,
+        ];
+
+        global $wgOpenAIModel;
+        $response = $this->client->responses()->create([
+                "model" => $wgOpenAIModel ?? "o3",
+                "input" => [
+                    [
+                        "role" => "user",
+                        "content" => $content,
+                    ]
+                ],
+
+            ]
+        );
+        $result = $response->outputText ?? 'no output generated';
+        $this->logger->log("Response from AI: " . $result);
+        return $result;
+    }
+
+    public function callAIWithTextInputs(array $textInputs, string $prompt)
+    {
+        $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($textInputs) . "]");
+        $content = array_map(fn($text) => ["type" => "input_text", "text" => $text], $textInputs);
         $content[] = [
             "type" => "input_text",
             "text" => $prompt,

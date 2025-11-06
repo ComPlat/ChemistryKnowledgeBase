@@ -1,0 +1,4 @@
+<noinclude>
+adds tags as comma-separated list
+</noinclude>
+<includeonly>{{#if: {{{tags|}}} | {{#arraymap:{{{tags|}}}|,|x| [[Tag::x]] }} |n/a}}</includeonly>

@@ -189,6 +189,7 @@
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",
         "PublicationImportJob": "DIQA\\ChemExtension\\Jobs\\PublicationImportJob",
+        "PublicationTaggingJob": "DIQA\\ChemExtension\\Jobs\\PublicationTaggingJob",
         "RGroupMaterializationJob": "DIQA\\ChemExtension\\Jobs\\RGroupMaterializationJob",
         "MoleculePageCreationJob": "DIQA\\ChemExtension\\Jobs\\MoleculePageCreationJob",
         "LiteratureResolverJob": "DIQA\\ChemExtension\\Jobs\\LiteratureResolverJob",
