@@ -10,18 +10,13 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\EditResult;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use Parser;
 use SMW\SemanticData;
 use SMW\Store;
 use StatusValue;
-use Title;
 use WikiPage;
-
-
-if ( !defined( 'MEDIAWIKI' ) ) {
-    die( "This file is part of the Enhanced Retrieval Extension extension. It is not a valid entry point.\n" );
-}
 
 class FSIncrementalUpdater  {
 
@@ -31,7 +26,7 @@ class FSIncrementalUpdater  {
     /**
      * Called when semantic data is refreshed.
      *
-     * @param SMWStore $store
+     * @param Store $store
      * @param SemanticData $semanticData
      * @return bool
      */
@@ -39,12 +34,14 @@ class FSIncrementalUpdater  {
         $wikiTitle = $semanticData->getSubject()->getTitle();
         if (self::shouldCreateUpdateJob()) {
             self::createUpdateJob( $wikiTitle);
+        } else {
+            FSIndexer::indexArticlesWithDependent($wikiTitle);
         }
         return true;
     }
 
     /**
-     * Called when article is saved. Not necessary if namespace of article may contain semantic links.
+     * Called when the article is saved. Not necessary if the namespace of an article may contain semantic links.
      *
      * @param WikiPage $wikiPage
      * @param UserIdentity $user
@@ -65,6 +62,8 @@ class FSIncrementalUpdater  {
         }
         if (self::shouldCreateUpdateJob()) {
             self::createUpdateJob( $wikiTitle);
+        } else {
+            FSIndexer::indexArticlesWithDependent($wikiTitle);
         }
         return true;
 
@@ -167,14 +166,14 @@ class FSIncrementalUpdater  {
 
     /**
      * This method called when a revision is approved.
-     * Only if ApprovedRev extension is installed.
+     * Only if the ApprovedRev extension is installed.
      *
      * @param Parser $parser
      * @param Title $title
      * @param int $rev_id
      * @return bool
      */
-    public static function onRevisionApproved($parser, $title, $rev_id): bool {
+    public static function onRevisionApproved(Parser $parser, $title, $rev_id): bool {
         $store = MediaWikiServices::getInstance()->getRevisionStore();
         $revision = $store->getRevisionByTitle( $title, $rev_id );
         if (is_null($revision)) {
@@ -184,7 +183,7 @@ class FSIncrementalUpdater  {
         $content = $revision->getContent(SlotRecord::MAIN, RevisionRecord::RAW)->serialize();
         try {
 
-            FSIndexer::indexArticleWithText($title, $content);
+            FSIndexer::indexArticlesWithText([$title], $content);
         } catch(Exception $e) {
             wfDebugLog("FacetedSearch2", "Could not update article in Index. Reason: ".$e->getMessage());
         }
@@ -198,7 +197,8 @@ class FSIncrementalUpdater  {
         MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup()->push( $job );
     }
 
-    private static function shouldCreateUpdateJob() {
+    private static function shouldCreateUpdateJob(): bool
+    {
         global $fs2gCreateUpdateJob;
         if (isset($fs2gCreateUpdateJob) && $fs2gCreateUpdateJob === false) {
             return false;

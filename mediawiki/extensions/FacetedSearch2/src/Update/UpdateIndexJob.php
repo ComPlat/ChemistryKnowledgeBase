@@ -4,15 +4,11 @@ namespace DIQA\FacetedSearch2\Update;
 
 use Exception;
 use Job;
-use SMW\DIProperty as SMWDIProperty;
-use SMW\Services\ServicesFactory as ApplicationFactory;
-use WikiPage;
-use Title;
-use SMW\DIWikiPage as SMWDIWikiPage;
+use MediaWiki\Title\Title;
 
 /**
  * Asynchronous updates for Index
- * Updates a page in the backend Index and also updates dependant pages
+ * Update a page in the backend Index and also update dependant pages
  * (= pages with an incoming relation)
  *
  * @author Kai
@@ -42,53 +38,16 @@ class UpdateIndexJob extends Job
         $consoleMode = PHP_SAPI === 'cli' && !defined('UNITTEST_MODE');
         $title = $this->params['title'];
 
-        // when indexing with jobs, we must assure not to create new updating jobs
+        // when indexing with jobs, we must ensure not to create new updating jobs
         global $fs2gCreateUpdateJob;
         $fs2gCreateUpdateJob = false;
 
-        $dependantPages = $this->retrieveDependent($title);
         try {
-
-            $this->updatePageInIndex($title, $consoleMode);
-
-            foreach ($dependantPages as $dp) {
-                $this->updatePageInIndex($dp, $consoleMode);
-            }
-        } catch (Exception $e) {
-            if ($consoleMode) {
-                print sprintf("\tnot indexed, reason: %s \n", $e->getMessage());
-            }
-
-        }
-    }
-
-    private function retrieveDependent($title): array
-    {
-
-        $dependant = [];
-        $subject = SMWDIWikiPage::newFromTitle($title);
-        $store = ApplicationFactory::getInstance()->getStore();
-        $inProperties = $store->getInProperties($subject);
-
-        foreach ($inProperties as $inProperty) {
-            /** @var SMWDIProperty $inProperty */
-            $subjects = $store->getPropertySubjects($inProperty, $subject);
-            foreach ($subjects as $subj) {
-                $dependant[] = $subj->getTitle();
-            }
-        }
-
-        // remove duplicate titles. works because of Title::__toString()
-        return array_unique($dependant);
-    }
-
-    private function updatePageInIndex(Title $title, bool $consoleMode): void
-    {
-        try {
-
             $messages = [];
-            FSIndexer::indexArticle($title, $messages);
+            $xml = FSIndexer::indexArticlesWithDependent($title, $messages);
+            print "\tindexed with xml:\n $xml\n";
             if ($consoleMode && count($messages) > 0) {
+                print "\tindexed with messages:\n";
                 print implode("\t\n", $messages);
             }
         } catch (Exception $e) {
@@ -96,9 +55,6 @@ class UpdateIndexJob extends Job
                 print sprintf("\tnot indexed, reason: %s \n", $e->getMessage());
             }
 
-        }
-        if ($consoleMode) {
-            echo "Updated (Index): $title\n";
         }
     }
 

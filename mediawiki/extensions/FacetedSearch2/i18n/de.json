@@ -16,7 +16,7 @@
 	"fs-results-from-to": 		"Ergebnisse $1 bis $2 von $3",
 	"fs-search-placeholder": 	"Suche...",
 	"fs-search-button": 		"Suche",
-	"fs-link-to-search": 		"Link zur Suche",
+	"fs-link-to-search": 		"Kopiere Link zur Suche",
 	"fs-no-facets-selected": 	"keine Facetten selektiert",
 	"fs-selected-facets": 		"Selektierte Facetten",
 	"fs-available-properties": 	"Verfügbare Property-Facetten",

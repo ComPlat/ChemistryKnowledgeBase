@@ -38,7 +38,7 @@ class ConfigTools {
         global $fs2gFacetControlOrder;
         if (count($fs2gFacetControlOrder) === 0) {
             $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
-                "facetView", "categoryLabel", "categoryDropDown", "categoryView"];
+                "facetView", "categoryLabel", "categoryDropDown", "categoryView", "categoryTree"];
         }
         global $fs2gHeaderControlOrder;
         if (count($fs2gHeaderControlOrder) === 0) {

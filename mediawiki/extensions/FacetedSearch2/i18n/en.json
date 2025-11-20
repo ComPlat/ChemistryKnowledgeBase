@@ -16,7 +16,7 @@
 	"fs-results-from-to": 		"Results $1 to $2 of $3",
 	"fs-search-placeholder": 	"Search...",
 	"fs-search-button": 		"Search",
-	"fs-link-to-search": 		"Link to search",
+	"fs-link-to-search": 		"Copy link to search",
 	"fs-no-facets-selected": 	"no facets selected",
 	"fs-selected-facets": 		"Selected facets",
 	"fs-available-properties": 	"Available property facets",

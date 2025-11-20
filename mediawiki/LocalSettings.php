@@ -417,6 +417,7 @@ $fsgNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION 
 $fsgShowNamespaces=false;
 $fsgShowArticleProperties=false;
 $fsgCreateNewPageLink = "/{article}?veaction=edit";
+$fsgEnableIncrementalIndexer = false;
 wfLoadExtension( 'EnhancedRetrieval' );
 
 
@@ -477,9 +478,10 @@ $fs2gShowArticleProperties=false;
 $fs2gCreateNewPageLink = "/{article}?veaction=edit";
 $fs2gFacetedSearchForMW = false;
 $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
-    "categoryLabel", "categoryDropDown", "categoryView", "facetView"];
+    "categoryLabel", "categoryDropDown", "categoryTree", "categoryView", "facetView"];
 
-$fs2gDateTimeOffset = 2;
+$fs2gShowCategoryTree = true;
+$fs2gTagCloudProperty = "Tag";
 wfLoadExtension( 'FacetedSearch2' );
 
 #################################################################

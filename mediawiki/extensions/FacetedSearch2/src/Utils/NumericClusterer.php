@@ -30,16 +30,18 @@ class NumericClusterer implements Clusterer
         $incr =  $diff / $numSteps;
 
         for ($i = 0; $i < $numSteps; ++$i) {
-            $values[$i] = round($currVal, 2);
+            $values[$i] = $currVal;
             $currVal += $incr;
         }
         $values[$i] = $max;
+        $ranges = [];
         for ($i = 0; $i < count($values) - 1; ++$i) {
-            $values[$i] = new Range($values[$i], $values[$i + 1]);
+            $from = round($values[$i], 2, PHP_ROUND_HALF_UP);
+            $to = round($values[$i + 1], 2, PHP_ROUND_HALF_DOWN);
+            $ranges[$i] = new Range($from, $to);
         }
-        array_splice($values, count($values) - 1, 1);
 
-        return $values;
+        return $ranges;
     }
 
     public function makeClustersInteger(int $min, int $max, int $numSteps): array
@@ -50,16 +52,18 @@ class NumericClusterer implements Clusterer
         $incr = $diff / $numSteps;
 
         for ($i = 0; $i < $numSteps; ++$i) {
-            $values[$i] = round($currVal);
+            $values[$i] = $currVal;
             $currVal += $incr;
         }
-        $values[$i] = $max + 1;
+        $values[$i] = $max;
+        $ranges = [];
         for ($i = 0; $i < count($values) - 1; ++$i) {
-            $values[$i] = new Range($values[$i], $values[$i + 1] - 1);
+            $from = round($values[$i], 0, PHP_ROUND_HALF_UP);
+            $to = round($values[$i + 1], 0, PHP_ROUND_HALF_DOWN);
+            $ranges[$i] = new Range($from, $to);
         }
-        array_splice($values, count($values) - 1, 1);
 
-        return $values;
+        return $ranges;
     }
 
     public function makeClustersWithFixedInterval(int $lowerBound, int $upperBound, int $interval,

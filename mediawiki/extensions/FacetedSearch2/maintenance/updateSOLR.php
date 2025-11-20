@@ -2,12 +2,9 @@
 
 namespace DIQA\FacetedSearch2\Maintenance;
 
-use DIQA\FacetedSearch2\Setup;
-use DIQA\FacetedSearch2\Update\SMWDBReader;
 use DIQA\FacetedSearch2\Update\FSIndexer;
 use MediaWiki\MediaWikiServices;
 use Title;
-use WikiPage;
 
 /**
  * Updates the solr index.
@@ -164,7 +161,10 @@ class UpdateSolr extends \Maintenance
 
         try {
             $messages = [];
-            FSIndexer::indexArticle($title, $messages);
+            $response = FSIndexer::indexArticle($title, $messages);
+            if ($this->hasOption('x')) {
+                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s\n%s", $title->getPrefixedText(), $response);
+            }
             if (count($messages) > 0) {
                 print implode("\t\n", $messages);
             }

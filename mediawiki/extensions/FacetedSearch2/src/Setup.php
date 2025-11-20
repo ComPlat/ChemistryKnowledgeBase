@@ -2,11 +2,10 @@
 
 namespace DIQA\FacetedSearch2;
 
+use MediaWiki\MediaWikiServices;
 use OutputPage;
 use RequestContext;
 use Skin;
-use SMW\DataTypeRegistry;
-use SMWDataItem;
 use SMWDIProperty;
 
 class Setup
@@ -18,13 +17,10 @@ class Setup
         global $wgResourceModules;
         global $IP;
 
+        self::checkIfCompiled();
+
         $basePath = "$IP/extensions/FacetedSearch2";
-        if (file_exists("$basePath/fs-react/public/main.js")) {
-            $reactScript = "fs-react/public/main.js";
-        } else {
-            trigger_error("No compiled react script found");
-            die();
-        }
+        $reactScript = "fs-react/public/main.js";
 
         $wgResourceModules['ext.diqa.facetedsearch2'] = array(
             'localBasePath' => $basePath,
@@ -70,14 +66,14 @@ class Setup
         global $fs2gEnableIncrementalIndexer;
 
         if ($fs2gEnableIncrementalIndexer) {
-            global $wgHooks;
-            $wgHooks['SMW::SQLStore::AfterDataUpdateComplete'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUpdateDataAfter';
-            $wgHooks['UploadComplete'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUploadComplete';
-            $wgHooks['AfterImportPage'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onAfterImportPage';
-            $wgHooks['PageMoveCompleting'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onTitleMoveComplete';
-            $wgHooks['PageDelete'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageDelete';
-            $wgHooks['ApprovedRevsRevisionApproved'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onRevisionApproved';
-            $wgHooks['PageSaveComplete'][] = 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageSaveComplete';
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->register('SMW::SQLStore::AfterDataUpdateComplete', 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUpdateDataAfter');
+            $hookContainer->register('UploadComplete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUploadComplete');
+            $hookContainer->register('AfterImportPage','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onAfterImportPage');
+            $hookContainer->register('PageMoveCompleting','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onTitleMoveComplete');
+            $hookContainer->register('PageDelete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageDelete');
+            $hookContainer->register('ApprovedRevsRevisionApproved','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onRevisionApproved');
+            $hookContainer->register('PageSaveComplete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageSaveComplete');
         }
     }
 

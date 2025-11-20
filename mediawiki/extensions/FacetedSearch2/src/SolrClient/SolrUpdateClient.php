@@ -11,9 +11,10 @@ use Exception;
 class SolrUpdateClient implements FacetedSearchUpdateClient
 {
 
-    public function updateDocument(Document $doc) {
-        $xml = $this->serializeAsXml($doc);
-        $this->updateSOLR($xml);
+    public function updateDocuments(array $docs) {
+
+        $xml = join("\n", array_map(fn($d) => $this->serializeAsXml($d), $docs));
+        $this->updateSOLR("<add>$xml</add>");
         return $xml;
     }
 
@@ -54,11 +55,9 @@ class SolrUpdateClient implements FacetedSearchUpdateClient
         $fields = array_filter($fields, fn($e) => $e !== '');
         $fields = implode("\n\t", $fields);
         return <<<XML
-<add>
     <doc>
         $fields
     </doc>
-</add>
 XML;
 
     }
@@ -145,6 +144,7 @@ XML;
             $headerFields[] = "Content-Type: text/xml";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
             $url = Helper::getSOLRBaseUrl() . "/update?commit=true&overwrite=true&wt=json";
+
             $ch = curl_init($url);
 
 

@@ -65,7 +65,12 @@
 			"path": "/FacetedSearch2/v1/proxy/facets",
 			"method": "POST",
 			"class": "DIQA\\FacetedSearch2\\Endpoints\\FacetQueryEndpoint"
-		}
+		},
+        {
+          "path": "/FacetedSearch2/v1/proxy/category-tree",
+          "method": "POST",
+          "class": "DIQA\\FacetedSearch2\\Endpoints\\CategoryTreeEndpoint"
+        }
 	],
 	"config_prefix": "fs2g",
 	"config": {
@@ -144,10 +149,6 @@
 		"NamespacesToShow": {
 			"value": [],
 			"description": "IDs of namespaces to show. Empty means all namespaces."
-		},
-		"NamespaceConstraint": {
-			"value": [],
-			"description": "Allows certain groups to see only some namespaces"
 		},
 		"ShowArticleProperties": {
 			"value": true,
@@ -264,7 +265,15 @@
 		"DateTimeZone": {
 			"value": "Europe/Berlin",
 			"description": "Adds/Subtracts an offset regarding the timezone to the datatime values which are stored in UTC"
-		}
+		},
+        "TagCloudProperty": {
+            "value": false,
+            "description": "If set to a property name, it shows tag cloud in the left-hand view. The property must be of datatype 'string'."
+        },
+        "ShowCategoryTree": {
+          "value": false,
+          "description": "Shows category tree in the left-hand view."
+        }
 	},
 	"manifest_version": 2
 }

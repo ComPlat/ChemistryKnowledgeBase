@@ -9,10 +9,10 @@ interface FacetedSearchUpdateClient
     /**
      * Creates/Updates a wiki page (=Document) in the index.
      *
-     * @param Document $doc
+     * @param array $docs array of Document objects
      * @return mixed result ignored for now
      */
-    public function updateDocument(Document $doc);
+    public function updateDocuments(array $docs);
 
     /**
      * Deletes a wiki page with the given page-ID from the index
