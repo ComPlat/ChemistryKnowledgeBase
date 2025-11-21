@@ -629,13 +629,3 @@ li.ce-inv-record-item {
     cursor: pointer;
 }
 
-span.tag-cloud-tag {
-    border: blue 1px solid;
-    border-radius: 5px;
-    padding: 2px;
-    margin: 3px !important;
-}
-
-div.fs-tagcloud-container {
-    height: 170px
-}
