@@ -23,17 +23,22 @@ class CategoryNode
 
     static function fromTuples($tuples): CategoryNode
     {
+        global $fs2gCategoryTreeRoot;
         $root = new CategoryNode('__ROOT__');
+        $configuredTreeRoot = NULL;
         foreach ($tuples as $tuple) {
             $fromNode = self::createOrGetNode($tuple['from'], $tuple['from_displaytitle']);
             if (!is_null($tuple['to'])) {
                 $toNode = self::createOrGetNode($tuple['to'], $tuple['to_displaytitle']);
                 $toNode->addChild($fromNode);
+                if (!is_null($fs2gCategoryTreeRoot) && $fs2gCategoryTreeRoot === $toNode->category) {
+                    $configuredTreeRoot = $toNode;
+                }
             } else {
                 $root->addChild($fromNode);
             }
         }
-        return $root;
+        return $configuredTreeRoot ?? $root;
     }
 
     static function createOrGetNode(string $title, ?string $displayTitle): CategoryNode

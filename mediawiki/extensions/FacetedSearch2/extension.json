@@ -273,6 +273,10 @@
         "ShowCategoryTree": {
           "value": false,
           "description": "Shows category tree in the left-hand view."
+        },
+        "CategoryTreeRoot": {
+          "value": "",
+          "description": "Defines the root category of the tree"
         }
 	},
 	"manifest_version": 2

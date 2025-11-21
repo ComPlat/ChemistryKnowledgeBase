@@ -482,6 +482,7 @@ $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCa
 
 $fs2gShowCategoryTree = true;
 $fs2gTagCloudProperty = "Tag";
+$fs2gCategoryTreeRoot = "Topic";
 wfLoadExtension( 'FacetedSearch2' );
 
 #################################################################

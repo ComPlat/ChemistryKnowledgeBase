@@ -37,8 +37,8 @@ SQL;
                 [
                     'from' => $row->from_category,
                     'to' => $row->to_category,
-                    'from_displaytitle' => $row->from_displaytitle,
-                    'to_displaytitle' => $row->to_displaytitle,
+                    'from_displaytitle' => $row->from_displaytitle ?? str_replace("_", " ", $row->from_category),
+                    'to_displaytitle' => $row->to_displaytitle ?? str_replace("_", " ", $row->to_category ?? ''),
                 ];
 
         }
