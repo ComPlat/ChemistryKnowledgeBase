@@ -27,6 +27,7 @@ class autoTagPublications extends \Maintenance
         parent::__construct();
         $this->addDescription('Adds tags to all publications in the Publication category');
         $this->addOption('contains', 'Only process publications that contain this string');
+        $this->addOption('dryrun', 'Does not actually create jobs, just show the list of publications');
     }
 
     /**
@@ -51,8 +52,11 @@ class autoTagPublications extends \Maintenance
                 continue;
             }
             echo "\nProcessing publication: " . $publication->getPrefixedText() . "...";
-            $job = new PublicationTaggingJob($publication);
-            $job->run();
+            if (!$this->hasOption("dryrun")) {
+                $job = new PublicationTaggingJob($publication);
+                $job->run();
+                echo "created job...";
+            }
             echo "done";
         }
         echo "\n";
