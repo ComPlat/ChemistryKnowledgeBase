@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension;
 
+use DIQA\ChemExtension\Jobs\PublicationTaggingJob;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormParser;
@@ -15,13 +16,14 @@ use DIQA\ChemExtension\Utils\TemplateParser\TemplateParser;
 use DIQA\ChemExtension\Utils\TemplateParser\TemplateTextNode;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\EditResult;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
-use Title;
 use User;
 use WikiPage;
 
@@ -43,6 +45,7 @@ class MultiContentSave
         $pageTitle = $revisionRecord->getPageAsLinkTarget();
         self::removeSubpagesIfNecessary($wikiPage, $wikitext);
         self::parseContentAndUpdateIndex($wikitext, $pageTitle, true);
+        self::createTaggingJobIfNecessary($wikiPage->getTitle());;
     }
 
     public static function onArticleDeleteComplete( &$article, User &$user, $reason, $id, $content, \LogEntry
@@ -268,6 +271,21 @@ class MultiContentSave
                 $deletePage->deleteIfAllowed("unused investigation page");
             }
         }
+    }
+
+    private static function createTaggingJobIfNecessary(Title $pageTitle): void
+    {
+        if (RequestContext::getMain()->getUser()->isAnon()) {
+            return;
+        }
+        $contLang = MediaWikiServices::getInstance()->getContentLanguage();
+        $fullCategoryName = $contLang->getNsText( NS_CATEGORY ) . ":Publication";
+        if (!array_key_exists($fullCategoryName, $pageTitle->getParentCategories())) {
+            return;
+        }
+        $job = new PublicationTaggingJob($pageTitle);
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push($job);
     }
 
 }

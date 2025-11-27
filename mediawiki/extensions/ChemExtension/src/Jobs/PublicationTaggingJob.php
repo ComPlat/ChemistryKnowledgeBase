@@ -8,6 +8,7 @@ use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Sanitizer;
 use WikiPage;
@@ -66,6 +67,12 @@ class PublicationTaggingJob extends Job
         if (!$content) {
             throw new Exception("Cannot find content for: " . $this->getTitle()->getPrefixedText());
         }
+
+        // remove existing tags before sending it to AI
+        $te = new TemplateEditor($content->getText());
+        $wikitext = $te->replaceTemplateParameters('Tags', ['tags' => '']);
+        $content = new WikitextContent($wikitext);
+
         $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         $text = Sanitizer::stripAllTags($parserOut->getText() ?? '');
 
