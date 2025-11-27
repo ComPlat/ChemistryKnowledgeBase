@@ -1030,12 +1030,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/kkthek/faceted-search-2.git",
-                "reference": "9eb01419de43625ba567d25b9b8ca9d25b36421b"
+                "reference": "0c34302bb9a089b126ac5ffc4af8db586bc09842"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kkthek/faceted-search-2/zipball/9eb01419de43625ba567d25b9b8ca9d25b36421b",
-                "reference": "9eb01419de43625ba567d25b9b8ca9d25b36421b",
+                "url": "https://api.github.com/repos/kkthek/faceted-search-2/zipball/0c34302bb9a089b126ac5ffc4af8db586bc09842",
+                "reference": "0c34302bb9a089b126ac5ffc4af8db586bc09842",
                 "shasum": ""
             },
             "require": {
@@ -1047,7 +1047,7 @@
             "require-dev": {
                 "phpunit/phpunit": "^7"
             },
-            "time": "2025-11-21T09:31:40+00:00",
+            "time": "2025-11-27T11:00:37+00:00",
             "default-branch": true,
             "type": "mediawiki-extension",
             "installation-source": "dist",

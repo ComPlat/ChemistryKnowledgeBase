@@ -33,14 +33,6 @@ div.fs-boxes {
     align-items: center;
 }
 
-span.tag-cloud-tag {
-    border: blue 1px solid;
-    border-radius: 5px;
-    padding: 2px;
-    margin: 3px !important;
-}
-
-
 @media (min-width: 1000px) {
 
     #fs-content {
@@ -176,6 +168,10 @@ div.demoted {
  */
 span.tag-cloud-tag {
     cursor: pointer;
+    border: blue 1px solid;
+    border-radius: 5px;
+    padding: 2px;
+    margin: 3px !important;
 }
 
 /*
