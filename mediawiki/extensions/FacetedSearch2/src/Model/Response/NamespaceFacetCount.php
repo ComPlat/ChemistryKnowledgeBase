@@ -1,6 +1,8 @@
 <?php
 namespace DIQA\FacetedSearch2\Model\Response;
 
+use DIQA\FacetedSearch2\Utils\WikiTools;
+
 class NamespaceFacetCount
 {
     public int $namespace;
@@ -16,7 +18,7 @@ class NamespaceFacetCount
     public function __construct(int $namespace, string $displayTitle, int $count)
     {
         $this->namespace = $namespace;
-        $this->displayTitle = $displayTitle;
+        $this->displayTitle = WikiTools::stripHtml($displayTitle);
         $this->count = $count;
     }
 

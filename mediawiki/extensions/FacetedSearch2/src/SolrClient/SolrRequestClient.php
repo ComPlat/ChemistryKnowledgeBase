@@ -234,7 +234,15 @@ class SolrRequestClient implements FacetedSearchClient
         );
         $params['fq'] = $fq;
 
-        $params['q.alt'] = $searchText === '' ? 'smwh_search_field:(*)' : self::encodeSearchQuery(preg_split("/\s+/", $searchText));
+        if ($searchText !== '') {
+            if (str_starts_with($searchText, '(') || str_ends_with($searchText, ')')) {
+                $params['q.alt'] = SearchPreprocessor::encodeExpertQuery($searchText);
+            } else {
+                $params['q.alt'] = SearchPreprocessor::encodeSearchQuery($searchText);
+            }
+        } else {
+            $params['q.alt'] = 'smwh_search_field:(*)';
+        }
 
         return $params;
     }
@@ -379,17 +387,6 @@ class SolrRequestClient implements FacetedSearchClient
         }, $sorts);
 
         return implode(", ", $arr);
-    }
-
-    private static function encodeSearchQuery(array $terms): string
-    {
-        $searchTerms = implode(' AND ', $terms);
-        $searchTermsWithPlus = implode(' AND ', array_map(fn($e) => "+$e", $terms));
-
-        return "smwh_search_field:(${searchTermsWithPlus}* ) OR "
-            . "smwh_search_field:(${searchTerms}) OR "
-            . "smwh_title:(${searchTerms}) OR "
-            . "smwh_displaytitle:(${searchTerms})";
     }
 
     private function requestSOLR(array $queryParams)

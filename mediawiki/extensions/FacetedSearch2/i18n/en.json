@@ -4,15 +4,15 @@
 			"DIQA Projektmanagement GmbH"
 		]
 	},
-	"facetedsearch2-desc": "Faceted search",
-	"facetedsearch2": "Faceted search",
+	"facetedsearch2-desc":      "Faceted search",
+	"facetedsearch2":           "Faceted search",
 
-	"fs-sort-order": 		"Sort order",
-	"fs-score": 			"Relevance",
-	"fs-newest": 			"Newest article first",
-	"fs-oldest": 			"Oldest article first",
-	"fs-descending": 	"Page title descending",
-	"fs-ascending": 	"Page title ascending",
+	"fs-sort-order": 		    "Sort order",
+	"fs-score": 			    "Relevance",
+	"fs-newest": 			    "Newest article first",
+	"fs-oldest": 			    "Oldest article first",
+	"fs-descending": 	        "Page title descending",
+	"fs-ascending": 	        "Page title ascending",
 	"fs-results-from-to": 		"Results $1 to $2 of $3",
 	"fs-search-placeholder": 	"Search...",
 	"fs-search-button": 		"Search",
@@ -29,9 +29,13 @@
 	"fs-facet-ored-values": 	"Select all values that should appear in result set",
 	"fs-create-article": 		"Create an article",
 	"fs-remove-all-facets": 	"Remove all selected facets",
-	"sort-by-count": "Sort by count",
-	"sort-alphabetically": "Sort alphabetically",
+	"sort-by-count":            "Sort by count",
+	"sort-alphabetically":      "Sort alphabetically",
 	"prefs-Standard-Sortierung-Facetten": "Standard sorting",
-	"prefs-facetedsearch2": "FacetedSearch2",
-	"fs-copy-search-link": 		"Copy link to clipboard"
+	"prefs-facetedsearch2":     "FacetedSearch2",
+	"fs-copy-search-link": 		"Copy link to clipboard",
+	"fs-filter-property": 		"Filter '$1' values...",
+    "fs-filter-category-tree":  "Filter category tree...",
+    "fs-bool-value-true":       "True",
+    "fs-bool-value-false":      "False"
 }

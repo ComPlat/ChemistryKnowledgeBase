@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Model\Response;
 
+use DIQA\FacetedSearch2\Utils\WikiTools;
+
 class CategoryFacetCount
 {
     public string $category;
@@ -16,7 +18,7 @@ class CategoryFacetCount
     public function __construct(string $category, string $displayTitle, int $count)
     {
         $this->category = $category;
-        $this->displayTitle = $displayTitle;
+        $this->displayTitle = WikiTools::stripHtml($displayTitle);
         $this->count = $count;
     }
 

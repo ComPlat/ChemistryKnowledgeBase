@@ -67,6 +67,10 @@ div.fs-boxes {
         flex-direction: column;
     }
 
+    #fs-searchbar-button {
+        margin-top: 10px;
+    }
+
     #fs-header > div {
         margin-top: 10px;
     }
@@ -114,10 +118,7 @@ div.fs-save-search-link {
     margin-top: 10px;
 }
 
-.fs-search-result-title {
-    font-weight: bold;
 
-}
 
 .fs-annotation-snippet {
     border: grey solid 1px;
@@ -137,10 +138,6 @@ div.demoted {
     background: lightgray;
 }
 
-#fs-result-view-number {
-    color: #666;
-}
-
 /**
  * Facets
  */
@@ -149,19 +146,6 @@ div.demoted {
     flex-direction: column;
 }
 
-.fs-facet-title {
-    color: #1B599B;
-    font-size: 1rem;
-}
-
-.fs-facet-count {
-    color: #666;
-    font-size: 1rem;
-}
-
-#fs-no-facet-selected {
-    color: #666;
-}
 
 /*
  * Tag cloud
@@ -185,7 +169,3 @@ div.fs-or-content {
 }
 
 
-/* global */
-#root a {
-    color: #1B599B;
-}

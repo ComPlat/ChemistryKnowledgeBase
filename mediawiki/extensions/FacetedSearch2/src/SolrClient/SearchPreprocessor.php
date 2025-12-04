@@ -88,4 +88,9 @@ class SearchPreprocessor {
 
         return $queryString;
     }
+
+    public static function encodeExpertQuery($searchText): string
+    {
+        return "smwh_search_field:" . str_replace(":", "\\:", $searchText);
+    }
 }

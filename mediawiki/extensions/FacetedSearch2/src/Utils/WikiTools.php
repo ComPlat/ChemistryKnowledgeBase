@@ -75,7 +75,7 @@ class WikiTools {
      */
     public static function stripHtml(string $html): string {
         // Keep only the allowed tags; everything else is stripped
-        $allowed = '<b><sub><sup>';
+        $allowed = '<b><sub><sup><i><em>';
         $stripped = strip_tags($html, $allowed);
 
         // Remove attributes from allowed tags to prevent XSS via attributes

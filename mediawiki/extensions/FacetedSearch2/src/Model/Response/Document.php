@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Model\Response;
 
+use DIQA\FacetedSearch2\Utils\WikiTools;
+
 class Document
 {
     public string $id;
@@ -41,10 +43,10 @@ class Document
         $this->directCategoryFacets = $directCategoryFacets;
         $this->namespaceFacet = $namespaceFacet;
         $this->title = $title;
-        $this->displayTitle = $displayTitle;
+        $this->displayTitle = WikiTools::stripHtml($displayTitle);
         $this->url = $url;
         $this->score = $score;
-        $this->highlighting = $highlighting;
+        $this->highlighting = WikiTools::stripHtml($highlighting ?? '');
     }
 
 

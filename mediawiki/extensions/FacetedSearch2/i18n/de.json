@@ -7,12 +7,12 @@
 	"facetedsearch2-desc": "Faceted search",
 	"facetedsearch2": "Faceted search",
 
-	"fs-sort-order": 		"Suchreihenfolge",
-	"fs-score": 			"Relevanz",
-	"fs-newest": 			"Neuester Artikel zuerst",
-	"fs-oldest":  			"Ältester Artikel zuerst",
-	"fs-descending": 	"Artikelname absteigend",
-	"fs-ascending": 	"Artikelname aufsteigend",
+	"fs-sort-order": 		    "Suchreihenfolge",
+	"fs-score": 			    "Relevanz",
+	"fs-newest": 			    "Neuester Artikel zuerst",
+	"fs-oldest":  			    "Ältester Artikel zuerst",
+	"fs-descending": 	        "Artikelname absteigend",
+	"fs-ascending": 	        "Artikelname aufsteigend",
 	"fs-results-from-to": 		"Ergebnisse $1 bis $2 von $3",
 	"fs-search-placeholder": 	"Suche...",
 	"fs-search-button": 		"Suche",
@@ -33,5 +33,9 @@
 	"sort-alphabetically": 		"Sortiere alphabetisch",
 	"prefs-Standard-Sortierung-Facetten": "Standard-Sortierung",
 	"prefs-facetedsearch2": 	"FacetedSearch2",
-	"fs-copy-search-link": 		"Link in Zwischenablage kopiert"
+	"fs-copy-search-link": 		"Link in Zwischenablage kopiert",
+    "fs-filter-property": 		"Filtere nach '$1' Werten...",
+    "fs-filter-category-tree":  "Filtere Kategoriebaum...",
+    "fs-bool-value-true":       "Wahr",
+    "fs-bool-value-false":      "Falsch"
 }
