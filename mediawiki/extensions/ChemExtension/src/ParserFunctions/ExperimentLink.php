@@ -5,16 +5,15 @@ namespace DIQA\ChemExtension\ParserFunctions;
 use DIQA\ChemExtension\Experiments\ExperimentLinkRenderer;
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
 use DIQA\ChemExtension\MultiContentSave;
-use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
+use eftec\bladeone\BladeOne;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use Parser;
-use eftec\bladeone\BladeOne;
-use SMW\DataValueFactory;
-use Title;
+use SMW\DIProperty;
 use SMWDataItem;
+use Title;
 
 class ExperimentLink
 {
@@ -116,12 +115,14 @@ class ExperimentLink
         $printRequests = [];
         $properties = $experimentType->getProperties();
         $convertedUnits = [];
-        foreach ($properties as $p => $templateParam) {
-            $defaultUnit = ConvertQuantity::getDefaultUnit($p, $parameters['form']);
-            if (!is_null($defaultUnit)) {
-                $convertedUnits[$templateParam] = $defaultUnit;
+        foreach ($properties as $p => $templateParams) {
+            foreach($templateParams as $templateParam) {
+                $defaultUnit = ConvertQuantity::getDefaultUnit($p, $parameters['form']);
+                if (!is_null($defaultUnit)) {
+                    $convertedUnits[$templateParam] = $defaultUnit;
+                }
+                $printRequests[] = QueryUtils::newPropertyPrintRequest($p, $defaultUnit ?? null);
             }
-            $printRequests[] = QueryUtils::newPropertyPrintRequest($p,  $defaultUnit ?? null);
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
         $results = QueryUtils::executeBasicQuery($selectExperimentQuery, $printRequests, ['sort' => $sort, 'order' => $order]);
@@ -131,28 +132,21 @@ class ExperimentLink
             $oneRow = [];
             while ($column !== false) {
                 $property = $column->getPrintRequest()->getLabel();
-                $templateParam = $properties[$property] ?? null;
+                $templateParams = $properties[$property] ?? null;
                 $dataItem = $column->getNextDataItem();
                 $currentColumn = $column;
                 $column = next($row);
-                if (is_null($templateParam)) continue;
+                if (is_null($templateParams)) continue;
                 if ($dataItem === false) continue;
-                if ($dataItem->getDIType() == SMWDataItem::TYPE_BLOB) {
-                    $oneRow[$templateParam] = $dataItem->getString();
-                } else if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
-                    $oneRow[$templateParam] = $dataItem->getTitle()->getPrefixedText();
-                } else if ($dataItem->getDIType() == SMWDataItem::TYPE_NUMBER) {
-                    if (isset($convertedUnits[$templateParam])) {
-                        $oneRow[$templateParam] = ConvertQuantity::convert($property, $dataItem->getNumber(),$convertedUnits[$templateParam]);
-                    } else {
-                        $oneRow[$templateParam] = $dataItem->getNumber();
-                    }
 
-                } else if ($dataItem->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
-                    $oneRow[$templateParam] = $dataItem->getBoolean();
+                foreach($templateParams as $templateParam) {
+                    if ($dataItem->getDIType() == SMWDataItem::TYPE_WIKIPAGE && $dataItem->getSubobjectName() != "") {
+                        $oneRow[$templateParam] = self::getContextValue($dataItem, $templateParam, $currentColumn, $convertedUnits[$templateParam] ?? null);
+                    } else {
+                        $oneRow[$templateParam] = self::getTemplateValue($dataItem, $convertedUnits[$templateParam] ?? null, $property);
+                    }
                 }
 
-                //FIXME: add other types
             }
             $rows[] = $oneRow;
         }
@@ -199,5 +193,58 @@ class ExperimentLink
             'refs' => RenderLiterature::$LITERATURE_REFS,
             'molecules' => MultiContentSave::$MOLECULES_FOUND
         ];
+    }
+
+    private static function getContextValue(SMWDataItem $dataItem, $property, $currentColumn, $unit)
+    {
+        if (!str_contains($property, "__")) {
+            throw new Exception("$property has wrong syntax");
+        }
+        list($property, $context) = explode("__", $property);
+        $currentColumn->reset();
+        $propertyValue = null;
+        do {
+            $subData = smwfGetStore()->getSemanticData($dataItem);
+            $propertyValues = $subData->getPropertyValues(DIProperty::newFromUserLabel("Context"));
+            $contextValue = reset($propertyValues);
+            if ($contextValue->getString() !== $context) {
+                $dataItem = $currentColumn->getNextDataItem();
+                continue;
+            }
+
+            $propertyValues = $subData->getPropertyValues($subData->getProperties()[ucfirst($property)]);
+            $propertyValue = reset($propertyValues);
+            break;
+
+        } while($dataItem !== false);
+
+        return self::getTemplateValue($propertyValue, $unit, $property);
+    }
+
+    /**
+     * @param mixed $propertyValue
+     * @param $unit
+     * @param string $property
+     * @return mixed|string|void
+     */
+    private static function getTemplateValue(mixed $propertyValue, $unit, string $property): mixed
+    {
+        if (is_null($propertyValue)) {
+            return "-missing context value-";
+        }
+        if ($propertyValue->getDIType() == SMWDataItem::TYPE_WIKIPAGE) {
+            return $propertyValue->getTitle()->getPrefixedText();
+        } else if ($propertyValue->getDIType() == SMWDataItem::TYPE_BLOB) {
+            return $propertyValue->getString();
+        } else if ($propertyValue->getDIType() == SMWDataItem::TYPE_BOOLEAN) {
+            return $propertyValue->getBoolean();
+        } else if ($propertyValue->getDIType() == SMWDataItem::TYPE_NUMBER) {
+            if (!is_null($unit)) {
+                return ConvertQuantity::convert($property, $propertyValue->getNumber(), $unit);
+            } else {
+                return $propertyValue->getNumber();
+            }
+        } else
+            return "-unknown context value-";
     }
 }

@@ -1,0 +1,25 @@
+<noinclude>
+This is the Electrochemical conversion of CO2 experiments template.
+</noinclude>
+<includeonly><tr>
+<td>{{{experiment_type|}}}</td>
+<td>{{DisplayMolecule|{{{catalyst|}}} }}</td>
+<td>{{{cat conc|}}}</td>
+<td>{{{cat fixation|}}}</td>
+<td>{{{cat carrier|}}}</td>
+<td>{{{cell type|}}}</td>
+<td>{{DisplayMolecule|{{{solvent_A__WE|}}} }}</td>
+<td>{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
+<td property="hidden">{{{include|}}}</td>
+
+<td>{{#subobject:
+ |Catalyst={{{catalyst|}}}
+ |Catalyst concentration={{{cat conc|}}}
+ |Catalyst fixation={{{cat fixation|}}}
+ |Catalyst carrier={{{cat carrier|}}}
+ |Cell type={{{cell type|}}}
+ |Solvent A at={{{solvent_A__WE|}}}; WE
+ |Solvent A at={{{solvent_A__CE|}}}; CE
+ |Included={{{include|}}}
+ |BasePageName={{BASEPAGENAME}}
+}}</td></tr></includeonly>

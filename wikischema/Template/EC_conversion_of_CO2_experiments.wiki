@@ -1,0 +1,23 @@
+<noinclude>
+This is the Electrochemical conversion of CO2 experiments template.
+</noinclude>
+<includeonly><table class="wikitable" title="">
+<tr>
+<th about="experiment_type" title="experiment type">experiment type</th>
+<th about="molecule:catalyst" title="catalyst">catalyst</th>
+<th about="cat conc" title="catalyst concentration [{{#defaultQuantity:property=Catalyst concentration|form=EC_conversion_of_CO2_experiments}}]">cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="cat fixation" title="immobilization technique">immobilization technique</th>
+<th about="cat carrier" title="catalyst carrier material (if immobilized)">catalyst carrier material</th>
+<th about="cell type" title="cell type">cell type</th>
+<th about="molecule:solvent_A__WE" title="solvent A (working electrode)">solvent A (WE)</th>
+<th about="molecule:solvent_A__CE" title="solvent A (counter electrode)">solvent A (CE)</th>
+<th about="include" title="include" property="hidden">include</th>
+
+</tr>
+{{{experiments|}}}
+</table>
+{{#set: BelongsToPublication={{BASEPAGENAME}} }}
+[[Category:EC conversion of CO2 experiments]]
+[[Category:EC conversion of CO2 overview experiments]]
+[[Category:Assay]]
+[[Category:Investigation]]</includeonly>

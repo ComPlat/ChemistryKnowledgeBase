@@ -76,9 +76,6 @@ class ExperimentType
         return $this->defaultUnits;
     }
 
-    /**
-     * @return mixed|null
-     */
     public function getProperties()
     {
         $templateText = WikiTools::getText(Title::newFromText($this->rowTemplate, NS_TEMPLATE));
@@ -92,9 +89,12 @@ class ExperimentType
 
         $propertyMapping = [];
         for($i = 0; $i < count($matches[0]); $i++) {
-            $propertyMapping[$matches[1][$i]] = $matches[2][$i];
+            if (!isset($propertyMapping[$matches[1][$i]])) {
+                $propertyMapping[$matches[1][$i]] = [];
+            }
+            $propertyMapping[$matches[1][$i]][] = $matches[2][$i];
         }
-        $propertyMapping['BasePageName'] = 'BasePageName';
+        $propertyMapping['BasePageName'] = ['BasePageName'];
 
         return $propertyMapping;
     }

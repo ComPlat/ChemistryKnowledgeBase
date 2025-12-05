@@ -47,31 +47,37 @@ class ExperimentXlsExporter
         $properties = $experimentType->getProperties();
         $column = 1;
         $exportProperties = [];
-        foreach ($properties as $p => $templateParam) {
+        foreach ($properties as $p => $templateParams) {
             $printRequest = QueryUtils::newPropertyPrintRequest($p);
-            $exportProperties[] = [
-                'property' => $p,
-                'type' => $printRequest->getTypeID(),
-                'templateParam' => $templateParam,
-            ];
-            if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
-                $this->workSheet->setCellValue([$column, 1], $p."_inchikey");
-            } else {
-                $unit = ConvertQuantity::getDefaultUnit($p, $this->parameters['form']);
-                $propertyTitle = Title::newFromText($p, SMW_NS_PROPERTY);
-                $displayTitle = QueryUtils::getDisplayTitle($propertyTitle);
-                $cellValue = is_null($unit) ? $displayTitle : "$displayTitle [$unit]";
-                $this->workSheet->setCellValue([$column, 1], $cellValue);
+            foreach($templateParams as $templateParam) {
+                $exportProperties[] = [
+                    'property' => $p,
+                    'type' => $printRequest->getTypeID(),
+                    'templateParam' => $templateParam,
+                ];
 
-            }
-            $this->setBackgroundColor($column, 'ffff00');
+                if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
+                    $cellValue = $p . "_inchikey";
+                    $cellValue .= " <$templateParam>";
+                    $this->workSheet->setCellValue([$column, 1], $cellValue);
+                } else {
+                    $unit = ConvertQuantity::getDefaultUnit($p, $this->parameters['form']);
+                    $propertyTitle = Title::newFromText($p, SMW_NS_PROPERTY);
+                    $displayTitle = QueryUtils::getDisplayTitle($propertyTitle);
+                    $cellValue = is_null($unit) ? $displayTitle : "$displayTitle [$unit]";
+                    $cellValue .= " <$templateParam>";
+                    $this->workSheet->setCellValue([$column, 1], $cellValue);
 
-            if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
-                $column++;
-                $this->workSheet->setCellValue([$column, 1], $p. self::MOLFILE_SUFFIX);
+                }
                 $this->setBackgroundColor($column, 'ffff00');
+
+                if ($printRequest->getTypeID() === '_wpg' && $p !== 'BasePageName') {
+                    $column++;
+                    $this->workSheet->setCellValue([$column, 1], $p . self::MOLFILE_SUFFIX);
+                    $this->setBackgroundColor($column, 'ffff00');
+                }
+                $column++;
             }
-            $column++;
         }
 
         $rowIndex = 2;

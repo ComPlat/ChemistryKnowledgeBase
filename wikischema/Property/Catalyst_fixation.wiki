@@ -1,0 +1,5 @@
+;Purpose
+* Denotes the catalyst immobilization technique
+
+;Datatype
+* [[Has type::String]]

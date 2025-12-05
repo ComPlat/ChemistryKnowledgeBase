@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\PublicationImport;
 
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
+use DIQA\ChemExtension\Utils\ArrayTools;
 use DIQA\ChemExtension\Utils\QueryUtils;
 
 class ExperimentWikitextImporter {
@@ -116,6 +117,7 @@ QUERY;
         foreach($allTypes as $type) {
             $experimentType = ExperimentRepository::getInstance()->getExperimentType($type);
             $templateParamNames = array_values($experimentType->getProperties());
+            $templateParamNames = ArrayTools::flatten($templateParamNames);
             $numOfMatches[$type] = count(array_intersect($templateParamNames, $headerFields));
         }
         $value = max($numOfMatches);
