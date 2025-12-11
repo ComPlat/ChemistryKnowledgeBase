@@ -66,3 +66,4 @@ mediawiki/*.sql
 
 mediawiki/LocalSettings.php
 vm/Vagrantfile
+/mediawiki/tests/phpunit/.phpunit.result.cache
