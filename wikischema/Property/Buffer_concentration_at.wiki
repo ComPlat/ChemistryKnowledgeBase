@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the buffer concentration under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Buffer concentration; Context]]
+
+; Values
+* see [[Property:Buffer concentration]]
+

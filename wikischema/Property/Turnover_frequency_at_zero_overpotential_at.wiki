@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the turnover frequency at zero overpotential under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Turnover frequency at zero overpotential; Context]]
+
+; Values
+* see [[Property:Turnover frequency at zero overpotential]]
+

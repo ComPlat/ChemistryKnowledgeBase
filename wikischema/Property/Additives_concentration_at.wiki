@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the additives concentration under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Additives concentration; Context]]
+
+; Values
+* see [[Property:Additives concentration]]
+

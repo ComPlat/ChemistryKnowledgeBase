@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the faradaic efficiency under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Faradaic efficiency; Context]]
+
+; Values
+* see [[Property:Faradaic efficiency]]
+

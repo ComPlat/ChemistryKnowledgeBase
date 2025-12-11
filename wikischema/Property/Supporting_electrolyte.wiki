@@ -1,0 +1,9 @@
+; Purpose
+* [[Property description::Contains a string describing the supporting electrolyte used in an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::string]].
+
+; Values
+* A String.
+

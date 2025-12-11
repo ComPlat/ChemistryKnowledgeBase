@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the maximum frequency under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Maximum turnover frequency; Context]]
+
+; Values
+* see [[Property:Maximum turnover frequency]]
+

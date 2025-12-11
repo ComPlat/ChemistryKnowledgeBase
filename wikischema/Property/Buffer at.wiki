@@ -1,0 +1,10 @@
+; Purpose
+* [[Property description::Contains a string describing the buffer under a given context.@en]]
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Buffer; Context]]
+
+; Values
+* see [[Property:Buffer]]
+

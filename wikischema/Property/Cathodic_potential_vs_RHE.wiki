@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the cathodic potential vs RHE
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 V]]
+
+; Unit
+* [[Display units::V]]
+

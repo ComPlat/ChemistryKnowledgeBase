@@ -1,0 +1,10 @@
+; Purpose
+* [[Property description::Contains the molecule used as a solvent B in an experiment under context.@en]]
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Solvent B; Context]]
+
+; Values
+* Input fields for solvent should be restricted to pages from the category [[:Category:Molecule|Molecule]].
+

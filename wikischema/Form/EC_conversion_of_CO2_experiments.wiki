@@ -14,46 +14,47 @@ Experiments:
 ! experimental / calculated:
 | {{{field|experiment_type|input type=dropdown|property=Experiment Type}}}
 |-
-! cat:
+! catalyst information:
+|-
+| catalyst
 | {{{field|catalyst|input type=combobox|property=Catalyst|values from url=molecule_lookup_cat}}}
-| cat conc [{{#defaultQuantity:property=Catalyst concentration|form=EC conversion of CO2 experiments}}]:
+| cat conc [{{#defaultQuantity:property=Catalyst concentration|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|cat conc|input type=regexp|property=Catalyst concentration|base type=Number|message=Input a positive number [µM]|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
 | immobilization technique:
 | {{{field|cat fixation|input type=text|property=Catalyst fixation}}}
 | catalyst carrier material:
 | {{{field|cat carrier|input type=text|property=Catalyst carrier}}}
 |-
+! cell setup:
+|-
+| cell type:
+| {{{field|cell type|input type=text|property=Cell type}}}
 | separator:
 | {{{field|separator|input type=text|property=Separator}}}
 |-
 | working electrode:
 | {{{field|RE|property=Working electrode|input type=dropdown}}}
-|-
 | counter electrode:
 | {{{field|RE|property=Counter electrode|input type=dropdown}}}
 |-
 | reference electrode:
 | {{{field|RE|property=Reference electrode|input type=dropdown}}}
 |-
-! solvent A (working electrode):
-| {{{field|solvent_A__WE|label=solvent A at|input type=combobox|values from category=Solvent}}}
+!electrolyte and solvent composition
 |-
-! solvent A (counter electrode):
+| solvent A (working electrode):
+| {{{field|solvent_A__WE|label=solvent A at|input type=combobox|values from category=Solvent}}}
+| solvent A (counter electrode):
 | {{{field|solvent_A__CE|label=solvent A at|input type=combobox|values from category=Solvent}}}
 |-
-! solvent B (working electrode):
+| solvent B (working electrode):
 | {{{field|solvent_B_WE|label=solvent B|input type=combobox|values from category=Solvent}}}
+| solvent B (counter electrode):
+| {{{field|solvent_B_CE|label=solvent C|input type=combobox|values from category=Solvent}}}
 |-
-! solvent C (working electrode):
-| {{{field|solvent_C_WE|label=solvent C|input type=combobox|values from category=Solvent}}}
-|-
-! solvent-ratio [SolvA/SolvB]:
+| solvent-ratio [SolvA/SolvB]:
 | {{{field|solvent_ratio|label=solvent-ratio [SolvA/SolvB]|input type=string}}}
-|-
-
-
-! Cell type:
-| {{{field|cell type|input type=combobox|property=Cell type|values from url=cell_type_lookup}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)

@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the limiting turnover frequency
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 Hz]]
+
+; Unit
+* [[Display units::Hz]]
+

@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the supporting electrolyte concentration under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Supporting electrolyte concentration; Context]]
+
+; Values
+* see [[Property:Supporting electrolyte concentration]]
+

@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the faradaic amount of a substance
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 F]]
+
+; Unit
+* [[Display units::F]]
+

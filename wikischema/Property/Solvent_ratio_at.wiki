@@ -1,0 +1,10 @@
+; Purpose
+* [[Property description::Contains a string describing the solvent ratio of an experiment or molecular process.@en]]
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Text; Context]]
+
+; Values
+* A string describing the solvent ratio.
+

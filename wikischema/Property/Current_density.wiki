@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the current density of a substance.
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 mA/cm²]]
+
+; Unit
+* [[Display units::mA/cm²]]
+

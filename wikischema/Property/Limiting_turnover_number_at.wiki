@@ -1,0 +1,10 @@
+; Purpose
+* Denotes the limiting frequency under a given context.
+
+; Datatype
+* [[Has type::Record]].
+* [[Has fields::Limiting turnover frequency; Context]]
+
+; Values
+* see [[Property:Limiting turnover frequency]]
+

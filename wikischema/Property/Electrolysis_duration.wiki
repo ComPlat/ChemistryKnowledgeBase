@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the electrolysis duration
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 h]]
+
+; Unit
+* [[Display units::h]]
+
