@@ -212,8 +212,12 @@ class ExperimentLink
                 continue;
             }
 
-            $propertyValues = $subData->getPropertyValues($subData->getProperties()[ucfirst($property)]);
-            $propertyValue = reset($propertyValues);
+            if (array_key_exists(ucfirst($property), $subData->getProperties())) {
+                $propertyValues = $subData->getPropertyValues($subData->getProperties()[ucfirst($property)]);
+                $propertyValue = reset($propertyValues);
+            } else {
+                return "";
+            }
             break;
 
         } while($dataItem !== false);

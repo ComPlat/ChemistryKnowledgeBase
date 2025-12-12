@@ -51,10 +51,152 @@ Experiments:
 | solvent B (working electrode):
 | {{{field|solvent_B_WE|label=solvent B|input type=combobox|values from category=Solvent}}}
 | solvent B (counter electrode):
-| {{{field|solvent_B_CE|label=solvent C|input type=combobox|values from category=Solvent}}}
+| {{{field|solvent_B_CE|label=solvent B|input type=combobox|values from category=Solvent}}}
+|-
+| solvent C (working electrode):
+| {{{field|solvent_C_WE|label=solvent C|input type=combobox|values from category=Solvent}}}
+| solvent C (counter electrode):
+| {{{field|solvent_C_CE|label=solvent C|input type=combobox|values from category=Solvent}}}
 |-
 | solvent-ratio [SolvA/SolvB]:
 | {{{field|solvent_ratio|label=solvent-ratio [SolvA/SolvB]|input type=string}}}
+|-
+| additives (working electrode):
+| {{{field|additives__WE|label=Additives at|input type=combobox|values from property=Additives}}}
+| additives conc (working electrode):
+| {{{field|additives_concentration__WE|label=Additives concentration at|input type=text}}}
+|-
+| additives (counter electrode):
+| {{{field|additives__CE|label=Additives at|input type=combobox|values from property=Additives}}}
+| additives conc (counter electrode):
+| {{{field|additives_concentration__CE|label=Additives concentration at|input type=text}}}
+|-
+| buffer (working electrode):
+| {{{field|buffer__WE|label=Buffer at|input type=combobox|values from property=Buffer}}}
+| buffer conc (working electrode):
+| {{{field|buffer_concentration__WE|label=Buffer concentration at|input type=text}}}
+|-
+| buffer (counter electrode):
+| {{{field|buffer__CE|label=Buffer at|input type=combobox|values from property=Buffer}}}
+| buffer conc (counter electrode):
+| {{{field|buffer_concentration__CE|label=Buffer concentration at|input type=text}}}
+|-
+| supporting electrolyte (working electrode):
+| {{{field|supporting_electrolyte__WE|label=Supporting electrolyte at|input type=combobox|values from property=Supporting electrolyte}}}
+| supporting electrolyte conc (working electrode):
+| {{{field|supporting_electrolyte_concentration__WE|label=Supporting electrolyte concentration at|input type=text}}}
+|-
+| supporting electrolyte (counter electrode):
+| {{{field|supporting_electrolyte__CE|label=Supporting electrolyte at|input type=combobox|values from property=Supporting electrolyte}}}
+| supporting electrolyte conc (counter electrode):
+| {{{field|supporting_electrolyte_concentration__CE|label=Supporting electrolyte concentration at|input type=text}}}
+|-
+| pH:
+| {{{field|pH|label=pH|input type=string}}}
+|-
+! reaction parameters:
+|-
+| current density [{{#defaultQuantity:property=Current density|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|current density|input type=text|property=Current density}}}
+| cathodic potential vs. RHE [{{#defaultQuantity:property=Cathodic potential vs RHE|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|cathodic potential|input type=text|property=Cathodic potential vs RHE}}}
+|-
+| faradaic amount [{{#defaultQuantity:property=Faradaic amount|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|faradaic amount|property=Faradaic amount|input type=text}}}
+| electrolysis duration [{{#defaultQuantity:property=Electrolysis duration|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|electrolysis duration|property=Electrolysis duration|input type=text}}}
+|-
+! catalyst performance / product analysis:
+|-
+| Limiting turnover number CO:
+| {{{field|limiting_turnover_number__CO|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency CO [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|maximum_turnover_frequency__CO|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential CO [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__CO|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency CO [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| {{{field|faradaic_efficiency__CO|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number HCOOH:
+| {{{field|limiting_turnover_number__HCOOH|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency HCOOH [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_HCOOH2_experiments}}]:
+| {{{field|maximum_turnover_frequency__HCOOH|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential HCOOH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_HCOOH2_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__HCOOH|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency HCOOH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_HCOOH2_experiments}}]:
+| {{{field|faradaic_efficiency__HCOOH|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number H2C2O4:
+| {{{field|limiting_turnover_number__H2C2O4|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency H2C2O4 [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_H2C2O42_experiments}}]:
+| {{{field|maximum_turnover_frequency__H2C2O4|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential H2C2O4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_H2C2O42_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__H2C2O4|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency H2C2O4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_H2C2O42_experiments}}]:
+| {{{field|faradaic_efficiency__H2C2O4|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number H2CO:
+| {{{field|limiting_turnover_number__H2CO|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency H2CO [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_H2CO2_experiments}}]:
+| {{{field|maximum_turnover_frequency__H2CO|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential H2CO [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_H2CO2_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__H2CO|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency H2CO [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_H2CO2_experiments}}]:
+| {{{field|faradaic_efficiency__H2CO|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number CH3OH:
+| {{{field|limiting_turnover_number__CH3OH|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency CH3OH [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_CH3OH2_experiments}}]:
+| {{{field|maximum_turnover_frequency__CH3OH|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential CH3OH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CH3OH2_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__CH3OH|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency CH3OH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CH3OH2_experiments}}]:
+| {{{field|faradaic_efficiency__CH3OH|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number H2:
+| {{{field|limiting_turnover_number__H2|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency H2 [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_H22_experiments}}]:
+| {{{field|maximum_turnover_frequency__H2|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential H2 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_H22_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__H2|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency H2 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_H22_experiments}}]:
+| {{{field|faradaic_efficiency__H2|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number CH4:
+| {{{field|limiting_turnover_number__CH4|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency CH4 [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_CH42_experiments}}]:
+| {{{field|maximum_turnover_frequency__CH4|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential CH4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CH42_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__CH4|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency CH4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CH42_experiments}}]:
+| {{{field|faradaic_efficiency__CH4|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number C2H4:
+| {{{field|limiting_turnover_number__C2H4|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency C2H4 [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_C2H42_experiments}}]:
+| {{{field|maximum_turnover_frequency__C2H4|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential C2H4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_C2H42_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__C2H4|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency C2H4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_C2H42_experiments}}]:
+| {{{field|faradaic_efficiency__C2H4|property=Faradaic efficiency|input type=text}}}
+|-
+| Limiting turnover number CH3CH2OH:
+| {{{field|limiting_turnover_number__CH3CH2OH|input type=text|property=Limiting turnover number}}}
+| Maximum turnover frequency CH3CH2OH [{{#defaultQuantity:property=Maximum turnover frequency|form=EC_conversion_of_CH3CH2OH2_experiments}}]:
+| {{{field|maximum_turnover_frequency__CH3CH2OH|input type=text|property=Maximum turnover frequency}}}
+|-
+| Turnover frequency at zero overpotential CH3CH2OH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CH3CH2OH2_experiments}}]:
+| {{{field|turnover_frequency_at_zero_overpotential__CH3CH2OH|property=Turnover frequency at zero overpotential|input type=text}}}
+| Faradaic efficiency CH3CH2OH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CH3CH2OH2_experiments}}]:
+| {{{field|faradaic_efficiency__CH3CH2OH|property=Faradaic efficiency|input type=text}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)

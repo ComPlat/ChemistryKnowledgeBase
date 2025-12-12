@@ -128,11 +128,11 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Buffer at={{{buffer__CE|}}}; CE
  |Buffer concentration at={{{buffer_concentration__CE|}}}; CE
 
- |Electrolyte at={{{supporting_electrolyte__WE|}}}; WE
- |Electrolyte concentration at={{{supporting_electrolyte_concentration__WE|}}}; WE
+ |Supporting electrolyte at={{{supporting_electrolyte__WE|}}}; WE
+ |Supporting electrolyte concentration at={{{supporting_electrolyte_concentration__WE|}}}; WE
 
- |Electrolyte at={{{supporting_electrolyte__CE|}}}; CE
- |Electrolyte concentration at={{{supporting_electrolyte_concentration__CE|}}}; CE
+ |Supporting electrolyte at={{{supporting_electrolyte__CE|}}}; CE
+ |Supporting electrolyte concentration at={{{supporting_electrolyte_concentration__CE|}}}; CE
 
  |pH={{{pH|}}}
  |Current density={{{current density|}}}

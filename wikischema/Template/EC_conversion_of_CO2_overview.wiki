@@ -1,23 +1,97 @@
 <noinclude>
-This is the Electrochemical conversion of CO2 experiments template.
+This is the Electrochemical conversion of CO2 overview experiments template.
 </noinclude>
 <includeonly><tr>
 <td>{{{experiment_type|}}}</td>
 <td>{{DisplayMolecule|{{{catalyst|}}} }}</td>
 <td>{{{cat conc|}}}</td>
 <td>{{{cell type|}}}</td>
+
+<td>{{{working electrode|}}}</td>
+<td>{{{counter electrode|}}}</td>
+<td>{{{reference electrode|}}}</td>
+
 <td>{{DisplayMolecule|{{{solvent_A__WE|}}} }}</td>
 <td>{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
-<td property="hidden">{{{include|}}}</td>
+
+<td>{{{additives__WE|}}}</td>
+<td>{{{supporting_electrolyte__WE|}}}</td>
+
+<td property="hidden">{{{pH|}}}</td>
+
+<td>{{{current density|}}}</td>
+<td>{{{cathodic potential|}}}</td>
+<td>{{{faradaic amount|}}}</td>
+<td>{{{electrolysis duration|}}}</td>
+
+<td property="hidden">{{{limiting_turnover_number__CO|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__HCOOH|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__H2C2O4|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__H2CO|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__CH3OH|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__H2|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__CH4|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__C2H4|}}}</td>
+<td property="hidden">{{{limiting_turnover_number__CH3CH2OH|}}}</td>
+
+<td property="hidden">{{{maximum_turnover_frequency__CO|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__HCOOH|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__H2C2O4|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__H2CO|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__CH3OH|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__H2|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__CH4|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__C2H4|}}}</td>
+<td property="hidden">{{{maximum_turnover_frequency__CH3CH2OH|}}}</td>
+
+
+<td property="hidden">{{#calculateSelectivity:
+|{{{limiting_turnover_number__CO|0}}}
+|{{{limiting_turnover_number__HCOOH|0}}}
+|{{{limiting_turnover_number__H2C2O4|0}}}
+|{{{limiting_turnover_number__H2CO|0}}}
+|{{{limiting_turnover_number__CH3OH|0}}}
+|{{{limiting_turnover_number__H2|0}}}
+|{{{limiting_turnover_number__CH4|0}}}
+|{{{limiting_turnover_number__C2H4|0}}}
+|{{{limiting_turnover_number__CH3CH2OH|0}}}
+}}</td>
+
 
 <td>{{#subobject:
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}
- |Catalyst fixation={{{cat fixation|}}}
- |Catalyst carrier={{{cat carrier|}}}
  |Cell type={{{cell type|}}}
+
  |Solvent A at={{{solvent_A__WE|}}}; WE
  |Solvent A at={{{solvent_A__CE|}}}; CE
- |Included={{{include|}}}
+ |Additives at={{{additives__WE|}}}; WE
+ |Supporting electrolyte at={{{supporting_electrolyte__WE|}}}; WE
+ |pH={{{pH|}}}
+ |Current density={{{current density|}}}
+ |Cathodic potential={{{cathodic potential|}}}
+ |Faradaic amount={{{faradaic amount|}}}
+ |Electrolysis duration={{{electrolysis duration|}}}
+
+ |Limiting turnover number at={{{limiting_turnover_number__CO|}}}; CO
+ |Limiting turnover number at={{{limiting_turnover_number__HCOOH|}}}; HCOOH
+ |Limiting turnover number at={{{limiting_turnover_number__H2C2O4|}}}; H2C2O4
+ |Limiting turnover number at={{{limiting_turnover_number__H2CO|}}}; H2CO
+ |Limiting turnover number at={{{limiting_turnover_number__CH3OH|}}}; CH3OH
+ |Limiting turnover number at={{{limiting_turnover_number__H2|}}}; H2
+ |Limiting turnover number at={{{limiting_turnover_number__CH4|}}}; CH4
+ |Limiting turnover number at={{{limiting_turnover_number__C2H4|}}}; C2H4
+ |Limiting turnover number at={{{limiting_turnover_number__CH3CH2OH|}}}; CH3CH2OH
+
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__CO|}}}; CO
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__HCOOH|}}}; HCOOH
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__H2C2O4|}}}; H2C2O4
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__H2CO|}}}; H2CO
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__CH3OH|}}}; CH3OH
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__H2|}}}; H2
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__CH4|}}}; CH4
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__C2H4|}}}; C2H4
+ |Maximum turnover frequency at={{{maximum_turnover_frequency__CH3CH2OH|}}}; CH3CH2OH
+
  |BasePageName={{BASEPAGENAME}}
 }}</td></tr></includeonly>

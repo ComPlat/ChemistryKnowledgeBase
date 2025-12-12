@@ -3,8 +3,8 @@
 
 ; Datatype
 * [[Has type::Record]].
-* [[Has fields::Limiting turnover frequency; Context]]
+* [[Has fields::Limiting turnover number; Context]]
 
 ; Values
-* see [[Property:Limiting turnover frequency]]
+* see [[Property:Limiting turnover number]]
 
