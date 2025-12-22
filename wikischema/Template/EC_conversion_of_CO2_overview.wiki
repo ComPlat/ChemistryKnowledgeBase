@@ -12,13 +12,12 @@ This is the Electrochemical conversion of CO2 overview experiments template.
 <td>{{{reference electrode|}}}</td>
 
 <td>{{DisplayMolecule|{{{solvent_A__WE|}}} }}</td>
-<td>{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
-
 <td>{{{additives__WE|}}}</td>
 <td>{{{supporting_electrolyte__WE|}}}</td>
 
-<td property="hidden">{{{pH|}}}</td>
+<td>{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
 
+<td property="hidden">{{{pH|}}}</td>
 <td>{{{current density|}}}</td>
 <td>{{{cathodic potential|}}}</td>
 <td>{{{faradaic amount|}}}</td>

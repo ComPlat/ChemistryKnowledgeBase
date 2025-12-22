@@ -2,13 +2,20 @@
     'use strict';
 
 
+    let getRowIndex = function (tr) {
+        if ($(tr).closest('table.experiment-list').find('tr.inv_group_header').length > 0) {
+            return tr.prop('rowIndex') - 2;
+        } else {
+            return tr.prop('rowIndex') - 1;
+        }
+    }
     let initialize = function () {
         function editValue(e) {
             let target = e.target;
             let container = $(target).closest('.experiment-list-container');
             let td = $(target).closest('td');
             let tr = $(target).closest('tr');
-            let rowIndex = tr.prop('rowIndex') - 1;
+            let rowIndex = getRowIndex(tr);
             let cellIndex = td.prop('cellIndex');
             let table = $(target).closest('table.experiment-list');
             let property = table.find('th').eq(cellIndex).attr('about');
@@ -24,7 +31,7 @@
             let container = $(target).closest('.experiment-list-container');
             let td = $(target).closest('td');
             let tr = $(target).closest('tr');
-            let rowIndex = tr.prop('rowIndex') - 1;
+            let rowIndex = getRowIndex(tr);
             let cellIndex = td.prop('cellIndex');
             let table = $(target).closest('table.experiment-list');
             let property = table.find('th').eq(cellIndex).attr('about');
@@ -123,6 +130,7 @@
         function registerEditors() {
             $('.experiment-list td')
                 .not('.collapsed-column')
+                .not('.inv_group_header')
                 .off('click')
                 .click((e) => {
                     registerEditFunctionality(e);

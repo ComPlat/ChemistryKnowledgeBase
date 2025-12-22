@@ -3,90 +3,91 @@ This is the Electrochemical conversion of CO2 experiments template.
 </noinclude>
 <includeonly><table class="wikitable" title="">
 <tr>
-<th about="experiment_type" title="experiment type">experiment type</th>
-<th about="molecule:catalyst" title="catalyst">catalyst</th>
-<th about="cat conc" title="catalyst concentration [{{#defaultQuantity:property=Catalyst concentration|form=EC_conversion_of_CO2_experiments}}]">cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
-<th about="cat fixation" title="immobilization technique">immobilization technique</th>
-<th about="cat carrier" title="catalyst carrier material (if immobilized)">catalyst carrier material</th>
-<th about="cell type" title="cell type">cell type</th>
-<th about="separator" title="separator">separator</th>
-<th about="working electrode" title="working electrode">working electrode (WE)</th>
-<th about="counter electrode" title="counter electrode">counter electrode (CE)</th>
-<th about="reference electrode" title="reference electrode">reference electrode (WE)</th>
+<th property="hidden" class="group_experiment_type" about="experiment_type" title="experiment type">experiment type</th>
+<th property="hidden" class="group_cat_info" about="molecule:catalyst" title="catalyst">catalyst</th>
+<th property="hidden" class="group_cat_info" about="cat conc" title="catalyst concentration [{{#defaultQuantity:property=Catalyst concentration|form=EC_conversion_of_CO2_experiments}}]">cat conc [{{#defaultQuantity:property=Catalyst concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th property="hidden" class="group_cat_info" about="cat fixation" title="immobilization technique">immobilization technique</th>
+<th property="hidden" class="group_cat_info" about="cat carrier" title="catalyst carrier material (if immobilized)">catalyst carrier material</th>
 
-<th about="molecule:solvent_A__WE" title="solvent A (working electrode)">solvent A (WE)</th>
-<th about="molecule:solvent_B__WE" title="solvent B (working electrode)">solvent B (WE)</th>
-<th about="molecule:solvent_C__WE" title="solvent C (working electrode)">solvent C (WE)</th>
-<th about="solvent_ratio__WE" title="solvent ratio (working electrode)">solvent ratio (WE)</th>
-<th about="additives__WE" title="additives (working electrode)">additives (WE)</th>
-<th about="additives_concentration__WE" title="additives concentration (working electrode)">additives concentration (WE)</th>
-<th about="buffer__WE" title="buffer (working electrode)">buffer (WE)</th>
-<th about="buffer_concentration__WE" title="buffer concentration (working electrode)">buffer concentration (WE)</th>
-<th about="supporting_electrolyte__WE" title="supporting electrolyte (working electrode)">supporting electrolyte (WE)</th>
-<th about="supporting_electrolyte_concentration__WE" title="supporting electrolyte concentration (working electrode)">supporting_electrolyte concentration (WE)</th>
+<th property="hidden" class="group_cell_setup" about="cell type" title="cell type">cell type</th>
+<th property="hidden" class="group_cell_setup" about="separator" title="separator">separator</th>
+<th property="hidden" class="group_cell_setup" about="working electrode" title="working electrode">working electrode (WE)</th>
+<th property="hidden" class="group_cell_setup" about="counter electrode" title="counter electrode">counter electrode (CE)</th>
+<th property="hidden" class="group_cell_setup" about="reference electrode" title="reference electrode">reference electrode (WE)</th>
+
+<th property="hidden" class="group_working_electrode" about="molecule:solvent_A__WE" title="solvent A (working electrode)">solvent A (WE)</th>
+<th property="hidden" class="group_working_electrode" about="molecule:solvent_B__WE" title="solvent B (working electrode)">solvent B (WE)</th>
+<th property="hidden" class="group_working_electrode" about="molecule:solvent_C__WE" title="solvent C (working electrode)">solvent C (WE)</th>
+<th property="hidden" class="group_working_electrode" about="solvent_ratio__WE" title="solvent ratio (working electrode)">solvent ratio (WE)</th>
+<th property="hidden" class="group_working_electrode" about="additives__WE" title="additives (working electrode)">additives (WE)</th>
+<th property="hidden" class="group_working_electrode" about="additives_concentration__WE" title="additives concentration (working electrode)">additives concentration (WE) [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th property="hidden" class="group_working_electrode" about="buffer__WE" title="buffer (working electrode)">buffer (WE)</th>
+<th property="hidden" class="group_working_electrode" about="buffer_concentration__WE" title="buffer concentration (working electrode)">buffer concentration (WE) [{{#defaultQuantity:property=Buffer concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th property="hidden" class="group_working_electrode" about="supporting_electrolyte__WE" title="supporting electrolyte (working electrode)">supporting electrolyte (WE)</th>
+<th property="hidden" class="group_working_electrode" about="supporting_electrolyte_concentration__WE" title="supporting electrolyte concentration (working electrode)">supporting_electrolyte concentration (WE) [{{#defaultQuantity:property=Supporting electrolyte concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
 
 
-<th about="molecule:solvent_A__CE" title="solvent A (counter electrode)">solvent A (CE)</th>
-<th about="molecule:solvent_B__CE" title="solvent B (counter electrode)">solvent B (CE)</th>
-<th about="molecule:solvent_C__CE" title="solvent C (counter electrode)">solvent C (CE)</th>
-<th about="solvent_ratio__CE" title="solvent ratio (counter electrode)">solvent ratio (CE)</th>
-<th about="additives__CE" title="additives (counter electrode)">additives (CE)</th>
-<th about="additives_concentration__CE" title="additives concentration (counter electrode)">additives concentration (CE)</th>
-<th about="buffer__CE" title="buffer (counter electrode)">buffer (CE)</th>
-<th about="buffer_concentration__CE" title="buffer concentration (counter electrode)">buffer concentration (CE)</th>
-<th about="supporting_electrolyte__CE" title="supporting electrolyte (counter electrode)">supporting electrolyte (CE)</th>
-<th about="supporting_electrolyte_concentration__CE" title="supporting electrolyte concentration (counter electrode)">supporting_electrolyte concentration (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="molecule:solvent_A__CE" title="solvent A (counter electrode)">solvent A (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="molecule:solvent_B__CE" title="solvent B (counter electrode)">solvent B (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="molecule:solvent_C__CE" title="solvent C (counter electrode)">solvent C (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="solvent_ratio__CE" title="solvent ratio (counter electrode)">solvent ratio (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="additives__CE" title="additives (counter electrode)">additives (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="additives_concentration__CE" title="additives concentration (counter electrode)">additives concentration (CE) [{{#defaultQuantity:property=Additives concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th property="hidden" class="group_counter_electrode" about="buffer__CE" title="buffer (counter electrode)">buffer (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="buffer_concentration__CE" title="buffer concentration (counter electrode)">buffer concentration (CE) [{{#defaultQuantity:property=Buffer concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th property="hidden" class="group_counter_electrode" about="supporting_electrolyte__CE" title="supporting electrolyte (counter electrode)">supporting electrolyte (CE)</th>
+<th property="hidden" class="group_counter_electrode" about="supporting_electrolyte_concentration__CE" title="supporting electrolyte concentration (counter electrode)">supporting_electrolyte concentration (CE) [{{#defaultQuantity:property=Supporting electrolyte concentration|form=Photocatalytic_CO2_conversion_experiments}}]</th>
 
-<th about="pH" property="hidden" title="pH">pH</th>
-<th about="current density" title="current density">current density [{{#defaultQuantity:property=Current density|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="cathodic potential vs RHE" title="Cathodic potential vs RHE">Cathodic potential vs RHE [{{#defaultQuantity:property=Cathodic potential vs RHE|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="faradaic amount" title="faradaic amount">faradaic amount [{{#defaultQuantity:property=Faradaic amount|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="electrolysis duration" title="electrolysis duration">electrolysis duration [{{#defaultQuantity:property=Electrolysis duration|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_reaction_parameters" about="pH" title="pH">pH</th>
+<th property="hidden" class="group_reaction_parameters" about="current density" title="current density">current density [{{#defaultQuantity:property=Current density|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_reaction_parameters" about="cathodic potential vs RHE" title="Cathodic potential vs RHE">Cathodic potential vs RHE [{{#defaultQuantity:property=Cathodic potential vs RHE|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_reaction_parameters" about="faradaic amount" title="faradaic amount">faradaic amount [{{#defaultQuantity:property=Faradaic amount|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_reaction_parameters" about="electrolysis duration" title="electrolysis duration">electrolysis duration [{{#defaultQuantity:property=Electrolysis duration|form=EC_conversion_of_CO2_experiments}}]</th>
 
-<th about="limiting_turnover_number__CO" property="hidden" title="limiting turnover number CO">limiting turnover number CO [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__HCOOH" property="hidden" title="limiting turnover number HCOOH">limiting turnover number HCOOH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__H2C2O4" property="hidden" title="limiting turnover number H2C2O4">limiting turnover number H2C2O4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__H2CO" property="hidden" title="limiting turnover number H2CO">limiting turnover number H2CO [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__CH3OH" property="hidden" title="limiting turnover number CH3OH">limiting turnover number CH3OH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__H2" property="hidden" title="limiting turnover number H2">limiting turnover number H2 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__CH4" property="hidden" title="limiting turnover number CH4">limiting turnover number CH4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__C2H4" property="hidden" title="limiting turnover number C2H4">limiting turnover number C2H4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="limiting_turnover_number__CH3CH2OH" property="hidden" title="limiting turnover number CH3CH2OH">limiting turnover number CH3CH2OH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__CO" title="limiting turnover number CO">limiting turnover number CO [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__HCOOH" title="limiting turnover number HCOOH">limiting turnover number HCOOH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__H2C2O4" title="limiting turnover number H2C2O4">limiting turnover number H2C2O4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__H2CO" title="limiting turnover number H2CO">limiting turnover number H2CO [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__CH3OH" title="limiting turnover number CH3OH">limiting turnover number CH3OH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__H2" title="limiting turnover number H2">limiting turnover number H2 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__CH4" title="limiting turnover number CH4">limiting turnover number CH4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__C2H4" title="limiting turnover number C2H4">limiting turnover number C2H4 [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="limiting_turnover_number__CH3CH2OH" title="limiting turnover number CH3CH2OH">limiting turnover number CH3CH2OH [{{#defaultQuantity:property=Limiting turnover number|form=EC_conversion_of_CO2_experiments}}]</th>
 
-<th about="maximum_turnover_frequency__CO" property="hidden" title="maximum turnover frequency CO">maximum turnover frequency CO [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__HCOOH" property="hidden" title="maximum turnover frequency HCOOH">maximum turnover frequency HCOOH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__H2C2O4" property="hidden" title="maximum turnover frequency H2C2O4">maximum turnover frequency H2C2O4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__H2CO" property="hidden" title="maximum turnover frequency H2CO">maximum turnover frequency H2CO [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__CH3OH" property="hidden" title="maximum turnover frequency CH3OH">maximum turnover frequency CH3OH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__H2" property="hidden" title="maximum turnover frequency H2">maximum turnover frequency H2 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__CH4" property="hidden" title="maximum turnover frequency CH4">maximum turnover frequency CH4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__C2H4" property="hidden" title="maximum turnover frequency C2H4">maximum turnover frequency C2H4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="maximum_turnover_frequency__CH3CH2OH" property="hidden" title="maximum turnover frequency CH3CH2OH">maximum turnover frequency CH3CH2OH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__CO" title="maximum turnover frequency CO">maximum turnover frequency CO [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__HCOOH" title="maximum turnover frequency HCOOH">maximum turnover frequency HCOOH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__H2C2O4" title="maximum turnover frequency H2C2O4">maximum turnover frequency H2C2O4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__H2CO" title="maximum turnover frequency H2CO">maximum turnover frequency H2CO [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__CH3OH" title="maximum turnover frequency CH3OH">maximum turnover frequency CH3OH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__H2" title="maximum turnover frequency H2">maximum turnover frequency H2 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__CH4" title="maximum turnover frequency CH4">maximum turnover frequency CH4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__C2H4" title="maximum turnover frequency C2H4">maximum turnover frequency C2H4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="maximum_turnover_frequency__CH3CH2OH" title="maximum turnover frequency CH3CH2OH">maximum turnover frequency CH3CH2OH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
 
-<th about="turnover_frequency_at_zero_overpotential__CO" property="hidden" title="turnover frequency at zero overpotential CO">turnover frequency at zero overpotential CO [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__HCOOH" property="hidden" title="turnover frequency at zero overpotential HCOOH">turnover frequency at zero overpotential HCOOH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__H2C2O4" property="hidden" title="turnover frequency at zero overpotential H2C2O4">turnover frequency at zero overpotential H2C2O4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__H2CO" property="hidden" title="turnover frequency at zero overpotential H2CO">turnover frequency at zero overpotential H2CO [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__CH3OH" property="hidden" title="turnover frequency at zero overpotential CH3OH">turnover frequency at zero overpotential CH3OH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__H2" property="hidden" title="turnover frequency at zero overpotential H2">turnover frequency at zero overpotential H2 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__CH4" property="hidden" title="turnover frequency at zero overpotential CH4">turnover frequency at zero overpotential CH4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__C2H4" property="hidden" title="turnover frequency at zero overpotential C2H4">turnover frequency at zero overpotential C2H4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
-<th about="turnover_frequency_at_zero_overpotential__CH3CH2OH" property="hidden" title="turnover frequency at zero overpotential CH3CH2OH">turnover frequency at zero overpotential CH3CH2OH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__CO" title="turnover frequency at zero overpotential CO">turnover frequency at zero overpotential CO [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__HCOOH" title="turnover frequency at zero overpotential HCOOH">turnover frequency at zero overpotential HCOOH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__H2C2O4" title="turnover frequency at zero overpotential H2C2O4">turnover frequency at zero overpotential H2C2O4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__H2CO" title="turnover frequency at zero overpotential H2CO">turnover frequency at zero overpotential H2CO [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__CH3OH" title="turnover frequency at zero overpotential CH3OH">turnover frequency at zero overpotential CH3OH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__H2" title="turnover frequency at zero overpotential H2">turnover frequency at zero overpotential H2 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__CH4" title="turnover frequency at zero overpotential CH4">turnover frequency at zero overpotential CH4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__C2H4" title="turnover frequency at zero overpotential C2H4">turnover frequency at zero overpotential C2H4 [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
+<th property="hidden" class="group_cat_perf" about="turnover_frequency_at_zero_overpotential__CH3CH2OH" title="turnover frequency at zero overpotential CH3CH2OH">turnover frequency at zero overpotential CH3CH2OH [{{#defaultQuantity:property=turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]</th>
 
-<th about="faradaic_efficiency__CO" property="hidden" title="faradaic efficiency CO">faradaic efficiency CO [%]</th>
-<th about="faradaic_efficiency__HCOOH" property="hidden" title="faradaic efficiency HCOOH">faradaic efficiency HCOOH [%]</th>
-<th about="faradaic_efficiency__H2C2O4" property="hidden" title="faradaic efficiency H2C2O4">faradaic efficiency H2C2O4 [%]</th>
-<th about="faradaic_efficiency__H2CO" property="hidden" title="faradaic efficiency H2CO">faradaic efficiency H2CO [%]</th>
-<th about="faradaic_efficiency__CH3OH" property="hidden" title="faradaic efficiency CH3OH">faradaic efficiency CH3OH [%]</th>
-<th about="faradaic_efficiency__H2" property="hidden" title="faradaic efficiency H2">faradaic efficiency H2 [%]</th>
-<th about="faradaic_efficiency__CH4" property="hidden" title="faradaic efficiency CH4">faradaic efficiency CH4 [%]</th>
-<th about="faradaic_efficiency__C2H4" property="hidden" title="faradaic efficiency C2H4">faradaic efficiency C2H4 [%]</th>
-<th about="faradaic_efficiency__CH3CH2OH" property="hidden" title="faradaic efficiency CH3CH2OH">faradaic efficiency CH3CH2OH [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__CO" title="faradaic efficiency CO">faradaic efficiency CO [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__HCOOH" title="faradaic efficiency HCOOH">faradaic efficiency HCOOH [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__H2C2O4" title="faradaic efficiency H2C2O4">faradaic efficiency H2C2O4 [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__H2CO" title="faradaic efficiency H2CO">faradaic efficiency H2CO [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__CH3OH" title="faradaic efficiency CH3OH">faradaic efficiency CH3OH [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__H2" title="faradaic efficiency H2">faradaic efficiency H2 [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__CH4" title="faradaic efficiency CH4">faradaic efficiency CH4 [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__C2H4" title="faradaic efficiency C2H4">faradaic efficiency C2H4 [%]</th>
+<th property="hidden" class="group_cat_perf" about="faradaic_efficiency__CH3CH2OH" title="faradaic efficiency CH3CH2OH">faradaic efficiency CH3CH2OH [%]</th>
 
-<th about="-" property="hidden" title="selectivity">selectivity [%] [CO;HCOOH;H2C2O4;H2CO;CH3OH;H2;CH4;C2H4;CH3CH2OH]</th>
+<th property="hidden" class="group_cat_perf" about="-" title="selectivity">selectivity [%] [CO;HCOOH;H2C2O4;H2CO;CH3OH;H2;CH4;C2H4;CH3CH2OH]</th>
 
-<th about="details" title="details" property="hidden">Details</th>
-<th about="include" title="include" property="hidden">include</th>
+<th property="hidden" class="group_cat_perf" about="details" title="details">Details</th>
+<th property="hidden" class="group_cat_perf" about="include" title="include">include</th>
 
 </tr>
 {{{experiments|}}}

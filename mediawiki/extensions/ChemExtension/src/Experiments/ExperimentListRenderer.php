@@ -68,6 +68,8 @@ class ExperimentListRenderer extends ExperimentRenderer
         $htmlTableEditor->addIndexAsFirstColumn();
         if (!WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeOtherColumns("[@resource='include']");
+            $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
+            $htmlTableEditor->addGroupHeader($experimentType);
         } else {
             $htmlTableEditor->addEditButtonsAsFirstColumn();
             // required because VE can handle only limited amount of HTML

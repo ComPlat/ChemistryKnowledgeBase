@@ -7,6 +7,15 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
+        $('table.wikitable:not(.infobox) td.inv_group_header').click((e) => {
+            let target = $(e.target);
+            let groups = target.attr('class').split(/\s+/).filter((e) => e.startsWith('group_'));
+            if (groups.length === 0) return;
+            let group = groups[0];
+            $('th.'+group).trigger('dblclick');
+            console.log(groups);
+        });
+
         $('table.wikitable:not(.infobox) th').off('dblclick');
         $('table.wikitable:not(.infobox) th').dblclick((e) => {
 
@@ -14,7 +23,7 @@
             let collapsed = (th.attr('collapsed') === 'true');
             th.attr('collapsed', !collapsed);
             let table = th.closest('table');
-            let columns = table.find('tr td:nth-child(' + whichChild(th) + ')', table);
+            let columns = table.find('tr:not(.inv_group_header) td:nth-child(' + whichChild(th) + ')', table);
             if (collapsed) {
                 th.empty().append(th.attr('stashed'));
                 columns.removeClass('collapsed-column');

@@ -81,7 +81,15 @@ class ExperimentRepository
                 'defaultUnits' => [
 
                 ],
-                'mode' => ['list']
+                'mode' => ['list'],
+                'headerGroups' => ['group_experiment_type' => 'Experiment type',
+                    'group_cat_info' => 'Catalytic information',
+                    'group_cell_setup' => 'Cell setup',
+                    'group_working_electrode' => 'Working electrode',
+                    'group_counter_electrode' => 'Counter electrode',
+                    'group_reaction_parameters' => 'Reaction parameters',
+                    'group_cat_perf' => 'Catalytic performance'
+                ]
             ],
             'EC_conversion_of_CO2_overview_experiments' => [
                 'label' => 'Electrochemical conversion of CO2 overview',
@@ -93,7 +101,15 @@ class ExperimentRepository
                 'defaultUnits' => [
 
                 ],
-                'mode' => ['link']
+                'mode' => ['link'],
+                'headerGroups' => ['group_experiment_type' => 'Experiment type',
+                    'group_cat_info' => 'Catalytic information',
+                    'group_cell_setup' => 'Cell setup',
+                    'group_working_electrode' => 'Working electrode',
+                    'group_counter_electrode' => 'Counter electrode',
+                    'group_reaction_parameters' => 'Reaction parameters',
+                    'group_cat_perf' => 'Catalytic performance'
+                ]
             ]
         ];
 

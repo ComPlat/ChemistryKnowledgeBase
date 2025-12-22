@@ -2,46 +2,46 @@
 This is the Electrochemical conversion of CO2 experiments template.
 </noinclude>
 <includeonly><tr>
-<td>{{{experiment_type|}}}</td>
-<td>{{DisplayMolecule|{{{catalyst|}}} }}</td>
-<td>{{{cat conc|}}}</td>
-<td>{{{cat fixation|}}}</td>
-<td>{{{cat carrier|}}}</td>
-<td>{{{cell type|}}}</td>
-<td>{{{separator|}}}</td>
+<td property="hidden">{{{experiment_type|}}}</td>
+<td property="hidden">{{DisplayMolecule|{{{catalyst|}}} }}</td>
+<td property="hidden">{{{cat conc|}}}</td>
+<td property="hidden">{{{cat fixation|}}}</td>
+<td property="hidden">{{{cat carrier|}}}</td>
+<td property="hidden">{{{cell type|}}}</td>
+<td property="hidden">{{{separator|}}}</td>
 
-<td>{{{working electrode|}}}</td>
-<td>{{{counter electrode|}}}</td>
-<td>{{{reference electrode|}}}</td>
+<td property="hidden">{{{working electrode|}}}</td>
+<td property="hidden">{{{counter electrode|}}}</td>
+<td property="hidden">{{{reference electrode|}}}</td>
 
-<td>{{DisplayMolecule|{{{solvent_A__WE|}}} }}</td>
-<td>{{DisplayMolecule|{{{solvent_B__WE|}}} }}</td>
-<td>{{DisplayMolecule|{{{solvent_C__WE|}}} }}</td>
-<td>{{{solvent_ratio__WE|}}}</td>
-<td>{{{additives__WE|}}}</td>
-<td>{{{additives_concentration__WE|}}}</td>
-<td>{{{buffer__WE|}}}</td>
-<td>{{{buffer_concentration__WE|}}}</td>
-<td>{{{supporting_electrolyte__WE|}}}</td>
-<td>{{{supporting_electrolyte_concentration__WE|}}}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_A__WE|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_B__WE|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_C__WE|}}} }}</td>
+<td property="hidden">{{{solvent_ratio__WE|}}}</td>
+<td property="hidden">{{{additives__WE|}}}</td>
+<td property="hidden">{{{additives_concentration__WE|}}}</td>
+<td property="hidden">{{{buffer__WE|}}}</td>
+<td property="hidden">{{{buffer_concentration__WE|}}}</td>
+<td property="hidden">{{{supporting_electrolyte__WE|}}}</td>
+<td property="hidden">{{{supporting_electrolyte_concentration__WE|}}}</td>
 
-<td>{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
-<td>{{DisplayMolecule|{{{solvent_B__CE|}}} }}</td>
-<td>{{DisplayMolecule|{{{solvent_C__CE|}}} }}</td>
-<td>{{{solvent_ratio__CE|}}}</td>
-<td>{{{additives__CE|}}}</td>
-<td>{{{additives_concentration__CE|}}}</td>
-<td>{{{buffer__CE|}}}</td>
-<td>{{{buffer_concentration__CE|}}}</td>
-<td>{{{supporting_electrolyte__CE|}}}</td>
-<td>{{{supporting_electrolyte_concentration__CE|}}}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_A__CE|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_B__CE|}}} }}</td>
+<td property="hidden">{{DisplayMolecule|{{{solvent_C__CE|}}} }}</td>
+<td property="hidden">{{{solvent_ratio__CE|}}}</td>
+<td property="hidden">{{{additives__CE|}}}</td>
+<td property="hidden">{{{additives_concentration__CE|}}}</td>
+<td property="hidden">{{{buffer__CE|}}}</td>
+<td property="hidden">{{{buffer_concentration__CE|}}}</td>
+<td property="hidden">{{{supporting_electrolyte__CE|}}}</td>
+<td property="hidden">{{{supporting_electrolyte_concentration__CE|}}}</td>
 
 <td property="hidden">{{{pH|}}}</td>
 
-<td>{{{current density|}}}</td>
-<td>{{{cathodic potential|}}}</td>
-<td>{{{faradaic amount|}}}</td>
-<td>{{{electrolysis duration|}}}</td>
+<td property="hidden">{{{current density|}}}</td>
+<td property="hidden">{{{cathodic potential|}}}</td>
+<td property="hidden">{{{faradaic amount|}}}</td>
+<td property="hidden">{{{electrolysis duration|}}}</td>
 
 <td property="hidden">{{{limiting_turnover_number__CO|}}}</td>
 <td property="hidden">{{{limiting_turnover_number__HCOOH|}}}</td>

@@ -93,6 +93,7 @@ TEMPLATE;
             //$htmlTableEditor->addPubLinkAsLastColumn($links);
             $htmlTableEditor->hideTables();
             $htmlTableEditor->addTableClass("experiment-link");
+            $htmlTableEditor->addGroupHeader($experimentType);
         } else {
             // required because VE can handle only limited amount of HTML
             $htmlTableEditor->shortenTable(25);
