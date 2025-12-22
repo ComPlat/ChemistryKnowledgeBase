@@ -115,7 +115,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential CO [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__CO|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency CO [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency CO [%]:
 | {{{field|faradaic_efficiency__CO|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number HCOOH:
@@ -125,7 +125,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential HCOOH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__HCOOH|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency HCOOH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency HCOOH [%]:
 | {{{field|faradaic_efficiency__HCOOH|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number H2C2O4:
@@ -135,7 +135,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential H2C2O4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__H2C2O4|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency H2C2O4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency H2C2O4 [%]:
 | {{{field|faradaic_efficiency__H2C2O4|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number H2CO:
@@ -145,7 +145,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential H2CO [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__H2CO|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency H2CO [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency H2CO [%]:
 | {{{field|faradaic_efficiency__H2CO|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number CH3OH:
@@ -155,7 +155,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential CH3OH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__CH3OH|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency CH3OH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency CH3OH [%]:
 | {{{field|faradaic_efficiency__CH3OH|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number H2:
@@ -165,7 +165,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential H2 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__H2|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency H2 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency H2 [%]:
 | {{{field|faradaic_efficiency__H2|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number CH4:
@@ -175,7 +175,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential CH4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__CH4|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency CH4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency CH4 [%]:
 | {{{field|faradaic_efficiency__CH4|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number C2H4:
@@ -185,7 +185,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential C2H4 [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__C2H4|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency C2H4 [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency C2H4 [%]:
 | {{{field|faradaic_efficiency__C2H4|property=Faradaic efficiency|input type=text}}}
 |-
 | Limiting turnover number CH3CH2OH:
@@ -195,7 +195,7 @@ Experiments:
 |-
 | Turnover frequency at zero overpotential CH3CH2OH [{{#defaultQuantity:property=Turnover frequency at zero overpotential|form=EC_conversion_of_CO2_experiments}}]:
 | {{{field|turnover_frequency_at_zero_overpotential__CH3CH2OH|property=Turnover frequency at zero overpotential|input type=text}}}
-| Faradaic efficiency CH3CH2OH [{{#defaultQuantity:property=Faradaic efficiency|form=EC_conversion_of_CO2_experiments}}]:
+| Faradaic efficiency CH3CH2OH [%]:
 | {{{field|faradaic_efficiency__CH3CH2OH|property=Faradaic efficiency|input type=text}}}
 |-
 ! include:
