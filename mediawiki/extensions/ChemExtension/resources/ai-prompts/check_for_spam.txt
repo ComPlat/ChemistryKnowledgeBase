@@ -1,0 +1,1 @@
+please check if the given text is spam. answer with yes or no.
