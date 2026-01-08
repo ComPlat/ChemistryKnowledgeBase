@@ -85,6 +85,7 @@ This is the Electrochemical conversion of CO2 experiments template.
 <th property="hidden" class="group_cat_perf" about="faradaic_efficiency__CH3CH2OH" title="faradaic efficiency CH3CH2OH">faradaic efficiency CH3CH2OH [%]</th>
 
 <th property="hidden" class="group_cat_perf" about="-" title="selectivity">selectivity [%] [CO;HCOOH;H2C2O4;H2CO;CH3OH;H2;CH4;C2H4;CH3CH2OH]</th>
+<th property="hidden" class="group_cat_perf" about="total_faradaic_efficiency" title="total faradaic efficiency">total faradaic efficiency [%]</th>
 
 <th property="hidden" class="group_cat_perf" about="details" title="details">Details</th>
 <th property="hidden" class="group_cat_perf" about="include" title="include">include</th>

@@ -95,6 +95,17 @@ This is the Electrochemical conversion of CO2 experiments template.
 |{{{limiting_turnover_number__CH3CH2OH|0}}}
 }}</td>
 
+<td property="hidden">{{DisplayNumberNotNull|{{#expr: {{#qvalue:{{{faradaic_efficiency__CO|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__HCOOH|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__H2C2O4|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__H2CO|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__CH3OH|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__H2|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__CH4|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__C2H4|0}}} }}
++ {{#qvalue:{{{faradaic_efficiency__CH3CH2OH|0}}} }}
+}} }}</td>
+
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 
