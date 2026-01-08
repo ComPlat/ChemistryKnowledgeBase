@@ -39,6 +39,9 @@ class DOIData
             } else {
                 $data = $literature['data'];
             }
+            if (is_null($data)) {
+                return ['', 'noparse' => true, 'isHTML' => false];
+            }
             $property = trim($parameters['property']);
             switch ($property) {
                 case 'showAuthor':
