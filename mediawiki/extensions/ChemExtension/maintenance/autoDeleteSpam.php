@@ -97,7 +97,7 @@ class autoDeleteSpam extends \Maintenance
         $aiClient = new AIClient();
         $prompt = "$IP/extensions/ChemExtension/resources/ai-prompts/check_for_spam.txt";
         $aiText = $aiClient->callAIWithTextInputs([$text], file_get_contents($prompt));
-        return trim($aiText) === 'yes';
+        return strtolower(trim($aiText)) === 'yes';
 
     }
 
