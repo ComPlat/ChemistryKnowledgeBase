@@ -149,7 +149,7 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Supporting electrolyte at={{{supporting_electrolyte__CE|}}}; CE
  |Supporting electrolyte concentration at={{{supporting_electrolyte_concentration__CE|}}}; CE
 
- |pH={{{pH|}}}
+ |PH value={{{pH|}}}
  |Current density={{{current density|}}}
  |Cathodic potential={{{cathodic potential|}}}
  |Faradaic amount={{{faradaic amount|}}}
