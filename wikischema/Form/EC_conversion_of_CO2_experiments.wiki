@@ -34,12 +34,12 @@ Experiments:
 | {{{field|separator|input type=text|property=Separator}}}
 |-
 | working electrode:
-| {{{field|RE|property=Working electrode|input type=dropdown}}}
+| {{{field|working electrode|property=Working electrode|input type=dropdown}}}
 | counter electrode:
-| {{{field|RE|property=Counter electrode|input type=dropdown}}}
+| {{{field|counter electrode|property=Counter electrode|input type=dropdown}}}
 |-
 | reference electrode:
-| {{{field|RE|property=Reference electrode|input type=dropdown}}}
+| {{{field|reference electrode|property=Reference electrode|input type=dropdown}}}
 |-
 !electrolyte and solvent composition
 |-

@@ -115,6 +115,10 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Catalyst fixation={{{cat fixation|}}}
  |Catalyst carrier={{{cat carrier|}}}
  |Cell type={{{cell type|}}}
+ |Separator={{{separator|}}}
+ |Working electrode={{{working electrode|}}}
+ |Counter electrode={{{counter electrode|}}}
+ |Reference electrode={{{reference electrode|}}}
 
  |Solvent A at={{{solvent_A__WE|}}}; WE
  |Solvent B at={{{solvent_B__WE|}}}; WE

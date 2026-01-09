@@ -1,0 +1,5 @@
+;Purpose
+* Contains the separator
+
+;Datatype
+* [[Has type::String]]
