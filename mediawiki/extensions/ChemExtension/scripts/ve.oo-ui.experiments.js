@@ -7,17 +7,17 @@
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        $('table.wikitable:not(.infobox) td.inv_group_header').click((e) => {
+        let toggleHeaderLine = (e) => {
             let target = $(e.target);
             let groups = target.attr('class').split(/\s+/).filter((e) => e.startsWith('group_'));
             if (groups.length === 0) return;
             let group = groups[0];
             $('th.'+group).trigger('dblclick');
-            console.log(groups);
-        });
+        };
+        $('table.wikitable:not(.infobox) td.inv_group_header').click(toggleHeaderLine);
 
         $('table.wikitable:not(.infobox) th').off('dblclick');
-        $('table.wikitable:not(.infobox) th').dblclick((e) => {
+        let headerDblClick = (e) => {
 
             let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
@@ -46,7 +46,8 @@
             setTimeout(function() {
                 th.trigger('click'); // hack to reset sort state
             }, 10);
-        });
+        };
+        $('table.wikitable:not(.infobox) th').dblclick(headerDblClick);
 
         // make tables sortable
         let updateTitles = function(table){
@@ -105,6 +106,8 @@
                 experimentContainer.replaceWith(newNode);
                 newNode.find('span.experiment-link-show-button').click(toggleExperimentHandler);
                 newNode.find('span.experiment-link-refresh-button').click(refreshExperimentLinkHandler);
+                newNode.find('td.inv_group_header').click(toggleHeaderLine);
+                newNode.find('th').dblclick(headerDblClick);
                 if (visible) {
                     newNode.find('table').show();
                 }
