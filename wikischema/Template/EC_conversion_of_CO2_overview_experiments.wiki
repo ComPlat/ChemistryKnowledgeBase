@@ -44,7 +44,7 @@ This is the Electrochemical conversion of CO2 overview experiments template.
 <th class="group_cat_perf" about="maximum_turnover_frequency__C2H4" property="hidden" title="maximum turnover frequency C2H4">maximum turnover frequency C2H4 [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
 <th class="group_cat_perf" about="maximum_turnover_frequency__CH3CH2OH" property="hidden" title="maximum turnover frequency CH3CH2OH">maximum turnover frequency CH3CH2OH [{{#defaultQuantity:property=maximum turnover frequency|form=EC_conversion_of_CO2_experiments}}]</th>
 
-<th about="-" property="hidden" title="selectivity">selectivity [%] [CO;HCOOH;H2C2O4;H2CO;CH3OH;H2;CH4;C2H4;CH3CH2OH]</th>
+<th class="group_cat_perf" about="-" property="hidden" title="selectivity">selectivity [%] [CO;HCOOH;H2C2O4;H2CO;CH3OH;H2;CH4;C2H4;CH3CH2OH]</th>
 
 <th about="details" title="details" property="hidden">Details</th>
 <th about="include" title="include" property="hidden">include</th>

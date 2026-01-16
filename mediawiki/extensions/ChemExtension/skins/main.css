@@ -629,3 +629,6 @@ li.ce-inv-record-item {
     cursor: pointer;
 }
 
+.inv_group_header {
+    cursor: pointer;
+}
