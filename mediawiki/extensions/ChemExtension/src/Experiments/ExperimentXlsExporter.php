@@ -78,6 +78,9 @@ class ExperimentXlsExporter
         }
 
         $inchiKey = $this->chemFormRepo->getMoleculeKey($title->getText());
+        if (is_null($inchiKey)) {
+            $inchiKey = $moleculeTitle;
+        }
         $molfile = smwfGetStore()->getPropertyValues(DIWikiPage::newFromTitle($title), $this->molfileProperty);
         if (count($molfile) > 0) {
             $first = reset($molfile);

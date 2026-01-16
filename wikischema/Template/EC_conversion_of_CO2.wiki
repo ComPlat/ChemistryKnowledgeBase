@@ -110,6 +110,7 @@ This is the Electrochemical conversion of CO2 experiments template.
 <td property="hidden">{{{include|}}}</td>
 
 <td>{{#subobject:
+ |Experiment Type={{{experiment_type|}}}
  |Catalyst={{{catalyst|}}}
  |Catalyst concentration={{{cat conc|}}}
  |Catalyst fixation={{{cat fixation|}}}
@@ -151,7 +152,7 @@ This is the Electrochemical conversion of CO2 experiments template.
 
  |PH value={{{pH|}}}
  |Current density={{{current density|}}}
- |Cathodic potential={{{cathodic potential|}}}
+ |Cathodic potential vs RHE={{{cathodic potential|}}}
  |Faradaic amount={{{faradaic amount|}}}
  |Electrolysis duration={{{electrolysis duration|}}}
 
