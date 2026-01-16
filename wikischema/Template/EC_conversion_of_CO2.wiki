@@ -128,8 +128,8 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Solvent B at={{{solvent_B__CE|}}}; CE
  |Solvent C at={{{solvent_C__CE|}}}; CE
 
- |Solvent ration at={{{solvent_ratio__WE|}}}; WE
- |Solvent ration at={{{solvent_ratio__CE|}}}; CE
+ |Solvent ratio at={{{solvent_ratio__WE|}}}; WE
+ |Solvent ratio at={{{solvent_ratio__CE|}}}; CE
 
  |Additives at={{{additives__WE|}}}; WE
  |Additives concentration at={{{additives_concentration__WE|}}}; WE
