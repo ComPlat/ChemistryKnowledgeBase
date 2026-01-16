@@ -1,0 +1,8 @@
+;Purpose
+* Denotes the total faradaic efficiency
+
+;Datatype
+* [[Has type::Number]]
+
+
+

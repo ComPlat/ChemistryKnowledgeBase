@@ -68,7 +68,7 @@ This is the Electrochemical conversion of CO2 overview experiments template.
  |Supporting electrolyte at={{{supporting_electrolyte__WE|}}}; WE
  |pH={{{pH|}}}
  |Current density={{{current density|}}}
- |Cathodic potential={{{cathodic potential|}}}
+ |Cathodic potential vs RHE={{{cathodic potential|}}}
  |Faradaic amount={{{faradaic amount|}}}
  |Electrolysis duration={{{electrolysis duration|}}}
 

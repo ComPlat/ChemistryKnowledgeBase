@@ -43,7 +43,7 @@ TEXT;
     {
         global $IP;
         $reader = new Xlsx();
-        $spreadsheet = $reader->load($IP . '/extensions/ChemExtension/test/xlsx/data/Test_EChem_1.xlsx');
+        $spreadsheet = $reader->load($IP . '/extensions/ChemExtension/test/xlsx/data/Electrochemical_Conversion_Template.xlsx');
         if ($spreadsheet->sheetNameExists('ChemWiki')) {
             $sheet = $spreadsheet->getSheetByName('ChemWiki');
         } else {

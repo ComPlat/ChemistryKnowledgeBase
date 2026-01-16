@@ -196,6 +196,27 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Faradaic efficiency at={{{faradaic_efficiency__C2H4|}}}; C2H4
  |Faradaic efficiency at={{{faradaic_efficiency__CH3CH2OH|}}}; CH3CH2OH
 
+ |Selectivity={{#calculateSelectivity:
+              |{{{limiting_turnover_number__CO|0}}}
+              |{{{limiting_turnover_number__HCOOH|0}}}
+              |{{{limiting_turnover_number__H2C2O4|0}}}
+              |{{{limiting_turnover_number__H2CO|0}}}
+              |{{{limiting_turnover_number__CH3OH|0}}}
+              |{{{limiting_turnover_number__H2|0}}}
+              |{{{limiting_turnover_number__CH4|0}}}
+              |{{{limiting_turnover_number__C2H4|0}}}
+              |{{{limiting_turnover_number__CH3CH2OH|0}}}
+              }}
+ |Total faradaic efficiency={{DisplayNumberNotNull|{{#expr: {{#qvalue:{{{faradaic_efficiency__CO|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__HCOOH|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__H2C2O4|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__H2CO|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__CH3OH|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__H2|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__CH4|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__C2H4|0}}} }}
+                            + {{#qvalue:{{{faradaic_efficiency__CH3CH2OH|0}}} }}
+                            }} }}
  |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
