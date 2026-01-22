@@ -109,6 +109,55 @@ TEXT;
 
     }
 
+    public function testImport_PhotoCat(): void
+    {
+        global $IP;
+        $reader = new Xlsx();
+        $spreadsheet = $reader->load($IP . '/extensions/ChemExtension/test/xlsx/data/Durable_Solar-Powered_Systems.xlsx');
+        if ($spreadsheet->sheetNameExists('ChemWiki')) {
+            $sheet = $spreadsheet->getSheetByName('ChemWiki');
+        } else {
+            $sheet = $spreadsheet->getActiveSheet();
+        }
+        $importer = new ExperimentXlsImporter($sheet);
+        $dataToImport = $importer->getDataToImport('Photocatalytic_CO2_conversion_experiments');
+        $expected = <<<TEXT
+{{Photocatalytic_CO2_conversion
+|catalyst=Molecule:100829
+|cat conc=0.002
+|PS=Molecule:100843
+|PS conc=0.1
+|e-D=Molecule:100508
+|e-D conc=0.01
+|solvent A=Molecule:100530
+|additives=TEA, H2O
+|λexc=solar spectrum
+|irr time=72
+|TON CO=51000
+|TON CH4=12000
+|details=Atmosphere of 1:1 CO2/H2
+|include=true
+|BasePageName=Durable Solar-Powered Systems with Ni-Catalysts for Conversion of CO2 or CO to CH4
+}}{{Photocatalytic_CO2_conversion
+|catalyst=Molecule:100830
+|cat conc=0.002
+|PS=Molecule:100843
+|PS conc=0.1
+|e-D=Molecule:100505
+|solvent A=Molecule:100530
+|feedstock gas=CO2
+|λexc=solar spectrum
+|irr time=72
+|TON CO=9000
+|TON H2=36000
+|include=true
+|BasePageName=Durable Solar-Powered Systems with Ni-Catalysts for Conversion of CO2 or CO to CH4
+}}
+TEXT;
+        $this->assertEquals(self::normalize($expected), self::normalize($dataToImport['rowsContent']));
+
+    }
+
     private static function normalize($s) {
         return str_replace(["\r"], "", $s);
     }

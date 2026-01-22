@@ -1,0 +1,8 @@
+;Purpose
+* Denotes the quantum yield in a chemical reaction at a given context.
+
+;Datatype
+* [[Has type::Record]]
+
+* [[Has fields::Quantum yield; Context]]
+

@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\ParserFunctions;
 
 use DIQA\ChemExtension\Experiments\ExperimentLinkRenderer;
 use DIQA\ChemExtension\Experiments\ExperimentRepository;
+use DIQA\ChemExtension\Experiments\Legacy;
 use DIQA\ChemExtension\MultiContentSave;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -195,12 +196,12 @@ class ExperimentLink
         ];
     }
 
-    private static function getContextValue(SMWDataItem $dataItem, $property, $currentColumn, $unit)
+    private static function getContextValue(SMWDataItem $dataItem, $templateParam, $currentColumn, $unit)
     {
-        if (!str_contains($property, "__")) {
-            throw new Exception("$property has wrong syntax");
+        if (!str_contains($templateParam, "__")) {
+            $templateParam = Legacy::checkLegacyExperiments($templateParam);
         }
-        list($property, $context) = explode("__", $property);
+        list($templateParam, $context) = explode("__", $templateParam);
         $currentColumn->reset();
         $propertyValue = null;
         do {
@@ -212,8 +213,8 @@ class ExperimentLink
                 continue;
             }
 
-            if (array_key_exists(ucfirst($property), $subData->getProperties())) {
-                $propertyValues = $subData->getPropertyValues($subData->getProperties()[ucfirst($property)]);
+            if (array_key_exists(ucfirst($templateParam), $subData->getProperties())) {
+                $propertyValues = $subData->getPropertyValues($subData->getProperties()[ucfirst($templateParam)]);
                 $propertyValue = reset($propertyValues);
             } else {
                 return "";
@@ -222,7 +223,7 @@ class ExperimentLink
 
         } while($dataItem !== false);
 
-        return self::getTemplateValue($propertyValue, $unit, $property);
+        return self::getTemplateValue($propertyValue, $unit, $templateParam);
     }
 
     /**

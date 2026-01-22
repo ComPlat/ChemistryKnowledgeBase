@@ -1,0 +1,8 @@
+;Purpose
+* Denotes the turnover number in a chemical reaction at a given context.
+
+;Datatype
+* [[Has type::Record]]
+
+* [[Has fields::Turnover number; Context]]
+
