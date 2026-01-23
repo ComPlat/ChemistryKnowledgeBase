@@ -8,7 +8,7 @@ Each type of investigation needs a particular set of properties. The Excel templ
 Despite the name "_inchikey", this column can also contain the abbreviation or trivial name of the molecule. In any case, it is checked if the molecule is already known to the wiki. If so, the molecule is used and the content of the "_molfile"-column is ignored. In case that the name is not unique, the first molecule found is used. It is also possible to specify an InchIKey and let the molfile-column empty. In this case, PubChem is requested to get a structual representation of the molecule. If none is found, the column remains empty.
 
 ;Example:
-{{#experimentlink:%5B%5BTurnover%20number%20CH4%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CH4 < 100}}
+{{#experimentlink:%5B%5BTurnover%20number%20at%3A%3A%3C100%3B%20CH4%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|sort=Catalyst|order=|description=TON CH4 < 100}}
 
 == How it can be imported ==
 To add a new Investigation, go to the edit mode and select "Investigation" from the "Insert"-menu. You should see this:
@@ -22,3 +22,4 @@ You have to select the type of the experiment and the name. At the bottom you ca
 *[[Media:Cyclic_Voltammetry_Template.xlsx|"Cyclic Voltammetry"-Template]]
 *[[Media:UV_vis_Template.xlsx|"UV_visuell"-Template]]
 *[[Media:Absorption_Emission_Spectroscopy_template.xlsx|"Absorption Emission Spectroscopy"-Template]]
+*[[Media:Electrochemical_Conversion_Template.xlsx|"Electrochemical conversion"-Template]]
