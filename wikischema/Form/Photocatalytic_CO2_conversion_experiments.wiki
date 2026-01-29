@@ -67,40 +67,40 @@ Experiments:
 | {{{field|irr time|input type=regexp|base type=Number|property=Irradiation time|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(h)?)?$/}}}
 |-
 ! TON CO:
-| {{{field|TON CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
+| {{{field|Turnover_number__CO|input type=regexp|base type=Number|property=Turnover number CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
 | TOF CO [{{#defaultQuantity:property=Turnover frequency CO|form=Photocatalytic_CO2_conversion_experiments}}]:
-| {{{field|TOF CO|input type=regexp|base type=Number|property=Turnover frequency CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
+| {{{field|Turnover_frequency__CO|input type=regexp|base type=Number|property=Turnover frequency CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ CO [%]:
-| {{{field|Φ CO|input type=regexp|base type=Number|property=Quantum yield CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
+| {{{field|Quantum_yield__CO|input type=regexp|base type=Number|property=Quantum yield CO|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON CH4
-| {{{field|TON CH4|input type=regexp|base type=Number|property=Turnover number CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
+| {{{field|Turnover_number__CH4|input type=regexp|base type=Number|property=Turnover number CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
 | TOF CH4 [{{#defaultQuantity:property=Turnover frequency CH4|form=Photocatalytic_CO2_conversion_experiments}}]:
-| {{{field|TOF CH4|input type=regexp|base type=Number|property=Turnover frequency CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
+| {{{field|Turnover_frequency__CH4|input type=regexp|base type=Number|property=Turnover frequency CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ CH4 [%]:
-| {{{field|Φ CH4|input type=regexp|base type=Number|property=Quantum yield CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
+| {{{field|Quantum_yield__CH4|input type=regexp|base type=Number|property=Quantum yield CH4|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON H2
-| {{{field|TON H2|input type=regexp|base type=Number|property=Turnover number H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
+| {{{field|Turnover_number__H2|input type=regexp|base type=Number|property=Turnover number H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
 | TOF H2 [{{#defaultQuantity:property=Turnover frequency H2|form=Photocatalytic_CO2_conversion_experiments}}]:
-| {{{field|TOF H2|input type=regexp|base type=Number|property=Turnover frequency H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
+| {{{field|Turnover_frequency__H2|input type=regexp|base type=Number|property=Turnover frequency H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ H2 [%]:
-| {{{field|Φ H2|input type=regexp|base type=Number|property=Quantum yield H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
+| {{{field|Quantum_yield__H2|input type=regexp|base type=Number|property=Quantum yield H2|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! TON HCOOH
-| {{{field|TON HCOOH|input type=regexp|base type=Number|property=Turnover number HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
+| {{{field|Turnover_number__HCOOH|input type=regexp|base type=Number|property=Turnover number HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
 | TOF HCOOH [{{#defaultQuantity:property=Turnover frequency HCOOH|form=Photocatalytic_CO2_conversion_experiments}}]:
-| {{{field|TOF HCOOH|input type=regexp|base type=Number|property=Turnover frequency HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
+| {{{field|Turnover_frequency__HCOOH|input type=regexp|base type=Number|property=Turnover frequency HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ HCOOH [%]:
-| {{{field|Φ HCOOH|input type=regexp|base type=Number|property=Quantum yield HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
+| {{{field|Quantum_yield__HCOOH|input type=regexp|base type=Number|property=Quantum yield HCOOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 |-
 ! TON MeOH
-| {{{field|TON MeOH|input type=regexp|base type=Number|property=Turnover number MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
+| {{{field|Turnover_number__MeOH|input type=regexp|base type=Number|property=Turnover number MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TON)?)?$/}}}
 | TOF MeOH [{{#defaultQuantity:property=Turnover frequency MeOH|form=Photocatalytic_CO2_conversion_experiments}}]:
-| {{{field|TOF MeOH|input type=regexp|base type=Number|property=Turnover frequency MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
+| {{{field|Turnover_frequency__MeOH|input type=regexp|base type=Number|property=Turnover frequency MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(TOF\/min)?)?$/}}}
 | Φ MeOH [%]:
-| {{{field|Φ MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
+| {{{field|Quantum_yield__MeOH|input type=regexp|base type=Number|property=Quantum yield MeOH|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(%)?)?$/}}}
 |-
 ! include:
 | {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)

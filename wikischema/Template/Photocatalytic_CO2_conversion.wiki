@@ -23,23 +23,23 @@ This is the Photocatalytic CO2 conversion template.
 <td property="hidden">{{{Temperature|}}}</td>
 <td>{{{λexc|}}}</td>
 <td property="hidden">{{{irr time|}}}</td>
-<td>{{{TON CO|}}}</td>
-<td property="hidden">{{{TOF CO|}}}</td>
-<td property="hidden">{{{Φ CO|}}}</td>
-<td>{{{TON CH4|}}}</td>
-<td property="hidden">{{{TOF CH4|}}}</td>
-<td property="hidden">{{{Φ CH4|}}}</td>
-<td>{{{TON H2|}}}</td>
-<td property="hidden">{{{TOF H2|}}}</td>
-<td property="hidden">{{{Φ H2|}}}</td>
-<td>{{{TON HCOOH|}}}</td>
-<td property="hidden">{{{TOF HCOOH|}}}</td>
-<td property="hidden">{{{Φ HCOOH|}}}</td>
-<td>{{{TON MeOH|}}}</td>
-<td property="hidden">{{{TOF MeOH|}}}</td>
-<td property="hidden">{{{Φ MeOH|}}}</td>
-<td property="hidden">{{#calculateSelectivity:{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}</td>
-<td property="hidden">{{DisplayNumberNotNull|{{#expr: {{#qvalue:{{{Φ CO|0}}} }} + {{#qvalue:{{{Φ CH4|0}}} }} + {{#qvalue:{{{Φ H2|0}}} }} + {{#qvalue:{{{Φ HCOOH|0}}} }} + {{#qvalue:{{{Φ MeOH|0}}} }} }} }}</td>
+<td>{{{Turnover_number__CO|}}}</td>
+<td property="hidden">{{{Turnover_frequency__CO|}}}</td>
+<td property="hidden">{{{Quantum_yield__CO|}}}</td>
+<td>{{{Turnover_number__CH4|}}}</td>
+<td property="hidden">{{{Turnover_frequency__CH4|}}}</td>
+<td property="hidden">{{{Quantum_yield__CH4|}}}</td>
+<td>{{{Turnover_number__H2|}}}</td>
+<td property="hidden">{{{Turnover_frequency__H2|}}}</td>
+<td property="hidden">{{{Quantum_yield__H2|}}}</td>
+<td>{{{Turnover_number__HCOOH|}}}</td>
+<td property="hidden">{{{Turnover_frequency__HCOOH|}}}</td>
+<td property="hidden">{{{Quantum_yield__HCOOH|}}}</td>
+<td>{{{Turnover_number__MeOH|}}}</td>
+<td property="hidden">{{{Turnover_frequency__MeOH|}}}</td>
+<td property="hidden">{{{Quantum_yield__MeOH|}}}</td>
+<td property="hidden">{{#calculateSelectivity:{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}</td>
+<td property="hidden">{{DisplayNumberNotNull|{{#expr: {{#qvalue:{{{Quantum_yield__CO|0}}} }} + {{#qvalue:{{{Quantum_yield__CH4|0}}} }} + {{#qvalue:{{{Quantum_yield__H2|0}}} }} + {{#qvalue:{{{Quantum_yield__HCOOH|0}}} }} + {{#qvalue:{{{Quantum_yield__MeOH|0}}} }} }} }}</td>
 <td property="hidden">{{{details|}}}</td>
 <td resource="include" property="hidden">{{{include|}}}</td>
 <td>{{#subobject:
@@ -64,28 +64,28 @@ This is the Photocatalytic CO2 conversion template.
  |TemperatureP={{{Temperature|}}}
  |Excitation wavelength={{{λexc|}}}
  |Irradiation time={{{irr time|}}}
- |Turnover number at={{{TON CO|}}}; CO
- |Turnover number at={{{TON CH4|}}}; CH4
- |Turnover number at={{{TON H2|}}}; H2
- |Turnover number at={{{TON HCOOH|}}}; HCOOH
- |Turnover number at={{{TON MeOH|}}}; MeOH
- |Turnover frequency at={{{TOF CO|}}}; CO
- |Turnover frequency at={{{TOF CH4|}}}; CH4
- |Turnover frequency at={{{TOF H2|}}}; H2
- |Turnover frequency at={{{TOF HCOOH|}}}; HCOOH
- |Turnover frequency at={{{TOF MeOH|}}}; MeOH
- |Quantum yield at={{{Φ CO|}}}; CO
- |Quantum yield at={{{Φ CH4|}}}; CH4
- |Quantum yield at={{{Φ H2|}}}; H2
- |Quantum yield at={{{Φ HCOOH|}}}; HCOOH
- |Quantum yield at={{{Φ MeOH|}}}; MeOH
+ |Turnover number at={{{Turnover_number__CO|}}}; CO
+ |Turnover number at={{{Turnover_number__CH4|}}}; CH4
+ |Turnover number at={{{Turnover_number__H2|}}}; H2
+ |Turnover number at={{{Turnover_number__HCOOH|}}}; HCOOH
+ |Turnover number at={{{Turnover_number__MeOH|}}}; MeOH
+ |Turnover frequency at={{{Turnover_frequency__CO|}}}; CO
+ |Turnover frequency at={{{Turnover_frequency__CH4|}}}; CH4
+ |Turnover frequency at={{{Turnover_frequency__H2|}}}; H2
+ |Turnover frequency at={{{Turnover_frequency__HCOOH|}}}; HCOOH
+ |Turnover frequency at={{{Turnover_frequency__MeOH|}}}; MeOH
+ |Quantum yield at={{{Quantum_yield__CO|}}}; CO
+ |Quantum yield at={{{Quantum_yield__CH4|}}}; CH4
+ |Quantum yield at={{{Quantum_yield__H2|}}}; H2
+ |Quantum yield at={{{Quantum_yield__HCOOH|}}}; HCOOH
+ |Quantum yield at={{{Quantum_yield__MeOH|}}}; MeOH
  |Quantum yield total={{{Φ all|}}}
  |Selectivity={{{selectivity|}}}
- |Selectivity at={{SelectivityForOne|{{{TON CO|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}; CO
- |Selectivity at={{SelectivityForOne|{{{TON CH4|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}; CH4
- |Selectivity at={{SelectivityForOne|{{{TON H2|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}; H2
- |Selectivity at={{SelectivityForOne|{{{TON HCOOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}; HCOOH
- |Selectivity at={{SelectivityForOne|{{{TON MeOH|0}}}|{{{TON CO|0}}}|{{{TON CH4|0}}}|{{{TON H2|0}}}|{{{TON HCOOH|0}}}|{{{TON MeOH|0}}} }}; MeOH
+ |Selectivity at={{SelectivityForOne|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}; CO
+ |Selectivity at={{SelectivityForOne|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}; CH4
+ |Selectivity at={{SelectivityForOne|{{{Turnover_number__H2|0}}}|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}; H2
+ |Selectivity at={{SelectivityForOne|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}; HCOOH
+ |Selectivity at={{SelectivityForOne|{{{Turnover_number__MeOH|0}}}|{{{Turnover_number__CO|0}}}|{{{Turnover_number__CH4|0}}}|{{{Turnover_number__H2|0}}}|{{{Turnover_number__HCOOH|0}}}|{{{Turnover_number__MeOH|0}}} }}; MeOH
  |Details={{{details|}}}
  |Included={{{include|}}}
  |BasePageName={{BASEPAGENAME}}
