@@ -63,8 +63,3 @@ Solvent ratio: e. g. 4:1<br>
 Irradiation wavelength: number, “dark” (or empty), description of source<br>
 Columns with numbers: Leave empty when number is not given or zero
 
-=== Comment banner ===
-
-Several comment banners can be found under “Templates”
-[[Test MissingTemplates|MissingTemplates]]
-[[Test MissingItems|MissingItems]]

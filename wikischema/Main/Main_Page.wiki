@@ -1,3 +1,5 @@
+<p style="font-size: 25px; border: 3px grey solid; padding: 5px; text-align: center">[mailto:info@diqa-pm.com Want an account? Please write an email. User account creation is deactivated due to spam issues]</p>
+
 {| style="border: 1px outset"
 |+
 ! style="background-color:#eaecf0; padding: 10px" | Available Topics

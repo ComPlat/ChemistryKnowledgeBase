@@ -289,8 +289,8 @@ M  END
 == Photosensitizers ==
 
 == Experiments ==
-Table of all the experiments that have a turnover number for HCOOH greater than 100, sorted by catalyst and in descending order.{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3E100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|description=TON > 100|sort=Turnover number HCOOH, Catalyst|order=descending}}
-Table of all the experiments that have a turnover number for HCOOH lower than 100, sorted by catalyst and in descending order.{{#experimentlink:%5B%5BTurnover%20number%20HCOOH%3A%3A%3C100%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|description=TON < 100|sort=Turnover number HCOOH, Catalyst|order=descending}}
+Table of all the experiments that have a turnover number for HCOOH greater than 100, sorted by catalyst and in descending order.{{#experimentlink:%5B%5BTurnover%20number%20at%3A%3A%3E100%3B%20HCOOH%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|description=TON > 100|sort=Catalyst|order=descending}}
+Table of all the experiments that have a turnover number for HCOOH lower than 100, sorted by catalyst and in descending order.{{#experimentlink:%5B%5BTurnover%20number%20at%3A%3A%3C100%3B%20HCOOH%5D%5D|form=Photocatalytic_CO2_conversion_experiments|restrictToPages=|description=TON < 100|sort=Catalyst|order=descending}}
 
 == Cobalt Catalysts ==
 
