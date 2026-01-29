@@ -198,9 +198,6 @@ class ExperimentLink
 
     private static function getContextValue(SMWDataItem $dataItem, $templateParam, $currentColumn, $unit)
     {
-        if (!str_contains($templateParam, "__")) {
-            $templateParam = Legacy::checkLegacyExperiments($templateParam);
-        }
         list($templateParam, $context) = explode("__", $templateParam);
         $currentColumn->reset();
         $propertyValue = null;

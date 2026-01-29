@@ -61,14 +61,6 @@ class ExperimentXlsExporter
 
     private static function getContext(string $templateParam): string
     {
-        if (!str_contains($templateParam, "__")) {
-            try {
-                $templateParam = Legacy::checkLegacyExperiments($templateParam);
-                return explode("__", $templateParam)[1];
-            } catch(\Exception $e) {
-                return '-no context-';
-            }
-        }
         return trim(explode("__", $templateParam)[1] ?? '-no context-');
     }
     private function getMoleculeData($moleculeTitle)
