@@ -41,6 +41,15 @@
 	"tags-label": "Tags (noch nicht funktional)",
 	"tags-hint": "Bitte geben Sie Tags ein",
 	"importmolecule": "Importiere Moleküle",
-	"licenses-page": "Lizenzen"
+	"licenses-page": "Lizenzen",
+    "crossrefspecialpage": "Publication List",
+    "publicationlist-title": "Neue Publikation auf CrossRef",
+    "crossref-category-label": "Topic",
+    "crossref-category-placeholder": "Suche nach Publikationen zu diesem Thema...",
+    "crossref-category-submit": "Neue Publikationen suchen",
+    "publicationlist-col-title": "Titel",
+    "publicationlist-col-abstract": "Abstract",
+    "publicationlist-col-doi": "DOI",
+    "publicationlist-col-date": "Publikationsdatum"
 
 }

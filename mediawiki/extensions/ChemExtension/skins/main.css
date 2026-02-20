@@ -632,3 +632,7 @@ li.ce-inv-record-item {
 .inv_group_header {
     cursor: pointer;
 }
+
+#crossref-category-input {
+    width: 50%;
+}

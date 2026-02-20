@@ -26,7 +26,8 @@
         "SpecialImportPage": "DIQA\\ChemExtension\\Specials\\SpecialImportPage",
         "SpecialModifyMoleculeLog": "DIQA\\ChemExtension\\Specials\\SpecialModifyMoleculeLog",
         "ShowPublications": "DIQA\\ChemExtension\\Specials\\ShowPublications",
-        "ImportMolecule": "DIQA\\ChemExtension\\Specials\\ImportMolecule"
+        "ImportMolecule": "DIQA\\ChemExtension\\Specials\\ImportMolecule",
+        "CrossRefSpecialpage": "DIQA\\ChemExtension\\CrossRef\\CrossRefSpecialpage"
     },
     "AutoloadNamespaces": {
         "DIQA\\ChemExtension\\": "src/",
