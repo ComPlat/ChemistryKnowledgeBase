@@ -236,7 +236,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.ChooseExperimentDialogTool.static.title = 'Investigation';
     ve.ui.ChooseExperimentDialogTool.static.icon = 'experiment';
     ve.ui.ChooseExperimentDialogTool.static.commandName = 'ChooseExperimentDialog';
-    ve.ui.toolFactory.register(ve.ui.ChooseExperimentDialogTool);
+    if (mw.config.get('wgNamespaceNumber') === 0) {
+        ve.ui.toolFactory.register(ve.ui.ChooseExperimentDialogTool);
+    }
 
 
 // -----------------------------------------------------------------------------------------------------------
@@ -305,7 +307,9 @@ mw.loader.using('ext.visualEditor.core').then(function () {
     ve.ui.AddExperimentLink.static.title = 'Investigation Link';
     ve.ui.AddExperimentLink.static.icon = 'link';
     ve.ui.AddExperimentLink.static.commandName = 'addExperimentLink';
-    ve.ui.toolFactory.register(ve.ui.AddExperimentLink);
+    if (mw.config.get('wgNamespaceNumber') === 14) {
+        ve.ui.toolFactory.register(ve.ui.AddExperimentLink);
+    }
 
 });
 
