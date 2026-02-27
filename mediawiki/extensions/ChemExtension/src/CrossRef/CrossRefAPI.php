@@ -15,7 +15,7 @@ class CrossRefAPI {
         $this->crossRefApiBaseUrl = 'https://api.crossref.org';
     }
 
-    public function find(string $query, int $daysAgo = 30) {
+    public function find(string $query, int $daysAgo = 30, $additionalFilters = []) {
 
         $filters = [
             'from-created-date' => date('Y-m-d', strtotime("-$daysAgo days")),
@@ -23,13 +23,13 @@ class CrossRefAPI {
         ];
         $filtersAsStrings = array_map(fn($k) => "$k:$filters[$k]", array_keys($filters));
 
-        return $this->getJsonData('/works', [
+        return $this->getJsonData('/works', array_merge( [
             'query' => $query,
             'select' => 'title,abstract,DOI,published',
             'filter' => implode(',', $filtersAsStrings),
             'sort' => 'published',
             'order' => 'desc'
-        ]);
+        ], $additionalFilters));
     }
 
 

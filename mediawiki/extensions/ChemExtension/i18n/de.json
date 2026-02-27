@@ -50,6 +50,9 @@
     "publicationlist-col-title": "Titel",
     "publicationlist-col-abstract": "Abstract",
     "publicationlist-col-doi": "DOI",
-    "publicationlist-col-date": "Publikationsdatum"
+    "publicationlist-col-date": "Publikationsdatum",
+  "crossref-pager-prev": "← Zurück",
+  "crossref-pager-next": "Weiter →",
+  "crossref-pager-info": "Seite $1 von $2 ($3 Ergebnisse)"
 
 }

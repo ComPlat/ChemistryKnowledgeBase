@@ -636,3 +636,11 @@ li.ce-inv-record-item {
 #crossref-category-input {
     width: 50%;
 }
+
+td.doi-link-known {
+    background: lightgreen;
+}
+
+td.doi-link-unknown {
+    background: lightpink;
+}

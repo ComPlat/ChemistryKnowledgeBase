@@ -58,5 +58,8 @@
     "publicationlist-col-title": "Titel",
     "publicationlist-col-abstract": "Abstract",
     "publicationlist-col-doi": "DOI",
-    "publicationlist-col-date": "Publication date"
+    "publicationlist-col-date": "Publication date",
+  "crossref-pager-prev": "← Previous",
+  "crossref-pager-next": "Next →",
+  "crossref-pager-info": "Page $1 of $2 ($3 results)"
 }

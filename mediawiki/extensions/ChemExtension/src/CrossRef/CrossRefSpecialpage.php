@@ -2,17 +2,18 @@
 
 namespace DIQA\ChemExtension\CrossRef;
 
-use SpecialPage;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use Html;
 use RequestContext;
+use SpecialPage;
 
 class CrossRefSpecialpage extends SpecialPage {
+
+    private const PAGE_SIZE = 20;
 
     public function __construct() {
         parent::__construct( 'CrossRefSpecialpage' );
     }
-
-
 
     /**
      * @param string|null $subPage
@@ -22,12 +23,21 @@ class CrossRefSpecialpage extends SpecialPage {
         $out->setPageTitle( $this->msg( 'publicationlist-title' ) );
         $out->addModules( 'mediawiki.special.publicationList' );
 
-        $topic = RequestContext::getMain()->getRequest()->getText('category', '');
+        $request = RequestContext::getMain()->getRequest();
+        $topic   = $request->getText( 'category', '' );
+        $nextCursor   = $request->getText( 'nextCursor', null );
+        $page    = max( 0, $request->getInt( 'page', 0 ) );
+
         $out->addHTML( $this->buildForm( $topic ) );
 
-        $publications = $this->fetchPublications($topic);
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $nextCursor );
+        $total        = $this->fetchTotalNumber($topic);
+        $pageSize     = self::PAGE_SIZE;
+        $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
+        $page         = min( $page, $totalPages - 1 );
 
-        $out->addHTML( $this->buildTable( $publications ) );
+        $out->addHTML( $this->buildTable( $publications['results'] ) );
+        $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total, $publications['nextCursor'] ) );
     }
 
     private function buildForm( string $selectedCategory ): string {
@@ -104,13 +114,21 @@ class CrossRefSpecialpage extends SpecialPage {
      *
      * @return array[]
      */
-    private function fetchPublications(string $topic): array {
+    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, $nextCursor= null): array {
         // Example: return data from your repository here.
         // Each entry must have keys: title, abstract, doi, date.
         $crossRefApi = new CrossRefAPI();
-        $res = $crossRefApi->find($topic, 300);
+        $res = $crossRefApi->find($topic, 300, ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]);
 
-        return CrossRefResult::fromResult($res);
+        return [ 'results' => CrossRefResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null ];
+    }
+
+    private function fetchTotalNumber(string $topic): int {
+
+        $crossRefApi = new CrossRefAPI();
+        $res = $crossRefApi->find($topic, 300, ['rows' => 0]);
+
+        return $res->message->{'total-results'};
     }
 
     /**
@@ -181,10 +199,11 @@ class CrossRefSpecialpage extends SpecialPage {
                     'href'   => 'https://doi.org/' . htmlspecialchars( $doi ),
                     'target' => '_blank',
                     'rel'    => 'noopener noreferrer',
+
                 ],
                 $doi
             );
-            $html .= Html::rawElement( 'td', [], $doiLink );
+            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink );
         } else {
             $html .= Html::element( 'td', [], '' );
         }
@@ -195,5 +214,49 @@ class CrossRefSpecialpage extends SpecialPage {
         $html .= Html::closeElement( 'tr' );
 
         return $html;
+    }
+
+    /**
+     * Build Previous / Next / page-number pager.
+     */
+    private function buildPager( string $topic, int $page, int $totalPages, int $total, $nextCursor ): string {
+        if ( $totalPages <= 1 ) {
+            return '';
+        }
+
+        $baseUrl = $this->getPageTitle()->getLocalURL( [
+            'category' => $topic,
+        ] );
+
+        $html = Html::openElement( 'div', [ 'class' => 'publication-pager mw-pager' ] );
+
+        // Page indicator
+        $html .= Html::element( 'span', [ 'class' => 'publication-pager-info' ],
+            $this->msg( 'crossref-pager-info' )
+                ->numParams( $page + 1, $totalPages, $total )
+                ->text()
+        );
+
+        // Next
+        if ( $page < $totalPages - 1 ) {
+            $html .= Html::element( 'a', [
+                'href'  => $baseUrl . '&page=' . ( $page + 1 ).'&nextCursor=' . $nextCursor,
+                'class' => 'mw-ui-button',
+            ], $this->msg( 'crossref-pager-next' )->text() );
+        } else {
+            $html .= Html::element( 'span', [
+                'class' => 'mw-ui-button mw-ui-quiet',
+                'aria-disabled' => 'true',
+            ], $this->msg( 'crossref-pager-next' )->text() );
+        }
+
+        $html .= Html::closeElement( 'div' );
+
+        return $html;
+    }
+
+    private static function isDOIKnown(string $doi): bool {
+        $res = QueryUtils::executeBasicQuery("[[DOI::" . $doi . "]]", [], ['limit' => 1]);
+        return $res->getCount() > 0;
     }
 }
