@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Maintenance;
 
 
 use DIQA\ChemExtension\CategoryIndexRepository;
+use DIQA\ChemExtension\CrossRef\CrossRefRepository;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
@@ -53,7 +54,8 @@ class setupStore extends \Maintenance
             (new ChemFormRepository($db))->setupTables(),
             (new PubChemRepository($db))->setupTables(),
             (new LiteratureRepository($db))->setupTables(),
-            (new CategoryIndexRepository($db))->setupTables()
+            (new CategoryIndexRepository($db))->setupTables(),
+            (new CrossRefRepository($db))->setupTables()
         ];
         $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {
@@ -98,7 +100,9 @@ class setupStore extends \Maintenance
         $tables = [
             (new ChemFormRepository($db))->dropTables(),
             (new PubChemRepository($db))->dropTables(),
-            (new LiteratureRepository($db))->dropTables()
+            (new LiteratureRepository($db))->dropTables(),
+            (new CategoryIndexRepository($db))->dropTables(),
+            (new CrossRefRepository($db))->dropTables()
         ];
         $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {

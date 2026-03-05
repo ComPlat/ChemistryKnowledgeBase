@@ -15,12 +15,14 @@ class CrossRefAPI {
         $this->crossRefApiBaseUrl = 'https://api.crossref.org';
     }
 
-    public function find(string $query, int $daysAgo = 30, $additionalFilters = []) {
+    public function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = []) {
 
         $filters = [
             'from-created-date' => date('Y-m-d', strtotime("-$daysAgo days")),
+            'until-created-date' => date('Y-m-d'),
             'has-abstract' => true
         ];
+        $filters = array_merge($filters, $additionalFilters);
         $filtersAsStrings = array_map(fn($k) => "$k:$filters[$k]", array_keys($filters));
 
         return $this->getJsonData('/works', array_merge( [
@@ -29,7 +31,7 @@ class CrossRefAPI {
             'filter' => implode(',', $filtersAsStrings),
             'sort' => 'published',
             'order' => 'desc'
-        ], $additionalFilters));
+        ], $additionalParams));
     }
 
 
