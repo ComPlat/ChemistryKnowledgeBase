@@ -42,7 +42,7 @@
 	"tags-hint": "Bitte geben Sie Tags ein",
 	"importmolecule": "Importiere Moleküle",
 	"licenses-page": "Lizenzen",
-    "crossrefspecialpage": "Publication List",
+    "publicationsearchspecialpage": "Publicationssuche",
     "publicationlist-title": "Neue Publikation auf CrossRef",
     "crossref-category-label": "Topic",
     "crossref-category-placeholder": "Suche nach Publikationen zu diesem Thema...",
