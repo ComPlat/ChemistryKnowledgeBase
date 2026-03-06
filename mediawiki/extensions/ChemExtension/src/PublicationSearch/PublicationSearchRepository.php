@@ -21,7 +21,7 @@ class PublicationSearchRepository {
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         doi VARCHAR(255) NOT NULL,
                         title VARCHAR(255) NOT NULL,
-                        published VARCHAR(40) NOT NULL,
+                        published VARCHAR(40),
                         abstract MEDIUMTEXT,
                         check_result VARCHAR(255)
                     )  ENGINE=INNODB;');
@@ -92,7 +92,7 @@ class PublicationSearchRepository {
 
     public function getUnclassifiedDois(): array {
         $res = $this->db->select(
-            'publications',
+            ['publications'],
             [ 'doi' ],
             [ 'check_result' => null ],
             __METHOD__
@@ -102,6 +102,17 @@ class PublicationSearchRepository {
             $results[] = $row->doi;
         }
         return $results;
+    }
+
+    public function doesJobExistsForDoi(string $doi): bool {
+        $title = str_replace("/", "-", $doi);
+        $res = $this->db->select(
+            'job',
+            [ 'job_id' ],
+            [ 'job_title' => $title ],
+            __METHOD__
+        );
+        return $res->numRows() > 0;
     }
 
     public function getRelevantPublications($topic, $limit, $offset): array {

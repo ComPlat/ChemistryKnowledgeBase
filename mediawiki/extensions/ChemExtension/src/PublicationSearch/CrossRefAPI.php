@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\PublicationSearch;
 use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
-class CrossRefAPI {
+class CrossRefAPI extends PublicationFetcher {
 
     private $logger;
     private $crossRefApiBaseUrl;
@@ -15,7 +15,7 @@ class CrossRefAPI {
         $this->crossRefApiBaseUrl = 'https://api.crossref.org';
     }
 
-    public function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = []) {
+    private function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = []) {
 
         $filters = [
             'from-created-date' => date('Y-m-d', strtotime("-$daysAgo days")),
@@ -73,5 +73,32 @@ class CrossRefAPI {
             curl_close($ch);
         }
     }
+
+    public function fetchPublication( callable $callback, $daysBack = 1): void
+    {
+
+        $pageNumber = 0;
+        $pageSize = 100;
+        $nextCursor = null;
+        do {
+            print "\nFetching page $pageNumber...";
+            $res = $this->fetchPublications($daysBack, $pageSize, $pageNumber, $nextCursor);
+            $callback($res['results']);
+            $nextCursor = $res['nextCursor'];
+            $pageNumber++;
+
+        } while (count($res['results']) === $pageSize);
+
+    }
+
+    private function fetchPublications(int $daysAgo, int $pageSize, int $pageNumber, $nextCursor = null): array
+    {
+        $res = $this->find('chemistry', $daysAgo,
+            ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]
+        );
+
+        return ['results' => PublicationSearchResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null];
+    }
+
 
 }

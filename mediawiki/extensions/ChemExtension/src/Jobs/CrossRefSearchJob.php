@@ -22,6 +22,7 @@ class CrossRefSearchJob extends Job
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->publicationRepo = new PublicationSearchRepository($dbr);
 
+        $params['title'] = $title;
         parent::__construct('CrossRefSearchJob', $params);
         $this->logger = new LoggerUtils('CrossRefSearchJob', 'ChemExtension');
 

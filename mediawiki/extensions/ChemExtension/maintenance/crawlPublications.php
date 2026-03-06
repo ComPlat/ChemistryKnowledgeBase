@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Maintenance;
 
 
 use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
+use DIQA\ChemExtension\PublicationSearch\PublicationFetcher;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
 use DIQA\ChemExtension\Jobs\CrossRefSearchJob;
@@ -47,19 +48,13 @@ class crawlPublications extends \Maintenance
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->publicationRepo = new PublicationSearchRepository($dbr);
 
-        $pageNumber = 0;
-        $pageSize = 2;
-        $nextCursor = null;
-        do {
-            print "\nFetching page $pageNumber...";
-            $res = $this->fetchPublications($days, $pageSize, $pageNumber, $nextCursor);
-            $this->addPublications($res['results']);
-            $nextCursor = $res['nextCursor'];
-            $pageNumber++;
+        $apis = PublicationFetcher::factory();
+        foreach($apis as $api) {
+            print "\nUsing API " . $api->name() . "...";
+            $api->fetchPublication(fn($publications) => $this->addPublications($publications), $days);
+        }
 
-        } while (count($res['results']) === $pageSize);
-
-        print "Adding jobs...";
+        print "\nAdding jobs...";
         $unclassifiedDois = $this->publicationRepo->getUnclassifiedDois();
         foreach ($unclassifiedDois as $doi) {
             $this->addJob($doi);
@@ -68,19 +63,9 @@ class crawlPublications extends \Maintenance
         echo "\n";
     }
 
-    private function fetchPublications(int $daysAgo, int $pageSize, int $pageNumber, $nextCursor = null): array
-    {
-        // Example: return data from your repository here.
-        // Each entry must have keys: title, abstract, doi, date.
-        $crossRefApi = new CrossRefAPI();
-        $res = $crossRefApi->find('chemistry', $daysAgo,
-            ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]
-        );
 
-        return ['results' => PublicationSearchResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null];
-    }
 
-    private function addPublications(array $results)
+    private function addPublications(array $results): void
     {
         foreach ($results as $result) {
             $publication = $this->publicationRepo->findByDoi($result->getDoi());
@@ -101,8 +86,13 @@ class crawlPublications extends \Maintenance
             return;
         }
 
+        if ($this->publicationRepo->doesJobExistsForDoi($doi)) {
+            print "\nJob already exists for publication with DOI: " . $doi;
+            return;
+        }
+        $title = str_replace("/", "-", $doi);
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $jobQueue->push(new CrossRefSearchJob(null, ['doi' => $doi]));
+        $jobQueue->push(new CrossRefSearchJob($title, ['doi' => $doi]));
         print "\nCreated AI-job for publication with DOI: " . $doi;
 
     }

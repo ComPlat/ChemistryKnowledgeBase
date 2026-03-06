@@ -121,14 +121,6 @@ class PublicationSearchSpecialpage extends SpecialPage {
         return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize);
     }
 
-    private function fetchTotalNumber(string $topic): int {
-
-        $crossRefApi = new CrossRefAPI();
-        $res = $crossRefApi->find($topic, 300, ['rows' => 0]);
-
-        return $res->message->{'total-results'};
-    }
-
     /**
      * Build an HTML table for the given publications.
      *
