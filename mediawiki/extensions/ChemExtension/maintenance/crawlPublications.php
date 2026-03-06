@@ -56,8 +56,15 @@ class crawlPublications extends \Maintenance
             $this->addPublications($res['results']);
             $nextCursor = $res['nextCursor'];
             $pageNumber++;
+
         } while (count($res['results']) === $pageSize);
 
+        print "Adding jobs...";
+        $unclassifiedDois = $this->publicationRepo->getUnclassifiedDois();
+        foreach ($unclassifiedDois as $doi) {
+            $this->addJob($doi);
+        }
+        print "\nDone.";
         echo "\n";
     }
 
@@ -83,24 +90,21 @@ class crawlPublications extends \Maintenance
             } else {
                 print "\nPublication already exists: " . $result->getDoi();
             }
-            $this->addJob($result);
 
         }
     }
 
 
-    public function addJob(mixed $result): void
+    public function addJob(string $doi): void
     {
         if ($this->hasOption("dryrun")) {
             return;
         }
-        if (!$this->publicationRepo->isClassified($result->getDoi())) {
-            $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-            $jobQueue->push(new CrossRefSearchJob(null, ['doi' => $result->getDoi()]));
-            print "\nCreated AI-job for publication with DOI: " . $result->getDoi();
-        } else {
-            print "\nPublication already classified: " . $result->getDoi();
-        }
+
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push(new CrossRefSearchJob(null, ['doi' => $doi]));
+        print "\nCreated AI-job for publication with DOI: " . $doi;
+
     }
 
 

@@ -55,7 +55,7 @@ class CrossRefRepository {
         return $this->db->insertId();
     }
 
-    public function updateCheckResult(CrossRefResult $result, string $checkResult = null)
+    public function updateCheckResult(CrossRefResult $result, string $checkResult = null): void
     {
         $this->db->update('publications',
             [
@@ -90,21 +90,53 @@ class CrossRefRepository {
         );
     }
 
-    public function isClassified(string $doi): bool
-    {
+    public function getUnclassifiedDois(): array {
         $res = $this->db->select(
             'publications',
-            [ 'check_result' ],
-            [ 'doi' => $doi ],
+            [ 'doi' ],
+            [ 'check_result' => null ],
             __METHOD__
         );
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = $row->doi;
+        }
+        return $results;
+    }
 
-        if ( $res->numRows() === 0 ) {
-            return false;
+    public function getRelevantPublications($topic, $limit, $offset): array {
+
+        if ($topic !== '') {
+            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
+        } else {
+            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
+        }
+        $res = $this->db->select(
+            'publications',
+            [ 'doi', 'title', 'abstract', 'published' ],
+            [ $where ],
+            __METHOD__,
+            ['limit' => $limit, 'offset' => $offset]
+        );
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = new CrossRefResult($row->doi, $row->title, $row->abstract, $row->published);
         }
 
-        $row = $res->fetchObject();
+        return $results;
+    }
 
-        return !is_null($row->check_result);
+    public function getRelevantPublicationsCount($topic): int {
+        if ($topic !== '') {
+            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
+        } else {
+            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
+        }
+        return $this->db->select(
+            'publications',
+            [ 'count(doi) as count' ],
+            [ $where ],
+            __METHOD__
+        )->fetchObject()->count;
     }
 }

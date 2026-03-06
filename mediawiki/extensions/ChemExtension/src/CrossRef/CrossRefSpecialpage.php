@@ -4,15 +4,19 @@ namespace DIQA\ChemExtension\CrossRef;
 
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Html;
+use MediaWiki\MediaWikiServices;
 use RequestContext;
 use SpecialPage;
 
 class CrossRefSpecialpage extends SpecialPage {
 
     private const PAGE_SIZE = 20;
+    private $publicationRepo;
 
     public function __construct() {
         parent::__construct( 'CrossRefSpecialpage' );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $this->publicationRepo = new CrossRefRepository($dbr);
     }
 
     /**
@@ -25,19 +29,18 @@ class CrossRefSpecialpage extends SpecialPage {
 
         $request = RequestContext::getMain()->getRequest();
         $topic   = $request->getText( 'category', '' );
-        $nextCursor   = $request->getText( 'nextCursor', null );
         $page    = max( 0, $request->getInt( 'page', 0 ) );
 
         $out->addHTML( $this->buildForm( $topic ) );
 
-        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $nextCursor );
-        $total        = $this->fetchTotalNumber($topic);
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page );
+        $total        = $this->publicationRepo->getRelevantPublicationsCount($topic);
         $pageSize     = self::PAGE_SIZE;
         $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
         $page         = min( $page, $totalPages - 1 );
 
-        $out->addHTML( $this->buildTable( $publications['results'] ) );
-        $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total, $publications['nextCursor'] ) );
+        $out->addHTML( $this->buildTable( $publications ) );
+        $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total ) );
     }
 
     private function buildForm( string $selectedCategory ): string {
@@ -114,13 +117,8 @@ class CrossRefSpecialpage extends SpecialPage {
      *
      * @return array[]
      */
-    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, $nextCursor= null): array {
-        // Example: return data from your repository here.
-        // Each entry must have keys: title, abstract, doi, date.
-        $crossRefApi = new CrossRefAPI();
-        $res = $crossRefApi->find($topic, 300, ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]);
-
-        return [ 'results' => CrossRefResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null ];
+    private function fetchPublications(string $topic, int $pageSize, int $pageNumber): array {
+        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize);
     }
 
     private function fetchTotalNumber(string $topic): int {
@@ -219,7 +217,7 @@ class CrossRefSpecialpage extends SpecialPage {
     /**
      * Build Previous / Next / page-number pager.
      */
-    private function buildPager( string $topic, int $page, int $totalPages, int $total, $nextCursor ): string {
+    private function buildPager( string $topic, int $page, int $totalPages, int $total ): string {
         if ( $totalPages <= 1 ) {
             return '';
         }
@@ -240,7 +238,7 @@ class CrossRefSpecialpage extends SpecialPage {
         // Next
         if ( $page < $totalPages - 1 ) {
             $html .= Html::element( 'a', [
-                'href'  => $baseUrl . '&page=' . ( $page + 1 ).'&nextCursor=' . $nextCursor,
+                'href'  => $baseUrl . '&page=' . ( $page + 1 ),
                 'class' => 'mw-ui-button',
             ], $this->msg( 'crossref-pager-next' )->text() );
         } else {
