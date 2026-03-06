@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
-use DIQA\ChemExtension\CrossRef\CrossRefRepository;
+use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationImport\AIClient;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
@@ -20,7 +20,7 @@ class CrossRefSearchJob extends Job
     {
         $this->doi = $params['doi'] ?? null;
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
-        $this->publicationRepo = new CrossRefRepository($dbr);
+        $this->publicationRepo = new PublicationSearchRepository($dbr);
 
         parent::__construct('CrossRefSearchJob', $params);
         $this->logger = new LoggerUtils('CrossRefSearchJob', 'ChemExtension');

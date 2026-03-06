@@ -1,9 +1,9 @@
 <?php
-namespace DIQA\ChemExtension\CrossRef;
+namespace DIQA\ChemExtension\PublicationSearch;
 
 use DateTime;
 
-class CrossRefResult
+class PublicationSearchResult
 {
 
     private $doi;
@@ -57,7 +57,7 @@ class CrossRefResult
         $results = [];
         $items = $result->message->items;
         foreach ($items as $item) {
-            $results[] = new CrossRefResult($item->DOI,
+            $results[] = new PublicationSearchResult($item->DOI,
                 $item->title[0],
                 strip_tags($item->abstract) ?? '',
                 self::parseDateFromPublished($item->published));

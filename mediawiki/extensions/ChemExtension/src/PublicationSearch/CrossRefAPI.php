@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\CrossRef;
+namespace DIQA\ChemExtension\PublicationSearch;
 
 use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
@@ -67,7 +67,7 @@ class CrossRefAPI {
                 $errMsg .= " for $url";
                 throw new Exception($errMsg);
             }
-            throw new Exception("Error on CrossRef request. HTTP status: $httpcode. Message: $body for $url");
+            throw new Exception("Error on PublicationSearch request. HTTP status: $httpcode. Message: $body for $url");
 
         } finally {
             curl_close($ch);

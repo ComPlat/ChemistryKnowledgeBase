@@ -1,10 +1,10 @@
 <?php
 
-namespace DIQA\ChemExtension\CrossRef;
+namespace DIQA\ChemExtension\PublicationSearch;
 
 use Wikimedia\Rdbms\IMaintainableDatabase;
 
-class CrossRefRepository {
+class PublicationSearchRepository {
     private $db;
 
     /**
@@ -37,7 +37,7 @@ class CrossRefRepository {
         return [ 'publications' ];
     }
 
-    public function addPublication(CrossRefResult $result, string $checkResult = null): ?int
+    public function addPublication(PublicationSearchResult $result, string $checkResult = null): ?int
     {
 
         if ($this->findByDoi($result->getDoi()) !== null) {
@@ -55,7 +55,7 @@ class CrossRefRepository {
         return $this->db->insertId();
     }
 
-    public function updateCheckResult(CrossRefResult $result, string $checkResult = null): void
+    public function updateCheckResult(PublicationSearchResult $result, string $checkResult = null): void
     {
         $this->db->update('publications',
             [
@@ -67,7 +67,7 @@ class CrossRefRepository {
         );
     }
 
-    public function findByDoi(string $doi): ?CrossRefResult
+    public function findByDoi(string $doi): ?PublicationSearchResult
     {
         $res = $this->db->select(
             'publications',
@@ -82,7 +82,7 @@ class CrossRefRepository {
 
         $row = $res->fetchObject();
 
-        return new CrossRefResult(
+        return new PublicationSearchResult(
             $row->doi,
             $row->title,
             $row->abstract,
@@ -120,7 +120,7 @@ class CrossRefRepository {
         );
         $results = [];
         foreach ($res as $row) {
-            $results[] = new CrossRefResult($row->doi, $row->title, $row->abstract, $row->published);
+            $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published);
         }
 
         return $results;

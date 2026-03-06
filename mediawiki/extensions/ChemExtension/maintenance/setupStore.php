@@ -8,6 +8,7 @@ use DIQA\ChemExtension\CrossRef\CrossRefRepository;
 use DIQA\ChemExtension\Literature\LiteratureRepository;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
 use DIQA\ChemExtension\PubChem\PubChemRepository;
+use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\Utils\ArrayTools;
 use MediaWiki\Installer\DatabaseUpdater;
 use Wikimedia\Rdbms\IMaintainableDatabase;
@@ -55,7 +56,7 @@ class setupStore extends \Maintenance
             (new PubChemRepository($db))->setupTables(),
             (new LiteratureRepository($db))->setupTables(),
             (new CategoryIndexRepository($db))->setupTables(),
-            (new CrossRefRepository($db))->setupTables()
+            (new PublicationSearchRepository($db))->setupTables()
         ];
         $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {
@@ -102,7 +103,7 @@ class setupStore extends \Maintenance
             (new PubChemRepository($db))->dropTables(),
             (new LiteratureRepository($db))->dropTables(),
             (new CategoryIndexRepository($db))->dropTables(),
-            (new CrossRefRepository($db))->dropTables()
+            (new PublicationSearchRepository($db))->dropTables()
         ];
         $tables = ArrayTools::flatten($tables);
         foreach ($tables as $t) {

@@ -3,9 +3,9 @@
 namespace DIQA\ChemExtension\Maintenance;
 
 
-use DIQA\ChemExtension\CrossRef\CrossRefAPI;
-use DIQA\ChemExtension\CrossRef\CrossRefRepository;
-use DIQA\ChemExtension\CrossRef\CrossRefResult;
+use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
+use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
+use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
 use DIQA\ChemExtension\Jobs\CrossRefSearchJob;
 use MediaWiki\MediaWikiServices;
 
@@ -25,7 +25,7 @@ if (getenv('MW_INSTALL_PATH') !== false) {
 class crawlPublications extends \Maintenance
 {
 
-    private CrossRefRepository $publicationRepo;
+    private PublicationSearchRepository $publicationRepo;
 
     public function __construct()
     {
@@ -45,7 +45,7 @@ class crawlPublications extends \Maintenance
         $days = $this->getOption('days', 1);
         print "\nCrawling new publications from $days days ago...";
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
-        $this->publicationRepo = new CrossRefRepository($dbr);
+        $this->publicationRepo = new PublicationSearchRepository($dbr);
 
         $pageNumber = 0;
         $pageSize = 2;
@@ -77,7 +77,7 @@ class crawlPublications extends \Maintenance
             ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]
         );
 
-        return ['results' => CrossRefResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null];
+        return ['results' => PublicationSearchResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null];
     }
 
     private function addPublications(array $results)

@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\ChemExtension\CrossRef;
+namespace DIQA\ChemExtension\PublicationSearch;
 
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Html;
@@ -8,15 +8,15 @@ use MediaWiki\MediaWikiServices;
 use RequestContext;
 use SpecialPage;
 
-class CrossRefSpecialpage extends SpecialPage {
+class PublicationSearchSpecialpage extends SpecialPage {
 
     private const PAGE_SIZE = 20;
     private $publicationRepo;
 
     public function __construct() {
-        parent::__construct( 'CrossRefSpecialpage' );
+        parent::__construct( 'PublicationSearchSpecialpage' );
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
-        $this->publicationRepo = new CrossRefRepository($dbr);
+        $this->publicationRepo = new PublicationSearchRepository($dbr);
     }
 
     /**
@@ -179,7 +179,7 @@ class CrossRefSpecialpage extends SpecialPage {
      *
      * @return string HTML
      */
-    private function buildRow( CrossRefResult $pub ): string {
+    private function buildRow(PublicationSearchResult $pub ): string {
         $html = Html::openElement( 'tr' );
 
         // Title
