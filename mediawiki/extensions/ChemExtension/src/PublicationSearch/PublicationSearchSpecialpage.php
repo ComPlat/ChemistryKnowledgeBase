@@ -29,11 +29,12 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         $request = RequestContext::getMain()->getRequest();
         $topic   = $request->getText( 'category', '' );
+        $onlyApproved   = $request->getText( 'only-approved', '' );
         $page    = max( 0, $request->getInt( 'page', 0 ) );
 
-        $out->addHTML( $this->buildForm( $topic ) );
+        $out->addHTML( $this->buildForm( $topic, $onlyApproved == 1 ) );
 
-        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page );
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved == 1);
         $total        = $this->publicationRepo->getRelevantPublicationsCount($topic);
         $pageSize     = self::PAGE_SIZE;
         $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
@@ -43,7 +44,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total ) );
     }
 
-    private function buildForm( string $selectedCategory ): string {
+    private function buildForm( string $selectedCategory, bool $onlyApproved ): string {
         $categories = $this->fetchTopicCategories();
 
         $html = Html::openElement( 'form', [
@@ -86,6 +87,13 @@ class PublicationSearchSpecialpage extends SpecialPage {
             'class' => 'mw-ui-button mw-ui-progressive',
         ] );
 
+        $html .= Html::label(
+            $this->msg( 'crossref-only-approved-label' )->text(),
+            'crossref-only-approved',
+            ['style' => 'margin-left: 10px;']
+        );
+        $html .= Html::check( 'only-approved', $onlyApproved, ['style' => 'margin-left: 10px;']);
+
         $html .= Html::closeElement( 'div' );
         $html .= Html::closeElement( 'form' );
 
@@ -117,8 +125,8 @@ class PublicationSearchSpecialpage extends SpecialPage {
      *
      * @return array[]
      */
-    private function fetchPublications(string $topic, int $pageSize, int $pageNumber): array {
-        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize);
+    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, bool $onlyApproved): array {
+        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize, $onlyApproved);
     }
 
     /**

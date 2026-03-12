@@ -63,5 +63,6 @@
     "publicationlist-col-approved": "Approved",
   "crossref-pager-prev": "← Previous",
   "crossref-pager-next": "Next →",
-  "crossref-pager-info": "Page $1 of $2 ($3 results)"
+  "crossref-pager-info": "Page $1 of $2 ($3 results)",
+  "crossref-only-approved-label": "Only approved"
 }

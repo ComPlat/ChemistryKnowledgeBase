@@ -35,7 +35,7 @@ class PublicationApprove extends SimpleHandler
             $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
             $publicationRepo = new PublicationSearchRepository($dbr);
 
-            $publicationRepo->updateApproved($body->doi, $body->isApproved === 'true');
+            $publicationRepo->updateApproved($body->doi, $body->isApproved);
 
             $res = new Response();
             $res->setStatus(200);

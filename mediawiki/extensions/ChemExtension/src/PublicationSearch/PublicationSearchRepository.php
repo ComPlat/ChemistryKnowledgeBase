@@ -71,7 +71,7 @@ class PublicationSearchRepository {
     {
         $this->db->update('publications',
             [
-                'approved' => $approved ? 0 : 1
+                'approved' => $approved ? 1 : 0
             ],
             [
                 'doi' => $doi
@@ -127,12 +127,15 @@ class PublicationSearchRepository {
         return $res->numRows() > 0;
     }
 
-    public function getRelevantPublications($topic, $limit, $offset): array {
+    public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved): array {
 
         if ($topic !== '') {
             $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
         } else {
             $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
+        }
+        if ($onlyApproved) {
+            $where .= " AND approved = 1";
         }
         $res = $this->db->select(
             'publications',
