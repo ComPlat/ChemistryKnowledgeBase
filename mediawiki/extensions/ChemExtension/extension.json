@@ -184,7 +184,11 @@
             "path": "/ChemExtension/v1/edit-experiment",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\EditExperiment"
-      }
+        },{
+            "path": "/ChemExtension/v1/publication-approve",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\PublicationApprove"
+        }
 
     ],
     "JobClasses": {

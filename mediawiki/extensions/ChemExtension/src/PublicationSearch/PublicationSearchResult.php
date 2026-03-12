@@ -10,13 +10,17 @@ class PublicationSearchResult
     private $title;
     private $abstract;
     private $published;
+    private $checkResult;
+    private $approved;
 
-    public function __construct($doi, $title, $abstract, $published)
+    public function __construct($doi, $title, $abstract, $published, $checkResult = null, $approved = null)
     {
         $this->doi = $doi;
         $this->title = $title;
         $this->abstract = $abstract;
         $this->published = $published;
+        $this->checkResult = $checkResult;
+        $this->approved = $approved;
     }
 
     /**
@@ -49,6 +53,16 @@ class PublicationSearchResult
     public function getPublished()
     {
         return $this->published;
+    }
+
+    public function getCheckResult(): mixed
+    {
+        return $this->checkResult;
+    }
+
+    public function getApproved(): mixed
+    {
+        return $this->approved;
     }
 
 

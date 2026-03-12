@@ -10,7 +10,7 @@ use SpecialPage;
 
 class PublicationSearchSpecialpage extends SpecialPage {
 
-    private const PAGE_SIZE = 20;
+    private const PAGE_SIZE = 10;
     private $publicationRepo;
 
     public function __construct() {
@@ -135,7 +135,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         // Table header
         $html .= Html::openElement( 'thead' );
         $html .= Html::openElement( 'tr' );
-        foreach ( [ 'title', 'abstract', 'doi', 'date' ] as $col ) {
+        foreach ( [ 'title', 'abstract', 'doi', 'date', 'check_result', 'approved' ] as $col ) {
             $html .= Html::element(
                 'th',
                 [],
@@ -200,6 +200,9 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         // Date
         $html .= Html::element( 'td', [], $pub->getPublished() ?? '' );
+        $html .= Html::element( 'td', [], $pub->getCheckResult() ?? '' );
+        $approvedElement = Html::check($pub->getDoi(), $pub->getApproved() == '1');
+        $html .= Html::rawElement( 'td', ['class' => 'approved-checkbox'],  $approvedElement);
 
         $html .= Html::closeElement( 'tr' );
 
@@ -220,12 +223,25 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         $html = Html::openElement( 'div', [ 'class' => 'publication-pager mw-pager' ] );
 
+        // Prev
+        if ( $page > 0 ) {
+            $html .= Html::element( 'a', [
+                'href'  => $baseUrl . '&page=' . ( $page - 1 ),
+                'class' => 'mw-ui-button',
+            ], $this->msg( 'crossref-pager-prev' )->text() );
+        } else {
+            $html .= Html::element( 'span', [
+                'class' => 'mw-ui-button mw-ui-quiet',
+                'aria-disabled' => 'true',
+            ], $this->msg( 'crossref-pager-prev' )->text() );
+        }
         // Page indicator
         $html .= Html::element( 'span', [ 'class' => 'publication-pager-info' ],
             $this->msg( 'crossref-pager-info' )
                 ->numParams( $page + 1, $totalPages, $total )
                 ->text()
         );
+
 
         // Next
         if ( $page < $totalPages - 1 ) {

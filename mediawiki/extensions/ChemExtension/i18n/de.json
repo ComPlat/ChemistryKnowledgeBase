@@ -51,6 +51,8 @@
     "publicationlist-col-abstract": "Abstract",
     "publicationlist-col-doi": "DOI",
     "publicationlist-col-date": "Publikationsdatum",
+    "publicationlist-col-check_result": "Identifiziertes Topic",
+    "publicationlist-col-approved": "Angenommen",
   "crossref-pager-prev": "← Zurück",
   "crossref-pager-next": "Weiter →",
   "crossref-pager-info": "Seite $1 von $2 ($3 Ergebnisse)"

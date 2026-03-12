@@ -136,6 +136,15 @@ class Setup {
             'dependencies' => ['ext.diqa.chemextension'],
         );
 
+        $wgResourceModules['ext.diqa.chemextension.publication-search'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => ['scripts/special.publication-search.js'],
+            'styles' => [],
+            'dependencies' => ['ext.diqa.chemextension'],
+        );
+
         $wgResourceModules['ext.diqa.chemextension.redoxinput'] = array(
             'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
@@ -192,6 +201,9 @@ class Setup {
         }
         if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("SpecialImportPage")) {
             $out->addModules('ext.diqa.chemextension.import-page');
+        }
+        if (!is_null($out->getTitle()) && $out->getTitle()->isSpecial("PublicationSearchSpecialpage")) {
+            $out->addModules('ext.diqa.chemextension.publication-search');
         }
     }
 

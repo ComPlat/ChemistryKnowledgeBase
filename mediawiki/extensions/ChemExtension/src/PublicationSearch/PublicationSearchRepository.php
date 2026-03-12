@@ -26,7 +26,7 @@ class PublicationSearchRepository {
                         check_result VARCHAR(255)
                     )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE publications ADD CONSTRAINT publications_doi_key_unique UNIQUE IF NOT EXISTS (doi)');
-
+        $this->db->query('ALTER TABLE publications ADD COLUMN IF NOT EXISTS approved TINYINT(1) DEFAULT 0;');
         return [ 'publications' ];
     }
 
@@ -63,6 +63,18 @@ class PublicationSearchRepository {
             ],
             [
                 'doi' => $result->getDoi()
+            ]
+        );
+    }
+
+    public function updateApproved(string $doi, bool $approved): void
+    {
+        $this->db->update('publications',
+            [
+                'approved' => $approved ? 0 : 1
+            ],
+            [
+                'doi' => $doi
             ]
         );
     }
@@ -124,14 +136,15 @@ class PublicationSearchRepository {
         }
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published' ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
             [ $where ],
             __METHOD__,
-            ['limit' => $limit, 'offset' => $offset]
+            ['LIMIT' => $limit, 'OFFSET' => $offset]
         );
         $results = [];
         foreach ($res as $row) {
-            $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published);
+            $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published,
+                                    $row->check_result, $row->approved);
         }
 
         return $results;
