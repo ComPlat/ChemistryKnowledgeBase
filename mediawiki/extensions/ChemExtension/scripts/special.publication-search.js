@@ -15,6 +15,18 @@
                     isApproved: isApproved
                 })
             })
+        });
+
+        $('.download-button').click(function(e) {
+            let doi = $(e.target).attr('doi');
+            let url = mw.config.get('wgScriptPath') + '/rest.php/ChemExtension/v1/download-publication-pdf?doi=' + encodeURIComponent(doi);
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: (blob, status, xhr) => {
+                    window.open(blob, '_blank').focus();
+                }
+            });
         })
     }
 

@@ -188,6 +188,10 @@
             "path": "/ChemExtension/v1/publication-approve",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\PublicationApprove"
+        },{
+            "path": "/ChemExtension/v1/download-publication-pdf",
+            "method": "GET",
+            "class": "DIQA\\ChemExtension\\Endpoints\\DownloadPublication"
         }
 
     ],

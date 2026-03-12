@@ -29,12 +29,12 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         $request = RequestContext::getMain()->getRequest();
         $topic   = $request->getText( 'category', '' );
-        $onlyApproved   = $request->getText( 'only-approved', '' );
+        $onlyApproved   = $request->getText( 'only-approved', false ) == 1;
         $page    = max( 0, $request->getInt( 'page', 0 ) );
 
-        $out->addHTML( $this->buildForm( $topic, $onlyApproved == 1 ) );
+        $out->addHTML( $this->buildForm( $topic, $onlyApproved ) );
 
-        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved == 1);
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved);
         $total        = $this->publicationRepo->getRelevantPublicationsCount($topic);
         $pageSize     = self::PAGE_SIZE;
         $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
@@ -201,7 +201,11 @@ class PublicationSearchSpecialpage extends SpecialPage {
                 ],
                 $doi
             );
-            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink );
+            $downloadButton = Html::openElement('div');
+            $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => 'https://doi.org/' . htmlspecialchars($doi)]);
+            $downloadButton .= Html::closeElement('div');
+
+            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton );
         } else {
             $html .= Html::element( 'td', [], '' );
         }
