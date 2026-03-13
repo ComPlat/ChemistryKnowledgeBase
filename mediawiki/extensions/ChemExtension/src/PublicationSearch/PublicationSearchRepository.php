@@ -144,7 +144,7 @@ class PublicationSearchRepository {
             [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
             [ $where ],
             __METHOD__,
-            ['LIMIT' => $limit, 'OFFSET' => $offset]
+            ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC']
         );
         $results = [];
         foreach ($res as $row) {
