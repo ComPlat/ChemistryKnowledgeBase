@@ -205,7 +205,18 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => 'https://doi.org/' . htmlspecialchars($doi)]);
             $downloadButton .= Html::closeElement('div');
 
-            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton );
+            $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
+                [
+                    'doi' => $doi,
+                    'publication-title' => strip_tags($pub->getTitle()),
+                    'topic' => $pub->getCheckResult()
+                ]
+            );
+            $importButton = Html::openElement('div');
+            $importButton .= Html::linkButton('[import]', ['class' => 'import-button', 'href' => $href]);
+            $importButton .= Html::closeElement('div');
+
+            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton . $importButton );
         } else {
             $html .= Html::element( 'td', [], '' );
         }

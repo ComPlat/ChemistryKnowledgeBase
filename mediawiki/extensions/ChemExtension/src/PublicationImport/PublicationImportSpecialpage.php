@@ -108,13 +108,13 @@ class PublicationImportSpecialpage extends SpecialPage
      */
     private function createUploadForm(): FormLayout
     {
-        global $wgScriptPath;
+        global $wgScriptPath, $wgRequest;
         $pageTitle = new FieldLayout(
             new TextInputWidget([
                 'id' => 'chemext-page-title',
                 'infusable' => true,
                 'name' => 'page-title',
-                'value' => '',
+                'value' => $wgRequest->getText('publication-title', ''),
                 'placeholder' => 'Publication title'
             ]),
             [
@@ -128,7 +128,7 @@ class PublicationImportSpecialpage extends SpecialPage
                 'id' => 'chemext-doi',
                 'infusable' => true,
                 'name' => 'doi',
-                'value' => '',
+                'value' => $wgRequest->getText('doi', ''),
                 'placeholder' => 'DOI',
                 'required' => true,
             ]),
@@ -138,12 +138,13 @@ class PublicationImportSpecialpage extends SpecialPage
             ]
         );
 
+        $presetTopic = $wgRequest->getText('topic', '');
         $topicCategory = new FieldLayout(
             new TitleMultiSelectWidget(['id' =>
                 'chemext-topic',
                 'infusable' => true,
                 'name' => 'topic',
-                'default' => [],
+                'default' =>  $presetTopic === '' ? [] : [$presetTopic],
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
                 'namespace' => NS_CATEGORY
