@@ -345,4 +345,63 @@ class QueryUtils {
             return $title->getText();
         }
     }
+
+    /**
+     * Recursively retrieves all subcategories of a given category.
+     *
+     * @param string $categoryName The category name (without "Category:" prefix)
+     * @param array $visited Already-visited categories (to prevent infinite loops)
+     * @return string[] List of all subcategory names
+     */
+    public static function getAllSubcategories(string $categoryName, array $visited = []): array
+    {
+        if (in_array($categoryName, $visited, true)) {
+            return [];
+        }
+
+        $visited[] = $categoryName;
+        $directSubcategories = self::getDirectSubcategories($categoryName);
+        $all = $directSubcategories;
+
+        foreach ($directSubcategories as $subcat) {
+            $nested = self::getAllSubcategories($subcat, $visited);
+            $all = array_merge($all, $nested);
+        }
+
+        return array_unique($all);
+    }
+
+    /**
+     * Returns the direct subcategories of a given category from the database.
+     *
+     * @param string $categoryName The category name (without "Category:" prefix)
+     * @return string[] List of direct subcategory names
+     */
+    private static function getDirectSubcategories(string $categoryName): array
+    {
+        $dbr = \MediaWiki\MediaWikiServices::getInstance()
+            ->getDBLoadBalancer()
+            ->getConnection(DB_REPLICA);
+
+        $res = $dbr->select(
+            ['page', 'categorylinks'],
+            ['page_title'],
+            [
+                'cl_to' => str_replace(' ', '_', $categoryName),
+                'page_namespace' => NS_CATEGORY,
+            ],
+            __METHOD__,
+            [],
+            [
+                'categorylinks' => ['JOIN', 'cl_from = page_id'],
+            ]
+        );
+
+        $subcats = [];
+        foreach ($res as $row) {
+            $subcats[] = str_replace('_', ' ', $row->page_title);
+        }
+
+        return $subcats;
+    }
 }

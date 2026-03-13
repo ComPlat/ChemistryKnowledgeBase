@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\Jobs;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationImport\AIClient;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Job;
 use MediaWiki\MediaWikiServices;
@@ -46,7 +47,7 @@ class CrossRefSearchJob extends Job
     {
         $aiClient = new AIClient();
 
-        $allSubCategories = $this->getAllSubcategories('Topic');
+        $allSubCategories = QueryUtils::getAllSubcategories('Topic');
         $prompt = <<<PROMPT
 Given the following abstract of the publication, is it relevant to any of the following subcategories? 
 Answer with either: yes, no or maybe. If yes or maybe, please provide also the subcategory after a semicolon. 
@@ -72,62 +73,5 @@ PROMPT;
         return strtolower(trim($aiText));
     }
 
-    /**
-     * Recursively retrieves all subcategories of a given category.
-     *
-     * @param string $categoryName The category name (without "Category:" prefix)
-     * @param array $visited Already-visited categories (to prevent infinite loops)
-     * @return string[] List of all subcategory names
-     */
-    private function getAllSubcategories(string $categoryName, array $visited = []): array
-    {
-        if (in_array($categoryName, $visited, true)) {
-            return [];
-        }
 
-        $visited[] = $categoryName;
-        $directSubcategories = $this->getDirectSubcategories($categoryName);
-        $all = $directSubcategories;
-
-        foreach ($directSubcategories as $subcat) {
-            $nested = $this->getAllSubcategories($subcat, $visited);
-            $all = array_merge($all, $nested);
-        }
-
-        return array_unique($all);
-    }
-
-    /**
-     * Returns the direct subcategories of a given category from the database.
-     *
-     * @param string $categoryName The category name (without "Category:" prefix)
-     * @return string[] List of direct subcategory names
-     */
-    private function getDirectSubcategories(string $categoryName): array
-    {
-        $dbr = \MediaWiki\MediaWikiServices::getInstance()
-            ->getDBLoadBalancer()
-            ->getConnection(DB_REPLICA);
-
-        $res = $dbr->select(
-            ['page', 'categorylinks'],
-            ['page_title'],
-            [
-                'cl_to' => str_replace(' ', '_', $categoryName),
-                'page_namespace' => NS_CATEGORY,
-            ],
-            __METHOD__,
-            [],
-            [
-                'categorylinks' => ['JOIN', 'cl_from = page_id'],
-            ]
-        );
-
-        $subcats = [];
-        foreach ($res as $row) {
-            $subcats[] = str_replace('_', ' ', $row->page_title);
-        }
-
-        return $subcats;
-    }
 }

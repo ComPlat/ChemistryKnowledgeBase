@@ -45,7 +45,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
     }
 
     private function buildForm( string $selectedCategory, bool $onlyApproved ): string {
-        $categories = $this->fetchTopicCategories();
+        $categories = QueryUtils::getAllSubcategories('Topic');
 
         $html = Html::openElement( 'form', [
             'method' => 'get',
@@ -98,25 +98,6 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $html .= Html::closeElement( 'form' );
 
         return $html;
-    }
-
-    private function fetchTopicCategories(): array {
-        $dbr = wfGetDB( DB_REPLICA );
-
-        $res = $dbr->select(
-            'category',
-            [ 'cat_title' ],
-            [],
-            __METHOD__,
-            [ 'ORDER BY' => 'cat_title ASC' ]
-        );
-
-        $categories = [];
-        foreach ( $res as $row ) {
-            $categories[] = str_replace( '_', ' ', $row->cat_title );
-        }
-
-        return $categories;
     }
 
     /**
