@@ -20,14 +20,15 @@ class CrossRefAPI extends PublicationFetcher {
         $filters = [
             'from-created-date' => date('Y-m-d', strtotime("-$daysAgo days")),
             'until-created-date' => date('Y-m-d'),
-            'has-abstract' => true
+            'has-abstract' => true,
+            'type' => 'journal-article',
         ];
         $filters = array_merge($filters, $additionalFilters);
         $filtersAsStrings = array_map(fn($k) => "$k:$filters[$k]", array_keys($filters));
 
         return $this->getJsonData('/works', array_merge( [
             'query' => $query,
-            'select' => 'title,abstract,DOI,published',
+            'select' => 'title,abstract,DOI,published,publisher',
             'filter' => implode(',', $filtersAsStrings),
             'sort' => 'published',
             'order' => 'desc'
@@ -97,7 +98,15 @@ class CrossRefAPI extends PublicationFetcher {
             ['rows' => $pageSize, 'cursor' => $pageNumber === 0 ? '*' : $nextCursor]
         );
 
-        return ['results' => PublicationSearchResult::fromResult($res), 'nextCursor' => $res->message->{'next-cursor'} ?? null];
+        $fromResult = PublicationSearchResult::fromResult($res);
+
+        global $wgCrossRefJournalList;
+        $wgCrossRefJournalList = $wgCrossRefJournalList ?? [];
+        if (count($wgCrossRefJournalList) > 0) {
+            $fromResult = array_filter($fromResult, fn (PublicationSearchResult $e)
+            => $e->getJournal() === '' || in_array($e->getJournal(), $wgCrossRefJournalList));
+        }
+        return ['results' => $fromResult, 'nextCursor' => $res->message->{'next-cursor'} ?? null];
     }
 
 

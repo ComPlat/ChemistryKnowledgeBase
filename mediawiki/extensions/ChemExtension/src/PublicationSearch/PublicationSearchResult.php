@@ -12,8 +12,9 @@ class PublicationSearchResult
     private $published;
     private $checkResult;
     private $approved;
+    private $journal;
 
-    public function __construct($doi, $title, $abstract, $published, $checkResult = null, $approved = null)
+    public function __construct($doi, $title, $abstract, $published, $checkResult = null, $approved = null, $journal = null)
     {
         $this->doi = $doi;
         $this->title = $title;
@@ -21,6 +22,7 @@ class PublicationSearchResult
         $this->published = $published;
         $this->checkResult = $checkResult;
         $this->approved = $approved;
+        $this->journal = $journal;
     }
 
     /**
@@ -65,6 +67,11 @@ class PublicationSearchResult
         return $this->approved;
     }
 
+    public function getJournal(): mixed
+    {
+        return $this->journal;
+    }
+
 
     static function fromResult($result): array
     {
@@ -74,7 +81,11 @@ class PublicationSearchResult
             $results[] = new PublicationSearchResult($item->DOI,
                 $item->title[0],
                 strip_tags($item->abstract) ?? '',
-                self::parseDateFromPublished($item->published));
+                self::parseDateFromPublished($item->published),
+                null,
+                null,
+                $item->publisher ?? '');
+
         }
         return $results;
     }

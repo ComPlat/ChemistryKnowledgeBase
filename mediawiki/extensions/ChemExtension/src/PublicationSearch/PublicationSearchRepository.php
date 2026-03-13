@@ -83,7 +83,7 @@ class PublicationSearchRepository {
     {
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published' ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
             [ 'doi' => $doi ],
             __METHOD__
         );
@@ -98,7 +98,9 @@ class PublicationSearchRepository {
             $row->doi,
             $row->title,
             $row->abstract,
-            $row->published
+            $row->published,
+            $row->check_result,
+            $row->approved
         );
     }
 
