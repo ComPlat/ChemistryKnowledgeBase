@@ -1,0 +1,23 @@
+Subject: [PATCH] custom prompt for publication search
+---
+Index: mediawiki/extensions/CategoryTree/includes/CategoryTree.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/CategoryTree/includes/CategoryTree.php b/mediawiki/extensions/CategoryTree/includes/CategoryTree.php
+--- a/mediawiki/extensions/CategoryTree/includes/CategoryTree.php	(revision de4a6999ed1c008e3e58d5965810677ec4f84958)
++++ b/mediawiki/extensions/CategoryTree/includes/CategoryTree.php	(date 1773931657626)
+@@ -209,6 +209,12 @@
+ 				}
+ 			}
+ 
++            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
++            $hookContainer->run('chem_categorytree', [$row->page_title, $row->page_namespace, & $result]);
++            if ($result ?? false) {
++                continue;
++            }
++
+ 			# NOTE: in inverse mode, the page record may be null, because we use a right join.
+ 			#      happens for categories with no category page (red cat links)
+ 			if ( $inverse && $row->page_title === null ) {

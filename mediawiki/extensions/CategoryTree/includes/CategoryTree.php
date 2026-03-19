@@ -209,6 +209,12 @@ class CategoryTree {
 				}
 			}
 
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->run('chem_categorytree', [$row->page_title, $row->page_namespace, & $result]);
+            if ($result ?? false) {
+                continue;
+            }
+
 			# NOTE: in inverse mode, the page record may be null, because we use a right join.
 			#      happens for categories with no category page (red cat links)
 			if ( $inverse && $row->page_title === null ) {

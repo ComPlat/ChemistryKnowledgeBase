@@ -29,6 +29,8 @@ use OutputPage;
 use Parser;
 use Skin;
 use SMW\ApplicationFactory;
+use SMW\DIProperty;
+use SMW\DIWikiPage;
 use SMW\Services\ServicesFactory;
 use Title;
 
@@ -287,6 +289,17 @@ CSS;
         $label = '';
         if (WikiTools::checkIfInTopicCategory($title)) {
             $label = 'Topics';
+        }
+    }
+
+    public static function categoryTree(string $pageTitle, int $pageNamespace, & $result) {
+        $result = false;
+        $hideTopicAnnotations = smwfGetStore()->getPropertyValues(
+            DIWikiPage::newFromTitle(Title::makeTitle($pageNamespace, $pageTitle)),
+            DIProperty::newFromUserLabel("Hide Topic"));
+        if (count($hideTopicAnnotations) > 0) {
+            $first = reset($hideTopicAnnotations);
+            $result = $first->getBoolean();
         }
     }
 

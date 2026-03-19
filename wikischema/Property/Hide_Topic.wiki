@@ -1,0 +1,5 @@
+;Purpose
+* Denotes if a category should be hidden from the user in the category tree.
+
+;Datatype
+* [[Has type::Boolean]]
