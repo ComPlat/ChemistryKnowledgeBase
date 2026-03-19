@@ -8,7 +8,13 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Job;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Revision\SlotRecord;
+use WikiPage;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class CrossRefSearchJob extends Job
 {
@@ -47,15 +53,21 @@ class CrossRefSearchJob extends Job
     {
         $aiClient = new AIClient();
 
-        $allSubCategories = QueryUtils::getAllSubcategories('Topic');
-        $prompt = <<<PROMPT
-Given the following abstract of the publication, is it relevant to any of the following subcategories? 
-Answer with either: yes, no or maybe. If yes or maybe, please provide also the subcategory after a semicolon. 
-Subcategories:
+        $promptTitle = Title::newFromText('Publication_search_prompt', NS_MEDIAWIKI);
+        if ($promptTitle->exists()) {
+            $prompt = $this->renderPage($promptTitle);
+        } else {
+            $allSubCategories = QueryUtils::getAllSubcategories('Topic');
+            $prompt = <<<PROMPT
+    Given the following abstract of the publication, is it relevant to any of the following subcategories? 
+    Answer with either: yes, no or maybe. If yes or maybe, please provide also the subcategory after a semicolon. 
+    Subcategories:
+    
+    PROMPT;
 
-PROMPT;
+            $prompt .= join("\n", $allSubCategories);
 
-        $prompt .= join("\n", $allSubCategories);
+        }
 
         $this->logger->log("Prompt for AI: " . $prompt);
         $publication = $this->publicationRepo->findByDoi($doi);
@@ -71,6 +83,16 @@ PROMPT;
             $this->publicationRepo->updateCheckResult($publication, 'not relevant');
         }
         return strtolower(trim($aiText));
+    }
+
+    private function renderPage(Title $promptTitle): string
+    {
+        $wikiPage = new WikiPage($promptTitle);
+        $content = $wikiPage->getContent(SlotRecord::MAIN)->getWikitextForTransclusion();
+        $parser = clone MediaWikiServices::getInstance()->getParser();
+        $parserOutput = $parser->parse($content, $promptTitle, new ParserOptions(RequestContext::getMain()->getUser()));
+        $renderedText = $parserOutput->getText(['enableSectionEditLinks' => false]);
+        return Sanitizer::stripAllTags($renderedText);
     }
 
 

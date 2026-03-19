@@ -19,6 +19,7 @@ $magicWords['en'] = [
     'doiinfobox' => [ 0, 'doiinfobox' ],
     'doidata' => [ 0, 'doidata' ],
     'counter' => [ 0, 'counter' ],
+    'alltopics' => [ 0, 'alltopics' ],
     'showcache' => [ 0, 'showcache' ],
     'extractFromTable' => [ 0, 'extractFromTable' ],
     'calculateSelectivity' => [ 0, 'calculateSelectivity' ],

@@ -21,6 +21,7 @@ use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
 use DIQA\ChemExtension\ParserFunctions\Selectivity;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\TIB\TagListRenderer;
+use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use RequestContext;
@@ -303,6 +304,9 @@ CSS;
         if ( $magicWordId === 'counter' ) {
             static $counter = 1;
             $ret = $counter++;
+        } else if ( $magicWordId === 'alltopics' ) {
+            $allSubCategories = QueryUtils::getAllSubcategories('Topic');
+            $ret = join(", ", $allSubCategories);
         }
         return true;
     }
@@ -310,6 +314,7 @@ CSS;
 
     public static function declareVarIds( &$customVariableIds ) {
         $customVariableIds[] = 'counter';
+        $customVariableIds[] = 'alltopics';
     }
 
     public static function cleanupChemExtState() {
