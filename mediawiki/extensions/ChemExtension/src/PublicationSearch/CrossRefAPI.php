@@ -38,7 +38,11 @@ class CrossRefAPI extends PublicationFetcher {
     public function findPdfDownloads($doi) {
         $json = $this->getJsonData("/works/doi/$doi");
         $links = $json->message->link;
-        return array_filter($links, fn($link) => $link->{'content-type'} === 'application/pdf');
+        $pdfs = array_filter($links, fn($link) => $link->{'content-type'} === 'application/pdf');
+        if (count($pdfs) > 0) {
+            return $pdfs;
+        }
+        return $links;
     }
 
 
