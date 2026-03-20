@@ -35,6 +35,14 @@ class CrossRefAPI extends PublicationFetcher {
         ], $additionalParams));
     }
 
+    public function findPdfDownloads($doi) {
+        $json = $this->getJsonData("/works/doi/$doi");
+        $links = $json->message->link;
+        return array_filter($links, fn($link) => $link->{'content-type'} === 'application/pdf');
+    }
+
+
+
 
     /**
      * @throws Exception

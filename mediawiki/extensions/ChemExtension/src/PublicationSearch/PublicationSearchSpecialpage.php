@@ -183,7 +183,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
                 $doi
             );
             $downloadButton = Html::openElement('div');
-            $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => 'https://doi.org/' . htmlspecialchars($doi)]);
+            $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => htmlspecialchars($doi)]);
             $downloadButton .= Html::closeElement('div');
 
             $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
