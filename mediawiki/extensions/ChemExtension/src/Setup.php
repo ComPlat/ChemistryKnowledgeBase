@@ -225,6 +225,18 @@ class Setup {
         return $link;
     }
 
+    private static function createModifyPromptLink() {
+        global $wgTitle;
+        $link = '';
+        $userGroups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups(RequestContext::getMain()->getUser());
+        if (in_array('editor', $userGroups)  && !is_null($wgTitle) && $wgTitle->getNamespace() === NS_CATEGORY) {
+            $modifyMoleculePage = Title::newFromText("Prompt " . $wgTitle->getText(), NS_MEDIAWIKI);
+            $url = $modifyMoleculePage->getFullURL(['action'=>'edit']);
+            $link = "<a target='_blank' href='$url'>Modify search prompt</a>";
+        }
+        return $link;
+    }
+
     public static function onSkinAfterContent( &$data, Skin $skin ) {
         global $wgTitle;
         if (is_null($wgTitle) || $wgTitle->isSpecial('FormEdit')) {
@@ -369,12 +381,13 @@ CSS;
             return;
         }
         $link = self::createModifyLink();
+        $promptLink = self::createModifyPromptLink();
         $investigationHints = self::createInvestigationHint($out);
         $out->addSubtitle('<div class="ce-subtitle-content">'
             . $b->getPageType()
             . $investigationHints
             .  self::$subTitleExtension
-            . "$link</div>");
+            . "$link $promptLink</div>");
     }
 
     /**

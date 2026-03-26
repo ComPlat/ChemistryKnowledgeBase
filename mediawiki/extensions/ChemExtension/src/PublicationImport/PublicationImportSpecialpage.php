@@ -144,7 +144,7 @@ class PublicationImportSpecialpage extends SpecialPage
                 'chemext-topic',
                 'infusable' => true,
                 'name' => 'topic',
-                'default' =>  $presetTopic === '' ? [] : [$presetTopic],
+                'default' =>  $presetTopic === '' ? [] : explode(",", $presetTopic),
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
                 'namespace' => NS_CATEGORY

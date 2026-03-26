@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
@@ -69,7 +70,6 @@ class CrossRefSearchJob extends Job
 
         }
 
-        $this->logger->log("Prompt for AI: " . $prompt);
         $publication = $this->publicationRepo->findByDoi($doi);
 
         $abstract = $publication->getAbstract() !== '' ? $publication->getAbstract() : $publication->getTitle();
@@ -77,10 +77,20 @@ class CrossRefSearchJob extends Job
 
         $this->logger->log("AI response: " . $aiText);
         $parts = explode(';', $aiText);
-        if ($parts[0] === 'yes' || $parts[0] === 'maybe') {
+        if (strtolower($parts[0]) === 'yes' || strtolower($parts[0]) === 'maybe') {
+            $this->logger->log("Publication relevant ({$parts[0]}): " . $publication->getDoi());
             $this->publicationRepo->updateCheckResult($publication, $parts[1] ?? 'unknown reason');
         } else {
-            $this->publicationRepo->updateCheckResult($publication, 'not relevant');
+            $allSubCategories = QueryUtils::getAllSubcategories('Topic');
+            $positiveResults = $this->checkSpecificPrompts($publication, $allSubCategories);
+            if (count($positiveResults) > 0) {
+                $topicResults = join(',', $positiveResults);
+                $this->logger->log("Publication relevant [topics: $topicResults]: " . $publication->getDoi());
+                $this->publicationRepo->updateCheckResult($publication, $topicResults);
+            } else {
+                $this->logger->log("Publication not relevant: " . $publication->getDoi());
+                $this->publicationRepo->updateCheckResult($publication, 'not relevant');
+            }
         }
         return strtolower(trim($aiText));
     }
@@ -93,6 +103,35 @@ class CrossRefSearchJob extends Job
         $parserOutput = $parser->parse($content, $promptTitle, new ParserOptions(RequestContext::getMain()->getUser()));
         $renderedText = $parserOutput->getText(['enableSectionEditLinks' => false]);
         return Sanitizer::stripAllTags($renderedText);
+    }
+
+    private function checkSpecificPrompts(PublicationSearchResult $publication, array $allTopics): array
+    {
+        $aiClient = new AIClient();
+
+        $positiveResults = [];
+        foreach ($allTopics as $topic) {
+            $promptTitle = Title::newFromText('Prompt_' . $topic , NS_MEDIAWIKI);
+            if (!$promptTitle->exists()) {
+                continue;
+            }
+            $prompt = $this->renderPage($promptTitle);
+            $this->logger->log("Specific prompt for AI [topic:$topic]: " . $prompt);
+            $publication = $this->publicationRepo->findByDoi($publication->getDoi());
+
+            $abstract = $publication->getAbstract() !== '' ? $publication->getAbstract() : $publication->getTitle();
+            $aiText = $aiClient->callAIWithTextInputs([$abstract], $prompt);
+            $this->logger->log("AI response: " . $aiText);
+            $parts = explode(';', $aiText);
+
+            if (strtolower($parts[0]) === 'yes' || strtolower($parts[0]) === 'maybe') {
+                $this->logger->log("Publication relevant [topic:$topic] (response: {$parts[0]}): " . $publication->getDoi());
+                $positiveResults[] = $topic;
+            }
+        }
+
+        return $positiveResults;
+
     }
 
 
