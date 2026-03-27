@@ -58,7 +58,9 @@ class CrossRefSearchJob extends Job
         if ($promptTitle->exists()) {
             $prompt = $this->renderPage($promptTitle);
         } else {
-            $allSubCategories = QueryUtils::getAllSubcategories('Topic');
+            $allTopics = QueryUtils::getAllSubcategories('Topic');
+            $specificPrompts = $this->getTopicsWithSpecificPrompts();
+            $nonSpecificPrompts = array_diff($allTopics, $specificPrompts);
             $prompt = <<<PROMPT
     Given the following abstract of the publication, is it relevant to any of the following subcategories? 
     Answer with either: yes, no or maybe. If yes or maybe, please provide also the subcategory after a semicolon. 
@@ -66,7 +68,7 @@ class CrossRefSearchJob extends Job
     
     PROMPT;
 
-            $prompt .= join("\n", $allSubCategories);
+            $prompt .= join("\n", $nonSpecificPrompts);
 
         }
 
@@ -81,8 +83,8 @@ class CrossRefSearchJob extends Job
             $this->logger->log("Publication relevant ({$parts[0]}): " . $publication->getDoi());
             $this->publicationRepo->updateCheckResult($publication, $parts[1] ?? 'unknown reason');
         } else {
-            $allSubCategories = QueryUtils::getAllSubcategories('Topic');
-            $positiveResults = $this->checkSpecificPrompts($publication, $allSubCategories);
+            $allTopics = QueryUtils::getAllSubcategories('Topic');
+            $positiveResults = $this->checkSpecificPrompts($publication, $allTopics);
             if (count($positiveResults) > 0) {
                 $topicResults = join(',', $positiveResults);
                 $this->logger->log("Publication relevant [topics: $topicResults]: " . $publication->getDoi());
@@ -134,5 +136,16 @@ class CrossRefSearchJob extends Job
 
     }
 
-
+    private function getTopicsWithSpecificPrompts(): array
+    {
+        $results = [];
+        $allTopics = QueryUtils::getAllSubcategories('Topic');
+        foreach ($allTopics as $topic) {
+            $promptTitle = Title::newFromText('Prompt_' . $topic, NS_MEDIAWIKI);
+            if ($promptTitle->exists()) {
+                 $results[] = $topic;
+            }
+        }
+        return $results;
+    }
 }
