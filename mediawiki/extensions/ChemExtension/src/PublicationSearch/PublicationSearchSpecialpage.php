@@ -164,7 +164,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $html = Html::openElement( 'tr' );
 
         // Title
-        $html .= Html::element( 'td', [], $pub->getTitle() ?? '' );
+        $html .= Html::rawElement( 'td', [], strip_tags($pub->getTitle(), ['<sup>', '</sup>', '<sub>', '</sub>', '<a>', '</a>', '<b>', '</b>', '<i>', '</i>', '<br>', '<br/>', '<br />', '<br/>']) ?? '' );
 
         // Abstract
         $html .= Html::element( 'td', [ 'class' => 'publication-abstract' ], $pub->getAbstract() ?? '' );
