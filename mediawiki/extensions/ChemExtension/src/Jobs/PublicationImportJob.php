@@ -86,7 +86,7 @@ $topicsCategoryAnnotations
 WIKITEXT;
 
         $wikitextImporter = new ExperimentWikitextImporter($wikitext);
-        $result = $wikitextImporter->createInvestigationsFromCSV('Photocatalytic_CO2_conversion_experiments');
+        $result = $wikitextImporter->createInvestigationsFromCSV();
         $wikitext = $result['wikitext'];
         foreach($result['investigationPages'] as $page => $content) {
             $invPage = Title::newFromText($this->getTitle()->getPrefixedText() . "/$page");

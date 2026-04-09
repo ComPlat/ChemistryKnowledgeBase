@@ -8,7 +8,7 @@ use DIQA\ChemExtension\Utils\QueryUtils;
 
 class ExperimentWikitextImporter {
 
-    const PRE = '/<pre>(.*?)<\/pre>/s';
+    const PRE = '/(<pre>|```csv)(.*?)(<\/pre>|```)/s';
     private $text;
 
     /**
@@ -28,7 +28,7 @@ class ExperimentWikitextImporter {
         $index = 0;
         $investigationPages = [];
 
-        foreach($matches[1] as $m) {
+        foreach($matches[2] as $m) {
             $totalMatch = $matches[0][$index];
             $parseTableResult = $this->parseTable2WikiTemplateCalls($m);
             $allRows = $parseTableResult['allRows'];
