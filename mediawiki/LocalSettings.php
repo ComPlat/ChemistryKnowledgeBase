@@ -499,6 +499,9 @@ $wgPageFormsAutocompletionURLs['molecule_lookup_analyte'] = $wgServer . $wgScrip
 $wgPageFormsAutocompletionURLs['molecule_lookup_additive'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=AdditiveMolecule';
 $wgPageFormsAutocompletionURLs['molecule_lookup_electrolyte'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Electrolyte';
 $wgPageFormsAutocompletionURLs['molecule_lookup_irc'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=IRC';
+$wgPageFormsAutocompletionURLs['molecule_lookup_host'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Host';
+$wgPageFormsAutocompletionURLs['molecule_lookup_guest'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Guest';
+$wgPageFormsAutocompletionURLs['molecule_lookup_cofactor'] = $wgServer . $wgScriptPath . '/rest.php/ChemExtension/v1/search-molecule?searchText=<substr>&priorityProperties[]=Cofactor';
 
 $wgPageFormsMaxLocalAutocompleteValues = 800;
 $wgPageFormsHeightForMinimizingInstances = 800; // default value is 800

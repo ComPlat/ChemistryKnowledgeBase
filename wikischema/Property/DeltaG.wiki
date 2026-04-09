@@ -1,0 +1,11 @@
+;Purpose
+* Denotes the ??
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 kJ/mol]]
+
+; Unit
+* [[Display units::kJ/mol]]

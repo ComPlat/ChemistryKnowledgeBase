@@ -1,0 +1,8 @@
+;Purpose
+* Denotes the assay type
+
+;Datatype
+* [[Has type::Text]]
+
+[[Allows value::Type 1]]
+[[Allows value::Type 2]]

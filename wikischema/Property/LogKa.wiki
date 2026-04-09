@@ -1,0 +1,6 @@
+;Purpose
+* Denotes the ??
+
+;Datatype
+* [[Has type::Number]]
+

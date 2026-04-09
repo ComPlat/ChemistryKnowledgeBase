@@ -1,0 +1,30 @@
+<noinclude>
+This is the Cyclic Voltammetry experiments template.
+</noinclude>
+<includeonly><table class="wikitable" title="">
+<tr>
+<th about="molecule:host" title="host">host</th>
+<th about="host conc" title="host concentration [{{#defaultQuantity:property=Host concentration|form=Host_Guest_interaction_experiments}}]">host conc [{{#defaultQuantity:property=Host concentration|form=Host_Guest_interaction_experiments}}]</th>
+<th about="molecule:guest" title="guest">guest</th>
+<th about="guest conc" title="guest concentration [{{#defaultQuantity:property=Guest concentration|form=Host_Guest_interaction_experiments}}]">guest conc [{{#defaultQuantity:property=Guest concentration|form=Host_Guest_interaction_experiments}}]</th>
+<th about="molecule:cofactor" title="cofactor">cofactor</th>
+<th about="cofactor conc" title="cofactor concentration [{{#defaultQuantity:property=Cofactor concentration|form=Host_Guest_interaction_experiments}}]">cofactor conc [{{#defaultQuantity:property=Cofactor concentration|form=Host_Guest_interaction_experiments}}]</th>
+<th about="host_guest_ratio" title="Host-Guest-Ratio">Host-Guest-Ratio</th>
+<th about="ka" title="Ka [{{#defaultQuantity:property=Ka|form=Host_Guest_interaction_experiments}}]">Ka [{{#defaultQuantity:property=Ka|form=Host_Guest_interaction_experiments}}]</th>
+<th about="logKa" title="logKa">LogKa</th>
+<th about="kd" title="Kd [{{#defaultQuantity:property=Kd|form=Host_Guest_interaction_experiments}}]">Kd [{{#defaultQuantity:property=Kd|form=Host_Guest_interaction_experiments}}]</th>
+<th about="deltaG" title="DeltaG [{{#defaultQuantity:property=DeltaG|form=Host_Guest_interaction_experiments}}]">DeltaG [{{#defaultQuantity:property=DeltaG|form=Host_Guest_interaction_experiments}}]</th>
+<th about="Temperature" property="hidden" title="temperature [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]">T [{{#defaultQuantity:property=TemperatureP|form=Photocatalytic_CO2_conversion_experiments}}]</th>
+<th about="detection_type" title="detection type">Detection type</th>
+<th about="assay_type" title="assay type">Assay type</th>
+<th about="technique" title="technique">Technique</th>
+
+<th about="details" title="details" property="hidden">Details</th>
+<th about="include" title="include" property="hidden">include</th>
+</tr>
+{{{experiments|}}}
+</table>
+{{#set: BelongsToPublication={{BASEPAGENAME}} }}
+[[Category:Host Guest interaction experiments]]
+[[Category:Molecular process]]
+[[Category:Investigation]]</includeonly>

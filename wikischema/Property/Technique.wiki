@@ -1,0 +1,8 @@
+;Purpose
+* Denotes the technique
+
+;Datatype
+* [[Has type::Text]]
+
+[[Allows value::Technique 1]]
+[[Allows value::Technique 2]]

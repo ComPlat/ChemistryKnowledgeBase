@@ -1,0 +1,11 @@
+;Purpose
+* Denotes the ??
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::1 mol^-1]]
+
+; Unit
+* [[Display units::mol^-1]]

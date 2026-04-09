@@ -1,0 +1,64 @@
+<noinclude>
+Add a new set of Host Guest interaction experiments (a table in which each row describes one investigation):
+{{#forminput:form=Host Guest interaction experiments}}
+</noinclude>
+
+<includeonly>
+{{{for template|Host Guest interaction experiments}}}
+experiments:
+{{{field|experiments|holds template}}}
+{{{end template}}}
+
+{{{for template|Host Guest interaction|multiple|embed in field=Host Guest interaction experiments[experiments]}}}
+{| class="formtable"
+! host:
+| {{{field|host|input type=combobox|property=Host|values from url=molecule_lookup_host}}}
+| host concentration [{{#defaultQuantity:property=Host concentration|form=Host_Guest_interaction_experiments}}]:
+| {{{field|host conc|input type=regexp|property=Host concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! guest:
+| {{{field|guest|input type=combobox|property=Guest|values from url=molecule_lookup_guest}}}
+| guest concentration [{{#defaultQuantity:property=Guest concentration|form=Host_Guest_interaction_experiments}}]:
+| {{{field|guest conc|input type=regexp|property=Guest concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! cofactor:
+| {{{field|cofactor|input type=combobox|property=Cofactor|values from url=molecule_lookup_cofactor}}}
+| cofactor concentration [{{#defaultQuantity:property=Cofactor concentration|form=Host_Guest_interaction_experiments}}]:
+| {{{field|cofactor conc|input type=regexp|property=Cofactor concentration|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(M|mM|µM)?)?$/}}}
+|-
+! guest-host-ratio [SolvA/SolvB]:
+| {{{field|guest_host_ratio|label=guest-host-ratio|input type=string}}}
+|-
+! Ka [1/mol]:
+| {{{field|ka|input type=regexp|property=Ka|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+| LogKa
+| {{{field|logka|input type=regexp|property=LogKa|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! Kd [mM]:
+| {{{field|kd|input type=regexp|property=Kd|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! Temperature [° C] (can be range):
+| {{{field|temperature|label=Temperature [° C]|input type=regexp|regexp=^[+-]?([0-9]*[.])?[0-9]+$}}}
+|-
+! DeltaG [kJ/mol]:
+| {{{field|deltaG|input type=regexp|property=DeltaG|base type=Number|message=Input a positive number|regexp=/^([0-9]*\.)?[0-9]*(\s+(V)?)?$/}}}
+|-
+! Detection type:
+| {{{field|detection_type|input type=dropdown|property=Detection type}}}
+|-
+! Assay type:
+| {{{field|assay_type|input type=dropdown|property=Assay type}}}
+|-
+! Technique:
+| {{{field|technique|input type=dropdown|property=Technique}}}
+|-
+! include:
+| {{{field|include|input type=checkbox|property=Include}}} (check it when you want to include this investigation on topic pages)
+|-
+|}
+;Details:
+{{{field|details|input type=textarea|property=Details|message=Arbitrary extra information}}}
+{{{end template}}}
+
+{{{standard input|save}}} {{{standard input|preview}}} {{{standard input|changes}}} {{{standard input|cancel}}}
+</includeonly>

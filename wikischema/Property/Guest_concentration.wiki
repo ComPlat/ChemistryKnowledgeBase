@@ -1,0 +1,12 @@
+;Purpose
+* Denotes the guest concentration
+
+;Datatype
+* [[Has type::Quantity]]
+
+; Corresponds
+* [[Corresponds to::0.001 mM]]
+* [[Corresponds to::1 µM]]
+
+; Unit
+* [[Display units::µM]]

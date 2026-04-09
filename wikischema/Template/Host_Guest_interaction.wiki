@@ -1,0 +1,42 @@
+<noinclude>
+This is the Host guest interaction template.
+</noinclude>
+<includeonly><tr>
+<td>{{DisplayMolecule|{{{host|}}} }}</td>
+<td>{{{host conc|}}}</td>
+<td>{{DisplayMolecule|{{{guest|}}} }}</td>
+<td>{{{guest conc|}}}</td>
+<td>{{DisplayMolecule|{{{cofactor|}}} }}</td>
+<td>{{{cofactor conc|}}}</td>
+<td>{{{guest_host_ratio|}}}</td>
+<td>{{#convertQuantity:{{{ka|}}}|property=Ka|form=Host_Guest_interaction_experiments }}</td>
+<td>{{{logka|}}}</td>
+<td>{{#convertQuantity:{{{kd|}}}|property=Kd|form=Host_Guest_interaction_experiments }}</td>
+<td>{{#convertQuantity:{{{deltaG|}}}|property=DeltaG|form=Host_Guest_interaction_experiments }}</td>
+<td property="hidden">{{{temperature|}}}</td>
+<td>{{{detection_type|}}}</td>
+<td>{{{assay_type|}}}</td>
+<td>{{{technique|}}}</td>
+
+<td property="hidden">{{{details|}}}</td>
+<td property="hidden">{{{include|}}}</td>
+<td>{{#subobject:
+ |Host={{{host|}}}
+ |Host concentration={{{host conc|}}}
+ |Guest={{{guest|}}}
+ |Guest concentration={{{guest conc|}}}
+ |Cofactor={{{cofactor|}}}
+ |Cofactor concentration={{{cofactor conc|}}}
+ |Host guest ratio={{{guest_host_ratio|}}}
+ |Ka={{{ka|}}}
+ |LogKa={{{logka|}}}
+ |Kd={{{kd|}}}
+ |DeltaG={{{deltaG|}}}
+ |TemperatureP={{{temperature|}}}
+ |Detection type={{{detection_type|}}}
+ |Assay type={{{assay_type|}}}
+ |Technique={{{technique|}}}
+ |Details={{{details|}}}
+ |Included={{{include|}}}
+ |BasePageName={{BASEPAGENAME}}
+}}</td></tr></includeonly>
