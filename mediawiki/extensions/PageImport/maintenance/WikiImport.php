@@ -256,7 +256,7 @@ class WikiImport extends Maintenance
     private static function getAllPagesByNamespace(int $nsID): array
     {
         $pageNames = array();
-        $DbConnection = wfGetDB(DB_REPLICA);
+        $DbConnection = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
 
         $results = $DbConnection->select(
             array('page'),
