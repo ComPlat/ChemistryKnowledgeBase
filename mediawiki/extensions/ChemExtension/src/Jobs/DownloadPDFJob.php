@@ -23,7 +23,12 @@ class DownloadPDFJob extends Job {
         $doi = $params['doi'];
         $this->logger->debug('Loading from URL: ' . $url);
 
-        $tmpFile = sys_get_temp_dir() . "/" . md5($doi);
+        global $wgChemPubStoreDir;
+        if (!isset($wgChemPubStoreDir)) {
+            $wgChemPubStoreDir = sys_get_temp_dir();
+            $this->logger->error('$wgChemPubStoreDir is not set. using system tmp-dir as default');
+        }
+        $tmpFile = $wgChemPubStoreDir . "/" . md5($doi);
         $cmdParams = " --url=" . escapeshellarg($url);
         $cmdParams .= " --dir=".escapeshellarg($tmpFile);
         global $wgChemChromeBin, $wgChemChromeDriverBin, $wgChemChromeDriverLog;
@@ -42,17 +47,10 @@ class DownloadPDFJob extends Job {
             $this->logger->log('$wgChemChromeDriverLog is not set');
         }
 
-        print "java -jar /opt/downloadPDF/downloadPDF.jar $cmdParams 2>&1";
-        print "\n";
         $output = shell_exec("java -jar /opt/downloadPDF/downloadPDF.jar $cmdParams 2>&1");
-        if (PdfUtils::isPdfFile($tmpFile)) {
-            $this->logger->debug('PDF file found. Stored at: ' . $tmpFile);
-            global $wgChemPubStoreDir;
-            if (isset($wgChemPubStoreDir)) {
-                copy($tmpFile, $wgChemPubStoreDir . "/" . md5($doi) . ".pdf");
-            }
-        } else {
-            $this->logger->debug('PDF file not found. Output: ' . $output);
+        if (!PdfUtils::isPdfFile($tmpFile)) {
+            $this->logger->debug('Not a PDF file: ' . $tmpFile. ". Deleted.");
+            unlink($tmpFile);
         }
         $this->logger->debug($output);
         
