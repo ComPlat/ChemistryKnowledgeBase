@@ -5,6 +5,7 @@ namespace DIQA\ChemExtension\PublicationImport;
 use DIQA\ChemExtension\Jobs\PublicationImportJob;
 use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
 use eftec\bladeone\BladeOne;
@@ -57,18 +58,21 @@ class PublicationImportSpecialpage extends SpecialPage
 
             $tmpFolder = $this->checkPrerequisites();
 
-            if (isset($_FILES["chemfile"]["name"])) {
+            global $wgRequest;
+            $doi = $wgRequest->getText('doi', '');
+            if (isset($_FILES["chemfile"]["name"]) || file_exists(PdfUtils::publicationPDF($doi))) {
                 try {
-                    global $wgRequest;
                     $pageTitle = $wgRequest->getText('page-title', '');
                     $topics = $wgRequest->getText('topic', '');
                     if ($topics === '') $topics = "Topic";
-                    $doi = $wgRequest->getText('doi', '');
                     if ($doi === '') {
                         throw new Exception('DOI is mandatory. Please specify one.');
                     }
                     $this->checkIfDOIAlreadyExists($doi);
                     $uploadedFiles = $this->processUpload($tmpFolder);
+                    if (file_exists(PdfUtils::publicationPDF($doi))) {
+                        $uploadedFiles[$pageTitle] = PdfUtils::publicationPDF($doi);
+                    }
                     $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
                     $this->putTitleOnWatchlist($title);
                     $output->addHTML($this->renderUploadResult($uploadedFiles));
@@ -89,6 +93,8 @@ class PublicationImportSpecialpage extends SpecialPage
             $output->addHTML($e->getMessage());
         }
     }
+
+
 
     private function renderUploadResult($uploadedFiles)
     {
@@ -185,7 +191,7 @@ class PublicationImportSpecialpage extends SpecialPage
     private function processUpload(string $tmpFolder): array
     {
         $uploadedFiles = [];
-        for ($i = 0; $i < count($_FILES["chemfile"]["name"]); $i++) {
+        for ($i = 0; $i < count($_FILES["chemfile"]["name"] ?? []); $i++) {
             $name = $_FILES["chemfile"]["name"][$i];
             if ($name === '') {
                 throw new Exception("No file(s) selected.");

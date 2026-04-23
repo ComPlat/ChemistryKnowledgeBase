@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\PublicationSearch;
 
+use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Html;
 use MediaWiki\MediaWikiServices;
@@ -193,13 +194,17 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
                 [
                     'doi' => $doi,
-                    'publication-title' => strip_tags($pub->getTitle()),
+                    'page-title' => strip_tags($pub->getTitle()),
                     'topic' => $pub->getCheckResult()
                 ]
             );
-            $importButton = Html::openElement('div');
-            $importButton .= Html::linkButton('[import]', ['class' => 'import-button', 'href' => $href]);
-            $importButton .= Html::closeElement('div');
+
+            $importButton = '';
+            if (file_exists(PdfUtils::publicationPDF($doi))) {
+                $importButton .= Html::openElement('div');
+                $importButton .= Html::linkButton('[import]', ['class' => 'import-button', 'href' => $href]);
+                $importButton .= Html::closeElement('div');
+            }
 
             $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton . $importButton );
         } else {
