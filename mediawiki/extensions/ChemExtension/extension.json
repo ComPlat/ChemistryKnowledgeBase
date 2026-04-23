@@ -209,7 +209,8 @@
         "CreateAuthorPageJob": "DIQA\\ChemExtension\\Jobs\\CreateAuthorPageJob",
         "ImportInvestigationJob": "DIQA\\ChemExtension\\Jobs\\ImportInvestigationJob",
         "ImportFromPubChem": "DIQA\\ChemExtension\\Jobs\\ImportFromPubChem",
-        "CrossRefSearchJob": "DIQA\\ChemExtension\\Jobs\\CrossRefSearchJob"
+        "CrossRefSearchJob": "DIQA\\ChemExtension\\Jobs\\CrossRefSearchJob",
+        "DownloadPDFJob": "DIQA\\ChemExtension\\Jobs\\DownloadPDFJob"
     },
     "manifest_version": 2
 }
