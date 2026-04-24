@@ -51,7 +51,15 @@ class crawlPublications extends \Maintenance
         $apis = PublicationFetcher::factory();
         foreach($apis as $api) {
             print "\nUsing API " . $api->name() . "...";
-            $api->fetchPublication(fn($publications) => $this->addPublications($publications), $days);
+            $api->fetchPublication(function($publications) {
+                global $wgCrossRefJournalList;
+                $wgCrossRefJournalList = $wgCrossRefJournalList ?? [];
+                if (count($wgCrossRefJournalList) > 0) {
+                    $publications = array_filter($publications, fn (PublicationSearchResult $e)
+                    => $e->getJournal() === '' || in_array($e->getJournal(), $wgCrossRefJournalList));
+                }
+                $this->addPublications($publications);
+                }, $days);
         }
 
         print "\nAdding jobs...";

@@ -80,11 +80,11 @@ class PublicationSearchResult
         foreach ($items as $item) {
             $results[] = new PublicationSearchResult($item->DOI,
                 $item->title[0],
-                strip_tags($item->abstract) ?? '',
+                isset($item->abstract) ? strip_tags($item->abstract) : $item->title[0],
                 self::parseDateFromPublished($item->published),
                 null,
                 null,
-                $item->publisher ?? '');
+                $item->{'container-title'}[0] ?? '');
 
         }
         return $results;
