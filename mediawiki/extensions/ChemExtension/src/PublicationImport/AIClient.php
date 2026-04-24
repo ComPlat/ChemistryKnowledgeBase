@@ -200,9 +200,10 @@ class AIClient
             "type" => "input_text",
             "text" => $systemPrompt,
         ];
-        global $wgOpenAIModel;
+        global $wgOpenAIModel, $wgOpenAIModelReasoning;
         return [
             "model" => $wgOpenAIModel ?? "o3",
+            "reasoning" => ["effort" => $wgOpenAIModelReasoning ?? "none"],
             "input" => [
                 [
                     "role" => "user",
