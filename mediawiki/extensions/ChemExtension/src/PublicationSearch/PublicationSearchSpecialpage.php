@@ -200,11 +200,12 @@ class PublicationSearchSpecialpage extends SpecialPage {
             );
 
             $importButton = '';
-            if (file_exists(PdfUtils::publicationPDF($doi))) {
-                $importButton .= Html::openElement('div');
-                $importButton .= Html::linkButton('[import]', ['class' => 'import-button', 'href' => $href]);
-                $importButton .= Html::closeElement('div');
-            }
+            $importAutomatically = file_exists(PdfUtils::publicationPDF($doi));
+            $importText = $importAutomatically ? 'import automatically' : 'import manually';
+            $importButton .= Html::openElement('div');
+            $importButton .= Html::linkButton("[$importText]", ['class' => 'import-button', 'href' => $href]);
+            $importButton .= Html::closeElement('div');
+
 
             $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton . $importButton );
         } else {
