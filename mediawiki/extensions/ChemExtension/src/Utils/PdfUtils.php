@@ -51,10 +51,10 @@ class PdfUtils {
         if (!isset($wgChemPubStoreDir)) {
             $wgChemPubStoreDir = sys_get_temp_dir();
         }
-        if (!is_dir($wgChemPubStoreDir . "/" . md5($doi))) {
-            return $wgChemPubStoreDir . "/" . md5($doi);
+        if (!is_dir($wgChemPubStoreDir . "/" . md5($doi) . '.pdf')) {
+            return $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
         }
-        return self::getFirstFileInDirectory($wgChemPubStoreDir . "/" . md5($doi));
+        return self::getFirstFileInDirectory($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
     }
 
     private static function getFirstFileInDirectory(string $directoryPath): ?string

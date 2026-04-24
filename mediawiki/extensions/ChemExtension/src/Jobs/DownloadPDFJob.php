@@ -28,7 +28,7 @@ class DownloadPDFJob extends Job {
             $wgChemPubStoreDir = sys_get_temp_dir();
             $this->logger->error('$wgChemPubStoreDir is not set. using system tmp-dir as default');
         }
-        $tmpFile = $wgChemPubStoreDir . "/" . md5($doi);
+        $tmpFile = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
         $cmdParams = " --url=" . escapeshellarg($url);
         $cmdParams .= " --dir=".escapeshellarg($tmpFile);
         global $wgChemChromeBin, $wgChemChromeDriverBin, $wgChemChromeDriverLog;
