@@ -18,8 +18,8 @@ class CrossRefAPI extends PublicationFetcher {
     private function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = []) {
 
         $filters = [
-            'from-created-date' => date('Y-m-d', strtotime("-$daysAgo days")),
-            'until-created-date' => date('Y-m-d'),
+            'from-pub-date' => date('Y-m-d', strtotime("-$daysAgo days")),
+            'until-pub-date' => date('Y-m-d'),
             'type' => 'journal-article',
         ];
         $filters = array_merge($filters, $additionalFilters);
