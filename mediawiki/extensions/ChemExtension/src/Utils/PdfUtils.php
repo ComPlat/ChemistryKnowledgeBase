@@ -51,6 +51,27 @@ class PdfUtils {
         if (!isset($wgChemPubStoreDir)) {
             $wgChemPubStoreDir = sys_get_temp_dir();
         }
-        return $wgChemPubStoreDir . "/" . md5($doi);
+        if (!is_dir($wgChemPubStoreDir . "/" . md5($doi))) {
+            return $wgChemPubStoreDir . "/" . md5($doi);
+        }
+        return self::getFirstFileInDirectory($wgChemPubStoreDir . "/" . md5($doi));
+    }
+
+    private static function getFirstFileInDirectory(string $directoryPath): ?string
+    {
+        if (!is_dir($directoryPath)) {
+            return null;
+        }
+
+        $files = scandir($directoryPath);
+
+        foreach ($files as $file) {
+            $fullPath = $directoryPath . DIRECTORY_SEPARATOR . $file;
+            if (is_file($fullPath)) {
+                return $fullPath;
+            }
+        }
+
+        return null;
     }
 }

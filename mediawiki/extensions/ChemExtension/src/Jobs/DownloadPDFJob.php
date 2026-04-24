@@ -48,7 +48,7 @@ class DownloadPDFJob extends Job {
         }
 
         $output = shell_exec("java -jar /opt/downloadPDF/downloadPDF.jar $cmdParams 2>&1");
-        if (!PdfUtils::isPdfFile($tmpFile)) {
+        if (file_exists($tmpFile) && !PdfUtils::isPdfFile($tmpFile)) {
             $this->logger->debug('Not a PDF file: ' . $tmpFile. ". Deleted.");
             unlink($tmpFile);
         }

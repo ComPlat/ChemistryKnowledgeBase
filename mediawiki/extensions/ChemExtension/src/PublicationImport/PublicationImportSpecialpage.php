@@ -232,11 +232,23 @@ class PublicationImportSpecialpage extends SpecialPage
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $paths = array_values($uploadedFiles);
         $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
-        $title = Title::newFromText($pageTitle);
+        $title = Title::newFromText($this->cleanTitle($pageTitle));
         $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics]);
         $jobQueue->push($job);
         return $title;
     }
+
+    private function cleanTitle(string $input): string
+    {
+        // Remove all non-printable characters (keeping standard printable ASCII and valid UTF-8 whitespace)
+        $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $input);
+
+        // Replace multiple whitespace characters (spaces, tabs, newlines, etc.) with a single space
+        $cleaned = preg_replace('/\s+/', ' ', $cleaned);
+
+        return trim($cleaned);
+    }
+
 
     private function putTitleOnWatchlist(Title $title): void
     {
