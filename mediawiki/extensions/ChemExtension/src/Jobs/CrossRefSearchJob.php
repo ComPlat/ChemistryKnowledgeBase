@@ -8,6 +8,7 @@ use DIQA\ChemExtension\PublicationSearch\DownloadLinkFinder;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
 use DIQA\ChemExtension\Utils\LoggerUtils;
+use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Job;
@@ -153,17 +154,29 @@ class CrossRefSearchJob extends Job
         return $results;
     }
 
-    private function createDownloadJob($doi): void
+    public function createDownloadJob($doi): void
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $crossRefApi = new CrossRefApi();
         $pdfDownloads = $crossRefApi->findPdfDownloads($doi);
         if (count($pdfDownloads) > 0) {
             $first = reset($pdfDownloads);
-            $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
-                'url' => $first->URL,
-                'doi' => $doi,
-            ]));
+            $downloader = new DownloadLinkFinder($first->URL);
+            $links = $downloader->findDownloadLinks(['pdf']);
+            if (empty($links)) {
+                $this->logger->log("no pdf links found for doi: $doi");
+                $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
+                    'url' => $first->URL,
+                    'doi' => $doi,
+                ]));
+            } else {
+                $first = reset($links);
+                $this->logger->log("downloading pdf from: " . $first['url']);
+                $content = file_get_contents($first['url']);
+                if (str_starts_with($content, '%PDF')) {
+                    PDFUtils::savePublicationPDF($doi, $content);
+                }
+            }
 
         } else {
             $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);

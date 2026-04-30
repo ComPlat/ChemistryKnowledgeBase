@@ -45,6 +45,15 @@ class PdfUtils {
         return $header === '%PDF';
     }
 
+    public static function savePublicationPDF(string $doi, string $content): void
+    {
+        global $wgChemPubStoreDir;
+        if (!isset($wgChemPubStoreDir)) {
+            $wgChemPubStoreDir = sys_get_temp_dir();
+        }
+        file_put_contents($wgChemPubStoreDir . "/" . md5($doi) . '.pdf', $content);
+    }
+
     public static function publicationPDF(string $doi): string
     {
         global $wgChemPubStoreDir;
