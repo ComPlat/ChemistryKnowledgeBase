@@ -170,4 +170,15 @@ class WikiTools {
             } else return 0;
         });
     }
+
+    public static function cleanTitle(string $input): string
+    {
+        // Remove all non-printable characters (keeping standard printable ASCII and valid UTF-8 whitespace)
+        $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $input);
+
+        // Replace multiple whitespace characters (spaces, tabs, newlines, etc.) with a single space
+        $cleaned = preg_replace('/\s+/', ' ', $cleaned);
+
+        return trim($cleaned);
+    }
 }

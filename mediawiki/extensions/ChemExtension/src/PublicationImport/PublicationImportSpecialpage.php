@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
+use DIQA\ChemExtension\Utils\WikiTools;
 use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
 use eftec\bladeone\BladeOne;
 use Exception;
@@ -232,21 +233,10 @@ class PublicationImportSpecialpage extends SpecialPage
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $paths = array_values($uploadedFiles);
         $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
-        $title = Title::newFromText($this->cleanTitle($pageTitle));
+        $title = Title::newFromText(WikiTools::cleanTitle($pageTitle));
         $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics]);
         $jobQueue->push($job);
         return $title;
-    }
-
-    private function cleanTitle(string $input): string
-    {
-        // Remove all non-printable characters (keeping standard printable ASCII and valid UTF-8 whitespace)
-        $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $input);
-
-        // Replace multiple whitespace characters (spaces, tabs, newlines, etc.) with a single space
-        $cleaned = preg_replace('/\s+/', ' ', $cleaned);
-
-        return trim($cleaned);
     }
 
 

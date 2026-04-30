@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\PublicationSearch;
 
 use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
+use DIQA\ChemExtension\Utils\WikiTools;
 use Html;
 use MediaWiki\MediaWikiServices;
 use RequestContext;
@@ -194,7 +195,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
                 [
                     'doi' => $doi,
-                    'page-title' => strip_tags($pub->getTitle()),
+                    'page-title' => WikiTools::cleanTitle(strip_tags($pub->getTitle())),
                     'topic' => $pub->getCheckResult()
                 ]
             );
