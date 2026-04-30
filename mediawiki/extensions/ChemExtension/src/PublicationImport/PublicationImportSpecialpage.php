@@ -120,7 +120,7 @@ class PublicationImportSpecialpage extends SpecialPage
                 'id' => 'chemext-page-title',
                 'infusable' => true,
                 'name' => 'page-title',
-                'value' => $wgRequest->getText('publication-title', ''),
+                'value' => $wgRequest->getText('page-title', ''),
                 'placeholder' => 'Publication title'
             ]),
             [
