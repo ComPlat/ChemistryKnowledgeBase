@@ -72,6 +72,40 @@ class ExtractionScorerTest extends TestCase
         $this->assertEqualsWithDelta(1.0, $score['precision'], 1e-9);
     }
 
+    public function testMoleculeResolverMatchesSynonyms(): void
+    {
+        // a fake resolver that maps known synonyms to the same canonical key
+        $resolver = new class extends MoleculeResolver {
+            public function canonicalize(string $name): string
+            {
+                $n = strtolower(trim($name));
+                $map = [
+                    'cb[7]' => 'Molecule:M1',
+                    'cucurbit[7]uril' => 'Molecule:M1',
+                ];
+                return $map[$n] ?? $n;
+            }
+        };
+        $scorer = new ExtractionScorer(0.1, ['host', 'guest'], $resolver);
+
+        $gold = [['host' => 'cucurbit[7]uril', 'guest' => 'adamantane']];
+        $extracted = [['host' => 'CB[7]', 'guest' => 'adamantane']];
+
+        $score = $scorer->scorePublication($gold, $extracted);
+        // synonym for host resolves to the same molecule -> perfect match
+        $this->assertEqualsWithDelta(1.0, $score['f1'], 1e-9);
+    }
+
+    public function testWithoutResolverSynonymsCountAsMismatch(): void
+    {
+        $scorer = new ExtractionScorer(0.1); // no resolver
+        $gold = [['host' => 'cucurbit[7]uril', 'guest' => 'adamantane']];
+        $extracted = [['host' => 'CB[7]', 'guest' => 'adamantane']];
+        $score = $scorer->scorePublication($gold, $extracted);
+        // host differs as plain string -> not a perfect score
+        $this->assertLessThan(1.0, $score['f1']);
+    }
+
     public function testAggregateMicroAverages(): void
     {
         $scorer = new ExtractionScorer();

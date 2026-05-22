@@ -44,9 +44,17 @@ One JSON file per publication under `<Topic>/gold/`:
       "guest conc": "0.001", "guest_host_ratio": "1:1", "ka": "1.2e9",
       "kd": "8.3e-10", "deltaG": "-52", "temperature": "298",
       "detection_type": "ITC", "technique": "ITC" }
-  ]
+  ],
+  "prose": {
+    "Abstract Summary": "The human-written summary text from the curated wiki entry ...",
+    "Advances and Special Progress": "..."
+  }
 }
 ```
+
+The optional `prose` field holds the human-written reference text from the curated wiki entry.
+It may be a single string or a map of section name → text; it is only used for the (secondary)
+prose-similarity metric and can be omitted.
 
 **Important:** the keys in each `experiments` object must be the **row-template parameter names**
 (the same column headers the corresponding `MediaWiki:Prompt_import_<Topic>` page asks for), so
@@ -58,15 +66,41 @@ that gold values and extracted values share one vocabulary. See the row template
 
 ## Metric
 
-`ExtractionScorer` does a structured, field-level comparison (not text similarity):
+**Primary — structured field accuracy** (`ExtractionScorer`, not text similarity):
 
 - extracted experiment rows are greedily matched to gold rows,
 - numeric cells (Ka, Kd, ΔG, TON, faradaic efficiency, concentrations, …) match within a
   relative tolerance (`--tolerance`, default 10%),
+- molecule cells (catalyst, photosensitizer, host, guest, solvents — see `EvalTopicConfig`) are
+  compared by molecule identity via `MoleculeResolver`, so synonyms/abbreviations that resolve to
+  the same Molecule page count as a match,
 - all other cells match by normalized string equality,
 - precision / recall / F1 are micro-averaged over all non-empty cells.
 
 This is the quantitative "Treffsicherheit" number for the paper.
+
+**Efficiency** — input/output token usage per publication is recorded; `F1 per 1k tokens` is
+reported so the optimizer is pushed to stay both accurate and lean. `--token-penalty` lets the
+best-prompt selection trade a little F1 for fewer tokens (default 0 = pure F1).
+
+**Secondary — prose similarity** — when a gold entry has a `prose` field, the AI prose (response
+minus the CSV block) is compared to the reference via embedding cosine similarity
+(`ProseSimilarityScorer` + `EmbeddingClient`, model `$wgOpenAIEmbeddingModel`). Disable with
+`--no-embeddings`. Kept as a low-weight support signal only.
+
+## CLI options
+
+```
+--topic <dir>          (required) topic directory under eval/
+--iterations <n>       optimization iterations (default 5)
+--tolerance <f>        numeric relative tolerance (default 0.1)
+--token-penalty <f>    penalty per 1k tokens/pub when selecting the best prompt (default 0)
+--no-embeddings        skip prose similarity (no embedding API calls)
+--prompt-page <name>   prompt page to seed from / write to (default Prompt_import_<Topic>)
+--prompt-file <path>   seed the initial prompt from a file instead of the wiki page
+--write                write the best prompt back to the prompt page
+--dry-run              do not write the wiki page (default)
+```
 
 > Note: `runs/`, `memory.md` and `best_prompt.txt` are generated artefacts. Consider git-ignoring
 > them once real runs start, to keep the gold set (the curated input) separate from loop output.

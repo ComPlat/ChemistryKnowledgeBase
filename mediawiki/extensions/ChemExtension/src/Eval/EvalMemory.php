@@ -90,8 +90,23 @@ class EvalMemory
             }
         }
 
+        $tokensPerPub = $metric['tokens']['perPublication'] ?? null;
+        $f1PerK = $metric['f1PerKToken'] ?? null;
+        $proseSim = $metric['proseSimilarity'] ?? null;
+
+        $efficiencyLine = '';
+        if ($tokensPerPub !== null) {
+            $efficiencyLine = "- Tokens/publication: $tokensPerPub | F1 per 1k tokens: "
+                . number_format($f1PerK ?? 0, 3) . "\n";
+        }
+        $proseLine = $proseSim !== null
+            ? "- Prose similarity: " . number_format($proseSim, 4) . "\n"
+            : '';
+
         $entry = "## Iteration $iteration — $ts\n"
             . "- F1: $f1 | Precision: $precision | Recall: $recall\n"
+            . $efficiencyLine
+            . $proseLine
             . "- Weakest fields: " . (empty($worstFields) ? '—' : implode('; ', $worstFields)) . "\n\n";
 
         file_put_contents($this->memoryFile, $entry, FILE_APPEND);

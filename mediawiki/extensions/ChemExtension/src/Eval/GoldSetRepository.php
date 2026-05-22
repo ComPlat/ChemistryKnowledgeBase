@@ -90,6 +90,7 @@ class GoldSetRepository
                 'topic' => $data['topic'] ?? str_replace('_', ' ', $topic),
                 'pdfPath' => $pdfPath,
                 'experiments' => $data['experiments'] ?? [],
+                'prose' => $data['prose'] ?? null,
             ];
         }
         return $entries;

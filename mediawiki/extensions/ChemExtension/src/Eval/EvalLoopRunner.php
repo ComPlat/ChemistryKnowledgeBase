@@ -28,6 +28,7 @@ class EvalLoopRunner
     private ExtractionScorer $scorer;
     private AIClient $aiClient;
     private PromptOptimizer $optimizer;
+    private ?ProseSimilarityScorer $proseScorer;
     private LoggerUtils $logger;
     /** @var callable */
     private $progress;
@@ -37,12 +38,14 @@ class EvalLoopRunner
         ?ExtractionScorer $scorer = null,
         ?AIClient $aiClient = null,
         ?PromptOptimizer $optimizer = null,
-        ?callable $progress = null
+        ?callable $progress = null,
+        ?ProseSimilarityScorer $proseScorer = null
     ) {
         $this->goldRepo = $goldRepo ?? new GoldSetRepository();
         $this->scorer = $scorer ?? new ExtractionScorer();
         $this->aiClient = $aiClient ?? new AIClient();
         $this->optimizer = $optimizer ?? new PromptOptimizer($this->aiClient);
+        $this->proseScorer = $proseScorer;
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');
         $this->progress = $progress ?? function ($msg) {};
     }
@@ -56,7 +59,7 @@ class EvalLoopRunner
      * @return array{best:array{f1:float,prompt:string}, history:array<int,array>}
      * @throws Exception
      */
-    public function run(string $topic, string $initialPrompt, int $iterations = 5): array
+    public function run(string $topic, string $initialPrompt, int $iterations = 5, float $tokenPenalty = 0.0): array
     {
         $goldEntries = $this->goldRepo->loadTopic($topic);
         if (empty($goldEntries)) {
@@ -65,35 +68,58 @@ class EvalLoopRunner
         $memory = new EvalMemory($this->goldRepo->getTopicDir($topic));
 
         $prompt = $initialPrompt;
-        $best = ['f1' => -1.0, 'prompt' => $initialPrompt];
+        $best = ['score' => -INF, 'f1' => -1.0, 'prompt' => $initialPrompt];
         $history = [];
 
         for ($i = 1; $i <= $iterations; $i++) {
             $this->emit("\n=== Iteration $i/$iterations (topic: $topic) ===");
-            $publicationScores = [];
+            $fieldScores = [];
+            $totalTokens = 0;
+            $scoredPublications = 0;
+            $proseSims = [];
 
             foreach ($goldEntries as $entry) {
                 $this->emit("  extracting: " . $entry['doi']);
                 try {
-                    $extractedRows = $this->extract($entry['pdfPath'], $prompt);
+                    $extraction = $this->extract($entry['pdfPath'], $prompt);
                 } catch (Exception $e) {
                     $this->logger->warn("Extraction failed for {$entry['doi']}: " . $e->getMessage());
                     $this->emit("    skipped (extraction error: " . $e->getMessage() . ")");
                     continue;
                 }
-                $score = $this->scorer->scorePublication($entry['experiments'], $extractedRows);
-                $publicationScores[] = $score;
-                $this->emit(sprintf("    F1=%.3f (matched %d/%d rows)",
-                    $score['f1'], $score['matchedRows'], $score['goldRows']));
+                $score = $this->scorer->scorePublication($entry['experiments'], $extraction['rows']);
+                $fieldScores[] = $score;
+                $scoredPublications++;
+                $totalTokens += $extraction['usage']['total'] ?? 0;
+
+                $proseInfo = '';
+                if ($this->proseScorer !== null && !empty($entry['prose'])) {
+                    $sim = $this->proseScorer->score($extraction['response'], $entry['prose']);
+                    $proseSims[] = $sim;
+                    $proseInfo = sprintf(" prose=%.3f", $sim);
+                }
+                $this->emit(sprintf("    F1=%.3f (matched %d/%d rows) tokens=%d%s",
+                    $score['f1'], $score['matchedRows'], $score['goldRows'],
+                    $extraction['usage']['total'] ?? 0, $proseInfo));
             }
 
-            if (empty($publicationScores)) {
+            if ($scoredPublications === 0) {
                 throw new Exception("No publication could be scored in iteration $i.");
             }
 
-            $aggregate = $this->scorer->aggregate($publicationScores);
-            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f",
-                $aggregate['f1'], $aggregate['precision'], $aggregate['recall']));
+            $aggregate = $this->scorer->aggregate($fieldScores);
+            $avgTokens = (int) round($totalTokens / $scoredPublications);
+            $aggregate['tokens'] = [
+                'total' => $totalTokens,
+                'perPublication' => $avgTokens,
+            ];
+            $aggregate['f1PerKToken'] = $avgTokens > 0 ? $aggregate['f1'] / ($avgTokens / 1000) : 0.0;
+            $aggregate['proseSimilarity'] = empty($proseSims) ? null : array_sum($proseSims) / count($proseSims);
+
+            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s",
+                $aggregate['f1'], $aggregate['precision'], $aggregate['recall'], $avgTokens,
+                $aggregate['f1PerKToken'],
+                $aggregate['proseSimilarity'] !== null ? sprintf(" | prose=%.3f", $aggregate['proseSimilarity']) : ''));
 
             $timestamp = date('Ymd_His');
             $memory->recordRun([
@@ -103,10 +129,12 @@ class EvalLoopRunner
                 'prompt' => $prompt,
                 'metric' => $aggregate,
             ]);
-            $history[] = ['iteration' => $i, 'f1' => $aggregate['f1'], 'timestamp' => $timestamp];
+            $history[] = ['iteration' => $i, 'f1' => $aggregate['f1'], 'tokens' => $avgTokens, 'timestamp' => $timestamp];
 
-            if ($aggregate['f1'] > $best['f1']) {
-                $best = ['f1' => $aggregate['f1'], 'prompt' => $prompt];
+            // Selection objective: F1 minus an optional efficiency penalty on tokens.
+            $selectionScore = $aggregate['f1'] - $tokenPenalty * ($avgTokens / 1000);
+            if ($selectionScore > $best['score']) {
+                $best = ['score' => $selectionScore, 'f1' => $aggregate['f1'], 'prompt' => $prompt];
             }
 
             if ($i < $iterations) {
@@ -124,9 +152,9 @@ class EvalLoopRunner
     }
 
     /**
-     * Runs one extraction (upload PDF, call AI, parse CSV) and returns the structured rows.
+     * Runs one extraction (upload PDF, call AI, parse CSV).
      *
-     * @return array<int, array<string,string>>
+     * @return array{rows:array<int,array<string,string>>, response:string, usage:array{input:int,output:int,total:int}}
      * @throws Exception
      */
     public function extract(string $pdfPath, string $prompt): array
@@ -143,7 +171,11 @@ class EvalLoopRunner
         } finally {
             $this->aiClient->deleteFiles($fileIds);
         }
-        return CsvExtractionParser::parseRows($response);
+        return [
+            'rows' => CsvExtractionParser::parseRows($response),
+            'response' => $response,
+            'usage' => $this->aiClient->getLastUsage() ?? ['input' => 0, 'output' => 0, 'total' => 0],
+        ];
     }
 
     private function emit(string $msg): void

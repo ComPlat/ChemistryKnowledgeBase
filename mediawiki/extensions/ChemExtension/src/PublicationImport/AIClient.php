@@ -11,6 +11,7 @@ class AIClient
 
     private $client;
     private $logger;
+    private $lastUsage = null;
 
     public function __construct()
     {
@@ -93,6 +94,7 @@ class AIClient
         $parameters = $this->extractRequestParameters($prompt, $userContent);
         $response = $this->client->responses()->create($parameters);
         $result = $response->outputText ?? 'no output generated';
+        $this->lastUsage = $this->extractUsage($response);
         $this->logger->log("Response from AI: " . $result);
         return $result;
     }
@@ -104,8 +106,32 @@ class AIClient
         $parameters = $this->extractRequestParameters($prompt, $userContent);
         $response = $this->client->responses()->create($parameters);
         $result = $response->outputText ?? 'no output generated';
+        $this->lastUsage = $this->extractUsage($response);
         $this->logger->log("Response from AI: " . $result);
         return $result;
+    }
+
+    /**
+     * Token usage of the most recent callAI / callAIWithTextInputs request.
+     *
+     * @return array{input:int, output:int, total:int}|null
+     */
+    public function getLastUsage(): ?array
+    {
+        return $this->lastUsage;
+    }
+
+    private function extractUsage($response): ?array
+    {
+        $usage = $response->usage ?? null;
+        if ($usage === null) {
+            return null;
+        }
+        return [
+            'input' => $usage->inputTokens ?? 0,
+            'output' => $usage->outputTokens ?? 0,
+            'total' => $usage->totalTokens ?? 0,
+        ];
     }
 
     /**

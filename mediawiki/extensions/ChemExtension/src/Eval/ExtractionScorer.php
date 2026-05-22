@@ -20,10 +20,20 @@ class ExtractionScorer
 {
     /** relative tolerance for numeric comparison (10%) */
     private float $numericTolerance;
+    /** @var array<string,bool> set of molecule-valued field names */
+    private array $moleculeFields;
+    private ?MoleculeResolver $moleculeResolver;
 
-    public function __construct(float $numericTolerance = 0.1)
+    /**
+     * @param float                  $numericTolerance relative tolerance for numeric fields
+     * @param string[]               $moleculeFields   columns to compare by molecule identity
+     * @param MoleculeResolver|null  $resolver         resolver for molecule fields (null = string compare)
+     */
+    public function __construct(float $numericTolerance = 0.1, array $moleculeFields = [], ?MoleculeResolver $resolver = null)
     {
         $this->numericTolerance = $numericTolerance;
+        $this->moleculeFields = array_fill_keys($moleculeFields, true);
+        $this->moleculeResolver = $resolver;
     }
 
     /**
@@ -57,7 +67,7 @@ class ExtractionScorer
                 $perField[$field]['gold']++;
 
                 $extractedValue = $extractedRow[$field] ?? '';
-                if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue)) {
+                if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue, $field)) {
                     $truePositives++;
                     $perField[$field]['correct']++;
                 } elseif (count($examples) < 25) {
@@ -168,15 +178,20 @@ class ExtractionScorer
             }
             $considered++;
             $extractedValue = $extractedRow[$field] ?? '';
-            if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue)) {
+            if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue, $field)) {
                 $matches++;
             }
         }
         return $considered > 0 ? $matches / $considered : 0.0;
     }
 
-    private function valuesMatch(string $gold, string $extracted): bool
+    private function valuesMatch(string $gold, string $extracted, string $field = ''): bool
     {
+        // Molecule-valued fields: compare by molecule identity when a resolver is available.
+        if ($field !== '' && $this->moleculeResolver !== null && isset($this->moleculeFields[$field])) {
+            return $this->moleculeResolver->canonicalize($gold) === $this->moleculeResolver->canonicalize($extracted);
+        }
+
         $goldNum = $this->parseNumber($gold);
         $extractedNum = $this->parseNumber($extracted);
         if ($goldNum !== null && $extractedNum !== null) {

@@ -2,9 +2,13 @@
 
 namespace DIQA\ChemExtension\Maintenance;
 
+use DIQA\ChemExtension\Eval\EmbeddingClient;
 use DIQA\ChemExtension\Eval\EvalLoopRunner;
+use DIQA\ChemExtension\Eval\EvalTopicConfig;
 use DIQA\ChemExtension\Eval\ExtractionScorer;
 use DIQA\ChemExtension\Eval\GoldSetRepository;
+use DIQA\ChemExtension\Eval\MoleculeResolver;
+use DIQA\ChemExtension\Eval\ProseSimilarityScorer;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\Title\Title;
 
@@ -39,6 +43,8 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addOption('topic', 'Topic directory name under eval/ (e.g. Host_Guest_interaction)', true, true);
         $this->addOption('iterations', 'Number of optimization iterations (default 5)', false, true);
         $this->addOption('tolerance', 'Relative tolerance for numeric field comparison (default 0.1)', false, true);
+        $this->addOption('token-penalty', 'Penalty per 1k tokens/publication when picking the best prompt (default 0 = pure F1)', false, true);
+        $this->addOption('no-embeddings', 'Disable prose similarity (no embedding API calls)');
         $this->addOption('prompt-page', 'MediaWiki prompt page to seed from / write to (default Prompt_import_<Topic>)', false, true);
         $this->addOption('prompt-file', 'Seed the initial prompt from this file instead of the wiki page', false, true);
         $this->addOption('write', 'Write the best prompt back to the prompt page when finished');
@@ -65,15 +71,20 @@ class optimizeExtractionPrompt extends \Maintenance
             $this->fatalError("No gold set for topic '$topic'. Available: " . (empty($available) ? '(none)' : implode(', ', $available)));
         }
 
+        $scorer = new ExtractionScorer($tolerance, EvalTopicConfig::moleculeFields($topic), new MoleculeResolver());
+        $proseScorer = $this->hasOption('no-embeddings') ? null : new ProseSimilarityScorer(new EmbeddingClient());
+
         $runner = new EvalLoopRunner(
             $goldRepo,
-            new ExtractionScorer($tolerance),
+            $scorer,
             null,
             null,
-            fn($msg) => $this->output($msg . "\n")
+            fn($msg) => $this->output($msg . "\n"),
+            $proseScorer
         );
 
-        $result = $runner->run($topic, $initialPrompt, $iterations);
+        $tokenPenalty = (float) $this->getOption('token-penalty', 0);
+        $result = $runner->run($topic, $initialPrompt, $iterations, $tokenPenalty);
 
         $this->output("\n----------------------------------------\n");
         $this->output(sprintf("Best F1: %.4f\n", $result['best']['f1']));
