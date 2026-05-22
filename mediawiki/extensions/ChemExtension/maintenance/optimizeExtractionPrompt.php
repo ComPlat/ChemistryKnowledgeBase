@@ -71,7 +71,12 @@ class optimizeExtractionPrompt extends \Maintenance
             $this->fatalError("No gold set for topic '$topic'. Available: " . (empty($available) ? '(none)' : implode(', ', $available)));
         }
 
-        $scorer = new ExtractionScorer($tolerance, EvalTopicConfig::moleculeFields($topic), new MoleculeResolver());
+        $scorer = new ExtractionScorer(
+            $tolerance,
+            EvalTopicConfig::moleculeFields($topic),
+            new MoleculeResolver(),
+            EvalTopicConfig::expectedUnits($topic)
+        );
         $proseScorer = $this->hasOption('no-embeddings') ? null : new ProseSimilarityScorer(new EmbeddingClient());
 
         $runner = new EvalLoopRunner(

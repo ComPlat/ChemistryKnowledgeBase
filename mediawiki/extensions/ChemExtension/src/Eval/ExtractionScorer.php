@@ -23,17 +23,25 @@ class ExtractionScorer
     /** @var array<string,bool> set of molecule-valued field names */
     private array $moleculeFields;
     private ?MoleculeResolver $moleculeResolver;
+    /** @var array<string, array{unit:string, family:string}> expected unit per field */
+    private array $expectedUnits;
 
     /**
      * @param float                  $numericTolerance relative tolerance for numeric fields
      * @param string[]               $moleculeFields   columns to compare by molecule identity
      * @param MoleculeResolver|null  $resolver         resolver for molecule fields (null = string compare)
+     * @param array<string, array{unit:string, family:string}> $expectedUnits expected unit per numeric field
      */
-    public function __construct(float $numericTolerance = 0.1, array $moleculeFields = [], ?MoleculeResolver $resolver = null)
-    {
+    public function __construct(
+        float $numericTolerance = 0.1,
+        array $moleculeFields = [],
+        ?MoleculeResolver $resolver = null,
+        array $expectedUnits = []
+    ) {
         $this->numericTolerance = $numericTolerance;
         $this->moleculeFields = array_fill_keys($moleculeFields, true);
         $this->moleculeResolver = $resolver;
+        $this->expectedUnits = $expectedUnits;
     }
 
     /**
@@ -50,6 +58,8 @@ class ExtractionScorer
         $perField = [];
         $examples = [];
         $matchedRows = 0;
+        $unitChecked = 0;
+        $unitConsistent = 0;
 
         foreach ($goldRows as $goldRow) {
             [$bestIdx, $bestScore] = $this->findBestMatch($goldRow, $extractedRows, $usedExtracted);
@@ -67,6 +77,16 @@ class ExtractionScorer
                 $perField[$field]['gold']++;
 
                 $extractedValue = $extractedRow[$field] ?? '';
+
+                // unit-correctness: does the extracted value carry a dimensionally consistent unit?
+                if (isset($this->expectedUnits[$field]) && !$this->isEmpty($extractedValue)) {
+                    $unitChecked++;
+                    $extractedUnit = UnitConverter::parse($extractedValue)['unit'];
+                    if (UnitConverter::inFamily($extractedUnit, $this->expectedUnits[$field]['family'])) {
+                        $unitConsistent++;
+                    }
+                }
+
                 if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue, $field)) {
                     $truePositives++;
                     $perField[$field]['correct']++;
@@ -94,6 +114,8 @@ class ExtractionScorer
             'goldRows' => count($goldRows),
             'extractedRows' => count($extractedRows),
             'matchedRows' => $matchedRows,
+            'unitChecked' => $unitChecked,
+            'unitConsistent' => $unitConsistent,
             'perField' => $perField,
             'examples' => $examples,
         ];
@@ -110,6 +132,8 @@ class ExtractionScorer
         $tp = 0;
         $goldCells = 0;
         $extractedCells = 0;
+        $unitChecked = 0;
+        $unitConsistent = 0;
         $perField = [];
         $examples = [];
 
@@ -117,6 +141,8 @@ class ExtractionScorer
             $tp += $score['truePositives'];
             $goldCells += $score['goldCells'];
             $extractedCells += $score['extractedCells'];
+            $unitChecked += $score['unitChecked'] ?? 0;
+            $unitConsistent += $score['unitConsistent'] ?? 0;
             foreach ($score['perField'] as $field => $counts) {
                 $perField[$field] = $perField[$field] ?? ['gold' => 0, 'correct' => 0];
                 $perField[$field]['gold'] += $counts['gold'];
@@ -143,6 +169,8 @@ class ExtractionScorer
             'precision' => $precision,
             'recall' => $recall,
             'f1' => $f1,
+            'unitCorrectness' => $unitChecked > 0 ? $unitConsistent / $unitChecked : null,
+            'unitChecked' => $unitChecked,
             'perField' => $perField,
             'examples' => $examples,
         ];
@@ -192,13 +220,33 @@ class ExtractionScorer
             return $this->moleculeResolver->canonicalize($gold) === $this->moleculeResolver->canonicalize($extracted);
         }
 
+        // Unit-aware numeric comparison: normalize both values to the field's expected unit so
+        // that e.g. "1 µM" and "1e-6 M" compare equal.
+        if ($field !== '' && isset($this->expectedUnits[$field])) {
+            $expected = $this->expectedUnits[$field];
+            $goldParsed = UnitConverter::parse($gold);
+            $extractedParsed = UnitConverter::parse($extracted);
+            if ($goldParsed['number'] !== null && $extractedParsed['number'] !== null) {
+                $goldCanon = UnitConverter::convertWithinFamily($goldParsed['number'], $goldParsed['unit'], $expected['unit'], $expected['family']);
+                $extractedCanon = UnitConverter::convertWithinFamily($extractedParsed['number'], $extractedParsed['unit'], $expected['unit'], $expected['family']);
+                if ($goldCanon !== null && $extractedCanon !== null) {
+                    return $this->numbersClose($goldCanon, $extractedCanon);
+                }
+            }
+        }
+
         $goldNum = $this->parseNumber($gold);
         $extractedNum = $this->parseNumber($extracted);
         if ($goldNum !== null && $extractedNum !== null) {
-            $scale = max(abs($goldNum), abs($extractedNum), 1e-12);
-            return abs($goldNum - $extractedNum) <= $this->numericTolerance * $scale;
+            return $this->numbersClose($goldNum, $extractedNum);
         }
         return $this->normalize($gold) === $this->normalize($extracted);
+    }
+
+    private function numbersClose(float $a, float $b): bool
+    {
+        $scale = max(abs($a), abs($b), 1e-12);
+        return abs($a - $b) <= $this->numericTolerance * $scale;
     }
 
     private function parseNumber(string $value): ?float

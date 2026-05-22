@@ -74,8 +74,14 @@ that gold values and extracted values share one vocabulary. See the row template
 - molecule cells (catalyst, photosensitizer, host, guest, solvents — see `EvalTopicConfig`) are
   compared by molecule identity via `MoleculeResolver`, so synonyms/abbreviations that resolve to
   the same Molecule page count as a match,
+- numeric cells with a known unit (see `EvalTopicConfig::expectedUnits`) are compared unit-aware
+  via `UnitConverter` — "1 µM" and "1e-6 M" are treated as equal,
 - all other cells match by normalized string equality,
 - precision / recall / F1 are micro-averaged over all non-empty cells.
+
+**Unit correctness** — a separate rate reporting how often the extracted value carries a
+dimensionally consistent unit for its field (e.g. a potential not reported in a concentration
+unit). Computed by `UnitConverter::inFamily` over the fields in `EvalTopicConfig::expectedUnits`.
 
 This is the quantitative "Treffsicherheit" number for the paper.
 

@@ -106,6 +106,39 @@ class ExtractionScorerTest extends TestCase
         $this->assertLessThan(1.0, $score['f1']);
     }
 
+    public function testUnitAwareComparisonMatchesEquivalentUnits(): void
+    {
+        $expectedUnits = [
+            'cat conc' => ['unit' => 'uM', 'family' => UnitConverter::F_CONCENTRATION],
+        ];
+        $scorer = new ExtractionScorer(0.1, [], null, $expectedUnits);
+
+        $gold = [['cat conc' => '1']];          // 1 µM (implied by header)
+        $extracted = [['cat conc' => '1e-6 M']]; // same value, explicit M
+
+        $score = $scorer->scorePublication($gold, $extracted);
+        $this->assertEqualsWithDelta(1.0, $score['f1'], 1e-9);
+    }
+
+    public function testUnitCorrectnessCountsConsistentUnits(): void
+    {
+        $expectedUnits = [
+            'cathodic potential' => ['unit' => 'V', 'family' => UnitConverter::F_POTENTIAL],
+        ];
+        $scorer = new ExtractionScorer(0.1, [], null, $expectedUnits);
+
+        $gold = [['cathodic potential' => '-0.8'], ['cathodic potential' => '-0.9']];
+        $extracted = [['cathodic potential' => '-800 mV'], ['cathodic potential' => '-0.9 M']];
+
+        $score = $scorer->scorePublication($gold, $extracted);
+        $this->assertSame(2, $score['unitChecked']);
+        // -800 mV is consistent (potential); -0.9 M is a wrong dimension
+        $this->assertSame(1, $score['unitConsistent']);
+
+        $agg = $scorer->aggregate([$score]);
+        $this->assertEqualsWithDelta(0.5, $agg['unitCorrectness'], 1e-9);
+    }
+
     public function testAggregateMicroAverages(): void
     {
         $scorer = new ExtractionScorer();

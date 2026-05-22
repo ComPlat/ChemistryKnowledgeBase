@@ -53,6 +53,10 @@ class PromptOptimizer
         $proseLine = $proseSim !== null
             ? "Prose similarity to reference: " . number_format($proseSim, 4) . "\n"
             : '';
+        $unitCorrectness = $aggregateMetric['unitCorrectness'] ?? null;
+        $unitLine = $unitCorrectness !== null
+            ? "Unit correctness: " . number_format($unitCorrectness, 4) . " (emit values in the exact units named in the column headers)\n"
+            : '';
 
         $weakFieldsText = empty($weakFields) ? '(none)' : implode("\n", $weakFields);
         $examplesText = empty($examples) ? '(none)' : "- " . implode("\n- ", $examples);
@@ -81,7 +85,7 @@ SYS;
         $task = <<<TASK
 [CURRENT METRIC]
 F1: $f1 | Precision: $precision | Recall: $recall
-{$efficiencyLine}{$proseLine}
+{$efficiencyLine}{$unitLine}{$proseLine}
 [SYSTEMATICALLY WEAK FIELDS]
 $weakFieldsText
 

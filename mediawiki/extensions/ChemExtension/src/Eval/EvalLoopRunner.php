@@ -116,9 +116,10 @@ class EvalLoopRunner
             $aggregate['f1PerKToken'] = $avgTokens > 0 ? $aggregate['f1'] / ($avgTokens / 1000) : 0.0;
             $aggregate['proseSimilarity'] = empty($proseSims) ? null : array_sum($proseSims) / count($proseSims);
 
-            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s",
+            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s%s",
                 $aggregate['f1'], $aggregate['precision'], $aggregate['recall'], $avgTokens,
                 $aggregate['f1PerKToken'],
+                $aggregate['unitCorrectness'] !== null ? sprintf(" | units=%.3f", $aggregate['unitCorrectness']) : '',
                 $aggregate['proseSimilarity'] !== null ? sprintf(" | prose=%.3f", $aggregate['proseSimilarity']) : ''));
 
             $timestamp = date('Ymd_His');

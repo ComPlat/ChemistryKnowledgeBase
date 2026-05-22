@@ -102,10 +102,15 @@ class EvalMemory
         $proseLine = $proseSim !== null
             ? "- Prose similarity: " . number_format($proseSim, 4) . "\n"
             : '';
+        $unitCorrectness = $metric['unitCorrectness'] ?? null;
+        $unitLine = $unitCorrectness !== null
+            ? "- Unit correctness: " . number_format($unitCorrectness, 4) . "\n"
+            : '';
 
         $entry = "## Iteration $iteration — $ts\n"
             . "- F1: $f1 | Precision: $precision | Recall: $recall\n"
             . $efficiencyLine
+            . $unitLine
             . $proseLine
             . "- Weakest fields: " . (empty($worstFields) ? '—' : implode('; ', $worstFields)) . "\n\n";
 
