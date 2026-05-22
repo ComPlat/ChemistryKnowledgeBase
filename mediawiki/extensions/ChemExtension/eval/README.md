@@ -126,6 +126,28 @@ minus the CSV block) is compared to the reference via embedding cosine similarit
 --dry-run              do not write the wiki page (default)
 ```
 
+## Paper-ready report (convergence / trends)
+
+Every iteration is recorded under `eval/<Topic>/runs/`. To turn that history into figures and
+tables for the paper:
+
+```bash
+php maintenance/exportEvalReport.php                      # all topics with runs
+php maintenance/exportEvalReport.php --topic Host_Guest_interaction
+```
+
+Writes to `eval/<Topic>/report/`:
+
+- `metrics.csv` — tidy data (one row per iteration) for any plotting tool,
+- `convergence.svg` — vector line chart of the quality metrics over iterations (shows
+  convergence/trend at a glance; F1, precision, recall, unit correctness, sanity, confidence,
+  prose similarity),
+- `tokens.svg` — efficiency trend (tokens per publication),
+- `metrics.tex` — a pgfplots plot + a booktabs summary table to paste straight into the paper,
+- `report.md` — short summary (best iteration, start→best Δ, convergence).
+
+This needs no API key — it only reads the recorded runs.
+
 ## Adding a new topic (generic core + per-topic fine-tuning)
 
 The optimizer is topic-agnostic. For a brand-new topic, almost everything is **derived
