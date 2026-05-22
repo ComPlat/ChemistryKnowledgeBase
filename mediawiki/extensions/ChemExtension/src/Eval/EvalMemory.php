@@ -106,11 +106,16 @@ class EvalMemory
         $unitLine = $unitCorrectness !== null
             ? "- Unit correctness: " . number_format($unitCorrectness, 4) . "\n"
             : '';
+        $sanityRate = $metric['sanityPassRate'] ?? null;
+        $sanityLine = $sanityRate !== null
+            ? "- Sanity pass rate: " . number_format($sanityRate, 4) . "\n"
+            : '';
 
         $entry = "## Iteration $iteration — $ts\n"
             . "- F1: $f1 | Precision: $precision | Recall: $recall\n"
             . $efficiencyLine
             . $unitLine
+            . $sanityLine
             . $proseLine
             . "- Weakest fields: " . (empty($worstFields) ? '—' : implode('; ', $worstFields)) . "\n\n";
 

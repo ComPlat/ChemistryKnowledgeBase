@@ -57,6 +57,10 @@ class PromptOptimizer
         $unitLine = $unitCorrectness !== null
             ? "Unit correctness: " . number_format($unitCorrectness, 4) . " (emit values in the exact units named in the column headers)\n"
             : '';
+        $sanityRate = $aggregateMetric['sanityPassRate'] ?? null;
+        $sanityLine = $sanityRate !== null
+            ? "Sanity pass rate: " . number_format($sanityRate, 4) . " (values must be physically plausible: efficiencies/yields in [0,100], turnover numbers >= 0, binding constants > 0, per-product efficiencies sum to <= 100)\n"
+            : '';
 
         $weakFieldsText = empty($weakFields) ? '(none)' : implode("\n", $weakFields);
         $examplesText = empty($examples) ? '(none)' : "- " . implode("\n- ", $examples);
@@ -85,7 +89,7 @@ SYS;
         $task = <<<TASK
 [CURRENT METRIC]
 F1: $f1 | Precision: $precision | Recall: $recall
-{$efficiencyLine}{$unitLine}{$proseLine}
+{$efficiencyLine}{$unitLine}{$sanityLine}{$proseLine}
 [SYSTEMATICALLY WEAK FIELDS]
 $weakFieldsText
 

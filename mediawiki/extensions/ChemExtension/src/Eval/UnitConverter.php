@@ -83,6 +83,34 @@ class UnitConverter
     }
 
     /**
+     * Best-effort mapping of a unit string to a family, for auto-deriving expected units of a new
+     * topic. Families are probed in a priority order so ambiguous tokens (e.g. "um"/"nm" which are
+     * both a concentration and a length) resolve to the more common chemistry-table meaning;
+     * mis-guesses can always be corrected per topic via the profile override.
+     */
+    public static function familyForUnit(string $unit): ?string
+    {
+        $u = self::normalizeUnit($unit);
+        if ($u === '') {
+            return null;
+        }
+        if ($u === 'k' || $u === 'c') {
+            return self::F_TEMPERATURE;
+        }
+        $order = [
+            self::F_PERCENT, self::F_ENERGY_MOL, self::F_ASSOCIATION, self::F_FREQUENCY,
+            self::F_CURRENT_DENSITY, self::F_POTENTIAL, self::F_CONCENTRATION,
+            self::F_WAVELENGTH, self::F_TIME,
+        ];
+        foreach ($order as $family) {
+            if (isset(self::FAMILIES[$family][$u])) {
+                return $family;
+            }
+        }
+        return null;
+    }
+
+    /**
      * True if the (possibly empty) unit is dimensionally consistent with the family.
      * An empty unit is treated as consistent (the value is assumed to be in the expected unit).
      */

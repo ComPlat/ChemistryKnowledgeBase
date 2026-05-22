@@ -34,6 +34,8 @@ class EvalLoopRunner
     private $progress;
     private ?array $jsonSchema = null;
     private string $schemaName = 'extraction';
+    private ?array $sanityRules = null;
+    private SanityChecker $sanityChecker;
 
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
@@ -50,6 +52,7 @@ class EvalLoopRunner
         $this->proseScorer = $proseScorer;
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');
         $this->progress = $progress ?? function ($msg) {};
+        $this->sanityChecker = new SanityChecker();
     }
 
     /**
@@ -59,6 +62,14 @@ class EvalLoopRunner
     {
         $this->jsonSchema = $jsonSchema;
         $this->schemaName = $schemaName;
+    }
+
+    /**
+     * Enables deterministic plausibility checks on each extraction (rules from TopicProfile).
+     */
+    public function useSanityRules(array $rules): void
+    {
+        $this->sanityRules = $rules;
     }
 
     /**
@@ -88,6 +99,8 @@ class EvalLoopRunner
             $totalTokens = 0;
             $scoredPublications = 0;
             $proseSims = [];
+            $sanityChecks = 0;
+            $sanityFailed = 0;
 
             foreach ($goldEntries as $entry) {
                 $this->emit("  extracting: " . $entry['doi']);
@@ -102,6 +115,12 @@ class EvalLoopRunner
                 $fieldScores[] = $score;
                 $scoredPublications++;
                 $totalTokens += $extraction['usage']['total'] ?? 0;
+
+                if ($this->sanityRules !== null) {
+                    $sanity = $this->sanityChecker->check($this->sanityRules, $extraction['rows']);
+                    $sanityChecks += $sanity['checks'];
+                    $sanityFailed += $sanity['failed'];
+                }
 
                 $proseInfo = '';
                 if ($this->proseScorer !== null && !empty($entry['prose'])) {
@@ -126,11 +145,13 @@ class EvalLoopRunner
             ];
             $aggregate['f1PerKToken'] = $avgTokens > 0 ? $aggregate['f1'] / ($avgTokens / 1000) : 0.0;
             $aggregate['proseSimilarity'] = empty($proseSims) ? null : array_sum($proseSims) / count($proseSims);
+            $aggregate['sanityPassRate'] = $sanityChecks > 0 ? 1.0 - $sanityFailed / $sanityChecks : null;
 
-            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s%s",
+            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s%s%s",
                 $aggregate['f1'], $aggregate['precision'], $aggregate['recall'], $avgTokens,
                 $aggregate['f1PerKToken'],
                 $aggregate['unitCorrectness'] !== null ? sprintf(" | units=%.3f", $aggregate['unitCorrectness']) : '',
+                $aggregate['sanityPassRate'] !== null ? sprintf(" | sanity=%.3f", $aggregate['sanityPassRate']) : '',
                 $aggregate['proseSimilarity'] !== null ? sprintf(" | prose=%.3f", $aggregate['proseSimilarity']) : ''));
 
             $timestamp = date('Ymd_His');

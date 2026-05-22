@@ -89,6 +89,11 @@ This is the quantitative "Treffsicherheit" number for the paper.
 reported so the optimizer is pushed to stay both accurate and lean. `--token-penalty` lets the
 best-prompt selection trade a little F1 for fewer tokens (default 0 = pure F1).
 
+**Sanity (plausibility)** — deterministic, model-independent checks on the extraction alone (no
+gold needed): percentages/yields in [0,100], turnover numbers ≥ 0, binding constants > 0,
+per-product efficiencies sum to ≤ 100. Reported as a sanity pass-rate and fed to the optimizer.
+The rules are derived generically per topic (see "Adding a new topic").
+
 **Secondary — prose similarity** — when a gold entry has a `prose` field, the AI prose (response
 minus the CSV block) is compared to the reference via embedding cosine similarity
 (`ProseSimilarityScorer` + `EmbeddingClient`, model `$wgOpenAIEmbeddingModel`). Disable with
@@ -108,6 +113,40 @@ minus the CSV block) is compared to the reference via embedding cosine similarit
 --write                write the best prompt back to the prompt page
 --dry-run              do not write the wiki page (default)
 ```
+
+## Adding a new topic (generic core + per-topic fine-tuning)
+
+The optimizer is topic-agnostic. For a brand-new topic, almost everything is **derived
+automatically** from the wiki by `TopicProfile`:
+
+- experiment fields → from the investigation row template,
+- molecule columns → from the `{{DisplayMolecule|…}}` wrappers in that template,
+- expected units → from the SMW property / default-unit definitions,
+- sanity rules → from the unit families + naming heuristics.
+
+To add a topic you only:
+
+1. create `eval/<Topic>/gold/` with curated JSON (+ `pdfs/`),
+2. optionally drop `eval/<Topic>/profile.json` to **fine-tune** the derived defaults — no code change.
+
+`profile.json` (all keys optional; override only what the derivation gets wrong):
+
+```json
+{
+  "form": "My_investigation_form",
+  "fields": ["colA", "colB"],
+  "moleculeFields": ["catalyst"],
+  "expectedUnits": { "colA": { "unit": "M", "family": "concentration" } },
+  "sanityRules": {
+    "nonNegative": ["colB"], "positive": [], "percentage": [],
+    "sumAtMost": [{ "label": "fe", "max": 100, "fields": ["fe__a", "fe__b"] }]
+  }
+}
+```
+
+Precedence: derived (base) < built-in defaults < `profile.json`. Unit families:
+`concentration, potential, time, energy_per_mol, wavelength, association, frequency, percent,
+current_density, temperature`.
 
 > Note: `runs/`, `memory.md` and `best_prompt.txt` are generated artefacts. Consider git-ignoring
 > them once real runs start, to keep the gold set (the curated input) separate from loop output.

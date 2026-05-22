@@ -4,12 +4,11 @@ namespace DIQA\ChemExtension\Maintenance;
 
 use DIQA\ChemExtension\Eval\EmbeddingClient;
 use DIQA\ChemExtension\Eval\EvalLoopRunner;
-use DIQA\ChemExtension\Eval\EvalTopicConfig;
 use DIQA\ChemExtension\Eval\ExtractionScorer;
 use DIQA\ChemExtension\Eval\GoldSetRepository;
 use DIQA\ChemExtension\Eval\MoleculeResolver;
 use DIQA\ChemExtension\Eval\ProseSimilarityScorer;
-use DIQA\ChemExtension\Eval\TopicSchema;
+use DIQA\ChemExtension\Eval\TopicProfile;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\Title\Title;
 
@@ -73,11 +72,15 @@ class optimizeExtractionPrompt extends \Maintenance
             $this->fatalError("No gold set for topic '$topic'. Available: " . (empty($available) ? '(none)' : implode(', ', $available)));
         }
 
+        // One topic-agnostic profile drives everything; it derives defaults from the wiki and is
+        // refined per topic via eval/<topic>/profile.json.
+        $profile = TopicProfile::forTopic($topic);
+
         $scorer = new ExtractionScorer(
             $tolerance,
-            EvalTopicConfig::moleculeFields($topic),
+            $profile->moleculeFields(),
             new MoleculeResolver(),
-            EvalTopicConfig::expectedUnits($topic)
+            $profile->expectedUnits()
         );
         $proseScorer = $this->hasOption('no-embeddings') ? null : new ProseSimilarityScorer(new EmbeddingClient());
 
@@ -90,14 +93,15 @@ class optimizeExtractionPrompt extends \Maintenance
             $proseScorer
         );
 
+        $runner->useSanityRules($profile->sanityRules());
+
         if ($this->hasOption('structured')) {
-            $form = EvalTopicConfig::formName($topic);
-            if ($form === null) {
-                $this->fatalError("No investigation form known for topic '$topic' — cannot build a JSON schema.");
+            $fields = $profile->fields();
+            if (empty($fields)) {
+                $this->fatalError("No experiment fields known for topic '$topic' — set 'form' or 'fields' in eval/$topic/profile.json.");
             }
-            $fields = TopicSchema::fieldsForForm($form);
-            $runner->useStructuredOutput(TopicSchema::build($fields), 'extraction_' . $topic);
-            $this->output("Using structured outputs with " . count($fields) . " fields from form $form.\n");
+            $runner->useStructuredOutput($profile->jsonSchema(), 'extraction_' . $topic);
+            $this->output("Using structured outputs with " . count($fields) . " fields.\n");
         }
 
         $tokenPenalty = (float) $this->getOption('token-penalty', 0);
