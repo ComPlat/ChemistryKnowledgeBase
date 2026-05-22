@@ -38,6 +38,7 @@ class EvalLoopRunner
     private SanityChecker $sanityChecker;
     private int $visionMaxPages = 0;
     private ?PdfPageRenderer $pageRenderer = null;
+    private ?ExtractionCritic $critic = null;
 
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
@@ -85,6 +86,14 @@ class EvalLoopRunner
     }
 
     /**
+     * Enables a second-pass critic that scores each extracted row's confidence against the source.
+     */
+    public function useCritic(float $threshold): void
+    {
+        $this->critic = new ExtractionCritic($this->aiClient, $threshold);
+    }
+
+    /**
      * Runs the optimization loop for a topic.
      *
      * @param string $topic         topic directory name (underscores)
@@ -113,6 +122,8 @@ class EvalLoopRunner
             $proseSims = [];
             $sanityChecks = 0;
             $sanityFailed = 0;
+            $confidences = [];
+            $flaggedTotal = 0;
 
             foreach ($goldEntries as $entry) {
                 $this->emit("  extracting: " . $entry['doi']);
@@ -132,6 +143,11 @@ class EvalLoopRunner
                     $sanity = $this->sanityChecker->check($this->sanityRules, $extraction['rows']);
                     $sanityChecks += $sanity['checks'];
                     $sanityFailed += $sanity['failed'];
+                }
+
+                if (($extraction['confidence'] ?? null) !== null) {
+                    $confidences[] = $extraction['confidence'];
+                    $flaggedTotal += $extraction['flaggedRows'] ?? 0;
                 }
 
                 $proseInfo = '';
@@ -158,12 +174,15 @@ class EvalLoopRunner
             $aggregate['f1PerKToken'] = $avgTokens > 0 ? $aggregate['f1'] / ($avgTokens / 1000) : 0.0;
             $aggregate['proseSimilarity'] = empty($proseSims) ? null : array_sum($proseSims) / count($proseSims);
             $aggregate['sanityPassRate'] = $sanityChecks > 0 ? 1.0 - $sanityFailed / $sanityChecks : null;
+            $aggregate['avgConfidence'] = empty($confidences) ? null : array_sum($confidences) / count($confidences);
+            $aggregate['flaggedRows'] = $flaggedTotal;
 
-            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s%s%s",
+            $this->emit(sprintf("  aggregate: F1=%.4f P=%.4f R=%.4f | tokens/pub=%d | F1/1k=%.3f%s%s%s%s",
                 $aggregate['f1'], $aggregate['precision'], $aggregate['recall'], $avgTokens,
                 $aggregate['f1PerKToken'],
                 $aggregate['unitCorrectness'] !== null ? sprintf(" | units=%.3f", $aggregate['unitCorrectness']) : '',
                 $aggregate['sanityPassRate'] !== null ? sprintf(" | sanity=%.3f", $aggregate['sanityPassRate']) : '',
+                $aggregate['avgConfidence'] !== null ? sprintf(" | conf=%.3f (flagged %d)", $aggregate['avgConfidence'], $flaggedTotal) : '',
                 $aggregate['proseSimilarity'] !== null ? sprintf(" | prose=%.3f", $aggregate['proseSimilarity']) : ''));
 
             $timestamp = date('Ymd_His');
@@ -226,6 +245,8 @@ class EvalLoopRunner
             }
         }
 
+        $confidence = null;
+        $flaggedRows = 0;
         try {
             if ($this->jsonSchema !== null) {
                 $raw = $this->aiClient->callAIWithSchema($fileIds, $prompt, $this->jsonSchema, $this->schemaName, $imageFileIds);
@@ -237,6 +258,14 @@ class EvalLoopRunner
                 $rows = CsvExtractionParser::parseRows($response);
                 $proseText = $response;
             }
+            // include token usage of the extraction call before the critic adds its own
+            $usage = $this->aiClient->getLastUsage() ?? ['input' => 0, 'output' => 0, 'total' => 0];
+
+            if ($this->critic !== null && !empty($rows)) {
+                $review = $this->critic->reviewWithFiles($fileIds, $rows, $imageFileIds);
+                $confidence = $review['avgConfidence'];
+                $flaggedRows = count($review['flagged']);
+            }
         } finally {
             $this->aiClient->deleteFiles(array_merge($fileIds, $imageFileIds));
             if (!empty($images) && $this->pageRenderer !== null) {
@@ -246,7 +275,9 @@ class EvalLoopRunner
         return [
             'rows' => $rows,
             'response' => $proseText,
-            'usage' => $this->aiClient->getLastUsage() ?? ['input' => 0, 'output' => 0, 'total' => 0],
+            'usage' => $usage,
+            'confidence' => $confidence,
+            'flaggedRows' => $flaggedRows,
         ];
     }
 

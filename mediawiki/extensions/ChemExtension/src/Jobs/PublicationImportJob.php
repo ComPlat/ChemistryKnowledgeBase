@@ -66,9 +66,11 @@ class PublicationImportJob extends Job
 
         $aiText = $aiClient->callAI($fileIds, $prompt);
 
+        $reviewNotice = $this->reviewNoticeIfLowConfidence($aiClient, $fileIds, $aiText);
+
         $wikitext = <<<WIKITEXT
 $importNotice
-
+$reviewNotice
 {{BaseTemplate}}
 {{DOI|doi=$doi}}
 
@@ -93,6 +95,40 @@ WIKITEXT;
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
         $aiClient->deleteFiles($fileIds);
+    }
+
+    /**
+     * Optional confidence gate: when $wgCEExtractionCriticThreshold is configured, a second-pass
+     * critic verifies the extracted experiments against the source. If the average confidence is
+     * below the threshold, returns a review notice (+ category) to prepend to the page so a human
+     * checks it instead of trusting the auto-import silently. Returns '' when disabled or healthy.
+     */
+    private function reviewNoticeIfLowConfidence(AIClient $aiClient, array $fileIds, string $aiText): string
+    {
+        global $wgCEExtractionCriticThreshold;
+        if (!isset($wgCEExtractionCriticThreshold)) {
+            return '';
+        }
+        $threshold = (float) $wgCEExtractionCriticThreshold;
+        try {
+            $rows = \DIQA\ChemExtension\Eval\CsvExtractionParser::parseRows($aiText);
+            if (empty($rows)) {
+                return '';
+            }
+            $critic = new \DIQA\ChemExtension\Eval\ExtractionCritic($aiClient, $threshold);
+            $review = $critic->reviewWithFiles($fileIds, $rows);
+            if ($review['avgConfidence'] !== null && $review['avgConfidence'] < $threshold) {
+                $this->logger->log("Extraction flagged for review (confidence {$review['avgConfidence']})");
+                return sprintf(
+                    "'''\u{26a0} Auto-extraction flagged for review''' (critic confidence %.2f, %d low-confidence row(s)).\n[[Category:Needs review]]\n",
+                    $review['avgConfidence'],
+                    count($review['flagged'])
+                );
+            }
+        } catch (Exception $e) {
+            $this->logger->warn("Critic check failed: " . $e->getMessage());
+        }
+        return '';
     }
 
     /**

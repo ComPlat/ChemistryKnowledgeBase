@@ -110,12 +110,18 @@ class EvalMemory
         $sanityLine = $sanityRate !== null
             ? "- Sanity pass rate: " . number_format($sanityRate, 4) . "\n"
             : '';
+        $confidence = $metric['avgConfidence'] ?? null;
+        $confidenceLine = $confidence !== null
+            ? "- Avg critic confidence: " . number_format($confidence, 4)
+                . " (flagged rows: " . ($metric['flaggedRows'] ?? 0) . ")\n"
+            : '';
 
         $entry = "## Iteration $iteration — $ts\n"
             . "- F1: $f1 | Precision: $precision | Recall: $recall\n"
             . $efficiencyLine
             . $unitLine
             . $sanityLine
+            . $confidenceLine
             . $proseLine
             . "- Weakest fields: " . (empty($worstFields) ? '—' : implode('; ', $worstFields)) . "\n\n";
 

@@ -98,6 +98,12 @@ gold needed): percentages/yields in [0,100], turnover numbers ≥ 0, binding con
 per-product efficiencies sum to ≤ 100. Reported as a sanity pass-rate and fed to the optimizer.
 The rules are derived generically per topic (see "Adding a new topic").
 
+**Critic / confidence** — an optional second pass (`--critic <t>`) re-reads the source and scores
+each row's confidence with a supporting quote; the average confidence and the number of flagged
+rows are reported. In production import, set `$wgCEExtractionCriticThreshold` to gate: pages whose
+average confidence falls below it get a review notice + `[[Category:Needs review]]` instead of
+being trusted silently.
+
 **Secondary — prose similarity** — when a gold entry has a `prose` field, the AI prose (response
 minus the CSV block) is compared to the reference via embedding cosine similarity
 (`ProseSimilarityScorer` + `EmbeddingClient`, model `$wgOpenAIEmbeddingModel`). Disable with
@@ -113,6 +119,7 @@ minus the CSV block) is compared to the reference via embedding cosine similarit
 --no-embeddings        skip prose similarity (no embedding API calls)
 --structured           use structured outputs (JSON schema) instead of CSV-in-prose
 --vision <n>           also attach the first n rendered PDF pages as images (needs pdftoppm)
+--critic <t>           second-pass critic; rows below confidence t (0..1) are flagged
 --prompt-page <name>   prompt page to seed from / write to (default Prompt_import_<Topic>)
 --prompt-file <path>   seed the initial prompt from a file instead of the wiki page
 --write                write the best prompt back to the prompt page

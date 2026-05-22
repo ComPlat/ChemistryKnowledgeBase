@@ -47,6 +47,7 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addOption('no-embeddings', 'Disable prose similarity (no embedding API calls)');
         $this->addOption('structured', 'Use structured outputs (JSON schema) instead of CSV-in-prose');
         $this->addOption('vision', 'Also attach the first N rendered PDF pages as images (needs pdftoppm)', false, true);
+        $this->addOption('critic', 'Run a second-pass critic; rows below this confidence (0..1) are flagged', false, true);
         $this->addOption('prompt-page', 'MediaWiki prompt page to seed from / write to (default Prompt_import_<Topic>)', false, true);
         $this->addOption('prompt-file', 'Seed the initial prompt from this file instead of the wiki page', false, true);
         $this->addOption('write', 'Write the best prompt back to the prompt page when finished');
@@ -99,6 +100,11 @@ class optimizeExtractionPrompt extends \Maintenance
         if ($this->getOption('vision', 0) > 0) {
             $runner->useVision((int) $this->getOption('vision'));
             $this->output("Vision enabled: attaching up to " . (int) $this->getOption('vision') . " rendered pages per PDF.\n");
+        }
+
+        if ($this->getOption('critic', null) !== null) {
+            $runner->useCritic((float) $this->getOption('critic'));
+            $this->output("Critic enabled: flagging rows below confidence " . (float) $this->getOption('critic') . ".\n");
         }
 
         if ($this->hasOption('structured')) {
