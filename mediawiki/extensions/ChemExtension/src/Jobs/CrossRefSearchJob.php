@@ -7,6 +7,7 @@ use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
 use DIQA\ChemExtension\PublicationSearch\DownloadLinkFinder;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
+use DIQA\ChemExtension\PublicationSearch\UnpaywallAPI;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
@@ -157,6 +158,21 @@ class CrossRefSearchJob extends Job
     public function createDownloadJob($doi): void
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+
+        // Prefer a freely available (open access) PDF via Unpaywall (issue #343).
+        // Falls back to the CrossRef link / landing-page scraping below if none is found.
+        $unpaywall = new UnpaywallAPI();
+        $oaPdfUrl = $unpaywall->findOpenAccessPdfUrl($doi);
+        if (!is_null($oaPdfUrl)) {
+            $this->logger->log("downloading open access pdf from Unpaywall: $oaPdfUrl");
+            $content = @file_get_contents($oaPdfUrl);
+            if ($content !== false && str_starts_with($content, '%PDF')) {
+                PDFUtils::savePublicationPDF($doi, $content);
+                return;
+            }
+            $this->logger->warn("Unpaywall PDF link did not yield a valid PDF for doi: $doi, falling back");
+        }
+
         $crossRefApi = new CrossRefApi();
         $pdfDownloads = $crossRefApi->findPdfDownloads($doi);
         if (count($pdfDownloads) > 0) {
