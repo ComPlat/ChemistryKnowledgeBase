@@ -39,6 +39,7 @@ One JSON file per publication under `<Topic>/gold/`:
   "doi": "10.1021/jacs.0c00000",
   "topic": "Host Guest interaction",
   "pdf": "pdfs/jacs_0c00000.pdf",
+  "si": ["pdfs/jacs_0c00000_si.pdf"],
   "experiments": [
     { "host": "CB[7]", "host conc": "0.001", "guest": "adamantane-1-carboxylate",
       "guest conc": "0.001", "guest_host_ratio": "1:1", "ka": "1.2e9",
@@ -51,6 +52,9 @@ One JSON file per publication under `<Topic>/gold/`:
   }
 }
 ```
+
+The optional `si` (or `attachments`) array lists supplementary-information PDFs to upload
+alongside the article — the experimental data tables often live there.
 
 The optional `prose` field holds the human-written reference text from the curated wiki entry.
 It may be a single string or a map of section name → text; it is only used for the (secondary)
@@ -108,6 +112,7 @@ minus the CSV block) is compared to the reference via embedding cosine similarit
 --token-penalty <f>    penalty per 1k tokens/pub when selecting the best prompt (default 0)
 --no-embeddings        skip prose similarity (no embedding API calls)
 --structured           use structured outputs (JSON schema) instead of CSV-in-prose
+--vision <n>           also attach the first n rendered PDF pages as images (needs pdftoppm)
 --prompt-page <name>   prompt page to seed from / write to (default Prompt_import_<Topic>)
 --prompt-file <path>   seed the initial prompt from a file instead of the wiki page
 --write                write the best prompt back to the prompt page

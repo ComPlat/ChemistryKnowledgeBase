@@ -75,6 +75,19 @@ class AIClient
         return $ids;
     }
 
+    /**
+     * Builds the user content array from uploaded document file ids and (optional) image file ids
+     * (rendered PDF pages) for vision input.
+     */
+    private function buildFileContent(array $fileIds, array $imageFileIds = []): array
+    {
+        $content = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        foreach ($imageFileIds as $imageId) {
+            $content[] = ["type" => "input_image", "file_id" => $imageId];
+        }
+        return $content;
+    }
+
     public function deleteFiles(array $files)
     {
         foreach ($files as $fileId) {
@@ -87,10 +100,10 @@ class AIClient
         }
     }
 
-    public function callAI(array $fileIds, string $prompt)
+    public function callAI(array $fileIds, string $prompt, array $imageFileIds = [])
     {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($fileIds) . "]");
-        $userContent = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        $userContent = $this->buildFileContent($fileIds, $imageFileIds);
         $parameters = $this->extractRequestParameters($prompt, $userContent);
         $response = $this->client->responses()->create($parameters);
         $result = $response->outputText ?? 'no output generated';
@@ -106,10 +119,10 @@ class AIClient
      * @param string[] $fileIds
      * @param array    $jsonSchema a JSON-schema object (see Eval\TopicSchema)
      */
-    public function callAIWithSchema(array $fileIds, string $prompt, array $jsonSchema, string $schemaName = 'extraction'): string
+    public function callAIWithSchema(array $fileIds, string $prompt, array $jsonSchema, string $schemaName = 'extraction', array $imageFileIds = []): string
     {
         $this->logger->log("Structured request to AI with prompt: '$prompt' and documents [" . join(',', $fileIds) . "]");
-        $userContent = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        $userContent = $this->buildFileContent($fileIds, $imageFileIds);
         $parameters = $this->extractRequestParameters($prompt, $userContent);
         $parameters['text'] = [
             'format' => [

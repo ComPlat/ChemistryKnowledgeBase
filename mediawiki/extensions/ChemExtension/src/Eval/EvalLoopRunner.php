@@ -36,6 +36,8 @@ class EvalLoopRunner
     private string $schemaName = 'extraction';
     private ?array $sanityRules = null;
     private SanityChecker $sanityChecker;
+    private int $visionMaxPages = 0;
+    private ?PdfPageRenderer $pageRenderer = null;
 
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
@@ -73,6 +75,16 @@ class EvalLoopRunner
     }
 
     /**
+     * Attaches the first $maxPages rendered PDF pages as vision input (in addition to the
+     * uploaded document), if a page renderer is available. 0 disables vision.
+     */
+    public function useVision(int $maxPages, ?PdfPageRenderer $renderer = null): void
+    {
+        $this->visionMaxPages = max(0, $maxPages);
+        $this->pageRenderer = $renderer ?? new PdfPageRenderer();
+    }
+
+    /**
      * Runs the optimization loop for a topic.
      *
      * @param string $topic         topic directory name (underscores)
@@ -105,7 +117,7 @@ class EvalLoopRunner
             foreach ($goldEntries as $entry) {
                 $this->emit("  extracting: " . $entry['doi']);
                 try {
-                    $extraction = $this->extract($entry['pdfPath'], $prompt);
+                    $extraction = $this->extract($entry['pdfPaths'], $prompt);
                 } catch (Exception $e) {
                     $this->logger->warn("Extraction failed for {$entry['doi']}: " . $e->getMessage());
                     $this->emit("    skipped (extraction error: " . $e->getMessage() . ")");
@@ -185,33 +197,51 @@ class EvalLoopRunner
     }
 
     /**
-     * Runs one extraction (upload PDF, call AI, parse CSV).
+     * Runs one extraction (upload the article + any supplementary PDFs, optionally attach rendered
+     * page images for vision, call the AI, parse the result).
      *
+     * @param string[] $pdfPaths article PDF plus optional supplementary files
      * @return array{rows:array<int,array<string,string>>, response:string, usage:array{input:int,output:int,total:int}}
      * @throws Exception
      */
-    public function extract(string $pdfPath, string $prompt): array
+    public function extract(array $pdfPaths, string $prompt): array
     {
-        if ($pdfPath === '' || !is_file($pdfPath)) {
-            throw new Exception("PDF not found: '$pdfPath'");
+        $existing = array_values(array_filter($pdfPaths, 'is_file'));
+        if (empty($existing)) {
+            throw new Exception("No PDF found: '" . implode(', ', $pdfPaths) . "'");
         }
-        $fileIds = $this->aiClient->uploadFiles([$pdfPath]);
+        $fileIds = $this->aiClient->uploadFiles($existing);
         if (empty($fileIds)) {
-            throw new Exception("PDF upload failed: $pdfPath");
+            throw new Exception("PDF upload failed: " . implode(', ', $existing));
         }
+
+        $images = [];
+        $imageFileIds = [];
+        if ($this->visionMaxPages > 0 && $this->pageRenderer !== null) {
+            foreach ($existing as $pdf) {
+                $images = array_merge($images, $this->pageRenderer->renderPages($pdf, $this->visionMaxPages));
+            }
+            if (!empty($images)) {
+                $imageFileIds = $this->aiClient->uploadFiles($images);
+            }
+        }
+
         try {
             if ($this->jsonSchema !== null) {
-                $raw = $this->aiClient->callAIWithSchema($fileIds, $prompt, $this->jsonSchema, $this->schemaName);
+                $raw = $this->aiClient->callAIWithSchema($fileIds, $prompt, $this->jsonSchema, $this->schemaName, $imageFileIds);
                 $parsed = StructuredExtractionParser::parse($raw);
                 $rows = $parsed['rows'];
                 $proseText = $parsed['summary'];
             } else {
-                $response = $this->aiClient->callAI($fileIds, $prompt);
+                $response = $this->aiClient->callAI($fileIds, $prompt, $imageFileIds);
                 $rows = CsvExtractionParser::parseRows($response);
                 $proseText = $response;
             }
         } finally {
-            $this->aiClient->deleteFiles($fileIds);
+            $this->aiClient->deleteFiles(array_merge($fileIds, $imageFileIds));
+            if (!empty($images) && $this->pageRenderer !== null) {
+                $this->pageRenderer->cleanup($images);
+            }
         }
         return [
             'rows' => $rows,

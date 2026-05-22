@@ -83,12 +83,21 @@ class GoldSetRepository
             if (!is_array($data)) {
                 throw new Exception("Gold file is not valid JSON: $file");
             }
-            $pdfRel = $data['pdf'] ?? '';
-            $pdfPath = $pdfRel === '' ? '' : $topicDir . '/' . $pdfRel;
+            // main article PDF plus optional supplementary information / attachments
+            $relPaths = [];
+            if (!empty($data['pdf'])) {
+                $relPaths[] = $data['pdf'];
+            }
+            foreach (($data['si'] ?? $data['attachments'] ?? []) as $rel) {
+                if (is_string($rel) && $rel !== '') {
+                    $relPaths[] = $rel;
+                }
+            }
+            $pdfPaths = array_map(fn($rel) => $topicDir . '/' . $rel, $relPaths);
             $entries[] = [
                 'doi' => $data['doi'] ?? basename($file, '.json'),
                 'topic' => $data['topic'] ?? str_replace('_', ' ', $topic),
-                'pdfPath' => $pdfPath,
+                'pdfPaths' => $pdfPaths,
                 'experiments' => $data['experiments'] ?? [],
                 'prose' => $data['prose'] ?? null,
             ];
