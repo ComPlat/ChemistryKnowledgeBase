@@ -14,6 +14,13 @@ namespace DIQA\ChemExtension\Eval;
  */
 class EvalTopicConfig
 {
+    /** topic directory name => investigation form (main template) name */
+    private const FORM_NAMES = [
+        'Host_Guest_interaction' => 'Host_Guest_interaction_experiments',
+        'Photocatalytic_CO2_conversion' => 'Photocatalytic_CO2_conversion_experiments',
+        'Electrochemical_CO2_conversion' => 'EC_conversion_of_CO2_experiments',
+    ];
+
     private const MOLECULE_FIELDS = [
         'Host_Guest_interaction' => ['host', 'guest', 'cofactor'],
         'Photocatalytic_CO2_conversion' => ['catalyst', 'PS', 'e-D', 'H-D', 'solvent A', 'solvent B', 'solvent C'],
@@ -63,6 +70,14 @@ class EvalTopicConfig
             'faradaic_efficiency__CH4' => ['unit' => '%', 'family' => UnitConverter::F_PERCENT],
         ],
     ];
+
+    /**
+     * @return string|null investigation form name for the topic (null if unknown)
+     */
+    public static function formName(string $topic): ?string
+    {
+        return self::FORM_NAMES[$topic] ?? null;
+    }
 
     /**
      * @return string[] molecule-valued column names for the topic (empty if unknown)

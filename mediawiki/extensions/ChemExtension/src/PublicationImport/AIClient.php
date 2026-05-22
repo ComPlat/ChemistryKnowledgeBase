@@ -99,6 +99,33 @@ class AIClient
         return $result;
     }
 
+    /**
+     * Like callAI(), but constrains the model to a JSON schema (OpenAI structured outputs).
+     * Returns the raw JSON string. Eliminates CSV parse / column-drift failures.
+     *
+     * @param string[] $fileIds
+     * @param array    $jsonSchema a JSON-schema object (see Eval\TopicSchema)
+     */
+    public function callAIWithSchema(array $fileIds, string $prompt, array $jsonSchema, string $schemaName = 'extraction'): string
+    {
+        $this->logger->log("Structured request to AI with prompt: '$prompt' and documents [" . join(',', $fileIds) . "]");
+        $userContent = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
+        $parameters = $this->extractRequestParameters($prompt, $userContent);
+        $parameters['text'] = [
+            'format' => [
+                'type' => 'json_schema',
+                'name' => $schemaName,
+                'strict' => true,
+                'schema' => $jsonSchema,
+            ],
+        ];
+        $response = $this->client->responses()->create($parameters);
+        $result = $response->outputText ?? '';
+        $this->lastUsage = $this->extractUsage($response);
+        $this->logger->log("Structured response from AI: " . $result);
+        return $result;
+    }
+
     public function callAIWithTextInputs(array $textInputs, string $prompt)
     {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($textInputs) . "]");

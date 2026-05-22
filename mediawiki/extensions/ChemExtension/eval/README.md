@@ -102,6 +102,7 @@ minus the CSV block) is compared to the reference via embedding cosine similarit
 --tolerance <f>        numeric relative tolerance (default 0.1)
 --token-penalty <f>    penalty per 1k tokens/pub when selecting the best prompt (default 0)
 --no-embeddings        skip prose similarity (no embedding API calls)
+--structured           use structured outputs (JSON schema) instead of CSV-in-prose
 --prompt-page <name>   prompt page to seed from / write to (default Prompt_import_<Topic>)
 --prompt-file <path>   seed the initial prompt from a file instead of the wiki page
 --write                write the best prompt back to the prompt page

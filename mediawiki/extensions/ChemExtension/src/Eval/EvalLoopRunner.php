@@ -32,6 +32,8 @@ class EvalLoopRunner
     private LoggerUtils $logger;
     /** @var callable */
     private $progress;
+    private ?array $jsonSchema = null;
+    private string $schemaName = 'extraction';
 
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
@@ -48,6 +50,15 @@ class EvalLoopRunner
         $this->proseScorer = $proseScorer;
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');
         $this->progress = $progress ?? function ($msg) {};
+    }
+
+    /**
+     * Switches extraction to structured outputs (JSON schema) instead of CSV-in-prose.
+     */
+    public function useStructuredOutput(array $jsonSchema, string $schemaName = 'extraction'): void
+    {
+        $this->jsonSchema = $jsonSchema;
+        $this->schemaName = $schemaName;
     }
 
     /**
@@ -168,13 +179,22 @@ class EvalLoopRunner
             throw new Exception("PDF upload failed: $pdfPath");
         }
         try {
-            $response = $this->aiClient->callAI($fileIds, $prompt);
+            if ($this->jsonSchema !== null) {
+                $raw = $this->aiClient->callAIWithSchema($fileIds, $prompt, $this->jsonSchema, $this->schemaName);
+                $parsed = StructuredExtractionParser::parse($raw);
+                $rows = $parsed['rows'];
+                $proseText = $parsed['summary'];
+            } else {
+                $response = $this->aiClient->callAI($fileIds, $prompt);
+                $rows = CsvExtractionParser::parseRows($response);
+                $proseText = $response;
+            }
         } finally {
             $this->aiClient->deleteFiles($fileIds);
         }
         return [
-            'rows' => CsvExtractionParser::parseRows($response),
-            'response' => $response,
+            'rows' => $rows,
+            'response' => $proseText,
             'usage' => $this->aiClient->getLastUsage() ?? ['input' => 0, 'output' => 0, 'total' => 0],
         ];
     }

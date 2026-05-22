@@ -9,6 +9,7 @@ use DIQA\ChemExtension\Eval\ExtractionScorer;
 use DIQA\ChemExtension\Eval\GoldSetRepository;
 use DIQA\ChemExtension\Eval\MoleculeResolver;
 use DIQA\ChemExtension\Eval\ProseSimilarityScorer;
+use DIQA\ChemExtension\Eval\TopicSchema;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\Title\Title;
 
@@ -45,6 +46,7 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addOption('tolerance', 'Relative tolerance for numeric field comparison (default 0.1)', false, true);
         $this->addOption('token-penalty', 'Penalty per 1k tokens/publication when picking the best prompt (default 0 = pure F1)', false, true);
         $this->addOption('no-embeddings', 'Disable prose similarity (no embedding API calls)');
+        $this->addOption('structured', 'Use structured outputs (JSON schema) instead of CSV-in-prose');
         $this->addOption('prompt-page', 'MediaWiki prompt page to seed from / write to (default Prompt_import_<Topic>)', false, true);
         $this->addOption('prompt-file', 'Seed the initial prompt from this file instead of the wiki page', false, true);
         $this->addOption('write', 'Write the best prompt back to the prompt page when finished');
@@ -87,6 +89,16 @@ class optimizeExtractionPrompt extends \Maintenance
             fn($msg) => $this->output($msg . "\n"),
             $proseScorer
         );
+
+        if ($this->hasOption('structured')) {
+            $form = EvalTopicConfig::formName($topic);
+            if ($form === null) {
+                $this->fatalError("No investigation form known for topic '$topic' — cannot build a JSON schema.");
+            }
+            $fields = TopicSchema::fieldsForForm($form);
+            $runner->useStructuredOutput(TopicSchema::build($fields), 'extraction_' . $topic);
+            $this->output("Using structured outputs with " . count($fields) . " fields from form $form.\n");
+        }
 
         $tokenPenalty = (float) $this->getOption('token-penalty', 0);
         $result = $runner->run($topic, $initialPrompt, $iterations, $tokenPenalty);
