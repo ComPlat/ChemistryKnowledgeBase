@@ -44,12 +44,22 @@ class exportEvalReport extends \Maintenance
             return;
         }
 
+        $done = [];
         foreach ($topics as $topic) {
             try {
                 $files = $report->generateForTopic($topic);
+                $done[] = $topic;
                 $this->output("[$topic] wrote:\n  " . implode("\n  ", $files) . "\n");
             } catch (\Throwable $e) {
                 $this->output("[$topic] skipped: " . $e->getMessage() . "\n");
+            }
+        }
+
+        // cross-topic comparison figure when more than one topic has runs
+        if (count($done) > 1) {
+            $files = $report->generateComparison($done);
+            if (!empty($files)) {
+                $this->output("[comparison] wrote:\n  " . implode("\n  ", $files) . "\n");
             }
         }
     }

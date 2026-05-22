@@ -146,6 +146,10 @@ Writes to `eval/<Topic>/report/`:
 - `metrics.tex` — a pgfplots plot + a booktabs summary table to paste straight into the paper,
 - `report.md` — short summary (best iteration, start→best Δ, convergence).
 
+When more than one topic has runs, it also writes a cross-topic comparison to `eval/report/`:
+`topic_comparison.svg` (best F1 per topic as a bar chart), `topic_comparison.csv` and
+`topic_comparison.md` — a ready "results" figure for the paper.
+
 This needs no API key — it only reads the recorded runs.
 
 ## Adding a new topic (generic core + per-topic fine-tuning)

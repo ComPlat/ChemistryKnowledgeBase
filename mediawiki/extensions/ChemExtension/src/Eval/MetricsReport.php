@@ -56,6 +56,65 @@ class MetricsReport
         return array_values(array_filter($written));
     }
 
+    /**
+     * Best (highest-F1) iteration metrics for a topic, or null if it has no runs.
+     *
+     * @return array<string, float|int|null>|null
+     */
+    public function bestMetrics(string $topic): ?array
+    {
+        $rows = $this->loadRuns($topic);
+        return empty($rows) ? null : $this->bestRow($rows);
+    }
+
+    /**
+     * Cross-topic comparison: best F1 per topic as a bar chart + CSV + a short Markdown table.
+     * Writes to eval/report/. Useful as a single "results" figure for the paper.
+     *
+     * @param string[] $topics
+     * @return string[] paths of generated files (empty if fewer than one topic has runs)
+     */
+    public function generateComparison(array $topics): array
+    {
+        $bars = [];
+        $csv = ['topic,best_f1,best_precision,best_recall,best_iteration'];
+        $mdRows = [];
+        foreach ($topics as $topic) {
+            $best = $this->bestMetrics($topic);
+            if ($best === null) {
+                continue;
+            }
+            $display = str_replace('_', ' ', $topic);
+            $bars[] = ['label' => $display, 'value' => (float) ($best['f1'] ?? 0)];
+            $csv[] = sprintf('%s,%s,%s,%s,%d', $topic, $best['f1'] ?? '', $best['precision'] ?? '', $best['recall'] ?? '', $best['iteration'] ?? 0);
+            $mdRows[] = sprintf('| %s | %s | %s | %s | %d |', $display, $this->fmt($best['f1']), $this->fmt($best['precision']), $this->fmt($best['recall']), $best['iteration'] ?? 0);
+        }
+        if (empty($bars)) {
+            return [];
+        }
+
+        $dir = $this->baseDir . '/report';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $written = [];
+        $svg = SvgBarChart::render($bars, ['title' => 'Best F1 per topic', 'ylabel' => 'F1', 'yMax' => 1.0]);
+        file_put_contents($dir . '/topic_comparison.svg', $svg);
+        $written[] = $dir . '/topic_comparison.svg';
+
+        file_put_contents($dir . '/topic_comparison.csv', implode("\n", $csv) . "\n");
+        $written[] = $dir . '/topic_comparison.csv';
+
+        $md = "# Cross-topic comparison (best F1 per topic)\n\n"
+            . "| Topic | F1 | Precision | Recall | Best it. |\n|---|----|-----------|--------|----------|\n"
+            . implode("\n", $mdRows) . "\n\nFigure: `topic_comparison.svg`.\n";
+        file_put_contents($dir . '/topic_comparison.md', $md);
+        $written[] = $dir . '/topic_comparison.md';
+
+        return $written;
+    }
+
     /** @return array<int, array<string, float|int|null>> one row per iteration, sorted */
     private function loadRuns(string $topic): array
     {
