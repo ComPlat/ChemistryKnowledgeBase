@@ -280,7 +280,28 @@ $smwgFieldTypeFeatures = SMW_FIELDT_CHAR_NOCASE;
 #################################################################
 # Chemistry
 #################################################################
-$wgCrossRefJournalList = [
+$openAccessJournals = [
+    'ACS Central Science',
+    'Advanced Energy and Sustainability Research',
+    'Advanced Science',
+    'Chemical Science',
+    'ChemElectroChem',
+    'Inorganics',
+    'iScience',
+    'Nature Communications',
+    'npj Materials Sustainability',
+    'American Journal of Applied Chemistry',
+    'Cell Reports Physical Science',
+    'Frontiers in Chemistry',
+    'Frontiers in Molecular Biosciences',
+    'JACS Au',
+    'Beilstein Journal of Organic Chemistry',
+    'Communications Biology',
+    'RSC Advances',
+    'RSC Chemical Biology',
+];
+
+$allJournals = [
     'ACS Catalysis',
     'ACS Central Science',
     'ACS Energy Letters',
@@ -356,6 +377,8 @@ $wgCrossRefJournalList = [
     'RSC advances',
     'RSC Chemical Biology',
 ];
+
+$wgCrossRefJournalList = $openAccessJournals;
 
 $wgJobRunRate = 0;
 define('NS_MOLECULE', 3300);
