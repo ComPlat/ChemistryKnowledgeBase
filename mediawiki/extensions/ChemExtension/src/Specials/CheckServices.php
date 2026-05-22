@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Specials;
 
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
+use DIQA\ChemExtension\PublicationImport\AIClient;
 use DIQA\ChemExtension\TIB\TibClient;
 use eftec\bladeone\BladeOne;
 use SpecialPage;
@@ -17,7 +18,7 @@ class CheckServices extends SpecialPage
 
     public function __construct()
     {
-        parent::__construct('CheckServices');
+        parent::__construct('CheckServices', 'delete');
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $this->blade = new BladeOne ($views, $cache);
@@ -29,13 +30,16 @@ class CheckServices extends SpecialPage
      */
     function execute($par)
     {
+        parent::execute($par);
         $output = $this->getOutput();
         $this->setHeaders();
 
         $output->addHTML($this->blade->run("check-services", [
             'RGroupState' => $this->checkRGroupsService(),
             'renderState' => $this->checkRenderService(),
-            'tibState' => $this->checkTIBService()])
+            'tibState' => $this->checkTIBService(),
+            'openAIState' => $this->checkOpenAIService(),
+            ])
             );
     }
 
@@ -68,6 +72,12 @@ class CheckServices extends SpecialPage
         } catch (Exception $e) {
             return $e->getMessage();
         }
+    }
+
+    private function checkOpenAIService() {
+        $aiClient = new AIClient();
+        $result = $aiClient->ping();
+        return $result['ok'] ? true : $result['message'];
     }
 
     private function initializeParameters() {

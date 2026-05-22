@@ -21,5 +21,11 @@
                 {{$tibState === true ? 'OK': $tibState}}
             </td>
         </tr>
+        <tr>
+            <td><span style="font-weight: bold">Open-AI service</span> (contact: kuehn (at) diqa.de)</td>
+            <td class="check-service-state {{$openAIState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
+                {{$openAIState === true ? 'OK': $openAIState}}
+            </td>
+        </tr>
     </table>
 </div>

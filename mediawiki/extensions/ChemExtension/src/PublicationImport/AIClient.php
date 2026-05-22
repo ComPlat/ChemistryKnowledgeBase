@@ -25,6 +25,55 @@ class AIClient
             ->make();
     }
 
+    /**
+     * Checks whether the OpenAI client is operational and requests are accepted
+     * (e.g. not refused due to an empty budget, invalid key, exceeded quota, etc.).
+     *
+     * Performs a minimal, low-cost request and inspects the response. On any
+     * failure, the underlying error is logged and false is returned.
+     *
+     * @return array{ok: bool, message: string} Status info: ok=true on success,
+     *                                          message contains details on failure.
+     */
+    public function ping(): array
+    {
+        try {
+            global $wgOpenAIModel;
+            $model = $wgOpenAIModel ?? 'o3';
+
+            $response = $this->client->responses()->create([
+                'model' => $model,
+                'reasoning' => ['effort' => 'low'],
+                'input' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => 'ping',
+                            ],
+                        ],
+                    ],
+                ],
+                'max_output_tokens' => 16,
+            ]);
+
+            if (!isset($response->id)) {
+                $msg = 'OpenAI ping failed: unexpected response (no id returned).';
+                $this->logger->error($msg . ' Response: ' . print_r($response, true));
+                return ['ok' => false, 'message' => $msg];
+            }
+
+            $this->logger->log("OpenAI ping successful (response id: {$response->id}).");
+            return ['ok' => true, 'message' => 'OpenAI client is reachable and accepting requests.'];
+
+        } catch (Exception $e) {
+            $msg = 'OpenAI ping failed: ' . $e->getMessage();
+            $this->logger->error($msg);
+            return ['ok' => false, 'message' => $msg];
+        }
+    }
+
 
     public function uploadFiles(array $files)
     {
