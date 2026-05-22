@@ -1,0 +1,223 @@
+<?php
+
+namespace DIQA\ChemExtension\Eval;
+
+/**
+ * Scores an AI extraction against a curated gold extraction for one publication.
+ *
+ * The metric is a structured, field-level comparison (not text similarity): every non-empty
+ * gold cell is a thing the model should have reproduced. We greedily match extracted experiment
+ * rows to gold rows, then compare cell by cell:
+ *   - numeric cells (e.g. Ka, Kd, ΔG, TON, faradaic efficiency, concentrations) match within a
+ *     relative tolerance,
+ *   - all other cells match by normalized string equality.
+ *
+ * From the cell-level true positives we derive precision / recall / F1, plus a structured error
+ * report (which fields are systematically missed or wrong) that {@see PromptOptimizer} feeds
+ * back to the model.
+ */
+class ExtractionScorer
+{
+    /** relative tolerance for numeric comparison (10%) */
+    private float $numericTolerance;
+
+    public function __construct(float $numericTolerance = 0.1)
+    {
+        $this->numericTolerance = $numericTolerance;
+    }
+
+    /**
+     * @param array<int, array<string,string>> $goldRows
+     * @param array<int, array<string,string>> $extractedRows
+     * @return array{precision:float, recall:float, f1:float, truePositives:int, goldCells:int,
+     *               extractedCells:int, goldRows:int, extractedRows:int, matchedRows:int,
+     *               perField:array<string,array{gold:int,correct:int}>, examples:string[]}
+     */
+    public function scorePublication(array $goldRows, array $extractedRows): array
+    {
+        $usedExtracted = [];
+        $truePositives = 0;
+        $perField = [];
+        $examples = [];
+        $matchedRows = 0;
+
+        foreach ($goldRows as $goldRow) {
+            [$bestIdx, $bestScore] = $this->findBestMatch($goldRow, $extractedRows, $usedExtracted);
+            $extractedRow = ($bestIdx !== null) ? $extractedRows[$bestIdx] : [];
+            if ($bestIdx !== null && $bestScore > 0) {
+                $usedExtracted[$bestIdx] = true;
+                $matchedRows++;
+            }
+
+            foreach ($goldRow as $field => $goldValue) {
+                if ($this->isEmpty($goldValue)) {
+                    continue;
+                }
+                $perField[$field] = $perField[$field] ?? ['gold' => 0, 'correct' => 0];
+                $perField[$field]['gold']++;
+
+                $extractedValue = $extractedRow[$field] ?? '';
+                if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue)) {
+                    $truePositives++;
+                    $perField[$field]['correct']++;
+                } elseif (count($examples) < 25) {
+                    $shown = $this->isEmpty($extractedValue) ? '(missing)' : $extractedValue;
+                    $examples[] = "$field: expected '$goldValue', got '$shown'";
+                }
+            }
+        }
+
+        $goldCells = $this->countNonEmptyCells($goldRows);
+        $extractedCells = $this->countNonEmptyCells($extractedRows);
+
+        $recall = $goldCells > 0 ? $truePositives / $goldCells : 0.0;
+        $precision = $extractedCells > 0 ? $truePositives / $extractedCells : 0.0;
+        $f1 = ($precision + $recall) > 0 ? 2 * $precision * $recall / ($precision + $recall) : 0.0;
+
+        return [
+            'precision' => $precision,
+            'recall' => $recall,
+            'f1' => $f1,
+            'truePositives' => $truePositives,
+            'goldCells' => $goldCells,
+            'extractedCells' => $extractedCells,
+            'goldRows' => count($goldRows),
+            'extractedRows' => count($extractedRows),
+            'matchedRows' => $matchedRows,
+            'perField' => $perField,
+            'examples' => $examples,
+        ];
+    }
+
+    /**
+     * Aggregates per-publication scores into a corpus-level result (micro-averaged F1).
+     *
+     * @param array<int, array> $publicationScores results of scorePublication()
+     * @return array{precision:float, recall:float, f1:float, perField:array<string,array{gold:int,correct:int,recall:float}>, examples:string[]}
+     */
+    public function aggregate(array $publicationScores): array
+    {
+        $tp = 0;
+        $goldCells = 0;
+        $extractedCells = 0;
+        $perField = [];
+        $examples = [];
+
+        foreach ($publicationScores as $score) {
+            $tp += $score['truePositives'];
+            $goldCells += $score['goldCells'];
+            $extractedCells += $score['extractedCells'];
+            foreach ($score['perField'] as $field => $counts) {
+                $perField[$field] = $perField[$field] ?? ['gold' => 0, 'correct' => 0];
+                $perField[$field]['gold'] += $counts['gold'];
+                $perField[$field]['correct'] += $counts['correct'];
+            }
+            foreach ($score['examples'] as $ex) {
+                if (count($examples) < 40) {
+                    $examples[] = $ex;
+                }
+            }
+        }
+
+        foreach ($perField as $field => $counts) {
+            $perField[$field]['recall'] = $counts['gold'] > 0 ? $counts['correct'] / $counts['gold'] : 0.0;
+        }
+        // worst fields first — most useful for the optimizer
+        uasort($perField, fn($a, $b) => $a['recall'] <=> $b['recall']);
+
+        $recall = $goldCells > 0 ? $tp / $goldCells : 0.0;
+        $precision = $extractedCells > 0 ? $tp / $extractedCells : 0.0;
+        $f1 = ($precision + $recall) > 0 ? 2 * $precision * $recall / ($precision + $recall) : 0.0;
+
+        return [
+            'precision' => $precision,
+            'recall' => $recall,
+            'f1' => $f1,
+            'perField' => $perField,
+            'examples' => $examples,
+        ];
+    }
+
+    /**
+     * @return array{0: int|null, 1: float} best extracted row index and its match score
+     */
+    private function findBestMatch(array $goldRow, array $extractedRows, array $usedExtracted): array
+    {
+        $bestIdx = null;
+        $bestScore = -1.0;
+        foreach ($extractedRows as $idx => $extractedRow) {
+            if (isset($usedExtracted[$idx])) {
+                continue;
+            }
+            $score = $this->rowMatchScore($goldRow, $extractedRow);
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestIdx = $idx;
+            }
+        }
+        return [$bestIdx, max(0.0, $bestScore)];
+    }
+
+    private function rowMatchScore(array $goldRow, array $extractedRow): float
+    {
+        $matches = 0;
+        $considered = 0;
+        foreach ($goldRow as $field => $goldValue) {
+            if ($this->isEmpty($goldValue)) {
+                continue;
+            }
+            $considered++;
+            $extractedValue = $extractedRow[$field] ?? '';
+            if (!$this->isEmpty($extractedValue) && $this->valuesMatch($goldValue, $extractedValue)) {
+                $matches++;
+            }
+        }
+        return $considered > 0 ? $matches / $considered : 0.0;
+    }
+
+    private function valuesMatch(string $gold, string $extracted): bool
+    {
+        $goldNum = $this->parseNumber($gold);
+        $extractedNum = $this->parseNumber($extracted);
+        if ($goldNum !== null && $extractedNum !== null) {
+            $scale = max(abs($goldNum), abs($extractedNum), 1e-12);
+            return abs($goldNum - $extractedNum) <= $this->numericTolerance * $scale;
+        }
+        return $this->normalize($gold) === $this->normalize($extracted);
+    }
+
+    private function parseNumber(string $value): ?float
+    {
+        $value = str_replace(['×10^', 'x10^', '·10^'], 'e', $value);
+        if (preg_match('/-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?/', $value, $m)) {
+            return (float) str_replace(',', '.', $m[0]);
+        }
+        return null;
+    }
+
+    private function normalize(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = preg_replace('/\s+/', ' ', $value);
+        return trim($value, " \t\n\r\0\x0B.;,");
+    }
+
+    private function isEmpty(string $value): bool
+    {
+        $v = trim($value);
+        return $v === '' || strtolower($v) === 'n/a' || $v === '-';
+    }
+
+    private function countNonEmptyCells(array $rows): int
+    {
+        $count = 0;
+        foreach ($rows as $row) {
+            foreach ($row as $value) {
+                if (!$this->isEmpty((string) $value)) {
+                    $count++;
+                }
+            }
+        }
+        return $count;
+    }
+}
