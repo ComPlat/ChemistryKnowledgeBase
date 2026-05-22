@@ -159,6 +159,10 @@ class CrossRefSearchJob extends Job
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
 
+        // Best-effort: also grab openly linked supplementary-information PDFs (the data tables
+        // often live in the SI). Picked up by the import alongside the main PDF.
+        $this->tryDownloadSupplementary($doi);
+
         // Prefer a freely available (open access) PDF via Unpaywall (issue #343).
         // Falls back to the CrossRef link / landing-page scraping below if none is found.
         $unpaywall = new UnpaywallAPI();
@@ -205,6 +209,36 @@ class CrossRefSearchJob extends Job
                 'doi' => $doi,
             ]));
 
+        }
+    }
+
+    /**
+     * Best-effort discovery of supplementary-information PDFs from the DOI landing page. Saves any
+     * openly downloadable SI PDFs next to the main PDF so the import feeds them to the AI too.
+     * Many publishers gate the SI (paywall / JS) — those are only reachable via manual upload.
+     */
+    private function tryDownloadSupplementary(string $doi): void
+    {
+        try {
+            $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
+            $links = $downloader->findDownloadLinks(['pdf']);
+            $index = 1;
+            foreach ($links as $link) {
+                $haystack = strtolower(($link['text'] ?? '') . ' ' . ($link['url'] ?? ''));
+                if (!preg_match('/suppl|supporting|_si\b|\bsi[\s._-]|si\.pdf/', $haystack)) {
+                    continue;
+                }
+                $content = @file_get_contents($link['url']);
+                if ($content !== false && str_starts_with($content, '%PDF')) {
+                    PdfUtils::savePublicationSI($doi, $index++, $content);
+                    $this->logger->log("saved supplementary PDF for $doi from " . $link['url']);
+                }
+                if ($index > 5) {
+                    break;
+                }
+            }
+        } catch (Exception $e) {
+            $this->logger->warn("supplementary discovery failed for $doi: " . $e->getMessage());
         }
     }
 }

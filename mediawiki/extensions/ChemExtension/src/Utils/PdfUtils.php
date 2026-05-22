@@ -83,4 +83,42 @@ class PdfUtils {
 
         return null;
     }
+
+    private static function storeDir(): string
+    {
+        global $wgChemPubStoreDir;
+        if (!isset($wgChemPubStoreDir)) {
+            $wgChemPubStoreDir = sys_get_temp_dir();
+        }
+        return $wgChemPubStoreDir;
+    }
+
+    /**
+     * Stores a supplementary-information PDF for a DOI next to the main PDF.
+     */
+    public static function savePublicationSI(string $doi, int $index, string $content): void
+    {
+        file_put_contents(self::storeDir() . "/" . md5($doi) . "_si{$index}.pdf", $content);
+    }
+
+    /**
+     * @return string[] paths of stored supplementary PDFs for the DOI (may be empty)
+     */
+    public static function publicationSIPDFs(string $doi): array
+    {
+        return glob(self::storeDir() . "/" . md5($doi) . "_si*.pdf") ?: [];
+    }
+
+    /**
+     * @return string[] the main PDF (if present) followed by any supplementary PDFs.
+     */
+    public static function publicationAllPDFs(string $doi): array
+    {
+        $all = [];
+        $main = self::publicationPDF($doi);
+        if (is_file($main)) {
+            $all[] = $main;
+        }
+        return array_merge($all, self::publicationSIPDFs($doi));
+    }
 }

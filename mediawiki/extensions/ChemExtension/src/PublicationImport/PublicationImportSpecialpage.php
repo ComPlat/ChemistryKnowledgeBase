@@ -73,6 +73,10 @@ class PublicationImportSpecialpage extends SpecialPage
                     $uploadedFiles = $this->processUpload($tmpFolder);
                     if (file_exists(PdfUtils::publicationPDF($doi))) {
                         $uploadedFiles[$pageTitle] = PdfUtils::publicationPDF($doi);
+                        // also feed any stored supplementary-information PDFs to the AI
+                        foreach (PdfUtils::publicationSIPDFs($doi) as $i => $siFile) {
+                            $uploadedFiles[$pageTitle . ' SI' . ($i + 1)] = $siFile;
+                        }
                     }
                     $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
                     $this->putTitleOnWatchlist($title);
