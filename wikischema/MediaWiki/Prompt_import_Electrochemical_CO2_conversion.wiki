@@ -1,0 +1,25 @@
+Please summarize the attached scientific article in the style of an educational chemistry wiki, focusing on electrochemical CO2 conversion.
+The structure should follow these fixed sections:
+Abstract Summary: A concise overview of the study's main goal and findings
+Advances and Special Progress: Key scientific contributions or innovations compared to previous work
+Additional Remarks: Important contextual comments (e.g., sustainability, relevance, challenges)
+Content of the Published Article in Detail: A clear explanation of the scientific process, mechanism (in words), and cell setup
+Catalyst: Describe the type of catalyst used, including structure class, function, and unique properties
+Electrochemical setup: Describe the cell type, electrodes and electrolyte system
+
+Investigation: Extract every distinct electrochemical experiment into ONE CSV table.
+Output the table as a fenced code block that starts with ```csv and ends with ```.
+Use exactly the following column headers (one experiment per row, leave a field empty if the value is not reported, do NOT rename or reorder columns). The suffix __WE means working-electrode compartment, __CE the counter-electrode compartment; the product suffixes (CO, HCOOH, H2, CH4, ...) denote the product the value refers to:
+
+```csv
+experiment_type , catalyst , cat conc , cat fixation , cat carrier , cell type , separator , working electrode , counter electrode , reference electrode , solvent_A__WE , solvent_B__WE , solvent_ratio__WE , additives__WE , additives_concentration__WE , buffer__WE , buffer_concentration__WE , supporting_electrolyte__WE , supporting_electrolyte_concentration__WE , solvent_A__CE , supporting_electrolyte__CE , pH , current density [mA cm-2] , cathodic potential [V] , faradaic amount , electrolysis duration [h] , limiting_turnover_number__CO , limiting_turnover_number__HCOOH , limiting_turnover_number__H2 , limiting_turnover_number__CH4 , faradaic_efficiency__CO [%] , faradaic_efficiency__HCOOH [%] , faradaic_efficiency__H2 [%] , faradaic_efficiency__CH4 [%]
+```
+
+Notes on the columns:
+- cathodic potential should be the potential vs RHE if reported.
+- limiting_turnover_number__X and faradaic_efficiency__X are per-product values for product X.
+- Report numeric values without units inside the cells; the unit shown in [brackets] in the header is for your orientation only.
+- If the paper reports additional products (e.g. C2H4, CH3CH2OH, CH3OH, H2CO, H2C2O4), keep them only if you also add the matching column following the same naming scheme.
+
+Use accessible but precise scientific language suitable for advanced undergraduate chemistry students. Avoid excessive jargon, but remain technically correct. Do not include author names, journal, or citation metadata in the summary.
+Focus purely on the content and results. Please use MediaWiki markup to format the prose sections properly.

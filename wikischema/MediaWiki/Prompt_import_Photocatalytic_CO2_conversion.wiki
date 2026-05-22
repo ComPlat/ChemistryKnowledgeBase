@@ -1,0 +1,24 @@
+Please summarize the attached scientific article in the style of an educational chemistry wiki, focusing on homogeneous/heterogeneous photocatalytic CO2 conversion.
+The structure should follow these fixed sections:
+Abstract Summary: A concise overview of the study's main goal and findings
+Advances and Special Progress: Key scientific contributions or innovations compared to previous work
+Additional Remarks: Important contextual comments (e.g., sustainability, relevance, challenges)
+Content of the Published Article in Detail: A clear explanation of the scientific process, mechanism (in words), and setup
+Catalyst: Describe the type of catalyst used, including structure class, function, and unique properties
+Photosensitizer: Describe the photosensitizer used and its role in the system
+
+Investigation: Extract every distinct photocatalytic experiment into ONE CSV table.
+Output the table as a fenced code block that starts with ```csv and ends with ```.
+Use exactly the following column headers (one experiment per row, leave a field empty if the value is not reported, do NOT rename or reorder columns):
+
+```csv
+catalyst , cat conc [µM] , PS , PS conc [mM] , e-D , e-D conc [M] , H-D , H-D conc [M] , solvent A , solvent B , solvent C , solvent-ratio , additives , additives conc , feedstock gas , feedstock volume , intensity , pH , Temperature [°C] , λexc [nm] , irr time [h] , Turnover_number__CO , Turnover_number__CH4 , Turnover_number__H2 , Turnover_number__HCOOH , Turnover_number__MeOH , Turnover_frequency__CO [h-1] , Quantum_yield__CO [%] , selectivity
+```
+
+Notes on the columns:
+- catalyst / PS / e-D / H-D: use the name or abbreviation as given in the paper for the catalyst, photosensitizer, electron donor and hydrogen donor.
+- Turnover_number__X is the turnover number (TON) for product X (CO, CH4, H2, HCOOH, MeOH).
+- Report numeric values without units inside the cells; the unit shown in [brackets] in the header is for your orientation only.
+
+Use accessible but precise scientific language suitable for advanced undergraduate chemistry students. Avoid excessive jargon, but remain technically correct. Do not include author names, journal, or citation metadata in the summary.
+Focus purely on the content and results. Please use MediaWiki markup to format the prose sections properly.

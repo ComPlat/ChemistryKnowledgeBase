@@ -1,0 +1,26 @@
+Please summarize the attached scientific article in the style of an educational chemistry wiki, focusing on host-guest interactions in supramolecular chemistry.
+The structure should follow these fixed sections:
+Abstract Summary: A concise overview of the study's main goal and findings
+Advances and Special Progress: Key scientific contributions or innovations compared to previous work
+Additional Remarks: Important contextual comments (e.g., relevance, scope, challenges)
+Content of the Published Article in Detail: A clear explanation of the binding system, the proposed binding mode (in words), and the experimental setup
+Host: Describe the host molecule, including structure class and the binding site(s)
+Guest: Describe the guest molecule(s) and the nature of the interaction
+
+Investigation: Extract every distinct host-guest binding experiment into ONE CSV table.
+Output the table as a fenced code block that starts with ```csv and ends with ```.
+Use exactly the following column headers (one host-guest pair per row, leave a field empty if the value is not reported, do NOT rename or reorder columns):
+
+```csv
+host , host conc [M] , guest , guest conc [M] , cofactor , cofactor conc [M] , guest_host_ratio , ka [M-1] , logka , kd [M] , deltaG [kJ/mol] , temperature [K] , detection_type , assay_type , technique
+```
+
+Notes on the columns:
+- host / guest / cofactor: use the name or abbreviation as given in the paper.
+- ka is the association constant, kd the dissociation constant, logka its decadic logarithm, deltaG the binding free energy.
+- guest_host_ratio is the stoichiometry of the complex (e.g. 1:1, 2:1).
+- detection_type / assay_type / technique: e.g. the method used to determine the binding constant (NMR titration, ITC, UV-Vis, fluorescence ...).
+- Report numeric values without units inside the cells; the unit shown in [brackets] in the header is for your orientation only.
+
+Use accessible but precise scientific language suitable for advanced undergraduate chemistry students. Avoid excessive jargon, but remain technically correct. Do not include author names, journal, or citation metadata in the summary.
+Focus purely on the content and results. Please use MediaWiki markup to format the prose sections properly.

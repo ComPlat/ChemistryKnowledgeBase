@@ -58,15 +58,7 @@ class PublicationImportJob extends Job
         }, $this->topics));
 
 
-        global $wgOpenAIPromptPages;
-        $promptPage = $wgOpenAIPromptPages['publicationImport'] ?? 'Publication import prompt';
-        $promptTitle = Title::newFromText($promptPage, NS_MEDIAWIKI);
-        if (!$promptTitle->exists()) {
-            // fallback
-            $prompt = "Can you tell me what the document is about?";
-        } else {
-            $prompt = WikiTools::getText($promptTitle);
-        }
+        $prompt = $this->resolveImportPrompt();
         $this->logger->log("prompt for AI: " . $prompt);
 
         $aiClient = new AIClient();
@@ -101,6 +93,46 @@ WIKITEXT;
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
         $aiClient->deleteFiles($fileIds);
+    }
+
+    /**
+     * Resolves the extraction prompt for this publication.
+     *
+     * Resolution order (first match wins):
+     *  1. Topic-specific prompt page MediaWiki:Prompt_import_<Topic> for any assigned topic.
+     *     This mirrors the topic-specific *search* prompts (MediaWiki:Prompt_<Topic>) used in
+     *     {@see CrossRefSearchJob} and lets each topic request the CSV columns that match its
+     *     own investigation template (e.g. Ka/Kd for Host-Guest, λexc/TON for photocatalysis).
+     *  2. The configurable global import prompt ($wgOpenAIPromptPages['publicationImport'],
+     *     default 'Publication import prompt') — the previous behaviour.
+     *  3. A hard-coded fallback question.
+     *
+     * Prompts are read as raw wikitext (WikiTools::getText) to preserve the exact formatting
+     * the model relies on (section layout, CSV table skeleton).
+     */
+    private function resolveImportPrompt(): string
+    {
+        foreach ($this->topics as $topic) {
+            $topic = trim($topic);
+            if ($topic === '' || $topic === 'Topic') {
+                continue;
+            }
+            $topicPromptTitle = Title::newFromText('Prompt_import_' . $topic, NS_MEDIAWIKI);
+            if ($topicPromptTitle !== null && $topicPromptTitle->exists()) {
+                $this->logger->log("Using topic-specific import prompt for topic: $topic");
+                return WikiTools::getText($topicPromptTitle);
+            }
+        }
+
+        global $wgOpenAIPromptPages;
+        $promptPage = $wgOpenAIPromptPages['publicationImport'] ?? 'Publication import prompt';
+        $promptTitle = Title::newFromText($promptPage, NS_MEDIAWIKI);
+        if ($promptTitle !== null && $promptTitle->exists()) {
+            return WikiTools::getText($promptTitle);
+        }
+
+        // fallback
+        return "Can you tell me what the document is about?";
     }
 
 }
