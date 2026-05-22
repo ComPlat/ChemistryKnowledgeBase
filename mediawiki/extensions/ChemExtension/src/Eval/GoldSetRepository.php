@@ -66,7 +66,7 @@ class GoldSetRepository
      * Loads all gold entries for a topic.
      *
      * @param string $topic topic directory name (underscores)
-     * @return array<int, array{doi:string, topic:string, pdfPath:string, experiments:array<int,array<string,string>>}>
+     * @return array<int, array{doi:string, topic:string, pdfPaths:string[], experiments:array<int,array<string,string>>, prose:mixed}>
      * @throws Exception
      */
     public function loadTopic(string $topic): array
