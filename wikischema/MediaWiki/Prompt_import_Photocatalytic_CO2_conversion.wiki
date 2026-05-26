@@ -165,101 +165,23 @@ Include only details explicitly supported by the article, such as:
 If multiple photosensitizers are compared, identify the main one clearly and mention others only when relevant data are reported.
 
 == Investigation ==
-Provide the core photocatalytic experiments as CSV data with exactly this header:
+Provide the core photocatalytic experiments as ONE fenced code block that starts with ```csv and ends with ```.
+The block must be plain CSV — no markdown table, no JSON, no text before or after it inside the block.
 
-cat , cat conc [µM] , PS , PS conc [mM] , e-D , e-D conc [M] , solvent A , λexc [nm] , TON CO
+The header row MUST be EXACTLY these columns, in this order:
 
-STRICT CSV EXTRACTION RULES
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent C , solvent-ratio , additives , additives conc , feedstock gas , intensity , pH , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Quantum_yield__CO , Turnover_number__CH4 , Turnover_number__H2 , Turnover_frequency__H2 , Turnover_number__HCOOH , Turnover_frequency__HCOOH , Quantum_yield__HCOOH , H-D , H-D conc
 
-1. Include only distinct photocatalytic reaction conditions explicitly reported in the article.
-2. Prefer the main photocatalytic performance table first.
-3. Add control experiments only when they are explicitly reported and chemically informative.
-4. One row must correspond to one distinct experimental condition.
-5. Use the reported catalyst identity for "cat".
-6. Use the reported photosensitizer identity for "PS".
-7. Use the reported sacrificial electron donor identity for "e-D".
-8. Normalize units exactly as follows:
-   - cat conc [µM] must be in µM
-   - PS conc [mM] must be in mM
-   - e-D conc [M] must be in M
-   - λexc [nm] must be in nm
-   - TON CO must refer only to CO
-9. Perform careful unit conversion only when explicitly supported:
-   - 1 mM = 1000 µM
-   - 1 µM = 0.001 mM
-   - 50 µM = 0.050 mM
-   - 100 µM = 0.100 mM
-10. Never leave photosensitizer concentration in µM; convert it to mM.
-11. Never leave catalyst concentration in mM; convert it to µM.
-12. Never report electron donor concentration in mM; convert it to M.
-13. If a concentration is given only as mol% and no absolute concentration is explicitly provided, write "not reported".
-14. If the excitation source is reported as a wavelength range or filter window, preserve the full range exactly as reported, for example:
-   420–650
-15. If the excitation is monochromatic, enter the single wavelength in nm.
-16. If the solvent is a mixture, report it explicitly, for example:
-   DMF/H2O (4:1)
-   CH3CN/TEOA (5:1)
-17. Do not place additives into the solvent field unless the article clearly treats them as part of the reaction medium.
-18. TON CO must be copied as the CO turnover number only.
-19. Do not substitute CO yield, CO amount, selectivity, or total TON for TON CO.
-20. If the article reports no detectable CO for a control experiment, enter:
-   0
-   only when that is explicitly supported.
-21. If the article gives only a qualitative statement such as "trace CO" or otherwise does not provide a reliable numeric CO TON, enter:
-   not reported
-22. Ignore H2 values in the CSV table.
-23. Do not average replicate values unless the article explicitly reports an average.
-24. Do not read approximate values from graphs unless they are unambiguous.
-25. Do not combine conditions from one figure with TON data from another unless the match is explicit.
-26. If several catalysts or photosensitizers are compared, include separate rows for each reported condition.
-27. If reaction time changes between conditions and TON CO depends on time, include a row only when the TON CO value is clearly assigned to that condition.
-28. Keep chemical names consistent across rows.
-29. Do not add extra columns.
-30. Use "not reported" whenever the requested entry is not explicitly and reliably available.
+Extraction rules for the CSV:
+- One row per distinct experimental condition explicitly reported. Take the main photocatalytic performance table first, and add control / condition-variation rows when they are explicitly reported. Include EVERY distinct experiment — do not summarise or collapse rows.
+- Report numbers as bare values (no unit text) in exactly these units, converting only when the article gives a clear basis: cat conc = µM; PS conc = mM; e-D conc = M; H-D conc = M; Temperature = °C; λexc = nm; irr time = h; Turnover_frequency__* = h^-1; Quantum_yield__* = %.
+- catalyst, PS (photosensitizer), e-D (sacrificial electron donor), H-D (hydrogen/proton donor): use the identity (name or abbreviation) exactly as given in the article. Keep names consistent across rows. Never swap catalyst, photosensitizer, electron donor, hydrogen donor, solvent, or additive.
+- Turnover_number__X, Turnover_frequency__X, Quantum_yield__X are per product X (CO, CH4, H2, HCOOH). Put each product's value in its own column; never substitute CO yield, selectivity, total TON, or a value read from a graph.
+- For a solvent mixture, give solvent A/B/C and the ratio in solvent-ratio (for example 4:1). Keep additives out of the solvent fields.
+- Keep a wavelength range as a range (for example 420-650); a monochromatic source is a single nm value.
+- Leave a cell EMPTY only when the article does not state the value. Never invent, guess, reconstruct, or infer a value from general knowledge, figures, or discussion — every value must be explicitly supported by the article.
+- Do NOT use a value that appears only in the supporting information unless the main text also states it.
+- Never put a comma inside a cell (commas separate columns); use a space or a slash instead.
+- Do not add, remove, rename, or reorder columns.
 
-INTERPRETATION RULES SPECIFIC TO PHOTOCATALYTIC CO2 REDUCTION
-- Keep catalyst, photosensitizer, sacrificial donor, proton source, solvent, atmosphere, and additive clearly separated.
-- Treat "electron donor", "sacrificial donor", and "reductant" as the same functional category only when the article uses them that way.
-- If the article discusses quenching studies, do not confuse the quencher identity with the catalyst or donor used in the photocatalytic runs.
-- If the article presents electrochemical data, use those data only for the prose explanation unless the photocatalytic condition itself is explicitly tied to them.
-- If CO selectivity versus H2 is a major topic, explain that in prose, but keep the table limited to TON CO.
-- Mention atmosphere controls, blank experiments, or omission experiments in prose where relevant.
-
-FORMATTING RULES
-- Use MediaWiki markup for all prose sections.
-- Put the CSV data in a plain fenced code block.
-- Do not use markdown tables.
-- Do not output JSON.
-- Do not output explanatory notes before or after the wiki entry.
-- Do not mention that you performed checks.
-- Do not include any content outside the requested final wiki entry and CSV block.
-
-FINAL SILENT SELF-CHECK BEFORE OUTPUT
-Internally verify all of the following before producing the final answer:
-- Section headings exactly match:
-  - Abstract Summary
-  - Advances and Special Progress
-  - Additional Remarks
-  - Content of the Published Article in Detail
-  - Catalyst
-  - Photosensitizer
-  - Investigation
-- No bibliographic metadata appears anywhere.
-- Catalyst concentrations are in µM.
-- Photosensitizer concentrations are in mM.
-- Electron donor concentrations are in M.
-- Excitation wavelengths are in nm and remain ranges when reported as ranges.
-- TON CO refers only to CO.
-- Missing values are marked as "not reported".
-- No unsupported value has been guessed.
-- Catalyst and photosensitizer identities have not been swapped.
-- Solvent composition has not been confused with donor concentration.
-- Control experiments are not merged into main-performance rows unless explicitly listed as separate conditions.
-- Mechanistic claims are no stronger than the article supports.
-- The final output contains only the requested MediaWiki-formatted entry and CSV block.
-
-Return only the final MediaWiki-formatted chemistry wiki entry with the CSV code block in the Investigation section.
-
-[OUTPUT FORMAT] First write the prose summary sections as MediaWiki text. Then output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
-catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH , pH , Turnover_frequency__HCOOH
-One row per distinct experiment; one value per cell; report numbers as bare values in these units (convert if the paper uses another): cat conc=µM; PS conc=mM; e-D conc=M; Temperature=°C; λexc=nm; irr time=h; Turnover_frequency__CO=h^-1; Turnover_frequency__H2=h^-1; Quantum_yield__CO=%; H-D conc=M; Turnover_frequency__HCOOH=h^-1. Leave a cell empty only if the paper does not state it. Never invent or guess a value — every value must be supported by the paper.
+Before output, silently verify: section headings match exactly; no bibliographic metadata; units are as specified above; catalyst and photosensitizer are not swapped; no unsupported value was added; one row per distinct experiment. Return only the final MediaWiki entry with the CSV code block in the Investigation section.
