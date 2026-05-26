@@ -30,12 +30,24 @@ FAMILIES = {
     "wavelength": {"nm": 1.0, "um": 1000.0, "a": 0.1},
     "percent": {"%": 1.0, "percent": 1.0},
 }
+FAMILIES["frequency"] = {"h-1": 1.0, "min-1": 60.0, "s-1": 3600.0}
 EXPECTED_UNIT = {  # field -> (unit, family)
     "cat conc": ("um", "concentration"), "PS conc": ("mm", "concentration"),
     "e-D conc": ("m", "concentration"), "H-D conc": ("m", "concentration"),
     "host conc": ("m", "concentration"), "guest conc": ("m", "concentration"),
     "λexc": ("nm", "wavelength"), "irr time": ("h", "time"),
     "Quantum_yield__CO": ("%", "percent"),
+    "Turnover_frequency__CO": ("h-1", "frequency"), "Turnover_frequency__CH4": ("h-1", "frequency"),
+    "Turnover_frequency__H2": ("h-1", "frequency"), "Turnover_frequency__HCOOH": ("h-1", "frequency"),
+    "Turnover_frequency__MeOH": ("h-1", "frequency"),
+}
+# units the model should report each field in (number only) — stated in the prompt to avoid drift
+FIELD_UNIT_LABEL = {
+    "cat conc": "µM", "PS conc": "mM", "e-D conc": "M", "H-D conc": "M",
+    "λexc": "nm", "irr time": "h", "Temperature": "°C",
+    "Turnover_frequency__CO": "h^-1", "Turnover_frequency__CH4": "h^-1",
+    "Turnover_frequency__H2": "h^-1", "Turnover_frequency__HCOOH": "h^-1", "Turnover_frequency__MeOH": "h^-1",
+    "Quantum_yield__CO": "%",
 }
 
 def norm_unit(u):
@@ -70,7 +82,21 @@ def is_empty(v):
 def is_molecule(v):
     return str(v).startswith("Molecule:")
 
+def ratio_match(a, b):
+    """Order-insensitive ratio compare: '4:1' matches '1:4' (same mixture, convention differs)."""
+    ra = re.match(r"^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$", a)
+    rb = re.match(r"^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$", b)
+    if not (ra and rb):
+        return None
+    sa = sorted([float(ra[1]), float(ra[2])])
+    sb = sorted([float(rb[1]), float(rb[2])])
+    return all(abs(x - y) <= 0.02 * max(abs(x), 1.0) for x, y in zip(sa, sb))
+
 def values_match(field, gold, ext, tol=0.1):
+    if "ratio" in field.lower():
+        r = ratio_match(str(gold), str(ext))
+        if r is not None:
+            return r
     if field in EXPECTED_UNIT:
         unit, fam = EXPECTED_UNIT[field]
         gn, gu = parse_value(gold); en, eu = parse_value(ext)
@@ -219,6 +245,10 @@ def field_hints(fd, skip_doi, fields, per_field=4):
 
 def extract(pdf_path, prompt, fields, model, key, hints=""):
     sys_part, task = split_prompt(prompt)
+    units = [f"{f}={FIELD_UNIT_LABEL[f]}" for f in fields if f in FIELD_UNIT_LABEL]
+    if units:
+        task += ("\n\n[FIELD UNITS] Report these fields as a bare number in EXACTLY these units "
+                 "(convert if the paper uses another unit; no unit text in the value): " + "; ".join(units))
     if hints:
         task += ("\n\n[FIELD FORMAT EXAMPLES — these are example value formats from OTHER papers, "
                  "NOT the answers for this paper; use them only to understand each column]\n" + hints)
