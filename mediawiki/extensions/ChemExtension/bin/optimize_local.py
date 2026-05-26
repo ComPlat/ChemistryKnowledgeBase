@@ -138,19 +138,33 @@ def api_key():
         return os.environ["OPENAI_API_KEY"].strip()
     sys.exit("No API key: create ~/.config/chemwiki/openai.key or set $OPENAI_API_KEY")
 
-def post(payload, key, timeout=300):
-    req = urllib.request.Request(API, data=json.dumps(payload).encode(),
-                                 headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.load(r)
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "ignore")
+def post(payload, key, timeout=300, retries=4):
+    body = json.dumps(payload).encode()
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(API, data=body,
+                                     headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
         try:
-            msg = json.loads(body)["error"]["message"]
-        except Exception:
-            msg = body[:500]
-        raise RuntimeError(f"HTTP {e.code}: {msg}")
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            text = e.read().decode("utf-8", "ignore")
+            if e.code in (429, 500, 502, 503, 504) and attempt < retries:
+                wait = min(60, 5 * (2 ** attempt))
+                print(f"    transient HTTP {e.code}, retry in {wait}s ...")
+                time.sleep(wait)
+                continue
+            try:
+                msg = json.loads(text)["error"]["message"]
+            except Exception:
+                msg = text[:500]
+            raise RuntimeError(f"HTTP {e.code}: {msg}")
+        except (urllib.error.URLError, TimeoutError) as e:
+            if attempt < retries:
+                wait = min(60, 5 * (2 ** attempt))
+                print(f"    network error ({e}), retry in {wait}s ...")
+                time.sleep(wait)
+                continue
+            raise RuntimeError(f"network error: {e}")
 
 def output_text(resp):
     if resp.get("output_text"):
