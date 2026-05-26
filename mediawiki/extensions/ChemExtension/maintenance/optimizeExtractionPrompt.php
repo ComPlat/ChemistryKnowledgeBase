@@ -42,6 +42,7 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addDescription('Self-optimizing loop for topic extraction prompts (scored against the gold set)');
         $this->addOption('topic', 'Topic directory name under eval/ (e.g. Host_Guest_interaction)', true, true);
         $this->addOption('iterations', 'Number of optimization iterations (default 5)', false, true);
+        $this->addOption('limit', 'Only use the first N gold publications that have a PDF (cheap test runs)', false, true);
         $this->addOption('tolerance', 'Relative tolerance for numeric field comparison (default 0.1)', false, true);
         $this->addOption('token-penalty', 'Penalty per 1k tokens/publication when picking the best prompt (default 0 = pure F1)', false, true);
         $this->addOption('no-embeddings', 'Disable prose similarity (no embedding API calls)');
@@ -118,7 +119,8 @@ class optimizeExtractionPrompt extends \Maintenance
         }
 
         $tokenPenalty = (float) $this->getOption('token-penalty', 0);
-        $result = $runner->run($topic, $initialPrompt, $iterations, $tokenPenalty);
+        $limit = (int) $this->getOption('limit', 0);
+        $result = $runner->run($topic, $initialPrompt, $iterations, $tokenPenalty, $limit);
 
         $this->output("\n----------------------------------------\n");
         $this->output(sprintf("Best F1: %.4f\n", $result['best']['f1']));

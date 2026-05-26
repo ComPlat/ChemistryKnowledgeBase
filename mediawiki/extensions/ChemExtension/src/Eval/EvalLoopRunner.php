@@ -106,12 +106,24 @@ class EvalLoopRunner
      * @return array{best:array{f1:float,prompt:string}, history:array<int,array>}
      * @throws Exception
      */
-    public function run(string $topic, string $initialPrompt, int $iterations = 5, float $tokenPenalty = 0.0): array
+    public function run(string $topic, string $initialPrompt, int $iterations = 5, float $tokenPenalty = 0.0, int $limit = 0): array
     {
         $goldEntries = $this->goldRepo->loadTopic($topic);
         if (empty($goldEntries)) {
             throw new Exception("Gold set for topic '$topic' is empty.");
         }
+        // only publications that actually have a PDF are usable; --limit caps for cheap test runs
+        $goldEntries = array_values(array_filter(
+            $goldEntries,
+            fn($e) => !empty(array_filter($e['pdfPaths'], 'is_file'))
+        ));
+        if (empty($goldEntries)) {
+            throw new Exception("No gold publication for topic '$topic' has a PDF yet.");
+        }
+        if ($limit > 0) {
+            $goldEntries = array_slice($goldEntries, 0, $limit);
+        }
+        $this->emit(sprintf("Using %d publication(s) with PDFs%s.", count($goldEntries), $limit > 0 ? " (limited)" : ""));
         $memory = new EvalMemory($this->goldRepo->getTopicDir($topic));
 
         $prompt = $initialPrompt;
