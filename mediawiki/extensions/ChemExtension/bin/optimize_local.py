@@ -14,7 +14,7 @@ Usage:
       --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
       --iterations 8 --limit 3 --model gpt-4o --export-prompt
 """
-import argparse, base64, glob, json, os, re, subprocess, sys, time, urllib.request
+import argparse, base64, glob, json, os, re, subprocess, sys, time, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXT = os.path.dirname(HERE)                       # .../ChemExtension
@@ -140,8 +140,16 @@ def api_key():
 def post(payload, key, timeout=300):
     req = urllib.request.Request(API, data=json.dumps(payload).encode(),
                                  headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "ignore")
+        try:
+            msg = json.loads(body)["error"]["message"]
+        except Exception:
+            msg = body[:500]
+        raise RuntimeError(f"HTTP {e.code}: {msg}")
 
 def output_text(resp):
     if resp.get("output_text"):
@@ -216,7 +224,7 @@ def main():
     ap.add_argument("--prompt-file", required=True)
     ap.add_argument("--iterations", type=int, default=5)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--model", default="gpt-4o")
+    ap.add_argument("--model", default="o3")
     ap.add_argument("--tolerance", type=float, default=0.1)
     ap.add_argument("--export-prompt", action="store_true")
     a = ap.parse_args()

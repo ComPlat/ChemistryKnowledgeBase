@@ -26,11 +26,11 @@ cd mediawiki/extensions/ChemExtension
 # cheap test first (3 papers, 2 rounds):
 python3 bin/optimize_local.py --topic Photocatalytic_CO2_conversion \
     --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
-    --iterations 2 --limit 3 --model gpt-4o
+    --iterations 2 --limit 3 --model o3
 # full run, write the winning prompt into the repo:
 python3 bin/optimize_local.py --topic Photocatalytic_CO2_conversion \
     --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
-    --iterations 8 --model gpt-4o --export-prompt
+    --iterations 8 --model o3 --export-prompt
 ```
 Each iteration writes `eval/<Topic>/results/metrics.csv` + `trend.png/pdf`. Stop with Ctrl+C
 (prior iterations stay archived). Commit `results/*` + the exported prompt to archive the trend.
