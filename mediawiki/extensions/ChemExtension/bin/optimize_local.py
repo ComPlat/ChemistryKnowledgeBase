@@ -177,8 +177,37 @@ def split_prompt(text):
         return sys_part, task
     return "", text.strip()
 
-def extract(pdf_path, prompt, fields, model, key):
+def build_field_examples(entries):
+    """field -> {doi -> [values]} for leakage-free few-shot format hints."""
+    fd = {}
+    for doi, _, exps in entries:
+        for e in exps:
+            for k, v in e.items():
+                if is_empty(v) or is_molecule(v):
+                    continue
+                fd.setdefault(k, {}).setdefault(doi, []).append(str(v))
+    return fd
+
+def field_hints(fd, skip_doi, fields, per_field=4):
+    """Example values per field taken from OTHER papers (never the current one)."""
+    lines = []
+    for f in fields:
+        vals = []
+        for doi, vs in fd.get(f, {}).items():
+            if doi == skip_doi:
+                continue
+            for v in vs:
+                if v not in vals:
+                    vals.append(v)
+        if vals:
+            lines.append(f"- {f}: e.g. " + " | ".join(vals[:per_field]))
+    return "\n".join(lines)
+
+def extract(pdf_path, prompt, fields, model, key, hints=""):
     sys_part, task = split_prompt(prompt)
+    if hints:
+        task += ("\n\n[FIELD FORMAT EXAMPLES — these are example value formats from OTHER papers, "
+                 "NOT the answers for this paper; use them only to understand each column]\n" + hints)
     data = base64.b64encode(open(pdf_path, "rb").read()).decode()
     payload = {
         "model": model,
@@ -315,6 +344,7 @@ def main():
     ap.add_argument("--tolerance", type=float, default=0.1)
     ap.add_argument("--export-prompt", action="store_true")
     ap.add_argument("--ground", action="store_true", help="verify each extracted value against the PDF (groundedness / no-hallucination)")
+    ap.add_argument("--field-hints", action="store_true", help="give the model example value formats per field, sampled from OTHER gold papers (leakage-free)")
     ap.add_argument("--commit", action="store_true", help="git-commit the results after each iteration (archive the progression)")
     a = ap.parse_args()
     key = api_key()
@@ -337,7 +367,9 @@ def main():
             for k in e:
                 if k not in fields:
                     fields.append(k)
-    print(f"{len(entries)} publication(s), {len(fields)} fields, model={a.model}")
+    fd = build_field_examples(entries) if a.field_hints else {}
+    print(f"{len(entries)} publication(s), {len(fields)} fields, model={a.model}"
+          + (", field-hints on" if a.field_hints else ""))
 
     results_dir = os.path.join(EVAL, a.topic, "results")
     os.makedirs(results_dir, exist_ok=True)
@@ -354,7 +386,8 @@ def main():
         gsup = gchk = 0
         for doi, pdf, gold in entries:
             try:
-                rows, t = extract(pdf, prompt, fields, a.model, key)
+                hints = field_hints(fd, doi, fields) if a.field_hints else ""
+                rows, t = extract(pdf, prompt, fields, a.model, key, hints)
                 toks += t
                 s = score_pub(gold, rows, a.tolerance)
                 scores.append(s)
