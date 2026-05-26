@@ -39,6 +39,9 @@ class EvalLoopRunner
     private int $visionMaxPages = 0;
     private ?PdfPageRenderer $pageRenderer = null;
     private ?ExtractionCritic $critic = null;
+    private string $extDir;
+    /** @var bool|null null = not yet tried, false = plotting unavailable */
+    private $plotState = null;
 
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
@@ -56,6 +59,7 @@ class EvalLoopRunner
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');
         $this->progress = $progress ?? function ($msg) {};
         $this->sanityChecker = new SanityChecker();
+        $this->extDir = dirname(__DIR__, 2);
     }
 
     /**
@@ -113,6 +117,11 @@ class EvalLoopRunner
         $prompt = $initialPrompt;
         $best = ['score' => -INF, 'f1' => -1.0, 'prompt' => $initialPrompt];
         $history = [];
+        $resultsDir = $this->goldRepo->getTopicDir($topic) . '/results';
+        if (!is_dir($resultsDir)) {
+            mkdir($resultsDir, 0775, true);
+        }
+        $resultsRows = [];
 
         for ($i = 1; $i <= $iterations; $i++) {
             $this->emit("\n=== Iteration $i/$iterations (topic: $topic) ===");
@@ -194,6 +203,21 @@ class EvalLoopRunner
                 'metric' => $aggregate,
             ]);
             $history[] = ['iteration' => $i, 'f1' => $aggregate['f1'], 'tokens' => $avgTokens, 'timestamp' => $timestamp];
+
+            // committable per-iteration archive + matplotlib trend (X=iteration, Y=metrics)
+            $resultsRows[] = [
+                'iteration' => $i,
+                'f1' => $aggregate['f1'],
+                'precision' => $aggregate['precision'],
+                'recall' => $aggregate['recall'],
+                'unitCorrectness' => $aggregate['unitCorrectness'],
+                'sanityPassRate' => $aggregate['sanityPassRate'],
+                'avgConfidence' => $aggregate['avgConfidence'],
+                'proseSimilarity' => $aggregate['proseSimilarity'],
+                'f1PerKToken' => $aggregate['f1PerKToken'],
+                'tokensPerPub' => $avgTokens,
+            ];
+            $this->writeResultsCsvAndPlot($resultsDir, $resultsRows, $topic);
 
             // Selection objective: F1 minus an optional efficiency penalty on tokens.
             $selectionScore = $aggregate['f1'] - $tokenPenalty * ($avgTokens / 1000);
@@ -279,6 +303,46 @@ class EvalLoopRunner
             'confidence' => $confidence,
             'flaggedRows' => $flaggedRows,
         ];
+    }
+
+    /**
+     * Writes the per-iteration metrics CSV (committable archive) and regenerates the matplotlib
+     * trend figure (best-effort — skipped silently if python/matplotlib is unavailable).
+     */
+    private function writeResultsCsvAndPlot(string $resultsDir, array $rows, string $topic): void
+    {
+        $cols = ['iteration', 'f1', 'precision', 'recall', 'unitCorrectness', 'sanityPassRate',
+            'avgConfidence', 'proseSimilarity', 'f1PerKToken', 'tokensPerPub'];
+        $lines = [implode(',', $cols)];
+        foreach ($rows as $row) {
+            $lines[] = implode(',', array_map(fn($c) => $row[$c] ?? '', $cols));
+        }
+        $csv = $resultsDir . '/metrics.csv';
+        file_put_contents($csv, implode("\n", $lines) . "\n");
+
+        if ($this->plotState === false) {
+            return; // already determined plotting is unavailable
+        }
+        $script = $this->extDir . '/bin/plot_eval_metrics.py';
+        if (!is_file($script)) {
+            $this->plotState = false;
+            return;
+        }
+        $cmd = sprintf(
+            'python3 %s %s %s %s 2>&1',
+            escapeshellarg($script),
+            escapeshellarg($csv),
+            escapeshellarg($resultsDir),
+            escapeshellarg(str_replace('_', ' ', $topic))
+        );
+        $output = @shell_exec($cmd);
+        if ($output !== null && str_contains($output, 'wrote trend')) {
+            $this->plotState = true;
+        } elseif ($this->plotState === null) {
+            $this->plotState = false;
+            $this->logger->warn("metric plotting unavailable (python3/matplotlib?): " . trim((string) $output));
+            $this->emit("  (matplotlib plot skipped — metrics.csv still written)");
+        }
     }
 
     private function emit(string $msg): void

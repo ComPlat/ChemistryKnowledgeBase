@@ -20,3 +20,10 @@ PDFS_TO_DOWNLOAD.*
 !*/gold/.gitkeep
 !*/pdfs/.gitkeep
 !*/profile.json
+
+# DO commit the per-iteration results: matplotlib trend figures + metrics CSV
+# (these are the paper artefacts and the archived progression — not raw data)
+!*/results/
+!*/results/*.csv
+!*/results/*.png
+!*/results/*.pdf
