@@ -1,0 +1,2 @@
+iteration,f1,f1_best,precision,recall,groundedness,hallucination,tokensPerPub
+1,0.2919,0.2919,0.3198,0.2685,,,23958
