@@ -52,6 +52,7 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addOption('prompt-file', 'Seed the initial prompt from this file instead of the wiki page', false, true);
         $this->addOption('write', 'Write the best prompt back to the prompt page when finished');
         $this->addOption('dry-run', 'Do not write the prompt page (default behaviour)');
+        $this->addOption('export-prompt', 'Also write the best prompt to wikischema/MediaWiki/Prompt_import_<Topic>.wiki (version-controlled)');
     }
 
     public function execute()
@@ -134,6 +135,15 @@ class optimizeExtractionPrompt extends \Maintenance
             $bestFile = $goldRepo->getTopicDir($topic) . '/best_prompt.txt';
             file_put_contents($bestFile, $result['best']['prompt']);
             $this->output("Dry run — best prompt written to $bestFile (not to the wiki).\n");
+        }
+
+        // The optimized prompt is the one artefact worth version-controlling: optionally write it
+        // back into wikischema so it lands in the repo (gold/PDFs stay out via eval/.gitignore).
+        if ($this->hasOption('export-prompt')) {
+            $repoRoot = dirname(__DIR__, 4);
+            $schemaFile = $repoRoot . '/wikischema/MediaWiki/Prompt_import_' . $topic . '.wiki';
+            file_put_contents($schemaFile, $result['best']['prompt']);
+            $this->output("Exported best prompt to $schemaFile (commit this).\n");
         }
     }
 

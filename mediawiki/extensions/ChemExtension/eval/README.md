@@ -3,6 +3,33 @@
 This directory holds the **gold set** (manually curated reference extractions) and the
 **memory** of the self-optimizing extraction loop, per topic.
 
+> **Data never goes into git.** `eval/.gitignore` excludes all PDFs (copyright), the curated gold
+> JSONs and every generated run/report. Only code and the (optimized) prompt pages under
+> `wikischema/MediaWiki/Prompt_import_<Topic>.wiki` are version-controlled.
+
+## Turnkey — once the OpenAI key is set
+
+1. **Config** in `LocalSettings.php`:
+   ```php
+   $wgOpenAIKey = 'sk-...';                              // required
+   // optional:
+   $wgOpenAIModel = 'o3';                                // extraction/critic model
+   $wgOpenAIEmbeddingModel = 'text-embedding-3-small';   // prose similarity
+   $wgCEUnpaywallEmail = 'you@kit.edu';                  // for OA PDF fetching
+   ```
+2. **Check readiness:** `php maintenance/checkEvalSetup.php`
+3. **Run** (per topic):
+   ```bash
+   php maintenance/optimizeExtractionPrompt.php --topic Photocatalytic_CO2_conversion \
+       --iterations 5 --structured --critic 0.6 --export-prompt
+   php maintenance/exportEvalReport.php                  # figures/tables for the paper
+   php maintenance/auditGoldSet.php --topic Photocatalytic_CO2_conversion   # flag gold errors
+   ```
+   `--export-prompt` writes the winning prompt into the version-controlled
+   `wikischema/MediaWiki/Prompt_import_<Topic>.wiki` — that is what lands in the repo.
+
+The gold set (47 publications) and the PDFs are already in place locally.
+
 The loop is run with the maintenance script:
 
 ```bash
