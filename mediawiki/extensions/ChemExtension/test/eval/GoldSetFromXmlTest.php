@@ -15,9 +15,10 @@ class GoldSetFromXmlTest extends TestCase
 
     private function investigationsXml(): string
     {
-        $text = "{{Photocatalytic_CO2_conversion_experiments|experiments={{Photocatalytic_CO2_conversion\n"
+        // real exports use spaces (not underscores) in template names
+        $text = "{{Photocatalytic CO2 conversion experiments|experiments={{Photocatalytic CO2 conversion\n"
             . "|catalyst=Molecule:100\n|cat conc=5\n|Turnover_number__CO=12\n|include=true\n}}"
-            . "{{Photocatalytic_CO2_conversion\n|catalyst=Molecule:200\n|Turnover_number__CO=30\n}}}}";
+            . "{{Photocatalytic CO2 conversion\n|catalyst=Molecule:200\n|Turnover_number__CO=30\n}}}}";
         return '<mediawiki><page><title>My Paper/Table 1</title><revision><text>'
             . htmlspecialchars($text, ENT_XML1) . '</text></revision></page></mediawiki>';
     }
@@ -39,8 +40,8 @@ class GoldSetFromXmlTest extends TestCase
 
     public function testParseRowsIgnoresWrapperTemplate(): void
     {
-        // the "..._experiments" wrapper must not be parsed as a row
-        $text = "{{Photocatalytic_CO2_conversion_experiments|experiments={{Photocatalytic_CO2_conversion\n|catalyst=Molecule:1\n}}}}";
+        // the "...experiments" wrapper must not be parsed as a row (space form)
+        $text = "{{Photocatalytic CO2 conversion experiments|experiments={{Photocatalytic CO2 conversion\n|catalyst=Molecule:1\n}}}}";
         $rows = GoldSetFromXml::parseRows($text, 'Photocatalytic_CO2_conversion');
         $this->assertCount(1, $rows);
         $this->assertSame('Molecule:1', $rows[0]['catalyst']);

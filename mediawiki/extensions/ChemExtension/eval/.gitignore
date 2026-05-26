@@ -1,0 +1,17 @@
+# Evaluation data and generated artefacts stay out of git:
+# - PDFs are copyrighted, must never be committed
+# - gold JSONs are the team's curated research data
+# - runs/report/memory are generated outputs
+*/pdfs/*
+*/gold/*.json
+*/runs/*
+*/report/*
+*/memory.md
+*/best_prompt.txt
+*/gold_review.*
+MISSING_PDFS.txt
+
+# keep the directory structure and per-topic overrides
+!*/gold/.gitkeep
+!*/pdfs/.gitkeep
+!*/profile.json

@@ -93,9 +93,11 @@ class GoldSetFromXml
      */
     public static function parseRows(string $text, string $rowTemplate): array
     {
-        // match {{RowTemplate<whitespace/pipe> ... }} — the row name must be followed by a
-        // non-word char so "..._experiments" wrappers are not matched.
-        $pattern = '/\{\{' . preg_quote($rowTemplate, '/') . '(?=[\s|])(.*?)\}\}/s';
+        // Template names may use spaces or underscores in the stored wikitext, so allow either as
+        // the word separator. The "...experiments"/"...overview" wrappers are excluded by requiring
+        // the name to be followed (after optional whitespace) by the first parameter pipe.
+        $name = str_replace('_', '[ _]+', preg_quote($rowTemplate, '/'));
+        $pattern = '/\{\{' . $name . '(?=\s*\|)(.*?)\}\}/si';
         if (!preg_match_all($pattern, $text, $matches)) {
             return [];
         }
