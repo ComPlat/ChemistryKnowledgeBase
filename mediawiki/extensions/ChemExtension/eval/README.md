@@ -17,18 +17,31 @@ This directory holds the **gold set** (manually curated reference extractions) a
    $wgOpenAIEmbeddingModel = 'text-embedding-3-small';   // prose similarity
    $wgCEUnpaywallEmail = 'you@kit.edu';                  // for OA PDF fetching
    ```
-2. **Check readiness:** `php maintenance/checkEvalSetup.php`
-3. **Run** (per topic):
+2. **Check readiness:** `php maintenance/checkEvalSetup.php` (run from the extension dir)
+3. **Run** (per topic) — seeded from the prompt file in `wikischema`, optimization runs on the
+   main article PDF only (**no SI**):
    ```bash
-   php maintenance/optimizeExtractionPrompt.php --topic Photocatalytic_CO2_conversion \
-       --iterations 5 --structured --critic 0.6 --export-prompt
-   php maintenance/exportEvalReport.php                  # figures/tables for the paper
-   php maintenance/auditGoldSet.php --topic Photocatalytic_CO2_conversion   # flag gold errors
+   cd mediawiki/extensions/ChemExtension
+   php maintenance/optimizeExtractionPrompt.php \
+       --topic Photocatalytic_CO2_conversion \
+       --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
+       --iterations 8 --structured --critic 0.6 --export-prompt
    ```
-   `--export-prompt` writes the winning prompt into the version-controlled
-   `wikischema/MediaWiki/Prompt_import_<Topic>.wiki` — that is what lands in the repo.
+   Each iteration writes `eval/<Topic>/results/metrics.csv` + a matplotlib `trend.png/pdf`
+   (X = iteration, Y = metrics). `--export-prompt` writes the winning prompt back into
+   `wikischema/MediaWiki/Prompt_import_<Topic>.wiki` — the one artefact that lands in the repo.
+4. **Archive the progression** (commit regularly):
+   ```bash
+   git add wikischema/MediaWiki/Prompt_import_*.wiki "mediawiki/extensions/ChemExtension/eval/*/results/*"
+   git commit -m "eval run <date>: trend + optimized prompt"
+   ```
 
-The gold set (47 publications) and the PDFs are already in place locally.
+**Stop / monitor / long runs:**
+- stop: `Ctrl+C` — each finished iteration is already archived in `results/`, so nothing is lost.
+- background: `nohup php maintenance/optimizeExtractionPrompt.php … > run.log 2>&1 &` then `kill <pid>` to stop.
+- watch progress: `tail -f run.log` or open `eval/<Topic>/results/trend.png`.
+
+The gold set (47 publications) and all 47 PDFs are already in place locally (data is gitignored).
 
 The loop is run with the maintenance script:
 
