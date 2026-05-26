@@ -27,7 +27,12 @@ class MoleculeResolver
      */
     public function canonicalize(string $name): string
     {
-        $key = mb_strtolower(trim($name));
+        $name = trim($name);
+        // already a canonical molecule reference (e.g. from the gold set) — keep as-is
+        if (preg_match('/^Molecule:(\d+)$/i', $name, $m)) {
+            return 'Molecule:' . $m[1];
+        }
+        $key = mb_strtolower($name);
         if ($key === '') {
             return '';
         }

@@ -30,6 +30,25 @@ eval/
 The topic directory name (underscored) must equal the topic the import tags, so that the
 optimized prompt is written to the matching `MediaWiki:Prompt_import_<Topic>` page.
 
+## Building the gold set from a wiki XML export
+
+If you already curated the publications and investigations in the wiki, export them
+(Special:Export) and let the builder turn them into the gold set automatically:
+
+```bash
+php maintenance/buildGoldSetFromXml.php \
+    --publications publications.xml --investigations investigations.xml --fetch-pdfs
+```
+
+It reads the DOI + topic from each publication page and the curated experiments from the
+investigation tables (`{{<RowTemplate> |…}}`), writes `eval/<Topic>/gold/<doi>.json`, and — with
+`--fetch-pdfs` — downloads the **open-access** PDFs by DOI via Unpaywall into `eval/<Topic>/pdfs/`.
+
+**PDFs that are not open access** are listed at the end; add them manually into the topic's
+`pdfs/` folder named `<doi-with-slashes-as-underscores>.pdf` (e.g. from your reference manager or
+institutional access). Molecule values keep the wiki's `Molecule:<id>` form, which the scorer
+compares directly.
+
 ## Gold file format
 
 One JSON file per publication under `<Topic>/gold/`:
