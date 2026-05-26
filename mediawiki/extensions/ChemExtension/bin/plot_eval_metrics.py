@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 # 0..1 quality metrics drawn together (column -> label)
 QUALITY = [
+    ("f1_best", "F1 (best so far)"),
     ("f1", "F1"),
     ("precision", "Precision"),
     ("recall", "Recall"),

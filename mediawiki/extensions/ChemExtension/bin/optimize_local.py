@@ -245,7 +245,11 @@ def improve_prompt(current, agg, model, key):
     sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into a "
                 "JSON object {summary, experiments[]}. Keep the exact field names and the JSON "
                 "structure; improve only wording, per-field guidance, units, scientific notation, "
-                "one-row-per-experiment rules. Respond with the FULL improved prompt text only.")
+                "and row coverage. IMPORTANT: the goal is to fill MORE correct cells — output one "
+                "row per distinct experiment and fill every field that the paper states; only leave "
+                "a field empty when the value is genuinely absent. Do NOT make the prompt more "
+                "conservative or tell the model to omit uncertain values. Respond with the FULL "
+                "improved prompt text only.")
     task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}\n\n"
             f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}\n\n[CURRENT PROMPT]\n{current}")
     payload = {"model": model, "input": [
@@ -292,7 +296,7 @@ def main():
     results_dir = os.path.join(EVAL, a.topic, "results")
     os.makedirs(results_dir, exist_ok=True)
     csv_path = os.path.join(results_dir, "metrics.csv")
-    cols = ["iteration", "f1", "precision", "recall", "tokensPerPub"]
+    cols = ["iteration", "f1", "f1_best", "precision", "recall", "tokensPerPub"]
     rows_csv = [",".join(cols)]
 
     prompt = open(a.prompt_file).read().strip()
@@ -316,20 +320,22 @@ def main():
             sys.exit("no publication could be scored")
         agg = aggregate(scores)
         avg_tok = toks // len(scores)
-        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} tok/pub={avg_tok}")
-        rows_csv.append(f"{it},{agg['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{avg_tok}")
-        hist.append({"iteration": it, "f1": agg["f1"], "precision": agg["precision"], "recall": agg["recall"], "tokensPerPub": avg_tok})
+        if agg["f1"] > best["f1"]:
+            best = {"f1": agg["f1"], "prompt": prompt, "agg": agg, "iter": it}
+        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} tok/pub={avg_tok} | best={best['f1']:.4f}")
+        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{avg_tok}")
+        hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"], "precision": agg["precision"], "recall": agg["recall"], "tokensPerPub": avg_tok})
         open(csv_path, "w").write("\n".join(rows_csv) + "\n")
         # regenerate matplotlib trend
         subprocess.run([sys.executable, os.path.join(HERE, "plot_eval_metrics.py"), csv_path, results_dir,
                         a.topic.replace("_", " ")], capture_output=True)
-        if agg["f1"] > best["f1"]:
-            best = {"f1": agg["f1"], "prompt": prompt, "agg": agg, "iter": it}
         if a.commit:
-            git_commit([results_dir], f"eval {a.topic} iter {it}: F1={agg['f1']:.4f}")
+            git_commit([results_dir], f"eval {a.topic} iter {it}: F1={agg['f1']:.4f} (best {best['f1']:.4f})")
         if it < a.iterations:
-            print("  improving prompt ...")
-            prompt = improve_prompt(prompt, agg, a.model, key)
+            print("  improving prompt (from best so far) ...")
+            # hill-climb: always propose the next variant from the BEST prompt + its error report,
+            # so a bad rewrite never drags the search downward.
+            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
