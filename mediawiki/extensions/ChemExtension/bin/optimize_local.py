@@ -243,7 +243,28 @@ def field_hints(fd, skip_doi, fields, per_field=4):
             lines.append(f"- {f}: e.g. " + " | ".join(vals[:per_field]))
     return "\n".join(lines)
 
-def extract(pdf_path, prompt, fields, model, key, hints=""):
+def parse_csv_rows(text):
+    """Parse the ```csv (or <pre>) experiment table out of a response; mirrors the live importer.
+    Picks the table with the most rows; strips [unit] hints from headers."""
+    tables = re.findall(r"(?:```csv|<pre>)(.*?)(?:```|</pre>)", text, re.S)
+    best = []
+    for b in tables:
+        lines = [l.strip() for l in b.strip().split("\n") if l.strip()]
+        if not lines:
+            continue
+        header = [re.sub(r"\[[^\]]*\]", "", h).strip() for h in lines[0].split(",")]
+        rows = []
+        for ln in lines[1:]:
+            cols = [c.strip() for c in ln.split(",")]
+            while len(header) > len(cols):
+                cols.append("")
+            cols = cols[:len(header)]
+            rows.append({h: v for h, v in zip(header, cols)})
+        if len(rows) > len(best):
+            best = rows
+    return best
+
+def extract(pdf_path, prompt, fields, model, key, hints="", fmt="json"):
     sys_part, task = split_prompt(prompt)
     units = [f"{f}={FIELD_UNIT_LABEL[f]}" for f in fields if f in FIELD_UNIT_LABEL]
     if units:
@@ -263,16 +284,21 @@ def extract(pdf_path, prompt, fields, model, key, hints=""):
                 {"type": "input_text", "text": task},
             ]},
         ],
-        "text": {"format": {"type": "json_schema", "name": "extraction", "strict": True, "schema": schema_for(fields)}},
     }
+    if fmt == "json":
+        payload["text"] = {"format": {"type": "json_schema", "name": "extraction", "strict": True, "schema": schema_for(fields)}}
     resp = post(payload, key)
     usage = resp.get("usage", {})
     tokens = usage.get("total_tokens") or (usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
-    try:
-        d = json.loads(output_text(resp))
-        rows = [{k: ("" if v is None else str(v)) for k, v in e.items()} for e in d.get("experiments", [])]
-    except Exception:
-        rows = []
+    out = output_text(resp)
+    if fmt == "json":
+        try:
+            d = json.loads(out)
+            rows = [{k: ("" if v is None else str(v)) for k, v in e.items()} for e in d.get("experiments", [])]
+        except Exception:
+            rows = []
+    else:
+        rows = parse_csv_rows(out)
     return rows, tokens
 
 def write_paper_artifacts(results_dir, hist, best, topic):
@@ -353,17 +379,20 @@ def ground_check(pdf_path, ext_rows, model, key):
           for c in checks if c.get("status") in ("contradicted", "absent")][:15]
     return {"checked": supported + unsupported, "supported": supported, "unsupported": unsupported, "examples": ex}
 
-def improve_prompt(current, agg, model, key):
+def improve_prompt(current, agg, model, key, fmt="json"):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
-    sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into a "
-                "JSON object {summary, experiments[]}. Keep the exact field names and the JSON "
-                "structure; improve only wording, per-field guidance, units, scientific notation, "
-                "and row coverage. IMPORTANT: the goal is to fill MORE correct cells — output one "
-                "row per distinct experiment and fill every field that the paper states; only leave "
-                "a field empty when the value is genuinely absent. Do NOT make the prompt more "
-                "conservative or tell the model to omit uncertain values. Respond with the FULL "
-                "improved prompt text only.")
+    struct = ("a fenced ```csv block whose header is EXACTLY the given columns (plus the prose "
+              "sections as MediaWiki text above it)" if fmt == "csv"
+              else "a JSON object {summary, experiments[]}")
+    sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into "
+                + struct + ". Keep the exact column/field names and the output structure unchanged; "
+                "improve only wording, per-field guidance, units, scientific notation, and row "
+                "coverage. IMPORTANT: the goal is to fill MORE correct cells — output one row per "
+                "distinct experiment and fill every field that the paper states; only leave a field "
+                "empty when the value is genuinely absent. Do NOT make the prompt more conservative "
+                "or tell the model to omit uncertain values. Respond with the FULL improved prompt "
+                "text only.")
     ground = ""
     if agg.get("groundedness") is not None:
         ground = (f"Groundedness={agg['groundedness']:.3f} Hallucination={agg['hallucination']:.3f} "
@@ -385,6 +414,8 @@ def main():
     ap.add_argument("--iterations", type=int, default=5)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--model", default="o3")
+    ap.add_argument("--format", choices=["json", "csv"], default="json",
+                    help="json = structured output; csv = produce a ```csv table (matches the live wiki import)")
     ap.add_argument("--tolerance", type=float, default=0.1)
     ap.add_argument("--export-prompt", action="store_true")
     ap.add_argument("--ground", action="store_true", help="verify each extracted value against the PDF (groundedness / no-hallucination)")
@@ -422,6 +453,14 @@ def main():
     rows_csv = [",".join(cols)]
 
     prompt = open(a.prompt_file).read().strip()
+    if a.format == "csv":
+        # bake the exact CSV column contract into the prompt so the EXPORTED prompt is
+        # live-deployable (the wiki importer maps these headers to template parameters)
+        prompt += ("\n\n[OUTPUT FORMAT] First write the prose summary sections as MediaWiki text. "
+                   "Then output the experiments as ONE fenced code block that starts with ```csv and "
+                   "ends with ```. The header row MUST be EXACTLY these columns, in this order:\n"
+                   + " , ".join(fields) + "\nOne row per distinct experiment; one value per cell; "
+                   "leave a cell empty only if the paper does not state it.")
     best = {"f1": -1, "prompt": prompt, "agg": None, "iter": 0}
     hist = []
     for it in range(1, a.iterations + 1):
@@ -431,7 +470,7 @@ def main():
         for doi, pdf, gold in entries:
             try:
                 hints = field_hints(fd, doi, fields) if a.field_hints else ""
-                rows, t = extract(pdf, prompt, fields, a.model, key, hints)
+                rows, t = extract(pdf, prompt, fields, a.model, key, hints, a.format)
                 toks += t
                 s = score_pub(gold, rows, a.tolerance)
                 scores.append(s)
@@ -480,7 +519,7 @@ def main():
             print("  improving prompt (from best so far) ...")
             # hill-climb: always propose the next variant from the BEST prompt + its error report,
             # so a bad rewrite never drags the search downward.
-            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key)
+            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
