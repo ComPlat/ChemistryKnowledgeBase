@@ -19,6 +19,8 @@ QUALITY = [
     ("f1", "F1"),
     ("precision", "Precision"),
     ("recall", "Recall"),
+    ("groundedness", "Groundedness"),
+    ("hallucination", "Hallucination (lower=better)"),
     ("unitCorrectness", "Unit correctness"),
     ("sanityPassRate", "Sanity pass rate"),
     ("avgConfidence", "Critic confidence"),

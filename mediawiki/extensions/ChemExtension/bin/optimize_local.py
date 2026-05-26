@@ -113,7 +113,8 @@ def score_pub(gold_rows, ext_rows, tol=0.1):
                 examples.append(f"{k}: expected '{v}', got '{e.get(k, '(missing)')}'")
     for e in ext_rows:
         ext_cells += sum(1 for k, v in e.items() if not is_empty(v) and not is_molecule(v))
-    return {"tp": tp, "gold": gold_cells, "ext": ext_cells, "perField": per_field, "examples": examples}
+    return {"tp": tp, "gold": gold_cells, "ext": ext_cells, "perField": per_field, "examples": examples,
+            "gold_rows": len(gold_rows), "ext_rows": len(ext_rows)}
 
 def aggregate(scores):
     tp = sum(s["tp"] for s in scores); gc = sum(s["gold"] for s in scores); ec = sum(s["ext"] for s in scores)
@@ -239,6 +240,46 @@ def git_commit(paths, msg):
     except subprocess.CalledProcessError as e:
         print("  (git commit skipped: " + (e.stderr.decode("utf-8", "ignore")[:120] if e.stderr else "nothing to commit") + ")")
 
+def ground_check(pdf_path, ext_rows, model, key):
+    """Verify each non-empty extracted cell against the source PDF (faithfulness / no-hallucination).
+    Returns supported/contradicted/absent counts + a few unsupported examples."""
+    cells = []
+    for i, row in enumerate(ext_rows):
+        for k, v in row.items():
+            if not is_empty(v) and not is_molecule(v):
+                cells.append({"row": i, "field": k, "value": str(v)})
+    if not cells:
+        return {"checked": 0, "supported": 0, "unsupported": 0, "examples": []}
+    data = base64.b64encode(open(pdf_path, "rb").read()).decode()
+    schema = {"type": "object", "properties": {"checks": {"type": "array", "items": {
+        "type": "object", "properties": {
+            "row": {"type": "integer"}, "field": {"type": "string"},
+            "status": {"type": "string", "enum": ["supported", "contradicted", "absent"]},
+            "evidence": {"type": ["string", "null"]}},
+        "required": ["row", "field", "status", "evidence"], "additionalProperties": False}}},
+        "required": ["checks"], "additionalProperties": False}
+    instr = ("Check each of the following values that were extracted from the attached paper. For "
+             "each, decide if the paper SUPPORTS it (verbatim or directly derivable), CONTRADICTS "
+             "it, or the value is ABSENT from the paper. Give a short verbatim quote as evidence "
+             "for 'supported'/'contradicted'. Be strict: a value not clearly in the paper is "
+             "'absent'.")
+    payload = {"model": model, "input": [
+        {"role": "developer", "content": [{"type": "input_text", "text": instr}]},
+        {"role": "user", "content": [
+            {"type": "input_file", "filename": os.path.basename(pdf_path), "file_data": "data:application/pdf;base64," + data},
+            {"type": "input_text", "text": "Values (JSON):\n" + json.dumps(cells, ensure_ascii=False)}]}],
+        "text": {"format": {"type": "json_schema", "name": "grounding", "strict": True, "schema": schema}}}
+    try:
+        d = json.loads(output_text(post(payload, key)))
+        checks = d.get("checks", [])
+    except Exception:
+        checks = []
+    supported = sum(1 for c in checks if c.get("status") == "supported")
+    unsupported = sum(1 for c in checks if c.get("status") in ("contradicted", "absent"))
+    ex = [f"{c['field']}='{cells[c['row']]['value'] if c.get('row',0) < len(cells) else '?'}' [{c.get('status')}]"
+          for c in checks if c.get("status") in ("contradicted", "absent")][:15]
+    return {"checked": supported + unsupported, "supported": supported, "unsupported": unsupported, "examples": ex}
+
 def improve_prompt(current, agg, model, key):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
@@ -250,7 +291,11 @@ def improve_prompt(current, agg, model, key):
                 "a field empty when the value is genuinely absent. Do NOT make the prompt more "
                 "conservative or tell the model to omit uncertain values. Respond with the FULL "
                 "improved prompt text only.")
-    task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}\n\n"
+    ground = ""
+    if agg.get("groundedness") is not None:
+        ground = (f"Groundedness={agg['groundedness']:.3f} Hallucination={agg['hallucination']:.3f} "
+                  f"(every value MUST be supported by the paper; never invent or guess values).\n")
+    task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}\n{ground}\n"
             f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}\n\n[CURRENT PROMPT]\n{current}")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
@@ -269,6 +314,7 @@ def main():
     ap.add_argument("--model", default="o3")
     ap.add_argument("--tolerance", type=float, default=0.1)
     ap.add_argument("--export-prompt", action="store_true")
+    ap.add_argument("--ground", action="store_true", help="verify each extracted value against the PDF (groundedness / no-hallucination)")
     ap.add_argument("--commit", action="store_true", help="git-commit the results after each iteration (archive the progression)")
     a = ap.parse_args()
     key = api_key()
@@ -296,7 +342,7 @@ def main():
     results_dir = os.path.join(EVAL, a.topic, "results")
     os.makedirs(results_dir, exist_ok=True)
     csv_path = os.path.join(results_dir, "metrics.csv")
-    cols = ["iteration", "f1", "f1_best", "precision", "recall", "tokensPerPub"]
+    cols = ["iteration", "f1", "f1_best", "precision", "recall", "groundedness", "hallucination", "tokensPerPub"]
     rows_csv = [",".join(cols)]
 
     prompt = open(a.prompt_file).read().strip()
@@ -304,27 +350,49 @@ def main():
     hist = []
     for it in range(1, a.iterations + 1):
         print(f"\n=== iteration {it}/{a.iterations} ===")
-        scores, toks = [], 0
+        scores, toks, diag = [], 0, []
+        gsup = gchk = 0
         for doi, pdf, gold in entries:
             try:
                 rows, t = extract(pdf, prompt, fields, a.model, key)
                 toks += t
                 s = score_pub(gold, rows, a.tolerance)
                 scores.append(s)
-                f1p = (2 * (s["tp"] / s["ext"] if s["ext"] else 0) * (s["tp"] / s["gold"] if s["gold"] else 0))
-                print(f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, {t} tokens")
+                line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
+                grec = None
+                if a.ground:
+                    g = ground_check(pdf, rows, a.model, key)
+                    gsup += g["supported"]; gchk += g["checked"]
+                    grec = g
+                    line += f", grounded {g['supported']}/{g['checked']}"
+                print(line)
+                diag.append({"doi": doi, "tp": s["tp"], "gold_cells": s["gold"], "ext_cells": s["ext"],
+                             "gold_rows": s["gold_rows"], "ext_rows": s["ext_rows"],
+                             "ground": grec, "examples": s["examples"][:10]})
             except Exception as e:
                 print(f"  {doi}: ERROR {e}")
             time.sleep(1)
         if not scores:
             sys.exit("no publication could be scored")
         agg = aggregate(scores)
+        agg["groundedness"] = (gsup / gchk) if (a.ground and gchk) else None
+        agg["hallucination"] = (1 - gsup / gchk) if (a.ground and gchk) else None
         avg_tok = toks // len(scores)
-        if agg["f1"] > best["f1"]:
-            best = {"f1": agg["f1"], "prompt": prompt, "agg": agg, "iter": it}
-        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} tok/pub={avg_tok} | best={best['f1']:.4f}")
-        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{avg_tok}")
+        # objective: gold-F1, and when grounding is on, reward faithfulness + punish hallucination
+        agg["objective"] = agg["f1"] if not a.ground or agg["groundedness"] is None \
+            else (agg["f1"] + agg["groundedness"]) / 2
+        if agg["objective"] > best.get("obj", -1):
+            best = {"f1": agg["f1"], "obj": agg["objective"], "prompt": prompt, "agg": agg, "iter": it}
+        gstr = f" grounded={agg['groundedness']:.3f} halluc={agg['hallucination']:.3f}" if agg["groundedness"] is not None else ""
+        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{gstr} tok/pub={avg_tok} | best={best['f1']:.4f}")
+        gv = f"{agg['groundedness']:.4f}" if agg["groundedness"] is not None else ""
+        hv = f"{agg['hallucination']:.4f}" if agg["hallucination"] is not None else ""
+        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{gv},{hv},{avg_tok}")
         hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"], "precision": agg["precision"], "recall": agg["recall"], "tokensPerPub": avg_tok})
+        json.dump({"iteration": it, "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness", "hallucination")},
+                   "weak_fields": [{"field": k, "recall": r, "correct": c, "total": g} for k, r, c, g in agg["weak"]],
+                   "per_publication": diag},
+                  open(os.path.join(results_dir, "diagnostics.json"), "w"), indent=2, ensure_ascii=False)
         open(csv_path, "w").write("\n".join(rows_csv) + "\n")
         # regenerate matplotlib trend
         subprocess.run([sys.executable, os.path.join(HERE, "plot_eval_metrics.py"), csv_path, results_dir,
