@@ -201,6 +201,44 @@ def extract(pdf_path, prompt, fields, model, key):
         rows = []
     return rows, tokens
 
+def write_paper_artifacts(results_dir, hist, best, topic):
+    """Final paper artefacts: a markdown summary + a pgfplots/booktabs LaTeX snippet."""
+    first, blast = hist[0], hist[-1]
+    bagg = best["agg"]
+    # summary.md
+    md = [f"# Results — {topic.replace('_', ' ')}", "",
+          f"- Iterations: {len(hist)}",
+          f"- F1: start {first['f1']:.3f} -> best {bagg['f1']:.3f} (iteration {best['iter']}), "
+          f"delta {bagg['f1'] - first['f1']:+.3f}",
+          f"- Best precision / recall: {bagg['precision']:.3f} / {bagg['recall']:.3f}",
+          "", "## Per-field recall (best iteration, worst first)", "",
+          "| field | recall | correct/total |", "|---|---|---|"]
+    for k, r, c, g in bagg["weak"][:25]:
+        md.append(f"| {k} | {r:.2f} | {c}/{g} |")
+    open(os.path.join(results_dir, "summary.md"), "w").write("\n".join(md) + "\n")
+    # metrics.tex (pgfplots trend + booktabs final table)
+    def coords(key):
+        return " ".join(f"({r['iteration']},{r[key]:.4f})" for r in hist)
+    tex = (f"% trend for {topic}\n\\begin{{tikzpicture}}\n\\begin{{axis}}[xlabel={{Iteration}},"
+           f"ylabel={{Score}},ymin=0,ymax=1,legend pos=south east,width=\\linewidth,height=6cm]\n"
+           f"\\addplot coordinates {{{coords('f1')}}}; \\addlegendentry{{F1}}\n"
+           f"\\addplot coordinates {{{coords('precision')}}}; \\addlegendentry{{Precision}}\n"
+           f"\\addplot coordinates {{{coords('recall')}}}; \\addlegendentry{{Recall}}\n"
+           f"\\end{{axis}}\n\\end{{tikzpicture}}\n\n"
+           f"\\begin{{tabular}}{{lcc}}\n\\hline\nMetric & Iteration 1 & Best (it.\\ {best['iter']}) \\\\\n\\hline\n"
+           f"F1 & {first['f1']:.3f} & {bagg['f1']:.3f} \\\\\n"
+           f"Precision & {first['precision']:.3f} & {bagg['precision']:.3f} \\\\\n"
+           f"Recall & {first['recall']:.3f} & {bagg['recall']:.3f} \\\\\n\\hline\n\\end{{tabular}}\n")
+    open(os.path.join(results_dir, "metrics.tex"), "w").write(tex)
+
+def git_commit(paths, msg):
+    try:
+        subprocess.run(["git", "-C", REPO, "add", "--"] + paths, check=True, capture_output=True)
+        subprocess.run(["git", "-C", REPO, "commit", "-q", "-m", msg], check=True, capture_output=True)
+        print(f"  committed: {msg}")
+    except subprocess.CalledProcessError as e:
+        print("  (git commit skipped: " + (e.stderr.decode("utf-8", "ignore")[:120] if e.stderr else "nothing to commit") + ")")
+
 def improve_prompt(current, agg, model, key):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
@@ -227,6 +265,7 @@ def main():
     ap.add_argument("--model", default="o3")
     ap.add_argument("--tolerance", type=float, default=0.1)
     ap.add_argument("--export-prompt", action="store_true")
+    ap.add_argument("--commit", action="store_true", help="git-commit the results after each iteration (archive the progression)")
     a = ap.parse_args()
     key = api_key()
 
@@ -257,7 +296,8 @@ def main():
     rows_csv = [",".join(cols)]
 
     prompt = open(a.prompt_file).read().strip()
-    best = {"f1": -1, "prompt": prompt}
+    best = {"f1": -1, "prompt": prompt, "agg": None, "iter": 0}
+    hist = []
     for it in range(1, a.iterations + 1):
         print(f"\n=== iteration {it}/{a.iterations} ===")
         scores, toks = [], 0
@@ -278,22 +318,31 @@ def main():
         avg_tok = toks // len(scores)
         print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} tok/pub={avg_tok}")
         rows_csv.append(f"{it},{agg['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{avg_tok}")
+        hist.append({"iteration": it, "f1": agg["f1"], "precision": agg["precision"], "recall": agg["recall"], "tokensPerPub": avg_tok})
         open(csv_path, "w").write("\n".join(rows_csv) + "\n")
         # regenerate matplotlib trend
         subprocess.run([sys.executable, os.path.join(HERE, "plot_eval_metrics.py"), csv_path, results_dir,
                         a.topic.replace("_", " ")], capture_output=True)
         if agg["f1"] > best["f1"]:
-            best = {"f1": agg["f1"], "prompt": prompt}
+            best = {"f1": agg["f1"], "prompt": prompt, "agg": agg, "iter": it}
+        if a.commit:
+            git_commit([results_dir], f"eval {a.topic} iter {it}: F1={agg['f1']:.4f}")
         if it < a.iterations:
             print("  improving prompt ...")
             prompt = improve_prompt(prompt, agg, a.model, key)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
+    write_paper_artifacts(results_dir, hist, best, a.topic)
+    print(f"Paper artefacts: {results_dir}/trend.pdf, summary.md, metrics.tex, metrics.csv")
+    committed_paths = [results_dir]
     if a.export_prompt:
         dest = os.path.join(REPO, "wikischema", "MediaWiki", f"Prompt_import_{a.topic}.wiki")
         open(dest, "w").write(best["prompt"])
+        committed_paths.append(dest)
         print(f"Exported best prompt to {dest}")
+    if a.commit:
+        git_commit(committed_paths, f"eval {a.topic}: final best F1={best['f1']:.4f} + optimized prompt")
 
 if __name__ == "__main__":
     main()
