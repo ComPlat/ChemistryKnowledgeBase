@@ -49,6 +49,26 @@ investigation tables (`{{<RowTemplate> |…}}`), writes `eval/<Topic>/gold/<doi>
 institutional access). Molecule values keep the wiki's `Molecule:<id>` form, which the scorer
 compares directly.
 
+## Gold-standard co-evolution (correcting gold errors)
+
+Manual curation has errors too. When the model — backed by the source document — repeatedly and
+confidently disagrees with a gold value, the *gold value* may be the thing that is wrong. So the
+gold set co-evolves with the prompt, on evidence:
+
+```bash
+# 1) audit the gold against the source PDFs -> suspected errors with quotes
+php maintenance/auditGoldSet.php --topic Photocatalytic_CO2_conversion --threshold 0.7
+#    writes eval/<Topic>/gold_review.md (human review) and gold_corrections.template.json
+# 2) review gold_review.md; copy the CONFIRMED entries into gold_corrections.json
+# 3) apply the confirmed corrections back into the gold JSONs
+php maintenance/applyGoldCorrections.php --topic Photocatalytic_CO2_conversion   # --dry-run to preview
+```
+
+Safety: nothing is changed automatically — the auditor only *flags candidates with evidence*; a
+human confirms, and only then are the gold files updated. Molecule references (`Molecule:<id>`) are
+never flagged. This keeps the model from silently rewriting its own ground truth, while letting
+real curation mistakes get fixed so both the prompt and the gold standard keep improving.
+
 ## Gold file format
 
 One JSON file per publication under `<Topic>/gold/`:
