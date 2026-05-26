@@ -7,7 +7,35 @@ This directory holds the **gold set** (manually curated reference extractions) a
 > JSONs and every generated run/report. Only code and the (optimized) prompt pages under
 > `wikischema/MediaWiki/Prompt_import_<Topic>.wiki` are version-controlled.
 
-## Turnkey — once the OpenAI key is set
+## Two ways to run
+
+- **Local, DB-free (this box): `bin/optimize_local.py`** — pure Python + OpenAI, no MediaWiki/DB.
+  Optimizes *prompt + extraction* against the gold set; molecule columns are extracted but not
+  scored (needs the wiki molecule DB). Use this where only python is available.
+- **In-wiki (the MediaWiki server): `maintenance/optimizeExtractionPrompt.php`** — full pipeline
+  incl. molecule resolution, critic, sanity; needs php + DB + SMW.
+
+Both share the gold format, `results/metrics.csv` and the matplotlib trend.
+
+### Local run (python, no key in repo)
+```bash
+# key lives OUTSIDE the repo:
+mkdir -p ~/.config/chemwiki && printf '%s' 'sk-...' > ~/.config/chemwiki/openai.key && chmod 600 ~/.config/chemwiki/openai.key
+
+cd mediawiki/extensions/ChemExtension
+# cheap test first (3 papers, 2 rounds):
+python3 bin/optimize_local.py --topic Photocatalytic_CO2_conversion \
+    --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
+    --iterations 2 --limit 3 --model gpt-4o
+# full run, write the winning prompt into the repo:
+python3 bin/optimize_local.py --topic Photocatalytic_CO2_conversion \
+    --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
+    --iterations 8 --model gpt-4o --export-prompt
+```
+Each iteration writes `eval/<Topic>/results/metrics.csv` + `trend.png/pdf`. Stop with Ctrl+C
+(prior iterations stay archived). Commit `results/*` + the exported prompt to archive the trend.
+
+## Turnkey (in-wiki / PHP) — once the OpenAI key is set
 
 1. **Config** in `LocalSettings.php`:
    ```php
