@@ -463,8 +463,12 @@ def main():
                    "leave a cell empty only if the paper does not state it.")
     best = {"f1": -1, "prompt": prompt, "agg": None, "iter": 0}
     hist = []
+    prompts_dir = os.path.join(results_dir, "prompts")
+    os.makedirs(prompts_dir, exist_ok=True)
     for it in range(1, a.iterations + 1):
         print(f"\n=== iteration {it}/{a.iterations} ===")
+        # archive the exact prompt used in this iteration (prompt evolution for the paper)
+        open(os.path.join(prompts_dir, f"iter_{it}.txt"), "w").write(prompt)
         scores, toks, diag = [], 0, []
         gsup = gchk = 0
         for doi, pdf, gold in entries:
