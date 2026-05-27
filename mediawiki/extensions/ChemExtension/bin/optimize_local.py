@@ -379,6 +379,20 @@ def ground_check(pdf_path, ext_rows, model, key):
           for c in checks if c.get("status") in ("contradicted", "absent")][:15]
     return {"checked": supported + unsupported, "supported": supported, "unsupported": unsupported, "examples": ex}
 
+def generate_initial_prompt(fields, fmt, model, key):
+    """Cold start: no seed prompt given — let the model write the initial extraction prompt itself."""
+    cols = " , ".join(fields)
+    sys_part = ("Write a concise, high-quality instruction prompt that makes a model extract the "
+                "experimental data from an attached chemistry paper. The prompt should ask for a "
+                "short MediaWiki summary followed by the experiments as structured data, ONE row "
+                "per experiment, using ONLY values explicitly stated in the paper (no guessing, no "
+                "hallucination). Respond with the prompt text only.")
+    task = "The experiments to capture have these fields:\n" + cols
+    payload = {"model": model, "input": [
+        {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
+        {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
+    return output_text(post(payload, key)).strip()
+
 def improve_prompt(current, agg, model, key, fmt="json"):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
@@ -410,7 +424,8 @@ def improve_prompt(current, agg, model, key, fmt="json"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--topic", required=True)
-    ap.add_argument("--prompt-file", required=True)
+    ap.add_argument("--prompt-file", required=False, default=None,
+                    help="seed prompt; if omitted, the model writes the initial prompt itself (cold start)")
     ap.add_argument("--iterations", type=int, default=5)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--model", default="o3")
@@ -452,7 +467,13 @@ def main():
     cols = ["iteration", "f1", "f1_best", "precision", "recall", "groundedness", "hallucination", "tokensPerPub"]
     rows_csv = [",".join(cols)]
 
-    prompt = open(a.prompt_file).read().strip()
+    if a.prompt_file:
+        prompt = open(a.prompt_file).read().strip()
+    else:
+        print("No --prompt-file given -> model writes the initial prompt itself (cold start)...")
+        prompt = generate_initial_prompt(fields, a.format, a.model, key)
+        os.makedirs(results_dir, exist_ok=True)
+        open(os.path.join(results_dir, "seed_generated.txt"), "w").write(prompt)
     if a.format == "csv":
         # bake the exact CSV column contract into the prompt so the EXPORTED prompt is
         # live-deployable (the wiki importer maps these headers to template parameters)
