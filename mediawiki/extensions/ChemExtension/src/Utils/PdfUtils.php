@@ -22,17 +22,13 @@ class PdfUtils {
         }
 
         if (!is_file($filePath) || !is_readable($filePath)) {
-            throw new \RuntimeException(
-                sprintf('File does not exist or is not readable: %s', $filePath)
-            );
+            return false;
         }
 
         // PDF files start with the magic bytes "%PDF" (hex: 25 50 44 46)
         $handle = fopen($filePath, 'rb');
         if ($handle === false) {
-            throw new \RuntimeException(
-                sprintf('Unable to open file: %s', $filePath)
-            );
+            return false;
         }
 
         $header = fread($handle, 4);
@@ -66,7 +62,7 @@ class PdfUtils {
         return self::getFirstFileInDirectory($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
     }
 
-    private static function getFirstFileInDirectory(string $directoryPath): ?string
+    public static function getFirstFileInDirectory(string $directoryPath): ?string
     {
         if (!is_dir($directoryPath)) {
             return null;

@@ -162,13 +162,21 @@ class CrossRefSearchJob extends Job
         if (count($pdfDownloads) > 0) {
             $first = reset($pdfDownloads);
             $downloader = new DownloadLinkFinder($first->URL);
-            $links = $downloader->findDownloadLinks(['pdf']);
+
+            $links = [];
+            try {
+                $links = $downloader->findDownloadLinks(['pdf']);
+            } catch(Exception $e) {
+                $this->logger->log("Cannot find download links: " . $e->getMessage());
+            }
             if (empty($links)) {
                 $this->logger->log("no pdf links found for doi: $doi");
                 $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
                     'url' => $first->URL,
                     'doi' => $doi,
+                    'openExternally' => true
                 ]));
+
             } else {
                 $first = reset($links);
                 $this->logger->log("downloading pdf from: " . $first['url']);
@@ -179,6 +187,7 @@ class CrossRefSearchJob extends Job
             }
 
         } else {
+            $this->logger->log("no pdf links found for doi: $doi");
             $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
             $links = $downloader->findDownloadLinks();
             if (empty($links)) {
