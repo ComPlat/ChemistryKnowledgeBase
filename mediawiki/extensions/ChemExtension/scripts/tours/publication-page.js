@@ -1,7 +1,7 @@
 // Tour of search features
 ( function ( window, document, $, mw, gt ) {
     // tour.step.name are assigned here as well as tour.name
-    var tour_name = "publication-page"
+    var tour_name = "publicationpage"
     var name_1 = "intro";
     var name_2 = "pub_intro"
     var name_3 = "toc"

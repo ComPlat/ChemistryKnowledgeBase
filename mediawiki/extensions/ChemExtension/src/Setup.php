@@ -166,7 +166,7 @@ class Setup {
         global $IP;
 
         $baseScript = 'scripts';
-        $wgResourceModules['ext.guidedTour.tour.publication-page'] = array(
+        $wgResourceModules['ext.guidedTour.tour.publicationpage'] = array(
             'localBasePath' => "$IP/extensions/ChemExtension",
             'remoteExtPath' => 'ChemExtension',
             'position' => 'bottom',
@@ -180,7 +180,7 @@ class Setup {
 
     private static function addTourModules(&$out): void
     {
-        $out->addModules('ext.guidedTour.tour.publication-page');
+        $out->addModules('ext.guidedTour.tour.publicationpage');
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
