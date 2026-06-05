@@ -5,15 +5,36 @@
 ! style="background-color:#eaecf0; padding: 10px" | Available Topics
 ! style="background-color:#eaecf0; padding: 10px" | Featured Molecule
 |-
-| style="padding: 30px" |<categorytree mode="pages" depth="3" hideroot="on" hideprefix="categories">Topic</categorytree>
-| style="padding: 30px" |{{#ask: [[Category:Molecule]] [[Abbreviation::+]] [[InChIKey::+]] 
-|?InChIKey 
-|?Abbreviation 
-|limit=1 
-|order=random 
-|format=plainlist 
-|introtemplate=MoleculeShortListIntro 
-|outrotemplate=MoleculeListOutro 
+| style="padding: 30px" |
+== ChemWiki - The Open Chemistry Knowledge Base (OCKB) ==
+
+ChemWiki is an open platform for collecting scientific information in the field of chemistry. It is intended to complement the publication of information through scientific publishers by making content freely accessible and searchable across publications. ChemWiki combines the well-established technical platform of MediaWiki with established toolkits from cheminformatics. It enables chemists to create semantically annotated information and to ingest chemical structures, which can be stored as machine-readable datasets. ChemWiki supports chemists in their efforts to create information systems that operate independently of commercial initiatives.
+
+ChemWiki currently supports the following functions, among others:
+
+* Recording the key information of published works as "publication pages"
+* Recording references to the original publication in the form of "literature"
+* Creating and integrating "investigations," which allow for a tabular summary of measurement results
+* Creating topic pages that summarize the state of the art in a subject-focused way
+* Compiling all relevant measurement results (i.e., investigations) on a topic into comprehensive overviews
+* AI-based search for new relevant publications related to the listed topic pages
+* AI-based extraction and integration of relevant information from new publications into the wiki
+
+ChemWiki and its core functionalities were described in an initial publication: https://link.springer.com/article/10.1186/s13321-025-01037-w
+
+=== Current Scope of the OCKB ===
+
+ChemWiki is currently limited to the subject areas of photochemical and electrochemical conversion of CO₂, as the contributors so far are active in this field. However, the use of the wiki and the contribution of additional subject areas are explicitly encouraged.
+
+[[Help:How to contribute|How to contribute to the wiki and suggest topics or extensions?]]
+| style="padding: 30px" |{{#ask: [[Category:Molecule]] [[Abbreviation::+]] [[InChIKey::+]]
+|?InChIKey
+|?Abbreviation
+|limit=1
+|order=random
+|format=plainlist
+|introtemplate=MoleculeShortListIntro
+|outrotemplate=MoleculeListOutro
 |template=MoleculeShortListRow
 |searchlabel= }}
 |-
