@@ -148,7 +148,7 @@
         title: "Main Topic",
         description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria. Each paper is stored at the publication level" ,
         overlay: true,
-        attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeItem:first-child' ,
+        attachTo: 'div.CategoryTreeItem:first-child' ,
         position: 'right'
 
     })
