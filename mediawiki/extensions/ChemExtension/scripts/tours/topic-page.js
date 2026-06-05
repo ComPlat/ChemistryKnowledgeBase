@@ -93,7 +93,7 @@
         name:name_7,
         title:"Table Sorted by H2 TON",
         description:"This table contains the same data as the above table. The data is sorted by  the TON of H2. Clicking on the table top row will collapse the column. This is use full on tables with a large number of columns",
-        attachTo:"#ce-show-investigation-7 > button > span.oo-ui-labelElement-label",
+        attachTo:".experiment-link-border",
         position: "topLeft"
     })
         .back(name_5)
@@ -115,7 +115,7 @@
         name:name_9,
         title:"Publications",
         description:"In this section publications that correspond to the topic are listed alphabetically by their title",
-        attachTo:"#mw-pages > div",
+        attachTo:".chem_ext_literature",
         position: "topLeft"
     })
         .back(name_7)
