@@ -157,6 +157,30 @@ class Setup {
             'dependencies' => ['ext.diqa.chemextension'],
         );
 
+        self::initTourModules();
+    }
+
+    private static function initTourModules(): void
+    {
+        global $wgResourceModules;
+        global $IP;
+
+        $baseScript = 'scripts';
+        $wgResourceModules['ext.guidedTour.tour.publication-page'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/publication-page.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+    }
+
+    private static function addTourModules(&$out): void
+    {
+        $out->addModules('ext.guidedTour.tour.publication-page');
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
@@ -189,6 +213,7 @@ class Setup {
         self::addSubtitle($out);
         $out->addModules('ext.diqa.chemextension');
         $out->addModules('ext.diqa.md5');
+        self::addTourModules($out);
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
