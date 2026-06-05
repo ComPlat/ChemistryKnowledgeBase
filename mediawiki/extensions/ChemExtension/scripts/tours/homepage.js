@@ -1,0 +1,253 @@
+/*
+ * Guided Tour to test guided tour features.
+ */
+// Copy the next line into the start of your tour.
+
+( function ( window, document, $, mw, gt ) {
+    var isnav_open = $('#ce-side-panel-content')[0].attributes.style ;
+    var navbarstate = '#ce-side-panel-content-collapsed';
+    var hasEditSection = $( '.mw-editsection' ).length > 0
+
+    console.log(hasEditSection)
+    if (isnav_open == "display:none;") {
+        navbarstate = "#ce-topic-element";
+    };
+
+    var old_pageName = $("#mw-content-text > div > table > tbody > tr:nth-child(4) > td > a").attr('href');
+    if (typeof old_pageName !== 'undefined'){
+        var new_pagename = old_pageName.replace("/main/mediawiki/", "")}
+
+    console.log($( '.ve-ce-documentNode[contenteditable="true"]' ))
+    // console.log(new_pagename)
+
+    function open_nav(){
+        if (1 < 2){
+            $('#ce-side-panel-content-collapsed').hide();
+            $('#ce-side-panel-content').show();
+            $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
+            navbarstate = "#ce-topic-element";}
+        return "m_topic"
+    }
+
+    // addEventListener("submit", (event) => {});
+    onsubmit = (event) => {console.log(event)};
+
+    function fix_home(){
+        $('#gt-newtour-homebutton').attr('style', 'width: 400px; position: absolute; top: 6px; left: 63px;');
+        $('#gt-newtour-homebutton > div.guider_arrow.guider_arrow_left').attr('style', 'top: 8.281px;');
+        return "homebutton"
+    }
+
+    tour = new gt.TourBuilder( {
+        name: 'homepage'
+    } );
+// 1
+    // Information defining each tour step
+    tour.firstStep( {
+        name: 'intro',
+        title: 'Welcome',
+        description: 'Welcome to the Introduction tour for MediaWiki',
+        overlay: true
+    } )
+        .next( 'homebutton' );
+
+// 2
+    tour.step( {
+        name: 'homebutton',
+        title: 'Home Button',
+        description: 'Here is the home buttton click here to return to the home page',
+        attachTo: '#mw-navigation a',
+        position: 'bottomRight',
+    } )
+        .next( 'edit_trans' )
+        .back( 'intro' );
+// 3
+    tour.step( {
+        name: 'edit_trans',
+        title: 'Edit the whole page…',
+        description: 'Click the \"Edit\" button to make your changes.',
+        attachTo: '#ca-ve-edit',
+        position: 'bottom',
+        closeOnClickOutside: false ,
+        // This indicates that we don't want an automatic next button,
+        // even though we are specifying which step comes next.
+        // allowAutomaticNext: false,
+        // buttons: [ {
+        //     // Custom logic to specify a button and its behavior
+        //     // depending on whether there are sections on the page.
+        //     action: hasEditSection ? 'next' : 'okay',
+        //     onclick: function () {
+        //         if ( hasEditSection ) {
+        //             mw.libs.guiders.next();
+        //         } else {
+        //             mw.libs.guiders.hideAll();
+        //         }
+        //     }
+        // } ]
+    } )
+        // At certain times, called transition points, the callback passed to .transition
+        // will be called.  At those times, this tour checks if the user is editing.  If so,
+        // the tour returns 'preview', indicating that the tour should transition to the
+        // 'preview' step automatically.
+        // step.transition( function () {
+
+        //     if ( gt.isVisualEditorOpen() ) {
+
+        //         return 'm_topic';
+        //     }
+        // } )
+        // .transition( function () { if ( mw.guidedTour.isEditing() ) { return 'm_topic'; } else{return "search_nav"} } )
+        .next( 'feat_mol' );
+
+// 4
+    tour.step( {
+        name: 'feat_mol',
+        title: 'Featured Molecule',
+        description: 'Clicking this will bring you to the relevant molecule page. From here you can see experiments that use the selected molecule.',
+        overlay: false,
+        attachTo: 'table tr:nth-child(2) td:nth-child(2)',
+        position: 'left',
+        // '#mw-content-text.mw-parser-output.tbody.tr:nth-child(7)'
+        // This means the wikitext for the description will be loaded from the
+        // page name in the description field.
+        // onShow: gt.getPageAsDescription,
+        // buttons: [ {
+        //     // This makes a button which acts like a wikilink to 'Help:Guided tours/mytest'
+        //     // action: 'next',
+        //     onclick: function () {
+        //         $('#ce-side-panel-content-collapsed').hide();
+        //         $('#ce-side-panel-content').show();
+        //         $('div.container-fluid div.row').attr('style', 'margin-left: 400px !important;');
+        //         navbarstate = "#ce-topic-element"
+        //         console.log("yes");
+        //         // if (tools.getCookie(NAVBAR_STATUS_COOKIE) !== 'expanded') {
+        //         //     tools.createCookie(NAVBAR_STATUS_COOKIE, 'expanded');
+        //         // }
+        //     },  closeOnClickOutside: false ,
+        //     action: "next",
+        //     page: pageName,
+        //     name: 'next',
+        //     // This specifies that the button takes you to the next step of a process,
+        //     // which affects its appearance.
+        //     type: 'progressive'
+
+        // },
+        //  {
+        //     // This makes the okay button on this step end the tour.
+        //     action: 'next'
+        // }
+        // ]
+        //
+    } )
+        .next(open_nav())
+        .back( 'homebutton' );
+
+// 5
+    tour.step( {
+        name:  "m_topic",
+        title: "Main Topic",
+        description:"Here is the main topic inside it are sub topics that organize papers on stricter criteria. Each paper is stored at the publication level" ,
+        overlay: true,
+        attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeItem:first-child' ,
+        position: 'right'
+
+    })
+        .next("testa")
+        .back("feat_mol");
+
+// 6
+    // tour.step( {
+    //     name: "pub",
+    //     title: "Publication",
+    //     description:"Here is the level at which papers are stored" ,
+    //     overlay: true,
+    //     attachTo: 'table tr:nth-child(2) td:nth-child(1) div.CategoryTreeChildren div.CategoryTreeSection ' ,
+    //     position: 'right'
+
+    // })
+    // .next("testa")
+    // .back("m_topic");
+
+// 7
+    tour.step( {
+        name: "testa",
+        title: "topic attacment",
+        description:"this is the highest level of the Organization" ,
+        attachTo: navbarstate,
+        position: 'right',
+
+    })
+        .next("pub_nav")
+        .back("m_topic");
+
+// 8
+    tour.step( {
+        name: "pub_nav",
+        title: "Publications",
+        description:"This is the publication level. Papers are stored here with each investigation splitting into the next level" ,
+        attachTo: '#ce-publication-element',
+        position: 'right',
+    })
+        .next("search_nav")
+        .back("testa");
+
+// 9
+    tour.step({
+        name:"search_nav",
+        title: "search bar",
+        description: "Here if you click on the search bar and hit enter will allow you to entered facted search",
+        attachTo: "#searchInput",
+        position:"bottom",
+        closeOnClickOutside: false ,
+        allowAutomaticNext : false,
+    })
+        .transition( function () {
+            if ( gt.isEditing() ) {
+                console.log("lets try it")
+                return 'pub_feat';}
+            else (console.log("fail"))})
+        // .next("pub_feat")
+        .back("pub_nav");
+
+// 10
+    tour.step( {
+        name: "pub_feat",
+        title: "Publications",
+        description:"this a featured publications page" ,
+        attachTo: '#mw-content-text > div > table > tbody > tr:nth-child(4)',
+        position: 'top',
+        buttons: [{action: 'wikiLink',
+            page: new_pagename,
+            name: 'Link to Featured Molecues',
+            type: 'progressive',
+        }]
+    })
+        .next("pub_page")
+        .back("search_nav");
+
+// 11
+    tour.step( {
+        name: "pub_page",
+        title: "Publication page",
+        description:"From here you will start the next tour about searching" ,
+        attachTo: '#Investigation',
+        position: 'top',
+        buttons: [ {
+            // This makes a button which acts like a wikilink to 'Help:Guided tours/guider'
+            action: 'wikiLink',
+            page: '/mediawiki/Special:Search?tour=searchtour',
+            name: 'go to the search page',
+            // This specifies that the button takes you to the next step of a process,
+            // which affects its appearance.
+            type: 'progressive'
+        }, {
+            // This makes the okay button on this step end the tour.
+            action: 'end'
+        } ]
+    } )
+
+        // .next("pub_feat")
+        .back("pub_feat");
+
+// The following should be the last line of your tour.
+} ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );

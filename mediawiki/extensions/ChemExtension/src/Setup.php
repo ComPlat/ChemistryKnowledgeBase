@@ -187,12 +187,36 @@ class Setup {
             'messages' => [],
             'dependencies' => 'ext.guidedTour',
         );
+
+        $wgResourceModules['ext.guidedTour.tour.search_tour'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/search.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+
+        $wgResourceModules['ext.guidedTour.tour.homepage'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/homepage.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
     }
 
     private static function addTourModules(&$out): void
     {
         $out->addModules('ext.guidedTour.tour.publicationpage');
         $out->addModules('ext.guidedTour.tour.topic_page');
+        $out->addModules('ext.guidedTour.tour.search_tour');
+        $out->addModules('ext.guidedTour.tour.homepage');
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
