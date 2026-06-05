@@ -176,11 +176,23 @@ class Setup {
             'messages' => [],
             'dependencies' => 'ext.guidedTour',
         );
+
+        $wgResourceModules['ext.guidedTour.tour.topic_page'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/topic-page.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
     }
 
     private static function addTourModules(&$out): void
     {
         $out->addModules('ext.guidedTour.tour.publicationpage');
+        $out->addModules('ext.guidedTour.tour.topic_page');
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
