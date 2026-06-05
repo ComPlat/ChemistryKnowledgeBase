@@ -49,7 +49,9 @@
         description: 'Welcome to the Introduction tour for MediaWiki',
         overlay: true
     } )
-        .next( 'homebutton' );
+        .next( function() {
+            gt.setTourCookie( 'homepage', 'homebutton' );
+            window.location.href = mw.util.getUrl( 'Main_Page' ) ;} );
 
 // 2
     tour.step( {
