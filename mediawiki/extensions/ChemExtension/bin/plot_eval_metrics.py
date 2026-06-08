@@ -15,10 +15,13 @@ import matplotlib.pyplot as plt
 
 # 0..1 quality metrics drawn together (column -> label)
 QUALITY = [
+    ("composite_best", "Composite (best so far)"),
+    ("composite", "Composite (F1 × layout)"),
     ("f1_best", "F1 (best so far)"),
     ("f1", "F1"),
     ("precision", "Precision"),
     ("recall", "Recall"),
+    ("layoutScore", "Layout / structure"),
     ("groundedness", "Groundedness"),
     ("hallucination", "Hallucination (lower=better)"),
     ("unitCorrectness", "Unit correctness"),

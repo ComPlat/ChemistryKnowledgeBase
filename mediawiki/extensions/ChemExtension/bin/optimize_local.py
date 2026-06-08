@@ -50,6 +50,91 @@ FIELD_UNIT_LABEL = {
     "Quantum_yield__CO": "%",
 }
 
+# ---------- layout / structure scoring ----------
+# Required output sections per topic. The live wiki publication pages are built from these,
+# so the optimizer is not allowed to drop them. Override via eval/<topic>/profile.json
+# ("required_sections": [...]). Empty list disables the layout check entirely.
+REQUIRED_SECTIONS_BY_TOPIC = {
+    "Photocatalytic_CO2_conversion": [
+        "Abstract Summary",
+        "Advances and Special Progress",
+        "Additional Remarks",
+        "Content of the Published Article in Detail",
+        "Catalyst",
+        "Photosensitizer",
+        "Investigation",
+    ],
+    "Electrochemical_CO2_conversion": [
+        "Abstract Summary", "Advances and Special Progress", "Additional Remarks",
+        "Content of the Published Article in Detail", "Catalyst", "Investigation",
+    ],
+    "Host_Guest_interaction": [
+        "Abstract Summary", "Advances and Special Progress", "Additional Remarks",
+        "Content of the Published Article in Detail", "Host", "Guest", "Investigation",
+    ],
+}
+# minimum substantive words between a section heading and the next required heading
+MIN_SECTION_WORDS = 20
+
+def _heading_positions(text, sections):
+    """Return ordered list of (section_name, start_index_after_heading). Matches wiki
+    headings (= ... =, == ... ==), markdown headings (#, ##), bracketed prompt-style
+    titles ([Name]), or the bare name on its own line. Case-insensitive."""
+    hits = []
+    for name in sections:
+        pat = re.compile(
+            r"(?im)^\s*(?:=+\s*|#+\s*|\[\s*)?" + re.escape(name) + r"(?:\s*=+|\s*\]|\s*:)?\s*$",
+            re.MULTILINE,
+        )
+        m = pat.search(text)
+        if m:
+            hits.append((name, m.end()))
+    hits.sort(key=lambda x: x[1])
+    return hits
+
+def layout_score(text, sections):
+    """Per-publication structure score on the raw model output.
+    Returns {score: 0..1, present: int, required: int, missing: [names]}.
+    A section counts as present only if it has at least MIN_SECTION_WORDS of substance
+    after its heading and (for Investigation) a fenced ```csv block.
+    """
+    required = list(sections or [])
+    if not required:
+        return {"score": 1.0, "present": 0, "required": 0, "missing": []}
+    positions = _heading_positions(text or "", required)
+    by_name = {n: pos for n, pos in positions}
+    ordered_offsets = sorted(p for _, p in positions) + [len(text or "")]
+    present, missing = 0, []
+    for name in required:
+        if name not in by_name:
+            missing.append(name); continue
+        start = by_name[name]
+        # find next heading offset that's strictly after `start`
+        next_off = next((o for o in ordered_offsets if o > start), len(text or ""))
+        body = (text or "")[start:next_off]
+        words = re.findall(r"\b\w[\w\-]*\b", body)
+        substantive = len(words) >= MIN_SECTION_WORDS
+        if name.lower() == "investigation":
+            # Investigation is a DATA section; word-count doesn't apply. We require a fenced
+            # csv block plus at least header + 1 data row.
+            has_csv = "```csv" in body or re.search(r"```\s*\ncatalyst\b", body) is not None
+            csv_rows = sum(1 for line in body.splitlines() if line.count(",") >= 3)
+            if has_csv and csv_rows >= 2:
+                present += 1
+            else:
+                missing.append(name)
+        elif substantive:
+            present += 1
+        else:
+            missing.append(name)
+    return {"score": present / len(required), "present": present,
+            "required": len(required), "missing": missing}
+
+def composite_objective(f1, avg_layout):
+    """Multiplicative gate: layout fully present (1.0) -> composite == F1; any missing
+    section proportionally shrinks the score. A model that drops all prose -> 0."""
+    return f1 * (avg_layout if avg_layout is not None else 1.0)
+
 def norm_unit(u):
     u = u.strip().lower().replace("µ", "u").replace("μ", "u")
     for ch in ("°", "^", " ", "·", "*"):
@@ -299,7 +384,7 @@ def extract(pdf_path, prompt, fields, model, key, hints="", fmt="json"):
             rows = []
     else:
         rows = parse_csv_rows(out)
-    return rows, tokens
+    return rows, tokens, out
 
 def write_paper_artifacts(results_dir, hist, best, topic):
     """Final paper artefacts: a markdown summary + a pgfplots/booktabs LaTeX snippet."""
@@ -379,28 +464,40 @@ def ground_check(pdf_path, ext_rows, model, key):
           for c in checks if c.get("status") in ("contradicted", "absent")][:15]
     return {"checked": supported + unsupported, "supported": supported, "unsupported": unsupported, "examples": ex}
 
-def generate_initial_prompt(fields, fmt, model, key):
+def generate_initial_prompt(fields, fmt, model, key, required_sections=None):
     """Cold start: no seed prompt given — let the model write the initial extraction prompt itself."""
     cols = " , ".join(fields)
+    section_clause = ""
+    if required_sections:
+        section_clause = (" The prompt MUST require the model to emit these MediaWiki sections in this exact "
+                          "order, each as a wiki heading with substantive content: "
+                          + ", ".join(required_sections)
+                          + ". The Investigation section must contain the experiments inside a fenced ```csv block.")
     sys_part = ("Write a concise, high-quality instruction prompt that makes a model extract the "
                 "experimental data from an attached chemistry paper. The prompt should ask for a "
                 "short MediaWiki summary followed by the experiments as structured data, ONE row "
                 "per experiment, using ONLY values explicitly stated in the paper (no guessing, no "
-                "hallucination). Respond with the prompt text only.")
+                "hallucination)." + section_clause + " Respond with the prompt text only.")
     task = "The experiments to capture have these fields:\n" + cols
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
         {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
     return output_text(post(payload, key)).strip()
 
-def improve_prompt(current, agg, model, key, fmt="json"):
+def improve_prompt(current, agg, model, key, fmt="json", required_sections=None):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
     struct = ("a fenced ```csv block whose header is EXACTLY the given columns (plus the prose "
               "sections as MediaWiki text above it)" if fmt == "csv"
               else "a JSON object {summary, experiments[]}")
+    sect = ""
+    if required_sections:
+        sect = (" The output structure has FIXED MediaWiki sections that MUST all be emitted with "
+                "substantive content (each at least 20 words): "
+                + ", ".join(required_sections) + ". The Investigation section MUST contain a "
+                "fenced ```csv block. NEVER drop, rename, or collapse a section.")
     sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into "
-                + struct + ". Keep the exact column/field names and the output structure unchanged; "
+                + struct + "." + sect + " Keep the exact column/field names and the output structure unchanged; "
                 "improve only wording, per-field guidance, units, scientific notation, and row "
                 "coverage. IMPORTANT: the goal is to fill MORE correct cells — output one row per "
                 "distinct experiment and fill every field that the paper states; only leave a field "
@@ -411,7 +508,12 @@ def improve_prompt(current, agg, model, key, fmt="json"):
     if agg.get("groundedness") is not None:
         ground = (f"Groundedness={agg['groundedness']:.3f} Hallucination={agg['hallucination']:.3f} "
                   f"(every value MUST be supported by the paper; never invent or guess values).\n")
-    task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}\n{ground}\n"
+    layout_line = ""
+    if agg.get("layoutScore") is not None:
+        layout_line = (f"Layout score={agg['layoutScore']:.3f} (1.0 = all required wiki sections "
+                       f"present with substantive content; current prompt is losing score when this <1).\n")
+    task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
+            f"composite={agg.get('composite', agg['f1']):.4f}\n{layout_line}{ground}\n"
             f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}\n\n[CURRENT PROMPT]\n{current}")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
@@ -464,22 +566,49 @@ def main():
     results_dir = os.path.join(EVAL, a.topic, "results")
     os.makedirs(results_dir, exist_ok=True)
     csv_path = os.path.join(results_dir, "metrics.csv")
-    cols = ["iteration", "f1", "f1_best", "precision", "recall", "groundedness", "hallucination", "tokensPerPub"]
+    cols = ["iteration", "f1", "f1_best", "precision", "recall", "groundedness", "hallucination",
+            "layoutScore", "composite", "composite_best", "tokensPerPub"]
     rows_csv = [",".join(cols)]
+
+    # required sections for layout/structure scoring (per topic, overridable in profile.json)
+    required_sections = list(REQUIRED_SECTIONS_BY_TOPIC.get(a.topic, []))
+    profile_path = os.path.join(EVAL, a.topic, "profile.json")
+    if os.path.isfile(profile_path):
+        try:
+            prof = json.load(open(profile_path))
+            if isinstance(prof.get("required_sections"), list):
+                required_sections = prof["required_sections"]
+        except Exception:
+            pass
+    if a.format != "csv":
+        # JSON output has no notion of wiki sections — disable layout check there
+        required_sections = []
+    if required_sections:
+        print(f"layout check on, {len(required_sections)} required sections: "
+              + ", ".join(required_sections))
 
     if a.prompt_file:
         prompt = open(a.prompt_file).read().strip()
     else:
         print("No --prompt-file given -> model writes the initial prompt itself (cold start)...")
-        prompt = generate_initial_prompt(fields, a.format, a.model, key)
+        prompt = generate_initial_prompt(fields, a.format, a.model, key, required_sections)
         os.makedirs(results_dir, exist_ok=True)
         open(os.path.join(results_dir, "seed_generated.txt"), "w").write(prompt)
     if a.format == "csv":
-        # bake the exact CSV column contract into the prompt so the EXPORTED prompt is
-        # live-deployable (the wiki importer maps these headers to template parameters)
-        prompt += ("\n\n[OUTPUT FORMAT] First write the prose summary sections as MediaWiki text. "
-                   "Then output the experiments as ONE fenced code block that starts with ```csv and "
-                   "ends with ```. The header row MUST be EXACTLY these columns, in this order:\n"
+        # bake the exact CSV column contract AND the required MediaWiki sections into the prompt
+        # so the EXPORTED prompt is live-deployable (the wiki importer maps these headers to
+        # template parameters; the section structure matches the live publication-page layout)
+        section_clause = ""
+        if required_sections:
+            section_clause = ("\n\n[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, "
+                              "each as a wiki heading with substantive content (≥20 words)]\n"
+                              + "\n".join(f"== {n} ==" for n in required_sections)
+                              + "\nThe Investigation section must contain ONE fenced ```csv block with the "
+                              "header below as its first row.")
+        prompt += (section_clause +
+                   "\n\n[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code "
+                   "block that starts with ```csv and ends with ```. The header row MUST be EXACTLY "
+                   "these columns, in this order:\n"
                    + " , ".join(fields) + "\nOne row per distinct experiment; one value per cell; "
                    "leave a cell empty only if the paper does not state it.")
     best = {"f1": -1, "prompt": prompt, "agg": None, "iter": 0}
@@ -492,14 +621,21 @@ def main():
         open(os.path.join(prompts_dir, f"iter_{it}.txt"), "w").write(prompt)
         scores, toks, diag = [], 0, []
         gsup = gchk = 0
+        layout_scores = []
         for doi, pdf, gold in entries:
             try:
                 hints = field_hints(fd, doi, fields) if a.field_hints else ""
-                rows, t = extract(pdf, prompt, fields, a.model, key, hints, a.format)
+                rows, t, raw = extract(pdf, prompt, fields, a.model, key, hints, a.format)
                 toks += t
                 s = score_pub(gold, rows, a.tolerance)
                 scores.append(s)
+                ls = layout_score(raw, required_sections)
+                layout_scores.append(ls["score"])
                 line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
+                if required_sections:
+                    line += f", layout {ls['present']}/{ls['required']}"
+                    if ls["missing"]:
+                        line += " (missing: " + ", ".join(ls["missing"][:3]) + (",…" if len(ls["missing"]) > 3 else "") + ")"
                 grec = None
                 if a.ground:
                     g = ground_check(pdf, rows, a.model, key)
@@ -509,7 +645,7 @@ def main():
                 print(line)
                 diag.append({"doi": doi, "tp": s["tp"], "gold_cells": s["gold"], "ext_cells": s["ext"],
                              "gold_rows": s["gold_rows"], "ext_rows": s["ext_rows"],
-                             "ground": grec, "examples": s["examples"][:10]})
+                             "layout": ls, "ground": grec, "examples": s["examples"][:10]})
             except Exception as e:
                 print(f"  {doi}: ERROR {e}")
             time.sleep(1)
@@ -518,18 +654,31 @@ def main():
         agg = aggregate(scores)
         agg["groundedness"] = (gsup / gchk) if (a.ground and gchk) else None
         agg["hallucination"] = (1 - gsup / gchk) if (a.ground and gchk) else None
+        agg["layoutScore"] = (sum(layout_scores) / len(layout_scores)) if layout_scores and required_sections else None
         avg_tok = toks // len(scores)
-        # objective: gold-F1, and when grounding is on, reward faithfulness + punish hallucination
-        agg["objective"] = agg["f1"] if not a.ground or agg["groundedness"] is None \
-            else (agg["f1"] + agg["groundedness"]) / 2
+        # objective: composite = F1 × layoutScore, optionally averaged with groundedness.
+        # Multiplicative gate means dropping prose sections costs proportionally; you cannot
+        # game the score by emitting only the CSV table.
+        base = composite_objective(agg["f1"], agg["layoutScore"] if agg["layoutScore"] is not None else 1.0)
+        agg["composite"] = base
+        agg["objective"] = base if not a.ground or agg["groundedness"] is None \
+            else (base + agg["groundedness"]) / 2
         if agg["objective"] > best.get("obj", -1):
-            best = {"f1": agg["f1"], "obj": agg["objective"], "prompt": prompt, "agg": agg, "iter": it}
+            best = {"f1": agg["f1"], "composite": base, "obj": agg["objective"], "prompt": prompt, "agg": agg, "iter": it}
+        best_comp = best.get("composite", base)
         gstr = f" grounded={agg['groundedness']:.3f} halluc={agg['hallucination']:.3f}" if agg["groundedness"] is not None else ""
-        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{gstr} tok/pub={avg_tok} | best={best['f1']:.4f}")
+        lstr = f" layout={agg['layoutScore']:.3f}" if agg["layoutScore"] is not None else ""
+        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{lstr}{gstr} "
+              f"composite={base:.4f} tok/pub={avg_tok} | best F1={best['f1']:.4f} composite={best_comp:.4f}")
         gv = f"{agg['groundedness']:.4f}" if agg["groundedness"] is not None else ""
         hv = f"{agg['hallucination']:.4f}" if agg["hallucination"] is not None else ""
-        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},{gv},{hv},{avg_tok}")
-        hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"], "precision": agg["precision"], "recall": agg["recall"], "tokensPerPub": avg_tok})
+        lv = f"{agg['layoutScore']:.4f}" if agg["layoutScore"] is not None else ""
+        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},"
+                        f"{gv},{hv},{lv},{base:.4f},{best_comp:.4f},{avg_tok}")
+        hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"],
+                     "precision": agg["precision"], "recall": agg["recall"],
+                     "layoutScore": agg["layoutScore"], "composite": base, "composite_best": best_comp,
+                     "tokensPerPub": avg_tok})
         json.dump({"iteration": it, "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness", "hallucination")},
                    "weak_fields": [{"field": k, "recall": r, "correct": c, "total": g} for k, r, c, g in agg["weak"]],
                    "per_publication": diag},
@@ -544,7 +693,7 @@ def main():
             print("  improving prompt (from best so far) ...")
             # hill-climb: always propose the next variant from the BEST prompt + its error report,
             # so a bad rewrite never drags the search downward.
-            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format)
+            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format, required_sections)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
