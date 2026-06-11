@@ -634,7 +634,11 @@ li.ce-inv-record-item {
 }
 
 #crossref-category-input {
-    width: 50%;
+    width: 30%;
+}
+
+#crossref-filter-input {
+    width: 30%;
 }
 
 td.doi-link-known {

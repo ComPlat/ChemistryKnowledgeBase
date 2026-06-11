@@ -56,6 +56,8 @@
   "crossref-pager-prev": "← Zurück",
   "crossref-pager-next": "Weiter →",
   "crossref-pager-info": "Seite $1 von $2 ($3 Ergebnisse)",
-  "crossref-only-approved-label": "Nur angenommene"
+  "crossref-only-approved-label": "Nur angenommene",
+  "crossref-filter-label": "Filter",
+  "crossref-filter-placeholder": "Titel oder DOI"
 
 }

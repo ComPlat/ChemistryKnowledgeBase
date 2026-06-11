@@ -129,9 +129,10 @@ class PublicationSearchRepository {
         return $res->numRows() > 0;
     }
 
-    public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved): array {
+    public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved, $filter): array {
 
         if ($topic !== '') {
+            $topic = $this->db->strencode($topic);
             $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
         } else {
             $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
@@ -139,6 +140,14 @@ class PublicationSearchRepository {
         if ($onlyApproved) {
             $where .= " AND approved = 1";
         }
+        if ($filter !== '') {
+            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($terms as $term) {
+                $escaped = $this->db->strencode(mb_strtolower($term));
+                $where .= " AND (LOWER(title) LIKE '%$escaped%' OR LOWER(doi) LIKE '%$escaped%')";
+            }
+        }
+
         $res = $this->db->select(
             'publications',
             [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
@@ -155,11 +164,18 @@ class PublicationSearchRepository {
         return $results;
     }
 
-    public function getRelevantPublicationsCount($topic): int {
+    public function getRelevantPublicationsCount($topic, $isApproved, $filter): int {
         if ($topic !== '') {
             $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
         } else {
             $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
+        }
+        if ($filter !== '') {
+            $where .= "  AND (title LIKE '%$filter%' OR doi LIKE '%$filter%')";
+        }
+        if (!is_null($isApproved)) {
+            $isApproved = $isApproved ? 1 : 0;
+            $where .= " AND approved = $isApproved";
         }
         return $this->db->select(
             'publications',

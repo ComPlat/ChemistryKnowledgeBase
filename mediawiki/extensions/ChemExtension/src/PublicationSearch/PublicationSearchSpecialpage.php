@@ -32,12 +32,13 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $request = RequestContext::getMain()->getRequest();
         $topic   = $request->getText( 'category', '' );
         $onlyApproved   = $request->getText( 'only-approved', false ) == 1;
+        $filter  = $request->getText( 'filter', '' );
         $page    = max( 0, $request->getInt( 'page', 0 ) );
 
-        $out->addHTML( $this->buildForm( $topic, $onlyApproved ) );
+        $out->addHTML( $this->buildForm( $topic, $onlyApproved, $filter ) );
 
-        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved);
-        $total        = $this->publicationRepo->getRelevantPublicationsCount($topic);
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved, $filter );
+        $total        = $this->publicationRepo->getRelevantPublicationsCount( $topic, $onlyApproved, $filter );
         $pageSize     = self::PAGE_SIZE;
         $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
         $page         = min( $page, $totalPages - 1 );
@@ -46,7 +47,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total ) );
     }
 
-    private function buildForm( string $selectedCategory, bool $onlyApproved ): string {
+    private function buildForm( string $selectedCategory, bool $onlyApproved, string $filter = '' ): string {
         $categories = QueryUtils::getAllSubcategories('Topic');
 
         $html = Html::openElement( 'form', [
@@ -83,6 +84,24 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         $html .= '&#160;';
 
+        // Filter input for title or DOI
+        $html .= Html::label(
+            $this->msg( 'crossref-filter-label' )->text(),
+            'crossref-filter-input',
+            [ 'style' => 'margin-left: 10px;' ]
+        );
+        $html .= '&#160;';
+        $html .= Html::element( 'input', [
+            'type'         => 'text',
+            'id'           => 'crossref-filter-input',
+            'name'         => 'filter',
+            'value'        => $filter,
+            'placeholder'  => $this->msg( 'crossref-filter-placeholder' )->text(),
+            'autocomplete' => 'off',
+        ] );
+
+        $html .= '&#160;';
+
         $html .= Html::element( 'input', [
             'type'  => 'submit',
             'value' => $this->msg( 'crossref-category-submit' )->text(),
@@ -108,8 +127,8 @@ class PublicationSearchSpecialpage extends SpecialPage {
      *
      * @return array[]
      */
-    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, bool $onlyApproved): array {
-        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize, $onlyApproved);
+    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, bool $onlyApproved, string $filter = ''): array {
+        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize, $onlyApproved, $filter);
     }
 
     /**
