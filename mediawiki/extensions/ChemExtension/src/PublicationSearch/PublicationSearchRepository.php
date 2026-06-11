@@ -155,7 +155,7 @@ class PublicationSearchRepository {
             [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
             [ $where ],
             __METHOD__,
-            ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC']
+            ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC', 'GROUP BY' => 'title']
         );
         $results = [];
         foreach ($res as $row) {
@@ -187,7 +187,8 @@ class PublicationSearchRepository {
             'publications',
             [ 'count(doi) as count' ],
             [ $where ],
-            __METHOD__
+            __METHOD__,
+            ['GROUP BY' => 'title']
         )->fetchObject()->count;
     }
 }
