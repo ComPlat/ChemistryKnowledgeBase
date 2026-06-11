@@ -53,6 +53,7 @@
     "publicationlist-col-date": "Publikationsdatum",
     "publicationlist-col-check_result": "Identifiziertes Topic",
     "publicationlist-col-approved": "Angenommen",
+    "publicationlist-col-created": "Erstellt am",
   "crossref-pager-prev": "← Zurück",
   "crossref-pager-next": "Weiter →",
   "crossref-pager-info": "Seite $1 von $2 ($3 Ergebnisse)",

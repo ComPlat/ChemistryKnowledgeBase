@@ -145,7 +145,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         // Table header
         $html .= Html::openElement( 'thead' );
         $html .= Html::openElement( 'tr' );
-        foreach ( [ 'title', 'abstract', 'doi', 'date', 'check_result', 'approved' ] as $col ) {
+        foreach ( [ 'title', 'abstract', 'doi', 'date', 'check_result', 'approved', 'created' ] as $col ) {
             $html .= Html::element(
                 'th',
                 [],
@@ -238,6 +238,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $approvedElement = Html::check($pub->getDoi(), $pub->getApproved() == '1');
         $html .= Html::rawElement( 'td', ['class' => 'approved-checkbox'],  $approvedElement);
 
+        $html .= Html::element( 'td', [], $pub->getCreated() ?? '' );
         $html .= Html::closeElement( 'tr' );
 
         return $html;

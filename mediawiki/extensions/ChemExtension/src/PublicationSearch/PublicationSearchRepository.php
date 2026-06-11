@@ -27,6 +27,7 @@ class PublicationSearchRepository {
                     )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE publications ADD CONSTRAINT publications_doi_key_unique UNIQUE IF NOT EXISTS (doi)');
         $this->db->query('ALTER TABLE publications ADD COLUMN IF NOT EXISTS approved TINYINT(1) DEFAULT 0;');
+        $this->db->query('ALTER TABLE publications ADD COLUMN IF NOT EXISTS created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;');
         return [ 'publications' ];
     }
 
@@ -83,7 +84,7 @@ class PublicationSearchRepository {
     {
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
             [ 'doi' => $doi ],
             __METHOD__
         );
@@ -100,7 +101,8 @@ class PublicationSearchRepository {
             $row->abstract,
             $row->published,
             $row->check_result,
-            $row->approved
+            $row->approved,
+            $row->created
         );
     }
 
@@ -150,7 +152,7 @@ class PublicationSearchRepository {
 
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
             [ $where ],
             __METHOD__,
             ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC']
@@ -158,7 +160,7 @@ class PublicationSearchRepository {
         $results = [];
         foreach ($res as $row) {
             $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published,
-                                    $row->check_result, $row->approved);
+                                    $row->check_result, $row->approved, $row->created);
         }
 
         return $results;
@@ -166,16 +168,20 @@ class PublicationSearchRepository {
 
     public function getRelevantPublicationsCount($topic, $isApproved, $filter): int {
         if ($topic !== '') {
+            $topic = $this->db->strencode($topic);
             $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
         } else {
             $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
         }
         if ($filter !== '') {
-            $where .= "  AND (title LIKE '%$filter%' OR doi LIKE '%$filter%')";
+            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($terms as $term) {
+                $escaped = $this->db->strencode(mb_strtolower($term));
+                $where .= " AND (LOWER(title) LIKE '%$escaped%' OR LOWER(doi) LIKE '%$escaped%')";
+            }
         }
-        if (!is_null($isApproved)) {
-            $isApproved = $isApproved ? 1 : 0;
-            $where .= " AND approved = $isApproved";
+        if ($isApproved) {
+            $where .= " AND approved = 1";
         }
         return $this->db->select(
             'publications',
