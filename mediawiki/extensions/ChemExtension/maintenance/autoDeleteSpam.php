@@ -11,6 +11,7 @@ use MediaWiki\Permissions\UltimateAuthority;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentityValue;
+use Exception;
 
 
 /**
@@ -61,9 +62,7 @@ class autoDeleteSpam extends \Maintenance
                 continue;
             }
             if (!$page->exists()) continue;
-            if ($page->getNamespace() != NS_MAIN) {
-                continue;
-            }
+
             echo "\nProcessing publication: " . $page->getPrefixedText() . "...";
             if (!$this->checkForSpam($page)) {
                 echo "not spam";
@@ -81,6 +80,9 @@ class autoDeleteSpam extends \Maintenance
         echo "\n";
     }
 
+    /**
+     * @throws Exception
+     */
     private function checkForSpam(Title $title): bool
     {
         global $IP;
