@@ -78,7 +78,7 @@ class ExperimentWikitextImporter {
 
     private function searchForMolecule($searchText): array
     {
-        if (is_numeric($searchText)) {
+        if (is_numeric($searchText) || trim($searchText) === '') {
             return [
                 'value' => $searchText,
                 'type' => 'plain'
