@@ -223,7 +223,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $pubFiles = PdfUtils::publicationPDF($doi);
             $importAutomatically = count($pubFiles) > 0;
             $importText = $importAutomatically ? 'import automatically' : 'import manually';
-            $importButton .= Html::openElement('div');
+            $importButton .= Html::openElement('div', ['title' => join("\n", array_map(fn($e) => basename($e), $pubFiles))]);
             $importButton .= Html::linkButton("[$importText]", ['class' => 'import-button', 'href' => $href]);
             $importButton .= Html::closeElement('div');
 
