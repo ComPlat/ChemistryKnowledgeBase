@@ -76,6 +76,7 @@ class DownloadPublication extends SimpleHandler
                 'doi' => $doi,
                 'openExternally' => true
             ]));
+            self::createJobsForSupplementaryPDFs($links ?? [], $doi);
         } else {
             $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
             try {
@@ -89,8 +90,26 @@ class DownloadPublication extends SimpleHandler
                 'doi' => $doi,
                 'openExternally' => true
             ]));
+            self::createJobsForSupplementaryPDFs($links, $doi);
         }
         return $url;
     }
 
+    private static function createJobsForSupplementaryPDFs($links, $doi): void
+    {
+
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        foreach ($links as $link) {
+            $text = strtolower($link['text']);
+            if (str_contains($text, 'supplementary information')) {
+
+                $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
+                    'url' => $link['url'],
+                    'doi' => $doi,
+                    'openExternally' => true
+                ]));
+            }
+        }
+
+    }
 }

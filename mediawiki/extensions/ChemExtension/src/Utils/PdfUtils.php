@@ -2,6 +2,11 @@
 
 namespace DIQA\ChemExtension\Utils;
 
+use FilesystemIterator;
+use InvalidArgumentException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
 class PdfUtils {
 
     /**
@@ -41,42 +46,57 @@ class PdfUtils {
         return $header === '%PDF';
     }
 
-    public static function savePublicationPDF(string $doi, string $content): void
-    {
-        global $wgChemPubStoreDir;
-        if (!isset($wgChemPubStoreDir)) {
-            $wgChemPubStoreDir = sys_get_temp_dir();
-        }
-        file_put_contents($wgChemPubStoreDir . "/" . md5($doi) . '.pdf', $content);
-    }
-
-    public static function publicationPDF(string $doi): string
+    public static function publicationPDF(string $doi): array
     {
         global $wgChemPubStoreDir;
         if (!isset($wgChemPubStoreDir)) {
             $wgChemPubStoreDir = sys_get_temp_dir();
         }
         if (!is_dir($wgChemPubStoreDir . "/" . md5($doi) . '.pdf')) {
-            return $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
+            return [ $wgChemPubStoreDir . "/" . md5($doi) . '.pdf' ];
         }
-        return self::getFirstFileInDirectory($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
+        return self::getFiles($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
     }
 
-    public static function getFirstFileInDirectory(string $directoryPath): ?string
+    public static function isDirectoryNotEmpty(string $directory): bool
     {
-        if (!is_dir($directoryPath)) {
-            return null;
+        if (!is_dir($directory)) {
+            throw new InvalidArgumentException("Not a valid directory: {$directory}");
         }
 
-        $files = scandir($directoryPath);
+        $iterator = new FilesystemIterator($directory, FilesystemIterator::SKIP_DOTS);
 
-        foreach ($files as $file) {
-            $fullPath = $directoryPath . DIRECTORY_SEPARATOR . $file;
-            if (is_file($fullPath)) {
-                return $fullPath;
+        return $iterator->valid();
+    }
+
+    public static function getFiles(string $directory, bool $recursive = false): array
+    {
+        if (!is_dir($directory)) {
+            throw new InvalidArgumentException("Not a valid directory: {$directory}");
+        }
+
+        $files = [];
+
+        if ($recursive) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $fileInfo) {
+                if ($fileInfo->isFile()) {
+                    $files[] = $fileInfo->getPathname();
+                }
+            }
+        } else {
+            $iterator = new FilesystemIterator($directory, FilesystemIterator::SKIP_DOTS);
+
+            foreach ($iterator as $fileInfo) {
+                if ($fileInfo->isFile()) {
+                    $files[] = $fileInfo->getPathname();
+                }
             }
         }
 
-        return null;
+        return $files;
     }
 }

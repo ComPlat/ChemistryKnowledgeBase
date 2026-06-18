@@ -61,7 +61,8 @@ class PublicationImportSpecialpage extends SpecialPage
 
             global $wgRequest;
             $doi = $wgRequest->getText('doi', '');
-            if (isset($_FILES["chemfile"]["name"]) || file_exists(PdfUtils::publicationPDF($doi))) {
+            $pubFiles = PdfUtils::publicationPDF($doi);
+            if (isset($_FILES["chemfile"]["name"]) || count($pubFiles) > 0) {
                 try {
                     $pageTitle = $wgRequest->getText('page-title', '');
                     $topics = $wgRequest->getText('topic', '');
@@ -71,8 +72,10 @@ class PublicationImportSpecialpage extends SpecialPage
                     }
                     $this->checkIfDOIAlreadyExists($doi);
                     $uploadedFiles = $this->processUpload($tmpFolder);
-                    if (file_exists(PdfUtils::publicationPDF($doi))) {
-                        $uploadedFiles[$pageTitle] = PdfUtils::publicationPDF($doi);
+                    if (count($uploadedFiles) === 0) {
+                        foreach($pubFiles as $pubFile) {
+                            $uploadedFiles[basename($pubFile)] = $pubFile;
+                        }
                     }
                     $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
                     $this->putTitleOnWatchlist($title);
