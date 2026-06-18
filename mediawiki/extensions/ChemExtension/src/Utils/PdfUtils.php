@@ -52,8 +52,12 @@ class PdfUtils {
         if (!isset($wgChemPubStoreDir)) {
             $wgChemPubStoreDir = sys_get_temp_dir();
         }
-        if (!is_dir($wgChemPubStoreDir . "/" . md5($doi) . '.pdf')) {
-            return [ $wgChemPubStoreDir . "/" . md5($doi) . '.pdf' ];
+        $file = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
+        if (!file_exists($file)) {
+            return [];
+        }
+        if (!is_dir($file)) {
+            return [ $file ];
         }
         return self::getFiles($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
     }
