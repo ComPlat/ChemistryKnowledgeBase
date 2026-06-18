@@ -185,10 +185,10 @@ class PublicationSearchRepository {
         }
         return $this->db->select(
             'publications',
-            [ 'count(doi) as count' ],
+            [ 'count(DISTINCT title) as count' ],
             [ $where ],
             __METHOD__,
-            ['GROUP BY' => 'title']
+            []
         )->fetchObject()->count;
     }
 }
