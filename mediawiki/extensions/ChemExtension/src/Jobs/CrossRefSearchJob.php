@@ -2,13 +2,11 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
+use DIQA\ChemExtension\Endpoints\DownloadPublication;
 use DIQA\ChemExtension\PublicationImport\AIClient;
-use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
-use DIQA\ChemExtension\PublicationSearch\DownloadLinkFinder;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchResult;
 use DIQA\ChemExtension\Utils\LoggerUtils;
-use DIQA\ChemExtension\Utils\PdfUtils;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use Exception;
 use Job;
@@ -53,7 +51,10 @@ class CrossRefSearchJob extends Job
     }
 
 
-    private function checkPublication(string $doi)
+    /**
+     * @throws Exception
+     */
+    private function checkPublication(string $doi): string
     {
         $aiClient = new AIClient();
 
@@ -85,7 +86,11 @@ class CrossRefSearchJob extends Job
         if (strtolower($parts[0]) === 'yes' || strtolower($parts[0]) === 'maybe') {
             $this->logger->log("Publication relevant ({$parts[0]}): " . $publication->getDoi());
             $this->publicationRepo->updateCheckResult($publication, $parts[1] ?? 'unknown reason');
-            $this->createDownloadJob($doi);
+            try {
+                DownloadPublication::downloadByDOI($doi);
+            } catch (Exception $e) {
+                $this->logger->error($e->getMessage());
+            }
         } else {
             $allTopics = QueryUtils::getAllSubcategories('Topic');
             $positiveResults = $this->checkSpecificPrompts($publication, $allTopics);
@@ -93,7 +98,11 @@ class CrossRefSearchJob extends Job
                 $topicResults = join(',', $positiveResults);
                 $this->logger->log("Publication relevant [topics: $topicResults]: " . $publication->getDoi());
                 $this->publicationRepo->updateCheckResult($publication, $topicResults);
-                $this->createDownloadJob($doi);
+                try {
+                    DownloadPublication::downloadByDOI($doi);
+                } catch (Exception $e) {
+                    $this->logger->error($e->getMessage());
+                }
             } else {
                 $this->logger->log("Publication not relevant: " . $publication->getDoi());
                 $this->publicationRepo->updateCheckResult($publication, 'not relevant');
@@ -154,50 +163,4 @@ class CrossRefSearchJob extends Job
         return $results;
     }
 
-    public function createDownloadJob($doi): void
-    {
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $crossRefApi = new CrossRefApi();
-        $pdfDownloads = $crossRefApi->findPdfDownloads($doi);
-        if (count($pdfDownloads) > 0) {
-            $first = reset($pdfDownloads);
-            $downloader = new DownloadLinkFinder($first->URL);
-
-            $links = [];
-            try {
-                $links = $downloader->findDownloadLinks(['pdf']);
-            } catch(Exception $e) {
-                $this->logger->log("Cannot find download links: " . $e->getMessage());
-            }
-            if (empty($links)) {
-                $this->logger->log("no pdf links found for doi: $doi");
-                $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
-                    'url' => $first->URL,
-                    'doi' => $doi,
-                    'openExternally' => true
-                ]));
-
-            } else {
-                $first = reset($links);
-                $this->logger->log("downloading pdf from: " . $first['url']);
-                $content = file_get_contents($first['url']);
-                if (str_starts_with($content, '%PDF')) {
-                    PDFUtils::savePublicationPDF($doi, $content);
-                }
-            }
-
-        } else {
-            $this->logger->log("no pdf links found for doi: $doi");
-            $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
-            $links = $downloader->findDownloadLinks();
-            if (empty($links)) {
-                return;
-            }
-            $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
-                'url' => $links[0]['url'],
-                'doi' => $doi,
-            ]));
-
-        }
-    }
 }

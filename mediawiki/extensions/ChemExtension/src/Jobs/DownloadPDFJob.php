@@ -57,8 +57,12 @@ class DownloadPDFJob extends Job
             $this->logger->debug('PDF file found: ' . $tmpFile);
         } else if (is_dir($tmpFile)) {
             $firstFile = PdfUtils::getFirstFileInDirectory($tmpFile);
-            PdfUtils::isPdfFile($firstFile);
-            $this->logger->debug('PDF file found: ' . $firstFile);
+            if (!is_null($firstFile) && PdfUtils::isPdfFile($firstFile)) {
+                $this->logger->debug('PDF file found: ' . $firstFile);
+            } else {
+                $this->logger->debug('No PDF file found in directory: ' . $tmpFile);
+                @unlink($tmpFile);
+            }
         } else {
             $this->logger->debug('Not a PDF file: ' . $tmpFile . ". Deleted.");
             unlink($tmpFile);

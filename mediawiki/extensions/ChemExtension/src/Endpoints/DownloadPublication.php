@@ -23,28 +23,8 @@ class DownloadPublication extends SimpleHandler
             if (is_null($doi)) {
                 throw new Exception("'doi' parameter is missing", 400);
             }
-            $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-            $crossRefApi = new CrossRefApi();
-            $pdfDownloads = $crossRefApi->findPdfDownloads($doi);
-            if (count($pdfDownloads) > 0) {
-                $first = reset($pdfDownloads);
-                $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
-                    'url' => $first->URL,
-                    'doi' => $doi,
-                ]));
-                $res = new Response($first->URL);
-            } else {
-                $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
-                $links = $downloader->findDownloadLinks();
-                if (empty($links)) {
-                    throw new Exception("no download links found", 404);
-                }
-                $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
-                    'url' => $links[0]['url'],
-                    'doi' => $doi,
-                ]));
-                $res = new Response($links[0]['url']);
-            }
+            $url = self::downloadByDOI($doi);
+            $res = new Response($url);
             $res->setStatus(200);
             return $res;
 
@@ -70,6 +50,47 @@ class DownloadPublication extends SimpleHandler
                 ParamValidator::PARAM_REQUIRED => true,
             ]
         ];
+    }
+
+    /**
+     * @param mixed $doi
+     * @return string URL of the first PDF download
+     * @throws Exception
+     */
+    public static function downloadByDOI(mixed $doi): string
+    {
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $crossRefApi = new CrossRefApi();
+        $pdfDownloads = $crossRefApi->findPdfDownloads($doi);
+        if (count($pdfDownloads) > 0) {
+            $first = reset($pdfDownloads);
+            $downloader = new DownloadLinkFinder($first->URL);
+            try {
+                $links = $downloader->findDownloadLinks(['pdf']);
+                $url = $links[0]['url'];
+            } catch(Exception $e) {
+                $url = $first->URL;
+            }
+            $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
+                'url' => $url,
+                'doi' => $doi,
+                'openExternally' => true
+            ]));
+        } else {
+            $downloader = new DownloadLinkFinder('https://doi.org/' . $doi);
+            try {
+                $links = $downloader->findDownloadLinks(['pdf']);
+                $url = $links[0]['url'];
+            } catch(Exception $e) {
+                throw new Exception("No PDF download link found for DOI: " . $doi);
+            }
+            $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
+                'url' => $url,
+                'doi' => $doi,
+                'openExternally' => true
+            ]));
+        }
+        return $url;
     }
 
 }

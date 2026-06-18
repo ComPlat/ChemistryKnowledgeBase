@@ -18,7 +18,7 @@ class PdfUtils {
     static function isPdfFile(string $filePath): bool
     {
         if ($filePath === '') {
-            throw new \InvalidArgumentException('File path must not be empty.');
+            return false;
         }
 
         if (!is_file($filePath) || !is_readable($filePath)) {
