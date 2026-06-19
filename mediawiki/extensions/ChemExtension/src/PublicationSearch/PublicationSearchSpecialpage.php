@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use RequestContext;
 use SpecialPage;
 
@@ -231,6 +232,21 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $contents = $doiLink . $downloadButton;
             if (!self::isDOIKnown($doi)) {
                 $contents .= $importButton;
+            } else {
+                $title = Title::newFromText(WikiTools::cleanTitle($pub->getTitle()));
+                $publicationLink = Html::element(
+                    'a',
+                    [
+                        'href'   => $title->getFullURL(),
+                        'target' => '_blank',
+                        'rel'    => 'noopener noreferrer',
+
+                    ],
+                    "[Open publication page]"
+                );
+                if ($title->exists()) {
+                    $contents .= $publicationLink;
+                }
             }
             $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $contents);
         } else {
