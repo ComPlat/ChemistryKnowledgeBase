@@ -23,17 +23,3 @@ Remember:
 • Use **only** information explicitly stated in the article.  
 • Never invent, estimate, or reinterpret data.  
 • Do not add headings, sections, or commentary other than those specified.
-
-[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading with substantive content (≥20 words)]
-== Abstract Summary ==
-== Advances and Special Progress ==
-== Additional Remarks ==
-== Content of the Published Article in Detail ==
-== Catalyst ==
-== Photosensitizer ==
-== Investigation ==
-The Investigation section must contain ONE fenced ```csv block with the header below as its first row.
-
-[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
-catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
-One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
