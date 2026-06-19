@@ -1,0 +1,76 @@
+You are given a primary chemistry research source (journal PDF, HTML, Supporting Information, figures or embedded images).
+
+Your single task is to TRANSCRIBE every photocatalytic experiment exactly as printed by the authors and to output them in the FIXED MediaWiki template below.  
+Never guess, average, round, back-calculate or otherwise modify a value that is not written explicitly in the paper.
+
+=====================================================================
+GLOBAL “DO OR DIE” RULES  
+1. Emit ALL seven top-level wiki headings shown below in the IDENTICAL order, spelling and capitalisation.  
+   • Each heading paragraph MUST contain at least 20 meaningful words that paraphrase or contextualise the article.  
+2. Under the final heading (Investigation) emit ONE fenced code block with the language tag csv.  
+   • Row 0 is the FIXED header supplied below – do not edit column names, do not reorder, do not add or delete.  
+   • Give ONE row for EVERY unique set of experimental conditions (different catalyst, light, solvent ratio, additive amount, time, temperature, isotope, etc.).  
+   • Leave a cell blank only if the paper truly states nothing for that field after you have searched the ENTIRE text, all tables, figures, footnotes and SI.  
+3. Copy strings verbatim EXCEPT when the normalisation rules in §4 say to transform a unit or format.  
+4. NORMALISATION RULES – apply consistently:  
+   4.1 Concentrations → millimolar (mM) numbers only.  
+       • µM ÷1 000; mM keep; M ×1 000. Report pure numbers, no “mM”.  
+       • mol %, wt %, equiv – convert only if an explicit absolute amount enables an unambiguous mM value; otherwise leave cat conc / PS conc / additives conc blank.  
+   4.2 Irradiation time → hours (h) numbers only. 30 min → 0.5; 90 s → 0.025; 3 d → 72.  
+   4.3 Temperature → numeric value in °C (omit the unit symbol).  
+   4.4 λexc → “number space nm” exactly; keep lamp description only if printed on the same line (e.g. “450 nm LED”).  
+   4.5 Light intensity → reproduce the FULL author string including units (e.g. “100 mW cm^-2”, “1 Sun, 100 mW cm^-2”).  
+       • If one global intensity applies to all experiments, WRITE IT INTO EVERY ROW – this field has suffered recall loss.  
+   4.6 Solvent ratios → copy exactly (“4:1”, “95/5 v/v”, “10:90”). Put solvents themselves in solvent A/B/C.  
+   4.7 TON vs TOF → do NOT confuse them.  
+       • TON (unit-less cumulative) → Turnover_number columns.  
+       • TOF (per time, usually “h^-1” or “s^-1”) → Turnover_frequency columns; copy only the number, strip “h^-1”/“s^-1”.  
+   4.8 Quantum yields → copy numeric part; KEEP “%” if printed. Populate Quantum_yield__CO or Quantum_yield__HCOOH as appropriate.  
+   4.9 Feedstock gas → chemical formula(s) only (“CO2”, “CO2/Ar”, “CO2/N2”). Purity, flow rate or “atmosphere” text is NOT allowed here.  
+   4.10 Additives vs additives conc – split them rigorously:  
+        • “TEOA (0.1 M)” → additives = “TEOA”, additives conc = “100”.  
+        • Atmosphere statements (“Argon atmosphere”, “CO2/Ar (10:90) atmosphere”) belong in additives; the numeric part belongs in additives conc (“10:90”).  
+   4.11 H-D and H-D conc – record all isotopic labelling information.  
+        • Example: “D2O/H2O 9:1” → H-D = “D2O/H2O”, H-D conc = “9:1”.  
+   4.12 Scientific notation – convert “3.2 × 10^3” → “3.2e3” (no spaces).  
+5. ONE row per experimental variant – even tiny changes (extra base, second lamp, isotope substitution, different run time) trigger a new row.  
+6. NEVER rename, drop or shuffle columns.  
+7. Before finishing, scan for systematically overlooked data:  
+   • cat conc, PS conc, e-D conc frequently hide in general procedures or footnotes – capture them.  
+   • light intensity often appears only once in Experimental Section – duplicate it into every row.  
+   • TOF values lurk in figure captions – ensure they populate the Turnover_frequency fields, not Turnover_number.  
+   • Quantum yields may be exclusive to the Supporting Information – record them INCLUDING the “%” if present.  
+   • H-D and H-D conc show up in isotope-effect studies – do not miss them.  
+8. If the article is ambiguous after exhaustive search, leave the cell blank rather than inventing a value.  
+9. Maintain identical CSV formatting across all rows so parsers never fail.
+
+=====================================================================
+FIXED OUTPUT TEMPLATE – COPY VERBATIM AND THEN FILL WITH DATA
+== Abstract Summary ==
+(≥20 words that concisely rephrase the authors’ abstract and highlight the photochemical context.)
+
+== Advances and Special Progress ==
+(≥20 words that outline what the paper adds compared with previous literature, stressing methodological or efficiency gains.)
+
+== Additional Remarks ==
+(≥20 words for disclaimers, surprising observations, reproducibility notes or anything worth flagging for future users of the dataset.)
+
+== Content of the Published Article in Detail ==
+(≥20 words describing figures, tables, experimental set-up, control experiments and where key numeric data were located.)
+
+== Catalyst ==
+(≥20 words summarising the molecular or heterogeneous catalysts studied, their synthesis or source, and any relevant characterisation.)
+
+== Photosensitizer ==
+(≥20 words detailing the photosensitizers, chromophores or semiconductor absorbers used, including spectral or electrochemical information if provided.)
+
+== Investigation ==
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+(row 1 – experiment 1)
+(row 2 – experiment 2)
+…
+```
+=====================================================================
+
+Remember: the evaluation rewards the TOTAL number of correctly filled cells. Capture every stated datum, particularly the weak-recall fields (TOF, intensity, additives conc, H-D conc, quantum yields, solvent-ratio).
