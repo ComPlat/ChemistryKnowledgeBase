@@ -1,0 +1,86 @@
+You are given a chemistry research article (PDF, HTML, SI or embedded images).
+
+Your single objective is to TRANSCRIBE every photocatalytic experiment EXACTLY as printed by the authors and to format it in the fixed MediaWiki template shown below.  
+Never invent, average, round, infer or otherwise manipulate any value that is not unambiguously stated in the paper.
+
+=====================================================================
+GLOBAL RULES – READ CAREFULLY, THEY ARE STRICT
+1. Emit the seven top-level wiki headings shown below in the IDENTICAL order, spelling and capitalisation.  
+   • Every heading MUST contain ≥20 meaningful words: paraphrase aims, context, implications, limitations, etc. – no lorem ipsum or copy-paste.  
+2. Under the final heading (Investigation) output ONE fenced code block whose language tag is csv.  
+   • Row 0 of that block is the FIXED header given below (exact column names, exact order, plain commas).  
+   • Give ONE row per independent experiment / condition set (any change in catalyst, sensitiser, solvent mixture, additive, light source, time, temperature, etc.).  
+   • Leave a cell blank ONLY if the paper truly provides no value after you have searched the full text, figures, tables and SI.  
+3. Copy strings verbatim EXCEPT for the standardised transformations in ¶4.  
+4. Unit & Formatting Rules – apply every time and in every row:  
+   4.1 Concentrations – always report in millimolar (mM).  
+       • µM → divide by 1 000 (e.g. 25 µM → 0.025).  
+       • mM → keep the numeric part (e.g. 5 mM → 5).  
+       • “×10⁻³ M” → multiply by 1 000 (0.30 × 10⁻³ M → 0.30).  
+       • mol %, wt %, equiv – convert only when the absolute amount needed for an unambiguous mM value is also printed; otherwise put the numeric value in additives conc exactly as written and keep the unit.  
+   4.2 Irradiation time – convert to hours (h).  
+       • 30 min → 0.5  90 s → 0.025  12 h → 12.  
+   4.3 Temperature – numeric value only, in °C (25 °C → 25).  
+   4.4 Wavelength λexc – “numeric space nm” exactly; include lamp type ONLY if inside the same author string (“450 nm LED”).  
+   4.5 Light intensity – reproduce the full author string including units and descriptors (“1 Sun, 100 mW cm^-2”, “100 mW cm^-2”, “12 mW cm^-2 at 365 nm”).  
+       • If one global intensity applies to every experiment, repeat that identical string in EVERY row.  
+   4.6 Ratios – keep precisely as printed: “4:1”, “95/5 v/v”, “10:90”.  
+   4.7 Turnover numbers vs frequencies:  
+       • TON (Turnover_number__*) = cumulative, unit-less; TOF (Turnover_frequency__*) = “per hour” or “per second”.  
+       • Copy ONLY the numeric part; delete “h^-1” or “s^-1” text, do NOT standardise to per-second.  
+       • Typical clues: “TOF = 28 h^-1” belongs in Turnover_frequency__CO (not TON).  
+   4.8 Quantum yields – copy the numeric part and KEEP the “%” sign if printed.  
+   4.9 Feedstock gas – list only the chemical formula or mixture (“CO2”, “CO2/Ar”). Flow rates belong nowhere.  
+  4.10 Additives vs additives conc – always split name and quantity.  
+       • “TEOA (0.1 M)” → additives = “TEOA” additives conc = “100”.  
+       • Pure-gas or inert atmospheres ARE additives (“Argon atmosphere”, “CO2/Ar (10:90) atmosphere”).  
+  4.11 H-D and H-D conc – capture isotopic composition explicitly.  
+       • H-D = “D2O/H2O” H-D conc = “9:1” or “90 % D2O” if stated.  
+  4.12 Scientific notation – “3.2 × 10^3” → “3.2e3” (no spaces).  
+5. NEVER mix several experiments into one row. The SMALLEST difference triggers a new row.  
+6. Preserve the exact column order; NEVER insert, delete or rename columns.  
+7. If the article is ambiguous leave the cell blank – do NOT guess – but scour captions, footnotes and SI first.  
+8. Maintain identical formatting across all rows so that a strict CSV parser will never break.
+
+=====================================================================
+FIELD-SPECIFIC REMINDERS FOR NOTORIOUSLY MISSED DATA
+• Turnover_frequency__CO and __H2 – search for “TOF” (table footnotes, SI Section, figure captions). Copy the numeric part into the correct frequency column.  
+• Turnover_number__H2, __CH4, __HCOOH – often hidden in discussion text or SI cumulative plots; the y-axis maximum is usually the TON.  
+• Light intensity – sometimes stated once in “Photolysis set-up” paragraphs. If found only there, replicate for all rows.  
+• cat conc, PS conc, e-D conc – look in experimental procedures immediately after “catalyst (x µmol)”. Convert to mM by dividing by total volume.  
+• additives conc – numbers that follow additives in parentheses (M, mM, %, equiv, or “atm”) always go here, NEVER leave them blank if printed.  
+• H-D and H-D conc – isotope labelling tables often give a D2O/H2O ratio once: duplicate that ratio into every relevant row.  
+• solvent-ratio – record explicit ratio strings ONLY; keep solvent names separately in solvent A/B/C.  
+• λexc – capture even if only shown in a scheme (“λ = 450 nm”).  
+• irr time – if a time course plot ends at 10 h, that is usually the irradiation time; copy 10.
+
+=====================================================================
+FIXED OUTPUT SKELETON – COPY VERBATIM AND THEN FILL
+== Abstract Summary ==
+(≥20 words)
+
+== Advances and Special Progress ==
+(≥20 words)
+
+== Additional Remarks ==
+(≥20 words)
+
+== Content of the Published Article in Detail ==
+(≥20 words)
+
+== Catalyst ==
+(≥20 words)
+
+== Photosensitizer ==
+(≥20 words)
+
+== Investigation ==
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+(row 1 – experiment 1)
+(row 2 – experiment 2)
+…
+```
+=====================================================================
+
+Your goal is to populate MORE correct cells per experiment without fabricating anything. Meticulous transcription with the above normalisation rules is the ONLY path to a high score.
