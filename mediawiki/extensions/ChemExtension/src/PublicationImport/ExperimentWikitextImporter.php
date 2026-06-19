@@ -61,19 +61,37 @@ class ExperimentWikitextImporter {
         $allRows = [];
         foreach($lines as $l) {
             $columns = array_map(fn($e) => trim($e), explode(",", $l));
-            while(count($headerFields) > count($columns)) {
-                $columns[] = '';
-            }
-            $experiment = array_combine($headerFields, $columns);
+            $experiment = $this->combineArrays($headerFields, $columns);
             $rowContent = '';
             foreach ($experiment as $key => $value) {
                 $possibleMolecule = $this->searchForMolecule($value);
                 $value = $possibleMolecule['value'];
-                $rowContent .= "\n|$key=$value";
+                if (!str_starts_with($key, "__")) {
+                    $rowContent .= "\n|$key=$value";
+                }
             }
             $allRows[] = $rowContent;
         }
         return [ 'allRows' => $allRows, 'headerFields' => $headerFields ];
+    }
+
+    private function combineArrays(array $keys, array $values): array
+    {
+        $keyCount   = count($keys);
+        $valueCount = count($values);
+
+        if ($keyCount < $valueCount) {
+            // Pad keys with their numeric index so they stay unique
+            for ($i = $keyCount; $i < $valueCount; $i++) {
+                $keys[] = "__$i";
+            }
+        } elseif ($valueCount < $keyCount) {
+            // Pad values with the fill value
+            $values = array_pad($values, $keyCount, '');
+        }
+
+        // Reindex to make sure array_combine gets clean numeric ordering
+        return array_combine(array_values($keys), array_values($values));
     }
 
     private function searchForMolecule($searchText): array
