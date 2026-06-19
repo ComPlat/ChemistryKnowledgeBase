@@ -58,9 +58,7 @@ class PublicationImportJob extends Job
         }, $this->topics));
 
 
-        global $wgOpenAIPromptPages;
-        $promptPage = $wgOpenAIPromptPages['publicationImport'] ?? 'Publication import prompt';
-        $promptTitle = Title::newFromText($promptPage, NS_MEDIAWIKI);
+        $promptTitle = $this->findSuitablePrompt();
         if (!$promptTitle->exists()) {
             // fallback
             $prompt = "Can you tell me what the document is about?";
@@ -101,6 +99,24 @@ WIKITEXT;
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
         $aiClient->deleteFiles($fileIds);
+    }
+
+    private function findSuitablePrompt(): Title
+    {
+        global $wgOpenAIPromptPages;
+        $promptPage = $wgOpenAIPromptPages['publicationImport'] ?? 'Publication import prompt';
+        $promptTitle = Title::newFromText($promptPage, NS_MEDIAWIKI);
+
+        // OR choose the first topic that has a prompt
+        foreach($this->topics as $topic) {
+            $title = Title::newFromText("Prompt import " . $topic, NS_MEDIAWIKI);
+            if ($title->exists()) {
+                $promptTitle = $title;
+                break;
+            }
+        }
+
+        return $promptTitle;
     }
 
 }
