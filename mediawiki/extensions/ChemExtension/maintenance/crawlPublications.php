@@ -77,11 +77,12 @@ class crawlPublications extends \Maintenance
     {
         foreach ($results as $result) {
             $publication = $this->publicationRepo->findByDoi($result->getDoi());
-            if (is_null($publication)) {
+            $publicationByTitle = $this->publicationRepo->findByTitle($result->getTitle());
+            if (is_null($publication) && is_null($publicationByTitle)) {
                 $this->publicationRepo->addPublication($result);
                 print "\nAdded publication: " . $result->getDoi();
             } else {
-                print "\nPublication already exists: " . $result->getDoi();
+                print "\nPublication already exists. DOI: [" . $result->getDoi() . "], title: [" . $result->getTitle() . "]";
             }
 
         }

@@ -106,6 +106,32 @@ class PublicationSearchRepository {
         );
     }
 
+    public function findByTitle(string $title): ?PublicationSearchResult
+    {
+        $res = $this->db->select(
+            'publications',
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
+            [ 'title' => $title ],
+            __METHOD__
+        );
+
+        if ( $res->numRows() === 0 ) {
+            return null;
+        }
+
+        $row = $res->fetchObject();
+
+        return new PublicationSearchResult(
+            $row->doi,
+            $row->title,
+            $row->abstract,
+            $row->published,
+            $row->check_result,
+            $row->approved,
+            $row->created
+        );
+    }
+
     public function getUnclassifiedDois(): array {
         $res = $this->db->select(
             ['publications'],
