@@ -1,0 +1,88 @@
+You are given a chemistry research article (PDF, HTML, supplementary information or embedded images).
+
+Your single objective is to TRANSCRIBE the photocatalytic experiment data EXACTLY as printed by the authors and to format it in the fixed MediaWiki template shown below.  
+Never invent, average, round, infer or otherwise manipulate any value that is not unambiguously stated in the paper.
+
+=====================================================================
+GLOBAL RULES – READ CAREFULLY, THEY ARE STRICT
+1. Emit the seven top-level wiki headings shown below in the IDENTICAL order, spelling and capitalisation.  
+   • Every heading MUST contain ≥20 meaningful words (explain, paraphrase, expand – but no meaningless filler).  
+2. Under the final heading (Investigation) output ONE fenced code block whose language tag is csv.  
+   • Row 0 of that block is the FIXED header given below (exact column names, exact order, plain commas).  
+   • Give ONE row per independent experiment / condition set (catalyst, light source, solvent change, additive, time, etc.).  
+   • Leave a cell blank ONLY if the paper truly provides no value.  
+3. Copy strings verbatim EXCEPT for the standardised transformations in ¶4.  
+4. Unit & Formatting Rules – apply systematically and consistently:  
+   4.1 Concentrations – always report in millimolar (mM).  
+       • µM → divide by 1 000 (e.g. 25 µM → 0.025).  
+       • “×10⁻³ M” → multiply by 1 000 (0.3 ×10⁻³ M → 0.3).  
+       • mol %, wt %, equiv – convert only when the paper ALSO gives the absolute amount that allows an unambiguous mM value; otherwise leave blank.  
+       • Record NUMBERS ONLY (no unit symbols).  
+   4.2 Irradiation time – always in hours (h).  
+       • 30 min → 0.5 ; 90 s → 0.025.  
+   4.3 Temperature – numeric value only, in °C.  
+   4.4 Wavelength λexc – “numeric space nm” exactly; include lamp description only if printed inside the same string (e.g. “450 nm LED”).  
+   4.5 Light intensity – reproduce the full author string including units (e.g. “100 mW cm^-2”, “1 Sun, 100 mW cm^-2”).  
+       • If one global intensity applies to all experiments, copy that value into EVERY row.  
+   4.6 Ratios – keep exactly as printed: “4:1”, “95/5 v/v”, “10:90”.  
+   4.7 Turnover numbers (TON) vs frequencies (TOF):  
+       • TON = total molecules produced / catalyst molecules (unit-less cumulative figure).  
+       • TOF = TON per unit time – usually “h^-1” or “s^-1”.  
+       • Strip any “h^-1” or “s^-1” text and copy only the numeric part.  
+       • DO NOT convert TOF to per-second and DO NOT confuse TOF with TON.  
+   4.8 Quantum yields – copy the numeric part.  
+       • If the symbol “%” appears, KEEP the percent sign ( “12 %” → “12 %”).  
+       • If no “%” symbol, record just the number (“0.47”).  
+   4.9 Feedstock gas – chemical formula(s) only, remove purity qualifiers (“CO2”, “CO2/Ar”).  
+  4.10 Additives (name) vs additives conc (quantity) – split them:  
+       • “TEOA (0.1 M)” → additives = “TEOA”; additives conc = “100”.  
+   4.11 H-D and H-D conc – for isotopic labelling studies.  
+       • H-D = text string that states which isotope mixture was used (“D2O/H2O”).  
+       • H-D conc = numeric proportion or percentage if given (“9:1”, “90 %”).  
+   4.12 Scientific notation – convert “3.2 × 10^3” to “3.2e3” (no spaces).  
+5. NEVER mix several experiments into one row. The smallest difference (catalyst batch, light colour, additive amount, temperature, etc.) requires a new row.  
+6. Preserve the exact column order; NEVER insert, delete or rename columns.  
+7. If the article is ambiguous, leave the cell blank rather than guessing, but actively search in figures, footnotes, captions, Tables, SI and Methods before giving up.  
+8. Use identical formatting across all rows so that downstream CSV parsers do not fail.
+
+=====================================================================
+FIELD-SPECIFIC HINTS WHERE RECALL HAS BEEN LOW
+• cat conc, PS conc, e-D conc – often hidden in tiny footnotes of catalytic tables, or in the “General Photocatalytic Procedure”. Convert µM → mM precisely (e.g. 500 µM → 0.5).  
+• TOF values – typically labelled “h^-1” in figure captions or Supplementary Tables; make sure they populate Turnover_frequency columns, NOT Turnover_number.  
+• Light intensity – sometimes described once in Experimental Section; replicate that value for every row that uses the same light source.  
+• Quantum yields – may appear only in the Supporting Information; record them including % sign if present.  
+• H-D and H-D conc – for experiments in D2O / H2O mixtures; list the mixture and numeric ratio if supplied.  
+• Additives – strip atmosphere or percentages from the additives column; move the numeric part to additives conc.  
+• solvent-ratio – capture explicit ratios (“MeCN/H2O 4:1”). Record just the ratio string in the solvent-ratio column and keep the solvent names in solvent A / B / C.  
+• feedstock gas – virtually always “CO2”, “CO2/Ar”, “CO2/N2” etc. Do not add flow rates here (those go nowhere).
+
+=====================================================================
+FIXED OUTPUT SKELETON – COPY VERBATIM AND THEN FILL
+== Abstract Summary ==
+(≥20 words)
+
+== Advances and Special Progress ==
+(≥20 words)
+
+== Additional Remarks ==
+(≥20 words)
+
+== Content of the Published Article in Detail ==
+(≥20 words)
+
+== Catalyst ==
+(≥20 words)
+
+== Photosensitizer ==
+(≥20 words)
+
+== Investigation ==
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+(row 1 – experiment 1)
+(row 2 – experiment 2)
+…
+```
+=====================================================================
+
+Always aim to fill MORE correct cells per row; completeness without fabrication is the key metric.
