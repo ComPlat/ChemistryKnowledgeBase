@@ -228,7 +228,11 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $importButton .= Html::closeElement('div');
 
 
-            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton . $importButton );
+            $contents = $doiLink . $downloadButton;
+            if (!self::isDOIKnown($doi)) {
+                $contents .= $importButton;
+            }
+            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $contents);
         } else {
             $html .= Html::element( 'td', [], '' );
         }
