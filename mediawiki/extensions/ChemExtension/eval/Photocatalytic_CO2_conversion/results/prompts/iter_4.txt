@@ -1,0 +1,83 @@
+You are given a chemistry research article (PDF or image set).
+
+Your task is to transcribe, standardise and organise every explicitly reported photocatalytic experiment into a MediaWiki-formatted report that uses the EXACT structure below.  Do NOT omit, rename or reorder any section; each must contain at least twenty informative words that you derive from the paper.
+
+= Abstract Summary  
+= Advances and Special Progress  
+= Additional Remarks  
+= Content of the Published Article in Detail  
+= Catalyst  
+= Photosensitizer  
+= Investigation  
+
+Universal rules  
+1. Copy only values that appear unambiguously in the article. Never invent, average, round-off, back-calculate or infer.  
+2. Create exactly one CSV row per independent experiment (change of any reagent, light, time, atmosphere, etc.).  
+3. Do not merge rows and do not split a single run into multiple rows.  
+4. Inside the CSV block write plain values only—no units, no “≈”, no text other than the value itself (except for gas or solvent formulae).  
+5. Numeric fields: write decimal numbers in standard form (e.g. 0.025, 1.7e-3). Do not use commas as thousands separators.  
+6. Leave a cell blank only when the article truly gives no information for that field.
+
+Field-specific guidance (strictly follow; it fixes the current recall problems)
+
+cat conc / PS conc / e-D conc / additives conc  
+• First convert any concentration into millimolar (mM).  
+• 1 µM = 0.001 mM, 1 mM = 1 mM, 1 M = 1000 mM.  
+• Write the numeric mM value only (e.g. “0.025” not “25 µM”).  
+
+solvent-ratio  
+• Record exactly the ratio string printed in the paper (e.g. “4:1” or “95/5”).  
+• Do not include solvent names here.
+
+feedstock gas  
+• Give only the gas name(s) and stoichiometry, no percentages or words like “100 %”.  
+  Examples: “CO2”, “CO2/Ar (10:90)”, “CO2/H2 (1:1)”.
+
+Temperature  
+• Convert to °C if needed and record the numeric value only.
+
+λexc  
+• Provide the excitation wavelength with unit “nm” and, if present, lamp description in parentheses exactly as printed, e.g. “450 nm (LED, 100 mW cm-2)”.
+
+irr time  
+• Always record irradiation time in hours (h). Convert minutes (÷60) or seconds (÷3600) when necessary.
+
+Turnover_number__*  (TON)  
+• Copy TON values exactly as printed. Ensure you choose TON, not TOF or yield.
+
+Turnover_frequency__*  (TOF)  
+• Copy the numeric TOF explicitly labelled in the paper (typically h-1). Never divide TON by time yourself.
+
+Quantum_yield__*  
+• Record the numeric quantum yield (%) without the “%” sign.
+
+intensity  
+• Capture light intensity / power density when reported (e.g. “100” for 100 mW cm-2). Convert W cm-2 → mW cm-2 (×1000).
+
+H-D / H-D conc  
+• If isotopic labelling (H2/D2 mixtures) is used, record the mixture string in H-D and the numeric concentration (mM) in H-D conc.
+
+solvent A / solvent B / solvent C  
+• List up to three solvents exactly as named in the article; leave fields blank if fewer than three are used.
+
+additives  
+• Record any additional reagents, buffers, sacrificial agents, bases, ion pairs, gasses etc. not already captured above.
+
+Important formatting reminder  
+The Investigation section must contain one fenced ```csv block whose first row is the exact header below, including spaces, commas and order. No additional columns, no missing columns.
+
+```csv
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
+```
+
+Deliverables – emit ALL of the following wiki headings (≥20 words each) in this order, followed by the single CSV block inside Investigation:
+
+== Abstract Summary ==  
+== Advances and Special Progress ==  
+== Additional Remarks ==  
+== Content of the Published Article in Detail ==  
+== Catalyst ==  
+== Photosensitizer ==  
+== Investigation ==  
+
+Adhere to these rules to maximise field coverage and correctness.
