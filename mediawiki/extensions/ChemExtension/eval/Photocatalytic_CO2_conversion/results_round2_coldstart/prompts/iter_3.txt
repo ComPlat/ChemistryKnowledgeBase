@@ -1,0 +1,83 @@
+You are given a chemistry research article (PDF or images).  
+Your task is to mine every explicitly reported photocatalytic experiment and produce a MediaWiki-formatted report whose structure is *fixed* and *cannot be altered*.  
+Never guess, average, or combine data: **copy only what the authors state**.  
+When a value is truly absent, leave the corresponding cell empty.
+
+====================================================================
+MANDATORY WIKI SECTIONS (emit them *all*, in this exact order; ≥ 20 words each)  
+= Abstract Summary  
+= Advances and Special Progress  
+= Additional Remarks  
+= Content of the Published Article in Detail  
+= Catalyst  
+= Photosensitizer  
+= Investigation  
+====================================================================
+
+INVESTIGATION SECTION – CSV DATASET  
+Inside the “Investigation” section output one fenced code block that starts with ```csv and ends with ``` .  
+The first row *must* be the header shown below (exact spelling and order).  
+Provide **one row per distinct experiment** (no grouping, no merging).
+
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+```
+
+====================================================================
+FIELD-BY-FIELD EXTRACTION GUIDELINES  
+(These rules directly address the most common errors.)
+
+1. Concentrations (cat conc, PS conc, e-D conc, additives conc, H-D conc)  
+   • Report in millimolar (mM).  
+   • Convert units when needed:  
+     – µM → divide by 1000 (e.g. 25 µM → 0.025 mM)  
+     – nM → divide by 1 000 000  
+   • Give the numeric value only, no unit.
+
+2. Solvents and solvent-ratio  
+   • List each solvent exactly as printed (e.g. “CH3CN”, “DMF”).  
+   • Put the composition in solvent-ratio using “A:B” or “A:B:C” form (numbers only).
+
+3. Feedstock gas  
+   • Record only the gas species (and mixture if stated).  
+   • Omit percentages, flow rates, and pressures.  
+     Example: “100 % CO2 (1 atm)” → “CO2” ; “CO2/Ar 10:90” → “CO2/Ar (10:90)”.
+
+4. Temperature  
+   • Numeric °C value only (no unit symbol).
+
+5. λexc  
+   • Keep wavelength in nm plus any light-source descriptor exactly as written, e.g.  
+     “450 nm (LED, 100 mW cm-2)”.
+
+6. irr time  
+   • Express in hours (h).  
+   • Convert minutes: 10 min → 0.167 ; seconds: 30 s → 0.0083.
+
+7. Light intensity  
+   • Copy the numeric value *and* its unit as given (e.g. “100 mW cm-2”, “1 W”).
+
+8. Turnover number (TON) fields  
+   • Record the numeric value only, no unit.
+
+9. Turnover frequency (TOF) fields  
+   • Report in h⁻¹.  
+   • If the paper gives s⁻¹, multiply by 3600 (e.g. 0.47 s⁻¹ → 1692 h⁻¹).
+
+10. Quantum yield fields  
+    • Give the numeric percentage without the “%” sign (e.g. “2.3” not “2.3 %”).
+
+11. H-D column  
+    • Copy the label the authors use for isotopic experiments (e.g. “D2O”, “H2O”).  
+      If no isotopic substitution is involved, leave blank.
+
+12. Order of precedence when multiple values are reported for the *same* experiment:  
+    • Prefer the main text over SI; if both list the same experiment, use the main text values.
+
+====================================================================
+GENERAL RULES  
+• Every wiki section must contain at least two full sentences (≥ 20 words).  
+• Do *not* add, delete, or rename headings, columns, or the code-block fences.  
+• Do *not* insert commentary outside the specified sections.  
+• Leave a CSV cell empty only when the paper genuinely omits that datum.  
+• Preserve spelling, capitalization, and Greek letters exactly as in the article (e.g. “fac-Re(bpy)(CO)3Cl”).

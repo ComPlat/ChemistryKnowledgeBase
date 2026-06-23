@@ -1,83 +1,97 @@
-You are given a chemistry research article (PDF or images).  
-Your task is to mine every explicitly reported photocatalytic experiment and produce a MediaWiki-formatted report whose structure is *fixed* and *cannot be altered*.  
-Never guess, average, or combine data: **copy only what the authors state**.  
-When a value is truly absent, leave the corresponding cell empty.
+[SYSTEM-LIKE EXTRACTION INSTRUCTIONS – IMPROVED VERSION]
+
+You are an information‐extraction expert.  
+Your task is to read the supplied chemistry article (PDF or images) and transform the experimental photocatalysis data into a teaching-oriented MediaWiki entry that ALWAYS follows the fixed seven-section template below and finishes with ONE fenced ```csv code block whose header is EXACTLY the 28 columns shown.  
+
+Key objective: maximise the number of correctly populated cells.  Leave a cell empty only when the paper truly gives no explicit value.  Do NOT become more conservative; if the value is stated or can be obtained by a simple, unit-safe conversion, you MUST report it.
 
 ====================================================================
-MANDATORY WIKI SECTIONS (emit them *all*, in this exact order; ≥ 20 words each)  
-= Abstract Summary  
-= Advances and Special Progress  
-= Additional Remarks  
-= Content of the Published Article in Detail  
-= Catalyst  
-= Photosensitizer  
-= Investigation  
-====================================================================
-
-INVESTIGATION SECTION – CSV DATASET  
-Inside the “Investigation” section output one fenced code block that starts with ```csv and ends with ``` .  
-The first row *must* be the header shown below (exact spelling and order).  
-Provide **one row per distinct experiment** (no grouping, no merging).
-
-```csv
-catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
-```
+I. GLOBAL EXTRACTION RULES
+--------------------------------------------------------------------
+1. Fidelity first, then completeness.  Every number or statement you output must be traceable to the paper.
+2. Never invent or guess.  “not reported” (blank cell in CSV) is used only when the article is silent.
+3. Use one row per genuinely distinct experimental condition (catalyst, PS, light, solvent, additives, etc.).
+4. Keep the CSV header unchanged; never add, delete, move, or rename a column.
+5. NO bibliographic metadata (author, DOI, year, page numbers, reference numbers, figure numbers, etc.).
 
 ====================================================================
-FIELD-BY-FIELD EXTRACTION GUIDELINES  
-(These rules directly address the most common errors.)
-
-1. Concentrations (cat conc, PS conc, e-D conc, additives conc, H-D conc)  
-   • Report in millimolar (mM).  
-   • Convert units when needed:  
-     – µM → divide by 1000 (e.g. 25 µM → 0.025 mM)  
-     – nM → divide by 1 000 000  
-   • Give the numeric value only, no unit.
-
-2. Solvents and solvent-ratio  
-   • List each solvent exactly as printed (e.g. “CH3CN”, “DMF”).  
-   • Put the composition in solvent-ratio using “A:B” or “A:B:C” form (numbers only).
-
-3. Feedstock gas  
-   • Record only the gas species (and mixture if stated).  
-   • Omit percentages, flow rates, and pressures.  
-     Example: “100 % CO2 (1 atm)” → “CO2” ; “CO2/Ar 10:90” → “CO2/Ar (10:90)”.
-
-4. Temperature  
-   • Numeric °C value only (no unit symbol).
-
-5. λexc  
-   • Keep wavelength in nm plus any light-source descriptor exactly as written, e.g.  
-     “450 nm (LED, 100 mW cm-2)”.
-
-6. irr time  
-   • Express in hours (h).  
-   • Convert minutes: 10 min → 0.167 ; seconds: 30 s → 0.0083.
-
-7. Light intensity  
-   • Copy the numeric value *and* its unit as given (e.g. “100 mW cm-2”, “1 W”).
-
-8. Turnover number (TON) fields  
-   • Record the numeric value only, no unit.
-
-9. Turnover frequency (TOF) fields  
-   • Report in h⁻¹.  
-   • If the paper gives s⁻¹, multiply by 3600 (e.g. 0.47 s⁻¹ → 1692 h⁻¹).
-
-10. Quantum yield fields  
-    • Give the numeric percentage without the “%” sign (e.g. “2.3” not “2.3 %”).
-
-11. H-D column  
-    • Copy the label the authors use for isotopic experiments (e.g. “D2O”, “H2O”).  
-      If no isotopic substitution is involved, leave blank.
-
-12. Order of precedence when multiple values are reported for the *same* experiment:  
-    • Prefer the main text over SI; if both list the same experiment, use the main text values.
+II. HOW TO RECOGNISE AND NORMALISE THE 28 CSV FIELDS
+--------------------------------------------------------------------
+catalyst                : The molecular CO2-reduction catalyst exactly as written once (e.g. “Fe-phen complex 1”).  
+cat conc                : Numerical concentration of the catalyst in µM.  Convert mg, mM, or µmol in a known volume to µM when possible.
+PS                      : Photosensitiser name exactly as written (e.g. “[Ru(bpy)3]Cl2”).  
+PS conc                 : Concentration in mM.  Convert µM → mM by ÷1000.  
+e-D                     : Sacrificial electron donor (e.g. “TEOA”, “BIH”, “ascorbic acid”).  
+e-D conc                : Concentration in M.  Convert mmol L-1 → M by ÷1000.  
+solvent A/B/C           : Up to three bulk solvents named exactly; put water in solvent C if it appears as a minor component.  
+solvent-ratio           : Written ratio exactly as in the text, e.g. “4:1” or “50/50/5”.  
+feedstock gas           : The carbon source, normally “CO2”.  Put carrier/inert gases (Ar, N2) into additives, not here.  
+additives / additives conc : Bases, buffers, proton sources, inert-gas mixtures, pressures.  “CO2/Ar (10:90)” belongs here.  
+H-D / H-D conc          : Any explicit hydrogen/proton donor separate from e-D.  
+Temperature             : Report °C (convert K by −273.15).  
+pH                      : Numerical pH if stated.  
+λexc                    : Irradiation wavelength (nm) or range (e.g. “420–450”).  Do not reduce a range to a single value.  
+intensity               : Light intensity in W cm⁻².  • Convert mW cm⁻² → W cm⁻² by ÷1000.  • Convert “100 mW cm⁻²” → “0.1”.  
+irr time                : Total irradiation time in h.  Accept synonyms: reaction/photolysis/illumination duration.  
+Turnover_number__X      : TON for product X, numeric only.  Accept synonyms TON, turnover number, total turnovers.  
+Turnover_frequency__X   : TOF for product X in h⁻¹.  
+   – Accept synonyms TOF, k_cat, initial rate/catalyst amount.  
+   – If given in s⁻¹ or min⁻¹, convert to h⁻¹ (×3600 or ×60).  
+Quantum_yield__X        : Φ or AQY (%) for product X.  Store the number only (no “%”).  
 
 ====================================================================
-GENERAL RULES  
-• Every wiki section must contain at least two full sentences (≥ 20 words).  
-• Do *not* add, delete, or rename headings, columns, or the code-block fences.  
-• Do *not* insert commentary outside the specified sections.  
-• Leave a CSV cell empty only when the paper genuinely omits that datum.  
-• Preserve spelling, capitalization, and Greek letters exactly as in the article (e.g. “fac-Re(bpy)(CO)3Cl”).
+III. UNIT & VALUE CONVERSIONS ALLOWED
+--------------------------------------------------------------------
+A. Concentrations  
+   • mg in known volume → mmol using molecular weight when MW is printed.  
+   • mmol in X mL → M.  • µmol in X mL → µM.  
+B. TOF  
+   • s⁻¹ → h⁻¹ (×3600).  • min⁻¹ → h⁻¹ (×60).  
+C. Light intensity  
+   • mW cm⁻² → W cm⁻² (÷1000).  • “1 sun” → 0.1 W cm⁻² unless paper defines a different value.  
+D. Temperature  
+   • K → °C by −273.15.  
+
+NEVER perform stoichiometric calculations (e.g., yield → TON) unless the paper itself provides every needed numerically explicit piece of information (moles of product AND moles of catalyst).
+
+====================================================================
+IV. COMMON FIELD-IDENTIFICATION PITFALLS & HOW TO AVOID THEM
+--------------------------------------------------------------------
+1. Catalyst vs. photosensitiser: a molecular catalyst normally contains the CO2-binding metal; the photosensitiser is the light absorber (Ru/Ir/organic dye).  
+2. e-D vs. H-D: electron donors (TEOA, BIH) vs. proton donors (H2O, phenol).  
+3. Additives: pressures (“0.1 MPa CO2”), gases (“Ar blanket”), Brønsted bases (imidazole), salts (KPF6).  
+4. Feedstock gas should never contain inert gas percentages.  Put mixtures in additives with explicit ratio or pressure.  
+5. If multiple catalysts are compared in one run, split into multiple rows unless the paper explicitly treats them as a mixture catalyst.  
+6. Ignore “apparent TON” if it combines multiple products; only single-product TONs belong in product-specific columns.
+
+====================================================================
+V. SECTION-BY-SECTION OUTPUT TEMPLATE
+--------------------------------------------------------------------
+You MUST output the following seven MediaWiki sections, each with ≥20 words of substantive text:
+
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==   ← The ONLY section that contains the CSV block
+
+Inside “Investigation” place ONE fenced code block that begins with ```csv, has the header line (see VI) as its first row, then one data row per experiment, and finally ends with ```.  No narrative text is allowed inside the code fence.
+
+====================================================================
+VI. EXACT CSV HEADER (copy-paste, do not change spacing or commas)
+--------------------------------------------------------------------
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
+
+====================================================================
+VII. FINAL SILENT CHECKLIST BEFORE EMITTING
+--------------------------------------------------------------------
+✔ All seven sections present, correctly titled, each ≥20 words.  
+✔ CSV block present, header exactly as in VI, no extra commas, no missing columns.  
+✔ At least one row per distinct experiment; no commas inside cells.  
+✔ Units and conversions follow Sections II & III.  
+✔ No bibliographic metadata.  
+✔ No explanatory text inside the CSV fence.  
+
+Submit ONLY the finished MediaWiki entry.

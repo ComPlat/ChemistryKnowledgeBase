@@ -1,0 +1,97 @@
+You are given a chemistry research article (PDF pages or images).  
+Your task is to transcribe every explicitly reported experimental datum into the fixed MediaWiki report below, WITHOUT inventing, averaging, or omitting any value that is present in the paper.  
+The structure, headings, and CSV header are immutable; never drop, rename, or collapse a section.  
+Populate every field that the article states; leave a cell blank only when the paper truly gives no information.  
+One experiment = one row.
+
+============================================================
+GLOBAL RULES – APPLIES TO ALL FIELDS  
+• Copy wording exactly when instructed; otherwise normalise units as specified below.  
+• Record only primary‐source numbers, not values inferred from plots or calculated by you.  
+• If several units are printed for the same datum, pick the one that matches the canonical unit below; otherwise convert and round to 3 significant figures.  
+• Use a period “.” as the decimal separator; never use commas for decimals.  
+• Do not add percentage symbols, text qualifiers, “≈”, “ca.”, or footnote markers inside the cells.  
+• Scientific notation is accepted (e.g. 1.23E-3).  
+• Temperatures, times, concentrations, and photon intensities often hide in figure captions, footnotes, ESI, or experimental sections—search thoroughly.
+
+============================================================
+CANONICAL UNITS / FIELD-SPECIFIC GUIDANCE  
+(The CSV header itself must remain unchanged; only the content follows these rules.)
+
+1. cat conc, PS conc, e-D conc, additives conc, H-D conc  
+   – Report in millimolar (mM).  
+   – Convert from µM (÷1000), M (×1000), mg in a known volume, or mol% when the initial total volume is given.  
+   – Write only the numeric value (e.g. 0.025) with no unit string.
+
+2. solvent A, solvent B, solvent C  
+   – Give the solvent name exactly as printed (MeCN, DMF, H2O, etc.).  
+   – Do not append ratios or additives here.
+
+3. solvent-ratio  
+   – Report the volumetric ratio between solvent A and solvent B as printed or converted to “X:Y” (no spaces).
+
+4. feedstock gas  
+   – Give ONLY the identity of the carbon source gas (e.g. CO2, CO, HCO3−).  
+   – Do not prepend “100%”, “pure”, or pressure information.
+
+5. Temperature  
+   – Numeric value in °C. Convert from K (°C = K – 273.15).
+
+6. λexc  
+   – Wavelength in nm (numeric) followed by any stated light-source descriptor in parentheses, e.g.  
+     450 nm (LED, 100 mW·cm−2)
+
+7. irr time  
+   – Duration of light irradiation in hours. Convert from seconds or minutes (3600 s = 1 h).
+
+8. Turnover_number__* (TON)  
+   – Dimensionless integer or decimal exactly as printed. No units.
+
+9. Turnover_frequency__* (TOF)  
+   – Numeric value per hour (h−1). If the article gives s−1 multiply by 3600.
+
+10. Quantum_yield__*  
+    – Numeric value (%) without the “%” sign.
+
+11. intensity  
+    – Report the incident photon or power density exactly as written with its units (e.g. 100 mW·cm−2, 8.3×10−5 Einstein·s−1).
+
+12. additives  
+    – List additional gases, sacrificial reagents, buffers, pressure values, or special atmospheres exactly as printed except for concentration (which goes to additives conc).
+
+13. H-D  
+    – Name the hydrogen donor (e.g. TEA, TEOA, BIH) exactly.
+
+============================================================
+OUTPUT SKELETON – DO NOT ALTER HEADINGS  
+Every section must contain at least 20 meaningful words that summarise or contextualise the data you extracted.
+
+== Abstract Summary ==
+(≥20 words)
+
+== Advances and Special Progress ==
+(≥20 words)
+
+== Additional Remarks ==
+(≥20 words)
+
+== Content of the Published Article in Detail ==
+(≥20 words)
+
+== Catalyst ==
+(≥20 words)
+
+== Photosensitizer ==
+(≥20 words)
+
+== Investigation ==
+The Investigation section must contain ONE fenced code block with the CSV data.
+
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+```
+(Insert one line per distinct experiment, preserving the column order above.)
+
+Remember:  
+– Fill MORE correct cells by hunting through tables, figures, and supplementary information.  
+– Convert and normalise according to the guidance above, but never fabricate data.

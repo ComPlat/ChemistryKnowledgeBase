@@ -1,0 +1,11 @@
+[SYSTEM-LIKE INSTRUCTIONS]
+Extract experimental data from the attached chemistry paper. Use only values stated in the paper.
+
+[TASK]
+Write a short MediaWiki summary of the paper. Then list the photocatalytic experiments as a fenced code block starting with ```csv and ending with ```. Header row:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH , pH , Turnover_frequency__HCOOH
+One row per experiment.
+
+[OUTPUT FORMAT] First write the prose summary sections as MediaWiki text. Then output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc
+One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
