@@ -1,0 +1,646 @@
+{
+  "iteration": 1,
+  "aggregate": {
+    "f1": 0.5410711210607887,
+    "precision": 0.4492422076065199,
+    "recall": 0.6800865800865801,
+    "groundedness": null,
+    "hallucination": null
+  },
+  "weak_fields": [
+    {
+      "field": "Turnover_frequency__CO",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 24
+    },
+    {
+      "field": "Turnover_frequency__H2",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 11
+    },
+    {
+      "field": "intensity",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 11
+    },
+    {
+      "field": "H-D conc",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 36
+    },
+    {
+      "field": "additives",
+      "recall": 0.34146341463414637,
+      "correct": 14,
+      "total": 41
+    },
+    {
+      "field": "cat conc",
+      "recall": 0.49049429657794674,
+      "correct": 129,
+      "total": 263
+    },
+    {
+      "field": "Turnover_number__CH4",
+      "recall": 0.5,
+      "correct": 7,
+      "total": 14
+    },
+    {
+      "field": "additives conc",
+      "recall": 0.5238095238095238,
+      "correct": 11,
+      "total": 21
+    },
+    {
+      "field": "PS conc",
+      "recall": 0.6162790697674418,
+      "correct": 159,
+      "total": 258
+    },
+    {
+      "field": "Turnover_number__H2",
+      "recall": 0.6363636363636364,
+      "correct": 98,
+      "total": 154
+    },
+    {
+      "field": "Turnover_number__HCOOH",
+      "recall": 0.6610169491525424,
+      "correct": 78,
+      "total": 118
+    },
+    {
+      "field": "feedstock gas",
+      "recall": 0.7388059701492538,
+      "correct": 99,
+      "total": 134
+    },
+    {
+      "field": "Quantum_yield__CO",
+      "recall": 0.7435897435897436,
+      "correct": 29,
+      "total": 39
+    },
+    {
+      "field": "Turnover_number__CO",
+      "recall": 0.755656108597285,
+      "correct": 167,
+      "total": 221
+    },
+    {
+      "field": "solvent-ratio",
+      "recall": 0.7590361445783133,
+      "correct": 126,
+      "total": 166
+    },
+    {
+      "field": "Temperature",
+      "recall": 0.7653061224489796,
+      "correct": 75,
+      "total": 98
+    },
+    {
+      "field": "irr time",
+      "recall": 0.780373831775701,
+      "correct": 167,
+      "total": 214
+    },
+    {
+      "field": "λexc",
+      "recall": 0.8055555555555556,
+      "correct": 203,
+      "total": 252
+    },
+    {
+      "field": "e-D conc",
+      "recall": 0.8779342723004695,
+      "correct": 187,
+      "total": 213
+    },
+    {
+      "field": "Quantum_yield__HCOOH",
+      "recall": 1.0,
+      "correct": 22,
+      "total": 22
+    }
+  ],
+  "per_publication": [
+    {
+      "doi": "10.1002/ange.201610607",
+      "tp": 31,
+      "gold_cells": 62,
+      "ext_cells": 80,
+      "gold_rows": 7,
+      "ext_rows": 5,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '0.025', got '25'",
+        "Turnover_frequency__CO: expected '0.47', got '1692'",
+        "Turnover_number__H2: expected '368', got ''",
+        "Turnover_frequency__H2: expected '0.01', got ''",
+        "cat conc: expected '0.5', got '50'",
+        "additives: expected 'CO2/Ar (10:90) atmosphere', got ''",
+        "Turnover_number__CO: expected '684', got '1600'",
+        "Turnover_frequency__CO: expected '0.019', got ''",
+        "Turnover_number__H2: expected '56', got ''",
+        "Turnover_frequency__H2: expected '0.0016', got ''"
+      ]
+    },
+    {
+      "doi": "10.1002/anie.201809084",
+      "tp": 27,
+      "gold_cells": 30,
+      "ext_cells": 45,
+      "gold_rows": 3,
+      "ext_rows": 3,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "λexc: expected '400', got ''",
+        "λexc: expected '400', got ''",
+        "λexc: expected '400', got ''"
+      ]
+    },
+    {
+      "doi": "10.1002/anie.201811010",
+      "tp": 93,
+      "gold_cells": 126,
+      "ext_cells": 167,
+      "gold_rows": 12,
+      "ext_rows": 11,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "intensity: expected '1', got '100 mW cm-2'",
+        "Turnover_frequency__CO: expected '108', got '6480'",
+        "intensity: expected '1', got '100 mW cm-2'",
+        "Turnover_frequency__CO: expected '28.2', got '1692'",
+        "intensity: expected '1', got '100 mW cm-2'",
+        "Turnover_frequency__CO: expected '5.58', got '334.8'",
+        "intensity: expected '1', got '100 mW cm-2'",
+        "Turnover_frequency__CO: expected '2.4', got '144'",
+        "intensity: expected '1', got '100 mW cm-2'",
+        "Turnover_frequency__CO: expected '0', got ''"
+      ]
+    },
+    {
+      "doi": "10.1002/cctc.201500494",
+      "tp": 95,
+      "gold_cells": 266,
+      "ext_cells": 285,
+      "gold_rows": 38,
+      "ext_rows": 19,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '0.025', got '1667'",
+        "PS conc: expected '0.025', got '1.667'",
+        "cat conc: expected '0.025', got '1667'",
+        "PS conc: expected '0.025', got '1.667'",
+        "cat conc: expected '0.025', got '1667'",
+        "PS conc: expected '0.025', got '1.667'",
+        "cat conc: expected '0.025', got '1667'",
+        "PS conc: expected '0.025', got '1.667'",
+        "cat conc: expected '0.025', got '1667'",
+        "PS conc: expected '0.025', got '1.667'"
+      ]
+    },
+    {
+      "doi": "10.1002/cctc.202201163",
+      "tp": 162,
+      "gold_cells": 226,
+      "ext_cells": 288,
+      "gold_rows": 23,
+      "ext_rows": 19,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "additives: expected 'water', got 'H2O'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'",
+        "cat conc: expected '10', got '100'"
+      ]
+    },
+    {
+      "doi": "10.1002/chem.201905840",
+      "tp": 66,
+      "gold_cells": 75,
+      "ext_cells": 127,
+      "gold_rows": 9,
+      "ext_rows": 9,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "cat conc: expected '0.01', got '10'",
+        "feedstock gas: expected 'argon', got 'Ar'",
+        "cat conc: expected '0.01', got '10'"
+      ]
+    },
+    {
+      "doi": "10.1002/chem.202001279",
+      "tp": 120,
+      "gold_cells": 152,
+      "ext_cells": 272,
+      "gold_rows": 18,
+      "ext_rows": 18,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '0.1', got '100'",
+        "cat conc: expected '0.1', got '100'",
+        "PS conc: expected '1', got '0.5'",
+        "cat conc: expected '0.1', got '100'",
+        "PS conc: expected '1', got '0.5'",
+        "cat conc: expected '0.1', got '100'",
+        "PS conc: expected '1', got '0.5'",
+        "cat conc: expected '0.1', got '100'",
+        "cat conc: expected '0.1', got '100'",
+        "PS conc: expected '1', got '0.5'"
+      ]
+    },
+    {
+      "doi": "10.1002/cptc.201700133",
+      "tp": 9,
+      "gold_cells": 32,
+      "ext_cells": 15,
+      "gold_rows": 4,
+      "ext_rows": 2,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "Turnover_number__H2: expected '1', got ''",
+        "cat conc: expected '100', got ''",
+        "solvent-ratio: expected '5:1', got ''",
+        "irr time: expected '24', got ''",
+        "Turnover_number__CO: expected '5', got ''",
+        "Turnover_number__H2: expected '3', got ''",
+        "Turnover_number__HCOOH: expected '9', got ''",
+        "cat conc: expected '100', got '(missing)'",
+        "solvent-ratio: expected '5:1', got '(missing)'",
+        "feedstock gas: expected 'CO2', got '(missing)'"
+      ]
+    },
+    {
+      "doi": "10.1002/cptc.202100034",
+      "tp": 105,
+      "gold_cells": 109,
+      "ext_cells": 179,
+      "gold_rows": 14,
+      "ext_rows": 14,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "e-D conc: expected '0.36', got ''",
+        "e-D conc: expected '0.5', got '0.05'",
+        "additives conc: expected '0.5', got '0.05'",
+        "additives conc: expected '0.005', got '0.05'"
+      ]
+    },
+    {
+      "doi": "10.1002/cptc.202200009",
+      "tp": 40,
+      "gold_cells": 52,
+      "ext_cells": 84,
+      "gold_rows": 6,
+      "ext_rows": 6,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.1', got ''",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.1', got ''",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.1', got ''",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.1', got ''",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.1', got ''"
+      ]
+    },
+    {
+      "doi": "10.1002/cssc.201901326",
+      "tp": 0,
+      "gold_cells": 53,
+      "ext_cells": 104,
+      "gold_rows": 8,
+      "ext_rows": 8,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '25', got '6-(Ph2PNMe)2NC5H3}(CO)2Cl]+'",
+        "PS conc: expected '0.025', got '[Ru(bpy)3]2+'",
+        "feedstock gas: expected 'CO2', got ''",
+        "λexc: expected '405', got ''",
+        "irr time: expected '24', got '405'",
+        "Turnover_number__HCOOH: expected '380', got ''",
+        "cat conc: expected '50', got '6-(Ph2PNMe)2NC5H3}(CO)2Cl]+'",
+        "PS conc: expected '0.05', got '[Ru(bpy)3]2+'",
+        "feedstock gas: expected 'CO2', got ''",
+        "λexc: expected '405', got ''"
+      ]
+    },
+    {
+      "doi": "10.1002/cssc.202301892",
+      "tp": 63,
+      "gold_cells": 76,
+      "ext_cells": 154,
+      "gold_rows": 9,
+      "ext_rows": 11,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "Quantum_yield__CO: expected '95', got ''",
+        "Quantum_yield__CO: expected '19', got ''",
+        "Quantum_yield__CO: expected '90', got ''",
+        "Quantum_yield__CO: expected '84', got ''",
+        "H-D conc: expected '0.1', got ''",
+        "Quantum_yield__CO: expected '79', got ''",
+        "H-D conc: expected '0.2', got ''",
+        "Quantum_yield__CO: expected '86', got ''",
+        "Quantum_yield__CO: expected '7', got ''",
+        "H-D conc: expected '0.1', got ''"
+      ]
+    },
+    {
+      "doi": "10.1007/s10562-021-03782-7",
+      "tp": 65,
+      "gold_cells": 75,
+      "ext_cells": 140,
+      "gold_rows": 10,
+      "ext_rows": 11,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "irr time: expected '10', got ''",
+        "Turnover_number__CO: expected '1130', got '1450'",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''",
+        "feedstock gas: expected 'nitrogen', got 'N2'",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''"
+      ]
+    },
+    {
+      "doi": "10.1016/j.apcata.2016.04.035",
+      "tp": 45,
+      "gold_cells": 52,
+      "ext_cells": 94,
+      "gold_rows": 7,
+      "ext_rows": 7,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''",
+        "λexc: expected 'xenon lamp', got ''"
+      ]
+    },
+    {
+      "doi": "10.1016/j.electacta.2017.04.080",
+      "tp": 95,
+      "gold_cells": 149,
+      "ext_cells": 285,
+      "gold_rows": 22,
+      "ext_rows": 21,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "PS conc: expected '100', got '0.1'",
+        "solvent-ratio: expected '4:1', got ''",
+        "PS conc: expected '100', got '0.1'",
+        "solvent-ratio: expected '4:1', got ''",
+        "PS conc: expected '100', got '0.1'",
+        "solvent-ratio: expected '4:1', got ''",
+        "PS conc: expected '100', got '0.1'",
+        "solvent-ratio: expected '4:1', got ''",
+        "PS conc: expected '100', got '0.1'",
+        "solvent-ratio: expected '4:1', got ''"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.inorgchem.0c03503",
+      "tp": 40,
+      "gold_cells": 41,
+      "ext_cells": 80,
+      "gold_rows": 5,
+      "ext_rows": 6,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "Turnover_frequency__CO: expected '127', got '7620'"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.inorgchem.6b00379",
+      "tp": 303,
+      "gold_cells": 314,
+      "ext_cells": 532,
+      "gold_rows": 31,
+      "ext_rows": 31,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '100', got '1000'",
+        "cat conc: expected '100', got '1000'",
+        "Turnover_number__H2: expected '0.8', got '0.18'",
+        "additives: expected 'Argon gas', got ''",
+        "additives: expected 'Argon gas', got ''",
+        "additives: expected 'Argon gas', got ''",
+        "additives: expected 'Argon gas', got ''",
+        "additives: expected 'Argon gas', got ''",
+        "Quantum_yield__CO: expected '0.00025', got '0.0025'",
+        "additives: expected 'Argon gas', got ''"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.jpcc.8b00950",
+      "tp": 83,
+      "gold_cells": 91,
+      "ext_cells": 148,
+      "gold_rows": 10,
+      "ext_rows": 10,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "Turnover_number__CH4: expected '89', got '16'",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.5', got ''",
+        "λexc: expected '> 420', got ''",
+        "Turnover_number__CH4: expected '100', got '17'",
+        "additives: expected 'TFE', got ''",
+        "additives conc: expected '0.5', got ''",
+        "Turnover_number__CH4: expected '195', got '19'"
+      ]
+    },
+    {
+      "doi": "10.1021/acscatal.2c02072",
+      "tp": 30,
+      "gold_cells": 157,
+      "ext_cells": 108,
+      "gold_rows": 20,
+      "ext_rows": 8,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "H-D conc: expected '1', got 'Phenol'",
+        "irr time: expected '1.5', got '0.5'",
+        "H-D conc: expected '1', got 'Phenol'",
+        "irr time: expected '1.5', got '0.75'",
+        "H-D conc: expected '1', got 'Phenol'",
+        "irr time: expected '1.5', got ''",
+        "Turnover_number__CO: expected '43', got '12749'",
+        "Turnover_number__H2: expected '52', got '163'",
+        "H-D conc: expected '1', got 'Phenol'",
+        "irr time: expected '1.5', got '2'"
+      ]
+    },
+    {
+      "doi": "10.1021/acscatal.3c00036",
+      "tp": 99,
+      "gold_cells": 172,
+      "ext_cells": 310,
+      "gold_rows": 20,
+      "ext_rows": 21,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '0.002', got '2'",
+        "Turnover_number__H2: expected '0', got '7'",
+        "cat conc: expected '0.002', got '5'",
+        "Turnover_number__H2: expected '0', got '159'",
+        "cat conc: expected '0.002', got '2'",
+        "cat conc: expected '0.002', got '2'",
+        "cat conc: expected '0.002', got ''",
+        "additives: expected 'Argon atmosphere', got ''",
+        "Turnover_number__CO: expected '0', got ''",
+        "Turnover_number__H2: expected '7', got '29'"
+      ]
+    }
+  ]
+}

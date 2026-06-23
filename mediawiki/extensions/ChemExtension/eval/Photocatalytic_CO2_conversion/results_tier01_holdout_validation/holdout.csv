@@ -1,0 +1,2 @@
+n_papers,f1,precision,recall,layoutScore,composite,tokensPerPub,training_f1,training_composite
+26,0.4021,0.3858,0.4199,1.0000,0.4021,22765,0.5411,0.5411
