@@ -1,0 +1,32 @@
+<!-- GOLD STANDARD EXAMPLE
+Illustrates the EXACT output structure expected from the extractor for a photocatalytic CO2
+conversion paper. Use as a stylistic and structural template. Concrete numerical values
+shown below come from a real curated paper (DOI 10.1002/anie.201809084, 3 experiments).
+Catalyst / photosensitizer names are written exactly as the PDF spells them.
+-->
+
+== Abstract Summary ==
+This work investigates a family of three earth-abundant first-row transition-metal complexes for the visible-light driven reduction of CO2 in homogeneous solution. The authors compare turnover numbers (TON) for CO, H2, and HCOOH at identical catalyst loading (50 µM), under monochromatic 400 nm LED irradiation in MeCN/TEOA mixtures, and establish a structure-activity relationship across the three ligand variants.
+
+== Advances and Special Progress ==
+The central advance is the demonstration that ligand redox-noninnocence (here a pyridyl-pyrazolyl scaffold) dramatically increases CO selectivity relative to the parent bipyridyl complex, raising the catalyst-1 TON_CO from 13 to 73 while keeping H2 evolution comparable. This is achieved without precious metals and at low (sub-millimolar) loading.
+
+== Additional Remarks ==
+The work uses Ir(ppy)3 as the photosensitizer (0.5 µM) and BIH (1,3-dimethyl-2-phenyl-2,3-dihydro-1H-benzo[d]imidazole, 100 µM) as the sacrificial electron donor. All runs were performed in MeCN/TEOA 5:1 at 20 °C for 15 h, allowing direct comparison across the three catalyst variants. Quantum yields are reported in the SI.
+
+== Content of the Published Article in Detail ==
+The article reports synthesis, X-ray characterisation, electrochemistry, and photocatalytic activity of three Fe(II) complexes that differ only in the redox-active pyrazolyl substituent. UV-vis and cyclic voltammetry indicate that the lowest reduction potential correlates with the highest catalytic activity for CO formation; mechanistic experiments support a single-electron transfer from the reduced photosensitizer to the catalyst as the rate-determining step.
+
+== Catalyst ==
+Three Fe(II) bis(pyrazolyl)phenanthroline complexes were employed as catalysts, each at 50 µM concentration. The catalysts differ only in the pyrazolyl substituent (-H, -CH3, -CF3). The most electron-poor variant (Catalyst-1) shows the highest CO turnover, attributed to its less-negative first reduction potential and faster reduction by the excited photosensitizer.
+
+== Photosensitizer ==
+fac-Ir(ppy)3 (tris-2-phenylpyridyl iridium(III)) was used as the photosensitizer at a constant concentration of 0.5 µM across all runs. Excitation was performed with a 400 nm LED. Ir(ppy)3 was chosen for its long-lived triplet excited state and strongly reducing E*1/2 in the presence of the BIH sacrificial donor.
+
+== Investigation ==
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+Catalyst-1,50,Ir(ppy)3,0.5,BIH,0.1,MeCN,TEOA,5:1,CO2,20,400,15,73,,670,,,80,,,,,,,,
+Catalyst-2,50,Ir(ppy)3,0.5,BIH,0.1,MeCN,TEOA,5:1,CO2,20,400,15,13,,51,,,31,,,,,,,,
+Catalyst-3,50,Ir(ppy)3,0.5,BIH,0.1,MeCN,TEOA,5:1,CO2,20,400,15,40,,89,,,83,,,,,,,,
+```
