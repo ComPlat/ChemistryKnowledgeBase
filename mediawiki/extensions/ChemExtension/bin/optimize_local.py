@@ -464,7 +464,7 @@ def ground_check(pdf_path, ext_rows, model, key):
           for c in checks if c.get("status") in ("contradicted", "absent")][:15]
     return {"checked": supported + unsupported, "supported": supported, "unsupported": unsupported, "examples": ex}
 
-def generate_initial_prompt(fields, fmt, model, key, required_sections=None):
+def generate_initial_prompt(fields, fmt, model, key, required_sections=None, gold_example=None):
     """Cold start: no seed prompt given — let the model write the initial extraction prompt itself."""
     cols = " , ".join(fields)
     section_clause = ""
@@ -479,12 +479,17 @@ def generate_initial_prompt(fields, fmt, model, key, required_sections=None):
                 "per experiment, using ONLY values explicitly stated in the paper (no guessing, no "
                 "hallucination)." + section_clause + " Respond with the prompt text only.")
     task = "The experiments to capture have these fields:\n" + cols
+    if gold_example:
+        task += ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
+                 "Mimic its sectioning, prose density, and CSV layout exactly]\n"
+                 + gold_example
+                 + "\n[END GOLD STANDARD EXAMPLE]")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
         {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
     return output_text(post(payload, key)).strip()
 
-def improve_prompt(current, agg, model, key, fmt="json", required_sections=None):
+def improve_prompt(current, agg, model, key, fmt="json", required_sections=None, gold_example=None):
     weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
     ex = "\n- ".join(agg["examples"][:20])
     struct = ("a fenced ```csv block whose header is EXACTLY the given columns (plus the prose "
@@ -512,9 +517,16 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None)
     if agg.get("layoutScore") is not None:
         layout_line = (f"Layout score={agg['layoutScore']:.3f} (1.0 = all required wiki sections "
                        f"present with substantive content; current prompt is losing score when this <1).\n")
+    gold_block = ""
+    if gold_example:
+        gold_block = ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
+                      "Make sure the improved prompt produces output that follows this sectioning, "
+                      "prose density, and CSV layout]\n"
+                      + gold_example
+                      + "\n[END GOLD STANDARD EXAMPLE]\n")
     task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
             f"composite={agg.get('composite', agg['f1']):.4f}\n{layout_line}{ground}\n"
-            f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}\n\n[CURRENT PROMPT]\n{current}")
+            f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}{gold_block}\n\n[CURRENT PROMPT]\n{current}")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
         {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
@@ -530,6 +542,10 @@ def main():
                     help="seed prompt; if omitted, the model writes the initial prompt itself (cold start)")
     ap.add_argument("--iterations", type=int, default=5)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--eval-limit", type=int, default=0,
+                    help="held-out validation: after optimization, run the winner once on the NEXT "
+                         "N papers (immediately after the training set) and report unseen-set "
+                         "F1/Layout/Composite. Defends against in-sample overfit (Goodhart).")
     ap.add_argument("--model", default="o3")
     ap.add_argument("--format", choices=["json", "csv"], default="json",
                     help="json = structured output; csv = produce a ```csv table (matches the live wiki import)")
@@ -542,14 +558,20 @@ def main():
     key = api_key()
 
     gold_dir = os.path.join(EVAL, a.topic, "gold")
-    entries = []
+    all_entries = []
     for gj in sorted(glob.glob(os.path.join(gold_dir, "*.json"))):
         d = json.load(open(gj))
         pdf = os.path.join(EVAL, a.topic, d.get("pdf", ""))
         if os.path.isfile(pdf) and d.get("experiments"):
-            entries.append((d["doi"], pdf, d["experiments"]))
+            all_entries.append((d["doi"], pdf, d["experiments"]))
+    # split: training set (first --limit papers) the optimizer sees during iteration,
+    # held-out set (next --eval-limit papers) only the WINNER prompt is evaluated against
     if a.limit:
-        entries = entries[:a.limit]
+        entries = all_entries[:a.limit]
+        holdout = all_entries[a.limit:a.limit + a.eval_limit] if a.eval_limit else []
+    else:
+        entries = all_entries
+        holdout = []
     if not entries:
         sys.exit(f"No gold publications with a PDF for topic '{a.topic}'.")
     # field set = union of gold experiment keys (the model is asked to fill exactly these)
@@ -587,11 +609,19 @@ def main():
         print(f"layout check on, {len(required_sections)} required sections: "
               + ", ".join(required_sections))
 
+    # Optional gold-standard example: if eval/<topic>/gold_example.wiki exists, the meta-LLM
+    # sees a fully curated reference page so it knows the EXACT desired output shape — same
+    # context a human prompt-engineer would have had.
+    gold_example_path = os.path.join(EVAL, a.topic, "gold_example.wiki")
+    gold_example = open(gold_example_path).read().strip() if os.path.isfile(gold_example_path) else None
+    if gold_example:
+        print(f"gold-standard example loaded ({len(gold_example)} chars) — used to guide the meta-LLM")
+
     if a.prompt_file:
         prompt = open(a.prompt_file).read().strip()
     else:
         print("No --prompt-file given -> model writes the initial prompt itself (cold start)...")
-        prompt = generate_initial_prompt(fields, a.format, a.model, key, required_sections)
+        prompt = generate_initial_prompt(fields, a.format, a.model, key, required_sections, gold_example)
         os.makedirs(results_dir, exist_ok=True)
         open(os.path.join(results_dir, "seed_generated.txt"), "w").write(prompt)
     if a.format == "csv":
@@ -693,12 +723,49 @@ def main():
             print("  improving prompt (from best so far) ...")
             # hill-climb: always propose the next variant from the BEST prompt + its error report,
             # so a bad rewrite never drags the search downward.
-            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format, required_sections)
+            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format, required_sections, gold_example)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
     write_paper_artifacts(results_dir, hist, best, a.topic)
     print(f"Paper artefacts: {results_dir}/trend.pdf, summary.md, metrics.tex, metrics.csv")
+
+    # ---- held-out validation (Goodhart defense): run the WINNER prompt on unseen papers
+    if holdout:
+        print(f"\n=== held-out validation on {len(holdout)} unseen papers ===")
+        h_scores, h_toks, h_layout = [], 0, []
+        for doi, pdf, gold in holdout:
+            try:
+                rows, t, raw = extract(pdf, best["prompt"], fields, a.model, key, "", a.format)
+                h_toks += t
+                s = score_pub(gold, rows, a.tolerance)
+                h_scores.append(s)
+                ls = layout_score(raw, required_sections)
+                h_layout.append(ls["score"])
+                line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
+                if required_sections:
+                    line += f", layout {ls['present']}/{ls['required']}"
+                print(line)
+            except Exception as e:
+                print(f"  {doi}: ERROR {e}")
+            time.sleep(1)
+        if h_scores:
+            agg_h = aggregate(h_scores)
+            layout_h = (sum(h_layout) / len(h_layout)) if h_layout and required_sections else None
+            comp_h = composite_objective(agg_h["f1"], layout_h if layout_h is not None else 1.0)
+            lstr_h = f" layout={layout_h:.3f}" if layout_h is not None else ""
+            print(f"  HOLDOUT F1={agg_h['f1']:.4f} P={agg_h['precision']:.4f} R={agg_h['recall']:.4f}"
+                  f"{lstr_h} composite={comp_h:.4f} tok/pub={h_toks // len(h_scores)} "
+                  f"(training best F1={best['f1']:.4f} composite={best.get('composite', best['f1']):.4f})")
+            with open(os.path.join(results_dir, "holdout.csv"), "w") as f:
+                f.write("n_papers,f1,precision,recall,layoutScore,composite,tokensPerPub,"
+                        "training_f1,training_composite\n")
+                f.write(f"{len(h_scores)},{agg_h['f1']:.4f},{agg_h['precision']:.4f},"
+                        f"{agg_h['recall']:.4f},"
+                        f"{(layout_h if layout_h is not None else 1.0):.4f},{comp_h:.4f},"
+                        f"{h_toks // len(h_scores)},{best['f1']:.4f},"
+                        f"{best.get('composite', best['f1']):.4f}\n")
+
     committed_paths = [results_dir]
     if a.export_prompt:
         dest = os.path.join(REPO, "wikischema", "MediaWiki", f"Prompt_import_{a.topic}.wiki")
