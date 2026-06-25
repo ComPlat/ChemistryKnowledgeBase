@@ -141,7 +141,7 @@
         // ]
         //
     } )
-        .next(open_nav())
+        .next(open_nav)
         .back( 'homebutton' );
 
 // 5
