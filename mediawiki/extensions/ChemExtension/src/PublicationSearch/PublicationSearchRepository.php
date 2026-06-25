@@ -217,4 +217,9 @@ class PublicationSearchRepository {
             []
         )->fetchObject()->count;
     }
+
+    public function deleteNotRelevantPublications(): void
+    {
+        $this->db->delete('publications', [ 'check_result' => 'not relevant' ]);
+    }
 }

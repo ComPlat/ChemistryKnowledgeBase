@@ -34,6 +34,7 @@ class crawlPublications extends \Maintenance
         $this->addDescription('Crawls new publications (default 1 day old)');
         $this->addOption('dryrun', 'Does not actually create jobs, just show the list of publications');
         $this->addOption('days', 'Considers last x days (default: 1)');
+        $this->addOption('deleteNotRelevant', 'Deletes not relevant publications (default: false)', false, false);
     }
 
     /**
@@ -43,10 +44,16 @@ class crawlPublications extends \Maintenance
      */
     public function execute()
     {
-        $days = $this->getOption('days', 1);
-        print "\nCrawling new publications from $days days ago...";
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->publicationRepo = new PublicationSearchRepository($dbr);
+        $deleteNotRelevant = $this->getOption('deleteNotRelevant', false);
+        if ($deleteNotRelevant) {
+            print "\nDeleting not relevant publications...";
+            $this->publicationRepo->deleteNotRelevantPublications();
+            print "done.";
+        }
+        $days = $this->getOption('days', 1);
+        print "\nCrawling new publications from $days days ago...";
 
         $apis = PublicationFetcher::factory();
         foreach($apis as $api) {
