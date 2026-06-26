@@ -33,7 +33,7 @@ class FSIndexer
         foreach ($titles as $title) {
             $documents[] = $smwDBReader->fromWikiPage(new WikiPage($title), $text, $messages);
         }
-        return $client->updateDocuments($documents);
+        return $client->updateDocuments(...$documents);
     }
 
     public static function indexArticlesWithDependent($title, & $messages = [])

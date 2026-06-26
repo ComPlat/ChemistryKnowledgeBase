@@ -1,5 +1,20 @@
 ## Release Notes
 
+### Chameleon 5.0.3
+
+Released on June 11, 2026.
+
+* Added the Wikibase "Edit links" / "Add links" link to the language menu (thanks @malberts)
+* Added initial compatibility with MediaWiki 1.46 (thanks @malberts)
+
+### Chameleon 5.0.2
+
+Released on November 14, 2025.
+
+* Fixed table caption position (thanks @D-Groenewegen)
+* Improved viewport tag handling (thanks @mdoggydog)
+* Translation updates for system messages (thanks @translatewiki and its translator community)
+
 ### Chameleon 5.0.1
 
 Released on March 30, 2025.

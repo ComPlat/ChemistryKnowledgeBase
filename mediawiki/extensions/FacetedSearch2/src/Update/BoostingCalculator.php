@@ -7,7 +7,7 @@ use WikiPage;
 
 class BoostingCalculator {
 
-    public function calculateBoosting(WikiPage $wikiPage, array &$options, array $doc): void
+     public function calculateBoosting(WikiPage $wikiPage, array $templates, array &$options, array $doc): void
     {
         global $fs2gActivateBoosting;
         if (!isset($fs2gActivateBoosting) || !$fs2gActivateBoosting) {
@@ -33,7 +33,6 @@ class BoostingCalculator {
 
         // add boost according to templates
         global $fs2gTemplateBoosts;
-        $templates = $this->retrieveTemplates($pid);
         $templates = array_intersect(array_keys($fs2gTemplateBoosts), $templates);
         foreach ($templates as $template) {
             $this->updateBoostFactor($options, $fs2gTemplateBoosts[$template]);
@@ -57,27 +56,5 @@ class BoostingCalculator {
         $options['smwh_boost_dummy']['boost'] *= $value;
     }
 
-    private function retrieveTemplates($pageId): array
-    {
-        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
-        $res = $db->newSelectQueryBuilder()
-            ->select('CAST(lt_title AS CHAR) AS template')
-            ->from('templatelinks')
-            ->join('page', null, ['page_id = tl_from'])
-            ->join('linktarget', null, ['lt_id = tl_target_id'])
-            ->where("tl_from = $pageId")
-            ->caller(__METHOD__)
-            ->fetchResultSet();
 
-        $smwhTemplates = [];
-        if ($res->numRows() > 0) {
-            while ($row = $res->fetchObject()) {
-                $template = $row->template;
-                $smwhTemplates[] = str_replace("_", " ", $template);
-            }
-        }
-        $res->free();
-
-        return $smwhTemplates;
-    }
 }

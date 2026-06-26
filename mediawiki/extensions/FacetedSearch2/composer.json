@@ -1,16 +1,17 @@
 {
 	"name": "diqa/faceted-search-2",
 	"type": "mediawiki-extension",
-	"description": "Enhanced retrieval provides a faceted search for Mediawiki and SMW. It requires a SOLR server as backend.",
+	"description": "Provides a faceted search for Mediawiki and SMW. It requires a SOLR or Elastic search server as backend.",
 	"keywords": [
 		"Faceted search",
 		"Drilldown",
 		"Enhanced retrieval",
 		"Wiki",
 		"MediaWiki",
-		"SOLR"
+		"SOLR",
+        "Elastic search"
 	],
-	"homepage": "https://www.semantic-mediawiki.org/wiki/Enhanced_Retrieval",
+	"homepage": "https://www.semantic-mediawiki.org/wiki/FacetedSearch2",
 	"license": "GPL-2.0-or-later",
 	"authors": [
 		{
@@ -20,15 +21,24 @@
 		}
 	],
 	"support": {
-		"email": "kuehn@diqa-pm.com",
-		"issues": "https://bugs.diqa-pm.com/"
+		"email": "kuehn@diqa.de",
+		"issues": "https://support.diqa-pm.com/"
 	},
 	"require": {
-		"php": ">=7.4.0",
+		"php": ">=8.3.0",
 		"composer/installers": "1.*,>=1.0.1|2.*",
 		"netresearch/jsonmapper": ">=v4.4.1",
-		"nesbot/carbon": "^2.72"
-	},
+		"nesbot/carbon": "^2.72",
+		"elasticsearch/elasticsearch": "^8.19",
+		"smalot/pdfparser": "^2.12",
+		"phpoffice/phpword": "^1.4",
+		"phpoffice/phppresentation": "^1.2",
+		"phpoffice/phpspreadsheet": "^4.0",
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-ctype": "*",
+        "ext-intl": "*"
+    },
 	"suggest": {
 
 	},
@@ -38,21 +48,31 @@
 	"config": {
 		"process-timeout": 0,
 		"allow-plugins": {
-			"composer/installers": true
-		}
+			"composer/installers": true,
+			"php-http/discovery": true
+		},
+        "policy": {
+          "advisories": {
+            "block": false
+          }
+        }
 	},
 	"scripts": {
-		"update": "php maintenance/updateBackend.php -v"
+		"update": "php maintenance/updateIndex.php -v"
 	},
 	"autoload": {
-	"psr-4": {
-		"DIQA\\FacetedSearch2\\": [
-			"src/", "test/"]
-	  }
+      "psr-4": {
+          "DIQA\\FacetedSearch2\\": [ "src/" ]
+      }
     },
+    "autoload-dev": {
+      "psr-4": {
+          "DIQA\\FacetedSearch2\\": [ "test/" ]
+      }
+  },
 	"require-dev": {
-		"phpunit/phpunit": "^7"
-	},
+		"phpunit/phpunit": "^12"
+    },
 	"archive": {
 		"exclude": [
 			"/.git", "/.idea", "/vm-ubuntu", "/test",

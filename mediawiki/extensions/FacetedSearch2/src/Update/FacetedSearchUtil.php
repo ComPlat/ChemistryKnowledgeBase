@@ -2,8 +2,7 @@
 namespace DIQA\FacetedSearch2\Update;
 
 use MediaWiki\MediaWikiServices;
-use SMW\SQLStore\SQLStore;
-use Title;
+use MediaWiki\Title\Title;
 use WikiPage;
 
 class FacetedSearchUtil {
@@ -17,7 +16,7 @@ class FacetedSearchUtil {
      * This code is inspired by getDisplayTitle() from DisplayTitle\includes\DisplayTitleHooks.php
      * 
      * @param Title $title
-     * @param WikiPage $wikipage (optional) if present redirects will be followed
+     * @param ?WikiPage $wikipage (optional) if present redirects will be followed
      * @return string smwh_displaytitle
      */
     public static function findDisplayTitle(Title $title, WikiPage $wikipage = null) {

@@ -60,8 +60,12 @@ class AccruedInterest
         $settlement = Functions::flattenSingleValue($settlement);
         $rate = Functions::flattenSingleValue($rate);
         $parValue = ($parValue === null) ? 1000 : Functions::flattenSingleValue($parValue);
-        $frequency = Functions::flattenSingleValue($frequency) ?? FinancialConstants::FREQUENCY_ANNUAL;
-        $basis = Functions::flattenSingleValue($basis) ?? FinancialConstants::BASIS_DAYS_PER_YEAR_NASD;
+        $frequency = ($frequency === null)
+            ? FinancialConstants::FREQUENCY_ANNUAL
+            : Functions::flattenSingleValue($frequency);
+        $basis = ($basis === null)
+            ? FinancialConstants::BASIS_DAYS_PER_YEAR_NASD
+            : Functions::flattenSingleValue($basis);
 
         try {
             $issue = SecurityValidations::validateIssueDate($issue);
@@ -122,7 +126,9 @@ class AccruedInterest
         $settlement = Functions::flattenSingleValue($settlement);
         $rate = Functions::flattenSingleValue($rate);
         $parValue = ($parValue === null) ? 1000 : Functions::flattenSingleValue($parValue);
-        $basis = Functions::flattenSingleValue($basis) ?? FinancialConstants::BASIS_DAYS_PER_YEAR_NASD;
+        $basis = ($basis === null)
+            ? FinancialConstants::BASIS_DAYS_PER_YEAR_NASD
+            : Functions::flattenSingleValue($basis);
 
         try {
             $issue = SecurityValidations::validateIssueDate($issue);

@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"GilPe",
 			"Les Meloures",
 			"Robby",
 			"Soued031",
@@ -26,7 +27,7 @@
 	"pf_createtemplate_displaylabel": "Etikett weisen:",
 	"pf_createproperty_allowedvalsforhierarchy": "Erlaabt Wäerter fir d'Hierarchie:",
 	"pf_createtemplate_delimiter": "Trennzeechen:",
-	"pf_createtemplate_aggregation": "Resumé",
+	"pf_createtemplate_aggregation": "Resümmee",
 	"pf_createtemplate_aggregationlabel": "Titel fir d'Lëscht:",
 	"pf_createtemplate_standardformat": "Tabell",
 	"pf_createtemplate_sectionsformat": "Abschnitter",
@@ -137,13 +138,12 @@
 	"pf_bad_date_error": "muss e gëltegen Datum sinn",
 	"pf_modified_input_error": "Dës Ännerung soll nogekuckt oder refuséiert ginn.",
 	"pf_pipe_error": "\"|\" ass net erlaabt, ausser an {{...}}, [[...]] oder speziellen Tags",
-	"uploadwindow": "Fënster fir eropzelueden",
 	"pf-simpleupload": "Eroplueden",
 	"pf_deletionlog": "Logbuch vum Läschen",
 	"pf-preview-note": "Sou gesäit de Formulaire aus wann e benotzt gëtt:",
 	"pf-pageschemas-header": "Formulaire",
 	"pf-pageschemas-createtitle": "Numm vum Formulaire fir nei Säiten:",
-	"pf-pageschemas-edittitle": "Numm vum Formulaire fir Säiten, déi et scho gëtt:",
+	"pf-pageschemas-edittitle": "Numm vum Formulaire fir besteeënd Säiten:",
 	"pf_property_linkstoform": "Et ass mat Säite verlinkt déi de Formulaire $1 benotzen.",
 	"pf_property_allowedvals": "{{PLURAL:$1|Den erlaabte Wäert fir dës Eegeschaft ass|Déi erlaabt Wäerter fir dës Eegeschaft sinn}}:",
 	"pf_template_docu": "Dëst ass d''$1'-Schabloun.\nSi soll an dësem Format opgeruff ginn:",

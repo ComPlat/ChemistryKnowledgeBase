@@ -14,35 +14,40 @@ Enter VM by running:
 
     vagrant ssh
 
+### SOLR
+
 and go to `/var/www/html/mediawiki/vm-ubuntu` and run:
 
-    ./solr-installPowerSearch.sh
-    ./solr-installCore.sh
+    sudo ./solr-installPowerSearch.sh
+    sudo ./solr-installCore.sh
+
+### ElasticSearch
+
+goto to `/var/www/html/mediawiki/vm-ubuntu` and run:
+
+    sudo ./install-elastic.sh
+    sudo ./set-password-for-elastic.sh
+
+This creates a user "elastic" with a password and sets it in the env.php file.
 
 # Build Frontend
 
 Install NPM - https://nodejs.org/en/download
 
-
-Open console and change to folder facetedSearch2/fs-react
-* npm install       (initially or after dependency update)
-* npm start         (to run the webserver for local development)
-* npm run dev-build (DEV build)
-* npm run build     (PROD build)
-* npm test          (to run all unit tests)
-
-To import test data for it-tests
-
-    php test/importTestdataForIT.php
-
-* npm run it-test   (to run all integration-tests)
+Open CMD console and change to folder "fs-react"
+* ``npm install`` (initially or after dependency update)
+* ``npm start`` (to run the webserver for local development)
+* ``npm run dev-build`` (DEV build)
+* ``npm run build`` (PROD build)
+* ``npm test`` (to run all unit tests)
+* ``npm run it-test`` (to run all integration-tests)
 
 # Backend 
 
-To run backend tests:
+To run backend tests, login via SSH to VM and run:
 
-    ./runTests
+    /var/www/html/mediawiki/runTests.sh
 
 To import test data for frontend:
 
-    php test/importTestdataForFrontend.php
+    php /var/www/html/mediawiki/test/importTestdataForFrontend.php

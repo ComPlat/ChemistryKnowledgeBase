@@ -9,10 +9,10 @@ class SearchPreprocessor {
         $escapedANDedTerms = self::prepareTitleQuery($searchText);
         $qs = self::prepareQueryString($searchText);
 
-        return "smwh_search_field:(${qs}) OR "
-             . "smwh_search_field:(${escapedANDedTerms}) OR "
-             . "smwh_title:(${escapedANDedTerms}) OR "
-             . "smwh_displaytitle:(${escapedANDedTerms})";
+        return "smwh_search_field:({$qs}) OR "
+             . "smwh_search_field:({$escapedANDedTerms}) OR "
+             . "smwh_title:({$escapedANDedTerms}) OR "
+             . "smwh_displaytitle:({$escapedANDedTerms})";
 
     }
 

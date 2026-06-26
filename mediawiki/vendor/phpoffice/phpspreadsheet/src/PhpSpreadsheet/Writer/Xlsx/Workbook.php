@@ -33,6 +33,7 @@ class Workbook extends WriterPart
 
         // workbook
         $objWriter->startElement('workbook');
+        $objWriter->writeAttribute('xml:space', 'preserve');
         $objWriter->writeAttribute('xmlns', Namespaces::MAIN);
         $objWriter->writeAttribute('xmlns:r', Namespaces::SCHEMA_OFFICE_DOCUMENT);
 

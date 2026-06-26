@@ -30,7 +30,7 @@ class SMWReader {
 
         foreach ($properties as $property) {
             // skip instance-of and subclass properties
-            if ($property->getKey() == "_INST" || $property->getKey() == "_SUBC") {
+            if ($property->getKey() == "_INST" || $property->getKey() == "_SUBC" || $property->getLabel() == "") {
                 continue;
             }
 
@@ -94,11 +94,32 @@ class SMWReader {
                         continue;
                     }
                     $propertyValuesToAdd[] = $enc_prop;
+                    $enc_prop = $this->handleSpecialWikiProperties($property, $value);
+                    if (is_null($enc_prop)) {
+                        continue;
+                    }
+                    $propertyValuesToAdd[] = $enc_prop;
                 }
             }
         }
 
         $doc['smwh_properties'] = $propertyValuesToAdd;
+    }
+
+    private function handleSpecialWikiProperties($property, $dataItem) {
+        if ($property->isUserDefined()) {
+            return null; // not special
+        }
+
+        switch ($property->getKey()) {
+            case '_MDAT':
+                // used for sorting
+                /** @var SMWDITime $dataItem */
+                $valueXSD = FacetedSearchUtil::getISODateFromDataItem($dataItem);
+                return new PropertyValues(new Property($property->getKey(), Datatype::DATETIME),
+                    [$valueXSD]);
+            default: return null;
+        }
     }
 
     public function shouldBeIgnored(Title $title): bool

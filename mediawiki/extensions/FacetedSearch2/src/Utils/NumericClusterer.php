@@ -16,50 +16,40 @@ class NumericClusterer implements Clusterer
     }
 
 
-    public function makeClusters(float $min, float $max, int $numSteps): array
+    public function makeClusters(string $min, string $max, int $numSteps): array
     {
+        $minNum = (float)$min;
+        $maxNum = (float)$max;
         if ($min === $max) {
-            return [new Range($min, $max)];
+            return [new Range($minNum, $maxNum)];
         }
         if ($this->isInteger) {
-            return $this->makeClustersInteger($min, $max, $numSteps);
+            return $this->makeClustersInteger($minNum, $maxNum, $numSteps);
+        } else {
+            return $this->makeClustersFloat($maxNum, $minNum, $numSteps);
         }
-        $diff =  $max - $min;
-        $values = [];
-        $currVal = $min;
-        $incr =  $diff / $numSteps;
+    }
 
-        for ($i = 0; $i < $numSteps; ++$i) {
-            $values[$i] = $currVal;
-            $currVal += $incr;
-        }
-        $values[$i] = $max;
+    private function makeClustersInteger(int $min, int $max, int $numSteps): array
+    {
+        $values = $this->generateClusters($max, $min, $numSteps);
         $ranges = [];
         for ($i = 0; $i < count($values) - 1; ++$i) {
-            $from = round($values[$i], 2, PHP_ROUND_HALF_UP);
-            $to = round($values[$i + 1], 2, PHP_ROUND_HALF_DOWN);
+            $from = round($values[$i], 0, PHP_ROUND_HALF_UP);
+            $to = round($values[$i + 1], 0, PHP_ROUND_HALF_DOWN);
             $ranges[$i] = new Range($from, $to);
         }
 
         return $ranges;
     }
 
-    public function makeClustersInteger(int $min, int $max, int $numSteps): array
+    private function makeClustersFloat(float $maxNum, float $minNum, int $numSteps): array
     {
-        $diff = $max - $min;
-        $values = [];
-        $currVal = $min;
-        $incr = $diff / $numSteps;
-
-        for ($i = 0; $i < $numSteps; ++$i) {
-            $values[$i] = $currVal;
-            $currVal += $incr;
-        }
-        $values[$i] = $max;
+        $values = $this->generateClusters($maxNum, $minNum, $numSteps);
         $ranges = [];
         for ($i = 0; $i < count($values) - 1; ++$i) {
-            $from = round($values[$i], 0, PHP_ROUND_HALF_UP);
-            $to = round($values[$i + 1], 0, PHP_ROUND_HALF_DOWN);
+            $from = round($values[$i], 2, PHP_ROUND_HALF_UP);
+            $to = round($values[$i + 1], 2, PHP_ROUND_HALF_DOWN);
             $ranges[$i] = new Range($from, $to);
         }
 
@@ -81,4 +71,21 @@ class NumericClusterer implements Clusterer
         }
         return $ranges;
     }
+
+    private function generateClusters(float $maxNum, float $minNum, int $numSteps): array
+    {
+        $diff = $maxNum - $minNum;
+        $values = [];
+        $currVal = $minNum;
+        $incr = $diff / $numSteps;
+
+        for ($i = 0; $i < $numSteps; ++$i) {
+            $values[$i] = $currVal;
+            $currVal += $incr;
+        }
+        $values[$i] = $maxNum;
+        return $values;
+    }
+
+
 }

@@ -17,4 +17,9 @@ class PropertyWithURL extends Property
         $this->url = $url;
     }
 
+    public static function fromProperty(Property $property, string $displayTitle, string $url): self
+    {
+        return new self($property->title, $displayTitle, $property->type, $url);
+    }
+
 }

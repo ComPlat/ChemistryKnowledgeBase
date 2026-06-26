@@ -4,8 +4,8 @@ namespace DIQA\FacetedSearch2\Utils;
 
 use DIQA\FacetedSearch2\Update\FacetedSearchUtil;
 use MediaWiki\MediaWikiServices;
-use Title;
 use RequestContext;
+use MediaWiki\Title\Title;
 
 class WikiTools {
 
@@ -53,6 +53,17 @@ class WikiTools {
             return ucfirst($title);
         }
         return FacetedSearchUtil::findDisplayTitle(Title::newFromText($title, NS_CATEGORY));
+    }
+
+    public static function titleExists($text) {
+        if (!defined('MEDIAWIKI')) {
+            return false;
+        }
+        if (is_null($text) || trim($text) === '') {
+            return false;
+        }
+        $titleOfSearchText = Title::newFromTitle($text);
+        return !is_null($titleOfSearchText) ? $titleOfSearchText->exists() : null;
     }
 
     public static function getUserGroups() {

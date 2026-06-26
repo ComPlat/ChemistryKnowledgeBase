@@ -1,7 +1,7 @@
 {
 	"name": "PageForms",
 	"namemsg": "pageforms-name",
-	"version": "6.0.1",
+	"version": "6.0.8",
 	"author": [
 		"Yaron Koren",
 		"Stephan Gambke",
@@ -60,12 +60,22 @@
 		"Templates": "PFTemplates",
 		"MultiPageEdit": "PFMultiPageEdit",
 		"CreateTemplate": "PFCreateTemplate",
-		"CreateClass": "PFCreateClass",
+		"CreateClass": {
+			"class": "PFCreateClass",
+			"services": [
+				"JobQueueGroup",
+				"WikiPageFactory"
+			]
+		},
 		"CreateCategory": "PFCreateCategory",
-		"FormStart": "PFFormStart",
+		"FormStart": {
+			"class": "PFFormStart",
+			"services": [
+				"WikiPageFactory"
+			]
+		},
 		"FormEdit": "PFFormEdit",
-		"RunQuery": "PFRunQuery",
-		"UploadWindow": "PFUploadWindow"
+		"RunQuery": "PFRunQuery"
 	},
 	"JobClasses": {
 		"pageFormsCreatePage": "PFCreatePageJob"
@@ -80,89 +90,88 @@
 		]
 	},
 	"ExtensionMessagesFiles": {
-		"PageFormsAlias": "languages/PF_Aliases.php",
-		"PageFormsMagic": "languages/PF_Magic.php",
-		"PageFormsNS": "languages/PF_Namespaces.php"
+		"PageFormsAlias": "languages/PFAliases.php",
+		"PageFormsMagic": "languages/PFMagic.php",
+		"PageFormsNS": "languages/PFNamespaces.php"
 	},
 	"AutoloadClasses": {
-		"PFForms": "specials/PF_Forms.php",
-		"PFCreateForm": "specials/PF_CreateForm.php",
-		"PFTemplates": "specials/PF_Templates.php",
-		"PFMultiPageEdit": "specials/PF_MultiPageEdit.php",
-		"PFCreateTemplate": "specials/PF_CreateTemplate.php",
-		"PFCreateClass": "specials/PF_CreateClass.php",
-		"PFCreateCategory": "specials/PF_CreateCategory.php",
-		"PFFormStart": "specials/PF_FormStart.php",
-		"PFFormEdit": "specials/PF_FormEdit.php",
-		"PFRunQuery": "specials/PF_RunQuery.php",
-		"PFUploadForm": "specials/PF_UploadForm.php",
-		"PFUploadWindow": "specials/PF_UploadWindow.php",
-		"PFTemplateField": "includes/PF_TemplateField.php",
-		"PFForm": "includes/PF_Form.php",
-		"PFTemplate": "includes/PF_Template.php",
-		"PFTemplateInForm": "includes/PF_TemplateInForm.php",
-		"PFFormField": "includes/PF_FormField.php",
-		"PFFormPrinter": "includes/PF_FormPrinter.php",
-		"PFFormUtils": "includes/PF_FormUtils.php",
-		"PFUtils": "includes/PF_Utils.php",
-		"PFValuesUtils": "includes/PF_ValuesUtils.php",
-		"PFMappingUtils": "includes/PF_MappingUtils.php",
-		"PFHooks": "includes/PF_Hooks.php",
-		"PFFormLinker": "includes/PF_FormLinker.php",
-		"PFPageSchemas": "includes/PF_PageSchemas.php",
-		"PFArrayMap": "includes/parserfunctions/PF_ArrayMap.php",
-		"PFArrayMapTemplate": "includes/parserfunctions/PF_ArrayMapTemplate.php",
-		"PFAutoEdit": "includes/parserfunctions/PF_AutoEdit.php",
-		"PFAutoEditRating": "includes/parserfunctions/PF_AutoEditRating.php",
-		"PFDefaultForm": "includes/parserfunctions/PF_DefaultForm.php",
-		"PFFormInputParserFunction": "includes/parserfunctions/PF_FormInputParserFunction.php",
-		"PFFormLink": "includes/parserfunctions/PF_FormLink.php",
-		"PFFormRedLink": "includes/parserfunctions/PF_FormRedLink.php",
-		"PFQueryFormLink": "includes/parserfunctions/PF_QueryFormLink.php",
-		"PFTemplateParams": "includes/parserfunctions/PF_TemplateParams.php",
-		"PFTemplateDisplay": "includes/parserfunctions/PF_TemplateDisplay.php",
-		"PFAutocompleteAPI": "includes/PF_AutocompleteAPI.php",
-		"PFAutoeditAPI": "includes/PF_AutoeditAPI.php",
-		"PFFormEditAction": "includes/PF_FormEditAction.php",
-		"PFHelperFormAction": "includes/PF_HelperFormAction.php",
-		"PFPageSection": "includes/PF_PageSection.php",
-		"PFFormInput": "includes/forminputs/PF_FormInput.php",
-		"PFTextInput": "includes/forminputs/PF_TextInput.php",
-		"PFTextWithAutocompleteInput": "includes/forminputs/PF_TextWithAutocompleteInput.php",
-		"PFTextAreaInput": "includes/forminputs/PF_TextAreaInput.php",
-		"PFTextAreaWithAutocompleteInput": "includes/forminputs/PF_TextAreaWithAutocompleteInput.php",
-		"PFEnumInput": "includes/forminputs/PF_EnumInput.php",
-		"PFMultiEnumInput": "includes/forminputs/PF_MultiEnumInput.php",
-		"PFCheckboxInput": "includes/forminputs/PF_CheckboxInput.php",
-		"PFCheckboxesInput": "includes/forminputs/PF_CheckboxesInput.php",
-		"PFRadioButtonInput": "includes/forminputs/PF_RadioButtonInput.php",
-		"PFDropdownInput": "includes/forminputs/PF_DropdownInput.php",
-		"PFListBoxInput": "includes/forminputs/PF_ListBoxInput.php",
-		"PFComboBoxInput": "includes/forminputs/PF_ComboBoxInput.php",
-		"PFDateInput": "includes/forminputs/PF_DateInput.php",
-		"PFStartDateInput": "includes/forminputs/PF_StartDateInput.php",
-		"PFEndDateInput": "includes/forminputs/PF_EndDateInput.php",
-		"PFDatePickerInput": "includes/forminputs/PF_DatePickerInput.php",
-		"PFTimePickerInput": "includes/forminputs/PF_TimePickerInput.php",
-		"PFDateTimePicker": "includes/forminputs/PF_DateTimePicker.php",
-		"PFDateTimeInput": "includes/forminputs/PF_DateTimeInput.php",
-		"PFStartDateTimeInput": "includes/forminputs/PF_StartDateTimeInput.php",
-		"PFEndDateTimeInput": "includes/forminputs/PF_EndDateTimeInput.php",
-		"PFYearInput": "includes/forminputs/PF_YearInput.php",
-		"PFTreeInput": "includes/forminputs/PF_TreeInput.php",
-		"PFTree": "includes/forminputs/PF_Tree.php",
-		"PFTokensInput": "includes/forminputs/PF_TokensInput.php",
-		"PFGoogleMapsInput": "includes/forminputs/PF_GoogleMapsInput.php",
-		"PFOpenLayersInput": "includes/forminputs/PF_OpenLayersInput.php",
-		"PFLeafletInput": "includes/forminputs/PF_LeafletInput.php",
-		"PFRegExpInput": "includes/forminputs/PF_RegExpInput.php",
-		"PFRatingInput": "includes/forminputs/PF_RatingInput.php",
-		"PFWikiPage": "includes/wikipage/PF_WikiPage.php",
-		"PFWikiPageTemplate": "includes/wikipage/PF_WikiPageTemplate.php",
-		"PFWikiPageTemplateParam": "includes/wikipage/PF_WikiPageTemplateParam.php",
-		"PFWikiPageSection": "includes/wikipage/PF_WikiPageSection.php",
-		"PFWikiPageFreeText": "includes/wikipage/PF_WikiPageFreeText.php",
-		"PFCreatePageJob": "includes/PF_CreatePageJob.php",
+		"PFForms": "specials/PFForms.php",
+		"PFCreateForm": "specials/PFCreateForm.php",
+		"PFTemplates": "specials/PFTemplates.php",
+		"PFMultiPageEdit": "specials/PFMultiPageEdit.php",
+		"PFCreateTemplate": "specials/PFCreateTemplate.php",
+		"PFCreateClass": "specials/PFCreateClass.php",
+		"PFCreateCategory": "specials/PFCreateCategory.php",
+		"PFFormStart": "specials/PFFormStart.php",
+		"PFFormEdit": "specials/PFFormEdit.php",
+		"PFRunQuery": "specials/PFRunQuery.php",
+		"PFTemplateField": "includes/PFTemplateField.php",
+		"PFForm": "includes/PFForm.php",
+		"PFTemplate": "includes/PFTemplate.php",
+		"PFTemplateInForm": "includes/PFTemplateInForm.php",
+		"PFFormField": "includes/PFFormField.php",
+		"PFFormPrinter": "includes/PFFormPrinter.php",
+		"PFFormUtils": "includes/PFFormUtils.php",
+		"PFUtils": "includes/PFUtils.php",
+		"PFValuesUtils": "includes/PFValuesUtils.php",
+		"PFMappingUtils": "includes/PFMappingUtils.php",
+		"PFHooks": "includes/PFHooks.php",
+		"PFFormLinker": "includes/PFFormLinker.php",
+		"PFPageSchemas": "includes/PFPageSchemas.php",
+		"PFArrayMap": "includes/parserfunctions/PFArrayMap.php",
+		"PFArrayMapTemplate": "includes/parserfunctions/PFArrayMapTemplate.php",
+		"PFAutoEdit": "includes/parserfunctions/PFAutoEdit.php",
+		"PFAutoEditRating": "includes/parserfunctions/PFAutoEditRating.php",
+		"PFDefaultForm": "includes/parserfunctions/PFDefaultForm.php",
+		"PFFormInputParserFunction": "includes/parserfunctions/PFFormInputParserFunction.php",
+		"PFFormLink": "includes/parserfunctions/PFFormLink.php",
+		"PFFormRedLink": "includes/parserfunctions/PFFormRedLink.php",
+		"PFQueryFormLink": "includes/parserfunctions/PFQueryFormLink.php",
+		"PFTemplateParams": "includes/parserfunctions/PFTemplateParams.php",
+		"PFTemplateDisplay": "includes/parserfunctions/PFTemplateDisplay.php",
+		"PFPageNameFormula": "includes/parserfunctions/PFPageNameFormula.php",
+		"PFAutocompleteAPI": "includes/PFAutocompleteAPI.php",
+		"PFAutoeditAPI": "includes/PFAutoeditAPI.php",
+		"PFFormEditAction": "includes/PFFormEditAction.php",
+		"PFHelperFormAction": "includes/PFHelperFormAction.php",
+		"PFPageSection": "includes/PFPageSection.php",
+		"PFFormInput": "includes/forminputs/PFFormInput.php",
+		"PFTextInput": "includes/forminputs/PFTextInput.php",
+		"PFTextWithAutocompleteInput": "includes/forminputs/PFTextWithAutocompleteInput.php",
+		"PFTextAreaInput": "includes/forminputs/PFTextAreaInput.php",
+		"PFTextAreaWithAutocompleteInput": "includes/forminputs/PFTextAreaWithAutocompleteInput.php",
+		"PFEnumInput": "includes/forminputs/PFEnumInput.php",
+		"PFMultiEnumInput": "includes/forminputs/PFMultiEnumInput.php",
+		"PFCheckboxInput": "includes/forminputs/PFCheckboxInput.php",
+		"PFCheckboxesInput": "includes/forminputs/PFCheckboxesInput.php",
+		"PFRadioButtonInput": "includes/forminputs/PFRadioButtonInput.php",
+		"PFDropdownInput": "includes/forminputs/PFDropdownInput.php",
+		"PFListBoxInput": "includes/forminputs/PFListBoxInput.php",
+		"PFComboBoxInput": "includes/forminputs/PFComboBoxInput.php",
+		"PFDateInput": "includes/forminputs/PFDateInput.php",
+		"PFStartDateInput": "includes/forminputs/PFStartDateInput.php",
+		"PFEndDateInput": "includes/forminputs/PFEndDateInput.php",
+		"PFDatePickerInput": "includes/forminputs/PFDatePickerInput.php",
+		"PFTimePickerInput": "includes/forminputs/PFTimePickerInput.php",
+		"PFDateTimePicker": "includes/forminputs/PFDateTimePicker.php",
+		"PFDateTimeInput": "includes/forminputs/PFDateTimeInput.php",
+		"PFStartDateTimeInput": "includes/forminputs/PFStartDateTimeInput.php",
+		"PFEndDateTimeInput": "includes/forminputs/PFEndDateTimeInput.php",
+		"PFYearInput": "includes/forminputs/PFYearInput.php",
+		"PFTreeInput": "includes/forminputs/PFTreeInput.php",
+		"PFTree": "includes/forminputs/PFTree.php",
+		"PFTokensInput": "includes/forminputs/PFTokensInput.php",
+		"PFGoogleMapsInput": "includes/forminputs/PFGoogleMapsInput.php",
+		"PFOpenLayersInput": "includes/forminputs/PFOpenLayersInput.php",
+		"PFLeafletInput": "includes/forminputs/PFLeafletInput.php",
+		"PFRegExpInput": "includes/forminputs/PFRegExpInput.php",
+		"PFRatingInput": "includes/forminputs/PFRatingInput.php",
+		"PFWikiPage": "includes/wikipage/PFWikiPage.php",
+		"PFWikiPageTemplate": "includes/wikipage/PFWikiPageTemplate.php",
+		"PFWikiPageTemplateParam": "includes/wikipage/PFWikiPageTemplateParam.php",
+		"PFWikiPageSection": "includes/wikipage/PFWikiPageSection.php",
+		"PFWikiPageFreeText": "includes/wikipage/PFWikiPageFreeText.php",
+		"PFCreatePageJob": "includes/PFCreatePageJob.php",
 		"PFDateInputWidget": "includes/widgets/PFDateInputWidget.php"
 	},
 	"ResourceModules": {
@@ -210,27 +219,27 @@
 		},
 		"ext.pageforms.main.styles": {
 			"styles": [
-				"skins/PageForms.css",
+				"skins/PageForms.less",
 				"skins/PF_wizard.css"
 			]
 		},
-		"ext.pageforms.browser": {
+		"ext.pageforms.jstree": {
 			"scripts": [
-				"libs/jquery.browser.js"
+				"libs/foreign/jstree/jstree.js",
+				"libs/PF_tree.js"
 			],
+			"styles": "skins/jstree/jstree.css",
+			"dependencies": "ext.pageforms",
 			"targets": [
 				"desktop",
 				"mobile"
 			]
 		},
-		"ext.pageforms.jstree": {
+		"ext.pageforms.leaflet": {
 			"scripts": [
-				"libs/jstree.js",
-				"libs/PF_tree.js"
+				"libs/foreign/leaflet/leaflet.js"
 			],
-			"styles": [
-				"skins/jstree/jstree.css"
-			],
+			"styles": "libs/foreign/leaflet/leaflet.css",
 			"dependencies": "ext.pageforms",
 			"targets": [
 				"desktop",
@@ -238,8 +247,9 @@
 			]
 		},
 		"ext.pageforms.sortable": {
-			"scripts": [
-				"libs/Sortable.js"
+			"packageFiles": [
+
+				"libs/foreign/sortablejs/Sortable.js"
 			],
 			"targets": [
 				"desktop",
@@ -255,12 +265,18 @@
 				"mobile"
 			]
 		},
+		"ext.pageforms.uploadable": {
+			"dependencies": [
+				"mediawiki.Upload.Dialog"
+			],
+			"packageFiles": [
+				"libs/uploadable/init.js",
+				"libs/uploadable/Booklet.js"
+			]
+		},
 		"ext.pageforms.popupformedit": {
 			"scripts": "libs/PF_popupform.js",
-			"styles": "skins/PF_popupform.css",
-			"dependencies": [
-				"ext.pageforms.browser"
-			]
+			"styles": "skins/PF_popupform.css"
 		},
 		"ext.pageforms.autoedit": {
 			"scripts": "libs/PF_autoedit.js",
@@ -281,10 +297,12 @@
 		},
 		"ext.pageforms.autoeditrating": {
 			"scripts": [
-				"libs/jquery.rateyo.js",
+				"libs/foreign/jquery.rateyo/jquery.rateyo.js",
 				"libs/PF_AutoEditRating.js"
 			],
-			"styles": "skins/jquery.rateyo.css",
+			"styles": [
+				"libs/foreign/jquery.rateyo/jquery.rateyo.css"
+			],
 			"dependencies": [
 				"oojs-ui-windows"
 			],
@@ -397,7 +415,7 @@
 		},
 		"ext.pageforms.rating": {
 			"scripts": [
-				"libs/jquery.rateyo.js",
+				"libs/foreign/jquery.rateyo/jquery.rateyo.js",
 				"libs/PF_rating.js"
 			],
 			"dependencies": [
@@ -409,7 +427,7 @@
 			]
 		},
 		"ext.pageforms.rating.styles": {
-			"styles": "skins/jquery.rateyo.css"
+			"styles": "libs/foreign/jquery.rateyo/jquery.rateyo.css"
 		},
 		"ext.pageforms.simpleupload": {
 			"scripts": [
@@ -427,12 +445,14 @@
 		},
 		"ext.pageforms.select2": {
 			"scripts": [
-				"libs/select2.js",
+				"libs/foreign/select2/select2.js",
+				"libs/foreign/jquery.mousewheel/jquery.mousewheel.js",
 				"libs/ext.pf.select2.base.js",
 				"libs/ext.pf.select2.tokens.js"
 			],
 			"dependencies": [
 				"ext.pageforms",
+				"ext.pageforms.sortable",
 				"mediawiki.jqueryMsg"
 			],
 			"messages": [
@@ -447,7 +467,7 @@
 		},
 		"ext.pageforms.select2.styles": {
 			"styles": [
-				"skins/select2/select2.css",
+				"libs/foreign/select2/select2.css",
 				"skins/select2/select2-bootstrap.css",
 				"skins/ext.pf.select2.css"
 			]
@@ -506,11 +526,11 @@
 		},
 		"ext.pageforms.fullcalendar": {
 			"scripts": [
-				"libs/FullCalendar/fullcalendar.js",
+				"libs/foreign/fullcalendar/fullcalendar.js",
 				"libs/PF_FullCalendar.js"
 			],
 			"styles": [
-				"skins/FullCalendar/fullcalendar.css",
+				"libs/foreign/fullcalendar/fullcalendar.css",
 				"skins/PF_FullCalendar.css"
 			],
 			"dependencies": [
@@ -532,15 +552,15 @@
 		},
 		"ext.pageforms.spreadsheet": {
 			"scripts": [
-				"libs/jsuites.js",
-				"libs/jspreadsheet.js",
+				"libs/foreign/jsuites/jsuites.js",
+				"libs/foreign/jspreadsheet/jexcel.js",
 				"libs/PF_spreadsheet.js",
 				"libs/PF_SpreadsheetAutocompleteWidget.js",
 				"libs/PF_SpreadsheetComboBoxInput.js"
 			],
 			"styles": [
-				"skins/jsuites.css",
-				"skins/jspreadsheet.css",
+				"libs/foreign/jspreadsheet/jexcel.css",
+				"libs/foreign/jsuites/jsuites.css",
 				"skins/PF_spreadsheet.css"
 			],
 			"dependencies": [
@@ -679,14 +699,16 @@
 		"MakeGlobalVariablesScript": "PFHooks::setGlobalJSVariables",
 		"PageSchemasRegisterHandlers": "PFHooks::registerPageSchemasClass",
 		"EditPage::importFormData": "PFHooks::showFormPreview",
-		"PageSaveComplete": "PFHooks::setPostEditCookie",
+		"PageSaveComplete": [
+			"PFHooks::setPostEditCookie",
+			"PFHooks::renamePageBasedOnFormula"
+		],
 		"MultiContentSave": "PFFormUtils::purgeCacheOnSave",
 		"HtmlPageLinkRendererEnd": "PFFormLinker::setBrokenLink",
 		"AdminLinks": "PFHooks::addToAdminLinks",
 		"CargoTablesActionLinks": "PFHooks::addToCargoTablesLinks",
 		"CargoTablesSetAllowedActions": "PFHooks::addToCargoTablesColumns",
 		"CargoTablesSetActionLinks": "PFHooks::addToCargoTablesRow",
-		"TinyMCEDisable": "PFHooks::disableTinyMCE",
 		"CanonicalNamespaces": "PFHooks::registerNamespaces",
 		"ResourceLoaderRegisterModules": "PFHooks::registerModules",
 		"BeforePageDisplay": "PFHooks::handleForceReload"
@@ -706,7 +728,7 @@
 		"PageFormsRenameEditTabs": false,
 		"PageFormsRenameMainEditTab": false,
 		"PageFormsMainFormsMinimum": 0.01,
-		"PageFormsListSeparator":  ",",
+		"PageFormsListSeparator": ",",
 		"PageForms24HourTime": false,
 		"PageFormsCacheFormDefinitions": false,
 		"PageFormsFormCacheType": null,
@@ -731,16 +753,14 @@
 		"PageFormsDependentFields": [],
 		"PageFormsCheckboxesSelectAllMinimum": 10,
 		"PageFormsMapsWithFeeders": [],
-		"PageFormsAutoeditNamespaces": [ 0 ],
+		"PageFormsAutoeditNamespaces": [
+			0
+		],
 		"PageFormsAutoCreateUser": null,
 		"PageFormsIgnoreTitlePattern": [],
 		"PageFormsEmbeddedTemplates": [],
 		"PageFormsEmbedQueryCacheTTL": 0
 	},
-	"ForeignResourcesDir": "libs",
-	"AutoloadNamespaces": {
-		"MediaWiki\\Extension\\PageForms\\": "includes/"
-	},
-
+	"ForeignResourcesDir": "libs/foreign",
 	"manifest_version": 1
 }

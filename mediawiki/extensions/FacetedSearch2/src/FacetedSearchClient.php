@@ -37,15 +37,6 @@ interface FacetedSearchClient
     public function requestStats(StatsQuery $q): StatsResponse;
 
     /**
-     * Extracts fulltext from a file.
-     *
-     * @param string $fileContent The raw content of the file
-     * @param string $contentType The content media type (eg. application/pdf)
-     * @return string The extracted full-text
-     */
-    public function requestFileExtraction(string $fileContent, string $contentType): string;
-
-    /**
      * Returns a single document by ID with ALL its properties.
      *
      * @param string $id

@@ -56,9 +56,18 @@
 		this.setInputAttribute('mappingproperty', element.attr('mappingproperty'));
 		this.setInputAttribute('mappingtemplate', element.attr('mappingtemplate'));
 
-		// Initialize values in the combobox
-		this.setValues();
-
+		// Propagate tabindex to the OOUI widget's visible text input so that
+		// keyboard navigation reaches the combobox in the correct order.
+		// setInputAttribute() sets it on the underlying hidden input; we also
+		// set it explicitly on $input (the visible <input>) and remove it from
+		// the dropdown toggle button so focus stays on the text field.
+		const tabIndexVal = element.attr('tabindex');
+		if ( tabIndexVal !== undefined ) {
+			this.$input.attr( 'tabindex', tabIndexVal );
+			// Exclude the dropdown toggle button from the tab order; the
+			// text input already opens the dropdown on focus/keypress.
+			this.$element.find( '.oo-ui-indicatorElement-indicator' ).attr( 'tabindex', '-1' );
+		}
 		if (this.config.autocompletesettings == 'external data') {
 			// this is especially set for dependent on settings
 			// when the source field has external data autocompletion
@@ -109,7 +118,7 @@
 		});
 
 		this.$input.keyup( (event) => {
-			if (event.keyCode !== 38 && event.keyCode !== 40 && event.keyCode !== 37 && event.keyCode !== 39) {
+			if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
 				this.setValues(false);
 			}
 		});
@@ -555,8 +564,7 @@
 	};
 
 	pf.ComboBoxInput.prototype.getConditionForAutocompleteOnAllChars = function(str, curStr) {
-		const containsSubstr = str.toLowerCase().includes(curStr.toLowerCase());
-		return containsSubstr;
+		return str.toString().toLowerCase().includes(curStr.toLowerCase());
 	};
 
 	pf.ComboBoxInput.prototype.setInputAttribute = function(attr, value) {

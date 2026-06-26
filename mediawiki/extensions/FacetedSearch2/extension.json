@@ -1,7 +1,7 @@
 {
 	"name": "FacetedSearch2",
 	"author": [
-		"[http://www.diqa-pm.com DIQA]"
+		"[https://www.diqa.de DIQA]"
 	],
 	"url": "https://github.com/kkthek/faceted-search2",
 	"descriptionmsg": "facetedsearch2-desc",
@@ -9,9 +9,9 @@
 	"type": "other",
 	"version": "2.3",
 	"requires": {
-		"MediaWiki": ">= 1.35",
+		"MediaWiki": ">= 1.43",
 		"platform": {
-			"php": ">= 7.3"
+			"php": ">= 8.3"
 		}
 	},
 	"callback" : "DIQA\\FacetedSearch2\\Setup::initModules",
@@ -74,29 +74,17 @@
 	],
 	"config_prefix": "fs2g",
 	"config": {
-		"SolrCore": {
-			"value": "mw",
-			"description": "The name of the SOLR core which stores the index data of the wiki. (1 per each wiki)"
+        "Backend": {
+          "value": "solr",
+          "description": "The name of the backend to use. Currently only 'solr' is supported."
+        },
+		"BackendConfig": {
+			"value": [],
+			"description": "The configuration of the backend. This is individual for each backend"
 		},
-		"SolrHost": {
-			"value": "localhost",
-			"description": "The hostname of the SOLR server. Default is localhost. It is recommended that SOLR listens only on localhost."
-		},
-		"SolrPort": {
-			"value": 8983,
-			"description": "The port of the SOLR server. Default is 8983"
-		},
-		"SolrUser": {
-			"value": "",
-			"description": "The user of the SOLR server (usually required in multi-tenant environments or if the SOLR server is accessible via internet"
-		},
-		"SolrPass": {
-			"value": "",
-			"description": "The password of the SOLR user (see SolrUser setting)"
-		},
-		"SolrProxyDebug": {
+		"DebugMode": {
 			"value": false,
-			"description": "Activates maximum PHP error reporting. DO NOT use this for production but only for debugging purposes."
+			"description": "Activates debug mode. DO NOT use this for production but only for debugging purposes."
 		},
 		"AnnotationsInSnippet": {
 			"value": [],
@@ -256,7 +244,7 @@
 		},
 		"PropertyGroupingByUrl": {
 			"value": [],
-			"description": "Groups property values in OR-Dialog by a request to the wiki. ['Property name' => 'https://host/path/to/endpoint', ...]"
+			"description": "Groups property values in OR-Dialog by a request to a rest endpoint of the wiki. ['Property name' => '/path/to/endpoint', ...]"
 		},
 		"AdditionalLinks": {
 			"value": [],
@@ -277,6 +265,10 @@
         "CategoryTreeRoot": {
           "value": "",
           "description": "Defines the root category of the tree"
+        },
+        "ShowEmptyNamespaces": {
+          "value": false,
+          "description": "Shows empty namespaces (with 0 results)"
         }
 	},
 	"manifest_version": 2

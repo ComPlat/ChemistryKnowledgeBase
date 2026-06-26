@@ -2,6 +2,7 @@
 
 namespace DIQA\FacetedSearch2\SolrClient;
 
+use DIQA\FacetedSearch2\ConfigTools;
 use DIQA\FacetedSearch2\FacetedSearchClient;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Common\Order;
@@ -18,10 +19,11 @@ use DIQA\FacetedSearch2\Model\Response\Document;
 use DIQA\FacetedSearch2\Model\Response\DocumentsResponse;
 use DIQA\FacetedSearch2\Model\Response\FacetResponse;
 use DIQA\FacetedSearch2\Model\Response\StatsResponse;
+use DIQA\FacetedSearch2\Utils\Logger;
 use DIQA\FacetedSearch2\Utils\WikiTools;
 use Exception;
 use MediaWiki\MediaWikiServices;
-use Title;
+use MediaWiki\Title\Title;
 
 class SolrRequestClient implements FacetedSearchClient
 {
@@ -43,11 +45,12 @@ class SolrRequestClient implements FacetedSearchClient
         $sortsAndLimits = $this->encodeSortsAndLimits($q->sorts, $q->limit, $q->offset);
         $queryParams = array_merge($queryParams, $sortsAndLimits);
 
-        $response = new SolrResponseParser($this->requestSOLR($queryParams));
+        $response = new SolrResponseParser($this->requestSOLR($queryParams), $q->searchText);
         $docResponse = $response->parse()
             ->setDebugInfo(Util::buildQueryParams($queryParams));
 
         $this->fillEmptyCategoryFacetCounts($docResponse, $q);
+        $this->recalculateNamespaceCountsIfNecessary($docResponse, $q);
         return $docResponse;
     }
 
@@ -118,68 +121,9 @@ class SolrRequestClient implements FacetedSearchClient
 
         }
 
-        return $result->setDebugInfo(Util::buildQueryParams($queryParams));;
+        return $result->setDebugInfo(Util::buildQueryParams($queryParams));
     }
 
-    /**
-     * Sends a document to Tika and extracts text. If Tika does not
-     * know the format, an empty string is returned.
-     *
-     *  - PDF
-     *  - DOC/X (Microsoft Word)
-     *  - PPT/X (Microsoft Powerpoint)
-     *  - XLS/X (Microsoft Excel)
-     *
-     * @param mixed $title Title or filepath
-     *         Title object of document (must be of type NS_FILE)
-     *         or a filepath in the filesystem
-     * @return array e.g. [ text => extracted text of document, xml => full XML-response of Tika ]
-     * @throws Exception
-     */
-    public function extractDocument($title) {
-        if ($title instanceof Title) {
-            $file = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()->newFile($title);
-            $filepath = $file->getLocalRefPath();
-        } else {
-            $filepath = $title;
-        }
-
-        // get file and extension
-        $ext = pathinfo($filepath, PATHINFO_EXTENSION);
-
-        // choose content type
-        if ($ext == 'pdf') {
-            $contentType = 'application/pdf';
-        } else if ($ext == 'doc' || $ext == 'docx') {
-            $contentType = 'application/msword';
-        } else if ($ext == 'ppt' || $ext == 'pptx') {
-            $contentType = 'application/vnd.ms-powerpoint';
-        } else if ($ext == 'xls' || $ext == 'xlsx') {
-            $contentType = 'application/vnd.ms-excel';
-        } else {
-            // general binary data as fallback (don't know if Tika accepts it)
-            $contentType = 'application/octet-stream';
-        }
-
-        // do not index unknown formats
-        if ($contentType == 'application/octet-stream') {
-            return [];
-        }
-
-        // send document to Tika and extract text
-        try {
-            $text = $this->requestFileExtraction(file_get_contents($filepath), $contentType);
-
-            if ($text == '') {
-                throw new Exception(sprintf("\nWARN Kein extrahierter Text gefunden: %s\n", $title->getPrefixedText()));
-            }
-
-            return ['text' => $text];
-        } catch (Exception $e) {
-            throw new Exception(sprintf("\nERROR Keine Extraktion möglich: %s (HTTP code: %s)\n",
-                $title->getPrefixedText(), $e->getCode()));
-        }
-    }
 
     private function getParams(string $searchText,
                                array $propertyFacetConstraints, /* @var PropertyFacet[] */
@@ -395,9 +339,14 @@ class SolrRequestClient implements FacetedSearchClient
             $headerFields = [];
             $headerFields[] = "Content-Type: application/x-www-form-urlencoded; charset=UTF-8";
             $headerFields[] = "Expect:"; // disables 100 CONTINUE
+            $headerFields = array_merge($headerFields, Helper::getBasicAuthHeader());
             $ch = curl_init();
             $queryString = Util::buildQueryParams($queryParams);
             $url = Helper::getSOLRBaseUrl() . "/select";
+            global $fs2gDebugMode;
+            if ($fs2gDebugMode ?? false) {
+                Logger::log("Request: $url?$queryString");
+            }
 
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -416,6 +365,9 @@ class SolrRequestClient implements FacetedSearchClient
             $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             list($header, $body) = Util::splitResponse($response);
+            if ($fs2gDebugMode ?? false) {
+                Logger::log("Response: $body");
+            }
             if ($httpcode >= 200 && $httpcode <= 299) {
 
                 return json_decode($body);
@@ -428,49 +380,6 @@ class SolrRequestClient implements FacetedSearchClient
         }
     }
 
-    public function requestFileExtraction(string $fileContent, string $contentType): string
-    {
-        try {
-            $headerFields = [];
-            $headerFields[] = "Content-Type: $contentType";
-            $headerFields[] = "Expect:"; // disables 100 CONTINUE
-            $ch = curl_init();
-
-            $url = Helper::getSOLRBaseUrl() . "/update/extract?extractOnly=true&wt=json";
-
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fileContent);
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 20); //timeout in seconds
-
-            $response = curl_exec($ch);
-            if (curl_errno($ch)) {
-                $error_msg = curl_error($ch);
-                throw new Exception("Error on request: $error_msg");
-            }
-            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            list($header, $body) = Util::splitResponse($response);
-            if ($httpcode >= 200 && $httpcode <= 299) {
-
-                $result = json_decode($body);
-                $xml = $result->{''};
-                $text = strip_tags(str_replace('<', ' <', $xml));
-                return preg_replace('/\s\s*/', ' ', $text);
-
-            }
-            throw new Exception("Error on select-request. HTTP status: $httpcode. Message: $body");
-
-        } finally {
-            curl_close($ch);
-        }
-    }
-
-
     /**
      * Fills empty category facet counts if category facet is selected but there are no results
      */
@@ -482,6 +391,21 @@ class SolrRequestClient implements FacetedSearchClient
                 $docResponse->categoryFacetCounts[] = new CategoryFacetCount($c, WikiTools::getDisplayTitleForCategory($c), 0);
             }
         }
+    }
+
+    private function recalculateNamespaceCountsIfNecessary(DocumentsResponse $docResponse, DocumentQuery $q): void
+    {
+        if (count($q->namespaceFacets) === 0 || $q->limit === 0) {
+            return;
+        }
+        $queryParams = $this->getParams($q->searchText, $q->propertyFacets, $q->categoryFacets,
+            ConfigTools::getAllowedNamespaces(), []);
+        $sortsAndLimits = $this->encodeSortsAndLimits([], 0, 0);
+        $queryParams = array_merge($queryParams, $sortsAndLimits);
+
+        $response = new SolrResponseParser($this->requestSOLR($queryParams));
+        $parsedResponse = $response->parse();
+        $docResponse->namespaceFacetCounts = $parsedResponse->namespaceFacetCounts;
     }
 
 }

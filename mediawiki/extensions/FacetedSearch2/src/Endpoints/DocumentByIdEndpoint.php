@@ -4,7 +4,6 @@ namespace DIQA\FacetedSearch2\Endpoints;
 
 use DIQA\FacetedSearch2\ConfigTools;
 use DIQA\FacetedSearch2\Model\Request\DocumentByIdQuery;
-use DIQA\FacetedSearch2\Setup;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\Response;
 

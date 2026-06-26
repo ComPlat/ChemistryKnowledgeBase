@@ -2,8 +2,6 @@
 
 namespace DIQA\FacetedSearch2;
 
-use DIQA\FacetedSearch2\Model\Update\Document;
-
 interface FacetedSearchUpdateClient
 {
     /**
@@ -12,7 +10,7 @@ interface FacetedSearchUpdateClient
      * @param array $docs array of Document objects
      * @return mixed result ignored for now
      */
-    public function updateDocuments(array $docs);
+    public function updateDocuments(... $docs);
 
     /**
      * Deletes a wiki page with the given page-ID from the index
@@ -27,5 +25,24 @@ interface FacetedSearchUpdateClient
      * @return mixed result ignored for now
      */
     public function clearAllDocuments();
+
+    /**
+     * Initializes the index.
+     */
+    public function initIndex(): bool;
+
+    /**
+     * Deletes the index.
+     * @return void
+     */
+    public function deleteIndex(): void;
+
+    /**
+     * Checks if the index exists.
+     * @return bool
+     */
+    public function existsIndex(): bool;
+
+    public function refreshIndex(): void;
 
 }
