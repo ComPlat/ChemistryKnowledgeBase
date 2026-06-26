@@ -2,7 +2,9 @@
 
 namespace DIQA\ChemExtension\PublicationSearch;
 
+use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\IMaintainableDatabase;
+use Wikimedia\Rdbms\LikeValue;
 
 class PublicationSearchRepository {
     private $db;
@@ -159,60 +161,29 @@ class PublicationSearchRepository {
 
     public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved, $filter): array {
 
-        if ($topic !== '') {
-            $topic = $this->db->strencode($topic);
-            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
-        } else {
-            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
-        }
-        if ($onlyApproved) {
-            $where .= " AND approved = 1";
-        }
-        if ($filter !== '') {
-            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($terms as $term) {
-                $escaped = $this->db->strencode(mb_strtolower($term));
-                $where .= " AND (LOWER(title) LIKE '%$escaped%' OR LOWER(doi) LIKE '%$escaped%')";
-            }
-        }
+        $conditions = $this->getConditionsForRelevantPublications($topic, $onlyApproved, $filter);
 
         $res = $this->db->select(
             'publications',
             [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
-            [ $where ],
+            $conditions,
             __METHOD__,
             ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC', 'GROUP BY' => 'title']
         );
         $results = [];
         foreach ($res as $row) {
             $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published,
-                                    $row->check_result, $row->approved, $row->created);
+                $row->check_result, $row->approved, $row->created);
         }
 
         return $results;
     }
-
-    public function getRelevantPublicationsCount($topic, $isApproved, $filter): int {
-        if ($topic !== '') {
-            $topic = $this->db->strencode($topic);
-            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
-        } else {
-            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
-        }
-        if ($filter !== '') {
-            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($terms as $term) {
-                $escaped = $this->db->strencode(mb_strtolower($term));
-                $where .= " AND (LOWER(title) LIKE '%$escaped%' OR LOWER(doi) LIKE '%$escaped%')";
-            }
-        }
-        if ($isApproved) {
-            $where .= " AND approved = 1";
-        }
+    public function getRelevantPublicationsCount($topic, $onlyApproved, $filter): int {
+        $conditions = $this->getConditionsForRelevantPublications($topic, $onlyApproved, $filter);
         return $this->db->select(
             'publications',
             [ 'count(DISTINCT title) as count' ],
-            [ $where ],
+            $conditions,
             __METHOD__,
             []
         )->fetchObject()->count;
@@ -221,5 +192,51 @@ class PublicationSearchRepository {
     public function deleteNotRelevantPublications(): void
     {
         $this->db->delete('publications', [ 'check_result' => 'not relevant' ]);
+    }
+
+    /**
+     * @param $topic
+     * @param bool $onlyApproved
+     * @param $filter
+     * @return array
+     */
+    public function getConditionsForRelevantPublications($topic, bool $onlyApproved, $filter): array
+    {
+        $conditions = [];
+        $conditions[] = $this->db->expr('check_result', '!=', null);
+
+        if ($topic !== '') {
+            $conditions[] = $this->db->expr(
+                'check_result',
+                IExpression::LIKE,
+                new LikeValue($this->db->anyString(), $topic, $this->db->anyString())
+            );
+        } else {
+            $conditions[] = $this->db->expr('check_result', '!=', 'not relevant');
+        }
+
+        if ($onlyApproved) {
+            $conditions['approved'] = 1;
+        }
+
+        if ($filter !== '') {
+            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($terms as $term) {
+                // Relies on a case-insensitive collation (the MW default *_ci),
+                // so we don't need LOWER() on the column side.
+                $titleExpr = $this->db->expr(
+                    'title',
+                    IExpression::LIKE,
+                    new LikeValue($this->db->anyString(), $term, $this->db->anyString())
+                );
+                $doiExpr = $this->db->expr(
+                    'doi',
+                    IExpression::LIKE,
+                    new LikeValue($this->db->anyString(), $term, $this->db->anyString())
+                );
+                $conditions[] = $titleExpr->orExpr($doiExpr);
+            }
+        }
+        return $conditions;
     }
 }
