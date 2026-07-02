@@ -519,7 +519,8 @@ $fsgShowNamespaces=false;
 $fsgShowArticleProperties=false;
 $fsgCreateNewPageLink = "/{article}?veaction=edit";
 $fsgEnableIncrementalIndexer = false;
-wfLoadExtension( 'EnhancedRetrieval' );
+# Deactivate for now
+#wfLoadExtension( 'EnhancedRetrieval' );
 
 
 #################################################################
@@ -577,7 +578,7 @@ $fs2gNamespacesForSearchField = [ NS_MAIN, NS_CATEGORY, NS_MOLECULE, NS_REACTION
 $fs2gShowNamespaces=false;
 $fs2gShowArticleProperties=false;
 $fs2gCreateNewPageLink = "/{article}?veaction=edit";
-$fs2gFacetedSearchForMW = false;
+$fs2gFacetedSearchForMW = true;
 $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
     "categoryLabel", "categoryDropDown", "categoryTree", "categoryView", "facetView"];
 
