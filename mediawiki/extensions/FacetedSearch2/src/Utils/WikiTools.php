@@ -62,7 +62,7 @@ class WikiTools {
         if (is_null($text) || trim($text) === '') {
             return false;
         }
-        $titleOfSearchText = Title::newFromTitle($text);
+        $titleOfSearchText = Title::newFromText($text);
         return !is_null($titleOfSearchText) ? $titleOfSearchText->exists() : null;
     }
 
