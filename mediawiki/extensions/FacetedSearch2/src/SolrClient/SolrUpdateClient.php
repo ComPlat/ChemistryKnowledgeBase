@@ -6,25 +6,41 @@ use DIQA\FacetedSearch2\FacetedSearchUpdateClient;
 
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Update\Document;
+use DIQA\FacetedSearch2\Utils\Logger;
 use Exception;
 
 class SolrUpdateClient implements FacetedSearchUpdateClient
 {
 
-    public function updateDocuments(... $docs) {
+    /**
+     * @throws Exception
+     */
+    public function updateDocuments(... $docs): void
+    {
 
         $xml = join("\n", array_map(fn($d) => $this->serializeAsXml($d), $docs));
+        $this->logIfConfigured($xml);
         $this->updateSOLR("<add>$xml</add>");
-        return $xml;
     }
 
-    public function deleteDocument(string $id)
+    /**
+     * @throws Exception
+     */
+    public function deleteDocument(string $id): void
     {
-        $this->updateSOLR("<delete><query>id:$id</query></delete>");
+        $xml = "<delete><query>id:$id</query></delete>";
+        $this->logIfConfigured($xml);
+        $this->updateSOLR($xml);
     }
 
-    public function clearAllDocuments() {
-        $this->updateSOLR("<delete><query>*:*</query></delete>");
+    /**
+     * @throws Exception
+     */
+    public function clearAllDocuments(): void
+    {
+        $xml = "<delete><query>*:*</query></delete>";
+        $this->logIfConfigured($xml);
+        $this->updateSOLR($xml);
     }
 
     private function serializeAsXml(Document $doc): string
@@ -62,7 +78,8 @@ XML;
 
     }
 
-    private function createField($field, $value) {
+    private function createField($field, $value): string
+    {
         $xml = '';
         if (!is_null($value)) {
             $xml .= "<field name='".$field."'><![CDATA[" . $value . "]]></field>";
@@ -137,7 +154,7 @@ XML;
         return array($categoriesAsXML, $directCategoriesAsXML);
     }
 
-    private function updateSOLR($xml)
+    private function updateSOLR($xml): void
     {
         try {
             $headerFields = [];
@@ -163,15 +180,16 @@ XML;
                 $error_msg = curl_error($ch);
                 throw new Exception("Error on request: $error_msg");
             }
-            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             list($header, $body) = Util::splitResponse($response);
-            if ($httpcode >= 200 && $httpcode <= 299) {
+            if ($httpCode >= 200 && $httpCode <= 299) {
 
-                return json_decode($body);
+                json_decode($body);
+                return;
 
             }
-            throw new Exception("Error on update-request. HTTP status: $httpcode. Message: $body");
+            throw new Exception("Error on update-request. HTTP status: $httpCode. Message: $body");
 
         } finally {
             curl_close($ch);
@@ -199,5 +217,16 @@ XML;
     public function refreshIndex(): void
     {
         // no impl. for SOLR
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function logIfConfigured(string $xml): void
+    {
+        global $fs2gDebugMode;
+        if ($fs2gDebugMode ?? false) {
+            Logger::info("SOLR request: " . $xml);
+        }
     }
 }

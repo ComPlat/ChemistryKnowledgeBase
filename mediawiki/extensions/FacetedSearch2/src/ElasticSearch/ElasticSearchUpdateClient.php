@@ -7,9 +7,11 @@ use DIQA\FacetedSearch2\FacetedSearchUpdateClient;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Update\Document;
 use DIQA\FacetedSearch2\Model\Update\PropertyValues;
+use DIQA\FacetedSearch2\Utils\Logger;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Exception;
 
 class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements FacetedSearchUpdateClient
 {
@@ -40,7 +42,7 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
                 $params['body'][] = $this->getDocumentBody($doc);
 
                 if ($i % self::MAX_BULK_SIZE == 0) {
-
+                    $this->logIfConfigured("updateDocuments", $params);
                     $responses = $this->client->bulk($params);
                     $params = ['body' => []];
                     unset($responses);
@@ -49,11 +51,13 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
             }
 
             if (!empty($params['body'])) {
+                $this->logIfConfigured("updateDocuments", $params);
                 $this->client->bulk($params);
             }
         } catch (
         ClientResponseException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
     }
@@ -67,10 +71,12 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         $params['id'] = $id;
 
         try {
+            $this->logIfConfigured("deleteDocument", $params);
             $this->client->delete($params);
         } catch (ClientResponseException
         |MissingParameterException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
     }
@@ -83,10 +89,12 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         $params = $this->getParamForIndex();
         $params['body'] = ['query' => ['match_all' => new \stdClass()]];
         try {
+            $this->logIfConfigured("clearAllDocuments", $params);
             $this->client->deleteByQuery($params);
         } catch (ClientResponseException
         |MissingParameterException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
     }
@@ -98,10 +106,12 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
     {
         $params = $this->getParamForIndex();
         try {
+            $this->logIfConfigured("deleteIndex", $params);
             $this->client->indices()->delete($params);
         } catch (ClientResponseException
         |MissingParameterException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
 
@@ -121,12 +131,13 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
             }
 
             $params['body'] = $this->getSchemaMappings();
-
+            $this->logIfConfigured("initIndex",$params);
             $this->client->indices()->create($params);
             return true;
         } catch (ClientResponseException
         |MissingParameterException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
 
@@ -246,12 +257,14 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
     {
         try {
             $params = $this->getParamForIndex();
+            $this->logIfConfigured("existsIndex", $params);
             $response = $this->client->indices()->exists($params);
             return $response->asBool();
         } catch (
         ClientResponseException
         |MissingParameterException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
     }
@@ -263,10 +276,12 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
     {
         try {
             $params = $this->getParamForIndex();
+            $this->logIfConfigured("refreshIndex", $params);
             $this->client->indices()->refresh($params);
         } catch (
         ClientResponseException
-        |ServerResponseException $e) {
+        |ServerResponseException
+        |Exception $e) {
             throw BackendException::create($e);
         }
     }
@@ -319,4 +334,14 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         return $result;
     }
 
+    /**
+     * @throws Exception
+     */
+    private function logIfConfigured(string $operation, array $params): void
+    {
+        global $fs2gDebugMode;
+        if ($fs2gDebugMode ?? false) {
+            Logger::info("ES request ($operation): " . json_encode($params));
+        }
+    }
 }

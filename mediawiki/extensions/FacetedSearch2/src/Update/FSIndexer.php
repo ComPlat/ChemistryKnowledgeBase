@@ -15,17 +15,17 @@ use WikiPage;
 class FSIndexer
 {
 
-    public static function indexArticle(Title $title, &$messages = [])
+    public static function indexArticle(Title $title, &$messages = []): void
     {
-        return self::indexArticlesWithText([$title], null, $messages);
+        self::indexArticlesWithText([$title], null, $messages);
     }
 
-    public static function indexArticles(array $titles, &$messages = [])
+    public static function indexArticles(array $titles, &$messages = []): void
     {
-        return self::indexArticlesWithText($titles, null, $messages);
+        self::indexArticlesWithText($titles, null, $messages);
     }
 
-    public static function indexArticlesWithText(array $titles, $text, &$messages = [])
+    public static function indexArticlesWithText(array $titles, $text, &$messages = []): void
     {
         $client = ConfigTools::getFacetedSearchUpdateClient();
         $smwDBReader = new MWDBReader();
@@ -33,17 +33,17 @@ class FSIndexer
         foreach ($titles as $title) {
             $documents[] = $smwDBReader->fromWikiPage(new WikiPage($title), $text, $messages);
         }
-        return $client->updateDocuments(...$documents);
+        $client->updateDocuments(...$documents);
     }
 
-    public static function indexArticlesWithDependent($title, & $messages = [])
+    public static function indexArticlesWithDependent($title, & $messages = []): void
     {
         $pagesToUpdate = [];
         $pagesToUpdate[] = $title;
         $pagesToUpdate = array_merge($pagesToUpdate, self::retrieveDependent($title));
         $pagesToUpdate = array_unique($pagesToUpdate);
 
-        return self::indexArticles($pagesToUpdate, $messages);
+        self::indexArticles($pagesToUpdate, $messages);
 
     }
 

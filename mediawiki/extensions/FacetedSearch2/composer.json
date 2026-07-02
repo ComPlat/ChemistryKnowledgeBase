@@ -37,7 +37,8 @@
         "ext-dom": "*",
         "ext-libxml": "*",
         "ext-ctype": "*",
-        "ext-intl": "*"
+        "ext-intl": "*",
+        "ext-curl": "*"
     },
 	"suggest": {
 
@@ -77,7 +78,7 @@
 		"exclude": [
 			"/.git", "/.idea", "/vm-ubuntu", "/test",
 			"/fs-react", "!/fs-react/dist", "/vendor",
-			"/rest.php", "/runTests.sh", "/phpunit", "/composer.lock"
+            "/dev", "/runTests.sh", "/composer.lock"
 		]
 	}
 }

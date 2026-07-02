@@ -1,6 +1,8 @@
 # faceted-search-2
 Next generation of EnhancedRetrieval
 
+This documentation is for **developers**.
+
 # Create VM
 
 * Install Virtualbox - `https://www.virtualbox.org/`
@@ -39,6 +41,7 @@ Open CMD console and change to folder "fs-react"
 * ``npm start`` (to run the webserver for local development)
 * ``npm run dev-build`` (DEV build)
 * ``npm run build`` (PROD build)
+* ``npm run installjs`` (copies the deployable to the public folder)
 * ``npm test`` (to run all unit tests)
 * ``npm run it-test`` (to run all integration-tests)
 

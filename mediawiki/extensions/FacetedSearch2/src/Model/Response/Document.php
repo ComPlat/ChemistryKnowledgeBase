@@ -6,6 +6,9 @@ use DIQA\FacetedSearch2\Utils\WikiTools;
 
 class Document
 {
+
+    use DebugInfo;
+
     public string $id;
     /* @var PropertyFacetValues[] */
     public array $propertyFacets;
@@ -35,7 +38,9 @@ class Document
      * @param float $score
      * @param string|null $highlighting
      */
-    public function __construct(string $id, array $propertyFacets, array $categoryFacets, array $directCategoryFacets, NamespaceFacetValue $namespaceFacet, string $title, string $displayTitle, string $url, float $score, ?string $highlighting)
+    public function __construct(string $id, array $propertyFacets, array $categoryFacets, array $directCategoryFacets,
+                                NamespaceFacetValue $namespaceFacet, string $title, string $displayTitle, string $url,
+                                float $score, ?string $highlighting)
     {
         $this->id = $id;
         $this->propertyFacets = $propertyFacets;

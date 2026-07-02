@@ -21,8 +21,12 @@ use DIQA\FacetedSearch2\Model\Response\DocumentsResponse;
 use DIQA\FacetedSearch2\Model\Response\FacetResponse;
 use DIQA\FacetedSearch2\Model\Response\StatsResponse;
 use DIQA\FacetedSearch2\Utils\DateTools;
+use DIQA\FacetedSearch2\Utils\Logger;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Response\Elasticsearch;
+use Exception;
+use Http\Promise\Promise;
 
 class ElasticSearchQueryClient extends AbstractElasticSearchClient implements FacetedSearchClient
 {
@@ -71,15 +75,16 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
             ];
 
 
-            $response = $this->client->search($params);
+            $response = $this->requestES($params);
             $response = $response->asArray();
 
-            $documentsResponse = $this->queryResponseParser->parseDocumentsResponse($response, $q);
+            $documentsResponse = $this->queryResponseParser->parseDocumentsResponse($response, $q)
+                ->setDebugInfo(json_encode($params));
             $this->fillEmptyCategoryFacetCounts($documentsResponse, $q);
             $this->recalculateNamespaceCountsIfNecessary($documentsResponse, $q);
             return $documentsResponse;
-        } catch (ClientResponseException|ServerResponseException $e) {
-            throw BackendException::create($e);
+        } catch (ClientResponseException|ServerResponseException|Exception $e) {
+            $this->handleException($e);
         }
     }
 
@@ -104,13 +109,14 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
                 $params['body']['aggs'] = $aggs;
             }
 
-            $response = $this->client->search($params);
+            $response = $this->requestES($params);
             $response = $response->asArray();
 
             $propertyValueCounts = $this->queryResponseParser->parsePropertyValueCounts($q, $response['aggregations']);
-            return new FacetResponse($propertyValueCounts);
-        } catch (ClientResponseException|ServerResponseException $e) {
-            throw BackendException::create($e);
+            return (new FacetResponse($propertyValueCounts))
+                ->setDebugInfo(json_encode($params));
+        } catch (ClientResponseException|ServerResponseException|Exception $e) {
+            $this->handleException($e);
         }
     }
 
@@ -138,12 +144,13 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
                 'aggs' => $aggs,
                 'size' => 0
             ];
-            $response = $this->client->search($params);
+            $response = $this->requestES($params);
             $response = $response->asArray();
             $stats = $this->queryResponseParser->parseStats($q, $response['aggregations']);
-            return new StatsResponse($stats);
-        } catch (ClientResponseException|ServerResponseException $e) {
-            throw BackendException::create($e);
+            return (new StatsResponse($stats))
+                ->setDebugInfo(json_encode($params));
+        } catch (ClientResponseException|ServerResponseException|Exception $e) {
+            $this->handleException($e);
         }
     }
 
@@ -159,17 +166,18 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
                 'query' => ['ids' => ['values' => [$id]]],
             ];
 
-            $response = $this->client->search($params);
+            $response = $this->requestES($params);
             $response = $response->asArray();
             $hits = $response['hits']['hits'] ?? [];
             if (count($hits) === 0) {
                 throw new BackendException("No document with ID $id found", 400, null);
             }
             $doc = $hits[0];
-            return $this->queryResponseParser->parseDocument($doc);
+            return $this->queryResponseParser->parseDocument($doc)
+                    ->setDebugInfo(json_encode($params));
 
-        } catch (ClientResponseException|ServerResponseException $e) {
-            throw BackendException::create($e);
+        } catch (ClientResponseException|ServerResponseException|Exception $e) {
+            $this->handleException($e);
         }
     }
 
@@ -434,6 +442,37 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
     {
         $query['bool']['must'] = count($query['bool']['must']) > 0 ? $query['bool']['must'] : ['match_all' => new \stdClass()];
         return $query;
+    }
+
+    /**
+     * @param array $params
+     * @return Elasticsearch|Promise
+     * @throws ClientResponseException
+     * @throws ServerResponseException
+     * @throws Exception
+     */
+    public function requestES(array $params): Promise|Elasticsearch
+    {
+        global $fs2gDebugMode;
+        if ($fs2gDebugMode ?? false) {
+            Logger::log("ES request: " . json_encode($params));
+        }
+        return $this->client->search($params);
+    }
+
+    /**
+     * @param ServerResponseException|Exception|ClientResponseException $e
+     * @return void
+     * @throws BackendException
+     * @throws Exception
+     */
+    public function handleException(ServerResponseException|Exception|ClientResponseException $e): void
+    {
+        global $fs2gDebugMode;
+        if ($fs2gDebugMode ?? false) {
+            Logger::error("ES response: " . $e->getMessage());
+        }
+        throw BackendException::create($e);
     }
 
 }

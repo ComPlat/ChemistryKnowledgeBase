@@ -164,9 +164,9 @@ class UpdateIndex extends \Maintenance
 
         try {
             $messages = [];
-            $response = FSIndexer::indexArticle($title, $messages);
+            FSIndexer::indexArticle($title, $messages);
             if ($this->hasOption('x')) {
-                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s\n%s", $title->getPrefixedText(), $response);
+                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s", $title->getPrefixedText());
             }
             if (count($messages) > 0) {
                 print implode("\t\n", $messages);

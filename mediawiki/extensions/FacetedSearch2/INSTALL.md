@@ -6,10 +6,11 @@
 * Composer
 * MediaWiki 1.43.x (LTS)
 * SMW 6.x (optional)
-* Apache SOLR server v8.30+
+* Apache SOLR server v8.30+ or ElasticSearch v9.0+
 
-	You can set up your own Solr server. Please use the SOLR-schema given in:
-		solr-config.zip (tested with Solr 8.30)
+
+You can set up your own Solr server. Please use the SOLR-schema given in:
+`solr-8-config.zip` (tested with Solr 8.30). For ElasticSearch the schema is created automatically.
 		
 ## Installation Instructions 
 
@@ -45,9 +46,9 @@ You can EITHER use SOLR or ElasticSearch as the index backend.
  
 * Add to your LocalSettings.php (adjust the values if different from default):
 
-      # Default values:
-
       $fs2gBackend = 'solr';          
+
+      # Default values:
       $fs2gBackendConfig = [
         'host' => 'localhost',  
         'port' => 8983,         
@@ -65,9 +66,9 @@ You can EITHER use SOLR or ElasticSearch as the index backend.
 * Install ElasticSearch according to the instructions on https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html
 * Add to your LocalSettings.php (adjust the values if different from default):
 
-      # Default values:
-
       $fs2gBackend = 'elastic';          
+
+      # Default values:
       $fs2gBackendConfig = [
         'host' => 'localhost',  
         'port' => 9200,         
@@ -113,7 +114,7 @@ All options are set in `LocalSettings.php` using the prefix `$fs2g`, e.g. `$fs2g
 
 ### `Backend`
 - **Default:** `"solr"`
-- The backend used for indexing. Currently, only `solr` is supported.
+- The backend used for indexing. Currently, only `solr` and `elastic` are supported.
 
 ### `BackendConfig`
 - **Default:** `[]`
@@ -122,8 +123,8 @@ All options are set in `LocalSettings.php` using the prefix `$fs2g`, e.g. `$fs2g
 ### `DebugMode`
 - **Default:** `false`
 - Activates debug mode. **Must not be used in production** — for debugging purposes only. 
-If activated, SOLR queries and responses are logged to a file in the "logs"-folder.
-Additionally, the SOLR request is echoed in the frontend's POST-requests.
+If activated, queries to backend and responses are logged to a file in the "logs"-folder.
+Additionally, the backend request is echoed in the frontend's POST-requests.
 
 ---
 
@@ -192,6 +193,10 @@ $fs2gDateTimePropertyClusters['Released on'] = [
 ---
 
 ### Search UI
+
+### `FacetedSearchForMW`
+- **Default:** `false`
+- If true, searches that entered the standard MediaWiki search field are redirected to the faceted search special page. If false, the search is only available on the special page `Special:FacetedSearch2`.
 
 ### `HitsPerPage`
 - **Default:** `10`

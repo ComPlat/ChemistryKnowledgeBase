@@ -64,7 +64,7 @@ class Setup
             $wgSpecialPages['Search'] = "DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial";
         } else {
             global $fs2gFacetedSearchForMW;
-            if (!$fs2gFacetedSearchForMW) {
+            if (!($fs2gFacetedSearchForMW ?? false)) {
                 global $wgSpecialPages;
                 unset($wgSpecialPages['Search']);
             }
@@ -86,11 +86,15 @@ class Setup
 
     public static function initializeBeforeParserInit()
     {
+        if (PHP_SAPI == 'cli') {
+            return true;
+        }
+
         if (!RequestContext::getMain()->hasTitle()) {
             return true;
         }
 
-        if (PHP_SAPI == 'cli' || !self::isSpecialPageOrProxy()) {
+        if (!self::isSpecialPageOrProxy()) {
             return true;
         }
 

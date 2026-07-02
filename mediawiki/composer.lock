@@ -755,18 +755,19 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/kkthek/faceted-search-2.git",
-                "reference": "a49fc692a892126824579705cbb0de012f12034c"
+                "reference": "6cbc716a94b713e6a56137df6d5a7bda31989157"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kkthek/faceted-search-2/zipball/a49fc692a892126824579705cbb0de012f12034c",
-                "reference": "a49fc692a892126824579705cbb0de012f12034c",
+                "url": "https://api.github.com/repos/kkthek/faceted-search-2/zipball/6cbc716a94b713e6a56137df6d5a7bda31989157",
+                "reference": "6cbc716a94b713e6a56137df6d5a7bda31989157",
                 "shasum": ""
             },
             "require": {
                 "composer/installers": "1.*,>=1.0.1|2.*",
                 "elasticsearch/elasticsearch": "^8.19",
                 "ext-ctype": "*",
+                "ext-curl": "*",
                 "ext-dom": "*",
                 "ext-intl": "*",
                 "ext-libxml": "*",
@@ -817,7 +818,7 @@
                 "issues": "https://support.diqa-pm.com/",
                 "source": "https://github.com/kkthek/faceted-search-2/tree/main"
             },
-            "time": "2026-06-26T09:54:18+00:00"
+            "time": "2026-07-02T15:23:35+00:00"
         },
         {
             "name": "diqa/formatter",
