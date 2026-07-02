@@ -141,6 +141,12 @@
         position: "bottom",
         closeOnClickOutside: false,
         allowAutomaticNext: false,
+    }).transition(function () {
+        if (gt.isEditing()) {
+            return 'pub_feat';
+        }
+        gt.endTour();  // remove the cookie, tour won't reopen
+        return gt.TransitionAction.HIDE;
     })
         .back("inv_nav");
 
