@@ -1,0 +1,20 @@
+Subject: [PATCH] moved patches for PageForms
+---
+Index: mediawiki/extensions/FacetedSearch2/src/Update/MWDBReader.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/FacetedSearch2/src/Update/MWDBReader.php b/mediawiki/extensions/FacetedSearch2/src/Update/MWDBReader.php
+--- a/mediawiki/extensions/FacetedSearch2/src/Update/MWDBReader.php	(revision 19fb9457b666917e565bd7c1a159e67a5c455116)
++++ b/mediawiki/extensions/FacetedSearch2/src/Update/MWDBReader.php	(date 1783080168803)
+@@ -77,6 +77,9 @@
+ 
+         $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+         $hookContainer->run('fs_saveArticle', [$text, &$doc]);
++        $hookContainer->run('FS_ExtendSearchFulltext', [& $extText]);
++        $hookContainer->run('CleanupChemExtState');
++        $doc['smwh_full_text'] .= $extText;
+ 
+         $document = new Document($doc['id'],
+             $doc['smwh_title'],
