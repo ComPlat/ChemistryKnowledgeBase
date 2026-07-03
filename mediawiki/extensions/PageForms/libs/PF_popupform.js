@@ -75,11 +75,11 @@ window.ext.popupform = ( function() {
 		const oldContW = $content.width();
 		const oldContH = $content.height();
 
-		const availW = Math.floor( jQuery(window).width() * 0.8 );
-		const availH = Math.floor( jQuery(window).height() * 0.8 );
+		const availW = Math.floor( jQuery(window).width() * 0.95 );
+		const availH = Math.floor( jQuery(window).height() * 0.95 );
 
-		const emergencyW = Math.floor( jQuery(window).width() * 0.85 );
-		const emergencyH = Math.floor( jQuery(window).height() * 0.85 );
+		const emergencyW = Math.floor( jQuery(window).width() * 0.99);
+		const emergencyH = Math.floor( jQuery(window).height() * 0.99 );
 
 		// FIXME: these might not be the true values
 		const scrollW = 25;
@@ -93,10 +93,12 @@ window.ext.popupform = ( function() {
 		let scrollTop = $html.scrollTop();
 		let scrollLeft = $html.scrollLeft();
 
+		let popupWidth = jQuery(window).width() - 200;
+		let popupHeight = jQuery(window).height() - 100;
 		$content
 		.css('position', 'absolute')
-		.width( 'auto' )
-		.height( 'auto' );
+		.width(popupWidth+"px" )
+		.height( popupHeight+"px");
 
 		// set max dimensions for layout of content
 		$iframe
@@ -615,8 +617,21 @@ window.ext.popupform = ( function() {
 				return false;
 			});
 
+			var f = function() {
+				if (!innerwdw.jQuery) {
+					setTimeout(f, 100);
+				} else {
+					innerwdw.jQuery($form[0])
+						.bind("submit", function (event) {
+							submitok =  innerwdw.validateAll();
+							innersubmitprocessed = true;
+							return false;
+						});
+				}
+			}
+			setTimeout(f, 100);
 			// catch inner form submit event
-			if ( innerJ ) {
+			/*if ( innerJ ) {
 				innerwdw.jQuery($form[0])
 				.bind( "submit", ( event ) => {
 						submitok = ( event.result === undefined ) ? true : event.result;
@@ -626,7 +641,7 @@ window.ext.popupform = ( function() {
 			} else {
 				submitok = true;
 				innersubmitprocessed = true;
-			}
+			}*/
 		}
 
 		if (innerJ) {
@@ -640,19 +655,19 @@ window.ext.popupform = ( function() {
 					if ( innerJ(this).queue().length > 0 ) {
 						foundQueue = true;
 						innerJ(this).queue( function(){
-							setTimeout( adjustFrameSize, 100, true );
+							//setTimeout( adjustFrameSize, 100, true );
 							innerJ(this).dequeue();
 						});
 					}
 				});
 				if ( ! foundQueue ) {
-					adjustFrameSize( true );
+					//adjustFrameSize( true );
 				}
 				return true;
 			});
 		} else {
 			$content.bind( 'click', () => {
-					adjustFrameSize( true );
+					//adjustFrameSize( true );
 			});
 		}
 
@@ -666,6 +681,7 @@ window.ext.popupform = ( function() {
 		// catch 'Cancel'-Link (and other 'back'-links) and close frame instead of going back
 		const backlinks = allLinks.filter('a[href="javascript:history.go(-1);"]');
 		backlinks.click(handleCloseFrame);
+		$('.pfSendBack', window.frames[0].document).off('click').click(handleCloseFrame);
 
 		// promote any other links to open in main window, prevent nested browsing
 		allLinks

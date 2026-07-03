@@ -227,7 +227,7 @@ const Sortable = require( 'ext.pageforms.sortable' );
 				const htmlElements = inputData.$selection[0].children[0].children;
 				term = htmlElements[htmlElements.length - 1].children[0].value;
 			}
-			return pf.select2.base.prototype.textHighlight( result.id, term );
+			return pf.select2.base.prototype.textHighlight( result.label ? result.label : result.id, term );
 		};
 		opts.language.searching = function() {
 			return mw.msg( "pf-autocomplete-searching" );
