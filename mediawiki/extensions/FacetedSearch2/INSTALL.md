@@ -136,7 +136,7 @@ Additionally, the backend request is echoed in the frontend's POST-requests.
 
 ### `EnableIncrementalIndexer`
 - **Default:** `true`
-- If `true`, changed pages are indexed incrementally when they are saved, moved, or deleted. Can be set to `false` during installation when SOLR is not yet running.
+- If `true`, changed pages are indexed incrementally when they are saved, moved, or deleted. Can be set to `false` during installation when the backend is not yet running.
 
 ### `BlacklistPages`
 - **Default:** `[]`
@@ -223,9 +223,9 @@ $fs2gDateTimePropertyClusters['Released on'] = [
 - If set to an array of file extensions, files of those types are shown in an overlay rather than navigating away. Set to `false` to disable.
 - **Example:** `['pdf', 'png']`
 
-### `ShowSolrScore`
+### `ShowScore`
 - **Default:** `false`
-- If `true`, the raw SOLR relevance score is shown as a tooltip on the "Show Details" link of each search result. Useful for debugging relevance.
+- If `true`, the raw relevance score is shown as a tooltip on the "Show Details" link of each search result. Useful for debugging relevance.
 
 ### `HeaderControlOrder`
 - **Default:** `["sortView", "searchView", "saveSearchLink", "createArticleLink"]`
@@ -322,9 +322,6 @@ $fs2gShownFacets['Company'] = ['CEO', 'City', 'BusinessArea'];
 - **Default:** `[]`
 - List of property names for which an "OR" selection dialog is offered, allowing users to select multiple values with OR logic.
 
-
-
-
 ### `TagCloudProperty`
 - **Default:** `false`
 - If set to a property name (of datatype `string`), a tag cloud for that property is displayed under the search bar.
@@ -398,6 +395,9 @@ $fs2gNamespaceConstraint['sysop'] = [0, 10, 14]; // Main, Template, Category
 
 ### Boosting
 
+**_Note_**: Changing the boosting settings requires a re-index for the SOLR backend. For ElasticSearch, 
+this is not required because boosting happens at query time, not index time.
+
 ### `ActivateBoosting`
 - **Default:** `false`
 - Enables or disables the boosting feature for search results.
@@ -467,3 +467,11 @@ $fs2gPropertyGroupingBySeparator['Location'] = '/';
 $fs2gPropertyGroupingByUrl['Region'] = '/endpoint/groupings';
 ```
 
+The endpoint must return a JSON object with the following structure:
+```php
+{
+  "group name 1": ["value 1", "value 2"],
+  "group name 2": ["value 3", "value 4"],
+  "group name 3": ["value 5", "value 6"]
+}
+```

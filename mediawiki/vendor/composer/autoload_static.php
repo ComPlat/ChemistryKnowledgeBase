@@ -950,6 +950,7 @@ class ComposerStaticInit_mediawiki_vendor
         'DIQA\\FacetedSearch2\\Endpoints\\StatsSearchEndpoint' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/Endpoints/StatsSearchEndpoint.php',
         'DIQA\\FacetedSearch2\\Exceptions\\BackendException' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/Exceptions/BackendException.php',
         'DIQA\\FacetedSearch2\\FacetedSearchClient' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/FacetedSearchClient.php',
+        'DIQA\\FacetedSearch2\\FacetedSearchDependantUpdates' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/FacetedSearchDependantUpdates.php',
         'DIQA\\FacetedSearch2\\FacetedSearchUpdateClient' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/FacetedSearchUpdateClient.php',
         'DIQA\\FacetedSearch2\\Model\\Common\\Datatype' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/Model/Common/Datatype.php',
         'DIQA\\FacetedSearch2\\Model\\Common\\MWTitle' => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src/Model/Common/MWTitle.php',

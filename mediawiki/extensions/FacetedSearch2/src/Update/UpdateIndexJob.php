@@ -44,7 +44,7 @@ class UpdateIndexJob extends Job
 
         try {
             $messages = [];
-            FSIndexer::indexArticlesWithDependent($title, $messages);
+            FSIndexer::indexArticleWithDependent($title, $messages);
             if ($consoleMode && count($messages) > 0) {
                 print "\tindexed with messages:\n";
                 print implode("\t\n", $messages);

@@ -229,4 +229,9 @@ XML;
             Logger::info("SOLR request: " . $xml);
         }
     }
+
+    public function supportBulkUpdates(): bool
+    {
+        return false;
+    }
 }

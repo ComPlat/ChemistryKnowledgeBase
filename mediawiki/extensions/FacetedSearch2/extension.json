@@ -210,7 +210,7 @@
 			"value": true,
 			"description": "If TRUE, changed pages will be indexed incrementally i.e. when they are saved, moved or deleted. Setting it to FALSE can make sense for example during the installation when SOLR is not yet running."
 		},
-		"ShowSolrScore": {
+		"ShowScore": {
 			"value": false,
 			"description": "Show the SOLR search score as a tooltip for the SHOW DETAILS link of each search hit."
 		},

@@ -277,6 +277,7 @@ return array(
     'DIQA\\FacetedSearch2\\Endpoints\\StatsSearchEndpoint' => $baseDir . '/extensions/FacetedSearch2/src/Endpoints/StatsSearchEndpoint.php',
     'DIQA\\FacetedSearch2\\Exceptions\\BackendException' => $baseDir . '/extensions/FacetedSearch2/src/Exceptions/BackendException.php',
     'DIQA\\FacetedSearch2\\FacetedSearchClient' => $baseDir . '/extensions/FacetedSearch2/src/FacetedSearchClient.php',
+    'DIQA\\FacetedSearch2\\FacetedSearchDependantUpdates' => $baseDir . '/extensions/FacetedSearch2/src/FacetedSearchDependantUpdates.php',
     'DIQA\\FacetedSearch2\\FacetedSearchUpdateClient' => $baseDir . '/extensions/FacetedSearch2/src/FacetedSearchUpdateClient.php',
     'DIQA\\FacetedSearch2\\Model\\Common\\Datatype' => $baseDir . '/extensions/FacetedSearch2/src/Model/Common/Datatype.php',
     'DIQA\\FacetedSearch2\\Model\\Common\\MWTitle' => $baseDir . '/extensions/FacetedSearch2/src/Model/Common/MWTitle.php',

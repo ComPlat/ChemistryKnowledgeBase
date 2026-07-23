@@ -45,4 +45,6 @@ interface FacetedSearchUpdateClient
 
     public function refreshIndex(): void;
 
+    public function supportBulkUpdates(): bool;
+
 }

@@ -78,7 +78,7 @@
 		"exclude": [
 			"/.git", "/.idea", "/vm-ubuntu", "/test",
 			"/fs-react", "!/fs-react/dist", "/vendor",
-            "/dev", "/runTests.sh", "/composer.lock"
+            "/dev", "/runTests.sh", "/composer.lock", "README.md"
 		]
 	}
 }

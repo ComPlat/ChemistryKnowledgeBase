@@ -77,9 +77,6 @@ class MWDBReader
 
         $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
         $hookContainer->run('fs_saveArticle', [$text, &$doc]);
-        $hookContainer->run('FS_ExtendSearchFulltext', [& $extText]);
-        $hookContainer->run('CleanupChemExtState');
-        $doc['smwh_full_text'] .= $extText;
 
         $document = new Document($doc['id'],
             $doc['smwh_title'],

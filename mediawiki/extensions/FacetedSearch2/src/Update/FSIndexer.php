@@ -3,6 +3,7 @@
 namespace DIQA\FacetedSearch2\Update;
 
 use DIQA\FacetedSearch2\ConfigTools;
+use DIQA\FacetedSearch2\FacetedSearchDependantUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -25,7 +26,28 @@ class FSIndexer
         self::indexArticlesWithText($titles, null, $messages);
     }
 
-    public static function indexArticlesWithText(array $titles, $text, &$messages = []): void
+    /**
+     * @throws \Exception
+     */
+    public static function indexArticleWithDependent($title, & $messages = []): void
+    {
+        $client = ConfigTools::getFacetedSearchUpdateClient();
+        if ($client instanceof FacetedSearchDependantUpdates) {
+            $smwDBReader = new MWDBReader();
+            $doc = $smwDBReader->fromWikiPage(new WikiPage($title), null, $messages);
+            $client->updateDocumentWithDependant($doc);
+        } else {
+            $pagesToUpdate = [];
+            $pagesToUpdate[] = $title;
+            $pagesToUpdate = array_merge($pagesToUpdate, self::retrieveDependent($title));
+            $pagesToUpdate = array_unique($pagesToUpdate);
+
+            self::indexArticlesWithText($pagesToUpdate, null, $messages);
+        }
+
+    }
+
+    private static function indexArticlesWithText(array $titles, $text, &$messages = []): void
     {
         $client = ConfigTools::getFacetedSearchUpdateClient();
         $smwDBReader = new MWDBReader();
@@ -36,16 +58,6 @@ class FSIndexer
         $client->updateDocuments(...$documents);
     }
 
-    public static function indexArticlesWithDependent($title, & $messages = []): void
-    {
-        $pagesToUpdate = [];
-        $pagesToUpdate[] = $title;
-        $pagesToUpdate = array_merge($pagesToUpdate, self::retrieveDependent($title));
-        $pagesToUpdate = array_unique($pagesToUpdate);
-
-        self::indexArticles($pagesToUpdate, $messages);
-
-    }
 
     public static function deleteArticleFromIndex($id): void
     {

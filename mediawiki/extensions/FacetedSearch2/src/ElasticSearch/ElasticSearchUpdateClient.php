@@ -3,6 +3,7 @@
 namespace DIQA\FacetedSearch2\ElasticSearch;
 
 use DIQA\FacetedSearch2\Exceptions\BackendException;
+use DIQA\FacetedSearch2\FacetedSearchDependantUpdates;
 use DIQA\FacetedSearch2\FacetedSearchUpdateClient;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Update\Document;
@@ -13,7 +14,7 @@ use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Exception;
 
-class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements FacetedSearchUpdateClient
+class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements FacetedSearchUpdateClient, FacetedSearchDependantUpdates
 {
     const int MAX_BULK_SIZE = 1000;
 
@@ -153,6 +154,13 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         $schemaProperties['__directCategories'] = ['type' => 'keyword'];
         $schemaProperties['__templates'] = ['type' => 'keyword'];
         $schemaProperties['__properties'] = ['type' => 'keyword'];
+        $schemaProperties['__out'] = [
+            "type" => "nested",
+            "properties" => [
+                "title" => ["type" => "keyword"],
+                "property" => ["type" => "keyword"]
+            ]
+        ];
         $schemaProperties['__fulltext'] = [
             'type' => 'text',
             'analyzer' => 'substring_analyzer',
@@ -303,10 +311,12 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         $body['__title'] = $doc->getTitle();
         $body['__namespace'] = $doc->getNamespace();
         $body['__display'] = $doc->getDisplayTitle();
+        $body['__out'] = [];
         $propertyValues = $doc->getPropertyValues();
         foreach ($propertyValues as $propertyValue) {
             $name = Helper::toInternalName($propertyValue->getProperty());
             $body[$name] = self::mapValuesForUpdateToESModel($propertyValue);
+            $body['__out'] = array_merge($body['__out'], self::mapValuesForOutField($propertyValue));
         }
         return $body;
     }
@@ -334,6 +344,22 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         return $result;
     }
 
+    private static function mapValuesForOutField(PropertyValues $values): array
+    {
+        if ($values->getProperty()->getType() !== Datatype::WIKIPAGE) {
+            return [];
+        }
+        $result = [];
+        foreach ($values->getMwTitles() as $value) {
+            $value = [
+                "title" => $value->getTitle(),
+                "property" => Helper::toInternalName($values->getProperty())
+            ];
+            $result[] = $value;
+        }
+        return $result;
+    }
+
     /**
      * @throws Exception
      */
@@ -343,5 +369,96 @@ class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements F
         if ($fs2gDebugMode ?? false) {
             Logger::info("ES request ($operation): " . json_encode($params));
         }
+    }
+
+
+    /**
+     * @param mixed $doc
+     * @throws BackendException
+     */
+    public function updateDocumentWithDependant(Document $doc): void
+    {
+        $params = $this->getParamForIndex();
+
+        try {
+            $params['id'] = $doc->getId();
+            $params['body'] = $this->getDocumentBody($doc);
+            $this->client->index($params);
+            $this->updateDisplayTitles($doc->getTitle(), $doc->getDisplayTitle());
+
+        } catch (
+        ClientResponseException
+        |MissingParameterException
+        |ServerResponseException $e) {
+            throw BackendException::create($e);
+        }
+    }
+    /**
+     *
+     * @throws BackendException
+     */
+    public function updateDisplayTitles(
+        string $title,
+        string $newDisplay
+    ): void {
+        $params = $this->getParamForIndex();
+        $params['refresh']             = true;
+        $params['conflicts']           = 'proceed';
+        $params['wait_for_completion'] = true;
+
+        $painless = <<<PAINLESS
+def list = ctx._source['__out']; 
+if (list == null) { return; } 
+for (int i = 0; i < list.size(); i++) {
+    if (list[i].title == params.title) {
+        def props = ctx._source[list[i].property];
+        if (props == null) { return; } 
+        for (int j = 0; j < props.size(); j++) {
+            if (props[j].title == params.title) {
+                props[j].display = params.newDisplay;
+            }
+        } 
+    }    
+}
+PAINLESS;
+
+
+        $params['body'] = [
+            'query' => [
+                'nested' => [
+                    'path'  => '__out',
+                    'query' => [
+                        'term' => [
+                            '__out.title' => $title,
+                        ],
+                    ],
+                ],
+            ],
+            'script' => [
+                'lang'   => 'painless',
+                'source' => $painless,
+                'params' => [
+                    'title'   => $title,
+                    'newDisplay' => $newDisplay,
+                ],
+            ],
+        ];
+
+        try {
+            $this->logIfConfigured('updateDisplayTitles', $params);
+            $this->client->updateByQuery($params);
+        } catch (
+        ClientResponseException
+        | MissingParameterException
+        | ServerResponseException
+        | Exception $e
+        ) {
+            throw BackendException::create($e);
+        }
+    }
+
+    public function supportBulkUpdates(): bool
+    {
+        return true;
     }
 }

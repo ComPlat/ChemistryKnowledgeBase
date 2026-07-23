@@ -67,13 +67,17 @@ class UpdateIndex extends \Maintenance
         if (!$this->hasOption('p')) {
             $startId = $this->getStartId();
             $endId = $this->getEndId($startId);
-            $this->refreshPagesByIds($startId, $endId);
+            if (ConfigTools::getFacetedSearchUpdateClient()->supportBulkUpdates()) {
+                $this->refreshPagesByIdsBulk($startId, $endId);
+            } else {
+                $this->refreshPagesByIds($startId, $endId);
+            }
         } else {
             $pages = explode(',', $this->getOption('p'));
             $this->refreshPages($pages);
         }
 
-        print "{$this->num_files} IDs refreshed.\n";
+        print "\n\n{$this->num_files} IDs refreshed.\n";
     }
 
     /**
@@ -128,6 +132,64 @@ class UpdateIndex extends \Maintenance
 
     }
 
+
+    /**
+     * Refresh all pages from ID start to ID end using bulk updates.
+     * Collects Title objects in batches and passes them as an array to updateIndexWithBatch().
+     * Writes last processed ID to a file if option 'startidfile' is set.
+     *
+     * @param int $start
+     * @param int $end
+     */
+    private function refreshPagesByIdsBulk($start, $end)
+    {
+        print "Processing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ... (bulk mode)\n";
+
+        $batchSize = 100;
+        $titles = [];
+        $id = $start;
+        $lastIdInBatch = $start;
+
+        while (((! $end) || ($id <= $end)) && ($id > 0)) {
+            $title = Title::newFromID($id);
+
+            $id ++;
+            if (is_null($title)) {
+                continue;
+            }
+
+            $titles[] = $title;
+            $lastIdInBatch = $id;
+            $this->num_files ++;
+
+            if (count($titles) >= $batchSize) {
+                $this->logOnConsole($id, $batchSize, $titles);
+                $this->updateIndexWithBatch($titles);
+                $titles = [];
+
+                if ($this->hasOption('d')) {
+                    usleep($this->getOption('d'));
+                }
+                $this->linkCache->clear(); // avoid memory leaks
+
+                if ($this->writeToStartidfile) {
+                    file_put_contents($this->getOption('startidfile'), "$lastIdInBatch");
+                }
+            }
+        }
+
+        // flush remaining titles
+        if (count($titles) > 0) {
+            $this->logOnConsole($id, $batchSize, $titles);
+            $this->updateIndexWithBatch($titles);
+            $this->linkCache->clear();
+
+            if ($this->writeToStartidfile) {
+                file_put_contents($this->getOption('startidfile'), "$lastIdInBatch");
+            }
+        }
+    }
+
     /**
      * Refresh given pages.
      *
@@ -170,6 +232,28 @@ class UpdateIndex extends \Maintenance
             }
             if (count($messages) > 0) {
                 print implode("\t\n", $messages);
+            }
+        } catch (Exception $e) {
+            print sprintf("\t[NOT INDEXED] [HTTP code %s]\n", $e->getCode());
+            if ($this->hasOption('x')) {
+                print sprintf("\t[NOT INDEXED] %s\n", $e->getMessage());
+                print sprintf("%s\n", $e->getTraceAsString());
+                print "---------------------------------------------------------\n";
+            }
+        }
+    }
+
+
+    private function updateIndexWithBatch(array $titles) {
+
+        try {
+            $messages = [];
+            FSIndexer::indexArticles($titles, $messages);
+            if ($this->hasOption('x')) {
+                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s", count($titles) . " pages");
+            }
+            if (count($messages) > 0) {
+                print "\n\n\t" . implode("\t\n", $messages) . "\n";
             }
         } catch (Exception $e) {
             print sprintf("\t[NOT INDEXED] [HTTP code %s]\n", $e->getCode());
@@ -255,8 +339,14 @@ class UpdateIndex extends \Maintenance
         try {
             $client = ConfigTools::getFacetedSearchUpdateClient();
             if ($client->existsIndex()) {
-                $client->clearAllDocuments();
-                print "\nIndex already exists. Documents cleared.\n";
+                if ($this->confirm("\nIndex already exists. Clear all documents and continue? (yes/no): ")) {
+                    $client->deleteIndex();
+                    $client->initIndex();
+                    print "\nIndex was deleted and re-created.\n";
+                } else {
+                    print "\nAborted.\n";
+                    die(1);
+                }
             } else {
                 if ($client->initIndex()) {
                     print "\nIndex created.\n";
@@ -268,6 +358,46 @@ class UpdateIndex extends \Maintenance
             echo("\nERROR: Creating the index failed. Reason: " . $e->getMessage());
             die(1);
         }
+    }
+
+    private function confirm(string $prompt): bool
+    {
+        while (true) {
+            print $prompt;
+            $handle = fopen("php://stdin", "r");
+            $line = fgets($handle);
+            fclose($handle);
+            $answer = strtolower(trim((string)$line));
+            if ($answer === 'yes' || $answer === 'y') {
+                return true;
+            }
+            if ($answer === 'no' || $answer === 'n') {
+                return false;
+            }
+            print "Please answer 'yes' or 'no'.\n";
+        }
+    }
+
+    /**
+     * @param int $id
+     * @param int $batchSize
+     * @param array $titles
+     * @return void
+     */
+    private function logOnConsole(int $id, int $batchSize, array $titles): void
+    {
+        if ($this->hasOption('v')) {
+            $startFrom = $id - $batchSize;
+            $startTitle = $titles[0]->getPrefixedText();
+            $endTitle = $titles[count($titles) - 1]->getPrefixedText();
+            print sprintf("\nProcessing IDs [%s to %s] [%s to %s]...",
+                $startFrom, $id, self::shorten($startTitle), self::shorten($endTitle));
+
+        }
+    }
+
+    private static function shorten(string $s) {
+        return mb_strlen($s) > 50 ?  trim(substr($s, 0, 50)) . "..." : $s;
     }
 }
 
