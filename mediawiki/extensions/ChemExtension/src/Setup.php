@@ -18,6 +18,7 @@ use DIQA\ChemExtension\ParserFunctions\QValue;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
+use DIQA\ChemExtension\ParserFunctions\SanitizeMolecule;
 use DIQA\ChemExtension\ParserFunctions\Selectivity;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\TIB\TagListRenderer;
@@ -343,6 +344,7 @@ CSS;
         $parser->setFunctionHook( 'convertQuantity', [ ConvertQuantity::class, 'convertQuantity' ] );
         $parser->setFunctionHook( 'convertQuantityByFactor', [ ConvertQuantity::class, 'convertQuantityByFactor' ] );
         $parser->setFunctionHook( 'defaultQuantity', [ ConvertQuantity::class, 'defaultQuantity' ] );
+        $parser->setFunctionHook( 'sanitizeMolecule', [ SanitizeMolecule::class, 'sanitizeMolecule' ] );
 
         self::registerShowCachedHandler($parser);
     }
