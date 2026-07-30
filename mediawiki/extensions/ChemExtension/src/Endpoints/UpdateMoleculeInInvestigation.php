@@ -36,10 +36,9 @@ class UpdateMoleculeInInvestigation extends SimpleHandler {
         }
 
         $moleculeAsText = $body->moleculeAsText;
-        $moleculeAsText = str_replace(['&#65339;', '&#65341;'], ['[', ']'], $moleculeAsText); // un-sanitize, see SanitizeMolecule
+        $moleculeAsText = str_replace(['［', '］'], ['[', ']'], $moleculeAsText); // un-sanitize, see SanitizeMolecule
         $inchiKey = $body->inchiKey;
 
-        $this->logger->debug("UpdateMoleculeInInvestigation: $moleculeAsText");
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $moleculeId = $repo->getChemFormId($inchiKey);
