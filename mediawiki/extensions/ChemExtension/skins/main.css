@@ -648,3 +648,8 @@ td.doi-link-known {
 td.doi-link-unknown {
     background: lightpink;
 }
+
+div.chemform-edit-in-investigation {
+    font-size: medium;
+    line-height: 1.5em;
+}

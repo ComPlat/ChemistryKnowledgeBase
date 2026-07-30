@@ -52,6 +52,7 @@ class Setup {
             'position' => 'bottom',
             'scripts' => [
                 $baseScript . '/edit-experiment.js',
+                $baseScript . '/edit-molecule-in-investigation.js',
                 $baseScript . '/faceted_search.js',
                 $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
