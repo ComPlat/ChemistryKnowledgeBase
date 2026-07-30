@@ -2,12 +2,20 @@
 namespace DIQA\ChemExtension\Endpoints;
 
 use DIQA\ChemExtension\Pages\ChemFormRepository;
+use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 
 class UpdateMoleculeInInvestigation extends SimpleHandler {
+
+    private $logger;
+
+    public function __construct()
+    {
+        $this->logger = new LoggerUtils('UpdateMoleculeInInvestigation', 'ChemExtension');
+    }
 
     public function run() {
 
@@ -19,6 +27,8 @@ class UpdateMoleculeInInvestigation extends SimpleHandler {
         }
         $body = json_decode($jsonBody);
 
+        $this->logger->debug("UpdateMoleculeInInvestigation: $jsonBody");
+
         if (empty($body->moleculeAsText) || empty($body->inchiKey || empty($body->investigationPage))) {
             $res = new Response("Missing required parameters: moleculeAsText, inchiKey, investigationPage");
             $res->setStatus(400);
@@ -29,6 +39,7 @@ class UpdateMoleculeInInvestigation extends SimpleHandler {
         $moleculeAsText = str_replace(['&#65339;', '&#65341;'], ['[', ']'], $moleculeAsText); // un-sanitize, see SanitizeMolecule
         $inchiKey = $body->inchiKey;
 
+        $this->logger->debug("UpdateMoleculeInInvestigation: $moleculeAsText");
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ChemFormRepository($dbr);
         $moleculeId = $repo->getChemFormId($inchiKey);
