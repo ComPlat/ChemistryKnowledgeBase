@@ -653,3 +653,7 @@ div.chemform-edit-in-investigation {
     font-size: medium;
     line-height: 1.5em;
 }
+
+.ce-updateMolecule-progress {
+    margin-top: 12px;
+}

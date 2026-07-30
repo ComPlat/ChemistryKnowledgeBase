@@ -35,7 +35,7 @@
         } );
 
         this.button = new OO.ui.ButtonWidget( {
-            label: 'Click me',
+            label: 'Update molecule in investigation',
             flags: [ 'primary', 'progressive' ]
         } );
 
@@ -48,11 +48,17 @@
                 moleculeAsText: this.requestData.moleculeText,
                 investigationPage: this.requestData.investigationPage,
             }
+            var self = this;
+            self.setLoading( true );
             ajax.updateMoleculeInInvestigation(request).done((response) => {
                 OO.ui.alert( 'Updated molecule in investigation.' );
             }).catch((e) => {
                 OO.ui.alert( 'Could not update molecule in investigation.' );
-            })
+            }).always( () => {
+                self.setLoading( false );
+                this.requestData.refreshButton.trigger('click');
+                this.close( { action: 'close' } );
+            } );
         } );
 
         this.textWidget = new OO.ui.InchiKeyLookupTextInputWidget();
@@ -62,7 +68,52 @@
         });
         this.panel.$element.append(formLayout.$element);
         this.panel.$element.append( $( '<br>' ), this.button.$element );
+
+        // Loading indicator (indeterminate progress bar)
+        this.progressBar = new OO.ui.ProgressBarWidget( {
+            progress: false // false = indeterminate
+        } );
+        this.progressBar.$element
+            .addClass( 'ce-updateMolecule-progress' )
+            .hide(); // hidden by default
+
+        // Optional label shown next to / above the progress bar
+        this.progressLabel = new OO.ui.LabelWidget( {
+            label: 'Updating molecule, please wait…'
+        } );
+        this.progressLabel.$element.hide();
+
+        this.panel.$element.append(
+            this.progressLabel.$element,
+            this.progressBar.$element
+        );
+
         this.$body.append( this.panel.$element );
+    };
+
+    /**
+     * Toggle the loading indicator inside the dialog.
+     * Also disables/enables the dialog's action buttons so the user
+     * can't submit twice while the AJAX call is running.
+     *
+     * @param {boolean} loading
+     */
+    EditMoleculeInInvestigation.prototype.setLoading = function ( loading ) {
+        this.progressBar.$element.toggle( loading );
+        this.progressLabel.$element.toggle( loading );
+
+        // Disable all actions (Save/Cancel/etc.) while loading
+        this.getActions().get().forEach( function ( action ) {
+            action.setDisabled( loading );
+        } );
+
+        // Also update the OOUI "pending" state on the dialog window itself,
+        // which shows a subtle progress stripe in the title bar.
+        if ( loading ) {
+            this.pushPending();
+        } else {
+            this.popPending();
+        }
     };
 
     /**
@@ -104,8 +155,9 @@
 
         $('div.experiment-list-container').each(function(i, e) {
             let el = $(e);
-            let value  = $('span.experiment-link-export-button button', el).attr('value');
-            let investigationData = JSON.parse(value);
+            let exportButton  = $('span.experiment-link-export-button button', el);
+            let refreshButton  = $('span.experiment-list-refresh-button button', el);
+            let investigationData = JSON.parse(exportButton.attr('value'));
             let url = mw.config.get('wgScriptPath')+"/index.php?";
             url += "title="+encodeURIComponent(mw.config.get('wgTitle'));
             url += "&veaction=edit";
@@ -123,7 +175,8 @@
                         let tooltip = api.elements.tooltip;
                         let data = {
                             investigationPage: investigationData.investigationPage,
-                            moleculeText: moleculeText
+                            moleculeText: moleculeText,
+                            refreshButton: refreshButton
                         }
                         $('a.chemform-use-existing',tooltip).off('click');
                         $('a.chemform-use-existing', tooltip).click((e) => {
