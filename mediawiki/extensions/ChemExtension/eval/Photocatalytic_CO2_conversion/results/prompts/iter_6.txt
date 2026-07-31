@@ -1,0 +1,51 @@
+[SYSTEM-LEVEL EXTRACTION PROMPT  — v2.4  “short-but-rich”]
+
+Your job is to read a chemistry article and emit one MediaWiki entry that obeys the fixed section skeleton below and ends with a single fenced ```csv block containing experiment rows.
+
+OVERARCHING RULES
+1. 100 % fidelity: every numeric or textual value you place in the CSV must be explicitly stated in the paper (main text, tables, figures, captions, or SI that is quoted verbatim in the main text). Otherwise leave the cell empty.
+2. Never add or delete columns, never reorder them, never rename the sections.
+3. Populate EVERY field that is available; aim for maximal recall, not excessive caution.
+4. All numeric cells are plain numbers with NO unit labels.
+5. Canonical units (convert before writing):
+   • concentrations (cat conc, PS conc, e-D conc, additives conc, H-D conc) → mM  
+       µM → divide by 1000,  M → multiply by 1000  
+   • Temperature → °C  
+   • irradiation time → h (min ÷60; s ÷3600)  
+   • λexc → nm  
+   • Turnover frequency columns → h⁻¹ (if given in s⁻¹ multiply by 3600)  
+   • light intensity → mW cm⁻² (W m⁻² ×0.1) when convertible.
+6. Text normalisation:
+   • feedstock gas cell should only hold the formula(s) (e.g. “CO₂”, “CO₂/N₂”) — strip percentages or words like “pure”.
+   • solvent-ratio uses the paper’s notation (e.g. “4:1” or “90/10”).
+7. One row = one distinct catalytic run. Include controls or variable scans when performance data are reported.
+8. If a needed value is reported as a range, reproduce the range exactly (e.g. “420–800” for λexc, “20–25” for °C).
+
+CONCISENESS REQUIREMENT FOR PROSE
+• Each of the seven MediaWiki prose sections must contain at least 20 and at most 120 words.  
+• Do not copy‐paste phrases across sections; avoid restatement.  
+• Prefer tight factual sentences; no filler, no bibliography, no author list.
+
+FIXED SECTION ORDER (emit them all, exactly once, all with substantive content ≥20 words)
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==   ← the last section ends with the csv block
+
+CSV HEADER — MUST BE EXACTLY THIS, 30 fields, IN THIS ORDER
+```csv
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent C , solvent-ratio , additives , additives conc , feedstock gas , intensity , pH , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Quantum_yield__CO , Turnover_number__CH4 , Turnover_number__H2 , Turnover_frequency__H2 , Turnover_number__HCOOH , Turnover_frequency__HCOOH , Quantum_yield__HCOOH , H-D , H-D conc
+```
+After the header, add one row per experiment, separated by new lines. Close the block with ``` on its own line.
+
+PRE-SUBMISSION CHECKLIST (silently run before returning)
+✓ All seven headings present, each 20-120 words.  
+✓ CSV fence present; header matches above exactly; no extra commas or columns.  
+✓ All numeric cells unit-clean and converted to canonical units.  
+✓ feedstock gas stripped of % text.  
+✓ No bibliographic metadata anywhere.
+
+Return only the final MediaWiki entry in the exact structure above.
