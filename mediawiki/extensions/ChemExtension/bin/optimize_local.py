@@ -620,7 +620,52 @@ def generate_initial_prompt(fields, fmt, model, key, required_sections=None, gol
         {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
     return output_text(post(payload, key)).strip()
 
-def improve_prompt(current, agg, model, key, fmt="json", required_sections=None, gold_example=None):
+def build_memory(hist):
+    """Cross-iteration pattern accumulator for the designer-mode meta-LLM.
+    Turns per-iteration diagnostics into stable failure patterns so the designer
+    can address the WHOLE run's weaknesses at once, not just the last snapshot.
+    Returns None on the first iteration (no history yet)."""
+    if not hist:
+        return None
+    field_recalls, field_unit_errs, section_max_words = {}, {}, {}
+    for h in hist:
+        for entry in h.get("weak_fields_raw", []):
+            f = entry["field"]
+            field_recalls.setdefault(f, []).append(entry["recall"])
+            field_unit_errs[f] = field_unit_errs.get(f, 0) + entry.get("unit_errors", 0)
+        for name, words in h.get("over_sections", []) or []:
+            section_max_words[name] = max(section_max_words.get(name, 0), words)
+    # a field is "persistently weak" if its MEAN recall across all iters < 0.30
+    persistent_weak = sorted(
+        ((f, sum(rs) / len(rs), len(rs)) for f, rs in field_recalls.items() if sum(rs) / len(rs) < 0.30),
+        key=lambda x: x[1],
+    )[:12]
+    # a field has a systematic unit-family problem if unit errors accumulate to >= 10
+    persistent_unit_errs = sorted(
+        ((f, u) for f, u in field_unit_errs.items() if u >= 10),
+        key=lambda x: -x[1],
+    )[:6]
+    # sections that went over-length in any iteration (top 5 by max words)
+    persistent_bloat = sorted(section_max_words.items(), key=lambda x: -x[1])[:5]
+    return {
+        "iterations_seen": len(hist),
+        "persistent_weak_fields": persistent_weak,
+        "persistent_unit_error_fields": persistent_unit_errs,
+        "persistent_over_sections": persistent_bloat,
+    }
+
+# Focus rotation for design-mode: each iteration targets ONE quality axis so the
+# meta-LLM never trades F1 for polish. Iter 1 is the seed measurement (no rewrite).
+FOCUS_SCHEDULE = {
+    2: "recall",
+    3: "recall",
+    4: "conciseness",
+    5: "units",
+    6: "polish",
+}
+
+def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
+                   gold_example=None, memory=None, focus="polish"):
     # weak entries carry (field, recall, correct, gold, unit_errors, misses). When
     # unit-family confusion dominates the misses (>20%), spell it out so the meta-LLM
     # doesn't just see low recall but sees "µM↔mM confusion" as the actionable cause.
@@ -640,63 +685,102 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
               else "a JSON object {summary, experiments[]}")
     sect = ""
     if required_sections:
-        sect = (" The output structure has FIXED MediaWiki sections that MUST all be emitted with "
-                "substantive content (each at least 20 words, at most ~120 words per section — "
-                "kurz und prägnant, no bloat, no restating the same point across sections): "
+        sect = ("The output structure has FIXED MediaWiki sections that MUST all be emitted with "
+                "substantive content (each at least 20 words, target ≤120 words per prose section): "
                 + ", ".join(required_sections) + ". The Investigation section MUST contain a "
-                "fenced ```csv block. NEVER drop, rename, or collapse a section.")
-    sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into "
-                + struct + "." + sect + " Keep the exact column/field names and the output structure unchanged; "
-                "improve only wording, per-field guidance, units, scientific notation, and row "
-                "coverage. CRITICAL PRIORITY ORDER: (1) F1 / recall is the primary metric — the "
-                "improved prompt must NOT reduce the number of correctly extracted cells; every "
-                "prose tightening or unit clarification below is subordinate to keeping F1 stable "
-                "or growing. (2) Layout — never drop, rename, or collapse a section. (3) Conciseness "
-                "and unit-correctness are secondary polish. If a wording change might make the "
-                "extractor emit fewer rows or empty more cells, DO NOT make that change. Do NOT "
-                "make the prompt more conservative or tell the model to omit uncertain values. "
-                "Respond with the FULL improved prompt text only.")
+                "fenced ```csv block. NEVER drop, rename, or collapse a section. ")
+    # DESIGNER framing (not EDITOR): the meta-LLM is asked to write a NEW prompt from scratch,
+    # using the current best only as *inspiration*. This mirrors the framing the original
+    # Hand-Version was authored under — one-shot design against a target structure, not
+    # incremental fix. The current prompt is passed at the end labelled explicitly as REFERENCE.
+    focus_briefs = {
+        "recall": ("MAXIMISE cells extracted. Add or sharpen per-field examples, be more "
+                   "aggressive about filling every field the paper states, list per-field "
+                   "hints for fields where recall has been low. Do NOT tell the extractor to "
+                   "omit uncertain values. Do NOT reduce the aggressiveness of any existing "
+                   "extraction instruction."),
+        "conciseness": ("Tighten ONLY the prose sections (Abstract Summary, Advances, "
+                        "Additional Remarks, Content in Detail, Catalyst, Photosensitizer) "
+                        "toward ≤120 words each. DO NOT touch the CSV field list, the per-"
+                        "field extraction rules, or the row-coverage instructions. Every "
+                        "extraction rule from the reference stays. Recall must not drop."),
+        "units": ("Add or sharpen canonical-unit CONVERSION rules for concentration (mM), "
+                  "time (h), and turnover frequency (h⁻¹). Values in the CSV are always in "
+                  "the field's canonical unit — the extractor must CONVERT (e.g. µM /1000 → mM) "
+                  "BEFORE writing the cell. This is a conversion, NOT a filter — never "
+                  "instruct the extractor to skip a cell because the paper's unit is ambiguous."),
+        "polish": ("Free choice — pick whichever of {recall, conciseness, units} you judge "
+                   "has the highest remaining leverage. F1/recall stays the top priority."),
+    }
+    focus_brief = focus_briefs.get(focus, focus_briefs["polish"])
+    sys_part = ("You are a chemistry-domain prompt DESIGNER. Your job is to WRITE a NEW extraction "
+                "prompt for photocatalytic-experiment PDFs, not to edit an existing one. Output "
+                "format: " + struct + ". " + sect
+                + "\n\nCRITICAL PRIORITY ORDER (never violate): "
+                "(1) F1 / recall — the new prompt must NOT reduce the number of correctly "
+                "extracted cells vs the reference. If any design choice below would reduce cells, "
+                "do NOT make it. "
+                "(2) Layout — all required sections present, Investigation contains a fenced "
+                "```csv block with the exact header. "
+                "(3) Conciseness + unit-correctness — secondary polish only.\n\n"
+                f"THIS ITERATION'S FOCUS: {focus.upper()} — {focus_brief}\n\n"
+                "You will receive: (a) the target Gold-Standard output example (this is the exact "
+                "structure to hit), (b) accumulated error patterns from ALL previous prompts in "
+                "this run (persistent weak fields, systematic unit confusions, chronic bloat), "
+                "(c) the current best prompt as REFERENCE (you may inherit any wording from it, "
+                "but you are also free to discard whatever you think won't serve the target).\n\n"
+                "Respond with the FULL new prompt text only — no commentary.")
     ground = ""
     if agg.get("groundedness") is not None:
         ground = (f"Groundedness={agg['groundedness']:.3f} Hallucination={agg['hallucination']:.3f} "
                   f"(every value MUST be supported by the paper; never invent or guess values).\n")
     layout_line = ""
     if agg.get("layoutScore") is not None:
-        layout_line = (f"Layout score={agg['layoutScore']:.3f} (1.0 = all required wiki sections "
-                       f"present with substantive content; current prompt is losing score when this <1).\n")
+        layout_line = (f"Layout score={agg['layoutScore']:.3f} (1.0 = all required sections present).\n")
     conc_line = ""
-    if agg.get("conciseness") is not None and agg["conciseness"] < 0.85:
+    if agg.get("conciseness") is not None:
         over = agg.get("over_sections") or []
-        over_str = ", ".join(f"{n} ({w} words)" for n, w in over[:3]) if over else "n/a"
-        conc_line = (f"Conciseness score={agg['conciseness']:.3f} (secondary metric — F1 remains "
-                     f"primary). Over-length prose sections: {over_str}. Tighten wording in ONLY "
-                     f"these prose sections toward ≤120 words each by removing redundant "
-                     f"restatements between sections. IMPORTANT: this MUST NOT affect the "
-                     f"Investigation CSV, its rows, its cells, or any per-field extraction rule. "
-                     f"If tightening a prose section would require making the CSV instructions less "
-                     f"aggressive, DO NOT tighten — keep the bloat, F1 wins.\n")
+        over_str = ", ".join(f"{n} ({w} words)" for n, w in over[:3]) if over else "none"
+        conc_line = (f"Conciseness={agg['conciseness']:.3f}. Over-length prose sections in the "
+                     f"latest run: {over_str}.\n")
     unit_line = ""
-    if agg.get("unitCorrectness") is not None and agg["unitCorrectness"] < 0.9:
-        unit_line = (f"Unit-correctness={agg['unitCorrectness']:.3f} (secondary metric — F1 remains "
-                     f"primary). Systematic unit-family errors detected. Add or clarify "
-                     f"canonical-unit conversion in the extractor prompt: values in the CSV are "
-                     f"ALWAYS in the field's canonical unit (mM for concentrations, h for time, "
-                     f"h^-1 for TOF). Convert µM→mM by /1000 BEFORE writing the cell. IMPORTANT: "
-                     f"this is a CONVERSION instruction, NOT a filter — the extractor must still "
-                     f"emit the cell with the converted numeric value. Converting a wrong-unit "
-                     f"value fixes it; dropping the cell is a regression. Never instruct the "
-                     f"extractor to leave a cell empty because the unit is unclear.\n")
+    if agg.get("unitCorrectness") is not None:
+        unit_line = (f"Unit-correctness={agg['unitCorrectness']:.3f}.\n")
     gold_block = ""
     if gold_example:
-        gold_block = ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
-                      "Make sure the improved prompt produces output that follows this sectioning, "
-                      "prose density (≤120 words per prose section), and CSV layout]\n"
+        gold_block = ("\n[TARGET GOLD-STANDARD OUTPUT — the new prompt must make the extractor "
+                      "produce output in exactly this structure]\n"
                       + gold_example
-                      + "\n[END GOLD STANDARD EXAMPLE]\n")
-    task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
+                      + "\n[END TARGET]\n")
+    # cross-iteration memory: accumulated patterns across the whole run
+    memory_block = ""
+    if memory and memory["iterations_seen"] > 0:
+        pw = memory.get("persistent_weak_fields") or []
+        pu = memory.get("persistent_unit_error_fields") or []
+        pb = memory.get("persistent_over_sections") or []
+        parts = [f"[ACCUMULATED PATTERNS across {memory['iterations_seen']} prior iterations]"]
+        if pw:
+            parts.append("Persistently weak fields (mean recall < 0.30, list oldest→newest):")
+            for f, r, n in pw:
+                parts.append(f"  - {f}: mean recall {r:.2f} across {n} iters")
+        if pu:
+            parts.append("Fields with recurring UNIT-FAMILY confusion (µM↔mM, h↔s, etc.):")
+            for f, u in pu:
+                parts.append(f"  - {f}: {u} unit-error mismatches accumulated")
+        if pb:
+            parts.append("Sections that consistently went over the 120-word budget:")
+            for name, words in pb:
+                parts.append(f"  - {name}: seen up to {words} words")
+        memory_block = "\n".join(parts) + "\n"
+    task = (f"[LAST-ITER METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
             f"composite={agg.get('composite', agg['f1']):.4f}\n"
             f"{layout_line}{conc_line}{unit_line}{ground}\n"
-            f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}{gold_block}\n\n[CURRENT PROMPT]\n{current}")
+            f"{memory_block}\n"
+            f"[WEAK FIELDS - LAST ITER]\n{weak}\n\n"
+            f"[MISMATCH EXAMPLES - LAST ITER]\n- {ex}\n"
+            f"{gold_block}\n"
+            f"[CURRENT BEST PROMPT - REFERENCE ONLY, feel free to keep or discard any part]\n"
+            f"{current}")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
         {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
@@ -901,7 +985,14 @@ def main():
                      "layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
                      "unitCorrectness": agg.get("unitCorrectness"),
                      "composite": base, "composite_best": best_comp,
-                     "tokensPerPub": avg_tok})
+                     "tokensPerPub": avg_tok,
+                     # raw data for cross-iteration memory (fed to build_memory in the
+                     # designer-mode improve_prompt call). Kept out of hist trend plots
+                     # but written into diagnostics.json for the paper trail.
+                     "weak_fields_raw": [{"field": k, "recall": r, "correct": c, "total": g,
+                                          "unit_errors": u, "misses": m}
+                                         for k, r, c, g, u, m in agg["weak"]],
+                     "over_sections": agg.get("over_sections") or []})
         json.dump({"iteration": it,
                    "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness",
                                                      "hallucination")}
@@ -920,10 +1011,19 @@ def main():
         if a.commit:
             git_commit([results_dir], f"eval {a.topic} iter {it}: F1={agg['f1']:.4f} (best {best['f1']:.4f})")
         if it < a.iterations:
-            print("  improving prompt (from best so far) ...")
-            # hill-climb: always propose the next variant from the BEST prompt + its error report,
+            # Focus for the NEXT iteration — rotates so the meta-LLM never has to trade F1
+            # against polish in the same rewrite. Iter 2-3 = recall (the big lever), iter 4 =
+            # conciseness, iter 5 = units, iter 6+ = polish.
+            next_focus = FOCUS_SCHEDULE.get(it + 1, "polish")
+            # Cross-iteration memory: patterns aggregated over ALL iterations so far, so the
+            # designer sees the whole run's weaknesses, not just the latest snapshot.
+            memory = build_memory(hist)
+            print(f"  designing next prompt (focus={next_focus}, memory over {len(hist)} iter) ...")
+            # hill-climb: always propose the next variant from the BEST prompt + full memory,
             # so a bad rewrite never drags the search downward.
-            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format, required_sections, gold_example)
+            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format,
+                                    required_sections, gold_example, memory=memory,
+                                    focus=next_focus)
 
     print(f"\nBest F1: {best['f1']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
