@@ -14,7 +14,7 @@ Usage:
       --prompt-file ../../../wikischema/MediaWiki/Prompt_import_Photocatalytic_CO2_conversion.wiki \
       --iterations 8 --limit 3 --model gpt-4o --export-prompt
 """
-import argparse, base64, glob, json, os, re, subprocess, sys, time, urllib.request, urllib.error
+import argparse, base64, glob, json, math, os, re, subprocess, sys, time, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXT = os.path.dirname(HERE)                       # .../ChemExtension
@@ -75,6 +75,21 @@ REQUIRED_SECTIONS_BY_TOPIC = {
 }
 # minimum substantive words between a section heading and the next required heading
 MIN_SECTION_WORDS = 20
+# soft upper bound per prose section (Investigation exempt). Above this, the conciseness
+# score starts to shrink linearly and penalises bloat. Keeps the wiki pages "kurz und prägnant".
+MAX_SECTION_WORDS = 120
+
+# log10 of known cross-family conversion factors used to flag likely unit errors when the
+# extracted numeric is off by exactly a family factor from the gold value. Mirrors the units
+# already handled in FAMILIES (concentration µM/mM/M: ×1000; time h/min/s: ×60 / ×3600;
+# frequency h⁻¹/min⁻¹/s⁻¹: ×60 / ×3600). Ratios within UNIT_LOG_TOL of any of these are
+# classified as unit confusion, not chemistry errors.
+UNIT_FACTORS_LOG = [
+    3.0, -3.0,                              # ×1000 (µM↔mM, mM↔M)
+    math.log10(60.0), -math.log10(60.0),    # ×60   (h↔min, min↔s)
+    math.log10(3600.0), -math.log10(3600.0),# ×3600 (h↔s)
+]
+UNIT_LOG_TOL = 0.05  # absorbs the existing ±10% numeric tolerance in log space
 
 def _heading_positions(text, sections):
     """Return ordered list of (section_name, start_index_after_heading). Matches wiki
@@ -130,10 +145,94 @@ def layout_score(text, sections):
     return {"score": present / len(required), "present": present,
             "required": len(required), "missing": missing}
 
-def composite_objective(f1, avg_layout):
-    """Multiplicative gate: layout fully present (1.0) -> composite == F1; any missing
-    section proportionally shrinks the score. A model that drops all prose -> 0."""
-    return f1 * (avg_layout if avg_layout is not None else 1.0)
+def _section_bodies(text, sections):
+    """Slice `text` into (name, body_str) pairs following the same heading rules as
+    layout_score. Sections missing from `text` are skipped rather than returned empty."""
+    positions = _heading_positions(text or "", sections or [])
+    by_name = {n: pos for n, pos in positions}
+    ordered_offsets = sorted(p for _, p in positions) + [len(text or "")]
+    out = []
+    for name in sections or []:
+        if name not in by_name:
+            continue
+        start = by_name[name]
+        next_off = next((o for o in ordered_offsets if o > start), len(text or ""))
+        out.append((name, (text or "")[start:next_off]))
+    return out
+
+def conciseness_score(text, sections):
+    """Two-axis conciseness metric on the raw model output.
+    Axis A — verbosity: mean over-length fraction per prose section, capped at 1.0.
+             A section of 240 words with MAX=120 → over = (240-120)/120 = 1.0.
+    Axis B — redundancy: mean pairwise trigram Jaccard between prose sections.
+             Two identical sections → 1.0; disjoint → 0.0.
+    Combined: conciseness = 1 - clip(0.5*verbosity + 0.5*redundancy, 0, 1) in [0, 1].
+    Investigation (data) is exempt on both axes. Returns
+    {score, verbosity, redundancy, over_sections: [(name, words)]}.
+    """
+    prose_sections = [s for s in (sections or []) if s.lower() != "investigation"]
+    if not prose_sections:
+        return {"score": 1.0, "verbosity": 0.0, "redundancy": 0.0, "over_sections": []}
+    bodies = _section_bodies(text or "", prose_sections)
+    if not bodies:
+        # nothing to measure (layout_score already flags missing sections)
+        return {"score": 1.0, "verbosity": 0.0, "redundancy": 0.0, "over_sections": []}
+    over_pen, over_sections = [], []
+    tri_sets = []
+    for name, body in bodies:
+        words = re.findall(r"\b\w[\w\-]*\b", body.lower())
+        n = len(words)
+        over = max(0.0, (n - MAX_SECTION_WORDS) / MAX_SECTION_WORDS)
+        over_pen.append(min(1.0, over))
+        if n > MAX_SECTION_WORDS:
+            over_sections.append((name, n))
+        # trigrams for redundancy
+        tri_sets.append(set(zip(words, words[1:], words[2:])) if n >= 3 else set())
+    verbosity = sum(over_pen) / len(over_pen)
+    # pairwise Jaccard between non-empty sections; ignore empty sets to avoid division noise
+    pairs, sim_sum = 0, 0.0
+    for i in range(len(tri_sets)):
+        for j in range(i + 1, len(tri_sets)):
+            a, b = tri_sets[i], tri_sets[j]
+            if not a and not b:
+                continue
+            union = len(a | b)
+            if union == 0:
+                continue
+            sim_sum += len(a & b) / union
+            pairs += 1
+    redundancy = (sim_sum / pairs) if pairs else 0.0
+    raw_penalty = 0.5 * verbosity + 0.5 * redundancy
+    score = 1.0 - max(0.0, min(1.0, raw_penalty))
+    return {"score": score, "verbosity": verbosity, "redundancy": redundancy,
+            "over_sections": over_sections}
+
+def is_unit_error(ext_val, gold_val):
+    """Cheap post-hoc detector: numeric values whose ratio matches a known cross-family
+    conversion factor (×1000 for µM/mM/M, ×60 or ×3600 for time/frequency) are almost
+    certainly unit confusions on the extractor's side rather than chemistry mistakes.
+    Returns (True, factor) or (False, None). Values of 0, missing, or non-numeric → False.
+    """
+    if ext_val is None or gold_val is None:
+        return False, None
+    a, b = abs(float(ext_val)), abs(float(gold_val))
+    if a <= 0 or b <= 0:
+        return False, None
+    log_r = math.log10(a / b)
+    for k in UNIT_FACTORS_LOG:
+        if abs(log_r - k) < UNIT_LOG_TOL:
+            return True, round(10 ** k, 4)
+    return False, None
+
+def composite_objective(f1, avg_layout, avg_conciseness=None):
+    """Multiplicative gate: composite = F1 × Layout × Conciseness.
+    Layout fully present (1.0) + concise prose (1.0) → composite == F1.
+    Any missing section OR verbose/redundant prose proportionally shrinks the score.
+    conciseness defaults to 1.0 for backwards compatibility (e.g., JSON output has no prose).
+    """
+    layout = 1.0 if avg_layout is None else avg_layout
+    conc = 1.0 if avg_conciseness is None else avg_conciseness
+    return f1 * layout * conc
 
 def norm_unit(u):
     u = u.strip().lower().replace("µ", "u").replace("μ", "u")
@@ -198,6 +297,9 @@ def values_match(field, gold, ext, tol=0.1):
 
 def score_pub(gold_rows, ext_rows, tol=0.1):
     used, tp, gold_cells, ext_cells = set(), 0, 0, 0
+    # per_field[k] = [gold_count, correct_count, unit_error_count] — unit errors are a
+    # subset of the misses that look like a family-factor swap (µM/mM etc.), tracked
+    # so the meta-LLM can see systematic unit confusions as actionable feedback.
     per_field, examples = {}, []
     def scorable(row):  # exclude molecule + empty cells
         return {k: v for k, v in row.items() if not is_empty(v) and not is_molecule(v)}
@@ -217,11 +319,20 @@ def score_pub(gold_rows, ext_rows, tol=0.1):
             used.add(best_i)
         for k, v in gs.items():
             gold_cells += 1
-            per_field.setdefault(k, [0, 0]); per_field[k][0] += 1
+            per_field.setdefault(k, [0, 0, 0]); per_field[k][0] += 1
             if k in e and not is_empty(e[k]) and values_match(k, v, e[k], tol):
                 tp += 1; per_field[k][1] += 1
-            elif len(examples) < 25:
-                examples.append(f"{k}: expected '{v}', got '{e.get(k, '(missing)')}'")
+            else:
+                # miss — check if it looks like a unit-family swap and mark the example
+                unit_flag = ""
+                if k in e and not is_empty(e[k]):
+                    gn = parse_num(v); en = parse_num(e[k])
+                    is_ue, factor = is_unit_error(en, gn)
+                    if is_ue:
+                        per_field[k][2] += 1
+                        unit_flag = f"  [UNIT_ERROR: ext/gold ≈ {factor:g}]"
+                if len(examples) < 25:
+                    examples.append(f"{k}: expected '{v}', got '{e.get(k, '(missing)')}'" + unit_flag)
     for e in ext_rows:
         ext_cells += sum(1 for k, v in e.items() if not is_empty(v) and not is_molecule(v))
     return {"tp": tp, "gold": gold_cells, "ext": ext_cells, "perField": per_field, "examples": examples,
@@ -231,14 +342,26 @@ def aggregate(scores):
     tp = sum(s["tp"] for s in scores); gc = sum(s["gold"] for s in scores); ec = sum(s["ext"] for s in scores)
     pf = {}
     for s in scores:
-        for k, (g, c) in s["perField"].items():
-            pf.setdefault(k, [0, 0]); pf[k][0] += g; pf[k][1] += c
+        for k, ent in s["perField"].items():
+            # tolerate old 2-tuple perField entries (backwards compat with cached test data)
+            g, c = ent[0], ent[1]
+            u = ent[2] if len(ent) > 2 else 0
+            pf.setdefault(k, [0, 0, 0]); pf[k][0] += g; pf[k][1] += c; pf[k][2] += u
     rec = tp / gc if gc else 0.0
     prec = tp / ec if ec else 0.0
     f1 = 2 * prec * rec / (prec + rec) if (prec + rec) else 0.0
-    weak = sorted(((k, c / g if g else 0, c, g) for k, (g, c) in pf.items()), key=lambda x: x[1])
+    # weak: (field, recall, correct, gold_count, unit_errors, misses)
+    weak = sorted(
+        ((k, (c / g if g else 0), c, g, u, max(0, g - c)) for k, (g, c, u) in pf.items()),
+        key=lambda x: x[1],
+    )
     ex = [e for s in scores for e in s["examples"]][:30]
-    return {"f1": f1, "precision": prec, "recall": rec, "weak": weak, "examples": ex}
+    # unitCorrectness in [0,1]: 1 = no misses look like family-factor swaps.
+    total_misses = sum(max(0, g - c) for g, c, _ in pf.values())
+    total_unit_errors = sum(u for _, _, u in pf.values())
+    unit_correctness = 1.0 - (total_unit_errors / total_misses) if total_misses else 1.0
+    return {"f1": f1, "precision": prec, "recall": rec, "weak": weak, "examples": ex,
+            "unitCorrectness": unit_correctness}
 
 # ---------- OpenAI Responses API ----------
 def api_key():
@@ -397,9 +520,14 @@ def write_paper_artifacts(results_dir, hist, best, topic):
           f"delta {bagg['f1'] - first['f1']:+.3f}",
           f"- Best precision / recall: {bagg['precision']:.3f} / {bagg['recall']:.3f}",
           "", "## Per-field recall (best iteration, worst first)", "",
-          "| field | recall | correct/total |", "|---|---|---|"]
-    for k, r, c, g in bagg["weak"][:25]:
-        md.append(f"| {k} | {r:.2f} | {c}/{g} |")
+          "| field | recall | correct/total | unit-errors |", "|---|---|---|---|"]
+    for entry in bagg["weak"][:25]:
+        # tolerate both old 4-tuple and new 6-tuple weak entries
+        k, r, c, g = entry[0], entry[1], entry[2], entry[3]
+        u = entry[4] if len(entry) > 4 else 0
+        m = entry[5] if len(entry) > 5 else max(0, g - c)
+        ue_cell = f"{u}/{m} ({(u/m*100):.0f}%)" if m else "—"
+        md.append(f"| {k} | {r:.2f} | {c}/{g} | {ue_cell} |")
     open(os.path.join(results_dir, "summary.md"), "w").write("\n".join(md) + "\n")
     # metrics.tex (pgfplots trend + booktabs final table)
     def coords(key):
@@ -490,7 +618,19 @@ def generate_initial_prompt(fields, fmt, model, key, required_sections=None, gol
     return output_text(post(payload, key)).strip()
 
 def improve_prompt(current, agg, model, key, fmt="json", required_sections=None, gold_example=None):
-    weak = "\n".join(f"- {k}: recall {r:.2f} ({c}/{g})" for k, r, c, g in agg["weak"][:15])
+    # weak entries carry (field, recall, correct, gold, unit_errors, misses). When
+    # unit-family confusion dominates the misses (>20%), spell it out so the meta-LLM
+    # doesn't just see low recall but sees "µM↔mM confusion" as the actionable cause.
+    weak_lines = []
+    for entry in agg["weak"][:15]:
+        k, r, c, g = entry[0], entry[1], entry[2], entry[3]
+        u = entry[4] if len(entry) > 4 else 0
+        m = entry[5] if len(entry) > 5 else max(0, g - c)
+        line = f"- {k}: recall {r:.2f} ({c}/{g})"
+        if m and u / m > 0.2:
+            line += f", {u}/{m} misses look like UNIT-FAMILY confusion (wrong µM/mM/M or h/min/s)"
+        weak_lines.append(line)
+    weak = "\n".join(weak_lines)
     ex = "\n- ".join(agg["examples"][:20])
     struct = ("a fenced ```csv block whose header is EXACTLY the given columns (plus the prose "
               "sections as MediaWiki text above it)" if fmt == "csv"
@@ -498,7 +638,8 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
     sect = ""
     if required_sections:
         sect = (" The output structure has FIXED MediaWiki sections that MUST all be emitted with "
-                "substantive content (each at least 20 words): "
+                "substantive content (each at least 20 words, at most ~120 words per section — "
+                "kurz und prägnant, no bloat, no restating the same point across sections): "
                 + ", ".join(required_sections) + ". The Investigation section MUST contain a "
                 "fenced ```csv block. NEVER drop, rename, or collapse a section.")
     sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into "
@@ -517,15 +658,24 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
     if agg.get("layoutScore") is not None:
         layout_line = (f"Layout score={agg['layoutScore']:.3f} (1.0 = all required wiki sections "
                        f"present with substantive content; current prompt is losing score when this <1).\n")
-    gold_block = ""
-    if gold_example:
-        gold_block = ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
-                      "Make sure the improved prompt produces output that follows this sectioning, "
-                      "prose density, and CSV layout]\n"
-                      + gold_example
-                      + "\n[END GOLD STANDARD EXAMPLE]\n")
+    conc_line = ""
+    if agg.get("conciseness") is not None and agg["conciseness"] < 0.85:
+        over = agg.get("over_sections") or []
+        over_str = ", ".join(f"{n} ({w} words)" for n, w in over[:3]) if over else "n/a"
+        conc_line = (f"Conciseness score={agg['conciseness']:.3f} — prose is too long or repeats "
+                     f"across sections. Over-length sections: {over_str}. "
+                     f"Tighten prose: prefer short substantive paragraphs (≤120 words), remove "
+                     f"restatements between sections. Do not merely trim words — cut redundant claims.\n")
+    unit_line = ""
+    if agg.get("unitCorrectness") is not None and agg["unitCorrectness"] < 0.9:
+        unit_line = (f"Unit-correctness={agg['unitCorrectness']:.3f} — systematic unit-family "
+                     f"errors detected. Enforce in the extractor prompt: values in the CSV are ALWAYS "
+                     f"in the field's canonical unit (e.g., mM for concentrations, h for time, h^-1 "
+                     f"for TOF). Convert µM→mM by /1000 BEFORE writing the cell. NEVER copy the "
+                     f"paper's unit label into a numeric cell.\n")
     task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
-            f"composite={agg.get('composite', agg['f1']):.4f}\n{layout_line}{ground}\n"
+            f"composite={agg.get('composite', agg['f1']):.4f}\n"
+            f"{layout_line}{conc_line}{unit_line}{ground}\n"
             f"[WEAK FIELDS]\n{weak}\n\n[MISMATCH EXAMPLES]\n- {ex}{gold_block}\n\n[CURRENT PROMPT]\n{current}")
     payload = {"model": model, "input": [
         {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
@@ -589,7 +739,7 @@ def main():
     os.makedirs(results_dir, exist_ok=True)
     csv_path = os.path.join(results_dir, "metrics.csv")
     cols = ["iteration", "f1", "f1_best", "precision", "recall", "groundedness", "hallucination",
-            "layoutScore", "composite", "composite_best", "tokensPerPub"]
+            "layoutScore", "conciseness", "unitCorrectness", "composite", "composite_best", "tokensPerPub"]
     rows_csv = [",".join(cols)]
 
     # required sections for layout/structure scoring (per topic, overridable in profile.json)
@@ -652,6 +802,7 @@ def main():
         scores, toks, diag = [], 0, []
         gsup = gchk = 0
         layout_scores = []
+        conciseness_scores = []
         for doi, pdf, gold in entries:
             try:
                 hints = field_hints(fd, doi, fields) if a.field_hints else ""
@@ -661,11 +812,17 @@ def main():
                 scores.append(s)
                 ls = layout_score(raw, required_sections)
                 layout_scores.append(ls["score"])
+                cs = conciseness_score(raw, required_sections) if required_sections else \
+                    {"score": 1.0, "verbosity": 0.0, "redundancy": 0.0, "over_sections": []}
+                conciseness_scores.append(cs["score"])
                 line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
                 if required_sections:
                     line += f", layout {ls['present']}/{ls['required']}"
                     if ls["missing"]:
                         line += " (missing: " + ", ".join(ls["missing"][:3]) + (",…" if len(ls["missing"]) > 3 else "") + ")"
+                    line += f", concise {cs['score']:.2f}"
+                    if cs["over_sections"]:
+                        line += " (long: " + ", ".join(f"{n}:{w}w" for n, w in cs["over_sections"][:2]) + ")"
                 grec = None
                 if a.ground:
                     g = ground_check(pdf, rows, a.model, key)
@@ -675,7 +832,7 @@ def main():
                 print(line)
                 diag.append({"doi": doi, "tp": s["tp"], "gold_cells": s["gold"], "ext_cells": s["ext"],
                              "gold_rows": s["gold_rows"], "ext_rows": s["ext_rows"],
-                             "layout": ls, "ground": grec, "examples": s["examples"][:10]})
+                             "layout": ls, "conciseness": cs, "ground": grec, "examples": s["examples"][:10]})
             except Exception as e:
                 print(f"  {doi}: ERROR {e}")
             time.sleep(1)
@@ -685,11 +842,21 @@ def main():
         agg["groundedness"] = (gsup / gchk) if (a.ground and gchk) else None
         agg["hallucination"] = (1 - gsup / gchk) if (a.ground and gchk) else None
         agg["layoutScore"] = (sum(layout_scores) / len(layout_scores)) if layout_scores and required_sections else None
+        agg["conciseness"] = (sum(conciseness_scores) / len(conciseness_scores)) if conciseness_scores and required_sections else None
+        # aggregate over-length sections across publications, sorted by max word count, so the
+        # meta-LLM sees which sections systematically bloat
+        over_agg = {}
+        for d in diag:
+            for name, words in d.get("conciseness", {}).get("over_sections", []):
+                if words > over_agg.get(name, 0):
+                    over_agg[name] = words
+        agg["over_sections"] = sorted(over_agg.items(), key=lambda x: -x[1])[:5]
         avg_tok = toks // len(scores)
-        # objective: composite = F1 × layoutScore, optionally averaged with groundedness.
-        # Multiplicative gate means dropping prose sections costs proportionally; you cannot
-        # game the score by emitting only the CSV table.
-        base = composite_objective(agg["f1"], agg["layoutScore"] if agg["layoutScore"] is not None else 1.0)
+        # objective: composite = F1 × layoutScore × conciseness, optionally averaged with groundedness.
+        # Multiplicative gate means dropping prose sections costs proportionally AND writing
+        # bloated / redundant prose costs proportionally; you cannot game the score by emitting
+        # only the CSV table nor by padding the prose with restated fluff.
+        base = composite_objective(agg["f1"], agg["layoutScore"], agg["conciseness"])
         agg["composite"] = base
         agg["objective"] = base if not a.ground or agg["groundedness"] is None \
             else (base + agg["groundedness"]) / 2
@@ -698,19 +865,32 @@ def main():
         best_comp = best.get("composite", base)
         gstr = f" grounded={agg['groundedness']:.3f} halluc={agg['hallucination']:.3f}" if agg["groundedness"] is not None else ""
         lstr = f" layout={agg['layoutScore']:.3f}" if agg["layoutScore"] is not None else ""
-        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{lstr}{gstr} "
+        cstr = f" conc={agg['conciseness']:.3f}" if agg["conciseness"] is not None else ""
+        ustr = f" unit_ok={agg['unitCorrectness']:.3f}" if agg.get("unitCorrectness") is not None else ""
+        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{lstr}{cstr}{ustr}{gstr} "
               f"composite={base:.4f} tok/pub={avg_tok} | best F1={best['f1']:.4f} composite={best_comp:.4f}")
         gv = f"{agg['groundedness']:.4f}" if agg["groundedness"] is not None else ""
         hv = f"{agg['hallucination']:.4f}" if agg["hallucination"] is not None else ""
         lv = f"{agg['layoutScore']:.4f}" if agg["layoutScore"] is not None else ""
+        cv = f"{agg['conciseness']:.4f}" if agg["conciseness"] is not None else ""
+        uv = f"{agg['unitCorrectness']:.4f}" if agg.get("unitCorrectness") is not None else ""
         rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},"
-                        f"{gv},{hv},{lv},{base:.4f},{best_comp:.4f},{avg_tok}")
+                        f"{gv},{hv},{lv},{cv},{uv},{base:.4f},{best_comp:.4f},{avg_tok}")
         hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"],
                      "precision": agg["precision"], "recall": agg["recall"],
-                     "layoutScore": agg["layoutScore"], "composite": base, "composite_best": best_comp,
+                     "layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
+                     "unitCorrectness": agg.get("unitCorrectness"),
+                     "composite": base, "composite_best": best_comp,
                      "tokensPerPub": avg_tok})
-        json.dump({"iteration": it, "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness", "hallucination")},
-                   "weak_fields": [{"field": k, "recall": r, "correct": c, "total": g} for k, r, c, g in agg["weak"]],
+        json.dump({"iteration": it,
+                   "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness",
+                                                     "hallucination")}
+                              | {"layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
+                                 "unitCorrectness": agg.get("unitCorrectness"), "composite": base},
+                   "weak_fields": [{"field": k, "recall": r, "correct": c, "total": g,
+                                    "unit_errors": u, "misses": m,
+                                    "unit_error_pct": (u / m if m else 0.0)}
+                                   for k, r, c, g, u, m in agg["weak"]],
                    "per_publication": diag},
                   open(os.path.join(results_dir, "diagnostics.json"), "w"), indent=2, ensure_ascii=False)
         open(csv_path, "w").write("\n".join(rows_csv) + "\n")
@@ -733,7 +913,7 @@ def main():
     # ---- held-out validation (Goodhart defense): run the WINNER prompt on unseen papers
     if holdout:
         print(f"\n=== held-out validation on {len(holdout)} unseen papers ===")
-        h_scores, h_toks, h_layout = [], 0, []
+        h_scores, h_toks, h_layout, h_conc = [], 0, [], []
         for doi, pdf, gold in holdout:
             try:
                 rows, t, raw = extract(pdf, best["prompt"], fields, a.model, key, "", a.format)
@@ -742,9 +922,12 @@ def main():
                 h_scores.append(s)
                 ls = layout_score(raw, required_sections)
                 h_layout.append(ls["score"])
+                cs = conciseness_score(raw, required_sections) if required_sections else \
+                    {"score": 1.0, "over_sections": []}
+                h_conc.append(cs["score"])
                 line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
                 if required_sections:
-                    line += f", layout {ls['present']}/{ls['required']}"
+                    line += f", layout {ls['present']}/{ls['required']}, concise {cs['score']:.2f}"
                 print(line)
             except Exception as e:
                 print(f"  {doi}: ERROR {e}")
@@ -752,17 +935,24 @@ def main():
         if h_scores:
             agg_h = aggregate(h_scores)
             layout_h = (sum(h_layout) / len(h_layout)) if h_layout and required_sections else None
-            comp_h = composite_objective(agg_h["f1"], layout_h if layout_h is not None else 1.0)
+            conc_h = (sum(h_conc) / len(h_conc)) if h_conc and required_sections else None
+            comp_h = composite_objective(agg_h["f1"], layout_h, conc_h)
+            unit_h = agg_h.get("unitCorrectness")
             lstr_h = f" layout={layout_h:.3f}" if layout_h is not None else ""
+            cstr_h = f" conc={conc_h:.3f}" if conc_h is not None else ""
+            ustr_h = f" unit_ok={unit_h:.3f}" if unit_h is not None else ""
             print(f"  HOLDOUT F1={agg_h['f1']:.4f} P={agg_h['precision']:.4f} R={agg_h['recall']:.4f}"
-                  f"{lstr_h} composite={comp_h:.4f} tok/pub={h_toks // len(h_scores)} "
+                  f"{lstr_h}{cstr_h}{ustr_h} composite={comp_h:.4f} tok/pub={h_toks // len(h_scores)} "
                   f"(training best F1={best['f1']:.4f} composite={best.get('composite', best['f1']):.4f})")
             with open(os.path.join(results_dir, "holdout.csv"), "w") as f:
-                f.write("n_papers,f1,precision,recall,layoutScore,composite,tokensPerPub,"
-                        "training_f1,training_composite\n")
+                f.write("n_papers,f1,precision,recall,layoutScore,conciseness,unitCorrectness,"
+                        "composite,tokensPerPub,training_f1,training_composite\n")
                 f.write(f"{len(h_scores)},{agg_h['f1']:.4f},{agg_h['precision']:.4f},"
                         f"{agg_h['recall']:.4f},"
-                        f"{(layout_h if layout_h is not None else 1.0):.4f},{comp_h:.4f},"
+                        f"{(layout_h if layout_h is not None else 1.0):.4f},"
+                        f"{(conc_h if conc_h is not None else 1.0):.4f},"
+                        f"{(unit_h if unit_h is not None else 1.0):.4f},"
+                        f"{comp_h:.4f},"
                         f"{h_toks // len(h_scores)},{best['f1']:.4f},"
                         f"{best.get('composite', best['f1']):.4f}\n")
 
