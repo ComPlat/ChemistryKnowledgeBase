@@ -225,14 +225,17 @@ def is_unit_error(ext_val, gold_val):
     return False, None
 
 def composite_objective(f1, avg_layout, avg_conciseness=None):
-    """Multiplicative gate: composite = F1 × Layout × Conciseness.
-    Layout fully present (1.0) + concise prose (1.0) → composite == F1.
-    Any missing section OR verbose/redundant prose proportionally shrinks the score.
+    """Multiplicative gate with a soft floor for conciseness:
+        composite = F1 × Layout × (0.5 + 0.5 × Conciseness)
+    Layout is a HARD gate (missing sections shrink the score linearly — a page with 0/7
+    sections is worth nothing to the wiki). Conciseness is a SOFT gate — even fully
+    bloated prose still lets 50 % of F1 through, so the optimizer can never win by
+    aggressively cutting cells to hit conciseness=1.0 at the cost of extraction quality.
     conciseness defaults to 1.0 for backwards compatibility (e.g., JSON output has no prose).
     """
     layout = 1.0 if avg_layout is None else avg_layout
     conc = 1.0 if avg_conciseness is None else avg_conciseness
-    return f1 * layout * conc
+    return f1 * layout * (0.5 + 0.5 * conc)
 
 def norm_unit(u):
     u = u.strip().lower().replace("µ", "u").replace("μ", "u")
@@ -645,11 +648,14 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
     sys_part = ("You optimize a prompt that extracts experiment data from chemistry papers into "
                 + struct + "." + sect + " Keep the exact column/field names and the output structure unchanged; "
                 "improve only wording, per-field guidance, units, scientific notation, and row "
-                "coverage. IMPORTANT: the goal is to fill MORE correct cells — output one row per "
-                "distinct experiment and fill every field that the paper states; only leave a field "
-                "empty when the value is genuinely absent. Do NOT make the prompt more conservative "
-                "or tell the model to omit uncertain values. Respond with the FULL improved prompt "
-                "text only.")
+                "coverage. CRITICAL PRIORITY ORDER: (1) F1 / recall is the primary metric — the "
+                "improved prompt must NOT reduce the number of correctly extracted cells; every "
+                "prose tightening or unit clarification below is subordinate to keeping F1 stable "
+                "or growing. (2) Layout — never drop, rename, or collapse a section. (3) Conciseness "
+                "and unit-correctness are secondary polish. If a wording change might make the "
+                "extractor emit fewer rows or empty more cells, DO NOT make that change. Do NOT "
+                "make the prompt more conservative or tell the model to omit uncertain values. "
+                "Respond with the FULL improved prompt text only.")
     ground = ""
     if agg.get("groundedness") is not None:
         ground = (f"Groundedness={agg['groundedness']:.3f} Hallucination={agg['hallucination']:.3f} "
@@ -662,17 +668,24 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
     if agg.get("conciseness") is not None and agg["conciseness"] < 0.85:
         over = agg.get("over_sections") or []
         over_str = ", ".join(f"{n} ({w} words)" for n, w in over[:3]) if over else "n/a"
-        conc_line = (f"Conciseness score={agg['conciseness']:.3f} — prose is too long or repeats "
-                     f"across sections. Over-length sections: {over_str}. "
-                     f"Tighten prose: prefer short substantive paragraphs (≤120 words), remove "
-                     f"restatements between sections. Do not merely trim words — cut redundant claims.\n")
+        conc_line = (f"Conciseness score={agg['conciseness']:.3f} (secondary metric — F1 remains "
+                     f"primary). Over-length prose sections: {over_str}. Tighten wording in ONLY "
+                     f"these prose sections toward ≤120 words each by removing redundant "
+                     f"restatements between sections. IMPORTANT: this MUST NOT affect the "
+                     f"Investigation CSV, its rows, its cells, or any per-field extraction rule. "
+                     f"If tightening a prose section would require making the CSV instructions less "
+                     f"aggressive, DO NOT tighten — keep the bloat, F1 wins.\n")
     unit_line = ""
     if agg.get("unitCorrectness") is not None and agg["unitCorrectness"] < 0.9:
-        unit_line = (f"Unit-correctness={agg['unitCorrectness']:.3f} — systematic unit-family "
-                     f"errors detected. Enforce in the extractor prompt: values in the CSV are ALWAYS "
-                     f"in the field's canonical unit (e.g., mM for concentrations, h for time, h^-1 "
-                     f"for TOF). Convert µM→mM by /1000 BEFORE writing the cell. NEVER copy the "
-                     f"paper's unit label into a numeric cell.\n")
+        unit_line = (f"Unit-correctness={agg['unitCorrectness']:.3f} (secondary metric — F1 remains "
+                     f"primary). Systematic unit-family errors detected. Add or clarify "
+                     f"canonical-unit conversion in the extractor prompt: values in the CSV are "
+                     f"ALWAYS in the field's canonical unit (mM for concentrations, h for time, "
+                     f"h^-1 for TOF). Convert µM→mM by /1000 BEFORE writing the cell. IMPORTANT: "
+                     f"this is a CONVERSION instruction, NOT a filter — the extractor must still "
+                     f"emit the cell with the converted numeric value. Converting a wrong-unit "
+                     f"value fixes it; dropping the cell is a regression. Never instruct the "
+                     f"extractor to leave a cell empty because the unit is unclear.\n")
     gold_block = ""
     if gold_example:
         gold_block = ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
