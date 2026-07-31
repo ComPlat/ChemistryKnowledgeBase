@@ -1,0 +1,2 @@
+iteration,f1,f1_best,precision,recall,groundedness,hallucination,layoutScore,conciseness,unitCorrectness,composite,composite_best,tokensPerPub
+1,0.4872,0.4872,0.4086,0.6035,,,1.0000,0.8149,0.9050,0.3970,0.3970,25849
