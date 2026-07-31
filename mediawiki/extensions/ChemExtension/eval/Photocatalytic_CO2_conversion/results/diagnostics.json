@@ -1,17 +1,26 @@
 {
   "iteration": 1,
   "aggregate": {
-    "f1": 0.5377276669557676,
-    "precision": 0.44862518089725034,
-    "recall": 0.670995670995671,
+    "f1": 0.5372825899776132,
+    "precision": 0.44609665427509293,
+    "recall": 0.6753246753246753,
     "groundedness": null,
     "hallucination": null,
     "layoutScore": 1.0,
-    "conciseness": 0.8271348429179465,
-    "unitCorrectness": 0.8671052631578947,
-    "composite": 0.44477328934009264
+    "conciseness": 0.8208157807800578,
+    "unitCorrectness": 0.876,
+    "composite": 0.4410100285920063
   },
   "weak_fields": [
+    {
+      "field": "Turnover_frequency__CO",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 24,
+      "unit_errors": 8,
+      "misses": 24,
+      "unit_error_pct": 0.3333333333333333
+    },
     {
       "field": "Turnover_frequency__H2",
       "recall": 0.0,
@@ -31,31 +40,22 @@
       "unit_error_pct": 0.0
     },
     {
-      "field": "H-D conc",
-      "recall": 0.05555555555555555,
-      "correct": 2,
-      "total": 36,
-      "unit_errors": 0,
-      "misses": 34,
-      "unit_error_pct": 0.0
+      "field": "Quantum_yield__CO",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 39,
+      "unit_errors": 1,
+      "misses": 39,
+      "unit_error_pct": 0.02564102564102564
     },
     {
-      "field": "additives",
-      "recall": 0.07317073170731707,
-      "correct": 3,
-      "total": 41,
+      "field": "Quantum_yield__HCOOH",
+      "recall": 0.0,
+      "correct": 0,
+      "total": 22,
       "unit_errors": 0,
-      "misses": 38,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "Turnover_frequency__CO",
-      "recall": 0.08333333333333333,
-      "correct": 2,
-      "total": 24,
-      "unit_errors": 7,
       "misses": 22,
-      "unit_error_pct": 0.3181818181818182
+      "unit_error_pct": 0.0
     },
     {
       "field": "additives conc",
@@ -67,13 +67,22 @@
       "unit_error_pct": 0.0
     },
     {
-      "field": "cat conc",
-      "recall": 0.49429657794676807,
-      "correct": 130,
-      "total": 263,
-      "unit_errors": 50,
-      "misses": 133,
-      "unit_error_pct": 0.37593984962406013
+      "field": "H-D conc",
+      "recall": 0.3333333333333333,
+      "correct": 12,
+      "total": 36,
+      "unit_errors": 0,
+      "misses": 24,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "additives",
+      "recall": 0.36585365853658536,
+      "correct": 15,
+      "total": 41,
+      "unit_errors": 0,
+      "misses": 26,
+      "unit_error_pct": 0.0
     },
     {
       "field": "Turnover_number__CH4",
@@ -85,122 +94,113 @@
       "unit_error_pct": 0.0
     },
     {
+      "field": "cat conc",
+      "recall": 0.532319391634981,
+      "correct": 140,
+      "total": 263,
+      "unit_errors": 45,
+      "misses": 123,
+      "unit_error_pct": 0.36585365853658536
+    },
+    {
       "field": "PS conc",
-      "recall": 0.6317829457364341,
-      "correct": 163,
+      "recall": 0.5968992248062015,
+      "correct": 154,
       "total": 258,
       "unit_errors": 37,
-      "misses": 95,
-      "unit_error_pct": 0.3894736842105263
-    },
-    {
-      "field": "Turnover_number__H2",
-      "recall": 0.6883116883116883,
-      "correct": 106,
-      "total": 154,
-      "unit_errors": 0,
-      "misses": 48,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "Turnover_number__HCOOH",
-      "recall": 0.711864406779661,
-      "correct": 84,
-      "total": 118,
-      "unit_errors": 0,
-      "misses": 34,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "Turnover_number__CO",
-      "recall": 0.7149321266968326,
-      "correct": 158,
-      "total": 221,
-      "unit_errors": 0,
-      "misses": 63,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "Quantum_yield__CO",
-      "recall": 0.7435897435897436,
-      "correct": 29,
-      "total": 39,
-      "unit_errors": 0,
-      "misses": 10,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "λexc",
-      "recall": 0.7579365079365079,
-      "correct": 191,
-      "total": 252,
-      "unit_errors": 0,
-      "misses": 61,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "solvent-ratio",
-      "recall": 0.7590361445783133,
-      "correct": 126,
-      "total": 166,
-      "unit_errors": 0,
-      "misses": 40,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "irr time",
-      "recall": 0.7757009345794392,
-      "correct": 166,
-      "total": 214,
-      "unit_errors": 0,
-      "misses": 48,
-      "unit_error_pct": 0.0
+      "misses": 104,
+      "unit_error_pct": 0.3557692307692308
     },
     {
       "field": "Temperature",
-      "recall": 0.7857142857142857,
-      "correct": 77,
+      "recall": 0.7244897959183674,
+      "correct": 71,
       "total": 98,
-      "unit_errors": 0,
-      "misses": 21,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "feedstock gas",
-      "recall": 0.7985074626865671,
-      "correct": 107,
-      "total": 134,
       "unit_errors": 0,
       "misses": 27,
       "unit_error_pct": 0.0
     },
     {
-      "field": "e-D conc",
-      "recall": 0.8215962441314554,
-      "correct": 175,
-      "total": 213,
-      "unit_errors": 7,
+      "field": "Turnover_number__H2",
+      "recall": 0.7532467532467533,
+      "correct": 116,
+      "total": 154,
+      "unit_errors": 0,
       "misses": 38,
-      "unit_error_pct": 0.18421052631578946
+      "unit_error_pct": 0.0
     },
     {
-      "field": "Quantum_yield__HCOOH",
-      "recall": 1.0,
-      "correct": 22,
-      "total": 22,
+      "field": "irr time",
+      "recall": 0.7570093457943925,
+      "correct": 162,
+      "total": 214,
       "unit_errors": 0,
-      "misses": 0,
+      "misses": 52,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "feedstock gas",
+      "recall": 0.7611940298507462,
+      "correct": 102,
+      "total": 134,
+      "unit_errors": 0,
+      "misses": 32,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "solvent-ratio",
+      "recall": 0.7710843373493976,
+      "correct": 128,
+      "total": 166,
+      "unit_errors": 0,
+      "misses": 38,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "Turnover_number__HCOOH",
+      "recall": 0.7796610169491526,
+      "correct": 92,
+      "total": 118,
+      "unit_errors": 0,
+      "misses": 26,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "Turnover_number__CO",
+      "recall": 0.7963800904977375,
+      "correct": 176,
+      "total": 221,
+      "unit_errors": 2,
+      "misses": 45,
+      "unit_error_pct": 0.044444444444444446
+    },
+    {
+      "field": "λexc",
+      "recall": 0.8055555555555556,
+      "correct": 203,
+      "total": 252,
+      "unit_errors": 0,
+      "misses": 49,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "e-D conc",
+      "recall": 0.8450704225352113,
+      "correct": 180,
+      "total": 213,
+      "unit_errors": 0,
+      "misses": 33,
       "unit_error_pct": 0.0
     }
   ],
   "per_publication": [
     {
       "doi": "10.1002/ange.201610607",
-      "tp": 41,
+      "tp": 24,
       "gold_cells": 62,
-      "ext_cells": 123,
+      "ext_cells": 62,
       "gold_rows": 7,
-      "ext_rows": 9,
+      "ext_rows": 4,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -208,45 +208,45 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8289801484268744,
-        "verbosity": 0.3347222222222222,
-        "redundancy": 0.007317480924029062,
+        "score": 0.8192428655108862,
+        "verbosity": 0.34861111111111115,
+        "redundancy": 0.012903157867116481,
         "over_sections": [
           [
             "Advances and Special Progress",
-            121
+            131
           ],
           [
             "Content of the Published Article in Detail",
-            311
+            397
           ],
           [
             "Photosensitizer",
-            305
+            248
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '0.025', got '25'  [UNIT_ERROR: ext/gold ≈ 1000]",
-        "irr time: expected '10', got ''",
+        "feedstock gas: expected 'CO2', got '100% CO2'",
         "Turnover_frequency__CO: expected '0.47', got '1692'  [UNIT_ERROR: ext/gold ≈ 3600]",
         "Turnover_number__H2: expected '368', got ''",
         "Turnover_frequency__H2: expected '0.01', got ''",
-        "cat conc: expected '0.5', got '500'  [UNIT_ERROR: ext/gold ≈ 1000]",
         "additives: expected 'CO2/Ar (10:90) atmosphere', got ''",
+        "feedstock gas: expected 'CO2', got '10% CO2'",
         "irr time: expected '10', got ''",
         "Turnover_frequency__CO: expected '0.019', got '68.4'  [UNIT_ERROR: ext/gold ≈ 3600]",
-        "Turnover_number__H2: expected '56', got ''"
+        "Turnover_number__H2: expected '56', got ''",
+        "Turnover_frequency__H2: expected '0.0016', got ''"
       ]
     },
     {
       "doi": "10.1002/anie.201809084",
-      "tp": 27,
+      "tp": 30,
       "gold_cells": 30,
-      "ext_cells": 45,
+      "ext_cells": 63,
       "gold_rows": 3,
-      "ext_rows": 3,
+      "ext_rows": 4,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -254,42 +254,42 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.852997566765474,
-        "verbosity": 0.2861111111111111,
-        "redundancy": 0.007893755357940875,
+        "score": 0.8191353929367352,
+        "verbosity": 0.34027777777777773,
+        "redundancy": 0.0214514363487519,
         "over_sections": [
           [
             "Advances and Special Progress",
-            124
+            122
           ],
           [
             "Additional Remarks",
-            127
+            124
           ],
           [
             "Content of the Published Article in Detail",
-            480
+            511
+          ],
+          [
+            "Catalyst",
+            129
           ],
           [
             "Photosensitizer",
-            195
+            230
           ]
         ]
       },
       "ground": null,
-      "examples": [
-        "λexc: expected '400', got ''",
-        "λexc: expected '400', got ''",
-        "λexc: expected '400', got ''"
-      ]
+      "examples": []
     },
     {
       "doi": "10.1002/anie.201811010",
-      "tp": 71,
+      "tp": 65,
       "gold_cells": 126,
-      "ext_cells": 144,
+      "ext_cells": 128,
       "gold_rows": 12,
-      "ext_rows": 9,
+      "ext_rows": 8,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -297,45 +297,49 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8225890194284635,
-        "verbosity": 0.35000000000000003,
-        "redundancy": 0.004821961143072932,
+        "score": 0.8173779044167282,
+        "verbosity": 0.3597222222222222,
+        "redundancy": 0.00552196894432146,
         "over_sections": [
           [
-            "Advances and Special Progress",
-            132
+            "Abstract Summary",
+            122
+          ],
+          [
+            "Additional Remarks",
+            137
           ],
           [
             "Content of the Published Article in Detail",
-            264
+            377
           ],
           [
             "Photosensitizer",
-            319
+            288
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "intensity: expected '1', got '100 mW/cm2'",
+        "intensity: expected '1', got '100 mWcm-2'",
         "Turnover_frequency__CO: expected '108', got '6480'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "intensity: expected '1', got '100 mW/cm2'",
+        "intensity: expected '1', got '100 mWcm-2'",
         "Turnover_frequency__CO: expected '28.2', got '1692'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "intensity: expected '1', got '100 mW/cm2'",
+        "intensity: expected '1', got '100 mWcm-2'",
         "Turnover_frequency__CO: expected '5.58', got '334.8'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "intensity: expected '1', got '100 mW/cm2'",
+        "intensity: expected '1', got '100 mWcm-2'",
         "Turnover_frequency__CO: expected '2.4', got '144'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "intensity: expected '1', got '100 mW/cm2'",
-        "intensity: expected '1', got '100 mW/cm2'"
+        "intensity: expected '1', got '100 mWcm-2'",
+        "Turnover_frequency__CO: expected '0', got ''"
       ]
     },
     {
       "doi": "10.1002/cctc.201500494",
-      "tp": 102,
+      "tp": 97,
       "gold_cells": 266,
-      "ext_cells": 324,
+      "ext_cells": 302,
       "gold_rows": 38,
-      "ext_rows": 22,
+      "ext_rows": 20,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -343,29 +347,25 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.7997048415411313,
-        "verbosity": 0.375,
-        "redundancy": 0.02559031691773731,
+        "score": 0.7774189782587668,
+        "verbosity": 0.4236111111111111,
+        "redundancy": 0.021550932371355212,
         "over_sections": [
           [
             "Abstract Summary",
-            124
+            158
           ],
           [
             "Advances and Special Progress",
-            143
+            147
           ],
           [
             "Content of the Published Article in Detail",
-            353
-          ],
-          [
-            "Catalyst",
-            123
+            337
           ],
           [
             "Photosensitizer",
-            707
+            682
           ]
         ]
       },
@@ -385,11 +385,11 @@
     },
     {
       "doi": "10.1002/cctc.202201163",
-      "tp": 161,
+      "tp": 148,
       "gold_cells": 226,
-      "ext_cells": 285,
+      "ext_cells": 275,
       "gold_rows": 23,
-      "ext_rows": 19,
+      "ext_rows": 18,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -397,25 +397,21 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8182691053079041,
-        "verbosity": 0.35555555555555557,
-        "redundancy": 0.007906233828636188,
+        "score": 0.8269902370532791,
+        "verbosity": 0.33888888888888885,
+        "redundancy": 0.007130637004552898,
         "over_sections": [
           [
-            "Abstract Summary",
-            123
-          ],
-          [
             "Advances and Special Progress",
-            133
+            124
           ],
           [
             "Content of the Published Article in Detail",
-            324
+            363
           ],
           [
             "Photosensitizer",
-            539
+            520
           ]
         ]
       },
@@ -447,17 +443,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8300345724434428,
-        "verbosity": 0.33194444444444443,
-        "redundancy": 0.007986410668670028,
+        "score": 0.830197605354423,
+        "verbosity": 0.3333333333333333,
+        "redundancy": 0.006271455957820701,
         "over_sections": [
           [
             "Content of the Published Article in Detail",
-            239
+            277
           ],
           [
             "Photosensitizer",
-            302
+            306
           ]
         ]
       },
@@ -472,16 +468,16 @@
         "cat conc: expected '0.01', got '10'  [UNIT_ERROR: ext/gold ≈ 1000]",
         "feedstock gas: expected 'argon', got 'Ar'",
         "cat conc: expected '0.01', got '10'  [UNIT_ERROR: ext/gold ≈ 1000]",
-        "λexc: expected 'dark', got ''"
+        "λexc: expected 'dark', got '>=500'"
       ]
     },
     {
       "doi": "10.1002/chem.202001279",
-      "tp": 121,
+      "tp": 120,
       "gold_cells": 152,
-      "ext_cells": 257,
+      "ext_cells": 240,
       "gold_rows": 18,
-      "ext_rows": 19,
+      "ext_rows": 18,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -489,17 +485,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8265043751675007,
+        "score": 0.828531657731684,
         "verbosity": 0.3333333333333333,
-        "redundancy": 0.013657916331665142,
+        "redundancy": 0.009603351203298714,
         "over_sections": [
           [
             "Content of the Published Article in Detail",
-            407
+            339
           ],
           [
             "Photosensitizer",
-            523
+            460
           ]
         ]
       },
@@ -519,7 +515,7 @@
     },
     {
       "doi": "10.1002/cptc.201700133",
-      "tp": 9,
+      "tp": 7,
       "gold_cells": 32,
       "ext_cells": 15,
       "gold_rows": 4,
@@ -531,41 +527,41 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8975463037036754,
-        "verbosity": 0.1986111111111111,
-        "redundancy": 0.006296281481538133,
+        "score": 0.9024915325767631,
+        "verbosity": 0.18611111111111112,
+        "redundancy": 0.008905823735362745,
         "over_sections": [
           [
-            "Abstract Summary",
-            143
+            "Content of the Published Article in Detail",
+            331
           ],
           [
-            "Content of the Published Article in Detail",
-            370
+            "Photosensitizer",
+            134
           ]
         ]
       },
       "ground": null,
       "examples": [
+        "feedstock gas: expected 'CO2', got 'CO₂'",
         "Turnover_number__H2: expected '1', got ''",
         "cat conc: expected '100', got ''",
         "solvent-ratio: expected '5:1', got ''",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
         "irr time: expected '24', got ''",
         "Turnover_number__CO: expected '5', got ''",
         "Turnover_number__H2: expected '3', got ''",
         "Turnover_number__HCOOH: expected '9', got ''",
-        "cat conc: expected '100', got '(missing)'",
-        "solvent-ratio: expected '5:1', got '(missing)'",
-        "feedstock gas: expected 'CO2', got '(missing)'"
+        "cat conc: expected '100', got '(missing)'"
       ]
     },
     {
       "doi": "10.1002/cptc.202100034",
       "tp": 69,
       "gold_cells": 109,
-      "ext_cells": 154,
+      "ext_cells": 147,
       "gold_rows": 14,
-      "ext_rows": 14,
+      "ext_rows": 15,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -573,36 +569,40 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8279424335416945,
-        "verbosity": 0.33888888888888885,
-        "redundancy": 0.005226244027722071,
+        "score": 0.7957649110492222,
+        "verbosity": 0.39999999999999997,
+        "redundancy": 0.008470177901555548,
         "over_sections": [
           [
-            "Abstract Summary",
-            124
+            "Advances and Special Progress",
+            165
+          ],
+          [
+            "Additional Remarks",
+            123
           ],
           [
             "Content of the Published Article in Detail",
-            370
+            430
           ],
           [
             "Photosensitizer",
-            351
+            299
           ]
         ]
       },
       "ground": null,
       "examples": [
+        "PS conc: expected '0.05', got ''",
         "e-D conc: expected '0.36', got ''",
+        "PS conc: expected '0.05', got ''",
         "e-D conc: expected '0.005', got ''",
-        "additives: expected 'TEA', got 'longpass filter >400 nm'",
         "additives conc: expected '0.005', got ''",
+        "PS conc: expected '0.05', got ''",
         "e-D conc: expected '0.01', got ''",
-        "additives: expected 'TEA', got 'longpass filter >400 nm'",
         "additives conc: expected '0.01', got ''",
-        "e-D conc: expected '0.01', got ''",
-        "additives: expected 'TEA', got 'longpass filter >400 nm'",
-        "additives conc: expected '0.01', got ''"
+        "PS conc: expected '0.05', got ''",
+        "e-D conc: expected '0.01', got ''"
       ]
     },
     {
@@ -619,17 +619,29 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8305020019405157,
-        "verbosity": 0.3236111111111111,
-        "redundancy": 0.015384885007857433,
+        "score": 0.79893050964711,
+        "verbosity": 0.3958333333333333,
+        "redundancy": 0.006305647372446765,
         "over_sections": [
           [
+            "Advances and Special Progress",
+            136
+          ],
+          [
+            "Additional Remarks",
+            134
+          ],
+          [
             "Content of the Published Article in Detail",
-            360
+            381
+          ],
+          [
+            "Catalyst",
+            135
           ],
           [
             "Photosensitizer",
-            233
+            251
           ]
         ]
       },
@@ -661,17 +673,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8314645848313486,
+        "score": 0.8311900814124913,
         "verbosity": 0.3333333333333333,
-        "redundancy": 0.0037374970039695597,
+        "redundancy": 0.004286503841684003,
         "over_sections": [
           [
             "Content of the Published Article in Detail",
-            293
+            300
           ],
           [
             "Photosensitizer",
-            290
+            338
           ]
         ]
       },
@@ -694,25 +706,21 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.7557614474898898,
-        "verbosity": 0.4680555555555556,
-        "redundancy": 0.020421549464664766,
+        "score": 0.8162514094508246,
+        "verbosity": 0.33888888888888885,
+        "redundancy": 0.028608292209461976,
         "over_sections": [
           [
-            "Abstract Summary",
-            166
-          ],
-          [
             "Advances and Special Progress",
-            171
+            124
           ],
           [
             "Content of the Published Article in Detail",
-            572
+            459
           ],
           [
             "Photosensitizer",
-            359
+            347
           ]
         ]
       },
@@ -732,11 +740,11 @@
     },
     {
       "doi": "10.1007/s10562-021-03782-7",
-      "tp": 32,
+      "tp": 62,
       "gold_cells": 75,
-      "ext_cells": 66,
+      "ext_cells": 114,
       "gold_rows": 10,
-      "ext_rows": 5,
+      "ext_rows": 10,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -744,45 +752,45 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8266546287605527,
-        "verbosity": 0.3236111111111111,
-        "redundancy": 0.023079631367783366,
+        "score": 0.8237343135580405,
+        "verbosity": 0.3430555555555555,
+        "redundancy": 0.009475817328363558,
         "over_sections": [
           [
             "Advances and Special Progress",
-            121
+            127
           ],
           [
             "Content of the Published Article in Detail",
-            400
+            297
           ],
           [
             "Photosensitizer",
-            232
+            351
           ]
         ]
       },
       "ground": null,
       "examples": [
+        "irr time: expected '10', got ''",
+        "Turnover_number__CO: expected '1130', got '1450'",
+        "irr time: expected '10', got ''",
+        "irr time: expected '10', got ''",
         "cat conc: expected '0', got '2.5'",
-        "Turnover_number__CO: expected '0', got '1450'",
         "irr time: expected '10', got ''",
-        "irr time: expected '10', got ''",
-        "irr time: expected '10', got ''",
-        "Turnover_number__CO: expected '0', got '1275'",
-        "cat conc: expected '0', got '(missing)'",
-        "PS conc: expected '0.40', got '(missing)'",
-        "e-D conc: expected '0.4', got '(missing)'",
-        "solvent-ratio: expected '9:1', got '(missing)'"
+        "Turnover_number__CO: expected '0', got '1130'",
+        "feedstock gas: expected 'nitrogen', got 'CO2'",
+        "λexc: expected '469', got ''",
+        "irr time: expected '10', got ''"
       ]
     },
     {
       "doi": "10.1016/j.apcata.2016.04.035",
       "tp": 45,
       "gold_cells": 52,
-      "ext_cells": 99,
+      "ext_cells": 122,
       "gold_rows": 7,
-      "ext_rows": 7,
+      "ext_rows": 9,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -790,17 +798,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8301242385884962,
+        "score": 0.8299772772520346,
         "verbosity": 0.3333333333333333,
-        "redundancy": 0.006418189489674242,
+        "redundancy": 0.006712112162597541,
         "over_sections": [
           [
             "Content of the Published Article in Detail",
-            349
+            430
           ],
           [
             "Photosensitizer",
-            281
+            282
           ]
         ]
       },
@@ -829,21 +837,21 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8268364021368915,
-        "verbosity": 0.3430555555555555,
-        "redundancy": 0.0032716401706614647,
+        "score": 0.8062687461144668,
+        "verbosity": 0.37916666666666665,
+        "redundancy": 0.008295841104399833,
         "over_sections": [
           [
             "Abstract Summary",
-            127
+            153
           ],
           [
             "Content of the Published Article in Detail",
-            295
+            387
           ],
           [
             "Photosensitizer",
-            553
+            548
           ]
         ]
       },
@@ -875,34 +883,34 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8289402276092367,
-        "verbosity": 0.3347222222222222,
-        "redundancy": 0.007397322559304367,
+        "score": 0.809447335605525,
+        "verbosity": 0.36527777777777776,
+        "redundancy": 0.01582755101117234,
         "over_sections": [
           [
-            "Abstract Summary",
-            121
+            "Advances and Special Progress",
+            157
           ],
           [
             "Content of the Published Article in Detail",
-            402
+            467
           ],
           [
             "Photosensitizer",
-            242
+            226
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "Turnover_frequency__CO: expected '127', got ''"
+        "Turnover_frequency__CO: expected '127', got '7620'  [UNIT_ERROR: ext/gold ≈ 60]"
       ]
     },
     {
       "doi": "10.1021/acs.inorgchem.6b00379",
-      "tp": 303,
+      "tp": 252,
       "gold_cells": 314,
-      "ext_cells": 534,
+      "ext_cells": 540,
       "gold_rows": 31,
       "ext_rows": 31,
       "layout": {
@@ -912,39 +920,39 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8251347606225947,
+        "score": 0.8296995256972095,
         "verbosity": 0.3333333333333333,
-        "redundancy": 0.01639714542147735,
+        "redundancy": 0.007267615272247705,
         "over_sections": [
           [
             "Content of the Published Article in Detail",
-            333
+            416
           ],
           [
             "Photosensitizer",
-            1063
+            1064
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '100', got '1000'",
-        "cat conc: expected '100', got '1000'",
-        "Turnover_number__H2: expected '0.8', got '0.18'",
-        "additives: expected 'Argon gas', got ''",
-        "additives: expected 'Argon gas', got ''",
-        "additives: expected 'Argon gas', got ''",
-        "additives: expected 'Argon gas', got ''",
-        "additives: expected 'Argon gas', got ''",
-        "Quantum_yield__CO: expected '0.00025', got '0.0025'",
-        "additives: expected 'Argon gas', got ''"
+        "Quantum_yield__CO: expected '0.001', got '0.10'",
+        "Quantum_yield__HCOOH: expected '0.0096', got '0.96'",
+        "Quantum_yield__CO: expected '0.0047', got '0.47'",
+        "Quantum_yield__HCOOH: expected '0.031', got '3.1'",
+        "Quantum_yield__CO: expected '0.0066', got '0.66'",
+        "Quantum_yield__HCOOH: expected '0.027', got '2.7'",
+        "Quantum_yield__CO: expected '0.0018', got '0.18'",
+        "Quantum_yield__HCOOH: expected '0.011', got '1.1'",
+        "Quantum_yield__CO: expected '0.0033', got '0.33'",
+        "Quantum_yield__HCOOH: expected '0.039', got '3.9'"
       ]
     },
     {
       "doi": "10.1021/acs.jpcc.8b00950",
-      "tp": 88,
+      "tp": 85,
       "gold_cells": 91,
-      "ext_cells": 150,
+      "ext_cells": 137,
       "gold_rows": 10,
       "ext_rows": 10,
       "layout": {
@@ -954,38 +962,41 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8219441744433382,
-        "verbosity": 0.34861111111111115,
-        "redundancy": 0.007500540002212467,
+        "score": 0.8073269999122539,
+        "verbosity": 0.3652777777777778,
+        "redundancy": 0.0200682223977144,
         "over_sections": [
           [
-            "Advances and Special Progress",
-            131
+            "Abstract Summary",
+            143
           ],
           [
             "Content of the Published Article in Detail",
-            384
+            365
           ],
           [
             "Photosensitizer",
-            332
+            361
           ]
         ]
       },
       "ground": null,
       "examples": [
+        "irr time: expected '47', got ''",
+        "irr time: expected '47', got ''",
         "Turnover_number__CH4: expected '89', got '17'",
+        "irr time: expected '47', got ''",
         "Turnover_number__CH4: expected '100', got '16'",
         "Turnover_number__CH4: expected '195', got '19'"
       ]
     },
     {
       "doi": "10.1021/acscatal.2c02072",
-      "tp": 45,
+      "tp": 79,
       "gold_cells": 157,
-      "ext_cells": 136,
+      "ext_cells": 167,
       "gold_rows": 20,
-      "ext_rows": 11,
+      "ext_rows": 13,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -993,41 +1004,49 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8300393929861885,
-        "verbosity": 0.3333333333333333,
-        "redundancy": 0.0065878806942897186,
+        "score": 0.8160055176357724,
+        "verbosity": 0.3625,
+        "redundancy": 0.005488964728455151,
         "over_sections": [
           [
+            "Abstract Summary",
+            138
+          ],
+          [
+            "Advances and Special Progress",
+            123
+          ],
+          [
             "Content of the Published Article in Detail",
-            364
+            286
           ],
           [
             "Photosensitizer",
-            315
+            341
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "H-D conc: expected '1', got ''",
         "irr time: expected '1.5', got ''",
-        "H-D conc: expected '1', got ''",
         "irr time: expected '1.5', got ''",
-        "PS conc: expected '0.2', got ''",
         "irr time: expected '1.5', got ''",
-        "Turnover_number__CO: expected '43', got '112'",
-        "Turnover_number__H2: expected '52', got '0'",
-        "e-D conc: expected '0.1', got ''",
+        "irr time: expected '1.5', got ''",
+        "irr time: expected '1.5', got ''",
+        "H-D conc: expected '1', got '0'",
+        "irr time: expected '1.5', got ''",
+        "additives: expected 'Ar', got ''",
+        "irr time: expected '1.5', got ''",
         "irr time: expected '1.5', got ''"
       ]
     },
     {
       "doi": "10.1021/acscatal.3c00036",
-      "tp": 87,
+      "tp": 128,
       "gold_cells": 172,
-      "ext_cells": 312,
+      "ext_cells": 374,
       "gold_rows": 20,
-      "ext_rows": 22,
+      "ext_rows": 25,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -1035,21 +1054,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.8307266326237166,
-        "verbosity": 0.3347222222222222,
-        "redundancy": 0.003824512530344471,
+        "score": 0.8303328144269403,
+        "verbosity": 0.3333333333333333,
+        "redundancy": 0.006001037812786134,
         "over_sections": [
           [
-            "Advances and Special Progress",
-            121
-          ],
-          [
             "Content of the Published Article in Detail",
-            317
+            390
           ],
           [
             "Photosensitizer",
-            538
+            712
           ]
         ]
       },
