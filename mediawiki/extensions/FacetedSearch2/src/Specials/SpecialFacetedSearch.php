@@ -3,8 +3,8 @@
 namespace DIQA\FacetedSearch2\Specials;
 
 use Exception;
-use SpecialPage;
 use OutputPage;
+use SpecialPage;
 
 class SpecialFacetedSearch extends SpecialPage
 {

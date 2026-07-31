@@ -1,6 +1,7 @@
 <?php
 namespace DIQA\FacetedSearch2\Model\Request;
 
+use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Common\MWTitle;
 use DIQA\FacetedSearch2\Model\Common\Range;
 
@@ -23,28 +24,44 @@ class FacetValue {
         $this->range = $range;
     }
 
-    public static function allValues() {
+    public static function allValues(): FacetValue
+    {
         return new FacetValue();
     }
 
-    public static function fromValue($value) {
+    public static function fromValue($value): FacetValue
+    {
         return new FacetValue($value);
     }
 
-    public static function fromTitle(MWTitle $MWTitle) {
+    public static function fromTitle(MWTitle $MWTitle): FacetValue
+    {
         return new FacetValue(null, $MWTitle);
     }
 
-    public static function fromRange(Range $range) {
+    public static function fromRange(Range $range): FacetValue
+    {
         return new FacetValue(null, null, $range);
     }
 
+    public function isAllValues(): bool
+    {
+        return is_null($this->value) && is_null($this->mwTitle) && is_null($this->range);
+    }
+
     /**
+     * @param int $type
      * @return string|null
      */
-    public function getValue(): ?string
+    public function getValue(int $type): ?string
     {
-        return $this->value;
+        if (is_null($this->value)) {
+            return null;
+        }
+        return match ($type) {
+            Datatype::BOOLEAN => $this->value ? 'true' : 'false',
+            default => $this->value,
+        };
     }
 
     /**

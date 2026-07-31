@@ -1,114 +1,135 @@
 // Tour of search features
 ( function ( window, document, $, mw, gt ) {
     // tour.step.name are assigned here as well as tour.name
-    var tour_name = "search_tour"
-    var name_1 = "intro";
-    var name_2 = "search_intro"
-    var name_3 = "search_query"
-    var name_4 = "selcted_facets"
-    var name_5 = "sort_by"
-    var name_6 = "catagory"
-    var name_7 = "results"
-    var name_8 = "link_to_search"
-    // Start tour
-    tour = new gt.TourBuilder( {
+    let tour_name = "search_tour"
+    let tour = new gt.TourBuilder({
         name: tour_name
-    } );
+    });
 
 
     // Information defining each tour step
 
-// 1
     tour.firstStep( {
-        name: name_1,
+        name: "intro",
         title: 'Welcome',
-        description: 'Welcome to the Introduction tour for MediaWiki',
+        description: 'Welcome to the Introduction tour for Search page',
         overlay: false,
         closeOnClickOutside: false ,
     } )
         .next( function() {
-            gt.setTourCookie( tour_name, name_2 );
+            gt.setTourCookie( tour_name, "fulltext_search" );
             window.location.href = mw.util.getUrl( 'Special:Search' ) ;})
 
-
-// 2
-    tour.step( {
-        name: name_2,
-        title: 'Welcome to the Search Page',
-        description: ' Welcome to the faceted search page here you can search by keywords.',
-    } )
-        .next( name_3 )
-        .back( function() {
-            gt.setTourCookie( tour_name, name_2 );
-            window.location.href = mw.util.getUrl( 'Main_Page' ) ;});
-
-// 3
     tour.step({
-        name:name_3,
-        title:"Search Query",
-        description:"Type your query into here.",
-        attachTo:"#query",
+        name:"fulltext_search",
+        title:"Fulltext search",
+        description:"Type your fulltext search query into here.",
+        attachTo:"#fs-searchbar-button-text",
         position: "top",
-        onShow: gt.setTourCookie('chemwiki', name_4),
+        closeOnClickOutside: false,
 
     })
-        .next(name_4)
-        .back(name_2)
+        .next("link_to_search")
+        .back("intro")
 
-// 4
     tour.step({
-        name:name_4,
-        title:"Selected Facets",
-        description:"Here you can see the currently selected facets that are filtering this collection.",
-        attachTo:"#wrapper > div.facets > div:nth-child(1) > span",
-        position: "right"
+        name:"link_to_search",
+        title:"Link to Search",
+        description:"Use this feature to either bookmark the link or to copy and share the search with a colleague.",
+        attachTo:".fs-save-search-link > a",
+        position: "topLeft",
+        closeOnClickOutside: false,
     })
-        .next(name_5)
-        .back(name_3)
+        .back("fulltext_search")
+        .next("sort_by")
 
-// 5
     tour.step({
-        name:name_5,
+        name:"sort_by",
         title:"Sort By",
         description:"This drop down menu will sort the results by either relevance , the time it was published, and alphabetically by title",
-        attachTo:"#fs_sort_order_label",
-        position: "top"
+        attachTo:"#sort-order-select-control",
+        position: "bottom",
+        closeOnClickOutside: false,
     })
-        .next(name_6)
-        .back(name_4)
+        .next("tag_search")
+        .back("link_to_search")
 
-// 6
+
     tour.step({
-        name:name_6,
+        name:"tag_search",
+        title:"Tagged values",
+        description:"Publication pages have a list of tags. Clicking on a tag will filter the search to only include " +
+            "results with that tag.",
+        attachTo:".tag-cloud",
+        position: "topLeft",
+        closeOnClickOutside: false,
+    })
+        .back("sort_by")
+        .next("selected_facets")
+
+    tour.step({
+        name:"selected_facets",
+        title:"Selected Facets",
+        description:"Here you can see the currently selected facets that are filtering the current result set. You can" +
+            " remove a facet by clicking on the trash bin next to it.",
+        attachTo:"#fs-facets > div:nth-child(1)",
+        position: "right",
+        closeOnClickOutside: false,
+    })
+        .next("category")
+        .back("tag_search")
+
+    tour.step({
+        name:"category",
         title:"Category",
-        description:"This drop down menu will change the selected facet being searched for.",
-        attachTo:"#fs_category_filter_label",
-        position: "left"
+        description:"Here you can restrict the search to a specific category. Clicking on the category will filter the search to only include results from that category.",
+        attachTo:"#fs-category-dropdown",
+        position: "left",
+        closeOnClickOutside: false,
     })
-        .next(name_7)
-        .back(name_5)
+        .next("topics")
+        .back("selected_facets")
 
-// 7
     tour.step({
-        name:name_7,
+        name:"topics",
+        title:"Topics",
+        description:"Here you can restrict the search to a specific topic. Clicking on the topic will filter the search to only include results from that topic.",
+        attachTo:"#fs-category-tree",
+        position: "left",
+        closeOnClickOutside: false,
+    })
+        .next("available_facets")
+        .back("category")
+
+    tour.step({
+        name:"available_facets",
+        title:"Available facets",
+        description:"Here you can see the available facets that can be used to filter the search results. Clicking on a " +
+            "facet will add it to the selected facets list. When you expand a facet you will see the available values. ",
+        attachTo:"#fs-facetview",
+        position: "right",
+        closeOnClickOutside: false,
+    })
+        .next("results")
+        .back("topics")
+
+    tour.step({
+        name:"results",
         title:"Results",
-        description:"Here is the results of the search clicking on the this will take you to the relevant page.",
-        attachTo:"#pager-header > span",
-        position: "top"
-    })
-        .back(name_6)
-        .next(name_8)
+        description:"Here are the pages found by the current search. Clicking on the this will take you to the relevant page.",
+        attachTo:"#fs-results",
+        position: "top",
+        closeOnClickOutside: false,
 
-// 8
-    tour.step({
-        name:name_8,
-        title:"Link to Search",
-        description:"Use this feature to either bookmark the save by right clicking and saving the link or copy to share the search with a colleague.",
-        attachTo:"#current_search_link > a",
-        position: "topLeft"
+    }).transition(function () {
+        if (gt.isEditing()) {
+            return 'pub_feat';
+        }
+        gt.endTour();  // remove the cookie, tour won't reopen
+        return gt.TransitionAction.HIDE;
     })
-        .back(name_7)
-    // .next(name_9)
+        .back("available_facets")
+
 
 // The following should be the last line of your tour.
 } ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );

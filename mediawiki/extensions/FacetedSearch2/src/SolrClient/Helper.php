@@ -6,9 +6,9 @@ use DIQA\FacetedSearch2\Model\Common\Datatype;
 
 class Helper
 {
-    private const RELATION_REGEX = "/^smwh_(.*)_(t|s)$/";
-    private const ATTRIBUTE_REGEX = "/^smwh_(.*)_xsdvalue_(.*)$/";
-    private const ATTRIBUTE_REGEX_DATEVALUE = "/^smwh_(.*)_(datevalue_l)$/";
+    private const RELATION_REGEX = "/^smwh_(.+)_(t|s)$/";
+    private const ATTRIBUTE_REGEX = "/^smwh_(.+)_xsdvalue_(.+)$/";
+    private const ATTRIBUTE_REGEX_DATEVALUE = "/^smwh_(.+)_(datevalue_l)$/";
     /**
      * Helper functions to return implementation specific property/value suffixes.
      * dependant from backend
@@ -48,11 +48,13 @@ class Helper
         return preg_replace('/__/', ' ', $s);
     }
 
-    private static function encodeSpecialChars($s) {
+    private static function encodeSpecialChars($s)
+    {
         return str_replace("%", "_0x", urlencode($s));
     }
 
-    private static function decodeSpecialChars($s) {
+    private static function decodeSpecialChars($s)
+    {
         return urldecode(str_replace("_0x", "%", $s));
     }
 
@@ -64,7 +66,8 @@ class Helper
         return self::encodeSpecialChars($s);
     }
 
-    public static function parseSOLRProperty(string $property) {
+    public static function parseSOLRProperty(string $property)
+    {
         $num = preg_match_all(self::ATTRIBUTE_REGEX, $property, $nameType);
         if ($num === 0) {
             // maybe a relation facet
@@ -109,8 +112,11 @@ class Helper
 
     public static function quoteValue($v, $type)
     {
-        if ($type === Datatype::NUMBER || $type === Datatype::BOOLEAN) {
+        if ($type === Datatype::NUMBER) {
             return $v;
+        }
+        if ($type === Datatype::BOOLEAN) {
+            return $v ? 'true' : 'false';
         }
         return '"' . preg_replace('/"/', '\"', $v) . '"';
     }
@@ -121,14 +127,29 @@ class Helper
         return $datetime->format('YmdHis');
     }
 
-    public static function getSOLRBaseUrl() {
+    public static function getSOLRBaseUrl(): string
+    {
 
-        global $fs2gSolrHost;
-        global $fs2gSolrPort;
-        global $fs2gSolrCore;
+        global $fs2gBackendConfig;
+
+        $host = $fs2gBackendConfig['host'] ?? 'localhost';
+        $port = $fs2gBackendConfig['port'] ?? 8983;
+        $indexName = $fs2gBackendConfig['indexName'] ?? 'mw';
 
         $protocol = "http";
-        return "$protocol://$fs2gSolrHost:$fs2gSolrPort/solr/$fs2gSolrCore";
+        return "$protocol://$host:$port/solr/$indexName";
     }
 
+    public static function getBasicAuthHeader(): array
+    {
+        global $fs2gBackendConfig;
+
+        $user = $fs2gBackendConfig['user'] ?? '';
+        $pass = $fs2gBackendConfig['pass'] ?? '';
+
+        if ($user !== '') {
+            return ["Authorization: Basic " . base64_encode("$user:$pass")];
+        }
+        return [];
+    }
 }

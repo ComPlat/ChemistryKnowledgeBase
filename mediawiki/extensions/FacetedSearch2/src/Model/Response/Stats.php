@@ -9,21 +9,21 @@ use DIQA\FacetedSearch2\Utils\NumericClusterer;
 class Stats
 {
     public PropertyWithURL $property;
-    public ?float $min;
-    public ?float $max;
-    public ?float $count;
-    public ?float $sum;
+    public ?string $min;
+    public ?string $max;
+    public ?int $count;
+    public ?string $sum;
     public array $clusters;
 
     /**
      * Stats constructor.
      * @param PropertyWithURL $property
-     * @param float|null $min
-     * @param float|null $max
-     * @param float|null $count
-     * @param float|null $sum
+     * @param string|null $min
+     * @param string|null $max
+     * @param int|null $count
+     * @param string|null $sum
      */
-    public function __construct(PropertyWithURL $property, ?float $min, ?float $max, ?float $count, ?float $sum)
+    public function __construct(PropertyWithURL $property, ?string $min, ?string $max, ?int $count, ?string $sum)
     {
         $this->property = $property;
         $this->min = $min;
@@ -42,17 +42,17 @@ class Stats
     }
 
     /**
-     * @return int|null
+     * @return string|null
      */
-    public function getMin(): ?float
+    public function getMin(): ?string
     {
         return $this->min;
     }
 
     /**
-     * @return int|null
+     * @return string|null
      */
-    public function getMax(): ?float
+    public function getMax(): ?string
     {
         return $this->max;
     }
@@ -60,20 +60,20 @@ class Stats
     /**
      * @return int|null
      */
-    public function getCount(): ?float
+    public function getCount(): ?int
     {
         return $this->count;
     }
 
     /**
-     * @return int|null
+     * @return string|null
      */
-    public function getSum(): ?float
+    public function getSum(): ?string
     {
         return $this->sum;
     }
 
-    private function makeClusters(PropertyWithURL $property, ?float $min, ?float $max, ?float $sum)
+    private function makeClusters(PropertyWithURL $property, ?string $min, ?string $max, ?string $sum): void
     {
         switch($property->getType()) {
             case Datatype::DATETIME:
@@ -81,8 +81,8 @@ class Stats
                 global $fs2gDateTimePropertyClusters;
                 if (array_key_exists($property->getTitle(), $fs2gDateTimePropertyClusters)) {
                     $constraints = $fs2gDateTimePropertyClusters[$property->getTitle()];
-                    $min = str_replace([':', '-'], '', $constraints['min']);
-                    $max = str_replace([':', '-'], '', $constraints['max']);
+                    $min = $constraints['min'];
+                    $max = $constraints['max'];
                 }
                 $this->clusters = $clusterer->makeClusters($min, $max, 10);
                 break;

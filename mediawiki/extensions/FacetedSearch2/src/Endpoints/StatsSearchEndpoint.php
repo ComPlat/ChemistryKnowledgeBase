@@ -4,8 +4,6 @@ namespace DIQA\FacetedSearch2\Endpoints;
 
 use DIQA\FacetedSearch2\ConfigTools;
 use DIQA\FacetedSearch2\Model\Request\StatsQuery;
-use DIQA\FacetedSearch2\Setup;
-use DIQA\FacetedSearch2\SolrClient\SolrRequestClient;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\Response;
 

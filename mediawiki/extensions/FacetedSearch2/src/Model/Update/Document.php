@@ -12,6 +12,7 @@ class Document {
     private $propertyValues = [];    /* @var PropertyValues[] */
     private $categories = [];        /* @var string[] */
     private $directCategories = [];  /* @var string[] */
+    private $templates = [];         /* @var string[] */
     private ?float $boost = null;
 
     /**
@@ -19,7 +20,7 @@ class Document {
      * @param string $id
      * @param string $title
      * @param string $displayTitle
-     * @param number $namespace
+     * @param int $namespace
      */
     public function __construct(string $id, string $title, string $displayTitle, $namespace)
     {
@@ -66,7 +67,7 @@ class Document {
     }
 
     /**
-     * @return PropertyValues[]
+     * @return string[]
      */
     public function getCategories(): array
     {
@@ -74,7 +75,7 @@ class Document {
     }
 
     /**
-     * @param PropertyValues[] $categories
+     * @param string[] $categories
      * @return Document
      */
     public function setCategories(array $categories): Document
@@ -101,8 +102,19 @@ class Document {
         return $this;
     }
 
+    public function getTemplates(): array
+    {
+        return $this->templates;
+    }
+
+    public function setTemplates(array $templates): Document
+    {
+        $this->templates = $templates;
+        return $this;
+    }
+
     /**
-     * @return number
+     * @return float|null
      */
     public function getBoost(): ?float
     {

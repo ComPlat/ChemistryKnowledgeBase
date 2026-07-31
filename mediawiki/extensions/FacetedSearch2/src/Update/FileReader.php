@@ -2,16 +2,22 @@
 
 namespace DIQA\FacetedSearch2\Update;
 
-use DIQA\FacetedSearch2\ConfigTools;
+
+use DIQA\FacetedSearch2\TextExtractors\PPTExtractor;
+use DIQA\FacetedSearch2\TextExtractors\WordExtractor;
+use DIQA\FacetedSearch2\TextExtractors\XLSExtractor;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Common\Property;
 use DIQA\FacetedSearch2\Model\Update\PropertyValues;
+use DIQA\FacetedSearch2\Utils\ConfusableCharacterNormalizer;
 use Exception;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use Smalot\PdfParser\Parser;
 use WikiPage;
 
-class FileReader {
+class FileReader
+{
 
     public function getTextFromFile(WikiPage $wikiPage, array &$doc, array &$messages): string
     {
@@ -30,10 +36,11 @@ class FileReader {
             if (isset($fs2gIndexImageURL) && $fs2gIndexImageURL === true) {
                 $this->retrieveFileSystemPath($pageNamespace, $pageDbKey, $doc);
             }
-            $client = ConfigTools::getFacetedSearchClient();
+
             $metadata = $this->getDocumentMetadata($pageTitle);
             if (is_null($metadata)) return '';
-            $text = $client->requestFileExtraction(file_get_contents($metadata['filePath']), $metadata['contentType']);
+            $text = $this->extractText($metadata);
+
 
         } catch (Exception $e) {
             $messages[] = $e->getMessage();
@@ -75,30 +82,65 @@ class FileReader {
         // choose content type
         if ($ext == 'pdf') {
             $contentType = 'application/pdf';
-        } else if ($ext == 'doc' || $ext == 'docx') {
+        } else if ($ext == 'doc') {
             $contentType = 'application/msword';
-        } else if ($ext == 'ppt' || $ext == 'pptx') {
+        } else if ($ext == 'docx') {
+            $contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        } else if ($ext == 'ppt') {
             $contentType = 'application/vnd.ms-powerpoint';
-        } else if ($ext == 'xls' || $ext == 'xlsx') {
+        } else if ($ext == 'pptx') {
+            $contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        } else if ($ext == 'xls') {
             $contentType = 'application/vnd.ms-excel';
+        } else if ($ext == 'xlsx') {
+            $contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         } else {
             // general binary data as fallback (don't know if Tika accepts it)
             $contentType = 'application/octet-stream';
         }
 
-        // do not index unknown formats
-        if ($contentType == 'application/octet-stream') {
-            return null;
-        }
+        return ['filePath' => $filepath, 'contentType' => $contentType, 'ext' => $ext];
+    }
 
-        // send document to Tika and extract text
-        if ($filepath == '') {
-            if (PHP_SAPI === 'cli' && !defined('UNITTEST_MODE')) {
-                throw new Exception(sprintf("\nWARN  Empty file path for '%s'. Can not index document properly.\n", $title->getPrefixedText()));
-            }
-            return null;
-        }
+    /**
+     * @param array $metadata
+     * @return string
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
+     */
+    public function extractText(array $metadata): string
+    {
+        $mediaExtractor = new WordExtractor();
+        $excelExtractor = new XLSExtractor();
+        $powerPointExtractor = new PPTExtractor();
+        switch ($metadata['contentType']) {
+            case 'application/pdf':
+                try {
+                    $parser = new Parser();
+                    $content = file_get_contents($metadata['filePath']);
+                    $pdf = $parser->parseContent($content);
+                    $text = $pdf->getText();
+                } catch (Exception $e) {
+                    $text = "Could not extract PDF content due to: " . $e->getMessage();
+                }
+                break;
+            case 'application/msword':
+                $text = $mediaExtractor->extractDocument($metadata['filePath'], 'MsDoc');
+                break;
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                $text = $mediaExtractor->extractDocument($metadata['filePath'], 'Word2007');
+                break;
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+                $text = $excelExtractor->extractXlsxText($metadata['filePath']);
+                break;
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                $text = $powerPointExtractor->extractPptxTextViaLib($metadata['filePath']);
+                break;
 
-        return ['filePath' => $filepath, 'contentType' => $contentType];
+            default:
+                $text = '';
+                break;
+        }
+        return ConfusableCharacterNormalizer::normalize($text);
     }
 }

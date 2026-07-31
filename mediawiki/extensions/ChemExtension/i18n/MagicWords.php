@@ -27,6 +27,7 @@ $magicWords['en'] = [
     'convertQuantity' => [ 0, 'convertQuantity' ],
     'convertQuantityByFactor' => [ 0, 'convertQuantityByFactor' ],
     'defaultQuantity' => [ 0, 'defaultQuantity' ],
+    'sanitizeMolecule' => [ 0, 'sanitizeMolecule' ],
 
 ];
 

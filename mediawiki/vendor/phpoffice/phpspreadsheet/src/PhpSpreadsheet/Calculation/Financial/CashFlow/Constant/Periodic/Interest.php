@@ -43,7 +43,7 @@ class Interest
         $numberOfPeriods = Functions::flattenSingleValue($numberOfPeriods);
         $presentValue = Functions::flattenSingleValue($presentValue);
         $futureValue = ($futureValue === null) ? 0.0 : Functions::flattenSingleValue($futureValue);
-        $type = Functions::flattenSingleValue($type) ?? FinancialConstants::PAYMENT_END_OF_PERIOD;
+        $type = ($type === null) ? FinancialConstants::PAYMENT_END_OF_PERIOD : Functions::flattenSingleValue($type);
 
         try {
             $interestRate = CashFlowValidations::validateRate($interestRate);
@@ -160,9 +160,9 @@ class Interest
         $numberOfPeriods = Functions::flattenSingleValue($numberOfPeriods);
         $payment = Functions::flattenSingleValue($payment);
         $presentValue = Functions::flattenSingleValue($presentValue);
-        $futureValue = Functions::flattenSingleValue($futureValue) ?? 0.0;
-        $type = Functions::flattenSingleValue($type) ?? FinancialConstants::PAYMENT_END_OF_PERIOD;
-        $guess = Functions::flattenSingleValue($guess) ?? 0.1;
+        $futureValue = ($futureValue === null) ? 0.0 : Functions::flattenSingleValue($futureValue);
+        $type = ($type === null) ? FinancialConstants::PAYMENT_END_OF_PERIOD : Functions::flattenSingleValue($type);
+        $guess = ($guess === null) ? 0.1 : Functions::flattenSingleValue($guess);
 
         try {
             $numberOfPeriods = CashFlowValidations::validateFloat($numberOfPeriods);

@@ -151,8 +151,8 @@ FacetedSearch.classes.FacetWidget = AjaxSolr.AbstractFacetWidget.extend({
 			var bDisplay  = fsi.extractDisplayName(b.facet);
 			aDisplay = fsi.extractPropertyName(aDisplay);
 			bDisplay = fsi.extractPropertyName(bDisplay);
-			aDisplay = window.XFS.translateName ? window.XFS.translateName(aDisplay) : aDisplay;
-			bDisplay = window.XFS.translateName ? window.XFS.translateName(bDisplay) : bDisplay;
+			aDisplay = window.XFS.translateName(aDisplay);
+			bDisplay = window.XFS.translateName(bDisplay);
 			return aDisplay.toLowerCase().localeCompare(bDisplay.toLowerCase());
 		});
 	},

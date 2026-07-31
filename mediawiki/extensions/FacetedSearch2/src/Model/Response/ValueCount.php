@@ -19,5 +19,18 @@ class ValueCount
         $this->count = $count;
     }
 
+    public static function fromValue($value, $count): self
+    {
+        return new ValueCount($value, null, null, $count);
+    }
 
+    public static function fromTitle(MWTitleWithURL $mwTitle, $count): self
+    {
+        return new ValueCount(null, $mwTitle, null, $count);
+    }
+
+    public static function fromRange(Range $range, $count): self
+    {
+        return new ValueCount(null, null, $range, $count);
+    }
 }

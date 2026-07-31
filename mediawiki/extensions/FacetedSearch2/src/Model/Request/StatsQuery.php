@@ -2,7 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Model\Request;
 
-use DIQA\FacetedSearch2\Model\Common\Property;
+use JsonMapper;
+use JsonMapper_Exception;
 
 class StatsQuery extends BaseQuery {
 
@@ -11,10 +12,14 @@ class StatsQuery extends BaseQuery {
      */
     public $statsProperties = [];
 
+    /**
+     * @throws JsonMapper_Exception
+     */
     public static function fromJson($json): StatsQuery
     {
-        $mapper = new \JsonMapper();
-        return $mapper->map(json_decode($json), new StatsQuery());
+        $mapper = new JsonMapper();
+        return $mapper->map(json_decode($json), new StatsQuery())
+            ->applyMandatoryFilters();
     }
 
     /**

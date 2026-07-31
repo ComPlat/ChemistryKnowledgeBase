@@ -20,4 +20,7 @@ class NamespaceFacetValue
         $this->displayTitle = WikiTools::stripHtml($displayTitle);
     }
 
+    public static function fromNamespace($namespace): self {
+        return new NamespaceFacetValue($namespace, WikiTools::getNamespaceName($namespace));
+    }
 }

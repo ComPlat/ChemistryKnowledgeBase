@@ -29,13 +29,14 @@ class FSIncrementalUpdater  {
      * @param Store $store
      * @param SemanticData $semanticData
      * @return bool
+     * @throws Exception
      */
     public static function onUpdateDataAfter(Store $store, SemanticData $semanticData) {
         $wikiTitle = $semanticData->getSubject()->getTitle();
         if (self::shouldCreateUpdateJob()) {
             self::createUpdateJob( $wikiTitle);
         } else {
-            FSIndexer::indexArticlesWithDependent($wikiTitle);
+            FSIndexer::indexArticleWithDependent($wikiTitle);
         }
         return true;
     }
@@ -63,7 +64,7 @@ class FSIncrementalUpdater  {
         if (self::shouldCreateUpdateJob()) {
             self::createUpdateJob( $wikiTitle);
         } else {
-            FSIndexer::indexArticlesWithDependent($wikiTitle);
+            FSIndexer::indexArticleWithDependent($wikiTitle);
         }
         return true;
 
@@ -78,7 +79,7 @@ class FSIncrementalUpdater  {
     public static function onUploadComplete( &$image ) {
         try {
 
-            FSIndexer::indexArticle($image->getLocalFile()->getTitle());
+            FSIndexer::indexArticleWithDependent($image->getLocalFile()->getTitle());
 
         } catch(Exception $e) {
             wfDebugLog("FacetedSearch2", "Could not update article in Index. Reason: ".$e->getMessage());
@@ -105,7 +106,7 @@ class FSIncrementalUpdater  {
      */
     public static function onAfterImportPage(Title $title, ForeignTitle $origTitle, $revCount, $sRevCount, $pageInfo) {
         try {
-            FSIndexer::indexArticle($title);
+            FSIndexer::indexArticleWithDependent($title);
 
         } catch(Exception $e) {
             wfDebugLog("FacetedSearch2", "Could not update article on import operation in Index. Reason: ".$e->getMessage());
@@ -183,7 +184,7 @@ class FSIncrementalUpdater  {
         $content = $revision->getContent(SlotRecord::MAIN, RevisionRecord::RAW)->serialize();
         try {
 
-            FSIndexer::indexArticlesWithText([$title], $content);
+            FSIndexer::indexArticleWithDependent($title);
         } catch(Exception $e) {
             wfDebugLog("FacetedSearch2", "Could not update article in Index. Reason: ".$e->getMessage());
         }

@@ -9,6 +9,20 @@
 
     };
 
+    window.ChemExtension.AjaxEndpoints.prototype.updateMoleculeInInvestigation = function (request) {
+        let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
+        let url = baseUrl + "/v1/update-molecule-in-investigation";
+
+        return $.ajax({
+            method: "POST",
+            datatype: 'json',
+            contentType: "application/json",
+            url: url,
+            data: JSON.stringify(request)
+
+        });
+    }
+
     window.ChemExtension.AjaxEndpoints.prototype.editExperiment = function (request) {
         let baseUrl = mw.config.get("wgScriptPath") + "/rest.php/ChemExtension";
         let url = baseUrl + "/v1/edit-experiment";

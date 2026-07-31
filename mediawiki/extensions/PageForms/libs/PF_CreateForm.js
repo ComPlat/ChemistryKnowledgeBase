@@ -1,7 +1,7 @@
 jQuery.fn.displayInputParams = function () {
 	const inputParamsDiv = this.closest( '.formField' ).find( '.otherInputParams' );
 	jQuery.ajax( {
-		url: mw.util.wikiScript() + '?title=' + mw.config.get('wgPageName') +
+		url: mw.util.wikiScript() + '?title=Special:CreateForm' +
 			'&showinputtypeoptions=' + encodeURIComponent( $(this).find('select').val() ) +
 			'&formfield=' + encodeURIComponent( this.attr( 'id' ) ),
 		context: document.body,
@@ -57,5 +57,5 @@ jQuery( () => {
 
 jQuery( "input,select" ).keypress( ( event ) =>
 	// Don't submit the form if enter is pressed on a text input box or a select.
-	 event.keyCode !== 13
+	 event.key !== 'Enter'
  );

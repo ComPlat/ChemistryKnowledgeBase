@@ -193,8 +193,11 @@
             "path": "/ChemExtension/v1/download-publication-pdf",
             "method": "GET",
             "class": "DIQA\\ChemExtension\\Endpoints\\DownloadPublication"
-        }
-
+        },{
+            "path": "/ChemExtension/v1/update-molecule-in-investigation",
+            "method": "POST",
+            "class": "DIQA\\ChemExtension\\Endpoints\\UpdateMoleculeInInvestigation"
+          }
     ],
     "JobClasses": {
         "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",

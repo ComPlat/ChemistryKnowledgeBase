@@ -26,15 +26,15 @@ use DIQA\FacetedSearch2\Utils\WikiTools;
 class SolrResponseParser {
 
     private $body;
-
+    private $searchText;
     /**
      * SolrResponseParser constructor.
      * @param $body
      */
-    public function __construct($body)
+    public function __construct($body, $searchText = null)
     {
         $this->body = $body;
-
+        $this->searchText = $searchText;
     }
 
     public function parse($fillEmptyProperties = true): DocumentsResponse {
@@ -61,7 +61,9 @@ class SolrResponseParser {
                             WikiTools::createURLForCategory($category)
                         ), $value);
 
-                    } else if (self::endsWith($property, "_s") || self::endsWith($property, "_datevalue_l")) {
+                    } else if (self::endsWith($property, "_s")       // search fields
+                        || self::endsWith($property, "_datevalue_l") // redundant date value as (sortable) number
+                        || $this->isPredefinedProperty($property)) {        // predefined properties (such as _MDAT)
                         continue;
                     } else if (self::startsWith($property, "smwh_")) {
                         $item = $this->parsePropertyWithValues($property, $value);
@@ -103,6 +105,7 @@ class SolrResponseParser {
         $smwh_properties = $this->body->facet_counts->facet_fields->smwh_properties ?? [];
         $propertyFacetCounts = []; /* @var PropertyFacetCount[] */
         foreach ($smwh_properties as $property => $count) {
+            if ($this->isPredefinedProperty($property)) continue;
             $propertyFacetCount = new PropertyFacetCount($this->parseProperty($property), $count);
             if (!is_null($propertyFacetCount)) {
                 $propertyFacetCounts[] = $propertyFacetCount;
@@ -110,6 +113,7 @@ class SolrResponseParser {
         }
         $smwh_attributes = $this->body->facet_counts->facet_fields->smwh_attributes ?? [];
         foreach ($smwh_attributes as $property => $count) {
+            if ($this->isPredefinedProperty($property)) continue;
             $propertyFacetCount = new PropertyFacetCount($this->parseProperty($property), $count);
             if (!is_null($propertyFacetCount)) {
                 $propertyFacetCounts[] = $propertyFacetCount;
@@ -126,7 +130,8 @@ class SolrResponseParser {
             $docs,
             $categoryFacetCounts,
             $propertyFacetCounts,
-            $namespaceFacetCounts
+            $namespaceFacetCounts,
+            !is_null($this->searchText)  ? WikiTools::titleExists($this->searchText) : null
         );
 
     }
@@ -138,9 +143,10 @@ class SolrResponseParser {
             foreach($this->body->stats->stats_fields as $p => $info) {
                 $property = $this->parsePropertyFromStats($p);
                 if (!is_null($property)) {
+                    if ($info->min == 0 && $info->max == 0) continue;
                     $stat = new Stats($property,
-                        $info->min ?? 0,
-                        $info->max ?? 0,
+                        $this->convertIfNecessary($info->min, $property->getType()),
+                        $this->convertIfNecessary($info->max, $property->getType()),
                         $info->count ?? 0,
                         $info->sum ?? 0
                     );
@@ -150,6 +156,15 @@ class SolrResponseParser {
         }
 
         return new StatsResponse($stats);
+    }
+
+    private function convertIfNecessary($long, int $datatype): string
+    {
+        if ($datatype === Datatype::DATETIME) {
+            return Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $long)
+                ->format('Y-m-d\TH:i:s.v\Z');
+        }
+        return $long;
     }
 
     public function parseFacetResponse(): FacetResponse {
@@ -191,7 +206,9 @@ class SolrResponseParser {
         }
 
         foreach ($this->body->facet_counts->facet_fields as $p => $values) {
-            if ($p === 'smwh_categories' || $p === 'smwh_attributes' || $p === 'smwh_properties' || $p === 'smwh_namespace_id') continue;
+            if ($p === 'smwh_categories' || $p === 'smwh_attributes' || $p === 'smwh_properties' || $p === 'smwh_namespace_id') {
+                continue;
+            }
             $property = $this->parseProperty($p);
             if ($property->getType() === Datatype::DATETIME || $property->getType() === Datatype::NUMBER) {
                 continue;
@@ -299,5 +316,10 @@ class SolrResponseParser {
             }
         }
         return $propertyFacetValues;
+    }
+
+    public function isPredefinedProperty(string $property): bool
+    {
+        return self::startsWith($property, "smwh__");
     }
 }

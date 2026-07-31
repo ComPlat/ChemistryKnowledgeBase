@@ -30,6 +30,7 @@ class ExperimentListRenderer extends ExperimentRenderer
     {
         $experimentName = $this->context['name'];
         $pageTitle = $this->context['page'];
+        $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
         $experimentPage = $pageTitle->getText() . '/' . $experimentName;
         $experimentPageTitle = Title::newFromText($experimentPage);
         if (!$experimentPageTitle->exists()) {
@@ -69,7 +70,6 @@ class ExperimentListRenderer extends ExperimentRenderer
         if (!WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeOtherColumns("[@resource='include']");
             $experimentType = ExperimentRepository::getInstance()->getExperimentType($this->context['form']);
-            $htmlTableEditor->addGroupHeader($experimentType);
         } else {
             $htmlTableEditor->addEditButtonsAsFirstColumn();
             // required because VE can handle only limited amount of HTML
@@ -143,6 +143,7 @@ class ExperimentListRenderer extends ExperimentRenderer
 
         global $wgScriptPath;
         $htmlTableEditor->addTableClass("experiment-list");
+        $htmlTableEditor->addTableType($experimentType->getMainTemplate());
         if (WikiTools::isInVisualEditor()) {
             $htmlTableEditor->removeTag("span[@class='smw-highlighter']");
         }

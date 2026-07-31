@@ -373,8 +373,7 @@ class Worksheet
      */
     public function __destruct()
     {
-        Calculation::getInstanceOrNull($this->parent)
-            ?->clearCalculationCacheForWorksheet($this->title);
+        Calculation::getInstance($this->parent)->clearCalculationCacheForWorksheet($this->title);
 
         $this->disconnectCells();
         unset($this->rowDimensions, $this->columnDimensions, $this->tableCollection, $this->drawingCollection, $this->chartCollection, $this->autoFilter);
@@ -910,7 +909,7 @@ class Worksheet
         // Set title
         $this->title = $title;
 
-        if ($this->parent && $this->parent->getIndex($this, true) >= 0) {
+        if ($this->parent && $this->parent->getIndex($this, true) >= 0 && $this->parent->getCalculationEngine()) {
             // New title
             $newTitle = $this->getTitle();
             $this->parent->getCalculationEngine()

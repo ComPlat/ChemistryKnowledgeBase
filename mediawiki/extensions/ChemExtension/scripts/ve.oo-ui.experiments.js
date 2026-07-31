@@ -1,23 +1,68 @@
 (function ($) {
     'use strict';
 
+
     function initialize() {
         let experimentList = $('.experimentlist');
         if (experimentList.length > 0) {
             experimentList.each( (i,e) => OO.ui.infuse(e));
         }
 
-        let toggleHeaderLine = (e) => {
+        let toggleGroupHeader = (e) => {
             let target = $(e.target);
             let groups = target.attr('class').split(/\s+/).filter((e) => e.startsWith('group_'));
             if (groups.length === 0) return;
             let group = groups[0];
+            // hides all columns in the group
             $('th.'+group).trigger('dblclick');
         };
-        $('table.wikitable:not(.infobox) td.inv_group_header').click(toggleHeaderLine);
+        let addGroupHeader = function ($table, experimentType) {
+            const $headerCells = $table.find('th');
 
-        $('table.wikitable:not(.infobox) th').off('dblclick');
-        let headerDblClick = (e) => {
+            // Build the new group header row
+            const $tr = $('<tr>').addClass('inv_group_header');
+            $tr.append($('<td>')); // leading empty cell
+
+            const columnSpans = {};
+            const groupHeaders = Object.keys(experimentType);
+
+            groupHeaders.forEach((gh) => {
+                // Count how many <th> cells have a class containing this group name
+                const num = $headerCells.filter(function () {
+                    return ($(this).attr('class') || '').indexOf(gh) !== -1;
+                }).length;
+
+                if (num > 0) {
+                    const $td = $('<td>')
+                        .attr('colspan', num)
+                        .addClass('inv_group_header')
+                        .addClass(gh)
+                        .text(experimentType[gh]);
+                    $tr.append($td);
+                }
+
+                columnSpans[gh] = num;
+            });
+
+            // Insert the new group header row before the first existing row
+            const $rows = $table.find('tr');
+            const $firstRow = $rows.first();
+            $firstRow.before($tr);
+
+            // Apply group class to each <td> in subsequent rows
+            $rows.slice(1).each(function () {
+                const $columns = $(this).find('td');
+                let j = 0;
+                groupHeaders.forEach((gh) => {
+                    for (let i = 0; i < columnSpans[gh]; i++) {
+                        $columns.eq(j).attr('class', gh);
+                        j++;
+                    }
+                });
+            });
+        }
+
+        let collapseOrExpandColumns = (e) => {
 
             let th = $(e.target);
             let collapsed = (th.attr('collapsed') === 'true');
@@ -47,30 +92,59 @@
                 th.trigger('click'); // hack to reset sort state
             }, 10);
         };
-        $('table.wikitable:not(.infobox) th').dblclick(headerDblClick);
 
-        // make tables sortable
+        // highlight literature-references
+        let highlightLiteratureReferences = function(table) {
+            table.find('span.literature-link a').click((e) => {
+                let target = $(e.target);
+                let href = target.attr('href');
+                $('.chem_ext_literature').css({'font-weight': 'normal'});
+                $(href).css({'font-weight': 'bold'});
+            });
+        }
+
         let updateTitles = function(table){
-
+            // makes tables sortable
             table.find('thead th').each((i, e) => {
                 $(e).attr('title', $(e).attr('title-copy') );
             });
         };
-        $('table.experiment-link, table.experiment-list').each(function(i,e) {
+
+        function initTable(e) {
             let target = $(e);
             let f = target.find('> tbody > tr:first-child', target);
             let head = $('<thead>').insertBefore(target.find('> tbody')).append(f);
             head.find('th').each((i, e) => {
-                $(e).attr('title-copy', $(e).attr('title') );
+                $(e).attr('title-copy', $(e).attr('title'));
             });
+            let experimentType = target.attr('about');
+            if (experimentType) {
+                let exp = mw.config.values['experiments'][experimentType];
+                if (exp) {
+                    let headerGroups = exp['headerGroups'];
+                    console.log(headerGroups);
+                    addGroupHeader(target, headerGroups || {});
+
+                }
+
+            }
             target.tablesorter();
             updateTitles(target);
-            target.bind("sortEnd.tablesorter",function() {
+            highlightLiteratureReferences(target);
+            target.bind("sortEnd.tablesorter", function () {
                 updateTitles(target);
             });
+
+            $('td.inv_group_header', target).click(toggleGroupHeader);
+            $('th', target).off('dblclick');
+            $('th', target).dblclick(collapseOrExpandColumns);
+        }
+
+        $('table.experiment-link, table.experiment-list').each(function(i,e) {
+            initTable(e);
         });
 
-
+        // buttons for experiments
         let toggleExperimentHandler = function(e) {
             let buttonLabel = $(e.target);
             let button = buttonLabel.closest('span.experiment-link-show-button');
@@ -106,8 +180,7 @@
                 experimentContainer.replaceWith(newNode);
                 newNode.find('span.experiment-link-show-button').click(toggleExperimentHandler);
                 newNode.find('span.experiment-link-refresh-button').click(refreshExperimentLinkHandler);
-                newNode.find('td.inv_group_header').click(toggleHeaderLine);
-                newNode.find('th').dblclick(headerDblClick);
+                initTable(newNode.find('table'));
                 if (visible) {
                     newNode.find('table').show();
                 }
@@ -189,13 +262,7 @@
 
         });
 
-        // highlight literature-references
-        $('.experiment-link, span.literature-link a').click((e) => {
-            let target = $(e.target);
-            let href = target.attr('href');
-            $('.chem_ext_literature').css({'font-weight': 'normal'});
-            $(href).css({'font-weight': 'bold'});
-        });
+
 
         checkErrorsPeriodically();
     }

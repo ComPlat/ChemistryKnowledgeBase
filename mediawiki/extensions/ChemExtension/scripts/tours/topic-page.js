@@ -1,125 +1,99 @@
 // Tour of search features
 ( function ( window, document, $, mw, gt ) {
     // tour.step.name are assigned here as well as tour.name
-    var tour_name = "topic_page"
-    var name_1 = "intro";
-    var name_2 = "topic_intro"
-    var name_3 = "toc"
-    var name_4 = "scope"
-    var name_5 = "distinction"
-    var name_6 = "table_1"
-    var name_7 = "table_2"
-    var name_8 = "subtopic"
-    var name_9 = "publications"
+    const tour_name = "topic_page"
     // Start tour
-    tour = new gt.TourBuilder( {
+    const tour = new gt.TourBuilder( {
         name: tour_name
     } );
 
-
-    // Information defining each tour step
-
-// 1
     tour.firstStep( {
-        name: name_1,
+        name: "intro",
         title: 'Welcome',
         description: 'Welcome to the Introduction tour for MediaWiki',
         overlay: false,
-        closeOnClickOutside: false ,
+        closeOnClickOutside: false,
+
     } )
         .next( function() {
-            gt.setTourCookie( tour_name, name_2 );
+            gt.setTourCookie( tour_name, "topic_intro" );
             window.location.href = mw.util.getUrl( 'Category:Homogeneous_photocatalytic_CO2_conversion' ) ;})
 
-
-// 2
     tour.step( {
-        name: name_2,
+        name: "topic_intro",
         title: 'Welcome to the Topic Page',
         description: 'Welcome to the topic page here you can see a collection of projects that share a common goal.',
     } )
-        .next( name_3 )
+        .next( "toc" )
         .back( function() {
-            gt.setTourCookie( tour_name, name_2 );
+            gt.setTourCookie( tour_name, "topic_intro" );
             window.location.href = mw.util.getUrl( 'Main_Page' ) ;});
 
-// 3
     tour.step({
-        name:name_3,
+        name:"toc",
         title:"Table of Contents",
         description:"Here is the table of contents clicking on any link in here will take you to relevant spot on the page",
         attachTo:"#mw-toc-heading",
         position: "top",
-
+        closeOnClickOutside: false,
     })
-        .next(name_4)
-        .back(name_2)
+        .next("scope")
+        .back("topic_intro")
 
-// 4
     tour.step({
-        name:name_4,
+        name:"scope",
         title:"Scope",
-        description:"The scope explains the criteria of the topic. This page is a subtopic of the higher level topics of CO2 conversion.",
+        description:"The scope explains the criteria of the topic. This page is a subtopic of the higher level topics " +
+            "of CO2 conversion.",
         attachTo:"#Scope_of_this_topic_and_related_important_content",
-        position: "right"
+        position: "right",
+        closeOnClickOutside: false,
     })
-        .next(name_5)
-        .back(name_3)
+        .next("distinction")
+        .back("toc")
 
-// 5
     tour.step({
-        name:name_5,
+        name:"distinction",
         title:"Distinction",
-        description:"This section explains the difference of this topic from other topics. It also contains the embded data from investigations in the publications page.",
-        attachTo:"#mw-content-text > div.mw-parser-output > h3:nth-child(5)",
-        position: "left"
+        description:"This section explains the difference of this topic from other topics. It also contains the embedded" +
+            " data from investigations in the publications page.",
+        attachTo:"#Distinction_from_other_articles_within_the_topic_Photocatalytic_CO2_conversion",
+        position: "bottom",
+        closeOnClickOutside: false,
     })
-        .next(name_7)
-        .back(name_4)
+        .next(() => {
+            $('.experiment-link-control-bar button').eq(0).trigger('click');
+            return "table_2";
+        })
+        .back("scope")
 
-// 6
-    // tour.step({
-    //     name:name_6,
-    //     title:"Extracted data table",
-    //     description:"This table contains all investigations that have a high TON, clicking on the show table reveals the table of extracted data. This table is sorted alphabetically by the catalyst used in the reactio",
-    //     attachTo:"#ce-show-investigation-1 > button > span.oo-ui-labelElement-label",
-    //     position: "topLeft"
-    // })
-    // .next(name_7)
-    // .back(name_5)
-
-// 7
     tour.step({
-        name:name_7,
-        title:"Table Sorted by H2 TON",
-        description:"This table contains the same data as the above table. The data is sorted by  the TON of H2. Clicking on the table top row will collapse the column. This is use full on tables with a large number of columns",
-        attachTo:".experiment-link-border",
-        position: "topLeft"
+        name:"table_2",
+        title:"Investigation Table",
+        description:"This investigation table contains an aggregated list of experiments that are part of the topic. " +
+            "The content comes from the investigations of the publications pages. The table is sortable by clicking on the column headers. " +
+            "Double-clicking on the table top row will collapse the column. This is useful on tables with a large number of columns",
+        attachTo:".experiment-link-control-bar button",
+        position: "bottomRight",
+        closeOnClickOutside: false,
     })
-        .back(name_5)
-        .next(name_9)
+        .back("distinction")
+        .next("publications_2")
 
-// // 8
-//     tour.step({
-//         name:name_8,
-//         title:"Subtopics",
-//         description:"In this section sub topics that are contained in the topic are listed with the number of publications that contain the subtopic",
-//         attachTo:"#mw-subcategories > div > div > div",
-//         position: "topLeft"
-//     })
-//     .back(name_7)
-//     .next(name_9)
-
-// 9
     tour.step({
-        name:name_9,
+        name:"publications_2",
         title:"Publications",
         description:"In this section publications that correspond to the topic are listed alphabetically by their title",
         attachTo:".chem_ext_literature",
-        position: "topLeft"
+        position: "topLeft",
+        closeOnClickOutside: false,
+    }).transition(function () {
+        if (gt.isEditing()) {
+            return 'pub_feat';
+        }
+        gt.endTour();  // remove the cookie, tour won't reopen
+        return gt.TransitionAction.HIDE;
     })
-        .back(name_7)
-    // .next(name_9)
+        .back("table_2")
 
-// The following should be the last line of your tour.
 } ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );

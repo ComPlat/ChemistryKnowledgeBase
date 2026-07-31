@@ -1,129 +1,111 @@
 // Tour of search features
 ( function ( window, document, $, mw, gt ) {
     // tour.step.name are assigned here as well as tour.name
-    var tour_name = "publicationpage"
-    var name_1 = "intro";
-    var name_2 = "pub_intro"
-    var name_3 = "toc"
-    var name_4 = "about"
-    var name_5 = "catalyst"
-    var name_6 = "investigations"
-    var name_7 = "product_tab"
-    var name_8 = "investigation_table"
-    // var name_9 = "publications"
+    const tour_name = "publicationpage"
 
-    var tour, launchTourButtons,
-        pageName = mw.config.get( 'wgGuidedTourHelpGuiderUrl' );
-    // Start tour
-    tour = new gt.TourBuilder( {
+    let tour = new gt.TourBuilder( {
         name: tour_name
     } );
 
 
-    // Information defining each tour step
-
-// 1
     tour.firstStep( {
-        name: name_1,
+        name: "intro",
         title: 'Welcome',
         description: 'Welcome to the Introduction tour for MediaWiki',
         overlay: false,
         closeOnClickOutside: false ,
     } )
         .next( function() {
-            gt.setTourCookie( tour_name, name_2 );
+            gt.setTourCookie( tour_name, "pub_intro" );
             window.location.href = mw.util.getUrl( 'Photochemical_Reduction_of_Carbon_Dioxide_to_Formic_Acid_using_Ruthenium(II)-Based_Catalysts_and_Visible_Light' ) ;})
 
-
-// 2
     tour.step( {
-        name: name_2,
+        name: "pub_intro",
         title: 'Welcome to an example publication page',
         description: 'Welcome to the Publications page here is where information from the paper is extracted into the tables on the page.',
+        closeOnClickOutside: false,
     } )
-        .next( name_3 )
+        .next( "toc" )
         .back( function() {
-            gt.setTourCookie( tour_name, name_2 );
+            gt.setTourCookie( tour_name, "pub_intro" );
             window.location.href = mw.util.getUrl( 'Main_Page' ) ;});
 
-// 3
     tour.step({
-        name:name_3,
+        name:"toc",
         title:"Table of Contents",
         description:"Here is the table of contents that contains the sections for the page.",
         attachTo:"#toc",
         position: "right",
+        closeOnClickOutside: false,
 
     })
-        .next(name_4)
-        .back(name_2)
+        .next("about")
+        .back("pub_intro")
 
-// 4
     tour.step({
-        name:name_4,
+        name:"about",
         title:"About Box",
         description:"Here is the about table clicking on  the bar expands the tale showing metadata about the paper",
         attachTo:".infobox > tbody:nth-child(1) > tr:nth-child(1) > th:nth-child(1)",
-        position: "top"
+        position: "top",
+        closeOnClickOutside: false,
     })
-        .next(name_5)
-        .back(name_3)
+        .next("catalyst")
+        .back("toc")
 
-// 5
     tour.step({
-        name:name_5,
-        title:"Catalysts",
-        description:"Here is the section of catalysts used in the publication",
+        name:"catalyst",
+        title:"Sample section: Catalysts used in the publication",
+        description:"Here is a sample section of the publication. You can easily create the document structure by " +
+            "using the visual editor mode. In this case, you dont need to learn wikitext markup",
         attachTo:"#Catalysts",
-        position: "topRight"
+        position: "topRight",
+        closeOnClickOutside: false,
     })
-        .next(name_6)
-        .back(name_4)
+        .next( "molecule")
+        .back("about")
 
-// 6
     tour.step({
-        name:name_6,
+        name:"molecule",
+        title:"Molecules",
+        description:"Here is a molecule extracted from the publication and drawn in Ketcher editor here in the wiki. " +
+            "Clicking on the molecule will take you to the relevant molecule page. " +
+            "You can edit the molecule by entering visual edit mode, then click on the molecule and choose 'edit' and then " +
+            "press the 'Ketcher'-button.",
+        attachTo:".chemform:nth-child(1)",
+        position: "topRight",
+        closeOnClickOutside: false,
+    })
+        .next( "investigations")
+        .back("catalyst")
+
+    tour.step({
+        name: "investigations",
         title:"Investigation",
         description:"Here is a table with each experiment extracted into a unique investigation.",
         attachTo:"#Investigations",
-        position: "topRight"
+        position: "topRight",
+        closeOnClickOutside: false,
     })
-        .next(name_8)
-        .back(name_5)
+        .next("investigation_table")
+        .back("catalyst")
 
-// 7
-    // tour.step({
-    //     name:name_7,
-    //     title:"Products Tab",
-    //     description:"Clicking on the table header will change the focus of the table.",
-    //     attachTo:"#ooui-php-14 > span",
-    //     position: "top"
-    // })
-    // .back(name_6)
-    // .next(name_8)
-
-// 8
     tour.step({
-        name:name_8,
+        name:"investigation_table",
         title:"Investigations",
         description:"Here is the  list of different investigations from the publication.",
         attachTo:"#mw-content-text > ul",
         position: "topLeft",
-        buttons: launchTourButtons
-    })
-        .back(name_6)
-    // .next(name_9)
+        closeOnClickOutside: false,
 
-// 9
-    // tour.step({
-    //     name:name_9,
-    //     title:"example title",
-    //     description:"",
-    //     attachTo:"#mw-pages > div",
-    //     position: "topLeft"
-    // })
-    // .back(name_8)
-    // .next(name_9)
+    }).transition(function () {
+        if (gt.isEditing()) {
+            return 'pub_feat';
+        }
+        gt.endTour();  // remove the cookie, tour won't reopen
+        return gt.TransitionAction.HIDE;
+    })
+        .back( "investigations")
 
 // The following should be the last line of your tour.
 } ( window, document, jQuery, mediaWiki, mediaWiki.guidedTour ) );

@@ -1,3 +1,5 @@
+const Sortable = require( 'ext.pageforms.sortable' );
+
 /*
  * ext.pf.select2.tokens.js
  *
@@ -35,7 +37,7 @@
 	/*
 	 * Applies select2 to the HTML element
 	 *
-	 * @param {HTMLElement} element
+	 * @param {jQuery} element
 	 *
 	 */
 	tokens_proto.apply = function( element ) {
@@ -121,10 +123,10 @@
 		});
 
 		$(inputData.$container[0]).on("keyup",(e) => {
-			if( existingValuesOnly ){
+			if ( existingValuesOnly ) {
 				return ;
 			}
-			if( e.keyCode === 9 ){
+			if ( e.key === 'Tab' ) {
 				let rawValue = "";
 				let checkIfPresent = false;
 				const valHighlighted = inputData.$results.find('.select2-results__option--highlighted')[0];
@@ -345,7 +347,7 @@
 					value.pfautocomplete.forEach( (item) => {
 						if (item.displaytitle !== undefined) {
 							values.push({
-								id: item.displaytitle, text: item.displaytitle
+								id: item.title, text: item.displaytitle
 							});
 						} else {
 							values.push({
@@ -426,7 +428,7 @@
 									: item.displaytitle + " (" + item.title + ")";
 							}
 							item.text = displayTitle;
-							item.id = displayTitle
+							item.id = item.title;
 						} else {
 							item.text = item.title;
 							item.id = item.title;
