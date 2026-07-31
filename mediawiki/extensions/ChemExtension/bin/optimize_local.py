@@ -673,6 +673,13 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
                      f"in the field's canonical unit (e.g., mM for concentrations, h for time, h^-1 "
                      f"for TOF). Convert µM→mM by /1000 BEFORE writing the cell. NEVER copy the "
                      f"paper's unit label into a numeric cell.\n")
+    gold_block = ""
+    if gold_example:
+        gold_block = ("\n\n[GOLD STANDARD EXAMPLE — the desired output structure looks like this. "
+                      "Make sure the improved prompt produces output that follows this sectioning, "
+                      "prose density (≤120 words per prose section), and CSV layout]\n"
+                      + gold_example
+                      + "\n[END GOLD STANDARD EXAMPLE]\n")
     task = (f"[CURRENT METRIC] F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
             f"composite={agg.get('composite', agg['f1']):.4f}\n"
             f"{layout_line}{conc_line}{unit_line}{ground}\n"
