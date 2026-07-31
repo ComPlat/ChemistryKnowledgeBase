@@ -1,0 +1,32 @@
+== Abstract Summary ==
+Extract a crisp overview in ≤100 words. Capture the chemical goal (e.g., visible-light CO₂-to-CO), the molecular components actually used (catalyst, photosensitizer, electron donor, solvent), the experimental scale (concentrations or loadings where stated), light source wavelength or band, irradiation time, temperature, and the headline numerical outcome such as the highest TON_CO or selectivity. Do not cite authors or journals. Use neutral language like “The article reports…”. If more than one catalyst or photosensitizer is compared, mention this comparative scope without detailing every value here.
+
+== Advances and Special Progress ==
+State the most significant improvements claimed by the paper in 20–120 words. Typical advances to highlight: higher TON or TOF, larger quantum yield, superior CO selectivity, less H₂ evolution, operation in aqueous or green solvents, use of earth-abundant metals, mechanistic insight from spectroscopy, long-term stability, or a novel supramolecular design. Only include points explicitly supported by the text, figures, or tables. If the authors benchmark against literature, note the relative factor (“5-fold TON increase over the parent bpy complex”).
+
+== Additional Remarks ==
+Record context that helps a reader judge utility and limitations: reliance on sacrificial donors, noble-metal photosensitizers, sensitivity to water or oxygen, catalyst degradation pathways, scalability issues, or special reactor setups. Note any reported control experiments (dark, no catalyst, argon atmosphere) confirming photocatalytic origin. Mention if quantum yields were measured but values are buried in Supporting Information so may not be extractable. Stay balanced; include caveats along with strengths.
+
+== Content of the Published Article in Detail ==
+Deliver a teaching-oriented mechanistic narrative (≤120 words). Summarise how the photosensitizer absorbs light, which component quenches its excited state (identify reductive vs oxidative quenching), the redox events leading to catalyst reduction, CO₂ binding or activation steps, proton sources involved, and fate of competing H₂ evolution. Reference concrete evidence such as Stern–Volmer plots, transient absorption, or cyclic voltammetry, but do not dwell on synthetic procedures. Distinguish clearly between observed intermediates and speculative ones; use cautious verbs like “proposes” or “attributes”.
+
+== Catalyst ==
+Name the catalyst(s) exactly as written in the article (e.g., “[Fe(bpy)₂(CO)₂]²⁺”). Specify metal, ligand class, nuclearity, and any key redox or structural feature linked to activity or selectivity. If multiple analogues are tested, explain the variable (substituent, denticity, tether). Mention loading units used in the CSV (µM) and instruct conversion: 1 mM = 1000 µM; 1 µmol in 1 L = 1 µM. Remind the extractor that cat conc must always be reported when present, never left blank if stated anywhere in text, figure, or SI table.
+
+== Photosensitizer ==
+Give the exact photosensitizer name (e.g., “Ru(bpy)₃Cl₂”, “fac-Ir(ppy)₃”, “CDs”). Note wavelength band used, redox properties if mentioned, and quenching pathway. Stress the recurring unit trap: PS conc must be in mM. Provide explicit conversions: 0.5 µM → 0.0005 mM; 2 × 10⁻⁵ M → 20 mM. If multiple PS are screened, keep naming consistent across CSV rows. Warn not to confuse PS with catalyst when both are metal complexes.
+
+== Investigation ==
+List every distinct photocatalytic run. Do not merge rows. Scan tables, figure captions, and footnotes for hidden parameters (additives, intensity, pH). Typical clues for weak fields: 
+• Turnover frequency often appears as “TOF = 2.3 h⁻¹” or “3.8 s⁻¹” (multiply by 3600 to convert s⁻¹ → h⁻¹).  
+• Quantum yield may be labeled “Φ_CO(400 nm) = 1.2 %”.  
+• Light intensity can be in mW cm⁻², W, or photon flux; copy numeric value with unit text.  
+• Additives include buffers, proton sources (e.g., “5 % H₂O”), or gas mixtures (“CO₂/Ar 10:90”).  
+Never delete a column; leave blank only when genuinely absent.
+
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+```
+
+== MediaWiki Output Checklist ==
+Before finalising, silently confirm: every requested column present and ordered; units converted (cat µM / PS mM / e-D M / TOF h⁻¹); no commas inside any cell; names match article spelling; no bibliographic metadata; each prose section between 20–120 words.
