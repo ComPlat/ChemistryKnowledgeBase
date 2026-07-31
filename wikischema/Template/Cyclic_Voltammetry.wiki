@@ -52,7 +52,7 @@ This is the Cyclic Voltammetry template.
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 <td>{{#subobject:
- |Analyte={{{anl|}}}
+ |Analyte={{#sanitizeMolecule: {{{anl|}}} }}
  |Analyte concentration={{{anl conc|}}}
  |Redox potential={{{redox potential|}}}
  |E0={{{e0|}}}
@@ -62,12 +62,12 @@ This is the Cyclic Voltammetry template.
  |Eox1={{{e_ox1|}}}
  |Eox2={{{e_ox2|}}}
  |Eox3={{{e_ox3|}}}
- |Solvent A={{{solv|}}}
+ |Solvent A={{#sanitizeMolecule: {{{solv|}}} }}
  |Solvent volume={{{solv vol|}}}
- |Electrolyte={{{electrolyte|}}}
+ |Electrolyte={{#sanitizeMolecule: {{{electrolyte|}}} }}
  |Electrolyte purity={{{electrolyte purity|}}}
  |Electrolyte concentration={{{el conc|}}}
- |Internal reference compound={{{int ref comp|}}}
+ |Internal reference compound={{#sanitizeMolecule: {{{int ref comp|}}} }}
  |Scan rate={{{scan rate|}}}
  |Scan number={{{scan number|}}}
  |Potential window={{{potential window|}}}

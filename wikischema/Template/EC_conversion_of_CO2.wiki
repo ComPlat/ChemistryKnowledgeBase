@@ -111,7 +111,7 @@ This is the Electrochemical conversion of CO2 experiments template.
 
 <td>{{#subobject:
  |Experiment Type={{{experiment_type|}}}
- |Catalyst={{{catalyst|}}}
+ |Catalyst={{#sanitizeMolecule: {{{catalyst|}}} }}
  |Catalyst concentration={{{cat conc|}}}
  |Catalyst fixation={{{cat fixation|}}}
  |Catalyst carrier={{{cat carrier|}}}
@@ -121,13 +121,13 @@ This is the Electrochemical conversion of CO2 experiments template.
  |Counter electrode={{{counter electrode|}}}
  |Reference electrode={{{reference electrode|}}}
 
- |Solvent A at={{{solvent_A__WE|}}}; WE
- |Solvent B at={{{solvent_B__WE|}}}; WE
- |Solvent C at={{{solvent_C__WE|}}}; WE
+ |Solvent A at={{#sanitizeMolecule: {{{solvent_A__WE|}}} }}; WE
+ |Solvent B at={{#sanitizeMolecule: {{{solvent_B__WE|}}} }}; WE
+ |Solvent C at={{#sanitizeMolecule: {{{solvent_C__WE|}}} }}; WE
 
- |Solvent A at={{{solvent_A__CE|}}}; CE
- |Solvent B at={{{solvent_B__CE|}}}; CE
- |Solvent C at={{{solvent_C__CE|}}}; CE
+ |Solvent A at={{#sanitizeMolecule: {{{solvent_A__CE|}}} }}; CE
+ |Solvent B at={{#sanitizeMolecule: {{{solvent_B__CE|}}} }}; CE
+ |Solvent C at={{#sanitizeMolecule: {{{solvent_C__CE|}}} }}; CE
 
  |Solvent ratio at={{{solvent_ratio__WE|}}}; WE
  |Solvent ratio at={{{solvent_ratio__CE|}}}; CE
