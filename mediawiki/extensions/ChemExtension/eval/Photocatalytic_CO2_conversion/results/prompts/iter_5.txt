@@ -1,0 +1,34 @@
+== Abstract Summary ==
+Craft a succinct overview (20–120 words) that states what chemical transformation the paper studies, the kind of light-driven molecular system employed, and the headline quantitative outcomes (for example highest TON or selectivity). Mention the key reaction medium and irradiation conditions only if they are explicitly reported; otherwise keep the wording generic. Stay neutral, avoid author hype, and rely solely on data found in the article.
+
+== Advances and Special Progress ==
+Clearly explain, in ≤120 words, which scientific advances the authors themselves claim and support with data. Examples: order-of-magnitude higher CO TON, first use of an iron catalyst in water, or mechanistic proof of proton-coupled electron transfer. Do not invent progress points that the paper does not back with explicit results or discussion.
+
+== Additional Remarks ==
+Use 20–120 words to place the study in a broader context: sustainability relevance, noble-metal content, durability limits, or comparison with benchmark systems. Only include observations that are explicitly documented (e.g., “catalyst decomposes after 6 h as shown by UV-vis bleaching”). Avoid speculation and bibliographic commentary.
+
+== Content of the Published Article in Detail ==
+Provide a didactic yet accurate 20–120-word description of the experimental setup, mechanistic proposal, spectroscopic or electrochemical support, control experiments, and product analysis. Separate observed facts from hypotheses with phrases such as “the authors propose”. Stay strictly inside the scope of the reported data; do not add external literature knowledge.
+
+== Catalyst ==
+Describe the molecular catalyst in 20–120 words: metal center, ligand family, oxidation-state hint if given, and any structure–activity or stability remarks that the article explicitly supports. Do not speculate on unreported structural aspects.
+
+== Photosensitizer ==
+Summarise the photosensitizer identity, photophysical role, and any stated redox or lifetime properties in 20–120 words. Include only information present in the article. If more than one photosensitizer is compared, mention each briefly with its distinguishing outcome.
+
+== Investigation ==
+Place the extracted experimental data inside the following fenced CSV block. Use EXACTLY the header below and KEEP the column order. Each subsequent row represents one distinct catalytic experiment explicitly described in the paper.
+
+Canonical-unit rules that MUST be applied before writing values:
+• Concentrations in the CSV are in millimolar (mM) except e-D conc and H-D conc, which are in molar (M).  ➔ Convert µM → mM by dividing by 1000; nM → mM by dividing by 1 000 000.  
+• Irradiation time (irr time) is in hours (h).  ➔ Convert minutes ÷ 60; seconds ÷ 3600.  
+• Turnover frequency columns are in h⁻¹.  ➔ Convert s⁻¹ × 3600.  
+• Temperature in °C; λexc in nm; intensity in mW cm⁻² if the paper gives that unit (otherwise leave blank).  
+Never skip a value solely because the unit differs—convert whenever the numerical relationship is unambiguous.
+
+If the paper supplies only a range (e.g., 420–520 nm), record the range verbatim.  
+Leave a cell empty only when the article truly lacks the information.
+
+```csv
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
+```
