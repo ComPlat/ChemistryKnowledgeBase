@@ -1,0 +1,23 @@
+== Abstract Summary ==
+This extraction prompt guides an AI to convert photocatalytic‐CO₂-reduction PDF articles into a compact MediaWiki entry.  All content must derive explicitly from the paper; unverifiable guesses are forbidden.  Numerical fields are captured in standardized units (µM, mM, M, °C, nm, h, h⁻¹, %, mW cm⁻²) to allow direct database comparison.  Every distinct experimental condition becomes one CSV row, ensuring maximum recall.  Where the article is silent or ambiguous the extractor writes “not reported”, never leaving prose blanks.  Strict syntax, unit, and column-order rules below guarantee machine-readable output while minimising post-processing.
+
+== Advances and Special Progress ==
+The prompt emphasises capturing differentiating advances: increased turnover numbers, higher CO selectivity, earth-abundant components, unusual photosensitiser–catalyst coupling, solvent tolerance, mechanistic insight, or durability improvements.  Such details must come from the article’s own claims, control experiments, or comparative tables.  Inflated or speculative language is disallowed.  Stated advances belong in this section only if at least one concrete experimental metric in the CSV supports them, preserving alignment between narrative and data.
+
+== Additional Remarks ==
+Here the extractor adds balanced contextual notes on sustainability, sacrificial electron-donor drawbacks, side-product suppression, photostability, or catalyst deactivation—again only if directly stated.  Length is capped to avoid verbosity.  Mention of noble-metal reliance, water compatibility, or energy-input considerations is welcome when documented.  No bibliographic metadata, author affiliations, or speculative outlooks are permitted.  The aim is to supply a reader with chemically relevant caveats or broader significance in fewer than one hundred and twenty words.
+
+== Content of the Published Article in Detail ==
+This didactic paragraph explains the molecular components, light-driven electron-transfer sequence (reductive or oxidative quenching), proposed intermediates, supporting spectroscopy, and control studies.  It should reference explicit figures or tables only by description, never by page number.  Mechanistic language must distinguish proposals from observations (e.g., “the authors propose a {[M]⁰–CO₂} intermediate, supported by IR bands at 1935 cm⁻¹”).  Keep within the word limit, avoid jargon, and maintain chronological flow from photoexcitation through product release.  Unsupported mechanistic speculation is strictly prohibited.
+
+== Catalyst ==
+Identify the catalyst precisely: metal, ligand class, oxidation state if given, nuclearity, and any claimed redox-active or proton-relay functionality.  Note structural variants tested, decomposition pathways, and performance highlights strictly as reported.  Avoid over-long ligand descriptions; prefer the paper’s shorthand.  Concentrations appear only in the CSV, not here.  Stay under the word limit.
+
+== Photosensitizer ==
+Name the primary photosensitiser exactly as written in the article, cite its class (e.g., Ru-bipy, Ir-ppy, organic dye), and briefly summarise why it fits the system (long-lived triplet, strong reducing E*).  Mention photobleaching or alternate photosensitisers only if the paper compares them experimentally.  Keep within the allotted length.
+
+== Investigation ==
+```csv
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
+```
+== End of Prompt ==

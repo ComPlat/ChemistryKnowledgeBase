@@ -1,15 +1,15 @@
 {
-  "iteration": 5,
+  "iteration": 6,
   "aggregate": {
-    "f1": 0.29385530227948464,
-    "precision": 0.34356894553881806,
-    "recall": 0.2567099567099567,
+    "f1": 0.2873435767463963,
+    "precision": 0.22658006495128655,
+    "recall": 0.3926406926406926,
     "groundedness": null,
     "hallucination": null,
-    "layoutScore": 0.9428571428571428,
-    "conciseness": 0.9401729218369367,
-    "unitCorrectness": 0.9697146185206756,
-    "composite": 0.26877561876983586
+    "layoutScore": 0.9642857142857142,
+    "conciseness": 0.9055505800222574,
+    "unitCorrectness": 0.9729151817533856,
+    "composite": 0.26399622182211907
   },
   "weak_fields": [
     {
@@ -62,18 +62,9 @@
       "recall": 0.041666666666666664,
       "correct": 1,
       "total": 24,
-      "unit_errors": 7,
+      "unit_errors": 8,
       "misses": 23,
-      "unit_error_pct": 0.30434782608695654
-    },
-    {
-      "field": "Turnover_number__HCOOH",
-      "recall": 0.1440677966101695,
-      "correct": 17,
-      "total": 118,
-      "unit_errors": 0,
-      "misses": 101,
-      "unit_error_pct": 0.0
+      "unit_error_pct": 0.34782608695652173
     },
     {
       "field": "additives",
@@ -85,40 +76,22 @@
       "unit_error_pct": 0.0
     },
     {
-      "field": "cat conc",
-      "recall": 0.1482889733840304,
-      "correct": 39,
-      "total": 263,
-      "unit_errors": 36,
-      "misses": 224,
-      "unit_error_pct": 0.16071428571428573
-    },
-    {
       "field": "Turnover_number__H2",
-      "recall": 0.2012987012987013,
-      "correct": 31,
+      "recall": 0.23376623376623376,
+      "correct": 36,
       "total": 154,
       "unit_errors": 0,
-      "misses": 123,
+      "misses": 118,
       "unit_error_pct": 0.0
     },
     {
-      "field": "Turnover_number__CO",
-      "recall": 0.248868778280543,
-      "correct": 55,
-      "total": 221,
+      "field": "Turnover_number__HCOOH",
+      "recall": 0.2542372881355932,
+      "correct": 30,
+      "total": 118,
       "unit_errors": 0,
-      "misses": 166,
+      "misses": 88,
       "unit_error_pct": 0.0
-    },
-    {
-      "field": "PS conc",
-      "recall": 0.28294573643410853,
-      "correct": 73,
-      "total": 258,
-      "unit_errors": 9,
-      "misses": 185,
-      "unit_error_pct": 0.04864864864864865
     },
     {
       "field": "additives conc",
@@ -130,57 +103,39 @@
       "unit_error_pct": 0.0
     },
     {
-      "field": "λexc",
-      "recall": 0.30952380952380953,
+      "field": "Turnover_number__CO",
+      "recall": 0.35294117647058826,
       "correct": 78,
-      "total": 252,
-      "unit_errors": 0,
-      "misses": 174,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "irr time",
-      "recall": 0.3130841121495327,
-      "correct": 67,
-      "total": 214,
-      "unit_errors": 0,
-      "misses": 147,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "solvent-ratio",
-      "recall": 0.3192771084337349,
-      "correct": 53,
-      "total": 166,
-      "unit_errors": 0,
-      "misses": 113,
-      "unit_error_pct": 0.0
-    },
-    {
-      "field": "feedstock gas",
-      "recall": 0.3208955223880597,
-      "correct": 43,
-      "total": 134,
-      "unit_errors": 0,
-      "misses": 91,
-      "unit_error_pct": 0.0
+      "total": 221,
+      "unit_errors": 1,
+      "misses": 143,
+      "unit_error_pct": 0.006993006993006993
     },
     {
       "field": "Temperature",
-      "recall": 0.32653061224489793,
-      "correct": 32,
+      "recall": 0.37755102040816324,
+      "correct": 37,
       "total": 98,
       "unit_errors": 0,
-      "misses": 66,
+      "misses": 61,
       "unit_error_pct": 0.0
     },
     {
-      "field": "e-D conc",
-      "recall": 0.39906103286384975,
-      "correct": 85,
-      "total": 213,
+      "field": "cat conc",
+      "recall": 0.40304182509505704,
+      "correct": 106,
+      "total": 263,
+      "unit_errors": 18,
+      "misses": 157,
+      "unit_error_pct": 0.11464968152866242
+    },
+    {
+      "field": "λexc",
+      "recall": 0.4166666666666667,
+      "correct": 105,
+      "total": 252,
       "unit_errors": 0,
-      "misses": 128,
+      "misses": 147,
       "unit_error_pct": 0.0
     },
     {
@@ -191,15 +146,102 @@
       "unit_errors": 0,
       "misses": 8,
       "unit_error_pct": 0.0
+    },
+    {
+      "field": "PS conc",
+      "recall": 0.437984496124031,
+      "correct": 113,
+      "total": 258,
+      "unit_errors": 11,
+      "misses": 145,
+      "unit_error_pct": 0.07586206896551724
+    },
+    {
+      "field": "irr time",
+      "recall": 0.49065420560747663,
+      "correct": 105,
+      "total": 214,
+      "unit_errors": 0,
+      "misses": 109,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "solvent-ratio",
+      "recall": 0.4939759036144578,
+      "correct": 82,
+      "total": 166,
+      "unit_errors": 0,
+      "misses": 84,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "e-D conc",
+      "recall": 0.5586854460093896,
+      "correct": 119,
+      "total": 213,
+      "unit_errors": 0,
+      "misses": 94,
+      "unit_error_pct": 0.0
+    },
+    {
+      "field": "feedstock gas",
+      "recall": 0.5671641791044776,
+      "correct": 76,
+      "total": 134,
+      "unit_errors": 0,
+      "misses": 58,
+      "unit_error_pct": 0.0
     }
   ],
   "per_publication": [
     {
       "doi": "10.1002/ange.201610607",
-      "tp": 24,
+      "tp": 16,
       "gold_cells": 62,
-      "ext_cells": 50,
+      "ext_cells": 54,
       "gold_rows": 7,
+      "ext_rows": 2,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.9545966701915203,
+        "verbosity": 0.08472222222222221,
+        "redundancy": 0.006084437394737324,
+        "over_sections": [
+          [
+            "Content of the Published Article in Detail",
+            127
+          ],
+          [
+            "Photosensitizer",
+            174
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "feedstock gas: expected 'CO2', got '100% CO2'",
+        "Turnover_frequency__CO: expected '0.47', got '1692'  [UNIT_ERROR: ext/gold ≈ 3600]",
+        "Turnover_number__H2: expected '368', got 'not reported'",
+        "Turnover_frequency__H2: expected '0.01', got 'not reported'",
+        "additives: expected 'CO2/Ar (10:90) atmosphere', got 'not reported'",
+        "feedstock gas: expected 'CO2', got '10% CO2/Ar'",
+        "Turnover_frequency__CO: expected '0.019', got '68.4'  [UNIT_ERROR: ext/gold ≈ 3600]",
+        "Turnover_number__H2: expected '56', got 'not reported'",
+        "Turnover_frequency__H2: expected '0.0016', got 'not reported'",
+        "PS conc: expected '0.4', got '(missing)'"
+      ]
+    },
+    {
+      "doi": "10.1002/anie.201809084",
+      "tp": 30,
+      "gold_cells": 30,
+      "ext_cells": 81,
+      "gold_rows": 3,
       "ext_rows": 3,
       "layout": {
         "score": 1.0,
@@ -208,51 +250,13 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9604472709059433,
-        "verbosity": 0.07777777777777778,
-        "redundancy": 0.0013276804103357046,
+        "score": 0.9194038178569536,
+        "verbosity": 0.15555555555555556,
+        "redundancy": 0.005636808730537266,
         "over_sections": [
           [
             "Photosensitizer",
-            176
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "feedstock gas: expected 'CO2', got '100% CO2'",
-        "Turnover_frequency__CO: expected '0.47', got '1692'  [UNIT_ERROR: ext/gold ≈ 3600]",
-        "Turnover_frequency__H2: expected '0.01', got ''",
-        "additives: expected 'CO2/Ar (10:90) atmosphere', got ''",
-        "feedstock gas: expected 'CO2', got '10% CO2/Ar'",
-        "Turnover_frequency__CO: expected '0.019', got '68.4'  [UNIT_ERROR: ext/gold ≈ 3600]",
-        "Turnover_frequency__H2: expected '0.0016', got ''",
-        "feedstock gas: expected 'CO2', got '100% CO2'",
-        "cat conc: expected '0.025', got '(missing)'",
-        "e-D conc: expected '0.3', got '(missing)'"
-      ]
-    },
-    {
-      "doi": "10.1002/anie.201809084",
-      "tp": 30,
-      "gold_cells": 30,
-      "ext_cells": 72,
-      "gold_rows": 3,
-      "ext_rows": 4,
-      "layout": {
-        "score": 1.0,
-        "present": 7,
-        "required": 7,
-        "missing": []
-      },
-      "conciseness": {
-        "score": 0.9353754499116707,
-        "verbosity": 0.125,
-        "redundancy": 0.0042491001766585875,
-        "over_sections": [
-          [
-            "Photosensitizer",
-            210
+            232
           ]
         ]
       },
@@ -261,11 +265,11 @@
     },
     {
       "doi": "10.1002/anie.201811010",
-      "tp": 46,
+      "tp": 66,
       "gold_cells": 126,
-      "ext_cells": 91,
+      "ext_cells": 216,
       "gold_rows": 12,
-      "ext_rows": 5,
+      "ext_rows": 8,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -273,13 +277,17 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9342015310297582,
-        "verbosity": 0.12916666666666668,
-        "redundancy": 0.0024302712738168072,
+        "score": 0.8946956492572431,
+        "verbosity": 0.20555555555555557,
+        "redundancy": 0.005053145929958139,
         "over_sections": [
           [
+            "Abstract Summary",
+            148
+          ],
+          [
             "Photosensitizer",
-            213
+            427
           ]
         ]
       },
@@ -294,16 +302,16 @@
         "intensity: expected '1', got '100'",
         "Turnover_frequency__CO: expected '2.4', got '144'  [UNIT_ERROR: ext/gold ≈ 60]",
         "intensity: expected '1', got '100'",
-        "cat conc: expected '0.025', got '(missing)'"
+        "intensity: expected '1', got '100'"
       ]
     },
     {
       "doi": "10.1002/cctc.201500494",
-      "tp": 8,
+      "tp": 2,
       "gold_cells": 266,
-      "ext_cells": 68,
+      "ext_cells": 27,
       "gold_rows": 38,
-      "ext_rows": 4,
+      "ext_rows": 1,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -311,37 +319,37 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9162626830158437,
-        "verbosity": 0.16111111111111112,
-        "redundancy": 0.006363522857201521,
+        "score": 0.9849375078673751,
+        "verbosity": 0.024999999999999998,
+        "redundancy": 0.005124984265249785,
         "over_sections": [
           [
             "Photosensitizer",
-            236
+            138
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '0.025', got '1666.7'",
+        "cat conc: expected '0.025', got '106.7'",
         "PS conc: expected '0.025', got '1.667'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "Turnover_number__CO: expected '1', got '13'",
-        "Turnover_number__H2: expected '2', got '8'",
-        "Turnover_number__HCOOH: expected '13', got '62'",
-        "cat conc: expected '0.025', got '416.7'",
-        "PS conc: expected '0.025', got '1.667'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "Turnover_number__CO: expected '2', got '19'",
-        "Turnover_number__H2: expected '4', got '19'",
-        "Turnover_number__HCOOH: expected '21', got '117'"
+        "Turnover_number__CO: expected '1', got '40'",
+        "Turnover_number__H2: expected '2', got '67'",
+        "Turnover_number__HCOOH: expected '13', got '419'",
+        "cat conc: expected '0.025', got '(missing)'",
+        "PS conc: expected '0.025', got '(missing)'",
+        "Temperature: expected '25', got '(missing)'",
+        "λexc: expected '400 - 700', got '(missing)'",
+        "Turnover_number__CO: expected '2', got '(missing)'"
       ]
     },
     {
       "doi": "10.1002/cctc.202201163",
-      "tp": 52,
+      "tp": 97,
       "gold_cells": 226,
-      "ext_cells": 103,
+      "ext_cells": 324,
       "gold_rows": 23,
-      "ext_rows": 6,
+      "ext_rows": 12,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -349,53 +357,59 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9151920641048252,
+        "score": 0.9150908772431556,
         "verbosity": 0.16666666666666666,
-        "redundancy": 0.002949205123682874,
+        "redundancy": 0.003151578847022154,
         "over_sections": [
           [
             "Photosensitizer",
-            255
+            623
           ]
         ]
       },
       "ground": null,
       "examples": [
         "cat conc: expected '10', got '100'",
-        "irr time: expected '20', got '4'",
-        "Turnover_number__CO: expected '109', got '576'",
-        "Turnover_number__H2: expected '54', got '287'",
         "cat conc: expected '10', got '100'",
-        "Turnover_number__CO: expected '576', got '1.1'",
-        "Turnover_number__H2: expected '287', got '7.4'",
         "cat conc: expected '10', got '100'",
-        "cat conc: expected '10', got '(missing)'",
-        "PS conc: expected '1.0', got '(missing)'"
+        "cat conc: expected '10', got '100'",
+        "additives: expected 'water', got 'H2O'",
+        "cat conc: expected '10', got '100'",
+        "irr time: expected '1', got '4'",
+        "Turnover_number__CO: expected '3.2', got '93'",
+        "Turnover_number__H2: expected '1.6', got '50'",
+        "λexc: expected '420', got 'not reported'"
       ]
     },
     {
       "doi": "10.1002/chem.201905840",
       "tp": 36,
       "gold_cells": 75,
-      "ext_cells": 60,
+      "ext_cells": 108,
       "gold_rows": 9,
       "ext_rows": 4,
       "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
+        "score": 1.0,
+        "present": 7,
         "required": 7,
-        "missing": [
-          "Investigation"
-        ]
+        "missing": []
       },
       "conciseness": {
-        "score": 0.9478567226057598,
-        "verbosity": 0.09861111111111111,
-        "redundancy": 0.0056754436773691925,
+        "score": 0.9089462455020256,
+        "verbosity": 0.1763888888888889,
+        "redundancy": 0.005718620107059874,
         "over_sections": [
           [
+            "Abstract Summary",
+            122
+          ],
+          [
+            "Content of the Published Article in Detail",
+            125
+          ],
+          [
             "Photosensitizer",
-            191
+            296
           ]
         ]
       },
@@ -417,25 +431,23 @@
       "doi": "10.1002/chem.202001279",
       "tp": 75,
       "gold_cells": 152,
-      "ext_cells": 191,
+      "ext_cells": 297,
       "gold_rows": 18,
       "ext_rows": 11,
       "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
+        "score": 1.0,
+        "present": 7,
         "required": 7,
-        "missing": [
-          "Investigation"
-        ]
+        "missing": []
       },
       "conciseness": {
-        "score": 0.9139446576451852,
+        "score": 0.9152722136535956,
         "verbosity": 0.16666666666666666,
-        "redundancy": 0.005444018042963033,
+        "redundancy": 0.0027889060261421374,
         "over_sections": [
           [
             "Photosensitizer",
-            374
+            564
           ]
         ]
       },
@@ -455,11 +467,11 @@
     },
     {
       "doi": "10.1002/cptc.201700133",
-      "tp": 7,
+      "tp": 9,
       "gold_cells": 32,
-      "ext_cells": 11,
+      "ext_cells": 54,
       "gold_rows": 4,
-      "ext_rows": 1,
+      "ext_rows": 2,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -467,30 +479,39 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9932378194127081,
-        "verbosity": 0.0,
-        "redundancy": 0.013524361174583832,
-        "over_sections": []
+        "score": 0.9362277379768056,
+        "verbosity": 0.11944444444444445,
+        "redundancy": 0.008100079601944307,
+        "over_sections": [
+          [
+            "Content of the Published Article in Detail",
+            151
+          ],
+          [
+            "Photosensitizer",
+            175
+          ]
+        ]
       },
       "ground": null,
       "examples": [
-        "Turnover_number__H2: expected '1', got ''",
+        "λexc: expected '410 - 750 nm', got 'not reported'",
+        "Turnover_number__H2: expected '1', got 'not reported'",
+        "cat conc: expected '100', got 'not reported'",
+        "irr time: expected '24', got 'not reported'",
+        "Turnover_number__CO: expected '5', got 'not reported'",
+        "Turnover_number__H2: expected '3', got 'not reported'",
+        "Turnover_number__HCOOH: expected '9', got 'not reported'",
         "cat conc: expected '100', got '(missing)'",
         "solvent-ratio: expected '5:1', got '(missing)'",
-        "feedstock gas: expected 'CO2', got '(missing)'",
-        "λexc: expected '410 - 750 nm', got '(missing)'",
-        "irr time: expected '24', got '(missing)'",
-        "Turnover_number__CO: expected '5', got '(missing)'",
-        "Turnover_number__H2: expected '3', got '(missing)'",
-        "Turnover_number__HCOOH: expected '9', got '(missing)'",
-        "cat conc: expected '100', got '(missing)'"
+        "feedstock gas: expected 'CO2', got '(missing)'"
       ]
     },
     {
       "doi": "10.1002/cptc.202100034",
-      "tp": 29,
+      "tp": 24,
       "gold_cells": 109,
-      "ext_cells": 80,
+      "ext_cells": 162,
       "gold_rows": 14,
       "ext_rows": 6,
       "layout": {
@@ -500,106 +521,116 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9363582079149727,
-        "verbosity": 0.125,
-        "redundancy": 0.0022835841700545073,
+        "score": 0.9112055427416628,
+        "verbosity": 0.1763888888888889,
+        "redundancy": 0.0012000256277856331,
         "over_sections": [
           [
+            "Content of the Published Article in Detail",
+            127
+          ],
+          [
             "Photosensitizer",
-            210
+            317
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "PS conc: expected '0.05', got ''",
-        "e-D conc: expected '0.36', got '0.036'",
-        "additives: expected 'TEA', got ''",
-        "additives conc: expected '0.005', got ''",
-        "additives: expected 'TEA', got ''",
-        "additives conc: expected '0.01', got ''",
+        "e-D conc: expected '0.36', got 'not reported'",
+        "e-D conc: expected '0.005', got '0.02'",
+        "additives: expected 'TEA', got 'none'",
+        "additives conc: expected '0.005', got 'not reported'",
+        "Turnover_number__CO: expected '78', got '169'",
+        "e-D conc: expected '0.01', got '0.02'",
+        "additives: expected 'TEA', got 'none'",
+        "additives conc: expected '0.01', got 'not reported'",
         "irr time: expected '4', got '2'",
-        "additives: expected 'TEA', got ''",
-        "additives conc: expected '0.01', got ''",
-        "PS conc: expected '0.05', got ''"
+        "PS conc: expected '0.05', got 'not reported'"
       ]
     },
     {
       "doi": "10.1002/cptc.202200009",
-      "tp": 52,
+      "tp": 46,
       "gold_cells": 52,
-      "ext_cells": 96,
+      "ext_cells": 162,
       "gold_rows": 6,
       "ext_rows": 6,
       "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
+        "score": 1.0,
+        "present": 7,
         "required": 7,
-        "missing": [
-          "Investigation"
-        ]
+        "missing": []
       },
       "conciseness": {
-        "score": 0.9139704298362332,
-        "verbosity": 0.16666666666666666,
-        "redundancy": 0.005392473660866787,
+        "score": 0.9136025993289617,
+        "verbosity": 0.1708333333333333,
+        "redundancy": 0.001961468008743351,
         "over_sections": [
           [
-            "Photosensitizer",
-            261
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": []
-    },
-    {
-      "doi": "10.1002/cssc.201901326",
-      "tp": 0,
-      "gold_cells": 53,
-      "ext_cells": 61,
-      "gold_rows": 8,
-      "ext_rows": 5,
-      "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
-        "required": 7,
-        "missing": [
-          "Investigation"
-        ]
-      },
-      "conciseness": {
-        "score": 0.9216730426018013,
-        "verbosity": 0.15138888888888888,
-        "redundancy": 0.005265025907508592,
-        "over_sections": [
+            "Abstract Summary",
+            123
+          ],
           [
             "Photosensitizer",
-            229
+            366
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '25', got '6-(Ph2PNMe)2NC5H3}(CO)2Cl]+'",
-        "PS conc: expected '0.025', got 'Ru(bpy)3(PF6)2'",
-        "feedstock gas: expected 'CO2', got ''",
-        "λexc: expected '405', got ''",
-        "irr time: expected '24', got '405'",
-        "Turnover_number__HCOOH: expected '380', got ''",
-        "cat conc: expected '50', got '6-(Ph2PNMe)2NC5H3}(CO)2Cl]+'",
-        "PS conc: expected '0.05', got 'Ru(bpy)3(PF6)2'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "feedstock gas: expected 'CO2', got ''",
-        "λexc: expected '405', got ''"
+        "λexc: expected '> 400', got 'not reported'",
+        "λexc: expected '> 400', got 'not reported'",
+        "λexc: expected '> 400', got 'not reported'",
+        "λexc: expected '> 400', got 'not reported'",
+        "λexc: expected '> 400', got 'not reported'",
+        "λexc: expected '> 400', got 'not reported'"
+      ]
+    },
+    {
+      "doi": "10.1002/cssc.201901326",
+      "tp": 44,
+      "gold_cells": 53,
+      "ext_cells": 216,
+      "gold_rows": 8,
+      "ext_rows": 8,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.9157603594160197,
+        "verbosity": 0.16666666666666666,
+        "redundancy": 0.0018126145012937467,
+        "over_sections": [
+          [
+            "Photosensitizer",
+            479
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "irr time: expected '14', got '24'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'",
+        "feedstock gas: expected 'CO2', got 'CO₂'"
       ]
     },
     {
       "doi": "10.1002/cssc.202301892",
-      "tp": 10,
+      "tp": 63,
       "gold_cells": 76,
-      "ext_cells": 32,
+      "ext_cells": 297,
       "gold_rows": 9,
-      "ext_rows": 2,
+      "ext_rows": 11,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -607,37 +638,45 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9812309800574093,
-        "verbosity": 0.036111111111111115,
-        "redundancy": 0.0014269287740704478,
+        "score": 0.9007920284135754,
+        "verbosity": 0.19722222222222222,
+        "redundancy": 0.001193720950627028,
         "over_sections": [
           [
+            "Abstract Summary",
+            135
+          ],
+          [
+            "Content of the Published Article in Detail",
+            127
+          ],
+          [
             "Photosensitizer",
-            146
+            601
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '1', got '0.001'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "irr time: expected '6', got '72'",
-        "Quantum_yield__CO: expected '95', got ''",
-        "cat conc: expected '1', got '0.001'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "irr time: expected '6', got '8'",
-        "Quantum_yield__CO: expected '19', got '1.08'",
-        "cat conc: expected '1', got '(missing)'",
-        "PS conc: expected '0.7', got '(missing)'",
-        "e-D conc: expected '0.02', got '(missing)'",
-        "solvent-ratio: expected '2:1', got '(missing)'"
+        "Quantum_yield__CO: expected '95', got 'not reported'",
+        "Quantum_yield__CO: expected '19', got 'not reported'",
+        "Quantum_yield__CO: expected '90', got 'not reported'",
+        "Quantum_yield__CO: expected '84', got 'not reported'",
+        "H-D conc: expected '0.1', got 'not reported'",
+        "Quantum_yield__CO: expected '79', got 'not reported'",
+        "H-D conc: expected '0.2', got 'not reported'",
+        "Quantum_yield__CO: expected '86', got 'not reported'",
+        "Quantum_yield__CO: expected '7', got 'not reported'",
+        "H-D conc: expected '0.1', got 'not reported'"
       ]
     },
     {
       "doi": "10.1007/s10562-021-03782-7",
-      "tp": 13,
+      "tp": 57,
       "gold_cells": 75,
-      "ext_cells": 28,
+      "ext_cells": 243,
       "gold_rows": 10,
-      "ext_rows": 2,
+      "ext_rows": 9,
       "layout": {
         "score": 1.0,
         "present": 7,
@@ -645,196 +684,40 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9694262101621062,
-        "verbosity": 0.05555555555555555,
-        "redundancy": 0.0055920241202321065,
+        "score": 0.9036236485523963,
+        "verbosity": 0.18611111111111112,
+        "redundancy": 0.00664159178409627,
         "over_sections": [
           [
+            "Content of the Published Article in Detail",
+            134
+          ],
+          [
             "Photosensitizer",
-            160
+            557
           ]
         ]
       },
       "ground": null,
       "examples": [
+        "irr time: expected '10', got 'not reported'",
+        "Turnover_number__CO: expected '1130', got '1450'",
+        "irr time: expected '10', got 'not reported'",
+        "irr time: expected '10', got 'not reported'",
         "cat conc: expected '0', got '2.5'",
-        "Turnover_number__CO: expected '0', got '1450'",
-        "Turnover_number__CO: expected '1130', got '1275'",
-        "cat conc: expected '5', got '(missing)'",
-        "PS conc: expected '0.40', got '(missing)'",
-        "e-D conc: expected '0.4', got '(missing)'",
-        "solvent-ratio: expected '9:1', got '(missing)'",
-        "feedstock gas: expected 'CO2', got '(missing)'",
-        "λexc: expected '469', got '(missing)'",
-        "irr time: expected '10', got '(missing)'"
+        "irr time: expected '10', got 'not reported'",
+        "feedstock gas: expected 'nitrogen', got 'CO2'",
+        "irr time: expected '10', got 'not reported'",
+        "Turnover_number__CO: expected '0', got '1130'",
+        "irr time: expected '10', got 'not reported'"
       ]
     },
     {
       "doi": "10.1016/j.apcata.2016.04.035",
-      "tp": 35,
+      "tp": 45,
       "gold_cells": 52,
-      "ext_cells": 80,
+      "ext_cells": 189,
       "gold_rows": 7,
-      "ext_rows": 5,
-      "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
-        "required": 7,
-        "missing": [
-          "Investigation"
-        ]
-      },
-      "conciseness": {
-        "score": 0.9281483391336333,
-        "verbosity": 0.14027777777777778,
-        "redundancy": 0.0034255439549557196,
-        "over_sections": [
-          [
-            "Photosensitizer",
-            221
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "λexc: expected 'xenon lamp', got ''",
-        "λexc: expected 'xenon lamp', got ''",
-        "λexc: expected 'xenon lamp', got ''",
-        "λexc: expected 'xenon lamp', got ''",
-        "λexc: expected 'xenon lamp', got ''",
-        "cat conc: expected '500', got '(missing)'",
-        "e-D conc: expected '0.1', got '(missing)'",
-        "solvent-ratio: expected '20:1', got '(missing)'",
-        "λexc: expected 'xenon lamp', got '(missing)'",
-        "irr time: expected '3', got '(missing)'"
-      ]
-    },
-    {
-      "doi": "10.1016/j.electacta.2017.04.080",
-      "tp": 17,
-      "gold_cells": 149,
-      "ext_cells": 68,
-      "gold_rows": 22,
-      "ext_rows": 4,
-      "layout": {
-        "score": 1.0,
-        "present": 7,
-        "required": 7,
-        "missing": []
-      },
-      "conciseness": {
-        "score": 0.941063792444414,
-        "verbosity": 0.11666666666666665,
-        "redundancy": 0.0012057484445054919,
-        "over_sections": [
-          [
-            "Content of the Published Article in Detail",
-            124
-          ],
-          [
-            "Photosensitizer",
-            200
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "solvent-ratio: expected '4:1', got ''",
-        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "solvent-ratio: expected '4:1', got ''",
-        "irr time: expected '24', got '16'",
-        "Turnover_number__CO: expected '15', got '9'",
-        "Turnover_number__HCOOH: expected '58', got '48'",
-        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "solvent-ratio: expected '4:1', got ''",
-        "Turnover_number__CO: expected '9', got '47'"
-      ]
-    },
-    {
-      "doi": "10.1021/acs.inorgchem.0c03503",
-      "tp": 7,
-      "gold_cells": 41,
-      "ext_cells": 16,
-      "gold_rows": 5,
-      "ext_rows": 1,
-      "layout": {
-        "score": 1.0,
-        "present": 7,
-        "required": 7,
-        "missing": []
-      },
-      "conciseness": {
-        "score": 0.9973788300722768,
-        "verbosity": 0.001388888888888889,
-        "redundancy": 0.0038534509665574274,
-        "over_sections": [
-          [
-            "Photosensitizer",
-            121
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "cat conc: expected '10', got '0.01'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "Turnover_frequency__CO: expected '127', got '7620'  [UNIT_ERROR: ext/gold ≈ 60]",
-        "cat conc: expected '10', got '(missing)'",
-        "PS conc: expected '0.1', got '(missing)'",
-        "e-D conc: expected '0.28', got '(missing)'",
-        "solvent-ratio: expected '3:2', got '(missing)'",
-        "feedstock gas: expected 'CO2', got '(missing)'",
-        "λexc: expected '420-650', got '(missing)'",
-        "irr time: expected '2', got '(missing)'",
-        "Turnover_number__CO: expected '2780', got '(missing)'"
-      ]
-    },
-    {
-      "doi": "10.1021/acs.inorgchem.6b00379",
-      "tp": 65,
-      "gold_cells": 314,
-      "ext_cells": 357,
-      "gold_rows": 31,
-      "ext_rows": 18,
-      "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
-        "required": 7,
-        "missing": [
-          "Investigation"
-        ]
-      },
-      "conciseness": {
-        "score": 0.9125852901061471,
-        "verbosity": 0.16666666666666666,
-        "redundancy": 0.008162753121039134,
-        "over_sections": [
-          [
-            "Photosensitizer",
-            765
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "cat conc: expected '100', got '0.10'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "Turnover_number__CO: expected '3.9', got '7.9'",
-        "Quantum_yield__CO: expected '0.001', got '0.0020'",
-        "Turnover_number__H2: expected '0.64', got '0.56'",
-        "Turnover_number__HCOOH: expected '36', got '4.5'",
-        "Quantum_yield__HCOOH: expected '0.0096', got '0.0011'",
-        "cat conc: expected '500', got '0.10'",
-        "Turnover_number__CO: expected '3.2', got '19'",
-        "Turnover_number__H2: expected '0.45', got '1.4'",
-        "Turnover_number__HCOOH: expected '21', got '8.1'"
-      ]
-    },
-    {
-      "doi": "10.1021/acs.jpcc.8b00950",
-      "tp": 51,
-      "gold_cells": 91,
-      "ext_cells": 113,
-      "gold_rows": 10,
       "ext_rows": 7,
       "layout": {
         "score": 1.0,
@@ -843,35 +726,243 @@
         "missing": []
       },
       "conciseness": {
-        "score": 0.9137073590454857,
-        "verbosity": 0.16666666666666666,
-        "redundancy": 0.005918615242361982,
+        "score": 0.8980056469009914,
+        "verbosity": 0.19444444444444445,
+        "redundancy": 0.009544261753572713,
         "over_sections": [
           [
+            "Content of the Published Article in Detail",
+            140
+          ],
+          [
             "Photosensitizer",
-            284
+            370
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "feedstock gas: expected 'CO2', got 'CO'",
-        "irr time: expected '47', got '102'",
-        "Turnover_number__CO: expected '198', got '19'"
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'",
+        "λexc: expected 'xenon lamp', got 'not reported'"
+      ]
+    },
+    {
+      "doi": "10.1016/j.electacta.2017.04.080",
+      "tp": 60,
+      "gold_cells": 149,
+      "ext_cells": 310,
+      "gold_rows": 22,
+      "ext_rows": 12,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.9058678450942625,
+        "verbosity": 0.18611111111111112,
+        "redundancy": 0.0021531987003637924,
+        "over_sections": [
+          [
+            "Content of the Published Article in Detail",
+            134
+          ],
+          [
+            "Photosensitizer",
+            606
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
+        "solvent-ratio: expected '4:1', got '100:0'",
+        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
+        "solvent-ratio: expected '4:1', got '100:0'",
+        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
+        "solvent-ratio: expected '4:1', got '100:0'",
+        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
+        "solvent-ratio: expected '4:1', got '100:0'",
+        "PS conc: expected '100', got '0.1'  [UNIT_ERROR: ext/gold ≈ 0.001]",
+        "solvent-ratio: expected '4:1', got '100:0'"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.inorgchem.0c03503",
+      "tp": 35,
+      "gold_cells": 41,
+      "ext_cells": 162,
+      "gold_rows": 5,
+      "ext_rows": 6,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.8949283370665944,
+        "verbosity": 0.20555555555555557,
+        "redundancy": 0.004587770311255582,
+        "over_sections": [
+          [
+            "Abstract Summary",
+            125
+          ],
+          [
+            "Content of the Published Article in Detail",
+            143
+          ],
+          [
+            "Photosensitizer",
+            382
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "λexc: expected '420-650', got 'not reported'",
+        "Turnover_frequency__CO: expected '127', got '7620'  [UNIT_ERROR: ext/gold ≈ 60]",
+        "Turnover_number__CO: expected '2780', got 'not reported'",
+        "λexc: expected '420-650', got 'not reported'",
+        "λexc: expected '420-650', got 'not reported'",
+        "λexc: expected '420-650', got 'not reported'"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.inorgchem.6b00379",
+      "tp": 76,
+      "gold_cells": 314,
+      "ext_cells": 486,
+      "gold_rows": 31,
+      "ext_rows": 18,
+      "layout": {
+        "score": 0.42857142857142855,
+        "present": 3,
+        "required": 7,
+        "missing": [
+          "Additional Remarks",
+          "Content of the Published Article in Detail",
+          "Catalyst",
+          "Photosensitizer"
+        ]
+      },
+      "conciseness": {
+        "score": 0.743234100135318,
+        "verbosity": 0.5,
+        "redundancy": 0.013531799729364006,
+        "over_sections": [
+          [
+            "Advances and Special Progress",
+            1318
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "Turnover_number__CO: expected '3.9', got '7.9'",
+        "Quantum_yield__CO: expected '0.001', got '0.0020'",
+        "Turnover_number__H2: expected '0.64', got '0.56'",
+        "Turnover_number__HCOOH: expected '36', got '4.5'",
+        "Quantum_yield__HCOOH: expected '0.0096', got '0.0011'",
+        "Turnover_number__CO: expected '3.2', got '5.9'",
+        "Quantum_yield__CO: expected '0.0047', got '0.0069'",
+        "Turnover_number__H2: expected '0.45', got '0.24'",
+        "Turnover_number__HCOOH: expected '21', got '2.1'",
+        "Quantum_yield__HCOOH: expected '0.031', got '0.0027'"
+      ]
+    },
+    {
+      "doi": "10.1021/acs.jpcc.8b00950",
+      "tp": 54,
+      "gold_cells": 91,
+      "ext_cells": 156,
+      "gold_rows": 10,
+      "ext_rows": 6,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.9107445609195068,
+        "verbosity": 0.17361111111111113,
+        "redundancy": 0.004899767049875202,
+        "over_sections": [
+          [
+            "Content of the Published Article in Detail",
+            125
+          ],
+          [
+            "Photosensitizer",
+            342
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "cat conc: expected '2', got '(missing)'",
+        "PS conc: expected '0.2', got '(missing)'",
+        "e-D conc: expected '0.05', got '(missing)'",
+        "feedstock gas: expected 'CO2', got '(missing)'",
+        "λexc: expected '> 420', got '(missing)'",
+        "irr time: expected '47', got '(missing)'",
+        "Turnover_number__CO: expected '198', got '(missing)'",
+        "Turnover_number__CH4: expected '31', got '(missing)'",
+        "Turnover_number__H2: expected '24', got '(missing)'",
+        "cat conc: expected '2', got '(missing)'"
       ]
     },
     {
       "doi": "10.1021/acscatal.2c02072",
-      "tp": 19,
+      "tp": 56,
       "gold_cells": 157,
-      "ext_cells": 81,
+      "ext_cells": 324,
+      "gold_rows": 20,
+      "ext_rows": 12,
+      "layout": {
+        "score": 1.0,
+        "present": 7,
+        "required": 7,
+        "missing": []
+      },
+      "conciseness": {
+        "score": 0.9149165382628237,
+        "verbosity": 0.16666666666666666,
+        "redundancy": 0.003500256807685975,
+        "over_sections": [
+          [
+            "Photosensitizer",
+            633
+          ]
+        ]
+      },
+      "ground": null,
+      "examples": [
+        "H-D conc: expected '1', got 'not reported'",
+        "H-D conc: expected '1', got 'not reported'",
+        "irr time: expected '1.5', got '0.75'",
+        "H-D conc: expected '1', got 'not reported'",
+        "Turnover_number__CO: expected '43', got '12749'",
+        "Turnover_number__H2: expected '52', got '163'",
+        "H-D conc: expected '1', got 'not reported'",
+        "H-D conc: expected '1', got 'not reported'",
+        "H-D conc: expected '1', got 'not reported'",
+        "Turnover_number__CO: expected '6', got '18502'"
+      ]
+    },
+    {
+      "doi": "10.1021/acscatal.3c00036",
+      "tp": 16,
+      "gold_cells": 172,
+      "ext_cells": 135,
       "gold_rows": 20,
       "ext_rows": 5,
       "layout": {
@@ -879,72 +970,40 @@
         "present": 6,
         "required": 7,
         "missing": [
-          "Investigation"
+          "Additional Remarks"
         ]
       },
       "conciseness": {
-        "score": 0.9306524547803617,
-        "verbosity": 0.1361111111111111,
-        "redundancy": 0.002583979328165375,
+        "score": 0.8691596740643623,
+        "verbosity": 0.25833333333333336,
+        "redundancy": 0.0033473185379419824,
         "over_sections": [
           [
+            "Advances and Special Progress",
+            143
+          ],
+          [
+            "Content of the Published Article in Detail",
+            132
+          ],
+          [
             "Photosensitizer",
-            218
+            321
           ]
         ]
       },
       "ground": null,
       "examples": [
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "H-D conc: expected '1', got ''",
-        "irr time: expected '1.5', got '0.5'",
-        "cat conc: expected '0.2', got '0.0002'  [UNIT_ERROR: ext/gold ≈ 0.001]",
-        "H-D conc: expected '1', got ''",
-        "irr time: expected '1.5', got '0.75'",
-        "H-D conc: expected '1', got ''",
-        "Turnover_number__CO: expected '43', got '12749'",
-        "Turnover_number__H2: expected '52', got '163'",
-        "cat conc: expected '2', got '0.002'  [UNIT_ERROR: ext/gold ≈ 0.001]"
-      ]
-    },
-    {
-      "doi": "10.1021/acscatal.3c00036",
-      "tp": 17,
-      "gold_cells": 172,
-      "ext_cells": 68,
-      "gold_rows": 20,
-      "ext_rows": 4,
-      "layout": {
-        "score": 0.8571428571428571,
-        "present": 6,
-        "required": 7,
-        "missing": [
-          "Investigation"
-        ]
-      },
-      "conciseness": {
-        "score": 0.9407453019521985,
-        "verbosity": 0.11666666666666665,
-        "redundancy": 0.0018427294289363255,
-        "over_sections": [
-          [
-            "Photosensitizer",
-            204
-          ]
-        ]
-      },
-      "ground": null,
-      "examples": [
-        "solvent-ratio: expected '85/15', got '100'",
+        "cat conc: expected '0.002', got '2'  [UNIT_ERROR: ext/gold ≈ 1000]",
+        "solvent-ratio: expected '85/15', got '100:0'",
         "Turnover_number__CO: expected '0', got '18989'",
         "Turnover_number__H2: expected '0', got '227'",
         "Turnover_number__HCOOH: expected '0', got '1215'",
-        "e-D conc: expected '0.1', got '0.2'",
-        "solvent-ratio: expected '85/15', got '100'",
-        "Turnover_number__CO: expected '0', got '2643'",
-        "Turnover_number__H2: expected '0', got '153'",
-        "solvent-ratio: expected '85/15', got '100'",
-        "Turnover_number__CO: expected '950', got '1792'"
+        "cat conc: expected '0.002', got '2'  [UNIT_ERROR: ext/gold ≈ 1000]",
+        "e-D conc: expected '0.1', got '0.15'",
+        "Turnover_number__CO: expected '0', got '6331'",
+        "Turnover_number__H2: expected '0', got '264'",
+        "Turnover_number__HCOOH: expected '0', got '179'"
       ]
     }
   ]
