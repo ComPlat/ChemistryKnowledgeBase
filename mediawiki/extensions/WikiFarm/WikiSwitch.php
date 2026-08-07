@@ -28,9 +28,8 @@ if (is_null($wiki)) {
     exit(0);
 }
 
-global $fs2gBackendConfig, $fs2gBackend, $fs2gEnableIncrementalIndexer;
+global $fs2gBackendConfig, $fs2gBackend;
 $fs2gBackend = 'solr';
-$fs2gEnableIncrementalIndexer = false; // indexed by EnhancedRetrieval
 global $fsgSolrCore, $wgSharedDB;
 if ($wiki == 'main') {
     $wgDBname = $wgSharedDB;
