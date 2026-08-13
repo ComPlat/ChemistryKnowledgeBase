@@ -91,7 +91,7 @@ class PublicationImportSpecialpage extends SpecialPage
 
             $output->addHTML($this->createHeader());
             $output->addHTML($this->createUploadForm());
-            $output->addHTML($this->renderImportJobsList());
+            $output->addHTML($this->renderImportProcesses());
 
         } catch (\Exception $e) {
             $output->addHTML($e->getMessage());
@@ -100,7 +100,7 @@ class PublicationImportSpecialpage extends SpecialPage
 
 
 
-    private function renderUploadResult($uploadedFiles)
+    private function renderUploadResult($uploadedFiles): string
     {
         global $wgServer, $wgScriptPath;
 
@@ -110,6 +110,15 @@ class PublicationImportSpecialpage extends SpecialPage
                 'uploadedFiles' => $uploadedFiles
             ]
         );
+    }
+
+    private function renderImportProcesses(): string
+    {
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $repo = new ImportProcessRepository($dbr);
+        $rows = $repo->getAllImportProcesses();
+        $renderer = new ImportProcessTableRenderer($rows);
+        return $renderer->render();
     }
 
     /**
@@ -239,6 +248,10 @@ class PublicationImportSpecialpage extends SpecialPage
         $title = Title::newFromText(WikiTools::cleanTitle($pageTitle));
         $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics]);
         $jobQueue->push($job);
+
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new ImportProcessRepository($db);
+        $repo->addImportProcess($pageTitle, $doi);
         return $title;
     }
 
@@ -256,18 +269,8 @@ class PublicationImportSpecialpage extends SpecialPage
 
     }
 
-    private function renderImportJobsList(): string
-    {
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroup()->get('PublicationImportJob');
-        $jobs = iterator_to_array($jobQueue->getAllQueuedJobs());
-        return $this->blade->run("publication-job-list",
-            [
-                'jobs' => $jobs
-            ]
-        );
-    }
 
-    private function createHeader()
+    private function createHeader(): string
     {
         $html = <<<HTML
 <div style="margin-bottom: 20px">

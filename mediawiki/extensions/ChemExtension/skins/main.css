@@ -657,3 +657,24 @@ div.chemform-edit-in-investigation {
 .ce-updateMolecule-progress {
     margin-top: 12px;
 }
+
+td.chemext-status-finished {
+    background: lightgreen;
+}
+
+td.chemext-status-running {
+    background: lightgreen;
+    animation: blinker 1s linear infinite;
+}
+
+td.chemext-status-scheduled {
+    background: lightblue;
+}
+
+td.chemext-status-failed {
+    background: lightpink;
+}
+
+table.chemext-import-process-table {
+    width: 100%;
+}

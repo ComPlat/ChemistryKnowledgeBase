@@ -4,6 +4,7 @@ namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
 use DIQA\ChemExtension\PublicationImport\ExperimentWikitextImporter;
+use DIQA\ChemExtension\PublicationImport\ImportProcessRepository;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
@@ -19,6 +20,7 @@ class PublicationImportJob extends Job
     private $doi;
     private $topics;
     private $logger;
+    private $repo;
 
     public function __construct($title, $params)
     {
@@ -27,6 +29,8 @@ class PublicationImportJob extends Job
         $this->doi = $params['doi'];
         $this->topics = $params['topics'];
         $this->logger = new LoggerUtils('PublicationImportJob', 'ChemExtension');
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $this->repo = new ImportProcessRepository($dbr);
     }
 
     /**
@@ -36,16 +40,59 @@ class PublicationImportJob extends Job
     {
         try {
 
+            register_shutdown_function([$this, 'cleanup']);
+            set_error_handler([$this, 'cleanup']);      // non-fatal errors
+            set_exception_handler([$this, 'cleanup']);  // uncatched throwables
+
             if (!WikiTools::createNotificationJobs($this->getTitle())) {
                 $this->logger->warn("Notification job was not created for page: " . $this->getTitle()->getPrefixedText());
             }
+
+            $process = $this->repo->getImportProcessByDOI($this->doi);
+
+            $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+            $this->repo->markAsRunning($process['id']);
+
+            $lbFactory->commitPrimaryChanges( __METHOD__ );
+            $lbFactory->waitForReplication();
+            $lbFactory->beginPrimaryChanges( __METHOD__ );
+
             $this->importPublicationPage();
+
+            $this->repo->markAsFinished($process['id']);
             $hooksContainer = MediaWikiServices::getInstance()->getHookContainer();
             $hooksContainer->run('CleanupChemExtState');
 
         } catch (Exception $e) {
             $this->logger->error("ERROR: " . $e->getMessage());
         }
+    }
+
+    private function cleanup(): void
+    {
+
+        $lastError = error_get_last();
+
+        if ($lastError === null) {
+            return; // Normal shutdown, no error
+        }
+
+        // Only act on real fatal errors
+        $fatalTypes = [
+            E_ERROR,
+            E_PARSE,
+            E_CORE_ERROR,
+            E_CORE_WARNING,
+            E_COMPILE_ERROR,
+            E_COMPILE_WARNING,
+        ];
+
+        if (!in_array($lastError['type'], $fatalTypes, true)) {
+            return;
+        }
+
+        $process = $this->repo->getImportProcessByDOI($this->doi);
+        $this->repo->markAsFailed($process['id']);
     }
 
     private function importPublicationPage()
@@ -67,10 +114,11 @@ class PublicationImportJob extends Job
         }
         $this->logger->log("prompt for AI: " . $prompt);
 
-        $aiClient = new AIClient();
-        $fileIds = $aiClient->uploadFiles($this->paths);
+        //$aiClient = new AIClient();
+        //$fileIds = $aiClient->uploadFiles($this->paths);
 
-        $aiText = $aiClient->callAI($fileIds, $prompt);
+        sleep(10);
+        $aiText = "test";//$aiClient->callAI($fileIds, $prompt);
 
         $wikitext = <<<WIKITEXT
 $importNotice
@@ -97,7 +145,7 @@ WIKITEXT;
         WikiTools::doEditContent($this->getTitle(), $wikitext,
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
-        $aiClient->deleteFiles($fileIds);
+        //$aiClient->deleteFiles($fileIds);
     }
 
     private function findSuitablePrompt(): Title
