@@ -49,7 +49,6 @@ class ImportProcessTableRenderer
     private function renderHeader(): string
     {
         $headers = [
-            'ID',
             'Page title',
             'DOI',
             'Status',
@@ -78,19 +77,20 @@ class ImportProcessTableRenderer
     private function renderRow(array $row): string
     {
         $status = $row['status'] ?? '';
+        $message = $row['message'] ?? '';
         $rowAttribs = [
             'class' => 'chemext-import-process-row chemext-import-process-status-'
                 . strtolower((string)$status),
         ];
 
         $cells = '';
-        $cells .= Html::element('td', ['class' => 'chemext-col-id'], (string)($row['id'] ?? ''));
+
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-page-title'],
             $this->renderPageTitle($row['page_title'] ?? ''));
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-doi'],
             $this->renderDoi($row['doi'] ?? ''));
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-status chemext-status-' . strtolower($status)],
-            $this->renderStatusBadge((string)$status));
+            $this->renderStatusBadge((string)$status, $message));
         $cells .= Html::element('td', ['class' => 'chemext-col-created-at'],
             $this->formatDate($row['created_at'] ?? null));
         $cells .= Html::element('td', ['class' => 'chemext-col-started-at'],
@@ -123,10 +123,14 @@ class ImportProcessTableRenderer
         ], $doi);
     }
 
-    private function renderStatusBadge(string $status): string
+    private function renderStatusBadge(string $status, string $message): string
     {
         $class = 'chemext-status-badge';
-        return Html::element('span', ['class' => $class], $status);
+        $attribs = ['class' => $class];
+        if (!empty($message)) {
+            $attribs['title'] = $message;
+        }
+        return Html::element('span', $attribs, $status);
     }
 
     private function formatDate($value): string

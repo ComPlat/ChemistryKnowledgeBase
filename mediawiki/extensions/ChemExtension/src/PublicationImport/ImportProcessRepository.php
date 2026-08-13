@@ -29,7 +29,8 @@ class ImportProcessRepository {
                             doi VARCHAR(255) NOT NULL,
                             status VARCHAR(20) NOT NULL DEFAULT "SCHEDULED",
                             created_at DATETIME NOT NULL,
-                            started_at DATETIME NULL
+                            started_at DATETIME NULL,
+                            message TEXT NULL
                         )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE import_process ADD INDEX IF NOT EXISTS import_process_status_idx (status)');
         $this->db->query('ALTER TABLE import_process ADD INDEX IF NOT EXISTS import_process_doi_idx (doi)');
@@ -78,11 +79,12 @@ class ImportProcessRepository {
             ]);
     }
 
-    public function markAsFailed(int $id): void
+    public function markAsFailed(int $id, string $message): void
     {
         $this->db->update('import_process',
             [
                 'status' => self::STATUS_FAILED,
+                'message' => $message,
             ], [
                 'id' => $id,
             ]);
@@ -101,7 +103,7 @@ class ImportProcessRepository {
     public function getImportProcess(int $id)
     {
         $res = $this->db->select('import_process',
-            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at'],
+            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
             ['id' => $id]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
@@ -113,7 +115,7 @@ class ImportProcessRepository {
     public function getImportProcessesByStatus(string $status): array
     {
         $res = $this->db->select('import_process',
-            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at'],
+            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
             ['status' => $status]);
         $results = [];
         foreach ($res as $row) {
@@ -125,7 +127,7 @@ class ImportProcessRepository {
     public function getImportProcessByDOI(string $doi)
     {
         $res = $this->db->select('import_process',
-            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at'],
+            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
             ['doi' => $doi]);
         if ($res->numRows() > 0) {
             $row = $res->fetchObject();
@@ -137,7 +139,7 @@ class ImportProcessRepository {
     public function getAllImportProcesses(): array
     {
         $res = $this->db->select('import_process',
-            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at'],
+            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
             [],
             __METHOD__,
             [ 'ORDER BY' => 'created_at DESC']);
@@ -162,6 +164,7 @@ class ImportProcessRepository {
             'status' => $row->status,
             'created_at' => $row->created_at,
             'started_at' => $row->started_at,
+            'message' => $row->message,
         ];
     }
 }

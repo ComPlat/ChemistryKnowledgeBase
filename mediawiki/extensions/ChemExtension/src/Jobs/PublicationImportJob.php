@@ -38,6 +38,8 @@ class PublicationImportJob extends Job
      */
     public function run()
     {
+        $process = $this->repo->getImportProcessByDOI($this->doi);
+
         try {
 
             register_shutdown_function([$this, 'cleanup']);
@@ -48,7 +50,6 @@ class PublicationImportJob extends Job
                 $this->logger->warn("Notification job was not created for page: " . $this->getTitle()->getPrefixedText());
             }
 
-            $process = $this->repo->getImportProcessByDOI($this->doi);
 
             $lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
             $this->repo->markAsRunning($process['id']);
@@ -65,6 +66,7 @@ class PublicationImportJob extends Job
 
         } catch (Exception $e) {
             $this->logger->error("ERROR: " . $e->getMessage());
+            $this->repo->markAsFailed($process['id'], $e->getMessage());
         }
     }
 
@@ -92,7 +94,7 @@ class PublicationImportJob extends Job
         }
 
         $process = $this->repo->getImportProcessByDOI($this->doi);
-        $this->repo->markAsFailed($process['id']);
+        $this->repo->markAsFailed($process['id'], $lastError['message']);
     }
 
     private function importPublicationPage()
