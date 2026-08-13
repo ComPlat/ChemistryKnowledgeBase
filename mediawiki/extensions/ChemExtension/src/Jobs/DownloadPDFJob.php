@@ -30,6 +30,10 @@ class DownloadPDFJob extends Job
             $wgChemPubStoreDir = sys_get_temp_dir();
             $this->logger->error('$wgChemPubStoreDir is not set. using system tmp-dir as default');
         }
+        if (count(PdfUtils::publicationPDF($doi)) > 0) {
+            $this->logger->debug('PDF already exists: ' . $doi);
+            return;
+        }
         $tmpFile = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
         $cmdParams = " --url=" . escapeshellarg($url);
         $cmdParams .= " --dir=" . escapeshellarg($tmpFile);
