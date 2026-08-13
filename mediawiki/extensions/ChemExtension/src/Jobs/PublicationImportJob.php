@@ -68,7 +68,7 @@ class PublicationImportJob extends Job
         }
     }
 
-    private function cleanup(): void
+    public function cleanup(): void
     {
 
         $lastError = error_get_last();
