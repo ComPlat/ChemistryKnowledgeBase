@@ -94,8 +94,7 @@ WIKITEXT;
         }
 
         $this->logger->log("generated text from AI: " . $wikitext);
-        $oldText = WikiTools::getText($this->getTitle());
-        WikiTools::doEditContent($this->getTitle(), "$wikitext\n\n$oldText",
+        WikiTools::doEditContent($this->getTitle(), $wikitext,
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
         $aiClient->deleteFiles($fileIds);

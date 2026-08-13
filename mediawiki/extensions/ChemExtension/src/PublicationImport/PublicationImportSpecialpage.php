@@ -70,7 +70,7 @@ class PublicationImportSpecialpage extends SpecialPage
                     if ($doi === '') {
                         throw new Exception('DOI is mandatory. Please specify one.');
                     }
-                    $this->checkIfDOIAlreadyExists($doi);
+                    $this->checkIfDOIAlreadyExists($doi, $pageTitle);
                     $uploadedFiles = $this->processUpload($tmpFolder);
                     if (count($uploadedFiles) === 0) {
                         foreach($pubFiles as $pubFile) {
@@ -278,17 +278,20 @@ HTML;
         return $html;
     }
 
-    private function checkIfDOIAlreadyExists($doi): void
+    private function checkIfDOIAlreadyExists($doi, $pageToImport): void
     {
         $doi = DOITools::parseDOI($doi);
         $results = QueryUtils::executeBasicQuery("[[DOI::$doi]]");
         $exists = $results->getCount() > 0;
-        $pageTitle = null;
+
         if ($exists) {
             $row = $results->getNext();
             $column = reset($row);
             $dataItem = $column->getNextDataItem();
             $pageTitle = $dataItem->getTitle();
+            if ($pageTitle->getPrefixedText() === $pageToImport) {
+                return;
+            }
             $link = sprintf('<a href="%s">%s</a>', $pageTitle->getFullURL(), $pageTitle->getText());
             throw new Exception("Page for this DOI '$doi' already exists: $link");
         }
