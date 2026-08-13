@@ -77,6 +77,7 @@ class AIClient
 
     public function uploadFiles(array $files)
     {
+        $this->logger->log("uploading files to AI: " . join(', ', $files));
         $ids = [];
 
         foreach ($files as $file) {
