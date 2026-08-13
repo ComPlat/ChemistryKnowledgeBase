@@ -114,11 +114,10 @@ class PublicationImportJob extends Job
         }
         $this->logger->log("prompt for AI: " . $prompt);
 
-        //$aiClient = new AIClient();
-        //$fileIds = $aiClient->uploadFiles($this->paths);
+        $aiClient = new AIClient();
+        $fileIds = $aiClient->uploadFiles($this->paths);
 
-        sleep(10);
-        $aiText = "test";//$aiClient->callAI($fileIds, $prompt);
+        $aiText = $aiClient->callAI($fileIds, $prompt);
 
         $wikitext = <<<WIKITEXT
 $importNotice
@@ -145,7 +144,7 @@ WIKITEXT;
         WikiTools::doEditContent($this->getTitle(), $wikitext,
             "auto-generated", $this->getTitle()->exists() ? EDIT_UPDATE : EDIT_NEW);
 
-        //$aiClient->deleteFiles($fileIds);
+        $aiClient->deleteFiles($fileIds);
     }
 
     private function findSuitablePrompt(): Title
