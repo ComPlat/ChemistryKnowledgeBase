@@ -21,6 +21,7 @@ EXT = os.path.dirname(HERE)                       # .../ChemExtension
 EVAL = os.path.join(EXT, "eval")
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(EXT)))  # repo root
 API = "https://api.openai.com/v1/responses"
+API_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 
 # ---------- unit handling (mirrors src/Eval/UnitConverter.php) ----------
 FAMILIES = {
@@ -224,6 +225,109 @@ def is_unit_error(ext_val, gold_val):
             return True, round(10 ** k, 4)
     return False, None
 
+# ---------- diff operators (structured prompt edits) ----------
+# Deterministic, idempotent, marker-guarded edits to an extraction prompt.
+# The meta-LLM chooses which operator + args to apply; the code applies it.
+# Small, testable deltas replace the previous free-form rewrite (11 000-char action
+# space) that had a catastrophic bias to reduce F1 while "fixing" one signal.
+_OPS_SECTION_HEADER = "<!-- ===== OPERATOR-DIFFS (applied by the optimization loop) ===== -->"
+
+def _ensure_ops_section(prompt):
+    if _OPS_SECTION_HEADER in prompt:
+        return prompt
+    return prompt.rstrip() + "\n\n" + _OPS_SECTION_HEADER + "\n"
+
+def _append_op(prompt, marker, body):
+    """Append `body` under `marker` to the ops section. No-op if marker already present."""
+    prompt = _ensure_ops_section(prompt)
+    if marker in prompt:
+        return prompt
+    return prompt.rstrip() + "\n" + marker + "\n" + body + "\n"
+
+def op_add_field_example(prompt, field, example):
+    """Insert a concrete example value for a weak field."""
+    marker = f"<!-- OP:add_field_example {field} -->"
+    body = (f"Example value for the '{field}' cell: {example}. Follow this exact format "
+            f"(number only, canonical unit, no unit symbol in the cell).")
+    return _append_op(prompt, marker, body)
+
+def op_strengthen_recall(prompt, field):
+    """Add a hard MUST-fill instruction for a field with chronically low recall."""
+    marker = f"<!-- OP:strengthen_recall {field} -->"
+    body = (f"CRITICAL RECALL: For the field '{field}', you MUST fill the value whenever the "
+            f"paper reports it — including figure captions, footnotes, tables, and Supporting "
+            f"Information. Only leave the cell empty if the paper genuinely does not state it.")
+    return _append_op(prompt, marker, body)
+
+def op_add_unit_rule(prompt, family, source, target, factor):
+    """Add an explicit canonical-unit conversion rule."""
+    marker = f"<!-- OP:add_unit_rule {family} {source}->{target} -->"
+    factor = float(factor)
+    if factor >= 1.0:
+        op_symbol, abs_factor = "÷", factor
+    else:
+        op_symbol, abs_factor = "×", 1.0 / factor
+    body = (f"UNIT CONVERSION for {family}: if the paper reports the value in {source}, "
+            f"convert to {target} by {op_symbol}{abs_factor:g} BEFORE writing the CSV cell. "
+            f"Emit the numeric value in {target} only — no unit symbol in the cell. "
+            f"This is a CONVERSION rule; never drop the cell because the unit is unclear.")
+    return _append_op(prompt, marker, body)
+
+def op_tighten_section(prompt, section, max_words):
+    """Add a hard word budget for a specific prose section."""
+    marker = f"<!-- OP:tighten {section} {max_words} -->"
+    body = (f"WORD BUDGET: The '{section}' section MUST be at most {int(max_words)} words. "
+            f"Prefer short substantive sentences. Cut restatements and filler; keep facts, "
+            f"catalyst names, numeric ranges, mechanistic claims.")
+    return _append_op(prompt, marker, body)
+
+def op_dedupe_trigrams(prompt):
+    """Add an explicit no-cross-section-repetition rule."""
+    marker = "<!-- OP:dedupe_trigrams -->"
+    body = ("CROSS-SECTION DE-DUPLICATION: Do not repeat the same three-word phrase across "
+            "multiple prose sections. If a claim is stated in one section, do not restate it "
+            "in another section — reference it by context instead.")
+    return _append_op(prompt, marker, body)
+
+def op_insert_row_coverage_hint(prompt, pattern):
+    """Add a row-coverage instruction with a descriptive pattern hint."""
+    pattern_hash = str(abs(hash(pattern)))[:8]
+    marker = f"<!-- OP:row_coverage {pattern_hash} -->"
+    body = (f"ROW COVERAGE: Emit ONE row per distinct experiment. Ensure separate rows for "
+            f"each unique combination of catalyst, additive, solvent, and light source described "
+            f"in the paper. Guidance pattern: {pattern}")
+    return _append_op(prompt, marker, body)
+
+def op_no_op(prompt):
+    """Deliberate no-op — the designer decided no change is warranted this iteration."""
+    return prompt
+
+DIFF_OPERATORS = {
+    "add_field_example": op_add_field_example,
+    "strengthen_recall": op_strengthen_recall,
+    "add_unit_rule": op_add_unit_rule,
+    "tighten_section": op_tighten_section,
+    "dedupe_trigrams": op_dedupe_trigrams,
+    "insert_row_coverage_hint": op_insert_row_coverage_hint,
+    "no_op": op_no_op,
+}
+
+def apply_diff(prompt, op_choice):
+    """Dispatch an operator choice against the registry. Returns the unchanged prompt on
+    unknown operator name or argument-mismatch — defensive against meta-LLM hallucinations."""
+    if not isinstance(op_choice, dict):
+        return prompt
+    op_name = op_choice.get("operator", "no_op")
+    args = op_choice.get("args", {}) or {}
+    fn = DIFF_OPERATORS.get(op_name)
+    if fn is None:
+        return prompt
+    try:
+        return fn(prompt, **args)
+    except TypeError:
+        # arg mismatch (missing/extra) — treat as no-op rather than crash
+        return prompt
+
 def composite_objective(f1, avg_layout, avg_conciseness=None):
     """Multiplicative gate with a soft floor for conciseness:
         composite = F1 × Layout × (0.5 + 0.5 × Conciseness)
@@ -402,6 +506,48 @@ def post(payload, key, timeout=300, retries=4):
                 time.sleep(wait)
                 continue
             raise RuntimeError(f"network error: {e}")
+
+def post_anthropic(payload, key, timeout=300, retries=4):
+    """Anthropic Messages API caller — analog to `post` but for claude-* designer-model.
+    Used only from choose_operator when a --designer-model claude-* is selected."""
+    body = json.dumps(payload).encode()
+    headers = {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(API_ANTHROPIC, data=body, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            text = e.read().decode("utf-8", "ignore")
+            if e.code in (429, 500, 502, 503, 504) and attempt < retries:
+                wait = min(60, 5 * (2 ** attempt))
+                print(f"    transient anthropic HTTP {e.code}, retry in {wait}s ...")
+                time.sleep(wait)
+                continue
+            try:
+                msg = json.loads(text).get("error", {}).get("message", text[:500])
+            except Exception:
+                msg = text[:500]
+            raise RuntimeError(f"anthropic HTTP {e.code}: {msg}")
+        except (urllib.error.URLError, TimeoutError) as e:
+            if attempt < retries:
+                wait = min(60, 5 * (2 ** attempt))
+                print(f"    anthropic network error ({e}), retry in {wait}s ...")
+                time.sleep(wait)
+                continue
+            raise RuntimeError(f"anthropic network error: {e}")
+
+def _anthropic_text(resp):
+    """Extract text from an Anthropic Messages API response."""
+    content = resp.get("content") or []
+    for block in content:
+        if isinstance(block, dict) and block.get("type") == "text":
+            return block.get("text", "")
+    return ""
 
 def output_text(resp):
     if resp.get("output_text"):
@@ -788,6 +934,245 @@ def improve_prompt(current, agg, model, key, fmt="json", required_sections=None,
     m = re.match(r"^```[a-zA-Z]*\s*\n(.*)\n```$", out, re.S)
     return (m.group(1).strip() if m else out) or current
 
+# ---------- structured operator choice + regression guard ----------
+# Restrict which operators are surfaced to the meta-LLM based on this iteration's focus.
+# Keeps the model from proposing conciseness edits during a recall-focus iteration.
+FOCUS_OP_MENU = {
+    "recall":      ["add_field_example", "strengthen_recall", "insert_row_coverage_hint", "no_op"],
+    "units":       ["add_unit_rule", "add_field_example", "no_op"],
+    "conciseness": ["tighten_section", "dedupe_trigrams", "no_op"],
+    "polish":      ["add_field_example", "strengthen_recall", "add_unit_rule",
+                    "tighten_section", "dedupe_trigrams", "insert_row_coverage_hint", "no_op"],
+}
+
+def _parse_operator_choice(text):
+    """Extract a {operator, args, rationale} dict from an LLM response, robust against
+    markdown code fences and stray commentary. Returns None on failure."""
+    if not text:
+        return None
+    # strip a ```json ... ``` fence if present
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    body = m.group(1) if m else text
+    # otherwise find the first {...} span
+    if not m:
+        m2 = re.search(r"\{.*\}", body, re.S)
+        if not m2:
+            return None
+        body = m2.group(0)
+    try:
+        obj = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(obj, dict) and "operator" in obj:
+        return obj
+    return None
+
+def choose_operator(prompt, agg, memory, focus, fields, model, key,
+                    designer_model=None, designer_key=None):
+    """Ask the meta-LLM to pick ONE deterministic edit-operator (from the focus menu) to
+    apply to the current prompt. Returns {operator, args, rationale}. Falls back to no_op
+    on any failure (API error, parse error, unknown operator) so the loop never crashes."""
+    menu = FOCUS_OP_MENU.get(focus, FOCUS_OP_MENU["polish"])
+    metric_line = (
+        f"F1={agg.get('f1', 0):.3f} "
+        f"Layout={(agg.get('layoutScore') or 1.0):.2f} "
+        f"Concise={(agg.get('conciseness') or 1.0):.2f} "
+        f"UnitOK={(agg.get('unitCorrectness') or 1.0):.2f} "
+        f"Composite={agg.get('composite', 0):.3f}"
+    )
+    # weak fields (top 6) with unit-error split so the model can pick the right operator
+    weak_lines = []
+    for entry in agg.get("weak", [])[:6]:
+        k, r, c, g = entry[0], entry[1], entry[2], entry[3]
+        u = entry[4] if len(entry) > 4 else 0
+        m_ = entry[5] if len(entry) > 5 else max(0, g - c)
+        weak_lines.append(f"  {k}: recall {r:.2f} ({c}/{g}), unit_errors {u}/{m_}")
+    weak_str = "\n".join(weak_lines) or "  (none)"
+    # persistent bloat (cross-iteration memory)
+    over_lines = []
+    if memory:
+        for name, words in memory.get("persistent_over_sections", [])[:5]:
+            over_lines.append(f"  {name}: seen up to {words} words (target ≤{MAX_SECTION_WORDS})")
+    over_str = "\n".join(over_lines) or "  (none)"
+    # persistent unit confusions
+    unit_err_lines = []
+    if memory:
+        for f, u in memory.get("persistent_unit_error_fields", [])[:5]:
+            unit_err_lines.append(f"  {f}: {u} accumulated unit-family confusions")
+    unit_err_str = "\n".join(unit_err_lines) or "  (none)"
+    # available operators with concise arg signatures the model can read at a glance
+    op_signatures = {
+        "add_field_example": '{"field": "<name>", "example": "<canonical example value>"}',
+        "strengthen_recall": '{"field": "<name>"}',
+        "add_unit_rule": '{"family": "concentration|time|frequency", "source": "<unit>", "target": "<unit>", "factor": <float>}',
+        "tighten_section": '{"section": "<section title>", "max_words": <int>}',
+        "dedupe_trigrams": '{}',
+        "insert_row_coverage_hint": '{"pattern": "<short description of desired row diversity>"}',
+        "no_op": '{}',
+    }
+    menu_desc = "\n".join(f"  - {op}({op_signatures[op]})" for op in menu)
+    sys_part = (
+        "You are a chemistry-domain prompt optimizer. Given the current extraction prompt "
+        "and its measured weaknesses, select ONE deterministic edit-operator to apply. Each "
+        "operator is a small, targeted modification, not a rewrite. Prefer no_op when no "
+        "operator would clearly help — a wasted operator is worse than none. "
+        "You MUST respond with valid JSON only, no markdown, no commentary. Schema: "
+        '{"operator": "<name>", "args": {...}, "rationale": "<one sentence>"}.'
+    )
+    task = (
+        f"[FOCUS] {focus}\n"
+        f"[METRICS] {metric_line}\n\n"
+        f"[WEAK FIELDS - latest iteration]\n{weak_str}\n\n"
+        f"[SECTIONS THAT EXCEED WORD BUDGET - across the whole run]\n{over_str}\n\n"
+        f"[PERSISTENT UNIT-FAMILY CONFUSIONS]\n{unit_err_str}\n\n"
+        f"[CANONICAL FIELDS]\n{', '.join(fields[:20])}\n\n"
+        f"[AVAILABLE OPERATORS - choose ONE]\n{menu_desc}\n\n"
+        "Respond with JSON only."
+    )
+    dm = designer_model or model
+    dk = designer_key or key
+    # Route to Anthropic API when a claude-* designer model is requested — this breaks
+    # the o3-critiques-o3 self-similarity that kept collapsing prompt quality in prior runs.
+    is_anthropic = isinstance(dm, str) and dm.startswith("claude")
+    if is_anthropic:
+        payload = {"model": dm, "max_tokens": 2048, "system": sys_part,
+                   "messages": [{"role": "user", "content": task}]}
+        try:
+            resp = post_anthropic(payload, dk)
+            text = _anthropic_text(resp).strip()
+        except Exception as e:
+            return {"operator": "no_op", "args": {}, "rationale": f"anthropic_error:{type(e).__name__}"}
+    else:
+        payload = {"model": dm, "input": [
+            {"role": "developer", "content": [{"type": "input_text", "text": sys_part}]},
+            {"role": "user", "content": [{"type": "input_text", "text": task}]}]}
+        try:
+            resp = post(payload, dk)
+            text = output_text(resp).strip()
+        except Exception as e:
+            return {"operator": "no_op", "args": {}, "rationale": f"api_error:{type(e).__name__}"}
+    parsed = _parse_operator_choice(text)
+    if parsed is None:
+        return {"operator": "no_op", "args": {}, "rationale": "parse_error"}
+    op_name = parsed.get("operator")
+    if op_name not in DIFF_OPERATORS:
+        return {"operator": "no_op", "args": {}, "rationale": f"unknown_op:{op_name}"}
+    # enforce focus menu — reject cross-focus proposals
+    if op_name != "no_op" and op_name not in menu:
+        return {"operator": "no_op", "args": {}, "rationale": f"off_focus:{op_name}"}
+    parsed.setdefault("args", {})
+    parsed.setdefault("rationale", "")
+    return parsed
+
+def regression_score(prompt, subset_entries, fields, model, key, fmt="csv", tolerance=0.1):
+    """Score a prompt on a fixed subset (first 10 training papers) — used as a hard
+    regression guard before accepting a diff-operator change. Returns aggregate F1.
+    Extraction errors are counted as zero-tp gold-cell losses (worst-case = regression)."""
+    scores = []
+    for doi, pdf, gold in subset_entries:
+        try:
+            rows, _tok, _raw = extract(pdf, prompt, fields, model, key, "", fmt)
+            s = score_pub(gold, rows, tolerance)
+            scores.append(s)
+        except Exception:
+            scores.append({"tp": 0, "gold": 1, "ext": 0, "perField": {}, "examples": [],
+                           "gold_rows": 0, "ext_rows": 0})
+        time.sleep(0.3)
+    if not scores:
+        return 0.0
+    return aggregate(scores)["f1"]
+
+def _score_prompt_on_entries(prompt, entries, fields, model, key, fmt, tolerance,
+                              required_sections, do_ground=False, hints_fn=None,
+                              log_prefix="  ", verbose=True):
+    """Full evaluation of one prompt over a list of entries. Returns (agg, diag, tokens,
+    layout_scores, conciseness_scores). Used by both the main iteration and held-out
+    validation, and reused across K parallel candidates."""
+    scores, toks, diag = [], 0, []
+    gsup = gchk = 0
+    layout_scores, conciseness_scores = [], []
+    for doi, pdf, gold in entries:
+        try:
+            hints = hints_fn(doi) if hints_fn else ""
+            rows, t, raw = extract(pdf, prompt, fields, model, key, hints, fmt)
+            toks += t
+            s = score_pub(gold, rows, tolerance)
+            scores.append(s)
+            ls = layout_score(raw, required_sections)
+            layout_scores.append(ls["score"])
+            cs = conciseness_score(raw, required_sections) if required_sections else \
+                {"score": 1.0, "verbosity": 0.0, "redundancy": 0.0, "over_sections": []}
+            conciseness_scores.append(cs["score"])
+            if verbose:
+                line = (f"{log_prefix}{doi}: matched {s['tp']}/{s['gold']} gold cells, "
+                        f"rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens")
+                if required_sections:
+                    line += f", layout {ls['present']}/{ls['required']}"
+                    if ls["missing"]:
+                        line += (" (missing: " + ", ".join(ls["missing"][:3])
+                                 + (",…" if len(ls["missing"]) > 3 else "") + ")")
+                    line += f", concise {cs['score']:.2f}"
+                    if cs["over_sections"]:
+                        line += (" (long: " + ", ".join(f"{n}:{w}w" for n, w in cs["over_sections"][:2]) + ")")
+                grec = None
+                if do_ground:
+                    g = ground_check(pdf, rows, model, key)
+                    gsup += g["supported"]; gchk += g["checked"]
+                    grec = g
+                    line += f", grounded {g['supported']}/{g['checked']}"
+                print(line)
+            else:
+                grec = None
+                if do_ground:
+                    g = ground_check(pdf, rows, model, key)
+                    gsup += g["supported"]; gchk += g["checked"]
+                    grec = g
+            diag.append({"doi": doi, "tp": s["tp"], "gold_cells": s["gold"],
+                         "ext_cells": s["ext"], "gold_rows": s["gold_rows"],
+                         "ext_rows": s["ext_rows"], "layout": ls, "conciseness": cs,
+                         "ground": grec, "examples": s["examples"][:10]})
+        except Exception as e:
+            if verbose:
+                print(f"{log_prefix}{doi}: ERROR {e}")
+        time.sleep(1)
+    if not scores:
+        return None, [], 0, [], []
+    agg = aggregate(scores)
+    agg["groundedness"] = (gsup / gchk) if (do_ground and gchk) else None
+    agg["hallucination"] = (1 - gsup / gchk) if (do_ground and gchk) else None
+    agg["layoutScore"] = ((sum(layout_scores) / len(layout_scores))
+                         if layout_scores and required_sections else None)
+    agg["conciseness"] = ((sum(conciseness_scores) / len(conciseness_scores))
+                         if conciseness_scores and required_sections else None)
+    # cross-publication over-length aggregation (for the meta-LLM's cross-iter memory)
+    over_agg = {}
+    for d in diag:
+        for name, words in d.get("conciseness", {}).get("over_sections", []):
+            if words > over_agg.get(name, 0):
+                over_agg[name] = words
+    agg["over_sections"] = sorted(over_agg.items(), key=lambda x: -x[1])[:5]
+    return agg, diag, toks, layout_scores, conciseness_scores
+
+def _append_csv_contract(prompt, required_sections, fields):
+    """Bake the exact CSV column contract and required MediaWiki sections into a prompt so
+    it is live-deployable to the wiki. Idempotent: skips appending if the marker is already
+    present (prevents double-appending on candidate seed sharing)."""
+    if "[OUTPUT FORMAT — INVESTIGATION CSV]" in prompt:
+        return prompt
+    section_clause = ""
+    if required_sections:
+        section_clause = ("\n\n[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, "
+                          "each as a wiki heading with substantive content (≥20 words)]\n"
+                          + "\n".join(f"== {n} ==" for n in required_sections)
+                          + "\nThe Investigation section must contain ONE fenced ```csv block with the "
+                          "header below as its first row.")
+    return prompt + (section_clause +
+                     "\n\n[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code "
+                     "block that starts with ```csv and ends with ```. The header row MUST be EXACTLY "
+                     "these columns, in this order:\n"
+                     + " , ".join(fields) + "\nOne row per distinct experiment; one value per cell; "
+                     "leave a cell empty only if the paper does not state it.")
+
 # ---------- main loop ----------
 def main():
     ap = argparse.ArgumentParser()
@@ -808,8 +1193,30 @@ def main():
     ap.add_argument("--ground", action="store_true", help="verify each extracted value against the PDF (groundedness / no-hallucination)")
     ap.add_argument("--field-hints", action="store_true", help="give the model example value formats per field, sampled from OTHER gold papers (leakage-free)")
     ap.add_argument("--commit", action="store_true", help="git-commit the results after each iteration (archive the progression)")
+    ap.add_argument("--candidates", type=int, default=1,
+                    help="beam width: run K parallel candidate prompts, best composite wins. "
+                         "K=1 preserves legacy single-line behavior (with diff operators). "
+                         "K=5 recommended for full-quality optimization.")
+    ap.add_argument("--regression-guard-tol", type=float, default=0.03,
+                    help="reject a diff operator if its subset-F1 falls by more than this "
+                         "(default 0.03 = 3 pp). Second defense layer beyond hill-climb.")
+    ap.add_argument("--designer-model", default=None,
+                    help="model used for choose_operator (default = --model). Set to "
+                         "claude-* to break o3/o3 self-similarity via cross-model.")
+    ap.add_argument("--designer-key-file", default=None,
+                    help="path to API key for --designer-model (default: same as extractor). "
+                         "For claude-* models, default is ~/.config/chemwiki/anthropic.key.")
     a = ap.parse_args()
     key = api_key()
+    # Designer key: separate file for cross-model Anthropic calls. Falls back to OpenAI key.
+    designer_key = key
+    if a.designer_model and a.designer_model.startswith("claude"):
+        akp = a.designer_key_file or os.path.expanduser("~/.config/chemwiki/anthropic.key")
+        if os.path.isfile(akp):
+            designer_key = open(akp).read().strip()
+        else:
+            print(f"WARN: Anthropic key not at {akp} — falling back to OpenAI extractor as designer")
+            a.designer_model = None
 
     gold_dir = os.path.join(EVAL, a.topic, "gold")
     all_entries = []
@@ -878,155 +1285,201 @@ def main():
         prompt = generate_initial_prompt(fields, a.format, a.model, key, required_sections, gold_example)
         os.makedirs(results_dir, exist_ok=True)
         open(os.path.join(results_dir, "seed_generated.txt"), "w").write(prompt)
+    # bake CSV format contract into the base prompt (for K2..K5 that reuse it)
     if a.format == "csv":
-        # bake the exact CSV column contract AND the required MediaWiki sections into the prompt
-        # so the EXPORTED prompt is live-deployable (the wiki importer maps these headers to
-        # template parameters; the section structure matches the live publication-page layout)
-        section_clause = ""
-        if required_sections:
-            section_clause = ("\n\n[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, "
-                              "each as a wiki heading with substantive content (≥20 words)]\n"
-                              + "\n".join(f"== {n} ==" for n in required_sections)
-                              + "\nThe Investigation section must contain ONE fenced ```csv block with the "
-                              "header below as its first row.")
-        prompt += (section_clause +
-                   "\n\n[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code "
-                   "block that starts with ```csv and ends with ```. The header row MUST be EXACTLY "
-                   "these columns, in this order:\n"
-                   + " , ".join(fields) + "\nOne row per distinct experiment; one value per cell; "
-                   "leave a cell empty only if the paper does not state it.")
-    best = {"f1": -1, "prompt": prompt, "agg": None, "iter": 0}
-    hist = []
-    prompts_dir = os.path.join(results_dir, "prompts")
-    os.makedirs(prompts_dir, exist_ok=True)
+        prompt = _append_csv_contract(prompt, required_sections, fields)
+    # ---- K parallel candidates (Beam) ----
+    # Each candidate is an independent prompt lineage with its own hill-climb,
+    # focus schedule, and diff-operator sequence. Winner = argmax composite across all.
+    # K=1 preserves single-line behavior (now with diff operators, still bounded by
+    # hill-climb + regression guard). K=5 = full-quality search.
+    K = max(1, int(a.candidates))
+    regression_subset = entries[:min(10, len(entries))]
+    print(f"regression-guard on: first {len(regression_subset)} papers, tolerance ±{a.regression_guard_tol:g}")
+    print(f"K = {K} parallel candidate(s), designer-model = {a.designer_model or a.model}")
+
+    # Per-candidate focus schedules — each candidate has a distinct optimization strategy
+    # so the beam explores multiple angles rather than one line.
+    CANDIDATE_SCHEDULES = {
+        "K1": ["recall", "recall", "units", "conciseness", "polish", "polish"],  # rotate
+        "K2": ["recall"] * 12,     # aggressive recall
+        "K3": ["units"] * 12,      # unit-focused
+        "K4": ["conciseness", "conciseness", "dedupe", "conciseness", "polish", "polish"],
+        "K5": ["recall", "units", "conciseness", "polish", "recall", "polish"],  # rotate variant
+    }
+    def focus_for(cand_id, it):
+        sched = CANDIDATE_SCHEDULES.get(cand_id, ["polish"] * 12)
+        return sched[(it - 1) % len(sched)] if sched else "polish"
+
+    # Initialize candidates. If a --prompt-file was passed we seed K2..K5 with it; K1 is
+    # always a fresh cold-start (reproduces the original Hand-Version-session as a floor).
+    print("\ninitializing candidates...")
+    candidates = []
+    for i in range(1, K + 1):
+        cid = f"K{i}"
+        if i == 1 or not a.prompt_file:
+            # Cold-start: model designs from scratch. K1 always cold-start for beam diversity.
+            print(f"  {cid}: cold-start (designer writes initial prompt)...")
+            cand_prompt = generate_initial_prompt(fields, a.format, a.model, key,
+                                                   required_sections, gold_example)
+            if a.format == "csv":
+                cand_prompt = _append_csv_contract(cand_prompt, required_sections, fields)
+        else:
+            # Hand-Version (or user-provided seed)
+            print(f"  {cid}: seeded from {os.path.basename(a.prompt_file)}")
+            cand_prompt = prompt  # already csv-contract-appended above
+        candidates.append({
+            "id": cid,
+            "prompt": cand_prompt,
+            "best": {"prompt": cand_prompt, "composite": -1.0, "agg": None, "iter": 0, "f1": -1.0},
+            "hist": [],
+            "reg_baseline": None,   # regression-guard F1 on subset; refreshed lazily
+        })
+
+    # Long-format CSV with candidate dimension. Legacy single-line CSV kept as a projection.
+    csv_cols = ["candidate", "iteration", "focus", "f1", "f1_best", "precision", "recall",
+                "layoutScore", "conciseness", "unitCorrectness",
+                "composite", "composite_best", "tokensPerPub",
+                "operator", "op_accepted", "op_rationale"]
+    rows_csv = [",".join(csv_cols)]
+
     for it in range(1, a.iterations + 1):
         print(f"\n=== iteration {it}/{a.iterations} ===")
-        # archive the exact prompt used in this iteration (prompt evolution for the paper)
-        open(os.path.join(prompts_dir, f"iter_{it}.txt"), "w").write(prompt)
-        scores, toks, diag = [], 0, []
-        gsup = gchk = 0
-        layout_scores = []
-        conciseness_scores = []
-        for doi, pdf, gold in entries:
-            try:
-                hints = field_hints(fd, doi, fields) if a.field_hints else ""
-                rows, t, raw = extract(pdf, prompt, fields, a.model, key, hints, a.format)
-                toks += t
-                s = score_pub(gold, rows, a.tolerance)
-                scores.append(s)
-                ls = layout_score(raw, required_sections)
-                layout_scores.append(ls["score"])
-                cs = conciseness_score(raw, required_sections) if required_sections else \
-                    {"score": 1.0, "verbosity": 0.0, "redundancy": 0.0, "over_sections": []}
-                conciseness_scores.append(cs["score"])
-                line = f"  {doi}: matched {s['tp']}/{s['gold']} gold cells, rows {s['ext_rows']}/{s['gold_rows']}, {t} tokens"
-                if required_sections:
-                    line += f", layout {ls['present']}/{ls['required']}"
-                    if ls["missing"]:
-                        line += " (missing: " + ", ".join(ls["missing"][:3]) + (",…" if len(ls["missing"]) > 3 else "") + ")"
-                    line += f", concise {cs['score']:.2f}"
-                    if cs["over_sections"]:
-                        line += " (long: " + ", ".join(f"{n}:{w}w" for n, w in cs["over_sections"][:2]) + ")"
-                grec = None
-                if a.ground:
-                    g = ground_check(pdf, rows, a.model, key)
-                    gsup += g["supported"]; gchk += g["checked"]
-                    grec = g
-                    line += f", grounded {g['supported']}/{g['checked']}"
-                print(line)
-                diag.append({"doi": doi, "tp": s["tp"], "gold_cells": s["gold"], "ext_cells": s["ext"],
-                             "gold_rows": s["gold_rows"], "ext_rows": s["ext_rows"],
-                             "layout": ls, "conciseness": cs, "ground": grec, "examples": s["examples"][:10]})
-            except Exception as e:
-                print(f"  {doi}: ERROR {e}")
-            time.sleep(1)
-        if not scores:
-            sys.exit("no publication could be scored")
-        agg = aggregate(scores)
-        agg["groundedness"] = (gsup / gchk) if (a.ground and gchk) else None
-        agg["hallucination"] = (1 - gsup / gchk) if (a.ground and gchk) else None
-        agg["layoutScore"] = (sum(layout_scores) / len(layout_scores)) if layout_scores and required_sections else None
-        agg["conciseness"] = (sum(conciseness_scores) / len(conciseness_scores)) if conciseness_scores and required_sections else None
-        # aggregate over-length sections across publications, sorted by max word count, so the
-        # meta-LLM sees which sections systematically bloat
-        over_agg = {}
-        for d in diag:
-            for name, words in d.get("conciseness", {}).get("over_sections", []):
-                if words > over_agg.get(name, 0):
-                    over_agg[name] = words
-        agg["over_sections"] = sorted(over_agg.items(), key=lambda x: -x[1])[:5]
-        avg_tok = toks // len(scores)
-        # objective: composite = F1 × layoutScore × conciseness, optionally averaged with groundedness.
-        # Multiplicative gate means dropping prose sections costs proportionally AND writing
-        # bloated / redundant prose costs proportionally; you cannot game the score by emitting
-        # only the CSV table nor by padding the prose with restated fluff.
-        base = composite_objective(agg["f1"], agg["layoutScore"], agg["conciseness"])
-        agg["composite"] = base
-        agg["objective"] = base if not a.ground or agg["groundedness"] is None \
-            else (base + agg["groundedness"]) / 2
-        if agg["objective"] > best.get("obj", -1):
-            best = {"f1": agg["f1"], "composite": base, "obj": agg["objective"], "prompt": prompt, "agg": agg, "iter": it}
-        best_comp = best.get("composite", base)
-        gstr = f" grounded={agg['groundedness']:.3f} halluc={agg['hallucination']:.3f}" if agg["groundedness"] is not None else ""
-        lstr = f" layout={agg['layoutScore']:.3f}" if agg["layoutScore"] is not None else ""
-        cstr = f" conc={agg['conciseness']:.3f}" if agg["conciseness"] is not None else ""
-        ustr = f" unit_ok={agg['unitCorrectness']:.3f}" if agg.get("unitCorrectness") is not None else ""
-        print(f"  AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f}{lstr}{cstr}{ustr}{gstr} "
-              f"composite={base:.4f} tok/pub={avg_tok} | best F1={best['f1']:.4f} composite={best_comp:.4f}")
-        gv = f"{agg['groundedness']:.4f}" if agg["groundedness"] is not None else ""
-        hv = f"{agg['hallucination']:.4f}" if agg["hallucination"] is not None else ""
-        lv = f"{agg['layoutScore']:.4f}" if agg["layoutScore"] is not None else ""
-        cv = f"{agg['conciseness']:.4f}" if agg["conciseness"] is not None else ""
-        uv = f"{agg['unitCorrectness']:.4f}" if agg.get("unitCorrectness") is not None else ""
-        rows_csv.append(f"{it},{agg['f1']:.4f},{best['f1']:.4f},{agg['precision']:.4f},{agg['recall']:.4f},"
-                        f"{gv},{hv},{lv},{cv},{uv},{base:.4f},{best_comp:.4f},{avg_tok}")
-        hist.append({"iteration": it, "f1": agg["f1"], "f1_best": best["f1"],
-                     "precision": agg["precision"], "recall": agg["recall"],
-                     "layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
-                     "unitCorrectness": agg.get("unitCorrectness"),
-                     "composite": base, "composite_best": best_comp,
-                     "tokensPerPub": avg_tok,
-                     # raw data for cross-iteration memory (fed to build_memory in the
-                     # designer-mode improve_prompt call). Kept out of hist trend plots
-                     # but written into diagnostics.json for the paper trail.
-                     "weak_fields_raw": [{"field": k, "recall": r, "correct": c, "total": g,
-                                          "unit_errors": u, "misses": m}
-                                         for k, r, c, g, u, m in agg["weak"]],
-                     "over_sections": agg.get("over_sections") or []})
-        json.dump({"iteration": it,
-                   "aggregate": {k: agg[k] for k in ("f1", "precision", "recall", "groundedness",
-                                                     "hallucination")}
-                              | {"layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
-                                 "unitCorrectness": agg.get("unitCorrectness"), "composite": base},
-                   "weak_fields": [{"field": k, "recall": r, "correct": c, "total": g,
-                                    "unit_errors": u, "misses": m,
-                                    "unit_error_pct": (u / m if m else 0.0)}
-                                   for k, r, c, g, u, m in agg["weak"]],
-                   "per_publication": diag},
-                  open(os.path.join(results_dir, "diagnostics.json"), "w"), indent=2, ensure_ascii=False)
-        open(csv_path, "w").write("\n".join(rows_csv) + "\n")
-        # regenerate matplotlib trend
-        subprocess.run([sys.executable, os.path.join(HERE, "plot_eval_metrics.py"), csv_path, results_dir,
-                        a.topic.replace("_", " ")], capture_output=True)
-        if a.commit:
-            git_commit([results_dir], f"eval {a.topic} iter {it}: F1={agg['f1']:.4f} (best {best['f1']:.4f})")
-        if it < a.iterations:
-            # Focus for the NEXT iteration — rotates so the meta-LLM never has to trade F1
-            # against polish in the same rewrite. Iter 2-3 = recall (the big lever), iter 4 =
-            # conciseness, iter 5 = units, iter 6+ = polish.
-            next_focus = FOCUS_SCHEDULE.get(it + 1, "polish")
-            # Cross-iteration memory: patterns aggregated over ALL iterations so far, so the
-            # designer sees the whole run's weaknesses, not just the latest snapshot.
-            memory = build_memory(hist)
-            print(f"  designing next prompt (focus={next_focus}, memory over {len(hist)} iter) ...")
-            # hill-climb: always propose the next variant from the BEST prompt + full memory,
-            # so a bad rewrite never drags the search downward.
-            prompt = improve_prompt(best["prompt"], best["agg"], a.model, key, a.format,
-                                    required_sections, gold_example, memory=memory,
-                                    focus=next_focus)
+        for cand in candidates:
+            cid = cand["id"]
+            focus = focus_for(cid, it)
+            print(f"\n-- candidate {cid} (iter {it}, focus={focus}) --")
+            # archive per-candidate prompt (paper trail)
+            cand_prompts_dir = os.path.join(results_dir, "candidates", cid, "prompts")
+            os.makedirs(cand_prompts_dir, exist_ok=True)
+            open(os.path.join(cand_prompts_dir, f"iter_{it}.txt"), "w").write(cand["prompt"])
 
-    print(f"\nBest F1: {best['f1']:.4f}")
+            hints_fn = (lambda doi: field_hints(fd, doi, fields)) if a.field_hints else None
+            agg, diag, toks, layout_scores, conciseness_scores = _score_prompt_on_entries(
+                cand["prompt"], entries, fields, a.model, key, a.format, a.tolerance,
+                required_sections, do_ground=a.ground, hints_fn=hints_fn, log_prefix="    ",
+                verbose=True)
+            if agg is None:
+                print(f"    {cid}: no publication could be scored — skipping candidate this iter")
+                continue
+            avg_tok = toks // max(1, len(entries))
+            composite = composite_objective(agg["f1"], agg["layoutScore"], agg["conciseness"])
+            agg["composite"] = composite
+
+            # Hill-climb per candidate
+            was_best = composite > cand["best"]["composite"]
+            if was_best:
+                cand["best"] = {"prompt": cand["prompt"], "composite": composite,
+                                "agg": agg, "iter": it, "f1": agg["f1"]}
+                # invalidate regression baseline — new best warrants re-computation on next diff
+                cand["reg_baseline"] = None
+
+            # Extract subset F1 from diag (regression baseline for the guard)
+            if cand["reg_baseline"] is None:
+                subset_dois = {t[0] for t in regression_subset}
+                subset_d = [d for d in diag if d["doi"] in subset_dois]
+                if subset_d:
+                    stp = sum(d["tp"] for d in subset_d)
+                    sgold = sum(d["gold_cells"] for d in subset_d)
+                    sext = sum(d["ext_cells"] for d in subset_d)
+                    sr = stp / sgold if sgold else 0
+                    sp = stp / sext if sext else 0
+                    cand["reg_baseline"] = (2 * sp * sr / (sp + sr)) if (sp + sr) else 0.0
+
+            # Log aggregate
+            marker = "★" if was_best else " "
+            print(f"    {marker} AGG F1={agg['f1']:.4f} P={agg['precision']:.4f} R={agg['recall']:.4f} "
+                  f"layout={agg['layoutScore'] or 1.0:.3f} conc={agg['conciseness'] or 1.0:.3f} "
+                  f"unit_ok={agg.get('unitCorrectness') or 1.0:.3f} "
+                  f"composite={composite:.4f} tok/pub={avg_tok} | "
+                  f"best F1={cand['best']['f1']:.4f} composite={cand['best']['composite']:.4f}")
+
+            # Record hist for cross-iter memory
+            cand["hist"].append({
+                "iteration": it,
+                "f1": agg["f1"], "precision": agg["precision"], "recall": agg["recall"],
+                "layoutScore": agg["layoutScore"], "conciseness": agg["conciseness"],
+                "unitCorrectness": agg.get("unitCorrectness"),
+                "composite": composite, "composite_best": cand["best"]["composite"],
+                "f1_best": cand["best"]["f1"], "tokensPerPub": avg_tok,
+                "weak_fields_raw": [{"field": k, "recall": r, "correct": c, "total": g,
+                                     "unit_errors": u, "misses": m}
+                                    for k, r, c, g, u, m in agg["weak"]],
+                "over_sections": agg.get("over_sections") or [],
+            })
+
+            # Diff-operator proposal + regression guard (only if not last iter)
+            op_name, op_accepted, op_rationale = "no_op", False, "last_iter"
+            if it < a.iterations:
+                memory = build_memory(cand["hist"])
+                op_choice = choose_operator(
+                    cand["best"]["prompt"], cand["best"]["agg"], memory, focus, fields,
+                    a.model, key,
+                    designer_model=a.designer_model, designer_key=designer_key)
+                op_name = op_choice["operator"]
+                op_rationale = op_choice.get("rationale", "")[:80]
+                if op_name == "no_op":
+                    print(f"    diff: no_op ({op_rationale})")
+                    op_accepted = False
+                else:
+                    proposed = apply_diff(cand["best"]["prompt"], op_choice)
+                    if proposed == cand["best"]["prompt"]:
+                        print(f"    diff: {op_name} — no textual change (idempotent skip)")
+                        op_accepted = False
+                    else:
+                        # Regression guard: score proposed on 10-paper subset, compare to baseline
+                        reg_new = regression_score(
+                            proposed, regression_subset, fields, a.model, key,
+                            a.format, a.tolerance)
+                        reg_old = cand["reg_baseline"] or 0.0
+                        if reg_new < reg_old - a.regression_guard_tol:
+                            print(f"    diff: {op_name} REJECTED "
+                                  f"(subset F1 {reg_new:.3f} < baseline {reg_old:.3f} - {a.regression_guard_tol:g})")
+                            op_accepted = False
+                        else:
+                            cand["prompt"] = proposed
+                            cand["reg_baseline"] = reg_new
+                            print(f"    diff: {op_name} ACCEPTED "
+                                  f"(subset F1 {reg_new:.3f} vs baseline {reg_old:.3f}) "
+                                  f"| {op_rationale}")
+                            op_accepted = True
+
+            # CSV row
+            rows_csv.append(
+                f"{cid},{it},{focus},"
+                f"{agg['f1']:.4f},{cand['best']['f1']:.4f},"
+                f"{agg['precision']:.4f},{agg['recall']:.4f},"
+                f"{(agg['layoutScore'] or 1.0):.4f},"
+                f"{(agg['conciseness'] or 1.0):.4f},"
+                f"{(agg.get('unitCorrectness') or 1.0):.4f},"
+                f"{composite:.4f},{cand['best']['composite']:.4f},{avg_tok},"
+                f"{op_name},{int(op_accepted)},\"{op_rationale.replace(chr(34), chr(39))}\""
+            )
+
+        # Write CSV after each full iteration across all candidates
+        open(csv_path, "w").write("\n".join(rows_csv) + "\n")
+        if a.commit:
+            best_across = max(candidates, key=lambda c: c["best"]["composite"])
+            git_commit([results_dir],
+                       f"eval {a.topic} iter {it}: best-of-K={K} F1={best_across['best']['f1']:.4f} "
+                       f"composite={best_across['best']['composite']:.4f}")
+
+    # ---- Winner = argmax composite across all candidates ----
+    winner_cand = max(candidates, key=lambda c: c["best"]["composite"])
+    best = winner_cand["best"]
+    hist = winner_cand["hist"]
+    print(f"\nBest-of-K={K} winner: candidate {winner_cand['id']}, "
+          f"F1={best['f1']:.4f}, composite={best['composite']:.4f} (iter {best['iter']})")
+    for c in candidates:
+        print(f"  {c['id']}: best F1={c['best']['f1']:.4f} composite={c['best']['composite']:.4f}")
     open(os.path.join(results_dir, "best_prompt.txt"), "w").write(best["prompt"])
+    # Write winner marker for downstream tooling
+    with open(os.path.join(results_dir, "winner.json"), "w") as f:
+        json.dump({"winner_candidate": winner_cand["id"], "composite": best["composite"],
+                   "f1": best["f1"], "iter": best["iter"],
+                   "candidates_summary": [{"id": c["id"], "f1": c["best"]["f1"],
+                                           "composite": c["best"]["composite"]}
+                                          for c in candidates]}, f, indent=2)
     write_paper_artifacts(results_dir, hist, best, a.topic)
     print(f"Paper artefacts: {results_dir}/trend.pdf, summary.md, metrics.tex, metrics.csv")
 
