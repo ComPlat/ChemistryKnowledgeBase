@@ -242,16 +242,17 @@ class PublicationImportSpecialpage extends SpecialPage
 
     private function createImportJobs(array $uploadedFiles, $pageTitle, $doi, array $topics): Title
     {
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $repo = new ImportProcessRepository($db);
+        $insertId = $repo->addImportProcess($pageTitle, $doi);
+
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $paths = array_values($uploadedFiles);
         $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
         $title = Title::newFromText(WikiTools::cleanTitle($pageTitle));
-        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics]);
+        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics, 'importProcessId' => $insertId]);
         $jobQueue->push($job);
 
-        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
-        $repo = new ImportProcessRepository($db);
-        $repo->addImportProcess($pageTitle, $doi);
         return $title;
     }
 

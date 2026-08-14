@@ -18,6 +18,7 @@ class PublicationImportJob extends Job
 
     private $paths;
     private $doi;
+    private $importProcessId;
     private $topics;
     private $logger;
     private $repo;
@@ -27,6 +28,7 @@ class PublicationImportJob extends Job
         parent::__construct('PublicationImportJob', $title, $params);
         $this->paths = $params['paths'];
         $this->doi = $params['doi'];
+        $this->importProcessId = $params['importProcessId'];;
         $this->topics = $params['topics'];
         $this->logger = new LoggerUtils('PublicationImportJob', 'ChemExtension');
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
@@ -38,7 +40,7 @@ class PublicationImportJob extends Job
      */
     public function run()
     {
-        $process = $this->repo->getImportProcessByDOI($this->doi);
+        $process = $this->repo->getImportProcess($this->importProcessId);
 
         try {
 
