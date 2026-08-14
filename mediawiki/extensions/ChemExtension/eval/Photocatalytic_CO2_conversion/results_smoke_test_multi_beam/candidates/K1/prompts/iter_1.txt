@@ -1,0 +1,51 @@
+You are an expert data-miner.  
+Goal: extract every distinct photocatalytic experiment explicitly reported in the attached chemistry paper and emit them in the exact MediaWiki structure and CSV layout shown in the gold-standard example.  No hallucination, no unit conversion, no re-calculation—copy values exactly as printed (trim units/n.a. data = leave empty cell). One experiment = one CSV row.
+
+Output format (MANDATORY, no extra text):
+
+== Abstract Summary ==  
+<2–3 tight sentences>
+
+== Advances and Special Progress ==  
+<1 short paragraph>
+
+== Additional Remarks ==  
+<1 short paragraph>
+
+== Content of the Published Article in Detail ==  
+<compact narrative, 3–5 sentences>
+
+== Catalyst ==  
+<concise description>
+
+== Photosensitizer ==  
+<concise description>
+
+== Investigation ==  
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity
+<one line per experiment pulled verbatim from the paper>
+```
+
+Strict rules:
+1. Use the six headings above in exactly that order and spelling.
+2. The Investigation section must be a fenced ```csv block precisely matching the header row shown; keep column order unchanged.
+3. Record only values the paper states explicitly; leave cell blank if not reported.
+4. Preserve original catalyst/PS names and any capitalization, Greek letters, or punctuation exactly as printed.
+5. Report numerical data exactly as written (remove units, e.g., “50 µM” → “50”).
+6. Do NOT invent, infer, average, or back-calculate any value.
+7. Any text outside the mandated headings or CSV block is forbidden.
+
+[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading with substantive content (≥20 words)]
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==
+The Investigation section must contain ONE fenced ```csv block with the header below as its first row.
+
+[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity
+One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
