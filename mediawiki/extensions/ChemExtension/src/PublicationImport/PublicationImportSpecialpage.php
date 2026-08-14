@@ -57,33 +57,8 @@ class PublicationImportSpecialpage extends SpecialPage
                 return;
             }
 
-            $tmpFolder = $this->checkPrerequisites();
-
-            global $wgRequest;
-            $doi = $wgRequest->getText('doi', '');
-            $pubFiles = PdfUtils::publicationPDF($doi);
-            if (isset($_FILES["chemfile"]["name"]) || count($pubFiles) > 0) {
-                try {
-                    $pageTitle = $wgRequest->getText('page-title', '');
-                    $topics = $wgRequest->getText('topic', '');
-                    if ($topics === '') $topics = "Topic";
-                    if ($doi === '') {
-                        throw new Exception('DOI is mandatory. Please specify one.');
-                    }
-                    $this->checkIfDOIAlreadyExists($doi, $pageTitle);
-                    $uploadedFiles = $this->processUpload($tmpFolder);
-                    if (count($uploadedFiles) === 0) {
-                        foreach($pubFiles as $pubFile) {
-                            $uploadedFiles[basename($pubFile)] = $pubFile;
-                        }
-                    }
-                    $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
-                    $this->putTitleOnWatchlist($title);
-                    $output->addHTML($this->renderUploadResult($uploadedFiles));
-                } catch (Exception $e) {
-                    $output->addHTML($e->getMessage());
-                    $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
-                }
+            if ($this->isUploadRequest()) {
+                $this->handleUploadRequest();
                 return;
             }
 
@@ -98,7 +73,26 @@ class PublicationImportSpecialpage extends SpecialPage
         }
     }
 
-
+    private function isUploadRequest(): bool
+    {
+        global $wgRequest;
+        $pageTitle = $wgRequest->getText('page-title', '');
+        $doi = $wgRequest->getText('doi', '');
+        if ($wgRequest->wasPosted()) {
+            if ($doi === '') {
+                throw new Exception('DOI is mandatory. Please specify one.');
+            }
+            if ($pageTitle === '') {
+                throw new Exception('Publication title is mandatory. Please specify one.');
+            }
+            if (count($_FILES["chemfile"]["name"] ?? []) === 0) {
+                throw new Exception('No files selected or filesize is too large. Max upload size is 30MB.');
+            }
+            return true;
+        }
+        $pubFiles = PdfUtils::publicationPDF($doi);
+        return count($pubFiles) > 0 && !empty($doi) && !empty($pageTitle);
+    }
 
     private function renderUploadResult($uploadedFiles): string
     {
@@ -116,7 +110,7 @@ class PublicationImportSpecialpage extends SpecialPage
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $repo = new ImportProcessRepository($dbr);
-        $rows = $repo->getAllImportProcesses();
+        $rows = $repo->getAllImportProcessesSince(date('Y-m-d', time() - 30 * 24 * 60 * 60));
         $renderer = new ImportProcessTableRenderer($rows);
         return $renderer->render();
     }
@@ -299,5 +293,34 @@ HTML;
             $link = sprintf('<a href="%s">%s</a>', $pageTitle->getFullURL(), $pageTitle->getText());
             throw new Exception("Page for this DOI '$doi' already exists: $link");
         }
+    }
+
+    public function handleUploadRequest(): void
+    {
+        try {
+            global $wgRequest;
+            $output = $this->getOutput();
+            $tmpFolder = $this->checkPrerequisites();
+            $pageTitle = $wgRequest->getText('page-title');
+            $doi = $wgRequest->getText('doi');
+            $topics = $wgRequest->getText('topic', '');
+            if ($topics === '') $topics = "Topic";
+
+            $this->checkIfDOIAlreadyExists($doi, $pageTitle);
+            $uploadedFiles = $this->processUpload($tmpFolder);
+            if (count($uploadedFiles) === 0) {
+                $pubFiles = PdfUtils::publicationPDF($doi);
+                foreach ($pubFiles as $pubFile) {
+                    $uploadedFiles[basename($pubFile)] = $pubFile;
+                }
+            }
+            $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
+            $this->putTitleOnWatchlist($title);
+            $output->addHTML($this->renderUploadResult($uploadedFiles));
+        } catch (Exception $e) {
+            $output->addHTML($e->getMessage());
+            $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
+        }
+
     }
 }

@@ -150,6 +150,20 @@ class ImportProcessRepository {
         return $results;
     }
 
+    public function getAllImportProcessesSince($fromDate): array
+    {
+        $res = $this->db->select('import_process',
+            ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
+            ['created_at' => ['>', $fromDate]],
+            __METHOD__,
+            [ 'ORDER BY' => 'created_at DESC']);
+        $results = [];
+        foreach ($res as $row) {
+            $results[] = $this->rowToArray($row);
+        }
+        return $results;
+    }
+
     public function deleteImportProcess(int $id): void
     {
         $this->db->delete('import_process', ['id' => $id]);
