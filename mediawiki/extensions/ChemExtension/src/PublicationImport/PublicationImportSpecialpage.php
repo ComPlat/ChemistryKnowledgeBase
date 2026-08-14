@@ -90,7 +90,7 @@ class PublicationImportSpecialpage extends SpecialPage
             }
             return true;
         }
-        $pubFiles = PdfUtils::publicationPDF($doi);
+        $pubFiles = PdfUtils::getPublicationPDFs($doi);
         return count($pubFiles) > 0 && !empty($doi) && !empty($pageTitle);
     }
 
@@ -190,13 +190,17 @@ class PublicationImportSpecialpage extends SpecialPage
         return $form;
     }
 
-    /**
-     * @param string $tmpFolder
-     * @return array
-     * @throws \Exception
-     */
-    private function processUpload(string $tmpFolder): array
+
+    private function processUpload(string $doi): array
     {
+        $tmpFolder = PdfUtils::getPublicationPDFDirectory($doi);
+        if (!file_exists($tmpFolder)) {
+            mkdir($tmpFolder);
+        }
+        if (!is_writable($tmpFolder)) {
+            throw new \Exception("temporary uploadfolder $tmpFolder must be writeable. Please configure.");
+        }
+        $this->logger->log("Processing upload for DOI $doi to $tmpFolder");
         $uploadedFiles = [];
         for ($i = 0; $i < count($_FILES["chemfile"]["name"] ?? []); $i++) {
             $name = $_FILES["chemfile"]["name"][$i];
@@ -213,25 +217,6 @@ class PublicationImportSpecialpage extends SpecialPage
             $uploadedFiles[$name] = "$tmpFolder/$filename";
         }
         return $uploadedFiles;
-    }
-
-    /**
-     * @return string
-     * @throws Exception
-     */
-    private function checkPrerequisites(): string
-    {
-        global $wgCEChemScannerTempFolder;
-        $tmpFolder = sys_get_temp_dir() . "/pub-import";
-        $tmpFolder = $wgCEChemScannerTempFolder ?? $tmpFolder;
-
-        if (!file_exists($tmpFolder)) {
-            mkdir($tmpFolder);
-        }
-        if (!is_writable($tmpFolder)) {
-            throw new \Exception("temporary uploadfolder $tmpFolder must be writeable. Please configure.");
-        }
-        return $tmpFolder;
     }
 
     private function createImportJobs(array $uploadedFiles, $pageTitle, $doi, array $topics): Title
@@ -297,19 +282,19 @@ HTML;
 
     public function handleUploadRequest(): void
     {
+        global $wgRequest;
+        $output = $this->getOutput();
+
         try {
-            global $wgRequest;
-            $output = $this->getOutput();
-            $tmpFolder = $this->checkPrerequisites();
             $pageTitle = $wgRequest->getText('page-title');
             $doi = $wgRequest->getText('doi');
             $topics = $wgRequest->getText('topic', '');
             if ($topics === '') $topics = "Topic";
 
             $this->checkIfDOIAlreadyExists($doi, $pageTitle);
-            $uploadedFiles = $this->processUpload($tmpFolder);
+            $uploadedFiles = $this->processUpload($doi);
             if (count($uploadedFiles) === 0) {
-                $pubFiles = PdfUtils::publicationPDF($doi);
+                $pubFiles = PdfUtils::getPublicationPDFs($doi);
                 foreach ($pubFiles as $pubFile) {
                     $uploadedFiles[basename($pubFile)] = $pubFile;
                 }
@@ -319,7 +304,8 @@ HTML;
             $output->addHTML($this->renderUploadResult($uploadedFiles));
         } catch (Exception $e) {
             $output->addHTML($e->getMessage());
-            $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>', RequestContext::getMain()->getTitle()->getFullURL()));
+            $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>',
+                RequestContext::getMain()->getTitle()->getFullURL()));
         }
 
     }

@@ -46,12 +46,29 @@ class PdfUtils {
         return $header === '%PDF';
     }
 
-    public static function publicationPDF(string $doi): array
-    {
+    private static function checkPDFPrerequisites(): string {
         global $wgChemPubStoreDir;
         if (!isset($wgChemPubStoreDir)) {
             $wgChemPubStoreDir = sys_get_temp_dir();
         }
+        if (!file_exists($wgChemPubStoreDir)) {
+            mkdir($wgChemPubStoreDir);
+        }
+        if (!is_writable($wgChemPubStoreDir)) {
+            throw new \Exception("temporary uploadfolder $wgChemPubStoreDir must be writeable. Please configure.");
+        }
+        return $wgChemPubStoreDir;
+    }
+
+    public static function getPublicationPDFDirectory(string $doi): string {
+        $wgChemPubStoreDir = self::checkPDFPrerequisites();
+        return $wgChemPubStoreDir . "/" . md5($doi);
+    }
+
+    public static function getPublicationPDFs(string $doi): array
+    {
+        $wgChemPubStoreDir = self::checkPDFPrerequisites();
+
         $file = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
         if (!file_exists($file)) {
             return [];
