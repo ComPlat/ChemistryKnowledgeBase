@@ -150,11 +150,11 @@ class ImportProcessRepository {
         return $results;
     }
 
-    public function getAllImportProcessesSince($fromDate): array
+    public function getAllImportProcessesSince(string $since): array
     {
         $res = $this->db->select('import_process',
             ['id', 'page_title', 'doi', 'status', 'created_at', 'started_at', 'message'],
-            ['created_at' => ['>', $fromDate]],
+            [ 'created_at >= ' . $this->db->addQuotes($since) ],
             __METHOD__,
             [ 'ORDER BY' => 'created_at DESC']);
         $results = [];
