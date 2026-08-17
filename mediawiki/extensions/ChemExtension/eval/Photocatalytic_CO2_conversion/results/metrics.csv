@@ -1,0 +1,5 @@
+candidate,iteration,focus,f1,f1_best,precision,recall,layoutScore,conciseness,unitCorrectness,composite,composite_best,tokensPerPub,operator,op_accepted,op_rationale
+K1,1,recall,0.3849,0.3849,0.3624,0.4104,1.0000,0.8574,0.9449,0.3574,0.3574,22433,add_field_example,1,"An explicit example with unit highlights the expected numeric-unit pattern and s"
+K2,1,recall,0.4580,0.4580,0.3997,0.5364,1.0000,0.8181,0.9197,0.4164,0.4164,25345,strengthen_recall,1,"Quantum_yield__CO has many instances yet almost zero recall, so boosting its ext"
+K3,1,units,0.5344,0.5344,0.4444,0.6701,1.0000,0.8246,0.8753,0.4876,0.4876,26385,add_field_example,1,"Field has zero recall so provide canonical example to reinforce pattern recognit"
+K4,1,conciseness,0.4570,0.4570,0.3773,0.5792,1.0000,0.8241,0.9105,0.4168,0.4168,25707,tighten_section,0,"The Photosensitizer section vastly exceeds the word budget, so tightening it wil"
