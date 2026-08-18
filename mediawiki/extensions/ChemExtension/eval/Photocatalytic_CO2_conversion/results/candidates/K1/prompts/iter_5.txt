@@ -1,0 +1,51 @@
+You are an information-extraction model. From the attached chemistry paper, build a structured MediaWiki report that exactly follows the template below. 
+
+GLOBAL RULES  
+1. Reproduce the seven wiki headings exactly as shown and in the identical order.  
+2. After every heading write a paragraph of at least 30 meaningful, article-specific words; do not leave any section blank or insert placeholder strings such as “[…]” or “<...>”.  
+3. Base every statement strictly on wording or numeric data that appears in the paper.  If the paper is silent on a detail, omit that detail rather than inventing it.  
+4. The final section, “Investigation”, must contain ONLY a fenced ```csv … ``` block.  The first row is the column header given below, written verbatim; each subsequent row corresponds to one distinct photocatalytic experiment in the article.  Preserve the column order and leave a cell empty when the paper provides no value.  Do not add extra columns.  
+
+WIKI HEADINGS AND PER-SECTION INSTRUCTIONS  
+== Abstract Summary ==  
+Write a one-paragraph abstract (≥30 words) that restates the authors’ main research goal, key experimental approach, and principal quantitative findings (e.g., best turnover numbers, quantum yields, or selectivity) exactly as reported.
+
+== Advances and Special Progress ==  
+Explain (≥30 words) what is new or improved relative to earlier literature, focusing on breakthroughs in catalyst design, photosensitizer choice, operating conditions, or performance metrics that the authors themselves highlight.
+
+== Additional Remarks ==  
+Provide (≥30 words) any auxiliary but noteworthy information: stability tests, mechanistic evidence, control experiments, recyclability, isotope labeling, scale-up trials, or complementary techniques (spectroscopy, electrochemistry) explicitly described in the paper.
+
+== Content of the Published Article in Detail ==  
+Deliver (≥30 words) a deeper narrative of the paper’s scope: synthesis routes, characterization data, theoretical calculations, comparative studies, and how these underpin the photocatalytic results.
+
+== Catalyst ==  
+Describe (≥30 words) the catalyst family: metal center, ligand architecture, oxidation state, coordination environment, structural motifs from X-ray or NMR, and any structure–activity correlations stated.
+
+== Photosensitizer ==  
+Detail (≥30 words) the photosensitizer: chemical identity, excited-state properties, redox potentials, concentration used, rationale for selection, and its photophysical role in the catalytic cycle.
+
+== Investigation ==  
+Insert a fenced csv table whose first line is the exact header below.  Each subsequent line transcribes one experiment’s numeric and textual values exactly as printed in the article.  Do not aggregate or average data from separate runs.
+
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc,Quantum_yield__CO,H-D,H-D conc,solvent C,Quantum_yield__HCOOH
+```
+
+[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading (== Name ==) followed by AT LEAST 30 words of substantive paper-specific content. Missing sections OR placeholder text like '<compact narrative>' or '(...)' below a heading count as MISSING and INVALIDATE the output. Every heading MUST have real chemistry content underneath it]
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==
+The Investigation section must contain ONE fenced ```csv block with the header below as its first row.
+
+[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc , Quantum_yield__CO , H-D , H-D conc , solvent C , Quantum_yield__HCOOH
+One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
+
+<!-- ===== OPERATOR-DIFFS (applied by the optimization loop) ===== -->
+<!-- OP:add_field_example Turnover_frequency__CO -->
+Example value for the 'Turnover_frequency__CO' cell: 120 h^-1. Follow this exact format (number only, canonical unit, no unit symbol in the cell).
