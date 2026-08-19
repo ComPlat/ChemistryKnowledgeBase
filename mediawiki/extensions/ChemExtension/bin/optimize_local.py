@@ -746,10 +746,20 @@ def generate_initial_prompt(fields, fmt, model, key, required_sections=None, gol
     cols = " , ".join(fields)
     section_clause = ""
     if required_sections:
-        section_clause = (" The prompt MUST require the model to emit these MediaWiki sections in this exact "
-                          "order, each as a wiki heading with substantive content: "
-                          + ", ".join(required_sections)
-                          + ". The Investigation section must contain the experiments inside a fenced ```csv block.")
+        section_clause = (
+            " The prompt MUST require the extractor to emit ALL of these MediaWiki sections in this "
+            "exact order, each as a wiki heading FOLLOWED BY substantive paper-specific content "
+            "(at least 30 substantive words per section, never placeholder text like '<...>' or "
+            "'(...)' — the extractor treats those as empty and skips the section). List of sections: "
+            + ", ".join(required_sections)
+            + ". For each section the generated prompt must include CONCRETE PER-SECTION "
+            "INSTRUCTIONS describing what content belongs there (e.g. for 'Catalyst': "
+            "'describe the catalyst family, active metal, ligand structure, and key structural "
+            "features'). Do NOT use placeholder phrases like '<compact narrative>' or "
+            "'<concise description>' — the extractor will emit them literally and lose the "
+            "section. The Investigation section must contain the experiments inside a fenced "
+            "```csv block whose first row is the column header."
+        )
     sys_part = ("Write a concise, high-quality instruction prompt that makes a model extract the "
                 "experimental data from an attached chemistry paper. The prompt should ask for a "
                 "short MediaWiki summary followed by the experiments as structured data, ONE row "
@@ -1065,9 +1075,8 @@ def choose_operator(prompt, agg, memory, focus, fields, model, key,
     return parsed
 
 def regression_score(prompt, subset_entries, fields, model, key, fmt="csv", tolerance=0.1):
-    """Score a prompt on a fixed subset (first 10 training papers) — used as a hard
-    regression guard before accepting a diff-operator change. Returns aggregate F1.
-    Extraction errors are counted as zero-tp gold-cell losses (worst-case = regression)."""
+    """Score a prompt on a fixed subset (first 10 training papers). Returns aggregate F1.
+    Extraction errors count as zero-tp gold-cell losses (worst-case = regression)."""
     scores = []
     for doi, pdf, gold in subset_entries:
         try:
@@ -1081,6 +1090,24 @@ def regression_score(prompt, subset_entries, fields, model, key, fmt="csv", tole
     if not scores:
         return 0.0
     return aggregate(scores)["f1"]
+
+def regression_check(old_prompt, new_prompt, subset_entries, fields, model, key,
+                     fmt="csv", tolerance=0.1, guard_tol=0.05):
+    """Noise-cancelled regression guard. Re-measures BOTH old_prompt and new_prompt on the
+    same subset in the SAME temporal batch — this way o3's sampling variance (typ ±2-3 pp
+    on 10 papers) affects both measurements similarly and cancels out in the delta.
+
+    Returns (accepted, old_f1, new_f1, delta):
+      - accepted = True iff (new_f1 - old_f1) >= -guard_tol (i.e., not a real regression)
+      - default guard_tol 0.05 (5 pp) is wider than the naive 0.03 to absorb residual noise
+    Cost: 2 × |subset| API calls per check (vs 1 × before, but the previous single-pass
+    guard was fooled by run-to-run variance and let real regressions through).
+    """
+    old_f1 = regression_score(old_prompt, subset_entries, fields, model, key, fmt, tolerance)
+    new_f1 = regression_score(new_prompt, subset_entries, fields, model, key, fmt, tolerance)
+    delta = new_f1 - old_f1
+    accepted = delta >= -guard_tol
+    return accepted, old_f1, new_f1, delta
 
 def _score_prompt_on_entries(prompt, entries, fields, model, key, fmt, tolerance,
                               required_sections, do_ground=False, hints_fn=None,
@@ -1161,11 +1188,16 @@ def _append_csv_contract(prompt, required_sections, fields):
         return prompt
     section_clause = ""
     if required_sections:
-        section_clause = ("\n\n[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, "
-                          "each as a wiki heading with substantive content (≥20 words)]\n"
-                          + "\n".join(f"== {n} ==" for n in required_sections)
-                          + "\nThe Investigation section must contain ONE fenced ```csv block with the "
-                          "header below as its first row.")
+        section_clause = (
+            "\n\n[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a "
+            "wiki heading (== Name ==) followed by AT LEAST 30 words of substantive paper-specific "
+            "content. Missing sections OR placeholder text like '<compact narrative>' or "
+            "'(...)' below a heading count as MISSING and INVALIDATE the output. Every heading "
+            "MUST have real chemistry content underneath it]\n"
+            + "\n".join(f"== {n} ==" for n in required_sections)
+            + "\nThe Investigation section must contain ONE fenced ```csv block with the header "
+            "below as its first row."
+        )
     return prompt + (section_clause +
                      "\n\n[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code "
                      "block that starts with ```csv and ends with ```. The header row MUST be EXACTLY "
@@ -1197,9 +1229,12 @@ def main():
                     help="beam width: run K parallel candidate prompts, best composite wins. "
                          "K=1 preserves legacy single-line behavior (with diff operators). "
                          "K=5 recommended for full-quality optimization.")
-    ap.add_argument("--regression-guard-tol", type=float, default=0.03,
-                    help="reject a diff operator if its subset-F1 falls by more than this "
-                         "(default 0.03 = 3 pp). Second defense layer beyond hill-climb.")
+    ap.add_argument("--regression-guard-tol", type=float, default=0.05,
+                    help="reject a diff operator if (new_subset_F1 − re-measured_baseline_F1) "
+                         "< −tol (default 0.05 = 5 pp). Second defense layer beyond hill-climb. "
+                         "0.05 is wider than the naive 0.03 to absorb o3 sampling noise; the "
+                         "noise-cancelling comparison (re-measure both in the same batch) is what "
+                         "makes this trustworthy.")
     ap.add_argument("--designer-model", default=None,
                     help="model used for choose_operator (default = --model). Set to "
                          "claude-* to break o3/o3 self-similarity via cross-model.")
@@ -1427,21 +1462,26 @@ def main():
                         print(f"    diff: {op_name} — no textual change (idempotent skip)")
                         op_accepted = False
                     else:
-                        # Regression guard: score proposed on 10-paper subset, compare to baseline
-                        reg_new = regression_score(
-                            proposed, regression_subset, fields, a.model, key,
-                            a.format, a.tolerance)
-                        reg_old = cand["reg_baseline"] or 0.0
-                        if reg_new < reg_old - a.regression_guard_tol:
+                        # Noise-cancelled regression guard: re-measure BOTH baseline and
+                        # proposed prompt on the same subset in the same batch. The prior
+                        # single-pass guard was fooled by o3 sampling variance (~2-3 pp) —
+                        # comparing a same-batch pair cancels that noise to first order.
+                        accepted, reg_old, reg_new, delta = regression_check(
+                            cand["best"]["prompt"], proposed, regression_subset, fields,
+                            a.model, key, a.format, a.tolerance, a.regression_guard_tol)
+                        if not accepted:
                             print(f"    diff: {op_name} REJECTED "
-                                  f"(subset F1 {reg_new:.3f} < baseline {reg_old:.3f} - {a.regression_guard_tol:g})")
+                                  f"(new {reg_new:.3f} vs re-measured baseline {reg_old:.3f} "
+                                  f"= Δ{delta:+.3f}, guard −{a.regression_guard_tol:g})")
                             op_accepted = False
                         else:
                             cand["prompt"] = proposed
+                            # cache new re-measured baseline for the next iter (no fresh
+                            # measurement needed at start of next iter — this saves 10 calls)
                             cand["reg_baseline"] = reg_new
                             print(f"    diff: {op_name} ACCEPTED "
-                                  f"(subset F1 {reg_new:.3f} vs baseline {reg_old:.3f}) "
-                                  f"| {op_rationale}")
+                                  f"(new {reg_new:.3f} vs re-measured baseline {reg_old:.3f} "
+                                  f"= Δ{delta:+.3f}) | {op_rationale}")
                             op_accepted = True
 
             # CSV row
