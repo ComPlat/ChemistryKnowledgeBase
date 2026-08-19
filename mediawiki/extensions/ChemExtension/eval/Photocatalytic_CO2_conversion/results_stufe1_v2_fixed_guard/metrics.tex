@@ -1,0 +1,18 @@
+% trend for Photocatalytic_CO2_conversion
+\begin{tikzpicture}
+\begin{axis}[xlabel={Iteration},ylabel={Score},ymin=0,ymax=1,legend pos=south east,width=\linewidth,height=6cm]
+\addplot coordinates {(1,0.5349) (2,0.5516)}; \addlegendentry{F1}
+\addplot coordinates {(1,0.4759) (2,0.4672)}; \addlegendentry{Precision}
+\addplot coordinates {(1,0.6106) (2,0.6735)}; \addlegendentry{Recall}
+\end{axis}
+\end{tikzpicture}
+
+\begin{tabular}{lcc}
+\hline
+Metric & Iteration 1 & Best (it.\ 2) \\
+\hline
+F1 & 0.535 & 0.552 \\
+Precision & 0.476 & 0.467 \\
+Recall & 0.611 & 0.673 \\
+\hline
+\end{tabular}

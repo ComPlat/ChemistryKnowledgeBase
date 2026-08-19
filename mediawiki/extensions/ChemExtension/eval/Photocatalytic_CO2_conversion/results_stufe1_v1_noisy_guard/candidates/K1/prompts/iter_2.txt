@@ -1,0 +1,79 @@
+You are given a chemistry paper (PDF) about photocatalytic CO₂ conversion. Read it carefully and produce a MediaWiki-formatted summary followed by a machine-readable table of every experiment that reports quantitative catalytic performance. Follow these rules exactly:
+
+GENERAL RULES
+1. Write the output as wikitext. Begin each requested section with the heading “== Section name ==” and follow it with at least 30 substantive, paper-specific words. No placeholders, no omissions, no hallucinations.
+2. Extract only facts that are explicitly stated in the paper (main text, figures, tables, SI). If a value is not reported, leave the cell empty; never invent numbers or text.
+3. Do not merge or average experiments. One line = one experimental entry exactly as published, even if conditions differ only slightly.
+4. Keep units exactly as printed in the PDF, but strip them from numeric cells in the CSV (e.g. “50 µM” → “50”). Textual descriptors remain in prose sections.
+5. Preserve chemical names, abbreviations, stoichiometries and capitalization exactly as the paper writes them.
+
+SECTION-BY-SECTION INSTRUCTIONS  
+Write the following seven sections in the order given.
+
+== Abstract Summary ==  
+Paraphrase the authors’ own abstract in ~3 dense sentences. Capture the studied catalyst family, the photochemical context, the main quantitative performance metrics, and the overall scientific question.
+
+== Advances and Special Progress ==  
+Explain, in at least 30 words, what is new compared with prior art. Reference specific numeric improvements (e.g. higher TON_CO, better selectivity), mechanistic insights, or unique experimental designs that the authors highlight.
+
+== Additional Remarks ==  
+Report ancillary but relevant details: sacrificial donors, illumination source characteristics, reaction scale, quantum yields, isotopic labelling, control experiments, or any safety/environmental notes the authors explicitly mention.
+
+== Content of the Published Article in Detail ==  
+Give a richer technical narrative: synthetic routes, spectroscopic/electrochemical characterization, mechanistic studies, DFT/computational work, comparative data versus benchmarks, and any structure–activity relationships stated.
+
+== Catalyst ==  
+Describe the catalyst family: active metal centre(s), ligand framework(s), nuclearity, oxidation state in the precatalyst, key structural motifs (e.g. pincer, macrocycle), and exact loading used in catalysis.
+
+== Photosensitizer ==  
+Detail the photosensitizer(s): molecular identity, concentration, excitation wavelength(s), excited-state redox potential if given, and why the authors chose this PS over alternatives.
+
+== Investigation ==  
+After a blank line, open a fenced CSV block (```csv). The first row must be the header:
+
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc
+
+For every distinct photocatalytic experiment reported, transcribe the numeric and textual values exactly as printed, one experiment per row. Keep column order unchanged and leave cells blank when the paper is silent. Close the CSV with ``` on its own line.
+
+OUTPUT TEMPLATE (do not repeat this comment):
+== Abstract Summary ==
+< ≥30 substantive words >
+
+== Advances and Special Progress ==
+< ≥30 substantive words >
+
+== Additional Remarks ==
+< ≥30 substantive words >
+
+== Content of the Published Article in Detail ==
+< ≥30 substantive words >
+
+== Catalyst ==
+< ≥30 substantive words >
+
+== Photosensitizer ==
+< ≥30 substantive words >
+
+== Investigation ==
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc
+<one row per experiment>
+```
+
+[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading (== Name ==) followed by AT LEAST 30 words of substantive paper-specific content. Missing sections OR placeholder text like '<compact narrative>' or '(...)' below a heading count as MISSING and INVALIDATE the output. Every heading MUST have real chemistry content underneath it]
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==
+The Investigation section must contain ONE fenced ```csv block with the header below as its first row.
+
+[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc
+One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
+
+<!-- ===== OPERATOR-DIFFS (applied by the optimization loop) ===== -->
+<!-- OP:strengthen_recall intensity -->
+CRITICAL RECALL: For the field 'intensity', you MUST fill the value whenever the paper reports it — including figure captions, footnotes, tables, and Supporting Information. Only leave the cell empty if the paper genuinely does not state it.

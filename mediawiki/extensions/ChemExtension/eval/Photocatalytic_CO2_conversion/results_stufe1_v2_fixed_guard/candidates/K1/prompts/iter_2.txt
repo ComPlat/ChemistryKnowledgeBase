@@ -1,0 +1,55 @@
+INSTRUCTION TO THE EXTRACTOR
+
+Read the attached chemistry research article carefully, concentrating on the photocatalytic experiments. Produce your answer in pure MediaWiki markup, no additional commentary. Emit ALL of the following level-2 sections in the precise order shown; each heading must be followed by at least thirty (30) substantive, article-specific words (no placeholders, no generic fluff, no copy-paste of these instructions).
+
+== Abstract Summary ==
+Summarise the paper’s overarching objective, the chemical system examined, the light-driven transformation targeted, the general methodology, and the headline quantitative outcomes that the authors emphasise.
+
+== Advances and Special Progress ==
+Explain what is new relative to previous literature: e.g., improved turnover numbers, higher selectivity, broader substrate scope, novel ligand design, or mechanistic insight. Tie the advance to concrete data reported in the article.
+
+== Additional Remarks ==
+Capture notable but secondary observations such as catalyst robustness, recyclability, quantum yields, reaction kinetics, spectroscopic or electrochemical diagnostics, or any unexpected side products that the authors discuss.
+
+== Content of the Published Article in Detail ==
+Describe the experimental scope and depth: synthesis routes, characterisation techniques, control experiments, kinetic or mechanistic studies, structure–activity relationships, and any theoretical calculations or modelling that support the conclusions.
+
+== Catalyst ==
+Specify the catalyst family, metal centre, oxidation state, ligand architecture, loading ranges, and structural features that the authors link to catalytic performance. Mention comparative variants if more than one catalyst is tested.
+
+== Photosensitizer ==
+Detail the photosensitizer identity, photophysical and redox properties reported, concentration used, excitation wavelength region, and the rationale the authors give for choosing this PS over alternatives.
+
+== Investigation ==
+After a blank line, open a fenced csv block and list ONE row per distinct experiment. The very first row must be the exact column header line provided below. Preserve the spelling, order, and unit notation exactly as it appears in the article. If the paper reports a value as “n.d.”, “0”, or “not detected”, leave the cell empty but keep the comma. Do not invent or average data, and do not add extra columns. Close the block with ``` on its own line.
+
+```csv
+catalyst,cat conc,PS,PS conc,e-D,e-D conc,solvent A,solvent B,solvent-ratio,feedstock gas,Temperature,λexc,irr time,Turnover_number__CO,Turnover_frequency__CO,Turnover_number__H2,Turnover_frequency__H2,additives,Turnover_number__HCOOH,intensity,Turnover_number__CH4,additives conc
+```
+
+General rules
+• Use only values explicitly printed in the paper—no guessing, interpolation, or unit conversion.  
+• Keep chemical names, abbreviations, and catalyst labels exactly as in the PDF.  
+• Maintain numerical precision and units exactly as reported (µM, mM, h, min, °C, W cm⁻², etc.).  
+• Ensure every MediaWiki section meets the 30-word minimum before submitting.  
+• Do not place any narrative text inside the csv block or after the closing ```.
+
+Begin your output now with the heading “== Abstract Summary ==”.
+
+[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading (== Name ==) followed by AT LEAST 30 words of substantive paper-specific content. Missing sections OR placeholder text like '<compact narrative>' or '(...)' below a heading count as MISSING and INVALIDATE the output. Every heading MUST have real chemistry content underneath it]
+== Abstract Summary ==
+== Advances and Special Progress ==
+== Additional Remarks ==
+== Content of the Published Article in Detail ==
+== Catalyst ==
+== Photosensitizer ==
+== Investigation ==
+The Investigation section must contain ONE fenced ```csv block with the header below as its first row.
+
+[OUTPUT FORMAT — INVESTIGATION CSV] Output the experiments as ONE fenced code block that starts with ```csv and ends with ```. The header row MUST be EXACTLY these columns, in this order:
+catalyst , cat conc , PS , PS conc , e-D , e-D conc , solvent A , solvent B , solvent-ratio , feedstock gas , Temperature , λexc , irr time , Turnover_number__CO , Turnover_frequency__CO , Turnover_number__H2 , Turnover_frequency__H2 , additives , Turnover_number__HCOOH , intensity , Turnover_number__CH4 , additives conc
+One row per distinct experiment; one value per cell; leave a cell empty only if the paper does not state it.
+
+<!-- ===== OPERATOR-DIFFS (applied by the optimization loop) ===== -->
+<!-- OP:add_field_example cat conc -->
+Example value for the 'cat conc' cell: 0.50 mM. Follow this exact format (number only, canonical unit, no unit symbol in the cell).
