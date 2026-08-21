@@ -177,9 +177,9 @@ class PublicationImportSpecialpage extends SpecialPage
             ]
         );
         $submitButton = new ButtonInputWidget(['classes' => ['wfarm-button'],
-            'id' => 'ce-upload-to-chemscanner',
+            'id' => 'ce-import-publication',
             'type' => 'submit',
-            'label' => $this->msg('ce-upload-to-chemscanner')->text(),
+            'label' => $this->msg('ce-import-publication')->text(),
             'flags' => ['primary', 'progressive'],
             'infusable' => true]);
         $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $topicCategory, $doi, $submitButton],

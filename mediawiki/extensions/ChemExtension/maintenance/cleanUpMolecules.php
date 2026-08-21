@@ -3,16 +3,10 @@
 namespace DIQA\ChemExtension\Maintenance;
 
 
-use DIQA\ChemExtension\ChemScanner\ChemScannerRequest;
 use DIQA\ChemExtension\Pages\ChemFormRepository;
-use DIQA\ChemExtension\PubChem\PubChemRecordResult;
-use DIQA\ChemExtension\PubChem\PubChemRepository;
-use DIQA\ChemExtension\PubChem\PubChemClient;
-use DIQA\ChemExtension\WikiRepository;
 use DIQA\Formatter\Color;
 use DIQA\Formatter\Config;
 use DIQA\Formatter\Formatter;
-use ExtensionRegistry;
 use Exception;
 use MediaWiki\MediaWikiServices;
 

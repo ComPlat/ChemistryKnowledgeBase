@@ -15,7 +15,6 @@
     "callback" : "DIQA\\ChemExtension\\Setup::initModules",
     "SpecialPages": {
         "Literature": "DIQA\\ChemExtension\\Literature\\SpecialLiterature",
-        "SpecialUploadToChemscanner": "DIQA\\ChemExtension\\ChemScanner\\ChemScannerSpecialpage",
         "PublicationImportSpecialpage": "DIQA\\ChemExtension\\PublicationImport\\PublicationImportSpecialpage",
         "CreateNewPaper": "DIQA\\ChemExtension\\Specials\\CreateNewPaper",
         "CreateNewTopic": "DIQA\\ChemExtension\\Specials\\CreateNewTopic",
@@ -75,11 +74,6 @@
             "path": "/ChemExtension/v1/invalidate-inv-list-cache",
             "method": "POST",
             "class": "DIQA\\ChemExtension\\Endpoints\\InvalidateExperimentListCache"
-        },
-        {
-            "path": "/ChemExtension/v1/chemscanner/jobs/notify-done",
-            "method": "POST",
-            "class": "DIQA\\ChemExtension\\ChemScanner\\NotifyChemScannerEndpoint"
         },
         {
             "path": "/ChemExtension/v1/inchi",
@@ -200,7 +194,6 @@
           }
     ],
     "JobClasses": {
-        "ChemScannerImportJob": "DIQA\\ChemExtension\\Jobs\\ChemScannerImportJob",
         "PublicationImportJob": "DIQA\\ChemExtension\\Jobs\\PublicationImportJob",
         "PublicationTaggingJob": "DIQA\\ChemExtension\\Jobs\\PublicationTaggingJob",
         "RGroupMaterializationJob": "DIQA\\ChemExtension\\Jobs\\RGroupMaterializationJob",
