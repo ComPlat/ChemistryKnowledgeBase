@@ -186,7 +186,7 @@ Extraction rules for the CSV:
 
 Before output, silently verify: section headings match exactly; no bibliographic metadata; units are as specified above; catalyst and photosensitizer are not swapped; no unsupported value was added; one row per distinct experiment. Return only the final MediaWiki entry with the CSV code block in the Investigation section.
 
-[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading with substantive content (≥20 words)]
+[OUTPUT SECTIONS - MANDATORY, emit ALL of them in this exact order, each as a wiki heading (== Name ==) followed by AT LEAST 30 words of substantive paper-specific content. Missing sections OR placeholder text like '<compact narrative>' or '(...)' below a heading count as MISSING and INVALIDATE the output. Every heading MUST have real chemistry content underneath it]
 == Abstract Summary ==
 == Advances and Special Progress ==
 == Additional Remarks ==
