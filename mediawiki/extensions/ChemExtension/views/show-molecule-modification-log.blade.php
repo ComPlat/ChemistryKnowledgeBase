@@ -1,9 +1,9 @@
 <p>This page show recent changes of molecules via the special Page <a href="{{"$wgScriptPath/index.php/Special:ModifyMolecule"}}">Special:ModifyMolecule</a></p>
 {!! $form !!}
 <p>
-@if (count($moleculeLog) === 0)
+@if (count($moleculeLog) === 0 && $moleculeId !== '')
     No log found!
-@else
+@elseif($moleculeId !== '')
 <table id="molecule-log-table" width="100%">
     <tr>
         <th>Title</th>
