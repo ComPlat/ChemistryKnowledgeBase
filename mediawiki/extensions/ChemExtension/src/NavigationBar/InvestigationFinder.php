@@ -7,6 +7,7 @@ use MediaWiki\MediaWikiServices;
 use eftec\bladeone\BladeOne;
 use Title;
 use OutputPage;
+use Wikimedia\Rdbms\IDatabase;
 
 class InvestigationFinder
 {
@@ -16,12 +17,12 @@ class InvestigationFinder
     {
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
 
-        $searchtext = $dbr->addQuotes(strtolower("%$searchTerm%"));
+        $textFilterSQL = $this->getSearchTextConditions($searchTerm, $dbr);
         $publication = $dbr->addQuotes($publication->getDBkey());
         $sql = <<<SQL
 SELECT DISTINCT page_title, page_namespace FROM page 
     JOIN page_props props ON page_id = props.pp_page
-    WHERE LOWER(CONVERT(pp_value USING latin1)) LIKE $searchtext 
+    WHERE $textFilterSQL
     AND page_title LIKE CONCAT($publication,'/%');
 SQL;
         $res = $dbr->query($sql);
@@ -53,13 +54,14 @@ SQL;
             return [];
         }
 
-        $searchtext = $dbr->addQuotes(strtolower("%$searchTerm%"));
+        $textFilterSQL = $this->getSearchTextConditions($searchTerm, $dbr);
+
         $sql = <<<SQL
 SELECT DISTINCT t1.page_title, t1.page_namespace FROM page t1 JOIN 
     ( SELECT page_title FROM page p 
         JOIN page_props props ON p.page_id = props.pp_page
         JOIN category_index ON p.page_id = category_index.page_id AND category_index.category_id = $category_id
-        WHERE LOWER(CONVERT(pp_value USING latin1)) LIKE $searchtext
+        WHERE $textFilterSQL
        
     ) t2 ON t1.page_title LIKE CONCAT(t2.page_title,'/%');
 SQL;
@@ -103,5 +105,18 @@ SQL;
             ]
         );
         $out->addHTML($html);
+    }
+
+    private function getSearchTextConditions(string $searchTerm, IDatabase $dbr): string
+    {
+        $searchText = strtolower($searchTerm);
+        $parts = explode(' ', $searchText);
+        $parts = array_filter($parts, fn($e) => trim($e) !== '');
+        $conditions = [];
+        foreach ($parts as $part) {
+            $encoded = $dbr->addQuotes("%$part%");
+            $conditions[] = "LOWER(CONVERT(pp_value USING latin1)) LIKE $encoded";
+        }
+        return implode(" AND ", $conditions);
     }
 }
