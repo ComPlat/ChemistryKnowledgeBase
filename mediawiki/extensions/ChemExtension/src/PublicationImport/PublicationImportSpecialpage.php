@@ -3,10 +3,8 @@
 namespace DIQA\ChemExtension\PublicationImport;
 
 use DIQA\ChemExtension\Jobs\PublicationImportJob;
-use DIQA\ChemExtension\Literature\DOITools;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\PdfUtils;
-use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use DIQA\ChemExtension\Widgets\TitleMultiSelectWidget;
 use eftec\bladeone\BladeOne;
@@ -15,6 +13,7 @@ use MediaWiki\MediaWikiServices;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FormLayout;
+use OOUI\HiddenInputWidget;
 use OOUI\SelectFileInputWidget;
 use OOUI\TextInputWidget;
 use OutputPage;
@@ -25,9 +24,14 @@ use Title;
 class PublicationImportSpecialpage extends SpecialPage
 {
 
-    private $blade;
-    private $logger;
+    private BladeOne $blade;
+    private LoggerUtils $logger;
+    private string $message = '';
+    private string $status = '';
 
+    /**
+     * @throws Exception
+     */
     function __construct()
     {
         parent::__construct('PublicationImportSpecialpage', 'edit');
@@ -46,31 +50,43 @@ class PublicationImportSpecialpage extends SpecialPage
      */
     function execute($par)
     {
+        $output = $this->getOutput();
         try {
-
-            $output = $this->getOutput();
             $this->setHeaders();
-
             $user = RequestContext::getMain()->getUser();
             if ($user->isAnon()) {
                 $output->addHTML('You must be logged-in and have at least the "edit"-right to use this feature.');
                 return;
             }
 
-            if ($this->isUploadRequest()) {
-                $this->handleUploadRequest();
-                return;
-            }
+            try {
+                if ($this->isUploadRequest()) {
+                    $this->handleUploadRequest();
+                    $this->getOutput()->redirect( RequestContext::getMain()->getTitle()->getFullURL() );
+                    return;
+                }
 
+            } catch (DOIAlreadyExistsException $e) {
+                $doi = $e->getDOI();
+                $this->status = "OVERWRITE";
+                $this->message = "Publication with DOI $doi already exists. Please confirm that it will be overwritten.";
+            }
             OutputPage::setupOOUI();
 
             $output->addHTML($this->createHeader());
+            $output->addHTML($this->renderMessageIfNecessary());
             $output->addHTML($this->createUploadForm());
             $output->addHTML($this->renderImportProcesses());
 
-        } catch (\Exception $e) {
-            $output->addHTML($e->getMessage());
+        } catch (Exception $e) {
+            $this->message = $e->getMessage();
+            $output->addHTML($this->renderMessageIfNecessary());
+
+            $url = RequestContext::getMain()->getTitle()->getFullURL(RequestContext::getMain()->getRequest()->getPostValues());
+            $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>',
+                $url));
         }
+
     }
 
     private function isUploadRequest(): bool
@@ -85,8 +101,10 @@ class PublicationImportSpecialpage extends SpecialPage
             if ($pageTitle === '') {
                 throw new Exception('Publication title is mandatory. Please specify one.');
             }
-            if (count($_FILES["chemfile"]["name"] ?? []) === 0) {
-                throw new Exception('No files selected or filesize is too large. Max upload size is 30MB.');
+            $alreadyUploaded = count(PdfUtils::getPublicationPDFs($doi)) > 0;
+            $uploading = $_FILES["chemfile"]["name"][0] !== '';
+            if (!$alreadyUploaded && !$uploading) {
+                throw new Exception('No files selected or already uploaded.');
             }
             return true;
         }
@@ -121,6 +139,8 @@ class PublicationImportSpecialpage extends SpecialPage
      */
     private function createUploadForm(): FormLayout
     {
+
+
         global $wgScriptPath, $wgRequest;
         $pageTitle = new FieldLayout(
             new TextInputWidget([
@@ -157,7 +177,7 @@ class PublicationImportSpecialpage extends SpecialPage
                 'chemext-topic',
                 'infusable' => true,
                 'name' => 'topic',
-                'default' =>  $presetTopic === '' ? [] : explode(",", $presetTopic),
+                'default' => $presetTopic === '' ? [] : explode(",", $presetTopic),
                 'placeholder' => $this->msg('topic-super-hint')->plain(),
                 'classes' => ['chemtext-topic-input'],
                 'namespace' => NS_CATEGORY
@@ -180,9 +200,19 @@ class PublicationImportSpecialpage extends SpecialPage
             'id' => 'ce-import-publication',
             'type' => 'submit',
             'label' => $this->msg('ce-import-publication')->text(),
-            'flags' => ['primary', 'progressive'],
+            'flags' => ['primary', $this->status === 'OVERWRITE' ? 'destructive' : 'progressive'],
             'infusable' => true]);
-        $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $topicCategory, $doi, $submitButton],
+
+        $hiddenWidget = new HiddenInputWidget(['name' => 'confirm', 'value' => $this->status === 'OVERWRITE' ? 'true' : 'false' ]);
+
+        if ($this->status === 'OVERWRITE') {
+            $uploadWidget->toggle(false);
+            $pageTitle->toggle(false);
+            $topicCategory->toggle(false);
+            $doi->toggle(false);
+        }
+
+        $form = new FormLayout(['items' => [$uploadWidget, $pageTitle, $topicCategory, $doi, $submitButton, $hiddenWidget],
             'method' => 'post',
             'action' => "$wgScriptPath/index.php/Special:PublicationImportSpecialpage",
             'enctype' => 'multipart/form-data',
@@ -191,6 +221,9 @@ class PublicationImportSpecialpage extends SpecialPage
     }
 
 
+    /**
+     * @throws Exception
+     */
     private function processUpload(string $doi): array
     {
         $tmpFolder = PdfUtils::getPublicationPDFDirectory($doi);
@@ -203,9 +236,13 @@ class PublicationImportSpecialpage extends SpecialPage
         $this->logger->log("Processing upload for DOI $doi to $tmpFolder");
         $uploadedFiles = [];
         for ($i = 0; $i < count($_FILES["chemfile"]["name"] ?? []); $i++) {
+            $size = $_FILES["chemfile"]["size"][$i];
+            if ($size > 30 * 1024 * 1024) {
+                throw new Exception("File size exceeds 30MB");
+            }
             $name = $_FILES["chemfile"]["name"][$i];
             if ($name === '') {
-                throw new Exception("No file(s) selected.");
+                continue;
             }
             $tmpName = $_FILES["chemfile"]["tmp_name"][$i];
             $pathInfo = pathinfo($name);
@@ -219,20 +256,27 @@ class PublicationImportSpecialpage extends SpecialPage
         return $uploadedFiles;
     }
 
-    private function createImportJobs(array $uploadedFiles, $pageTitle, $doi, array $topics): Title
+    private function createImportJobs(array $uploadedFiles, $displayTitle, $doi, array $topics): Title
     {
         $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $repo = new ImportProcessRepository($db);
-        $insertId = $repo->addImportProcess($pageTitle, $doi);
+        $insertId = $repo->addImportProcess($displayTitle, $doi);
 
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $paths = array_values($uploadedFiles);
-        $pageTitle = $pageTitle !== '' ? $pageTitle : array_keys($uploadedFiles)[0];
-        $title = Title::newFromText(WikiTools::cleanTitle($pageTitle));
-        $job = new PublicationImportJob($title, ['paths' => $paths, 'doi' => $doi, 'topics' => $topics, 'importProcessId' => $insertId]);
+        $displayTitle = $displayTitle !== '' ? $displayTitle : array_keys($uploadedFiles)[0];
+        $wikiTitle = WikiTools::makeWikiTitleFromDoi($doi);
+
+        $job = new PublicationImportJob($wikiTitle, [
+            'paths' => $paths,
+            'doi' => $doi,
+            'displayTitle' => $displayTitle,
+            'topics' => $topics,
+            'importProcessId' => $insertId
+        ]);
         $jobQueue->push($job);
 
-        return $title;
+        return $wikiTitle;
     }
 
 
@@ -261,52 +305,48 @@ HTML;
         return $html;
     }
 
-    private function checkIfDOIAlreadyExists($doi, $pageToImport): void
-    {
-        $doi = DOITools::parseDOI($doi);
-        $results = QueryUtils::executeBasicQuery("[[DOI::$doi]]");
-        $exists = $results->getCount() > 0;
 
-        if ($exists) {
-            $row = $results->getNext();
-            $column = reset($row);
-            $dataItem = $column->getNextDataItem();
-            $pageTitle = $dataItem->getTitle();
-            if ($pageTitle->getPrefixedText() === $pageToImport) {
-                return;
-            }
-            $link = sprintf('<a href="%s">%s</a>', $pageTitle->getFullURL(), $pageTitle->getText());
-            throw new Exception("Page for this DOI '$doi' already exists: $link");
-        }
-    }
-
+    /**
+     * @throws DOIAlreadyExistsException
+     * @throws Exception
+     */
     public function handleUploadRequest(): void
     {
         global $wgRequest;
         $output = $this->getOutput();
 
-        try {
-            $pageTitle = $wgRequest->getText('page-title');
-            $doi = $wgRequest->getText('doi');
-            $topics = $wgRequest->getText('topic', '');
-            if ($topics === '') $topics = "Topic";
 
-            $this->checkIfDOIAlreadyExists($doi, $pageTitle);
-            $uploadedFiles = $this->processUpload($doi);
-            if (count($uploadedFiles) === 0) {
-                $pubFiles = PdfUtils::getPublicationPDFs($doi);
-                foreach ($pubFiles as $pubFile) {
-                    $uploadedFiles[basename($pubFile)] = $pubFile;
-                }
+        $pageTitle = $wgRequest->getText('page-title');
+        $doi = $wgRequest->getText('doi');
+        $topics = $wgRequest->getText('topic', '');
+        if ($topics === '') $topics = "Topic";
+        $uploadedFiles = $this->processUpload($doi);
+        if (count($uploadedFiles) === 0) {
+            $pubFiles = PdfUtils::getPublicationPDFs($doi);
+            foreach ($pubFiles as $pubFile) {
+                $uploadedFiles[basename($pubFile)] = $pubFile;
             }
-            $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
-            $this->putTitleOnWatchlist($title);
-            $output->addHTML($this->renderUploadResult($uploadedFiles));
-        } catch (Exception $e) {
-            $output->addHTML($e->getMessage());
-            $output->addHTML(sprintf('<br><br><a href="%s">Go back to import page</a>',
-                RequestContext::getMain()->getTitle()->getFullURL()));
         }
 
+        $forceOverwrite = $wgRequest->getText('confirm') === 'true';
+        if (WikiTools::makeWikiTitleFromDoi($doi)->exists() && !$forceOverwrite) {
+            throw new DOIAlreadyExistsException($doi);
+        }
+
+        $title = $this->createImportJobs($uploadedFiles, $pageTitle, $doi, explode("\n", $topics));
+        $this->putTitleOnWatchlist($title);
+        $output->addHTML($this->renderUploadResult($uploadedFiles));
+
+
     }
+
+    private function renderMessageIfNecessary(): string
+    {
+        if (is_null($this->message)) {
+            return '';
+        }
+        return $this->blade->run("error", ['message' => $this->message]);
+    }
+
+
 }

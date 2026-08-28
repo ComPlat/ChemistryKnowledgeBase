@@ -181,4 +181,37 @@ class WikiTools {
 
         return trim($cleaned);
     }
+
+    public static function makeWikiTitleFromDoi( string $doi) {
+        $wikiTitle = WikiTools::cleanTitle($doi);
+        $wikiTitle = str_replace('/', '_', $wikiTitle);
+        return Title::newFromText($wikiTitle);
+    }
+
+    public static function findDisplayTitle(\MediaWiki\Title\Title $title, ?WikiPage $wikipage = null): string {
+        $title = $title->createFragmentTarget( '' );
+        $originalPageName = $title->getPrefixedText();
+
+        $redirect = false;
+        if($wikipage) {
+            $redirectTarget = MediaWikiServices::getInstance()->getRedirectLookup()->getRedirectTarget( $wikipage );
+            if ( !is_null( $redirectTarget ) ) {
+                $redirect = true;
+                $title = Title::makeTitle( $redirectTarget->getNamespace(), $redirectTarget->getDBkey() );
+            }
+        }
+
+        $id = $title->getArticleID();
+        $values = MediaWikiServices::getInstance()->getPageProps()->getProperties( $title, 'displaytitle' );
+
+        if ( array_key_exists( $id, $values ) ) {
+            $value = $values[$id];
+            if ( trim( str_replace( '&#160;', '', strip_tags( $value ) ) ) !== '' ) {
+                return $value;
+            }
+        } elseif ( $redirect ) {
+            return  $title->getPrefixedText();
+        }
+        return $originalPageName;
+    }
 }

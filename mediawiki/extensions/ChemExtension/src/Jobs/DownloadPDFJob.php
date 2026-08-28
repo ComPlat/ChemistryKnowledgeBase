@@ -34,7 +34,7 @@ class DownloadPDFJob extends Job
             $this->logger->debug('PDF already exists: ' . $doi);
             return;
         }
-        $tmpFile = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
+        $tmpFile = PdfUtils::getPublicationPDFDirectory($doi);
         $cmdParams = " --url=" . escapeshellarg($url);
         $cmdParams .= " --dir=" . escapeshellarg($tmpFile);
         global $wgChemChromeBin, $wgChemChromeDriverBin, $wgChemChromeDriverLog;

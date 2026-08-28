@@ -18,6 +18,7 @@ class PublicationImportJob extends Job
 
     private $paths;
     private $doi;
+    private $displayTitle;
     private $importProcessId;
     private $topics;
     private $logger;
@@ -28,6 +29,7 @@ class PublicationImportJob extends Job
         parent::__construct('PublicationImportJob', $title, $params);
         $this->paths = $params['paths'];
         $this->doi = $params['doi'];
+        $this->displayTitle = $params['displayTitle'];
         $this->importProcessId = $params['importProcessId'];;
         $this->topics = $params['topics'];
         $this->logger = new LoggerUtils('PublicationImportJob', 'ChemExtension');
@@ -126,7 +128,7 @@ class PublicationImportJob extends Job
         $wikitext = <<<WIKITEXT
 $importNotice
 
-{{BaseTemplate}}
+{{DISPLAYTITLE: $this->displayTitle }}
 {{DOI|doi=$doi}}
 
 $aiText

@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\NavigationBar;
 
+use DIQA\ChemExtension\Utils\WikiTools;
 use OOUI\Tag;
 use Title;
 
@@ -148,7 +149,8 @@ class TreeNode {
     private function createTitleLink($title): Tag
     {
         $a = new Tag('a');
-        $a->appendContent($title->getText());
+        $displayTitle = WikiTools::findDisplayTitle($title);
+        $a->appendContent($displayTitle);
         $a->setAttributes(['href' => $title->getFullURL()]);
         return $a;
     }

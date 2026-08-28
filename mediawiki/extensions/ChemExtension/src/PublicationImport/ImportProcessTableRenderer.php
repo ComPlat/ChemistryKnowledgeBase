@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\PublicationImport;
 
+use DIQA\ChemExtension\Utils\WikiTools;
 use Html;
 use Title;
 
@@ -86,7 +87,7 @@ class ImportProcessTableRenderer
         $cells = '';
 
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-page-title'],
-            $this->renderPageTitle($row['page_title'] ?? ''));
+            $this->renderPageTitle($row['page_title'] ?? '', $row['doi'] ?? ''));
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-doi'],
             $this->renderDoi($row['doi'] ?? ''));
         $cells .= Html::rawElement('td', ['class' => 'chemext-col-status chemext-status-' . strtolower($status)],
@@ -99,16 +100,16 @@ class ImportProcessTableRenderer
         return Html::rawElement('tr', $rowAttribs, $cells);
     }
 
-    private function renderPageTitle(string $pageTitle): string
+    private function renderPageTitle(string $pageTitle, string $doi): string
     {
         if ($pageTitle === '') {
             return '';
         }
-        $title = Title::newFromText($pageTitle);
-        if ($title === null) {
+        $wikiTitle = WikiTools::makeWikiTitleFromDoi($doi);
+        if ($wikiTitle === null) {
             return htmlspecialchars($pageTitle);
         }
-        return Html::element('a', ['href' => $title->getFullURL()], $title->getPrefixedText());
+        return Html::element('a', ['href' => $wikiTitle->getFullURL()], $pageTitle);
     }
 
     private function renderDoi(string $doi): string

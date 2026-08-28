@@ -108,7 +108,7 @@
     function searchForPublication(input) {
         let ajax = new window.ChemExtension.AjaxEndpoints();
         input.pushPending();
-        let category = mw.config.get('wgCanonicalNamespace') === 'Category' ? mw.config.get('wgTitle') : 'Topic';
+        let category = mw.config.get('wgCanonicalNamespace') === 'Category' ? mw.config.get('wgTitle') : '';
         ajax.getPublications(category, input.getValue()).done((result) => {
             input.popPending();
             let list = $('#ce-publication-list');

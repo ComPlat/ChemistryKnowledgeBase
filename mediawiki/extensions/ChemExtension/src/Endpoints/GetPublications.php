@@ -29,7 +29,7 @@ class GetPublications extends SimpleHandler
 
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
 
-        if (isset($params['category'])) {
+        if (isset($params['category']) && $params['category'] != '') {
             $category = $dbr->addQuotes(str_replace(' ','_', $params['category']));
             $res = $dbr->select('page', 'page_id', "page_title = $category AND page_namespace = ".NS_CATEGORY);
             if ($res->numRows() > 0) {
@@ -76,7 +76,7 @@ class GetPublications extends SimpleHandler
             'category' => [
                 self::PARAM_SOURCE => 'query',
                 ParamValidator::PARAM_TYPE => 'string',
-                ParamValidator::PARAM_REQUIRED => true,
+                ParamValidator::PARAM_REQUIRED => false,
             ],
             'searchTerm' => [
                 self::PARAM_SOURCE => 'query',

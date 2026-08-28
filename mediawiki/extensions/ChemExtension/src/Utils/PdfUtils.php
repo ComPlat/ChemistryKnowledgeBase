@@ -62,7 +62,7 @@ class PdfUtils {
 
     public static function getPublicationPDFDirectory(string $doi): string {
         $wgChemPubStoreDir = self::checkPDFPrerequisites();
-        return $wgChemPubStoreDir . "/" . md5($doi);
+        return $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
     }
 
     public static function getPublicationPDFs(string $doi): array
@@ -70,11 +70,11 @@ class PdfUtils {
         $wgChemPubStoreDir = self::checkPDFPrerequisites();
 
         $file = $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
-        if (!file_exists($file)) {
-            return [];
+        if (file_exists($file) && !is_dir($file)) {
+            return [ $file ];
         }
         if (!is_dir($file)) {
-            return [ $file ];
+            return [];
         }
         return self::getFiles($wgChemPubStoreDir . "/" . md5($doi). '.pdf');
     }

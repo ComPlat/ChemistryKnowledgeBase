@@ -233,7 +233,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
             if (!self::isDOIKnown($doi)) {
                 $contents .= $importButton;
             } else {
-                $title = Title::newFromText(WikiTools::cleanTitle($pub->getTitle()));
+                $title = WikiTools::makeWikiTitleFromDoi($doi);
                 $publicationLink = Html::element(
                     'a',
                     [
