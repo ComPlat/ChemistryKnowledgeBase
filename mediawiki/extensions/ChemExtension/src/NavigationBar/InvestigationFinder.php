@@ -117,6 +117,7 @@ SQL;
             $encoded = $dbr->addQuotes("%$part%");
             $conditions[] = "LOWER(CONVERT(pp_value USING latin1)) LIKE $encoded";
         }
-        return implode(" AND ", $conditions);
+        $result = implode(" AND ", $conditions);
+        return $result === '' ? 'TRUE' : '('.$result.')';
     }
 }
