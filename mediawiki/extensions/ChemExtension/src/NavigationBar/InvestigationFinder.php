@@ -55,7 +55,7 @@ SQL;
         }
 
         $textFilterSQL = $this->getSearchTextConditions($searchTerm, $dbr);
-
+        $textFilterJoinSQL = $this->getSearchTextConditionsForJoin($searchTerm, $dbr);
         $sql = <<<SQL
 SELECT DISTINCT t1.page_title, t1.page_namespace FROM page t1 JOIN 
     ( SELECT page_title FROM page p 
@@ -63,8 +63,19 @@ SELECT DISTINCT t1.page_title, t1.page_namespace FROM page t1 JOIN
         JOIN category_index ON p.page_id = category_index.page_id AND category_index.category_id = $category_id
         WHERE $textFilterSQL
        
-    ) t2 ON t1.page_title LIKE CONCAT(t2.page_title,'/%');
+    ) t2 ON t1.page_title LIKE CONCAT(t2.page_title,'/%')
+
+UNION (
+    SELECT DISTINCT t1.page_title, t1.page_namespace FROM page t1 JOIN 
+    ( SELECT page_title FROM page p 
+        JOIN page_props props ON p.page_id = props.pp_page
+        JOIN category_index ON p.page_id = category_index.page_id AND category_index.category_id = $category_id
+       
+    ) t2 ON $textFilterJoinSQL
+)
+;
 SQL;
+
         $res = $dbr->query($sql);
         $results = [];
         foreach ($res as $row) {
@@ -119,5 +130,19 @@ SQL;
         }
         $result = implode(" AND ", $conditions);
         return $result === '' ? 'TRUE' : '('.$result.')';
+    }
+
+    private function getSearchTextConditionsForJoin(string $searchTerm, IDatabase $dbr): string
+    {
+        $searchText = strtolower($searchTerm);
+        $parts = explode(' ', $searchText);
+        $parts = array_filter($parts, fn($e) => trim($e) !== '');
+        $conditions = [];
+        foreach ($parts as $part) {
+            $encoded = $dbr->addQuotes("/%$part%");
+            $conditions[] = "t1.page_title LIKE CONCAT(t2.page_title,$encoded)";
+        }
+        $result = implode(" AND ", $conditions);
+        return $result === '' ? "t1.page_title LIKE CONCAT(t2.page_title,'/%')" : '('.$result.')';
     }
 }
