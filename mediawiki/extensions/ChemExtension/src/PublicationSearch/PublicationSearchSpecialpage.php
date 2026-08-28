@@ -212,11 +212,13 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => htmlspecialchars($doi)]);
             $downloadButton .= Html::closeElement('div');
 
+            $topics = $pub->getCheckResult();
+            $topics = str_replace(',', "\n", $topics);
             $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
                 [
                     'doi' => $doi,
                     'page-title' => WikiTools::cleanTitle(strip_tags($pub->getTitle())),
-                    'topic' => $pub->getCheckResult()
+                    'topic' => $topics
                 ]
             );
 
