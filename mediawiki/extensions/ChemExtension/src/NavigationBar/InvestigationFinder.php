@@ -140,9 +140,9 @@ SQL;
         $conditions = [];
         foreach ($parts as $part) {
             $encoded = $dbr->addQuotes("/%$part%");
-            $conditions[] = "t1.page_title LIKE CONCAT(t2.page_title,$encoded)";
+            $conditions[] = "LOWER(CONVERT(t1.page_title USING latin1)) LIKE CONCAT(LOWER(CONVERT(t2.page_title USING latin1)),$encoded)";
         }
         $result = implode(" AND ", $conditions);
-        return $result === '' ? "t1.page_title LIKE CONCAT(t2.page_title,'/%')" : '('.$result.')';
+        return $result === '' ? "LOWER(CONVERT(t1.page_title USING latin1)) LIKE CONCAT(LOWER(CONVERT(t2.page_title USING latin1)),'/%')" : '('.$result.')';
     }
 }
