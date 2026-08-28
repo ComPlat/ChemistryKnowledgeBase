@@ -50,7 +50,7 @@ class GetPublications extends SimpleHandler
             $tables[] = 'category_index';
             $conds[] = "page.page_id = category_index.page_id AND category_index.category_id = $category_id";
         }
-        $res = $dbr->select($tables, ['page_title', 'page_namespace'], $conds);
+        $res = $dbr->select($tables, ['DISTINCT page_title', 'page_namespace'], $conds);
         $results = [];
         foreach ($res as $row) {
             $title = Title::newFromText($row->page_title, $row->page_namespace);
