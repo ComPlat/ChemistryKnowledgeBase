@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\EnsembleExtractor;
 use DIQA\ChemExtension\PublicationImport\ExperimentWikitextImporter;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -64,7 +65,11 @@ class PublicationImportJob extends Job
         $aiClient = new AIClient();
         $fileIds = $aiClient->uploadFiles($this->paths);
 
-        $aiText = $aiClient->callAI($fileIds, $prompt);
+        // Consistency wrapper: if $wgAIExtractionPasses > 1, run the extractor N times in
+        // parallel and merge deterministically (row-union + cell-majority). Same PDF/prompt
+        // → same wiki page across re-imports. N=1 (default) preserves legacy behaviour.
+        $ensemble = new EnsembleExtractor($aiClient);
+        $aiText = $ensemble->extract($fileIds, $prompt);
 
         $reviewNotice = $this->reviewNoticeIfLowConfidence($aiClient, $fileIds, $aiText);
 
