@@ -24,6 +24,10 @@
 	"apihelp-pfautocomplete-param-base_cargo_table": "The Cargo table for a previous field in the form to check against",
 	"apihelp-pfautocomplete-param-base_cargo_field": "The Cargo field for a previous field in the form to check against",
 	"apihelp-pfautocomplete-param-basevalue": "The value to check for the previous property or field",
+	"apihelp-pfautocomplete-param-mappingproperty": "A Semantic MediaWiki property used to map values to labels",
+	"apihelp-pfautocomplete-param-mappingtemplate": "A template used to map values to labels",
+	"apihelp-pfautocomplete-param-mappingcargotable": "A Cargo table used to map values to labels",
+	"apihelp-pfautocomplete-param-mappingcargofield": "A Cargo field used to map values to labels",
 	"apihelp-pfautoedit-summary": "Create or edit a page using a form defined by the Page Forms extension.",
 	"apihelp-pfautoedit-param-form": "The Page Forms form to use",
 	"apihelp-pfautoedit-param-target": "The name of the page to be created or edited",
@@ -237,7 +241,6 @@
 	"pf_start_end_datetime_error": "End datetime must be after start datetime",
 	"pf_modified_input_error": "This modification should be approved or rejected",
 	"pf_pipe_error": "\"|\" is not allowed, except within {{...}}, [[...]], or special tags",
-	"uploadwindow": "Upload window",
 	"pf-simpleupload": "Upload",
 	"pf_deletionlog": "Deletion log",
 	"pf-preview-header": "Form preview",
@@ -313,5 +316,6 @@
 	"pf-invalidexturl": "Invalid external URL value.",
 	"pf-blankexturl": "Blank external URL value.",
 	"pf-externalpageempty": "External page contains no contents.",
-	"pf-externalpagebadjson": "Could not parse JSON in external page."
+	"pf-externalpagebadjson": "Could not parse JSON in external page.",
+	"pf-automatic-rename": "Automatic rename based on page name formula"
 }

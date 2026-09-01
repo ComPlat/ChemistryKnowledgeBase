@@ -1,6 +1,18 @@
 {{BaseTemplate}}
-==THIS PAGE IS GENERATED TO RESERVE THE TOPIC SPACE IN THIS WIKI - THE MAIN CONTENT IS MISSING==
+=== Scope of this topic and related important content ===
+Text
 
+=== Distinction from other articles within the topic Electrocatalytic CO2 conversion ===
+Text
 
-The page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] is an example page in this wiki that contains scientific content
+=== Important aspects of homogeneous electrocatalytic CO2 conversion ===
+Text
+
+=== Summary of selected scientific progress ===
+'''False Table!'''
+
+''Table of all experiments that have a turnover number >100 for one of the products CO, CH2, HCOOH, H2 or MeOH. This table is sorted by catalyst.''
+
+{{#experimentlink:|form=EC_conversion_of_CO2_overview_experiments|restrictToPages=|description=Hom electrochem CO2|sort=|order=}}
+
 [[Category:Electrochemical CO2 conversion]]

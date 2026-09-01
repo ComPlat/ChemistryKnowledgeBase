@@ -18,6 +18,7 @@ use DIQA\ChemExtension\ParserFunctions\QValue;
 use DIQA\ChemExtension\ParserFunctions\RenderFormula;
 use DIQA\ChemExtension\ParserFunctions\RenderLiterature;
 use DIQA\ChemExtension\ParserFunctions\RenderMoleculeLink;
+use DIQA\ChemExtension\ParserFunctions\SanitizeMolecule;
 use DIQA\ChemExtension\ParserFunctions\Selectivity;
 use DIQA\ChemExtension\ParserFunctions\ShowMoleculeCollection;
 use DIQA\ChemExtension\TIB\TagListRenderer;
@@ -51,6 +52,7 @@ class Setup {
             'position' => 'bottom',
             'scripts' => [
                 $baseScript . '/edit-experiment.js',
+                $baseScript . '/edit-molecule-in-investigation.js',
                 $baseScript . '/faceted_search.js',
                 $baseScript . '/special.create-pages.js',
                 $baseScript . '/rgroups.js',
@@ -157,6 +159,66 @@ class Setup {
             'dependencies' => ['ext.diqa.chemextension'],
         );
 
+        self::initTourModules();
+    }
+
+    private static function initTourModules(): void
+    {
+        global $wgResourceModules;
+        global $IP;
+
+        $baseScript = 'scripts';
+        $wgResourceModules['ext.guidedTour.tour.publicationpage'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/publication-page.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+
+        $wgResourceModules['ext.guidedTour.tour.topic_page'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/topic-page.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+
+        $wgResourceModules['ext.guidedTour.tour.search_tour'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/search.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+
+        $wgResourceModules['ext.guidedTour.tour.homepage'] = array(
+            'localBasePath' => "$IP/extensions/ChemExtension",
+            'remoteExtPath' => 'ChemExtension',
+            'position' => 'bottom',
+            'scripts' => [
+                $baseScript . '/tours/homepage.js',
+            ],
+            'messages' => [],
+            'dependencies' => 'ext.guidedTour',
+        );
+    }
+
+    private static function addTourModules(&$out): void
+    {
+        $out->addModules('ext.guidedTour.tour.publicationpage');
+        $out->addModules('ext.guidedTour.tour.topic_page');
+        $out->addModules('ext.guidedTour.tour.search_tour');
+        $out->addModules('ext.guidedTour.tour.homepage');
     }
 
     public static function onSkinTemplateNavigation( \SkinTemplate $skinTemplate, array &$links ) {
@@ -189,6 +251,7 @@ class Setup {
         self::addSubtitle($out);
         $out->addModules('ext.diqa.chemextension');
         $out->addModules('ext.diqa.md5');
+        self::addTourModules($out);
         $out->addJsConfigVars('experiments', ExperimentRepository::getInstance()->getAll());
         DOIRenderer::outputLiteratureReferences($out);
         RenderFormula::outputMoleculeReferences($out);
@@ -282,6 +345,7 @@ CSS;
         $parser->setFunctionHook( 'convertQuantity', [ ConvertQuantity::class, 'convertQuantity' ] );
         $parser->setFunctionHook( 'convertQuantityByFactor', [ ConvertQuantity::class, 'convertQuantityByFactor' ] );
         $parser->setFunctionHook( 'defaultQuantity', [ ConvertQuantity::class, 'defaultQuantity' ] );
+        $parser->setFunctionHook( 'sanitizeMolecule', [ SanitizeMolecule::class, 'sanitizeMolecule' ] );
 
         self::registerShowCachedHandler($parser);
     }

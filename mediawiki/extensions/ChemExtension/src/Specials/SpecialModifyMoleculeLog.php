@@ -43,11 +43,13 @@ class SpecialModifyMoleculeLog extends SpecialPage {
             $form = $this->createGUI();
 
             global $wgRequest;
+            $moleculeId = $wgRequest->getText('molecule-id', '');
             $moleculeLog = $this->processRequest($wgRequest);
             $html = $this->blade->run("show-molecule-modification-log", [
                 'moleculeLog' => $moleculeLog,
                 'form' => $form,
-                'wgScriptPath' => $wgScriptPath
+                'wgScriptPath' => $wgScriptPath,
+                'moleculeId' => $moleculeId
             ]);
             $this->getOutput()->addHTML($html);
 

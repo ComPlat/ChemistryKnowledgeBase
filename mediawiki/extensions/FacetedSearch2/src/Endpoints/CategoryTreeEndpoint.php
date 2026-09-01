@@ -2,8 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Endpoints;
 
-use DIQA\FacetedSearch2\CategoryNode;
-use DIQA\FacetedSearch2\CategoryTreeGenerator;
+use DIQA\FacetedSearch2\Model\Response\CategoryNode;
+use DIQA\FacetedSearch2\Utils\CategoryTreeGenerator;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\Response;

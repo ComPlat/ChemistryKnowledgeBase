@@ -13,8 +13,9 @@ class PublicationSearchResult
     private $checkResult;
     private $approved;
     private $journal;
+    private $created;
 
-    public function __construct($doi, $title, $abstract, $published, $checkResult = null, $approved = null, $journal = null)
+    public function __construct($doi, $title, $abstract, $published, $checkResult = null, $approved = null, $created = null, $journal = null)
     {
         $this->doi = $doi;
         $this->title = $title;
@@ -23,6 +24,12 @@ class PublicationSearchResult
         $this->checkResult = $checkResult;
         $this->approved = $approved;
         $this->journal = $journal;
+        $this->created = $created;
+    }
+
+    public function getCreated(): string
+    {
+        return $this->created;
     }
 
     /**
@@ -82,6 +89,7 @@ class PublicationSearchResult
                 $item->title[0],
                 isset($item->abstract) ? strip_tags($item->abstract) : $item->title[0],
                 self::parseDateFromPublished($item->published),
+                null,
                 null,
                 null,
                 $item->{'container-title'}[0] ?? '');

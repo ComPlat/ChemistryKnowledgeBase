@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Model\Request;
 
+use DIQA\FacetedSearch2\ConfigTools;
+
 abstract class BaseQuery {
 
     public string $searchText = '';
@@ -87,10 +89,20 @@ abstract class BaseQuery {
         return $this;
     }
 
-    public function updateQuery(BaseQuery $query) {
+    public function updateQuery(BaseQuery $query): BaseQuery {
         $this->searchText = $query->getSearchText();
         $this->propertyFacets = $query->getPropertyFacets();
         $this->categoryFacets = $query->getCategoryFacets();
         $this->namespaceFacets = $query->getNamespaceFacets();
+        return $this;
+    }
+
+    public function applyMandatoryFilters(): BaseQuery
+    {
+        $allowedNamespaces = ConfigTools::getAllowedNamespaces();
+        $intersectedNamespaces = array_intersect($allowedNamespaces, $this->getNamespaceFacets());
+        $namespaceFacets = empty($this->getNamespaceFacets()) ? $allowedNamespaces : $intersectedNamespaces;
+        $this->setNamespaceFacets($namespaceFacets);
+        return $this;
     }
 }

@@ -17,13 +17,20 @@ class DateTimeClusterer implements Clusterer
     private int $numSteps;
     private int $currentStep;
 
-    private const DATETIME_FORMAT = 'Y-m-d\TH:i:s\Z';
+    private const string DATETIME_FORMAT = 'Y-m-d\TH:i:s\Z';
 
-    public function makeClusters(float $min, float $max, int $numSteps): array
+    public function makeClusters(string $min, string $max, int $numSteps): array
     {
         $this->numSteps = $numSteps;
         $this->currentStep = 0;
 
+        if ($min === $max) {
+            if ($min == 0) return [];
+            return [new Range(
+                $min,
+                $max
+            )];
+        }
         $this->findIncrement($min, $max, $this->numSteps);
         $values = [];
 
@@ -58,16 +65,16 @@ class DateTimeClusterer implements Clusterer
         return $current;
     }
 
-    private function findIncrement(int $min, int $max, int $numSteps)
+    private function findIncrement(string $min, string $max, int $numSteps): void
     {
-        if ($min === 0) {
-            $min = "00000101000000"; // 1. Jan 0000, 0:00:00am
+        if ($min === "0") {
+            $min = Carbon::parse("0000-01-01T00:00:00.000Z"); // 1. Jan 0000, 0:00:00am
         }
-        if ($max === 0) {
-            $max = "99991231235959"; // 31. Dec 9999 23:59:59pm
+        if ($max === "0") {
+            $max = Carbon::parse("9999-12-31T23:59:59.999Z");; // 31. Dec 9999 23:59:59pm
         }
-        $minDT = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $min);
-        $maxDT = Carbon::createFromIsoFormat('YYYYMMDDHHmmss', $max);
+        $minDT = Carbon::parse($min);
+        $maxDT = Carbon::parse($max);
         $start = [
             "year" => $minDT->year,
             "month" => 1,

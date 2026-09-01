@@ -45,7 +45,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # VirtualBox
     config.vm.provider "virtualbox" do |v, override|
         v.name = "MW-1.43"
-        v.memory = 2024
+        v.memory = 4096
         v.cpus = 2
         override.vm.provision "shell", path: "bootstrap-ubuntu.sh", privileged: false
 

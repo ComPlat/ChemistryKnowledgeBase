@@ -2,7 +2,9 @@
 
 namespace DIQA\ChemExtension\PublicationSearch;
 
+use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\IMaintainableDatabase;
+use Wikimedia\Rdbms\LikeValue;
 
 class PublicationSearchRepository {
     private $db;
@@ -27,6 +29,7 @@ class PublicationSearchRepository {
                     )  ENGINE=INNODB;');
         $this->db->query('ALTER TABLE publications ADD CONSTRAINT publications_doi_key_unique UNIQUE IF NOT EXISTS (doi)');
         $this->db->query('ALTER TABLE publications ADD COLUMN IF NOT EXISTS approved TINYINT(1) DEFAULT 0;');
+        $this->db->query('ALTER TABLE publications ADD COLUMN IF NOT EXISTS created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;');
         return [ 'publications' ];
     }
 
@@ -83,7 +86,7 @@ class PublicationSearchRepository {
     {
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
             [ 'doi' => $doi ],
             __METHOD__
         );
@@ -100,7 +103,34 @@ class PublicationSearchRepository {
             $row->abstract,
             $row->published,
             $row->check_result,
-            $row->approved
+            $row->approved,
+            $row->created
+        );
+    }
+
+    public function findByTitle(string $title): ?PublicationSearchResult
+    {
+        $res = $this->db->select(
+            'publications',
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
+            [ 'title' => $title ],
+            __METHOD__
+        );
+
+        if ( $res->numRows() === 0 ) {
+            return null;
+        }
+
+        $row = $res->fetchObject();
+
+        return new PublicationSearchResult(
+            $row->doi,
+            $row->title,
+            $row->abstract,
+            $row->published,
+            $row->check_result,
+            $row->approved,
+            $row->created
         );
     }
 
@@ -129,43 +159,84 @@ class PublicationSearchRepository {
         return $res->numRows() > 0;
     }
 
-    public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved): array {
+    public function getRelevantPublications($topic, $limit, $offset, bool $onlyApproved, $filter): array {
 
-        if ($topic !== '') {
-            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
-        } else {
-            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
-        }
-        if ($onlyApproved) {
-            $where .= " AND approved = 1";
-        }
+        $conditions = $this->getConditionsForRelevantPublications($topic, $onlyApproved, $filter);
+
         $res = $this->db->select(
             'publications',
-            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved' ],
-            [ $where ],
+            [ 'doi', 'title', 'abstract', 'published', 'check_result', 'approved', 'created' ],
+            $conditions,
             __METHOD__,
-            ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC']
+            ['LIMIT' => $limit, 'OFFSET' => $offset, 'ORDER BY' => 'id DESC', 'GROUP BY' => 'title']
         );
         $results = [];
         foreach ($res as $row) {
             $results[] = new PublicationSearchResult($row->doi, $row->title, $row->abstract, $row->published,
-                                    $row->check_result, $row->approved);
+                $row->check_result, $row->approved, $row->created);
         }
 
         return $results;
     }
-
-    public function getRelevantPublicationsCount($topic): int {
-        if ($topic !== '') {
-            $where = "check_result IS NOT NULL AND check_result LIKE '%$topic%'";
-        } else {
-            $where = "check_result IS NOT NULL AND check_result != 'not relevant'";
-        }
+    public function getRelevantPublicationsCount($topic, $onlyApproved, $filter): int {
+        $conditions = $this->getConditionsForRelevantPublications($topic, $onlyApproved, $filter);
         return $this->db->select(
             'publications',
-            [ 'count(doi) as count' ],
-            [ $where ],
-            __METHOD__
+            [ 'count(DISTINCT title) as count' ],
+            $conditions,
+            __METHOD__,
+            []
         )->fetchObject()->count;
+    }
+
+    public function deleteNotRelevantPublications(): void
+    {
+        $this->db->delete('publications', [ 'check_result' => 'not relevant' ]);
+    }
+
+    /**
+     * @param $topic
+     * @param bool $onlyApproved
+     * @param $filter
+     * @return array
+     */
+    public function getConditionsForRelevantPublications($topic, bool $onlyApproved, $filter): array
+    {
+        $conditions = [];
+        $conditions[] = $this->db->expr('check_result', '!=', null);
+
+        if ($topic !== '') {
+            $conditions[] = $this->db->expr(
+                'check_result',
+                IExpression::LIKE,
+                new LikeValue($this->db->anyString(), $topic, $this->db->anyString())
+            );
+        } else {
+            $conditions[] = $this->db->expr('check_result', '!=', 'not relevant');
+        }
+
+        if ($onlyApproved) {
+            $conditions['approved'] = 1;
+        }
+
+        if ($filter !== '') {
+            $terms = preg_split('/\s+/', trim($filter), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($terms as $term) {
+                // Relies on a case-insensitive collation (the MW default *_ci),
+                // so we don't need LOWER() on the column side.
+                $titleExpr = $this->db->expr(
+                    'title',
+                    IExpression::LIKE,
+                    new LikeValue($this->db->anyString(), $term, $this->db->anyString())
+                );
+                $doiExpr = $this->db->expr(
+                    'doi',
+                    IExpression::LIKE,
+                    new LikeValue($this->db->anyString(), $term, $this->db->anyString())
+                );
+                $conditions[] = $titleExpr->orExpr($doiExpr);
+            }
+        }
+        return $conditions;
     }
 }

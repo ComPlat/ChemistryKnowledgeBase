@@ -21,11 +21,11 @@ This is the Host guest interaction template.
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 <td>{{#subobject:
- |Host={{{host|}}}
+ |Host={{#sanitizeMolecule: {{{host|}}} }}
  |Host concentration={{{host conc|}}}
- |Guest={{{guest|}}}
+ |Guest={{#sanitizeMolecule: {{{guest|}}} }}
  |Guest concentration={{{guest conc|}}}
- |Cofactor={{{cofactor|}}}
+ |Cofactor={{#sanitizeMolecule: {{{cofactor|}}} }}
  |Cofactor concentration={{{cofactor conc|}}}
  |Host guest ratio={{{guest_host_ratio|}}}
  |Ka={{{ka|}}}

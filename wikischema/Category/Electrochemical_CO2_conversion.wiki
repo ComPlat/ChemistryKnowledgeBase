@@ -2,5 +2,14 @@
 ==THIS PAGE IS GENERATED TO RESERVE THE TOPIC SPACE IN THIS WIKI - THE MAIN CONTENT IS MISSING==
 
 
-The page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] is an example page in this wiki that contains scientific content
+The page [[:Category:Homogeneous electrochemical CO2 conversion|Homogeneous electrochemical CO2 conversion]] is an example page in this wiki that contains scientific content
+{| class="wikitable"
+|+
+!Useful links
+|-
+|
+* [[Help:Guidelines to electrochemical CO2 conversion|Guidelines to electrochemical CO2 conversion]]
+* [[Help:Guidelines to cyclic voltammetry|Guidelines to cyclic voltammetry]]
+* [[Help:Create new publication: electrocatalytic CO2 conversion|Create new publication: electrocatalytic CO2 conversion]]
+|}
 [[Category:CO2 conversion]]

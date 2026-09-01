@@ -93,9 +93,9 @@ class SpecialLiterature extends SpecialPage
                 'volume' => $data->volume,
                 'pages' => $data->page,
                 'subjects' => $data->subject,
-                'funders' => count($data->funder) === 0 ? "-" : array_map(function ($e) {
+                'funders' => count($data->funder ?? []) === 0 ? ["-"] : array_map(function ($e) {
                     return $e->name;
-                }, $data->funder),
+                }, $data->funder ?? []),
                 'usedBy' => $repo->getPagesForDOI($data->DOI),
                 'wgScriptPath' => $wgScriptPath
             ]

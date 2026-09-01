@@ -43,17 +43,17 @@ This is the Photocatalytic CO2 conversion template.
 <td property="hidden">{{{details|}}}</td>
 <td resource="include" property="hidden">{{{include|}}}</td>
 <td>{{#subobject:
- |Catalyst={{{catalyst|}}}
+ |Catalyst={{#sanitizeMolecule: {{{catalyst|}}} }}
  |Catalyst concentration={{{cat conc|}}}
- |Photosensitizer={{{PS|}}}
+ |Photosensitizer={{#sanitizeMolecule: {{{PS|}}} }}
  |Photosensitizer concentration={{{PS conc|}}}
- |Electron donor={{{e-D|}}}
+ |Electron donor={{#sanitizeMolecule: {{{e-D|}}} }}
  |Electron donor concentration={{{e-D conc|}}}
- |Hydrogen donor={{{H-D|}}}
+ |Hydrogen donor={{#sanitizeMolecule: {{{H-D|}}} }}
  |Hydrogen donor concentration={{{H-D conc|}}}
- |Solvent A={{{solvent A|}}}
- |Solvent B={{{solvent B|}}}
- |Solvent C={{{solvent C|}}}
+ |Solvent A={{#sanitizeMolecule: {{{solvent A|}}} }}
+ |Solvent B={{#sanitizeMolecule: {{{solvent B|}}} }}
+ |Solvent C={{#sanitizeMolecule: {{{solvent C|}}} }}
  |Solvent ratio={{{solvent-ratio|}}}
  |Additives={{{additives|}}}
  |Additives concentration={{{additives conc|}}}

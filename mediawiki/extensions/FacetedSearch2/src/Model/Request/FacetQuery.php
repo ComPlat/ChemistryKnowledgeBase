@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch2\Model\Request;
 
+use JsonMapper;
+use JsonMapper_Exception;
 
 class FacetQuery extends BaseQuery {
 
@@ -15,10 +17,15 @@ class FacetQuery extends BaseQuery {
      */
     public $propertyValueQueries = [];
 
+    /**
+     * @throws JsonMapper_Exception
+     */
     public static function fromJson($json): FacetQuery
     {
-        $mapper = new \JsonMapper();
-        return $mapper->map(json_decode($json), new FacetQuery());
+        $mapper = new JsonMapper();
+        return $mapper->map(json_decode($json), new FacetQuery())
+            ->applyMandatoryFilters();
+
     }
 
     /**

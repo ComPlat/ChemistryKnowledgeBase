@@ -1,0 +1,18 @@
+Subject: [PATCH] activated indexing via FS2
+---
+Index: mediawiki/includes/api/ApiOpenSearch.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/includes/api/ApiOpenSearch.php b/mediawiki/includes/api/ApiOpenSearch.php
+--- a/mediawiki/includes/api/ApiOpenSearch.php	(revision 79c9009533050c3e3021fea61dadbb4c612a3fd8)
++++ b/mediawiki/includes/api/ApiOpenSearch.php	(date 1786112999897)
+@@ -245,6 +245,7 @@
+ 				$descriptions = [];
+ 				$urls = [];
+ 				foreach ( $results as $r ) {
++                    if ( $r['title']->isSubpage()) continue;
+ 					$terms[] = $r['title']->getPrefixedText();
+ 					$descriptions[] = strval( $r['extract'] );
+ 					$urls[] = $r['url'];

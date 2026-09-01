@@ -1,0 +1,235 @@
+Subject: [PATCH] updated FS2
+---
+Index: mediawiki/extensions/PageForms/libs/PF_popupform.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/PF_popupform.js b/mediawiki/extensions/PageForms/libs/PF_popupform.js
+--- a/mediawiki/extensions/PageForms/libs/PF_popupform.js	(revision eedbdf688e8320b0e7bfa4441800dfe682a2361b)
++++ b/mediawiki/extensions/PageForms/libs/PF_popupform.js	(date 1783009687446)
+@@ -75,11 +75,11 @@
+ 		const oldContW = $content.width();
+ 		const oldContH = $content.height();
+ 
+-		const availW = Math.floor( jQuery(window).width() * 0.8 );
+-		const availH = Math.floor( jQuery(window).height() * 0.8 );
++		const availW = Math.floor( jQuery(window).width() * 0.95 );
++		const availH = Math.floor( jQuery(window).height() * 0.95 );
+ 
+-		const emergencyW = Math.floor( jQuery(window).width() * 0.85 );
+-		const emergencyH = Math.floor( jQuery(window).height() * 0.85 );
++		const emergencyW = Math.floor( jQuery(window).width() * 0.99);
++		const emergencyH = Math.floor( jQuery(window).height() * 0.99 );
+ 
+ 		// FIXME: these might not be the true values
+ 		const scrollW = 25;
+@@ -93,10 +93,12 @@
+ 		let scrollTop = $html.scrollTop();
+ 		let scrollLeft = $html.scrollLeft();
+ 
++		let popupWidth = jQuery(window).width() - 200;
++		let popupHeight = jQuery(window).height() - 100;
+ 		$content
+ 		.css('position', 'absolute')
+-		.width( 'auto' )
+-		.height( 'auto' );
++		.width(popupWidth+"px" )
++		.height( popupHeight+"px");
+ 
+ 		// set max dimensions for layout of content
+ 		$iframe
+@@ -615,8 +617,21 @@
+ 				return false;
+ 			});
+ 
++			var f = function() {
++				if (!innerwdw.jQuery) {
++					setTimeout(f, 100);
++				} else {
++					innerwdw.jQuery($form[0])
++						.bind("submit", function (event) {
++							submitok =  innerwdw.validateAll();
++							innersubmitprocessed = true;
++							return false;
++						});
++				}
++			}
++			setTimeout(f, 100);
+ 			// catch inner form submit event
+-			if ( innerJ ) {
++			/*if ( innerJ ) {
+ 				innerwdw.jQuery($form[0])
+ 				.bind( "submit", ( event ) => {
+ 						submitok = ( event.result === undefined ) ? true : event.result;
+@@ -626,7 +641,7 @@
+ 			} else {
+ 				submitok = true;
+ 				innersubmitprocessed = true;
+-			}
++			}*/
+ 		}
+ 
+ 		if (innerJ) {
+@@ -640,19 +655,19 @@
+ 					if ( innerJ(this).queue().length > 0 ) {
+ 						foundQueue = true;
+ 						innerJ(this).queue( function(){
+-							setTimeout( adjustFrameSize, 100, true );
++							//setTimeout( adjustFrameSize, 100, true );
+ 							innerJ(this).dequeue();
+ 						});
+ 					}
+ 				});
+ 				if ( ! foundQueue ) {
+-					adjustFrameSize( true );
++					//adjustFrameSize( true );
+ 				}
+ 				return true;
+ 			});
+ 		} else {
+ 			$content.bind( 'click', () => {
+-					adjustFrameSize( true );
++					//adjustFrameSize( true );
+ 			});
+ 		}
+ 
+@@ -666,6 +681,7 @@
+ 		// catch 'Cancel'-Link (and other 'back'-links) and close frame instead of going back
+ 		const backlinks = allLinks.filter('a[href="javascript:history.go(-1);"]');
+ 		backlinks.click(handleCloseFrame);
++		$('.pfSendBack', window.frames[0].document).off('click').click(handleCloseFrame);
+ 
+ 		// promote any other links to open in main window, prevent nested browsing
+ 		allLinks
+Index: mediawiki/extensions/PageForms/libs/PageForms.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/PageForms.js b/mediawiki/extensions/PageForms/libs/PageForms.js
+--- a/mediawiki/extensions/PageForms/libs/PageForms.js	(revision eedbdf688e8320b0e7bfa4441800dfe682a2361b)
++++ b/mediawiki/extensions/PageForms/libs/PageForms.js	(date 1783009672453)
+@@ -12,9 +12,9 @@
+  * @author Harold Solbrig
+  * @author Eugene Mednikov
+  */
+-/*global wgPageFormsShowOnSelect, wgPageFormsFieldProperties, wgPageFormsCargoFields, wgPageFormsDependentFields, validateAll, alert, pf, Sortable*/
++/*global wgPageFormsShowOnSelect, wgPageFormsFieldProperties, wgPageFormsCargoFields, wgPageFormsDependentFields, validateAll, alert, mwTinyMCEInit, pf, Sortable*/
+ 
+-( function( $, mw ) {
++( function ( $, mw ) {
+ 
+ /*
+  * Functions to register/unregister methods for the initialization and
+@@ -1478,6 +1478,7 @@
+ 			$firstFocusable[0].focus();
+ 		}
+ 	}, 500 );
++	return $new_div;
+ };
+ 
+ // The first argument is needed, even though it's an attribute of the element
+@@ -1951,11 +1952,30 @@
+ 
+ 		// We are all done - remove the loading spinner.
+ 		$('.loadingImage').remove();
++		preSelectByIndex();
++
+ 	}, 0 );
+ 
+ 	mw.hook('pf.formSetupAfter').fire();
+ });
+ 
++function preSelectByIndex() {
++	let queryParams = {};
++	let search = window.location.search;
++	search = search.length > 0 ? search.substring(1) : '';
++	let params = search.split("&");
++	for(let i = 0; i < params.length;i++) {
++		let keyValue = params[i].split("=");
++		if (keyValue.length != 2) {
++			continue;
++		}
++		queryParams[keyValue[0]] = decodeURIComponent(keyValue[1]);
++	}
++	if (queryParams['expand']) {
++		$('.multipleTemplateInstance').eq(queryParams['expand']).trigger('click');
++	}
++}
++
+ // If some part of the form is clicked, minimize any multiple-instance
+ // template instances that need minimizing, and move the "focus" to the current
+ // instance list, if one is being clicked and it's different from the
+@@ -2020,7 +2040,9 @@
+ });
+ 
+ $('.pfSendBack').click( () => {
+-	window.history.back();
++	if (window.top == window.self) {
++		window.history.back();
++	}
+ });
+ 
+ }( jQuery, mediaWiki ) );
+Index: mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js b/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js
+--- a/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js	(revision eedbdf688e8320b0e7bfa4441800dfe682a2361b)
++++ b/mediawiki/extensions/PageForms/libs/ext.pf.select2.tokens.js	(date 1783009438921)
+@@ -227,7 +227,7 @@
+ 				const htmlElements = inputData.$selection[0].children[0].children;
+ 				term = htmlElements[htmlElements.length - 1].children[0].value;
+ 			}
+-			return pf.select2.base.prototype.textHighlight( result.id, term );
++			return pf.select2.base.prototype.textHighlight( result.label ? result.label : result.id, term );
+ 		};
+ 		opts.language.searching = function() {
+ 			return mw.msg( "pf-autocomplete-searching" );
+Index: mediawiki/extensions/PageForms/includes/PFFormPrinter.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/includes/PFFormPrinter.php b/mediawiki/extensions/PageForms/includes/PFFormPrinter.php
+--- a/mediawiki/extensions/PageForms/includes/PFFormPrinter.php	(revision eedbdf688e8320b0e7bfa4441800dfe682a2361b)
++++ b/mediawiki/extensions/PageForms/includes/PFFormPrinter.php	(date 1783009621952)
+@@ -379,6 +379,7 @@
+ 			<td class="instanceRemove">$removeButton</td>
+ 			</tr>
+ 			</table>
++            <div class="pf_copy_template">copy</div>
+ END;
+ 
+ 		return $text;
+Index: mediawiki/extensions/PageForms/libs/foreign/select2/select2.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/mediawiki/extensions/PageForms/libs/foreign/select2/select2.js b/mediawiki/extensions/PageForms/libs/foreign/select2/select2.js
+--- a/mediawiki/extensions/PageForms/libs/foreign/select2/select2.js	(revision eedbdf688e8320b0e7bfa4441800dfe682a2361b)
++++ b/mediawiki/extensions/PageForms/libs/foreign/select2/select2.js	(date 1783009680381)
+@@ -4496,8 +4496,8 @@
+     };
+ 
+     var viewport = {
+-      top: $window.scrollTop(),
+-      bottom: $window.scrollTop() + $window.height()
++      top: window.document.body.scrollTop,
++      bottom: window.document.body.scrollTop + $window.height()
+     };
+ 
+     var enoughRoomAbove = viewport.top < (offset.top - dropdown.height);
+@@ -4530,6 +4530,8 @@
+     }
+ 
+     css.top -= parentOffset.top;
++    var ffOffset = $window.scrollTop() === 0 ? window.document.body.scrollTop : 0;
++    css.top += ffOffset;
+     css.left -= parentOffset.left;
+     //fix for rtl forms
+     if( 'rtl' == $('html').attr('dir') ){

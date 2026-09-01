@@ -5,14 +5,20 @@
     <ul>
         @if($type==='topic')
         @foreach($list as $l)
-            <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">{{$l['title']->getSubpageText()}}</a>
-                <a class="publication-for-investigation" href="{{$l['title']->getBaseTitle()->getFullURL()}}">({{$l['title']->getBaseText()}})</a>
+            <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">
+                    {{$l['title']->getSubpageText()}}
+                </a>
+                <a class="publication-for-investigation" href="{{$l['title']->getBaseTitle()->getFullURL()}}">
+                    ({{\DIQA\ChemExtension\Utils\WikiTools::findDisplayTitle($l['title'])}})
+                </a>
 
             </li>
         @endforeach
         @else
             @foreach($list as $l)
-                <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">{{$l['title']->getSubpageText()}}</a></li>
+                <li><a title="{{count($l['type']) > 0 ? reset($l['type']):'unknown type'}}" href="{{$l['title']->getFullURL()}}">
+                        {{\DIQA\ChemExtension\Utils\WikiTools::findDisplayTitle($l['title'])}}
+                    </a></li>
             @endforeach
         @endif
     </ul>

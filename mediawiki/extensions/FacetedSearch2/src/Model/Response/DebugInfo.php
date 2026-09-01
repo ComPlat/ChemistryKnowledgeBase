@@ -17,7 +17,7 @@ trait DebugInfo {
      * @param string $debugInfo
      * @return DebugInfo
      */
-    public function setDebugInfo(string $debugInfo)
+    public function setDebugInfo(string $debugInfo): static
     {
         global $fs2gDebugMode;
         if ($fs2gDebugMode ?? false) {

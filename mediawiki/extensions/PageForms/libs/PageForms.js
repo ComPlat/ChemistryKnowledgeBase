@@ -1,3 +1,5 @@
+const Sortable = require( 'ext.pageforms.sortable' );
+
 /**
  * PageForms.js
  *
@@ -12,7 +14,7 @@
  */
 /*global wgPageFormsShowOnSelect, wgPageFormsFieldProperties, wgPageFormsCargoFields, wgPageFormsDependentFields, validateAll, alert, mwTinyMCEInit, pf, Sortable*/
 
-( function( $, mw ) {
+( function ( $, mw ) {
 
 /*
  * Functions to register/unregister methods for the initialization and
@@ -299,14 +301,7 @@ $.fn.showIfSelected = function(partOfMultiple, initPage) {
 			inputVal = $(this).find('input').val();
 		}
 	} else if ( this.attr( 'data-input-type' ) == 'tokens' ) {
-		if ( initPage ) {
-			inputVal = $(this).find('select').val();
-		} else {
-			inputVal = [];
-			$(this).find('li.select2-selection__choice').each( function() {
-				inputVal.push( $(this).attr('title') );
-			});
-		}
+		inputVal = $(this).find('select').val();
 	} else {
 		inputVal = this.val();
 	}
@@ -736,15 +731,26 @@ $.fn.validateDateField = function() {
 // Standalone pipes are not allowed, because they mess up the template
 // parsing; unless they're part of a call to a template or a parser function.
 $.fn.checkForPipes = function() {
-	let fieldVal = this.find("input, textarea").val();
 	// We need to check for a few different things because this is
 	// called for a variety of different input types.
-	if ( fieldVal === undefined || fieldVal === '' ) {
+	let fieldVal = this.find("textarea").val();
+	if ( fieldVal === undefined ) {
+		fieldVal = this.find("select").val();
+	}
+	if ( fieldVal === undefined ) {
+		fieldVal = this.find("input").val();
+	}
+	if ( fieldVal === undefined ) {
 		fieldVal = this.text();
 	}
-	if ( fieldVal === undefined || fieldVal === '' ) {
+	if ( fieldVal === undefined ) {
 		return true;
 	}
+
+	if ( Array.isArray(fieldVal) ) {
+		fieldVal = fieldVal.join();
+	}
+
 	if ( !fieldVal.includes('|') ) {
 		return true;
 	}
@@ -850,12 +856,15 @@ function validateStartEndDateField( startInput, endInput ) {
 	if ( !startInput.length || !endInput.length ) {
 		return true;
 	}
+
+	// We get the index, instead of the actual value, of the month dropdown in
+	// case it's a text value (i.e., with $wgAmericanDates.)
 	const startYearVal = leftPad( startInput.find(".yearInput").val(),4 );
-	const startMonthVal = leftPad( startInput.find(".monthInput").val(),2 );
+	const startMonthVal = leftPad( startInput.find(".monthInput").prop('selectedIndex'),2 );
 	const startDayVal = leftPad( startInput.find(".dayInput").val(),2 );
 
 	const endYearVal = leftPad( endInput.find(".yearInput").val(),4 );
-	const endMonthVal = leftPad( endInput.find(".monthInput").val(),2 );
+	const endMonthVal = leftPad( endInput.find(".monthInput").prop('selectedIndex'),2 );
 	const endDayVal = leftPad( endInput.find(".dayInput").val(),2 );
 
 	const startDate = startYearVal + "/" + startMonthVal + "/" + startDayVal;
@@ -975,7 +984,7 @@ window.validateAll = function() {
 			num_errors += 1;
 		}
 	});
-	$("span.inputSpan, div.pfComboBox").not(".hiddenByPF, .freeText, .pageSection").each( function() {
+	$("span.inputSpan, span.comboboxSpan").not(".hiddenByPF, .freeText, .pageSection").each( function() {
 		if (! $(this).checkForPipes() ) {
 			num_errors += 1;
 		}
@@ -1135,7 +1144,7 @@ $.fn.possiblyMinimizeAllOpenInstances = function() {
 			valuesStr += curVal;
 		});
 		if ( valuesStr === '' ) {
-			valuesStr = '<em>' + mw.msg('pf-formedit-nodata') + '</em>';
+			valuesStr = '<em>' + mw.message('pf-formedit-nodata').escaped() + '</em>';
 		}
 		$instance.find('.instanceMain').fadeOut( "medium", () => {
 			$instance.find('.instanceRearranger').after('<td class="fieldValuesDisplay">' + valuesStr + '</td>');
@@ -1244,7 +1253,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	const wgPageFormsShowOnSelect = mw.config.get( 'wgPageFormsShowOnSelect' );
 	const wgPageFormsHeightForMinimizingInstances = mw.config.get( 'wgPageFormsHeightForMinimizingInstances' );
 	const $wrapper = this.closest(".multipleTemplateWrapper");
-	const $multipleTemplateList = $wrapper.find('.multipleTemplateList');
+	const $multipleTemplateList = $wrapper.children('.multipleTemplateList');
 
 	// If the nubmer of instances is already at the maximum allowed,
 	// exit here.
@@ -1268,8 +1277,8 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	num_elements++;
 
 	// Create the new instance
-	const $new_div = $wrapper
-		.find(".multipleTemplateStarter")
+	const $new_div = $multipleTemplateList
+		.children(".multipleTemplateStarter")
 		.clone()
 		.removeClass('multipleTemplateStarter')
 		.addClass('multipleTemplateInstance')
@@ -1379,6 +1388,12 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 		return this.href.replace(/input_/g, 'input_' + num_elements + '_');
 	});
 
+	// Update the 'Upload file' link's data attribute to point to the new input ID.
+	$new_div.find( '.ext-pageforms-uploadable' ).attr(
+		'data-input-id',
+		( index, attr ) => attr.replace( /input_/g, 'input_' + num_elements + '_' )
+	);
+
 	$new_div.find('span').attr('id', function() {
 		return this.id.replace(/span_/g, 'span_' + num_elements + '_');
 	});
@@ -1389,9 +1404,20 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 			.hide().fadeIn();
 	} else {
 		this.closest(".multipleTemplateWrapper")
-			.find(".multipleTemplateList")
+			.children(".multipleTemplateList")
 			.append($new_div.hide().fadeIn());
 	}
+
+	// Re-sequence tabindex values for all focusable elements on the entire form so that
+	// keyboard navigation strictly follows the new logical visual DOM order after insertion.
+	let currentTabIndex = 1;
+	$( '#pfForm' ).find( '[tabindex]' ).each( function() {
+		const ti = parseInt( $( this ).attr( 'tabindex' ), 10 );
+		// Only re-sequence elements that intentionally participate in the tab order (exclude -1)
+		if ( !isNaN( ti ) && ti > 0 ) {
+			$( this ).attr( 'tabindex', currentTabIndex++ );
+		}
+	} );
 
 	$new_div.initializeJSElements(true);
 
@@ -1438,6 +1464,20 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	// Hook that fires each time a new template instance is added.
 	// The first parameter is a jQuery selection of the newly created instance div.
 	mw.hook('pf.addTemplateInstance').fire($new_div);
+
+	// Move keyboard focus to the first focusable field in the new instance.
+	// This ensures that Tab/Enter-triggered instance creation places focus on
+	// the first input (e.g., a topic dropdown) rather than on the "add above"
+	// icon. We use a setTimeout to defer execution slightly, ensuring the
+	// row's .fadeIn() animation has started so the elements are officially :visible.
+	setTimeout( () => {
+		const $firstFocusable = $new_div.find(
+			'.oo-ui-inputWidget-input, .select2-selection, input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled)'
+		).not( '.hiddenByPF, .disabledByPF' ).filter( ':visible' ).first();
+		if ( $firstFocusable.length ) {
+			$firstFocusable[0].focus();
+		}
+	}, 500 );
 	return $new_div;
 };
 
@@ -1617,11 +1657,28 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 			});
 			return false;
 		});
+		this.find(".removeButton").keydown( function( e ) {
+			if ( e.key === 'Enter' || e.key === ' ' ) {
+				e.preventDefault();
+				$(this).trigger( 'click' );
+			}
+		});
 
 		// ...and the new adder
 		this.find('.addAboveButton').click( function() {
 			$(this).addInstance( true );
 			return false; // needed to disable <a> behavior
+		});
+		this.find('.addAboveButton').keydown( function( e ) {
+			if ( e.key === 'Enter' || e.key === ' ' ) {
+				e.preventDefault();
+				// Blur the button before adding the instance so the browser
+				// has no element to restore focus to after the keydown event.
+				// This allows our setTimeout in addInstance to set focus on
+				// the first input of the newly created instance.
+				$(this).trigger( 'blur' );
+				$(this).addInstance( true );
+			}
 		});
 	}
 
@@ -1757,32 +1814,6 @@ $.fn.initializeJSElements = function( partOfMultiple ) {
 			}
 		});
 	}
-
-	// @TODO - this should be in the TinyMCE extension, and use a hook.
-	if ( typeof( mwTinyMCEInit ) === 'function' ) {
-		if ( partOfMultiple ) {
-			$myThis.find(".tinymce").each( function() {
-				mwTinyMCEInit( '#' + $(this).attr('id') );
-			});
-		} else {
-			$myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
-				mwTinyMCEInit( '#' + $(this).attr('id') );
-			});
-		}
-	} else {
-		$(document).on('TinyMCELoaded', (e) => {
-			if ( partOfMultiple ) {
-				$myThis.find(".tinymce").each( function() {
-					mwTinyMCEInit( '#' + $(this).attr('id') );
-				});
-			} else {
-				$myThis.find(".tinymce").not(".multipleTemplateWrapper .tinymce").each( function() {
-					mwTinyMCEInit( '#' + $(this).attr('id') );
-				});
-			}
-		});
-	}
-
 };
 
 // Copied from https://stackoverflow.com/a/8809472
@@ -1870,8 +1901,20 @@ $( () => {
 		$('.multipleTemplateInstance').each( function() {
 			$(this).initializeJSElements(true);
 		});
-		$('.multipleTemplateAdder').click( function() {
-			$(this).addInstance( false );
+		$( document )
+		.on( 'click', '.multipleTemplateAdder', function() {
+			$( this ).addInstance( false );
+		})
+		.on( 'keydown', '.multipleTemplateAdder', function( e ) {
+			if ( e.key === 'Enter' || e.key === ' ' ) {
+				e.preventDefault();
+				// Blur the button before adding the instance so the browser
+				// has no element to restore focus to after the keydown event.
+				// This allows our setTimeout in addInstance to set focus on
+				// the first input of the newly created instance.
+				$( this ).trigger( 'blur' );
+				$( this ).addInstance( false );
+			}
 		});
 		const wgPageFormsHeightForMinimizingInstances = mw.config.get( 'wgPageFormsHeightForMinimizingInstances' );
 		minimizeInstances( wgPageFormsHeightForMinimizingInstances );

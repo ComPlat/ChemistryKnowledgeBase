@@ -1,1 +1,0 @@
-Page created: <a href="{{$wikiUrl}}/{{$jobId}}" target="_blank">{{$jobId}}</a>

@@ -1,0 +1,464 @@
+<?php
+
+namespace DIQA\FacetedSearch2\ElasticSearch;
+
+use DIQA\FacetedSearch2\Exceptions\BackendException;
+use DIQA\FacetedSearch2\FacetedSearchDependantUpdates;
+use DIQA\FacetedSearch2\FacetedSearchUpdateClient;
+use DIQA\FacetedSearch2\Model\Common\Datatype;
+use DIQA\FacetedSearch2\Model\Update\Document;
+use DIQA\FacetedSearch2\Model\Update\PropertyValues;
+use DIQA\FacetedSearch2\Utils\Logger;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Exception;
+
+class ElasticSearchUpdateClient extends AbstractElasticSearchClient implements FacetedSearchUpdateClient, FacetedSearchDependantUpdates
+{
+    const int MAX_BULK_SIZE = 1000;
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function updateDocuments(...$docs): void
+    {
+        global $fs2gBackendConfig;
+
+        $params = ['body' => [] ];
+        $i = 0;
+        try {
+            foreach ($docs as $doc) {
+                $params['body'][] = [
+                    'index' => [
+                        '_index' => $fs2gBackendConfig['indexName'] ?? 'mw',
+                        '_id' => $doc->getId(),
+                    ],
+                ];
+                $params['body'][] = $this->getDocumentBody($doc);
+
+                if ($i % self::MAX_BULK_SIZE == 0) {
+                    $this->logIfConfigured("updateDocuments", $params);
+                    $responses = $this->client->bulk($params);
+                    $params = ['body' => []];
+                    unset($responses);
+                }
+                $i++;
+            }
+
+            if (!empty($params['body'])) {
+                $this->logIfConfigured("updateDocuments", $params);
+                $this->client->bulk($params);
+            }
+        } catch (
+        ClientResponseException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function deleteDocument(string $id): void
+    {
+        $params = $this->getParamForIndex();
+        $params['id'] = $id;
+
+        try {
+            $this->logIfConfigured("deleteDocument", $params);
+            $this->client->delete($params);
+        } catch (ClientResponseException
+        |MissingParameterException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function clearAllDocuments(): void
+    {
+        $params = $this->getParamForIndex();
+        $params['body'] = ['query' => ['match_all' => new \stdClass()]];
+        try {
+            $this->logIfConfigured("clearAllDocuments", $params);
+            $this->client->deleteByQuery($params);
+        } catch (ClientResponseException
+        |MissingParameterException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function deleteIndex(): void
+    {
+        $params = $this->getParamForIndex();
+        try {
+            $this->logIfConfigured("deleteIndex", $params);
+            $this->client->indices()->delete($params);
+        } catch (ClientResponseException
+        |MissingParameterException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function initIndex(): bool
+    {
+        $params = $this->getParamForIndex();
+
+        try {
+            $response = $this->client->indices()->exists($params);
+            if ($response->asBool()) {
+                return true;
+            }
+
+            $params['body'] = $this->getSchemaMappings();
+            $this->logIfConfigured("initIndex",$params);
+            $this->client->indices()->create($params);
+            return true;
+        } catch (ClientResponseException
+        |MissingParameterException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+
+    }
+
+    /**
+     * @return array[]
+     */
+    private function getSchemaMappings(): array
+    {
+        $schemaProperties = [];
+        $schemaProperties['__categories'] = ['type' => 'keyword'];
+        $schemaProperties['__directCategories'] = ['type' => 'keyword'];
+        $schemaProperties['__templates'] = ['type' => 'keyword'];
+        $schemaProperties['__properties'] = ['type' => 'keyword'];
+        $schemaProperties['__out'] = [
+            "type" => "nested",
+            "properties" => [
+                "title" => ["type" => "keyword"],
+                "property" => ["type" => "keyword"]
+            ]
+        ];
+        $schemaProperties['__fulltext'] = [
+            'type' => 'text',
+            'analyzer' => 'substring_analyzer',
+            'search_analyzer' => 'substring_search_analyzer'];
+        $schemaProperties['__title'] = [
+            'type' => 'text',
+            'analyzer' => 'substring_analyzer',
+            'search_analyzer' => 'substring_search_analyzer'
+        ];
+        $schemaProperties['__namespace'] = ['type' => 'long'];
+        $schemaProperties['__display'] = ['type' => 'wildcard'];
+        return [
+            "settings" => [
+                "analysis" => [
+                    "analyzer" => [
+                        "substring_analyzer" => [
+                            "type" => "custom",
+                            "tokenizer" => "standard",
+                            "filter" => ["lowercase", "substring_ngram"]
+                        ],
+                        "substring_search_analyzer" => [
+                            "type" => "custom",
+                            "tokenizer" => "standard",
+                            "filter" => ["lowercase"]
+                        ]
+                    ],
+                    "filter" => [
+                        "substring_ngram" => [
+                            "type" => "ngram",
+                            "min_gram" => 2,
+                            "max_gram" => 20
+                        ]
+                    ]
+                ],
+                "index" => [
+                    "max_ngram_diff" => 18
+                ]
+            ],
+            'mappings' => [
+                'properties' => $schemaProperties,
+                "dynamic_templates" => [
+                    [
+
+                        "fs2-number-template" => [
+                            "match" => "number_*",
+                            "mapping" => [
+                                "type" => "double"
+                            ]
+                        ],
+                    ],
+                    [
+
+                        "fs2-text-template" => [
+                            "match" => "text_*",
+                            "mapping" => [
+                                "type" => "wildcard"
+                            ]
+                        ],
+                    ],
+                    [
+
+                        "fs2-datetime-template" => [
+                            "match" => "datetime_*",
+                            "mapping" => [
+                                "type" => "date"
+                            ]
+                        ],
+                    ],
+                    [
+
+                        "fs2-boolean-template" => [
+                            "match" => "boolean_*",
+                            "mapping" => [
+                                "type" => "boolean"
+                            ]
+                        ],
+                    ],
+                    [
+
+                        "fs2-wikipage-template" => [
+                            "match" => "wikipage_*",
+                            "mapping" => [
+                                "type" => "nested",
+                                "properties" => [
+                                    "title" => ["type" => "wildcard"],
+                                    "display" => ["type" => "wildcard"]
+                                ]
+                            ]
+                        ],
+                    ]
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * Check if the index exists
+     * @return bool
+     * @throws BackendException
+     */
+    public function existsIndex(): bool
+    {
+        try {
+            $params = $this->getParamForIndex();
+            $this->logIfConfigured("existsIndex", $params);
+            $response = $this->client->indices()->exists($params);
+            return $response->asBool();
+        } catch (
+        ClientResponseException
+        |MissingParameterException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+    }
+
+    /**
+     * @throws BackendException
+     */
+    public function refreshIndex(): void
+    {
+        try {
+            $params = $this->getParamForIndex();
+            $this->logIfConfigured("refreshIndex", $params);
+            $this->client->indices()->refresh($params);
+        } catch (
+        ClientResponseException
+        |ServerResponseException
+        |Exception $e) {
+            throw BackendException::create($e);
+        }
+    }
+
+    /**
+     * @param Document $doc
+     * @return array
+     */
+    private function getDocumentBody(Document $doc): array
+    {
+        $body = [];
+        $body['__categories'] = $doc->getCategories();
+        $body['__directCategories'] = $doc->getDirectCategories();
+        $body['__templates'] = $doc->getTemplates();
+        $properties = array_map(fn(PropertyValues $pv) =>
+            Helper::toInternalName($pv->getProperty()), $doc->getPropertyValues());
+        $body['__properties'] = array_values(array_unique($properties));
+        $body['__fulltext'] = $doc->getFulltext();
+        $body['__title'] = $doc->getTitle();
+        $body['__namespace'] = $doc->getNamespace();
+        $body['__display'] = $doc->getDisplayTitle();
+        $body['__out'] = [];
+        $propertyValues = $doc->getPropertyValues();
+        foreach ($propertyValues as $propertyValue) {
+            $name = Helper::toInternalName($propertyValue->getProperty());
+            $body[$name] = self::mapValuesForUpdateToESModel($propertyValue);
+            $body['__out'] = array_merge($body['__out'], self::mapValuesForOutField($propertyValue));
+        }
+        return $body;
+    }
+
+    private static function mapValuesForUpdateToESModel(PropertyValues $values): array
+    {
+        $result = [];
+        switch ($values->getProperty()->getType()) {
+
+            case Datatype::WIKIPAGE:
+                foreach ($values->getMwTitles() as $value) {
+                    $value = [
+                        "title" => $value->getTitle(),
+                        "display" => $value->getDisplayTitle()
+                    ];
+                    $result[] = $value;
+                }
+                break;
+            default:
+                foreach ($values->getValues() as $value) {
+                    $result[] = $value;
+                }
+                break;
+        }
+        return $result;
+    }
+
+    private static function mapValuesForOutField(PropertyValues $values): array
+    {
+        if ($values->getProperty()->getType() !== Datatype::WIKIPAGE) {
+            return [];
+        }
+        $result = [];
+        foreach ($values->getMwTitles() as $value) {
+            $value = [
+                "title" => $value->getTitle(),
+                "property" => Helper::toInternalName($values->getProperty())
+            ];
+            $result[] = $value;
+        }
+        return $result;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function logIfConfigured(string $operation, array $params): void
+    {
+        global $fs2gDebugMode;
+        if ($fs2gDebugMode ?? false) {
+            Logger::info("ES request ($operation): " . json_encode($params));
+        }
+    }
+
+
+    /**
+     * @param mixed $doc
+     * @throws BackendException
+     */
+    public function updateDocumentWithDependant(Document $doc): void
+    {
+        $params = $this->getParamForIndex();
+
+        try {
+            $params['id'] = $doc->getId();
+            $params['body'] = $this->getDocumentBody($doc);
+            $this->client->index($params);
+            $this->updateDisplayTitles($doc->getTitle(), $doc->getDisplayTitle());
+
+        } catch (
+        ClientResponseException
+        |MissingParameterException
+        |ServerResponseException $e) {
+            throw BackendException::create($e);
+        }
+    }
+    /**
+     *
+     * @throws BackendException
+     */
+    public function updateDisplayTitles(
+        string $title,
+        string $newDisplay
+    ): void {
+        $params = $this->getParamForIndex();
+        $params['refresh']             = true;
+        $params['conflicts']           = 'proceed';
+        $params['wait_for_completion'] = true;
+
+        $painless = <<<PAINLESS
+def list = ctx._source['__out']; 
+if (list == null) { return; } 
+for (int i = 0; i < list.size(); i++) {
+    if (list[i].title == params.title) {
+        def props = ctx._source[list[i].property];
+        if (props == null) { return; } 
+        for (int j = 0; j < props.size(); j++) {
+            if (props[j].title == params.title) {
+                props[j].display = params.newDisplay;
+            }
+        } 
+    }    
+}
+PAINLESS;
+
+
+        $params['body'] = [
+            'query' => [
+                'nested' => [
+                    'path'  => '__out',
+                    'query' => [
+                        'term' => [
+                            '__out.title' => $title,
+                        ],
+                    ],
+                ],
+            ],
+            'script' => [
+                'lang'   => 'painless',
+                'source' => $painless,
+                'params' => [
+                    'title'   => $title,
+                    'newDisplay' => $newDisplay,
+                ],
+            ],
+        ];
+
+        try {
+            $this->logIfConfigured('updateDisplayTitles', $params);
+            $this->client->updateByQuery($params);
+        } catch (
+        ClientResponseException
+        | MissingParameterException
+        | ServerResponseException
+        | Exception $e
+        ) {
+            throw BackendException::create($e);
+        }
+    }
+
+    public function supportBulkUpdates(): bool
+    {
+        return true;
+    }
+}

@@ -12,6 +12,6 @@ abstract class PublicationFetcher {
 
     static function factory(): array
     {
-        return [new CrossRefAPI()];
+        return [new CrossRefAPI(), new OpenAlexAPI()];
     }
 }

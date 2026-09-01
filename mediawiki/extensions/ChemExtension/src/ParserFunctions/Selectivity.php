@@ -21,7 +21,7 @@ class Selectivity
             $parametersAsStringArray = func_get_args();
             array_shift($parametersAsStringArray); // get rid of Parser
 
-            $valueIsEmpty = fn($e) => trim($e) === '' || trim($e) === '0';
+            $valueIsEmpty = fn($e) => trim($e) === '' || trim($e) === '0' || !is_numeric($e);
             $nonEmptyValues = array_filter($parametersAsStringArray, fn($e) => !$valueIsEmpty($e));
             $nonEmptyValues = array_map(fn($e) => QValue::extractValue($e), $nonEmptyValues);
             $totalSum = array_sum($nonEmptyValues);

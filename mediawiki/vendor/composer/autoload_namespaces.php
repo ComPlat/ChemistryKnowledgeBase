@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'TextCat' => array($vendorDir . '/wikimedia/textcat/src'),
+    'Smalot\\PdfParser\\' => array($vendorDir . '/smalot/pdfparser/src'),
     'SemanticMediaWiki' => array($baseDir . '/extensions/SemanticMediaWiki/includes/SemanticMediaWiki.php'),
     'Net' => array($vendorDir . '/pear/net_smtp', $vendorDir . '/pear/net_socket'),
     'Mail' => array($vendorDir . '/pear/mail_mime', $vendorDir . '/pear/mail'),

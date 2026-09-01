@@ -2,6 +2,9 @@
 
 namespace DIQA\FacetedSearch2\Model\Request;
 
+use JsonMapper;
+use JsonMapper_Exception;
+
 class DocumentQuery extends BaseQuery {
 
     /**
@@ -17,10 +20,14 @@ class DocumentQuery extends BaseQuery {
     public ?int $limit = 10;
     public ?int $offset = 0;
 
+    /**
+     * @throws JsonMapper_Exception
+     */
     public static function fromJson($json): DocumentQuery
     {
-        $mapper = new \JsonMapper();
-        return $mapper->map(json_decode($json), new DocumentQuery());
+        $mapper = new JsonMapper();
+        return $mapper->map(json_decode($json), new DocumentQuery())
+            ->applyMandatoryFilters();
     }
 
     /**

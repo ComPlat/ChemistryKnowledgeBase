@@ -7,7 +7,6 @@
 	"facetedsearch2-desc":      "Faceted search",
 	"facetedsearch2":           "Faceted search",
 
-	"fs-sort-order": 		    "Sort order",
 	"fs-score": 			    "Relevance",
 	"fs-newest": 			    "Newest article first",
 	"fs-oldest": 			    "Oldest article first",
@@ -37,5 +36,18 @@
 	"fs-filter-property": 		"Filter '$1' values...",
     "fs-filter-category-tree":  "Filter category tree...",
     "fs-bool-value-true":       "True",
-    "fs-bool-value-false":      "False"
+    "fs-bool-value-false":      "False",
+    "fs-date-range":            "Date range",
+    "fs-facet-date-range-dialog-title": "Please select a date range",
+    "fs-from":                  "From",
+    "fs-to":                    "To",
+    "fs-ok":                    "OK",
+    "fs-cancel":                "Cancel",
+    "fs-none":                  "none",
+    "fs-main-namespace":        "Main",
+    "fs-please-confirm":        "Please confirm",
+    "fs-operation-successful": "Operation successful.",
+    "fs-generic-error-message": "Some error appeared. See console for details.",
+    "fs-error-message":         "Error",
+    "fs-category-tree":         "Category tree"
 }

@@ -16,6 +16,8 @@ class DocumentsResponse
     /* @var NamespaceFacetCount[] */
     public array $namespaceFacetCounts;
 
+    public ?bool $titleExists;
+
     /**
      * SolrDocumentsResponse constructor.
      * @param int $numResults
@@ -23,14 +25,22 @@ class DocumentsResponse
      * @param CategoryFacetCount[] $categoryFacetCounts
      * @param PropertyFacetCount[] $propertyFacetCounts
      * @param NamespaceFacetCount[] $namespaceFacetCounts
+     * @param bool $titleExists (null means: the search text is no valid title)
      */
-    public function __construct(int $numResults, array $docs, array $categoryFacetCounts, array $propertyFacetCounts, array $namespaceFacetCounts)
+    public function __construct(int $numResults, array $docs, array $categoryFacetCounts, array $propertyFacetCounts, array $namespaceFacetCounts,
+    ?bool $titleExists)
     {
         $this->numResults = $numResults;
         $this->docs = $docs;
         $this->categoryFacetCounts = $categoryFacetCounts;
         $this->propertyFacetCounts = $propertyFacetCounts;
         $this->namespaceFacetCounts = $namespaceFacetCounts;
+        $this->titleExists = $titleExists;
+    }
+
+    public function titleExists(): ?bool
+    {
+        return $this->titleExists;
     }
 
     /**

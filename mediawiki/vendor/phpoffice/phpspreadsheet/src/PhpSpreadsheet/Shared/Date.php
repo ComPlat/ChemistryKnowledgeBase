@@ -172,7 +172,10 @@ class Date
             throw new Exception("Invalid string $value supplied for datatype Date");
         }
 
-        $newValue = self::dateTimeToExcel($date);
+        $newValue = self::PHPToExcel($date);
+        if ($newValue === false) {
+            throw new Exception("Invalid string $value supplied for datatype Date");
+        }
 
         if (preg_match('/^\s*\d?\d:\d\d(:\d\d([.]\d+)?)?\s*(am|pm)?\s*$/i', $value) == 1) {
             $newValue = fmod($newValue, 1.0);
@@ -371,12 +374,7 @@ class Date
             $selected = $worksheet->getSelectedCells();
 
             try {
-                if ($value === null) {
-                    $value = Functions::flattenSingleValue(
-                        $cell->getCalculatedValue()
-                    );
-                }
-                $result = is_numeric($value)
+                $result = is_numeric($value ?? $cell->getCalculatedValue())
                     && self::isDateTimeFormat(
                         $worksheet->getStyle(
                             $cell->getCoordinate()

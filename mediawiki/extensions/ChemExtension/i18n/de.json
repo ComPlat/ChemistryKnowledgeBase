@@ -6,9 +6,8 @@
 	},
 	"ketchereditor": "Ketcher-Editor",
 	"literature": "Literatur",
-	"specialuploadtochemscanner": "Zu Chemscanner hochladen",
 	"publicationimportspecialpage": "Publication Import",
-	"ce-upload-to-chemscanner": "Hochladen",
+    "ce-import-publication": "Publikation importieren",
 	"ce-choose-file" : "Wählen Sie eine Datei aus die Sie hochladen wollen",
 	"submit-doi": "DOI auflösen",
 	"doi-label": "Digital object identifier (DOI)",
@@ -53,9 +52,12 @@
     "publicationlist-col-date": "Publikationsdatum",
     "publicationlist-col-check_result": "Identifiziertes Topic",
     "publicationlist-col-approved": "Angenommen",
+    "publicationlist-col-created": "Erstellt am",
   "crossref-pager-prev": "← Zurück",
   "crossref-pager-next": "Weiter →",
   "crossref-pager-info": "Seite $1 von $2 ($3 Ergebnisse)",
-  "crossref-only-approved-label": "Nur angenommene"
+  "crossref-only-approved-label": "Nur angenommene",
+  "crossref-filter-label": "Filter",
+  "crossref-filter-placeholder": "Titel oder DOI"
 
 }

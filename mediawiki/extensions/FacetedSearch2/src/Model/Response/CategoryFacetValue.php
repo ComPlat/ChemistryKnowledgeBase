@@ -22,4 +22,11 @@ class CategoryFacetValue
         $this->url = $url;
     }
 
+    public static function fromCategory(string $category): self
+    {
+        return new CategoryFacetValue($category,
+            WikiTools::getDisplayTitleForCategory($category),
+            WikiTools::createURLForCategory($category));
+    }
+
 }

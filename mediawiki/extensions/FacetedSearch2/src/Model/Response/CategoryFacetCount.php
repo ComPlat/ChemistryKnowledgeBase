@@ -13,6 +13,7 @@ class CategoryFacetCount
     /**
      * CategoryFacetCount constructor.
      * @param string $category
+     * @param string $displayTitle
      * @param int $count
      */
     public function __construct(string $category, string $displayTitle, int $count)
@@ -20,6 +21,11 @@ class CategoryFacetCount
         $this->category = $category;
         $this->displayTitle = WikiTools::stripHtml($displayTitle);
         $this->count = $count;
+    }
+
+    public static function fromCategory(string $category, int $count): self
+    {
+        return new CategoryFacetCount($category, WikiTools::getDisplayTitleForCategory($category), $count);
     }
 
 }

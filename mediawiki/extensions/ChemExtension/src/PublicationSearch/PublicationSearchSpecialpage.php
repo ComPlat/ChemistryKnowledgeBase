@@ -7,6 +7,7 @@ use DIQA\ChemExtension\Utils\QueryUtils;
 use DIQA\ChemExtension\Utils\WikiTools;
 use Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use RequestContext;
 use SpecialPage;
 
@@ -32,12 +33,13 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $request = RequestContext::getMain()->getRequest();
         $topic   = $request->getText( 'category', '' );
         $onlyApproved   = $request->getText( 'only-approved', false ) == 1;
+        $filter  = $request->getText( 'filter', '' );
         $page    = max( 0, $request->getInt( 'page', 0 ) );
 
-        $out->addHTML( $this->buildForm( $topic, $onlyApproved ) );
+        $out->addHTML( $this->buildForm( $topic, $onlyApproved, $filter ) );
 
-        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved);
-        $total        = $this->publicationRepo->getRelevantPublicationsCount($topic);
+        $publications = $this->fetchPublications( $topic, self::PAGE_SIZE, $page, $onlyApproved, $filter );
+        $total        = $this->publicationRepo->getRelevantPublicationsCount( $topic, $onlyApproved, $filter );
         $pageSize     = self::PAGE_SIZE;
         $totalPages   = max( 1, (int)ceil( $total / $pageSize ) );
         $page         = min( $page, $totalPages - 1 );
@@ -46,7 +48,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $out->addHTML( $this->buildPager( $topic, $page, $totalPages, $total ) );
     }
 
-    private function buildForm( string $selectedCategory, bool $onlyApproved ): string {
+    private function buildForm( string $selectedCategory, bool $onlyApproved, string $filter = '' ): string {
         $categories = QueryUtils::getAllSubcategories('Topic');
 
         $html = Html::openElement( 'form', [
@@ -83,6 +85,24 @@ class PublicationSearchSpecialpage extends SpecialPage {
 
         $html .= '&#160;';
 
+        // Filter input for title or DOI
+        $html .= Html::label(
+            $this->msg( 'crossref-filter-label' )->text(),
+            'crossref-filter-input',
+            [ 'style' => 'margin-left: 10px;' ]
+        );
+        $html .= '&#160;';
+        $html .= Html::element( 'input', [
+            'type'         => 'text',
+            'id'           => 'crossref-filter-input',
+            'name'         => 'filter',
+            'value'        => $filter,
+            'placeholder'  => $this->msg( 'crossref-filter-placeholder' )->text(),
+            'autocomplete' => 'off',
+        ] );
+
+        $html .= '&#160;';
+
         $html .= Html::element( 'input', [
             'type'  => 'submit',
             'value' => $this->msg( 'crossref-category-submit' )->text(),
@@ -108,8 +128,8 @@ class PublicationSearchSpecialpage extends SpecialPage {
      *
      * @return array[]
      */
-    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, bool $onlyApproved): array {
-        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize, $onlyApproved);
+    private function fetchPublications(string $topic, int $pageSize, int $pageNumber, bool $onlyApproved, string $filter = ''): array {
+        return $this->publicationRepo->getRelevantPublications($topic, $pageSize, $pageNumber * $pageSize, $onlyApproved, $filter);
     }
 
     /**
@@ -126,7 +146,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         // Table header
         $html .= Html::openElement( 'thead' );
         $html .= Html::openElement( 'tr' );
-        foreach ( [ 'title', 'abstract', 'doi', 'date', 'check_result', 'approved' ] as $col ) {
+        foreach ( [ 'title', 'abstract', 'doi', 'date', 'check_result', 'approved', 'created' ] as $col ) {
             $html .= Html::element(
                 'th',
                 [],
@@ -192,23 +212,45 @@ class PublicationSearchSpecialpage extends SpecialPage {
             $downloadButton .= Html::linkButton('[try download]', ['class' => 'download-button', 'doi' => htmlspecialchars($doi)]);
             $downloadButton .= Html::closeElement('div');
 
+            $topics = $pub->getCheckResult();
+            $topics = str_replace(',', "\n", $topics);
             $href = SpecialPage::getTitleFor( 'PublicationImportSpecialpage')->getLocalURL(
                 [
                     'doi' => $doi,
                     'page-title' => WikiTools::cleanTitle(strip_tags($pub->getTitle())),
-                    'topic' => $pub->getCheckResult()
+                    'topic' => $topics
                 ]
             );
 
             $importButton = '';
-            $importAutomatically = file_exists(PdfUtils::publicationPDF($doi));
+            $pubFiles = PdfUtils::getPublicationPDFs($doi);
+            $importAutomatically = count($pubFiles) > 0;
             $importText = $importAutomatically ? 'import automatically' : 'import manually';
-            $importButton .= Html::openElement('div');
+            $importButton .= Html::openElement('div', ['title' => join("\n", array_map(fn($e) => basename($e), $pubFiles))]);
             $importButton .= Html::linkButton("[$importText]", ['class' => 'import-button', 'href' => $href]);
             $importButton .= Html::closeElement('div');
 
 
-            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $doiLink . $downloadButton . $importButton );
+            $contents = $doiLink . $downloadButton;
+            if (!self::isDOIKnown($doi)) {
+                $contents .= $importButton;
+            } else {
+                $title = WikiTools::makeWikiTitleFromDoi($doi);
+                $publicationLink = Html::element(
+                    'a',
+                    [
+                        'href'   => $title->getFullURL(),
+                        'target' => '_blank',
+                        'rel'    => 'noopener noreferrer',
+
+                    ],
+                    "[Open publication page]"
+                );
+                if ($title->exists()) {
+                    $contents .= $publicationLink;
+                }
+            }
+            $html .= Html::rawElement( 'td', ['class'  => self::isDOIKnown($doi) ? 'doi-link-known' : 'doi-link-unknown'], $contents);
         } else {
             $html .= Html::element( 'td', [], '' );
         }
@@ -219,6 +261,7 @@ class PublicationSearchSpecialpage extends SpecialPage {
         $approvedElement = Html::check($pub->getDoi(), $pub->getApproved() == '1');
         $html .= Html::rawElement( 'td', ['class' => 'approved-checkbox'],  $approvedElement);
 
+        $html .= Html::element( 'td', [], $pub->getCreated() ?? '' );
         $html .= Html::closeElement( 'tr' );
 
         return $html;

@@ -16,6 +16,7 @@
 			"Shybetsky",
 			"Steve.rusyn",
 			"SteveR",
+			"Vlad5250",
 			"Ата",
 			"Тест"
 		]
@@ -27,6 +28,7 @@
 	"apihelp-pfautocomplete-param-limit": "Обмеження кількості виведених результатів",
 	"apihelp-pfautocomplete-param-substr": "Підрядок, на основі якого здійснити автозаповнення",
 	"apihelp-pfautocomplete-param-property": "Властивість Семантичної MediaWiki, на основі значень якої відбудеться автозаповнення",
+	"apihelp-pfautocomplete-param-semantic_query": "Запит Семантичної MediaWiki, на основі значень якого відбудеться автозаповнення",
 	"apihelp-pfautocomplete-param-category": "Категорія, на основі сторінок якої відбудеться автозаповнення",
 	"apihelp-pfautocomplete-param-concept": "«Концепт» Семантичної MediaWiki, на основі сторінок якого відбудеться автозаповнення",
 	"apihelp-pfautocomplete-param-cargo_table": "Таблиця бази даних, визначена розширенням Cargo, на основі значень якої відбудеться автозаповнення",
@@ -174,6 +176,7 @@
 	"pf-spreadsheet-addrow": "Додати рядок",
 	"pf-spreadsheet-addrowinstructions": "Ви можете додати новий рядок, натиснувши «Enter» в останньому рядку.",
 	"formstart": "Додати сторінку з формою",
+	"pf-formstart-formlabel": "Форма:",
 	"pf_formstart_badform": "Помилка: На сторінці «$1» не знайдено форм.",
 	"pf_formstart_badtitle": "Помилка: «$1» — недопустима назва сторінки.",
 	"pf_formstart_docu": "Введіть назву сторінки, яку потрібно редагувати з допомогою форми «$1». Якщо сторінка вже існує, ви будете спрямовані на форму редагування сторінки, інакше ви будете спрямовані на форму додавання сторінки.",
@@ -240,7 +243,6 @@
 	"pf_start_end_datetime_error": "Дата завершення повинна бути після дати початку",
 	"pf_modified_input_error": "Цю модифікацію слід або затвердити, або відхилити",
 	"pf_pipe_error": "Використання «|» не дозволене, за винятком вживання в межах {{...}}, [[...]], або спеціальних тегів",
-	"uploadwindow": "Вікно завантаження",
 	"pf-simpleupload": "Завантажити",
 	"pf_deletionlog": "Журнал вилучень",
 	"pf-preview-header": "Попередній перегляд форми",

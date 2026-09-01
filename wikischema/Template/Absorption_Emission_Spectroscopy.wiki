@@ -17,14 +17,14 @@ This is the Absorption Emission Spectroscopy template.
 <td property="hidden">{{{details|}}}</td>
 <td property="hidden">{{{include|}}}</td>
 <td>{{#subobject:
- |Absorber Emitter={{{absorber_emitter|}}}
+ |Absorber Emitter={{#sanitizeMolecule: {{{absorber_emitter|}}} }}
  |Experiment Type={{{experiment_type|}}}
  |Absorption Max={{{absorption_max|}}}
  |Absorption Intensity Max={{{absorption_intensity_max|}}}
  |Emission Max={{{emission_max|}}}
  |Emission Intensity Max={{{emission_intensity_max|}}}
  |Intersection={{{intersection|}}}
- |Solvent={{{solvent|}}}
+ |Solvent={{#sanitizeMolecule: {{{solvent|}}} }}
  |Solvent concentration={{{solvent_conc|}}}
  |TemperatureP={{{temp|}}}
  |E0={{#expr: 1240 / {{#convertQuantity:{{{intersection|}}}|property=Intersection|form=Absorption_Emission_Spectroscopy_experiments }} round 2 }}

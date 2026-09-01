@@ -2,6 +2,8 @@
 
 namespace DIQA\FacetedSearch2;
 
+use DIQA\FacetedSearch2\ElasticSearch\ElasticSearchQueryClient;
+use DIQA\FacetedSearch2\ElasticSearch\ElasticSearchUpdateClient;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Common\Property;
 use DIQA\FacetedSearch2\SolrClient\SolrRequestClient;
@@ -10,9 +12,10 @@ use DIQA\FacetedSearch2\Utils\ArrayTools;
 use DIQA\FacetedSearch2\Utils\WikiTools;
 use SMW\DataTypeRegistry;
 use SMWDataItem;
-use SMWDIProperty;
+use SMW\DIProperty as SMWDIProperty;
 
-class ConfigTools {
+class ConfigTools
+{
 
     public static function initializeServersideConfig(): void
     {
@@ -38,11 +41,11 @@ class ConfigTools {
         global $fs2gFacetControlOrder;
         if (count($fs2gFacetControlOrder) === 0) {
             $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCategoryView", "removeAllFacets", "divider",
-                "facetView", "categoryLabel", "categoryDropDown", "categoryView", "categoryTree"];
+                "facetView", "categoryDropDown", "categoryView", "categoryTree"];
         }
         global $fs2gHeaderControlOrder;
         if (count($fs2gHeaderControlOrder) === 0) {
-            $fs2gHeaderControlOrder = ["sortView", "searchView", "saveSearchLink"];
+            $fs2gHeaderControlOrder = ["sortView", "searchView", "saveSearchLink", "createArticleLink"];
         }
     }
 
@@ -68,7 +71,7 @@ class ConfigTools {
 
     public static function getPropertiesForAnnotations($fs2gAnnotationsInSnippet): array
     {
-        //FIXME: store in MW-object cache
+
         $result = [];
         $allExtraProperties = ArrayTools::flatten(array_values($fs2gAnnotationsInSnippet));
         foreach ($allExtraProperties as $property) {
@@ -85,9 +88,11 @@ class ConfigTools {
                     $result[] = new Property($property, Datatype::NUMBER);
                     break;
                 case SMWDataItem::TYPE_BLOB:
+                default:
                     $result[] = new Property($property, Datatype::STRING);
                     break;
                 case SMWDataItem::TYPE_WIKIPAGE:
+                case SMWDataItem::TYPE_NOTYPE:
                     $result[] = new Property($property, Datatype::WIKIPAGE);
                     break;
                 case SMWDataItem::TYPE_TIME:
@@ -100,19 +105,32 @@ class ConfigTools {
 
     public static function getFacetedSearchUpdateClient(): FacetedSearchUpdateClient
     {
-        global $fsgBackendUpdateClient;
-        if (!isset($fsgBackendUpdateClient)) {
-            $fsgBackendUpdateClient = SolrUpdateClient::class;
+        global $fs2gBackend;
+        switch ($fs2gBackend) {
+            case 'solr':
+            default:
+                $backendUpdateClientClass = SolrUpdateClient::class;
+                break;
+            case 'elastic':
+                $backendUpdateClientClass = ElasticSearchUpdateClient::class;
+                break;
+
         }
-        return new $fsgBackendUpdateClient;
+        return new $backendUpdateClientClass;
     }
 
     public static function getFacetedSearchClient(): FacetedSearchClient
     {
-        global $fsgBackendQueryClient;
-        if (!isset($fsgBackendQueryClient)) {
-            $fsgBackendQueryClient = SolrRequestClient::class;
+        global $fs2gBackend;
+        switch ($fs2gBackend) {
+            case 'solr':
+            default:
+                $backendQueryClientClass = SolrRequestClient::class;
+                break;
+            case 'elastic':
+                $backendQueryClientClass = ElasticSearchQueryClient::class;
+                break;
         }
-        return new $fsgBackendQueryClient;
+        return new $backendQueryClientClass;
     }
 }

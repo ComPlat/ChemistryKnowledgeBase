@@ -1,6 +1,8 @@
 {{BaseTemplate}}
 ==THIS PAGE IS GENERATED TO RESERVE THE TOPIC SPACE IN THIS WIKI - THE MAIN CONTENT IS MISSING==
 
+[[Hide Topic::true]]
 
+{{#experimentlink:|form=EC_conversion_of_CO2_overview_experiments|restrictToPages=|description=Linking Test|sort=|order=}}
 The page [[:Category:Homogeneous photocatalytic CO2 conversion|Homogeneous photocatalytic CO2 conversion]] is an example page in this wiki that contains scientific content
 [[Category:Electrochemical CO2 conversion]]

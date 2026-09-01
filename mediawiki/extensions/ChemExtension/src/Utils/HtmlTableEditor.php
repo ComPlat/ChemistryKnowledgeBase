@@ -236,50 +236,6 @@ class HtmlTableEditor
 
     }
 
-    public function addGroupHeader(ExperimentType $experimentType) {
-        $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//th');
-        $i = 0;
-
-        $tr = $this->doc->createElement('tr');
-        $tr->setAttribute('class', "inv_group_header");
-        $td = $this->doc->createElement('td');
-        $tr->appendChild($td);
-        $columnSpans = [];
-        $groupHeaders = $experimentType->getHeaderGroups();
-        foreach($groupHeaders as $gh) {
-            $num = array_reduce(
-                iterator_to_array($list),
-                fn ($carry, $item) => str_contains($item->getAttribute('class'), $gh) ? $carry + 1 : $carry,
-                0
-            );
-            if ($num > 0) {
-                $td = $this->doc->createElement('td');
-                $td->setAttribute('colspan', $num);
-                $td->setAttribute('class', "inv_group_header $gh");
-                $td->textContent = $experimentType->getHeaderGroupLabel($gh);
-                $tr->appendChild($td);
-            }
-            $columnSpans[$gh] = $num;
-        }
-
-        $rowsNodelist = $xpath->query('//tr');
-        $rows = iterator_to_array($rowsNodelist);
-        $firstRow = array_shift($rows);
-        $firstRow->parentNode->insertBefore($tr, $firstRow);
-
-        foreach($rows as $tr) {
-            $columns = $xpath->query('td', $tr);
-            $j = 0;
-            foreach($groupHeaders as $gh) {
-                for($i = 0; $i < $columnSpans[$gh]; $i++) {
-                    $columns->item($j)->setAttribute("class", $gh);
-                    $j++;
-                }
-            }
-        }
-    }
-
     public function addPubLinkAsLastColumn(array $links)
     {
         $xpath = new DOMXPath($this->doc);
@@ -307,21 +263,6 @@ class HtmlTableEditor
 
     }
 
-    public function hideAllRowsExceptFirst()
-    {
-        $xpath = new DOMXPath($this->doc);
-        $list = $xpath->query('//tr');
-        $i = 0;
-
-        foreach ($list as $tr) {
-            if ($i === 0) {
-                $i++;
-                continue;
-            }
-            $tr->setAttribute('style', 'display:none;');
-        }
-    }
-
     public function addTableClass($class)
     {
         $xpath = new DOMXPath($this->doc);
@@ -333,6 +274,15 @@ class HtmlTableEditor
             } else {
                 $t->setAttribute('class', "$oldClass $class");
             }
+        }
+    }
+
+    public function addTableType($experimentType): void
+    {
+        $xpath = new DOMXPath($this->doc);
+        $list = $xpath->query('//table');
+        foreach ($list as $t) {
+            $t->setAttribute('about', $experimentType);
         }
     }
 

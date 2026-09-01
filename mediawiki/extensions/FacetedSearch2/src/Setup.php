@@ -6,7 +6,6 @@ use MediaWiki\MediaWikiServices;
 use OutputPage;
 use RequestContext;
 use Skin;
-use SMWDIProperty;
 
 class Setup
 {
@@ -46,6 +45,14 @@ class Setup
         return $keys;
     }
 
+    private static function getMessagesFromSMW(): array {
+        if (!class_exists('\SMW\Localizer\Localizer')) {
+            return [];
+        }
+        $lang = \SMW\Localizer\Localizer::getInstance()->getLang();
+        return $lang->getPropertyLabels();
+    }
+
     public static function setupFacetedSearch()
     {
 
@@ -57,7 +64,7 @@ class Setup
             $wgSpecialPages['Search'] = "DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial";
         } else {
             global $fs2gFacetedSearchForMW;
-            if (!$fs2gFacetedSearchForMW) {
+            if (!($fs2gFacetedSearchForMW ?? false)) {
                 global $wgSpecialPages;
                 unset($wgSpecialPages['Search']);
             }
@@ -79,6 +86,10 @@ class Setup
 
     public static function initializeBeforeParserInit()
     {
+        if (PHP_SAPI == 'cli') {
+            return true;
+        }
+
         if (!RequestContext::getMain()->hasTitle()) {
             return true;
         }
@@ -111,6 +122,7 @@ class Setup
             && ($out->getTitle()->isSpecial("FacetedSearch2") || $out->getTitle()->isSpecial("Search"))) {
             self::checkIfCompiled();
             $out->addModules('ext.diqa.facetedsearch2');
+            $out->addJsConfigVars('fs2gSMWLanguage', self::getMessagesFromSMW() );
         }
     }
 
