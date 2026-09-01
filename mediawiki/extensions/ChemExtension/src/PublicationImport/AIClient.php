@@ -77,9 +77,10 @@ class AIClient
 
     /**
      * Builds the user content array from uploaded document file ids and (optional) image file ids
-     * (rendered PDF pages) for vision input.
+     * (rendered PDF pages) for vision input. Public so EnsembleExtractor can construct a
+     * request body identical to what callAI would send, then fire N parallel POSTs itself.
      */
-    private function buildFileContent(array $fileIds, array $imageFileIds = []): array
+    public function buildFileContent(array $fileIds, array $imageFileIds = []): array
     {
         $content = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
         foreach ($imageFileIds as $imageId) {
