@@ -404,7 +404,12 @@ $smwgNamespacesWithSemanticLinks[NS_AUTHOR] = true;
 $wgNamespacesWithSubpages[NS_MAIN] = true;
 wfLoadExtension('ChemExtension');
 
-
+# ChemExtension: number of parallel AI extraction passes per publication import.
+# 1 = legacy single-call behaviour. 3 = ensemble (row-union + cell-majority merge) —
+# fires 3 concurrent OpenAI Responses calls via curl_multi and deterministically merges
+# them so re-importing the same PDF gives the same wiki page. Cost ~3x per import,
+# wall-time ~1x. See src/PublicationImport/EnsembleExtractor.php.
+$wgAIExtractionPasses = 3;
 
 
 $wgShowExceptionDetails = true;
