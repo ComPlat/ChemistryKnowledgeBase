@@ -6,13 +6,18 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use OpenAI;
 
-class AIClient
+class AIClient implements AIClientInterface
 {
 
-    private $client;
-    private $logger;
+    private OpenAI\Client $client;
+    private LoggerUtils $logger;
 
-    public function __construct()
+    static function getAIClient(): AIClientInterface {
+        global $wgCEUseAIClientMock;
+        return isset($wgCEUseAIClientMock) && $wgCEUseAIClientMock === true ? new AIClientMock() : new AIClient();
+    }
+
+    private function __construct()
     {
         global $wgOpenAIKey;
         if (!isset($wgOpenAIKey)) {
@@ -75,7 +80,7 @@ class AIClient
     }
 
 
-    public function uploadFiles(array $files)
+    public function uploadFiles(array $files): array
     {
         $this->logger->log("uploading files to AI: " . join(', ', $files));
         $ids = [];
@@ -101,7 +106,7 @@ class AIClient
         return $ids;
     }
 
-    public function uploadTextAsFile($text)
+    public function uploadTextAsFile($text): array
     {
         $ids = [];
 
@@ -124,7 +129,7 @@ class AIClient
         return $ids;
     }
 
-    public function deleteFiles(array $files)
+    public function deleteFiles(array $files): void
     {
         foreach ($files as $fileId) {
             $response = $this->client->files()->delete($fileId);
@@ -136,7 +141,7 @@ class AIClient
         }
     }
 
-    public function callAI(array $fileIds, string $prompt)
+    public function callAI(array $fileIds, string $prompt): string
     {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($fileIds) . "]");
         $userContent = array_map(fn($fileId) => ["type" => "input_file", "file_id" => $fileId], $fileIds);
@@ -147,7 +152,7 @@ class AIClient
         return $result;
     }
 
-    public function callAIWithTextInputs(array $textInputs, string $prompt)
+    public function callAIWithTextInputs(array $textInputs, string $prompt): string
     {
         $this->logger->log("Request to AI with prompt: '$prompt' and documents [" . join($textInputs) . "]");
         $userContent = array_map(fn($text) => ["type" => "input_text", "text" => $text], $textInputs);
@@ -230,12 +235,8 @@ class AIClient
         return $result;
     }
 
-    /**
-     * @param string $prompt
-     * @param array $userContent
-     * @return array
-     */
-    public function extractRequestParameters(string $prompt, array $userContent): array
+
+    private function extractRequestParameters(string $prompt, array $userContent): array
     {
         $promptParts = self::splitByTags($prompt);
         $systemPrompt = $promptParts['systemLikeInstructions'];

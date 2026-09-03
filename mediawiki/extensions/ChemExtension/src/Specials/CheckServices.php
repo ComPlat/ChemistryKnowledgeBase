@@ -75,7 +75,7 @@ class CheckServices extends SpecialPage
     }
 
     private function checkOpenAIService() {
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
         $result = $aiClient->ping();
         return $result['ok'] ? true : $result['message'];
     }

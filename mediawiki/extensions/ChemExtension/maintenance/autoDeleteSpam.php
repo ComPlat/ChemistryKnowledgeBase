@@ -96,7 +96,7 @@ class autoDeleteSpam extends \Maintenance
         $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         $text = Sanitizer::stripAllTags($parserOut->getText() ?? '');
 
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
         $prompt = "$IP/extensions/ChemExtension/resources/ai-prompts/check_for_spam.txt";
         $aiText = $aiClient->callAIWithTextInputs([$text], file_get_contents($prompt));
         return strtolower(trim($aiText)) === 'yes';
