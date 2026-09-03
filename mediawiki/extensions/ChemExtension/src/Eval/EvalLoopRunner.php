@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Eval;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 
@@ -26,7 +27,7 @@ class EvalLoopRunner
 {
     private GoldSetRepository $goldRepo;
     private ExtractionScorer $scorer;
-    private AIClient $aiClient;
+    private AIClientInterface $aiClient;
     private PromptOptimizer $optimizer;
     private ?ProseSimilarityScorer $proseScorer;
     private LoggerUtils $logger;
@@ -53,7 +54,7 @@ class EvalLoopRunner
     ) {
         $this->goldRepo = $goldRepo ?? new GoldSetRepository();
         $this->scorer = $scorer ?? new ExtractionScorer();
-        $this->aiClient = $aiClient ?? new AIClient();
+        $this->aiClient = $aiClient ?? AIClient::getAIClient();
         $this->optimizer = $optimizer ?? new PromptOptimizer($this->aiClient);
         $this->proseScorer = $proseScorer;
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');

@@ -43,7 +43,7 @@ class auditGoldSet extends \Maintenance
             $this->fatalError("No gold set for topic '$topic'.");
         }
 
-        $client = new AIClient();
+        $client = AIClient::getAIClient();
         $auditor = new GoldAuditor($client, $threshold);
 
         $all = [];   // doi => findings[]

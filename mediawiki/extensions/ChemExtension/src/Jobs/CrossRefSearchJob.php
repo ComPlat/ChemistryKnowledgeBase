@@ -155,6 +155,9 @@ class CrossRefSearchJob extends Job
         return $results;
     }
 
+    /**
+     * @throws Exception
+     */
     public function createDownloadJob($doi): void
     {
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
@@ -171,7 +174,7 @@ class CrossRefSearchJob extends Job
             $this->logger->log("downloading open access pdf from Unpaywall: $oaPdfUrl");
             $content = @file_get_contents($oaPdfUrl);
             if ($content !== false && str_starts_with($content, '%PDF')) {
-                PDFUtils::savePublicationPDF($doi, $content);
+                PDFUtils::savePublication($doi, $content);
                 return;
             }
             $this->logger->warn("Unpaywall PDF link did not yield a valid PDF for doi: $doi, falling back");
@@ -182,9 +185,14 @@ class CrossRefSearchJob extends Job
         if (count($pdfDownloads) > 0) {
             $first = reset($pdfDownloads);
             $downloader = new DownloadLinkFinder($first->URL);
-            $links = $downloader->findDownloadLinks(['pdf']);
+            try {
+                $links = $downloader->findDownloadLinks(['pdf']);
+            } catch (Exception $e) {
+                $this->logger->warn("CrossRef link did not yield a valid PDF for doi: $doi, falling back");
+                $links = [];
+            }
             if (empty($links)) {
-                $this->logger->log("no pdf links found for doi: $doi");
+                $this->logger->log("no pdf links found for doi: $doi, creating download job for first link: " . $first->URL);
                 $jobQueue->push(new DownloadPDFJob(Title::newFromText("DownloadPublication"), [
                     'url' => $first->URL,
                     'doi' => $doi,
@@ -194,7 +202,7 @@ class CrossRefSearchJob extends Job
                 $this->logger->log("downloading pdf from: " . $first['url']);
                 $content = file_get_contents($first['url']);
                 if (str_starts_with($content, '%PDF')) {
-                    PDFUtils::savePublicationPDF($doi, $content);
+                    PDFUtils::savePublication($doi, $content);
                 }
             }
 

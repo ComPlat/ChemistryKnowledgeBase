@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Eval;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 
 /**
@@ -15,12 +16,12 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
  */
 class PromptOptimizer
 {
-    private AIClient $aiClient;
+    private AIClientInterface $aiClient;
     private LoggerUtils $logger;
 
     public function __construct(?AIClient $aiClient = null)
     {
-        $this->aiClient = $aiClient ?? new AIClient();
+        $this->aiClient = $aiClient ?? AIClient::getAIClient();
         $this->logger = new LoggerUtils('PromptOptimizer', 'ChemExtension');
     }
 

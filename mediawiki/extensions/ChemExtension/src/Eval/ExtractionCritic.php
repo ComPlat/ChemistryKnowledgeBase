@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Eval;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 
 /**
@@ -17,13 +18,13 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
  */
 class ExtractionCritic
 {
-    private AIClient $client;
+    private AIClientInterface $client;
     private float $threshold;
     private LoggerUtils $logger;
 
-    public function __construct(?AIClient $client = null, float $threshold = 0.6)
+    public function __construct(?AIClientInterface $client = null, float $threshold = 0.6)
     {
-        $this->client = $client ?? new AIClient();
+        $this->client = $client ?? AIClient::getAIClient();
         $this->threshold = $threshold;
         $this->logger = new LoggerUtils('ExtractionCritic', 'ChemExtension');
     }

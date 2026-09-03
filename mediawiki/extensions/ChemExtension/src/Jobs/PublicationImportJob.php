@@ -3,6 +3,7 @@
 namespace DIQA\ChemExtension\Jobs;
 
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\PublicationImport\EnsembleExtractor;
 use DIQA\ChemExtension\PublicationImport\ExperimentWikitextImporter;
 use DIQA\ChemExtension\PublicationImport\ImportProcessRepository;
@@ -134,7 +135,6 @@ class PublicationImportJob extends Job
         $wikitext = <<<WIKITEXT
 $importNotice
 $reviewNotice
-{{BaseTemplate}}
 {{DISPLAYTITLE: $this->displayTitle }}
 {{DOI|doi=$doi}}
 
@@ -166,7 +166,7 @@ WIKITEXT;
      * below the threshold, returns a review notice (+ category) to prepend to the page so a human
      * checks it instead of trusting the auto-import silently. Returns '' when disabled or healthy.
      */
-    private function reviewNoticeIfLowConfidence(AIClient $aiClient, array $fileIds, string $aiText): string
+    private function reviewNoticeIfLowConfidence(AIClientInterface $aiClient, array $fileIds, string $aiText): string
     {
         global $wgCEExtractionCriticThreshold;
         if (!isset($wgCEExtractionCriticThreshold)) {

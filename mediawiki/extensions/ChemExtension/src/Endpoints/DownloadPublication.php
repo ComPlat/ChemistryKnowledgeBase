@@ -24,6 +24,9 @@ class DownloadPublication extends SimpleHandler
                 throw new Exception("'doi' parameter is missing", 400);
             }
             $url = self::downloadByDOI($doi);
+            if (is_null($url)) {
+                throw new Exception("No PDF download link found for DOI: " . $doi, 404);
+            }
             $res = new Response($url);
             $res->setStatus(200);
             return $res;
@@ -53,12 +56,13 @@ class DownloadPublication extends SimpleHandler
     }
 
     /**
-     * @param mixed $doi
-     * @return string URL of the first PDF download
+     * @param string $doi
+     * @return ?string URL of the first PDF download
      * @throws Exception
      */
-    public static function downloadByDOI(mixed $doi): string
+    public static function downloadByDOI(string $doi): ?string
     {
+
         $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
         $crossRefApi = new CrossRefApi();
         $pdfDownloads = $crossRefApi->findPdfDownloads($doi);

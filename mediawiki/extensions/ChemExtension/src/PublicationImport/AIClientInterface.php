@@ -26,5 +26,13 @@ interface AIClientInterface
 
     public function callAIWithTextInputs(array $textInputs, string $prompt): string;
 
+    public function callAIWithSchema(array $fileIds, string $prompt, array $jsonSchema, string $schemaName = 'extraction', array $imageFileIds = []): string;
+
+    public function buildFileContent(array $fileIds, array $imageFileIds = []): array;
+
+    public function extractRequestParameters(string $prompt, array $userContent): array;
+
+    public function parallelPost(array $requestBody, int $n): array;
+
 
 }

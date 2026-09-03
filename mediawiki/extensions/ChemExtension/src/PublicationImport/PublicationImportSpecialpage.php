@@ -103,14 +103,14 @@ class PublicationImportSpecialpage extends SpecialPage
             }
             // "already uploaded" = any main or SI PDF is on disk (our SI-aware helper vs
             // main's getPublicationPDFs which only sees the main file).
-            $alreadyUploaded = count(PdfUtils::publicationAllPDFs($doi)) > 0;
+            $alreadyUploaded = count(PdfUtils::getPublicationPDFs($doi)) > 0;
             $uploading = $_FILES["chemfile"]["name"][0] !== '';
             if (!$alreadyUploaded && !$uploading) {
                 throw new Exception('No files selected or already uploaded.');
             }
             return true;
         }
-        $pubFiles = PdfUtils::publicationAllPDFs($doi);
+        $pubFiles = PdfUtils::getPublicationPDFs($doi);
         return count($pubFiles) > 0 && !empty($doi) && !empty($pageTitle);
     }
 
@@ -327,7 +327,7 @@ HTML;
             // publicationAllPDFs returns the main PDF followed by any supplementary
             // (SI) PDFs so the AI extractor sees the whole paper package, not just
             // the main file — the SI often contains the experimental tables.
-            $pubFiles = PdfUtils::publicationAllPDFs($doi);
+            $pubFiles = PdfUtils::getPublicationPDFs($doi);
             foreach ($pubFiles as $pubFile) {
                 $uploadedFiles[basename($pubFile)] = $pubFile;
             }

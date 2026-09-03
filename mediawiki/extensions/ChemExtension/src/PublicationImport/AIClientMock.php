@@ -33,4 +33,24 @@ class AIClientMock implements AIClientInterface {
     {
         return "callAIWithTextInputs response";
     }
+
+    public function callAIWithSchema(array $fileIds, string $prompt, array $jsonSchema, string $schemaName = 'extraction', array $imageFileIds = []): string
+    {
+        return "callAIWithSchema response";
+    }
+
+    public function buildFileContent(array $fileIds, array $imageFileIds = []): array
+    {
+        return [];
+    }
+
+    public function extractRequestParameters(string $prompt, array $userContent): array
+    {
+        return [];
+    }
+
+    public function parallelPost(array $requestBody, int $n): array
+    {
+        return [ 'first' => ['output_text' => 'parallelPost response'] ];
+    }
 }

@@ -60,11 +60,17 @@ class PdfUtils {
         return $wgChemPubStoreDir;
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function getPublicationPDFDirectory(string $doi): string {
         $wgChemPubStoreDir = self::checkPDFPrerequisites();
         return $wgChemPubStoreDir . "/" . md5($doi) . '.pdf';
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function getPublicationPDFs(string $doi): array
     {
         $wgChemPubStoreDir = self::checkPDFPrerequisites();
@@ -121,41 +127,23 @@ class PdfUtils {
         return $files;
     }
 
-    private static function storeDir(): string
-    {
-        global $wgChemPubStoreDir;
-        if (!isset($wgChemPubStoreDir)) {
-            $wgChemPubStoreDir = sys_get_temp_dir();
-        }
-        return $wgChemPubStoreDir;
-    }
-
     /**
      * Stores a supplementary-information PDF for a DOI next to the main PDF.
+     * @throws \Exception
      */
     public static function savePublicationSI(string $doi, int $index, string $content): void
     {
-        file_put_contents(self::storeDir() . "/" . md5($doi) . "_si{$index}.pdf", $content);
+        $dir = self::getPublicationPDFDirectory($doi);
+        file_put_contents($dir . "/si{$index}.pdf", $content);
     }
 
     /**
-     * @return string[] paths of stored supplementary PDFs for the DOI (may be empty)
+     * @throws \Exception
      */
-    public static function publicationSIPDFs(string $doi): array
+    public static function savePublication(string $doi, string $content): void
     {
-        return glob(self::storeDir() . "/" . md5($doi) . "_si*.pdf") ?: [];
+        $dir = self::getPublicationPDFDirectory($doi);
+        file_put_contents($dir . "/publication.pdf", $content);
     }
 
-    /**
-     * @return string[] the main PDF (if present) followed by any supplementary PDFs.
-     */
-    public static function publicationAllPDFs(string $doi): array
-    {
-        $all = [];
-        $main = self::publicationPDF($doi);
-        if (is_file($main)) {
-            $all[] = $main;
-        }
-        return array_merge($all, self::publicationSIPDFs($doi));
-    }
 }
