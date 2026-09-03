@@ -678,3 +678,10 @@ td.chemext-status-failed {
 table.chemext-import-process-table {
     width: 100%;
 }
+
+div.ce_import_notice {
+    padding: 10px;
+    background: lightyellow;
+    border: 1px solid;
+    margin-top: 10px;
+}

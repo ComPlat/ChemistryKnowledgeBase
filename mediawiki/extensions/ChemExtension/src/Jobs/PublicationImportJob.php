@@ -11,6 +11,7 @@ use DIQA\ChemExtension\Utils\WikiTools;
 use Exception;
 use Job;
 use Hooks;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 
@@ -105,7 +106,11 @@ class PublicationImportJob extends Job
     private function importPublicationPage()
     {
         $doi = $this->doi;
-        $importNotice = "Imported from: " . join(', ', $this->paths);
+        $pathItems = implode('', array_map(static function ($path) {
+            return Html::rawElement('li', [], htmlspecialchars($path));
+        }, $this->paths));
+        $importNotice = Html::rawElement("div", ['class' => 'ce_import_notice'],
+            "Imported from: " . Html::rawElement('ul', [], $pathItems));
 
         $topicsCategoryAnnotations = join("\n", array_map(function ($topic) {
             return "[[Category:$topic]]";
@@ -115,7 +120,7 @@ class PublicationImportJob extends Job
         $prompt = $this->resolveImportPrompt();
         $this->logger->log("prompt for AI: " . $prompt);
 
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
         $fileIds = $aiClient->uploadFiles($this->paths);
 
         // Consistency wrapper: if $wgAIExtractionPasses > 1, run the extractor N times in

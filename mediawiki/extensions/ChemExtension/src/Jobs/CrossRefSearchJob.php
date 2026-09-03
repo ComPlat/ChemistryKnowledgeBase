@@ -56,7 +56,7 @@ class CrossRefSearchJob extends Job
 
     private function checkPublication(string $doi)
     {
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
 
         $promptTitle = Title::newFromText('Publication_search_prompt', NS_MEDIAWIKI);
         if ($promptTitle->exists()) {
@@ -115,7 +115,7 @@ class CrossRefSearchJob extends Job
 
     private function checkSpecificPrompts(PublicationSearchResult $publication, array $allTopics): array
     {
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
 
         $positiveResults = [];
         foreach ($allTopics as $topic) {

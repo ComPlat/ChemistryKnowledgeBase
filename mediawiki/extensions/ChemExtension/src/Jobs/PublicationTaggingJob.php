@@ -76,7 +76,7 @@ class PublicationTaggingJob extends Job
         $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         $text = Sanitizer::stripAllTags($parserOut->getText() ?? '');
 
-        $aiClient = new AIClient();
+        $aiClient = AIClient::getAIClient();
         $prompt = "$IP/extensions/ChemExtension/resources/ai-prompts/tagging_prompt.txt";
         $aiText = $aiClient->callAIWithTextInputs([$text], file_get_contents($prompt));
         return explode(",", $aiText);
