@@ -29,10 +29,11 @@ class OpenAlexAPI extends PublicationFetcher {
         $pageNumber = 0;
         $pageSize = 100;
         $nextCursor = '*';
-
+        global $wgCECrawlingDelay;
         do {
             $this->logger->log("\nFetching page $pageNumber...");
             $res = $this->fetchPublications($daysBack, $pageSize, $nextCursor);
+            sleep($wgCECrawlingDelay ?? 1);
             $callback($res['results']);
             $nextCursor = $res['nextCursor'];
             $pageNumber++;
