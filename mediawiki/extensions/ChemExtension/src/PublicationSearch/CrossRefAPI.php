@@ -29,8 +29,8 @@ class CrossRefAPI extends PublicationFetcher {
             'query' => $query,
             'select' => 'title,abstract,DOI,published,container-title',
             'filter' => implode(',', $filtersAsStrings),
-            'sort' => 'published',
-            'order' => 'desc'
+            //'sort' => 'published', not allowed anymore
+            //'order' => 'desc'
         ], $additionalParams));
     }
 
