@@ -5,9 +5,10 @@ namespace DIQA\ChemExtension\Specials;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
+use DIQA\ChemExtension\PublicationSearch\OpenAlexAPI;
 use DIQA\ChemExtension\TIB\TibClient;
 use eftec\bladeone\BladeOne;
-use Exception;
 use SpecialPage;
 
 class CheckServices extends SpecialPage
@@ -33,45 +34,43 @@ class CheckServices extends SpecialPage
         $output = $this->getOutput();
         $this->setHeaders();
 
-        $responses= $this->doParallelCheckRequests();
+        $servicesData = [
+            'RGroupState' => [
+                'class' => MoleculeRGroupServiceClientImpl::class,
+                'contact' => 'caman.nguyenthanh (at) gmail.com',
+                'name' => 'R-group service',
+            ],
+            'renderState' =>  [
+                'class' => MoleculeRendererClientImpl::class,
+                'contact' => 'pierre.tremouilhac (at) kit.edu',
+                'name' => 'Molecule render service',
+            ],
+            'tibState' => [
+                'class' => TIBClient::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'TIB service',
+            ],
+            'crossRef' => [
+                'class' => CrossRefAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'CrossRef service',
+            ],
+            'openAlexApi' => [
+                'class' => OpenAlexAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'OpenAlex service',
+            ],
+        ];
+
+        $responses= $this->doParallelCheckRequests($servicesData);
 
         $dataToRender = array_map(fn ($e) => $e['_error'] ?? true, $responses);
         $output->addHTML($this->blade->run("check-services", [
-            ...$dataToRender,
+            'responses' => $dataToRender,
+            'servicesData' => $servicesData,
             'openAIState' => $this->checkOpenAIService(),
         ])
         );
-    }
-
-    private function checkRGroupsService()
-    {
-        try {
-            $service = new MoleculeRGroupServiceClientImpl();
-            return $service->check();
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
-    private function checkRenderService()
-    {
-        try {
-            $service = new MoleculeRendererClientImpl();
-            return $service->check();
-
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
-    private function checkTIBService()
-    {
-        try {
-            $service = new TibClient();
-            return $service->check();
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
     }
 
     private function checkOpenAIService()
@@ -81,22 +80,19 @@ class CheckServices extends SpecialPage
         return $result['ok'] ? true : $result['message'];
     }
 
-    /**
-     * @return array
-     */
-    public function doParallelCheckRequests(): array
+
+    public function doParallelCheckRequests($servicesData): array
     {
-        $handles = [
-            'RGroupState' => $this->checkRGroupsService(),
-            'renderState' => $this->checkRenderService(),
-            'tibState' => $this->checkTIBService(),
-        ];
+
         $multi = curl_multi_init();
-        foreach ($handles as $i => $ch) {
-            if ($ch === false) {
+        $handles = [];
+        foreach ($servicesData as $i => $tuple) {
+            $service = new $tuple['class'];
+            $handles[$i] = $service->check();
+            if ($handles[$i] === false) {
                 continue;
             }
-            curl_multi_add_handle($multi, $ch);
+            curl_multi_add_handle($multi, $handles[$i]);
         }
 
         // Drive the multi handle until all requests complete.
@@ -109,7 +105,8 @@ class CheckServices extends SpecialPage
         } while ($running > 0 && $status === CURLM_OK);
 
         $responses = [];
-        foreach ($handles as $i => $ch) {
+        foreach ($servicesData as $i => $tuple) {
+            $ch = $handles[$i];
             if ($ch === false) {
                 continue;
             }

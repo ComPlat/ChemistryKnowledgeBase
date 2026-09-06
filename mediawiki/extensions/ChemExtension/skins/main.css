@@ -153,16 +153,22 @@ table.wikitable tr td.experiment-editable-column, th.experiment-editable-column 
 
 .check-service-state {
     text-align: right;
+    color: white;
+    font-weight: bold;
+}
+
+.check-service-state div {
+    width: 100%;
+    padding: 5px;
+    text-align: center;
 }
 
 .check-service-state-ok {
-    color: green;
-    font-weight: bold;
+    background: darkgreen;
 }
 
 .check-service-state-not-ok {
-    color: red;
-    font-weight: bold;
+    background: darkred;
 }
 
 .experimentlist-panel {
