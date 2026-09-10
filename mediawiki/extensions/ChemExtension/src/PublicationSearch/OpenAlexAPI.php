@@ -2,11 +2,12 @@
 
 namespace DIQA\ChemExtension\PublicationSearch;
 
+use DIQA\ChemExtension\CheckServiceRequest;
 use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 
-class OpenAlexAPI extends PublicationFetcher {
+class OpenAlexAPI extends PublicationFetcher implements CheckServiceRequest {
 
     private $logger;
     private $openAlexApiBaseUrl;
@@ -29,10 +30,11 @@ class OpenAlexAPI extends PublicationFetcher {
         $pageNumber = 0;
         $pageSize = 100;
         $nextCursor = '*';
-
+        global $wgCECrawlingDelay;
         do {
             $this->logger->log("\nFetching page $pageNumber...");
             $res = $this->fetchPublications($daysBack, $pageSize, $nextCursor);
+            sleep($wgCECrawlingDelay ?? 1);
             $callback($res['results']);
             $nextCursor = $res['nextCursor'];
             $pageNumber++;
@@ -168,5 +170,35 @@ class OpenAlexAPI extends PublicationFetcher {
         } finally {
             curl_close($ch);
         }
+    }
+
+    public function check(): \CurlHandle|false
+    {
+        $fromDate = date('Y-m-d', strtotime("-1 days"));
+        $untilDate = date('Y-m-d');
+
+        $filters = [
+            'from_publication_date:' . $fromDate,
+            'to_publication_date:' . $untilDate,
+            'type:article',
+            'has_doi:true',
+            'topics.domain.id:3', // Physical Sciences
+            'topics.field.id:16' // Chemistry
+        ];
+
+        $params = [
+            'filter' => implode(',', $filters),
+            'per-page' => 10,
+            'cursor' => $cursor ?? '*',
+            'sort' => 'publication_date:desc',
+            'select' => 'doi,title,abstract_inverted_index,publication_date,primary_location',
+        ];
+        $url = $this->openAlexApiBaseUrl . "/works" . '?' . CurlUtil::buildQueryParams($params);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Expect:', 'Accept: application/json']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        return $ch;
     }
 }

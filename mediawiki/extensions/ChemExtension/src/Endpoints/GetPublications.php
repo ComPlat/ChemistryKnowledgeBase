@@ -30,12 +30,16 @@ class GetPublications extends SimpleHandler
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
 
         if (isset($params['category']) && $params['category'] != '') {
-            $category = $dbr->addQuotes(str_replace(' ','_', $params['category']));
-            $res = $dbr->select('page', 'page_id', "page_title = $category AND page_namespace = ".NS_CATEGORY);
-            if ($res->numRows() > 0) {
-                $row = $res->fetchObject();
-                $category_id = $row->page_id;
-            }
+            $category = $dbr->addQuotes(str_replace(' ', '_', $params['category']));
+        } else {
+            $category = $dbr->addQuotes('Topic');
+        }
+        $res = $dbr->select('page', 'page_id',
+            "page_title = $category AND page_namespace = " . NS_CATEGORY
+        );
+        if ($res->numRows() > 0) {
+            $row = $res->fetchObject();
+            $category_id = $row->page_id;
         }
 
         $searchText = strtolower($params['searchTerm']);
@@ -44,10 +48,11 @@ class GetPublications extends SimpleHandler
 
         $conditions = [
             'page.page_id = page_props.pp_page',
+            'page.page_namespace = 0',
         ];
         foreach ($parts as $part) {
             $encoded = $dbr->addQuotes("%$part%");
-            $conditions[] =   "LOWER(CONVERT(pp_value USING latin1)) LIKE $encoded";
+            $conditions[] = "LOWER(CONVERT(pp_value USING latin1)) LIKE $encoded";
 
         }
         $tables = ['page_props', 'page'];
@@ -59,7 +64,7 @@ class GetPublications extends SimpleHandler
         $results = [];
         foreach ($res as $row) {
             $title = Title::newFromText($row->page_title, $row->page_namespace);
-            $results[] = ['title' => $title ];
+            $results[] = ['title' => $title];
 
         }
         $html = $this->blade->run("navigation.publication-list",

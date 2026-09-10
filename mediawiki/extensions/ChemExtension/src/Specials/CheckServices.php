@@ -5,16 +5,16 @@ namespace DIQA\ChemExtension\Specials;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
+use DIQA\ChemExtension\PublicationSearch\OpenAlexAPI;
 use DIQA\ChemExtension\TIB\TibClient;
 use eftec\bladeone\BladeOne;
 use SpecialPage;
-use Exception;
 
 class CheckServices extends SpecialPage
 {
     private $blade;
-    private $benzolWithRGroupsMolfile;
-    private $benzolMolfile;
+
 
     public function __construct()
     {
@@ -22,7 +22,7 @@ class CheckServices extends SpecialPage
         $views = __DIR__ . '/../../views';
         $cache = __DIR__ . '/../../cache';
         $this->blade = new BladeOne ($views, $cache);
-        $this->initializeParameters();
+
     }
 
     /**
@@ -34,109 +34,101 @@ class CheckServices extends SpecialPage
         $output = $this->getOutput();
         $this->setHeaders();
 
+        $servicesData = [
+            'RGroupState' => [
+                'class' => MoleculeRGroupServiceClientImpl::class,
+                'contact' => 'caman.nguyenthanh (at) gmail.com',
+                'name' => 'R-group service',
+            ],
+            'renderState' =>  [
+                'class' => MoleculeRendererClientImpl::class,
+                'contact' => 'pierre.tremouilhac (at) kit.edu',
+                'name' => 'Molecule render service',
+            ],
+            'tibState' => [
+                'class' => TIBClient::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'TIB service',
+            ],
+            'crossRef' => [
+                'class' => CrossRefAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'CrossRef service',
+            ],
+            'openAlexApi' => [
+                'class' => OpenAlexAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'OpenAlex service',
+            ],
+        ];
+
+        $responses= $this->doParallelCheckRequests($servicesData);
+
+        $dataToRender = array_map(fn ($e) => $e['_error'] ?? true, $responses);
         $output->addHTML($this->blade->run("check-services", [
-            'RGroupState' => $this->checkRGroupsService(),
-            'renderState' => $this->checkRenderService(),
-            'tibState' => $this->checkTIBService(),
+            'responses' => $dataToRender,
+            'servicesData' => $servicesData,
             'openAIState' => $this->checkOpenAIService(),
-            ])
-            );
+        ])
+        );
     }
 
-    private function checkRGroupsService()
+    private function checkOpenAIService()
     {
-        try {
-            $service = new MoleculeRGroupServiceClientImpl();
-            $service->buildMolecules( $this->benzolWithRGroupsMolfile, [['r4' => 'ACE']]);
-            return true;
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
-    private function checkRenderService() {
-        try {
-            $service = new MoleculeRendererClientImpl();
-            $service->render( $this->benzolMolfile);
-            return true;
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
-    private function checkTIBService() {
-        try {
-            $service = new TibClient();
-            $service->suggest( "atomic", 1);
-            return true;
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
-    private function checkOpenAIService() {
         $aiClient = AIClient::getAIClient();
         $result = $aiClient->ping();
         return $result['ok'] ? true : $result['message'];
     }
 
-    private function initializeParameters() {
-        $this->benzolWithRGroupsMolfile = <<<MOL
 
-  -INDIGO-01122317072D
+    public function doParallelCheckRequests($servicesData): array
+    {
 
-  0  0  0  0  0  0  0  0  0  0  0 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 7 7 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 2.80985 -5.95007 0.0 0
-M  V30 2 C 4.54015 -5.94959 0.0 0
-M  V30 3 C 3.67664 -5.44997 0.0 0
-M  V30 4 C 4.54015 -6.95053 0.0 0
-M  V30 5 C 2.80985 -6.95502 0.0 0
-M  V30 6 C 3.67882 -7.45003 0.0 0
-M  V30 7 R# 5.375 -7.575 0.0 0 RGROUPS=(1 4)
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 2 3 1
-M  V30 2 2 4 2
-M  V30 3 1 1 5
-M  V30 4 1 2 3
-M  V30 5 2 5 6
-M  V30 6 1 6 4
-M  V30 7 1 7 4
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-MOL;
+        $multi = curl_multi_init();
+        $handles = [];
+        foreach ($servicesData as $i => $tuple) {
+            $service = new $tuple['class'];
+            $handles[$i] = $service->check();
+            if ($handles[$i] === false) {
+                continue;
+            }
+            curl_multi_add_handle($multi, $handles[$i]);
+        }
 
-        $this->benzolMolfile = <<<MOL
+        // Drive the multi handle until all requests complete.
+        $running = 0;
+        do {
+            $status = curl_multi_exec($multi, $running);
+            if ($running > 0) {
+                curl_multi_select($multi, 5.0);
+            }
+        } while ($running > 0 && $status === CURLM_OK);
 
-  -INDIGO-08042212082D
-
-  0  0  0  0  0  0  0  0  0  0  0 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 6 6 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 1.25985 -4.72507 0.0 0
-M  V30 2 C 2.99015 -4.72459 0.0 0
-M  V30 3 C 2.12664 -4.22497 0.0 0
-M  V30 4 C 2.99015 -5.72553 0.0 0
-M  V30 5 C 1.25985 -5.73002 0.0 0
-M  V30 6 C 2.12882 -6.22503 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 2 3 1
-M  V30 2 2 4 2
-M  V30 3 1 1 5
-M  V30 4 1 2 3
-M  V30 5 2 5 6
-M  V30 6 1 6 4
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-
-MOL;
-
+        $responses = [];
+        foreach ($servicesData as $i => $tuple) {
+            $ch = $handles[$i];
+            if ($ch === false) {
+                continue;
+            }
+            $response = curl_multi_getcontent($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErrno = curl_errno($ch);
+            if ($curlErrno !== 0) {
+                $responses[$i] = ['_error' => 'curl error: ' . curl_error($ch)];
+            } elseif ($httpCode !== 200) {
+                // Preserve the error message for logging, but leave output empty so merger skips.
+                $snippet = is_string($response) ? substr($response, 0, 500) : '';
+                $curlError = curl_error($ch);
+                $responses[$i] = ['_error' => "HTTP $httpCode: $snippet $curlError"];
+            } else {
+                $responses[$i] = []; // OK
+            }
+            curl_multi_remove_handle($multi, $ch);
+            curl_close($ch);
+        }
+        curl_multi_close($multi);
+        return $responses;
     }
+
+
 }

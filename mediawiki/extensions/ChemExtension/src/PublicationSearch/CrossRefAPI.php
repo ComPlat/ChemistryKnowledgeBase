@@ -2,20 +2,25 @@
 
 namespace DIQA\ChemExtension\PublicationSearch;
 
+use DIQA\ChemExtension\CheckServiceRequest;
 use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
-class CrossRefAPI extends PublicationFetcher {
+
+class CrossRefAPI extends PublicationFetcher implements CheckServiceRequest
+{
 
     private $logger;
     private $crossRefApiBaseUrl;
+
     public function __construct()
     {
         $this->logger = new LoggerUtils('CrossRefAPI', 'ChemExtension');
         $this->crossRefApiBaseUrl = 'https://api.crossref.org';
     }
 
-    private function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = []) {
+    private function find(string $query, int $daysAgo = 30, $additionalParams = [], $additionalFilters = [])
+    {
 
         $filters = [
             'from-pub-date' => date('Y-m-d', strtotime("-$daysAgo days")),
@@ -25,16 +30,17 @@ class CrossRefAPI extends PublicationFetcher {
         $filters = array_merge($filters, $additionalFilters);
         $filtersAsStrings = array_map(fn($k) => "$k:$filters[$k]", array_keys($filters));
 
-        return $this->getJsonData('/works', array_merge( [
+        return $this->getJsonData('/works', array_merge([
             'query' => $query,
             'select' => 'title,abstract,DOI,published,container-title',
             'filter' => implode(',', $filtersAsStrings),
-            'sort' => 'published',
-            'order' => 'desc'
+            //'sort' => 'published', not allowed anymore
+            //'order' => 'desc'
         ], $additionalParams));
     }
 
-    public function findPdfDownloads($doi) {
+    public function findPdfDownloads($doi)
+    {
         $json = $this->getJsonData("/works/doi/$doi");
         $links = $json->message->link;
         $pdfs = array_filter($links, fn($link) => $link->{'content-type'} === 'application/pdf');
@@ -43,8 +49,6 @@ class CrossRefAPI extends PublicationFetcher {
         }
         return $links;
     }
-
-
 
 
     /**
@@ -86,15 +90,17 @@ class CrossRefAPI extends PublicationFetcher {
         }
     }
 
-    public function fetchPublication( callable $callback, $daysBack = 1): void
+    public function fetchPublication(callable $callback, $daysBack = 1): void
     {
 
         $pageNumber = 0;
         $pageSize = 100;
         $nextCursor = null;
+        global $wgCECrawlingDelay;
         do {
             print "\nFetching page $pageNumber...";
             $res = $this->fetchPublications($daysBack, $pageSize, $pageNumber, $nextCursor);
+            sleep($wgCECrawlingDelay ?? 1);
             $callback($res['results']);
             $nextCursor = $res['nextCursor'];
             $pageNumber++;
@@ -116,4 +122,30 @@ class CrossRefAPI extends PublicationFetcher {
     }
 
 
+    public function check(): \CurlHandle|false
+    {
+        $filters = [
+            'from-pub-date' => date('Y-m-d', strtotime("-1 days")),
+            'until-pub-date' => date('Y-m-d'),
+            'type' => 'journal-article',
+        ];
+
+        $filtersAsStrings = array_map(fn($k) => "$k:$filters[$k]", array_keys($filters));
+
+        $queryParams = [
+            'query' => "",
+            'select' => 'title,abstract,DOI,published,container-title',
+            'filter' => implode(',', $filtersAsStrings),
+        ];
+
+        $headerFields = [];
+        $headerFields[] = "Expect:"; // disables 100 CONTINUE
+        $ch = curl_init();
+        $url = $this->crossRefApiBaseUrl . "/works" . '?' . CurlUtil::buildQueryParams($queryParams);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        return $ch;
+    }
 }

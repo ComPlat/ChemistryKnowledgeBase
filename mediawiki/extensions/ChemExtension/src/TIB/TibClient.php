@@ -2,11 +2,12 @@
 
 namespace DIQA\ChemExtension\TIB;
 
+use DIQA\ChemExtension\CheckServiceRequest;
 use DIQA\ChemExtension\Utils\CurlUtil;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 
-class TibClient {
+class TibClient implements CheckServiceRequest {
     
     private $tibServiceUrl;
     private $logger;
@@ -112,5 +113,22 @@ class TibClient {
                 'obo_id' => $e->obo_id
             ],
             $curlResult->response->docs);
+    }
+
+    public function check(): \CurlHandle|false
+    {
+        $headerFields = [];
+        $headerFields[] = "Expect:"; // disables 100 CONTINUE
+        $ch = curl_init();
+        $url = $this->tibServiceUrl . "/suggest?q=%s&rows=%s";
+        $url = sprintf($url, urlencode("atomic"), 1);
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headerFields);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); //timeout in seconds
+        return $ch;
     }
 }

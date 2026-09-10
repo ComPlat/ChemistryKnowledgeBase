@@ -2,29 +2,20 @@
     <p>
         This page checks the external services required for this wiki.
     </p>
-    <table style="width: 80%">
+    <table style="width: 80%; border-collapse: separate; border-spacing: 1em;">
+        @foreach($responses as $id => $res)
         <tr>
-            <td><span style="font-weight: bold">R-Groups-Service</span> (contact: caman.nguyenthanh (at) gmail.com)</td>
-            <td class="check-service-state {{$RGroupState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
-                {{$RGroupState === true ? 'OK': $RGroupState}}
+            <td><span style="font-weight: bold">{{$servicesData[$id]['name']}}</span> (contact: {{$servicesData[$id]['contact']}})</td>
+            <td class="check-service-state {{$res === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
+                <div title="{{$res === true ? "" : $res}}">{{$res === true ? 'OK': 'ERROR'}}</div>
             </td>
         </tr>
-        <tr>
-            <td><span style="font-weight: bold">Molecule render service</span> (contact: pierre.tremouilhac (at) kit.edu)</td>
-            <td class="check-service-state {{$renderState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
-                {{$renderState === true ? 'OK': $renderState}}
-            </td>
-        </tr>
-        <tr>
-            <td><span style="font-weight: bold">TIB service</span> (contact: kuehn (at) diqa.de)</td>
-            <td class="check-service-state {{$tibState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
-                {{$tibState === true ? 'OK': $tibState}}
-            </td>
-        </tr>
+        @endforeach
+
         <tr>
             <td><span style="font-weight: bold">Open-AI service</span> (contact: kuehn (at) diqa.de)</td>
             <td class="check-service-state {{$openAIState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
-                {{$openAIState === true ? 'OK': $openAIState}}
+               <div title="{{$openAIState === true ? "": $openAIState}}">{{$openAIState === true ? 'OK': 'ERROR'}}</div>
             </td>
         </tr>
     </table>
