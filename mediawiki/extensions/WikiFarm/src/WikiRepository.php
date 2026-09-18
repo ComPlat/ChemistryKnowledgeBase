@@ -21,23 +21,8 @@ class WikiRepository {
     }
 
 
-    public function createWikiJob($wikiName, $userName) {
-        $title = \Title::newFromText( "Wiki $wikiName/CreateWikiJob" );
-        $jobParams = [ 'name' => $wikiName ];
-        $user = \User::newFromName($userName);
-        if ($user->getId() === 0) {
-            print "\nUser '$userName' does not exist\n";
-            exit;
-        }
-        $wikiId = self::createWikiInDB($wikiName, $user);
-        $jobParams['wikiId'] = "$wikiId";
-        $job = new CreateWikiJob( $title, $jobParams );
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $jobQueue->push( $job );
-        return $wikiId;
-    }
-
-    private function createWikiInDB($name, $user) {
+    public function createWikiInDB($name, $user): int
+    {
         $this->db->startAtomic( __METHOD__ );
         $this->db->insert('wiki_farm',
             [
@@ -63,7 +48,8 @@ class WikiRepository {
         return $wikiId;
     }
 
-    public function updateToCreated($wikiId) {
+    public function updateToCreated($wikiId): void
+    {
         $this->db->startAtomic( __METHOD__ );
         $this->db->update('wiki_farm',
             [
@@ -76,11 +62,26 @@ class WikiRepository {
         $this->db->endAtomic( __METHOD__ );
     }
 
-    public function updateToBeDeleted($wikiId) {
+    public function updateToBeDeleted($wikiId): void
+    {
         $this->db->startAtomic( __METHOD__ );
         $this->db->update('wiki_farm',
             [
                 'wiki_status' => 'TO_BE_DELETED'
+            ],
+            [
+                'id' => $wikiId
+            ]
+        );
+        $this->db->endAtomic( __METHOD__ );
+    }
+
+    public function updateToFailed($wikiId): void
+    {
+        $this->db->startAtomic( __METHOD__ );
+        $this->db->update('wiki_farm',
+            [
+                'wiki_status' => 'FAILED'
             ],
             [
                 'id' => $wikiId
@@ -138,7 +139,8 @@ class WikiRepository {
         return $results;
     }
 
-    public function addUserToWiki(array $users, $wikiId, $status_enum) {
+    public function addUserToWiki(array $users, $wikiId, $status_enum): void
+    {
         $this->db->startAtomic( __METHOD__ );
         $this->db->delete('wiki_farm_user', [
             'fk_wiki_id' => $wikiId,
@@ -165,7 +167,8 @@ class WikiRepository {
         $this->db->endAtomic( __METHOD__ );
     }
 
-    public function removeWiki($wikiId) {
+    public function removeWiki($wikiId): void
+    {
         $this->db->startAtomic( __METHOD__ );
         $this->db->delete('wiki_farm',
             [
@@ -183,7 +186,7 @@ class WikiRepository {
         return ($row !== false);
     }
 
-    public function setupTables()
+    public function setupTables(): void
     {
         $this->db->query('CREATE TABLE IF NOT EXISTS wiki_farm (
                         id INT AUTO_INCREMENT PRIMARY KEY,

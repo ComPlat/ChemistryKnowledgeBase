@@ -1,46 +1,48 @@
 <?php
 namespace DIQA\WikiFarm;
 
+use DIQA\WikiFarm\WikiGenerator\WikiGenerator;
 use MediaWiki\MediaWikiServices;
 use Exception;
 
 class CreateWikiJob extends \Job {
 
-    private $dbr;
-    private $wikiRepository;
+    private WikiRepository $wikiRepository;
 
     public function __construct( $title, $params ) {
         parent::__construct( 'CreateWikiJob', $title, $params );
-        $this->dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_PRIMARY
-        );
-        $this->wikiRepository = new WikiRepository($this->dbr);
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $this->wikiRepository = new WikiRepository($dbr);
+
     }
 
     public function run()
     {
-        global $IP;
+        $wikiName = $this->params['wikiName'];
         $wikiId = $this->params['wikiId'];
-        $name = escapeshellarg($this->params['name']);
+        $wikiConfig = <<<WIKICONFIG
+{
+    "wikiName": "$wikiName",
+    "wikiId": "wiki$wikiId",
+    "useLdap": false,
+    "ldap": {
+
+    },
+    "readForAll": false,
+    "favicon": "/var/www/html/mediawiki/extensions/ChemExtension/resources/favicon.ico",
+    "logo": "/var/www/html/mediawiki/extensions/ChemExtension/resources/home.png",
+    "wordmark": "/var/www/html/mediawiki/extensions/ChemExtension/resources/home.png"
+}
+WIKICONFIG;
+
+        $wikiGenerator = new WikiGenerator();
         try {
-            $this->checkPreconditions($wikiId);
-            shell_exec("bash $IP/extensions/WikiFarm/bin/createWiki.sh wiki$wikiId $name 2>&1");
+            $wikiGenerator->createNewWikiFromConfig(json_decode($wikiConfig));
             $this->wikiRepository->updateToCreated($wikiId);
-        } catch(Exception $e) {
-            wfDebugLog('CreateWikiJob', $e->getMessage());
-            $this->wikiRepository->removeWiki($wikiId);
+        } catch (Exception $e) {
+            $this->wikiRepository->updateToFailed($wikiId);
         }
     }
 
-    /**
-     * @throws Exception
-     */
-    private function checkPreconditions($wikiId) {
 
-        $res = $this->dbr->select('INFORMATION_SCHEMA.SCHEMATA', ['SCHEMA_NAME'], ['SCHEMA_NAME' => "chemwiki$wikiId"]);
-        if ($res->numRows() > 0) {
-            throw new Exception("Database 'chemwiki$wikiId' already exists.");
-        }
-
-    }
 }

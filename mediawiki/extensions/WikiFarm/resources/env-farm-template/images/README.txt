@@ -1,0 +1,1 @@
+This folder will contain uploaded images for this wiki in the Wiki farm.

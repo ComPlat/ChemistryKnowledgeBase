@@ -2,54 +2,32 @@
 
 namespace DIQA\WikiFarm;
 
+use DIQA\WikiFarm\WikiGenerator\WikiGenerator;
 use MediaWiki\MediaWikiServices;
 use Exception;
 
 class RemoveWikiJob extends \Job
 {
 
-    private $dbr;
-    private $wikiRepository;
+    private WikiRepository $wikiRepository;
 
-    public function __construct($title, $params)
-    {
-        parent::__construct('RemoveWikiJob', $title, $params);
-        $this->dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-            DB_PRIMARY
-        );
-        $this->wikiRepository = new WikiRepository($this->dbr);
+    public function __construct( $title, $params ) {
+        parent::__construct( 'CreateWikiJob', $title, $params );
+        $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
+        $this->wikiRepository = new WikiRepository($dbr);
     }
 
     public function run()
     {
-        global $IP;
         $wikiId = $this->params['wikiId'];
 
-
+        $wikiGenerator = new WikiGenerator();
         try {
-            if ($this->isWikiCompletelyRemoved($wikiId)) {
-                $this->wikiRepository->removeWiki($wikiId);
-                return;
-            }
-            echo shell_exec("bash $IP/extensions/WikiFarm/bin/removeWiki.sh wiki$wikiId 2>&1");
-            if ($this->isWikiCompletelyRemoved($wikiId)) {
-                $this->wikiRepository->removeWiki($wikiId);
-            } else {
-                wfDebugLog('RemoveWikiJob', "Wiki $wikiId could not be removed completely");
-            }
+            $wikiGenerator->rollback($wikiId);
+            $this->wikiRepository->removeWiki($wikiId);
         } catch (Exception $e) {
-            wfDebugLog('RemoveWikiJob', $e->getMessage());
+            $this->wikiRepository->updateToFailed($wikiId);
         }
-    }
-
-    private function isWikiCompletelyRemoved($wikiId): bool
-    {
-        global $IP;
-        $resultCheck = shell_exec("bash $IP/extensions/WikiFarm/bin/checkIfWikiExists.sh wiki$wikiId 2> /dev/null");
-        return (strpos($resultCheck, "wiki") === false
-            && strpos($resultCheck, "db") === false
-            && strpos($resultCheck, "solr") === false
-        );
     }
 
 }

@@ -465,6 +465,20 @@ $wgCategoryTreeMaxDepth=4;
 #################################################################
 # WikiFarm
 #################################################################
+# These settings are needed for the WikiGenerator (and can be overridden by env.php).
+# The default values here will only work on the Sarstedt servers.
+
+$mysqlBin         = 'mysql';
+$phpBin           = 'php';
+$publicHtml       = '/var/www/html';
+$solrBin          = getenv('WIKI_SOLR_BIN') ? getenv('WIKI_SOLR_BIN') : '/opt/solr-8.3.0/bin/solr';
+$wgWikiFarmAllowMissingEnv = true;
+$wgWikiFarmDefaultWikiId = 'main';
+$wgWikiFarmDBPattern = 'chem{wiki}';
+$wgWikiFarmDBPatternMappings = ['main' => 'chemmain143'];
+$wgWikiFarmScriptPathPattern = '/{wiki}/mediawiki';
+$wgWikiFarmEntryPoint = "/var/www/html/gateway";
+
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');
 

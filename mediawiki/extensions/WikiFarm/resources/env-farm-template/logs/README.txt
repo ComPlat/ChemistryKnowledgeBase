@@ -1,0 +1,1 @@
+This folder will contain log files for this wiki in the Wiki farm.
