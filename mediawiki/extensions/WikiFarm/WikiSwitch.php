@@ -101,7 +101,7 @@ class WikiSwitch
             $wgScriptPath = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmScriptPathPattern);
             $wgResourceBasePath = $wgScriptPath;
             $wgArticlePath = $wgScriptPath . "/$1";
-            $wikiRootWeb = "/$wgScriptPath/env-farm-$wikiSelector";
+            $wikiRootWeb = "$wgScriptPath/env-farm-$wikiSelector";
         } else {
             $wgScriptPath = "/$wikiSelector";
             $wgResourceBasePath = "/$wikiSelector";
