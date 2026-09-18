@@ -92,6 +92,8 @@ class WikiSwitch
         global $wgDBname;
         global $wgSitename;
         global $wgArticlePath;
+        global $wgUsePathInfo;
+        $wgUsePathInfo = true;
 
         global $fs2gBackendConfig, $fs2gBackend, $fsgSolrCore;
         $fs2gBackend = 'solr';
