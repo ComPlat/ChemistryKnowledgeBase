@@ -20,6 +20,6 @@ fi
 for wiki in "$@"; do
     # Source setup.sh so exported variables (PHP_BIN, MEDIAWIKI/MW, etc.) are available in this shell
     if source "$SCRIPT_DIR/setup.sh" "$wiki"; then
-        "$PHP_BIN" "$MW/extensions/ChemExtension/maintenance/refreshChemFormIndex.php" --onlyexplink
+        "$PHP_BIN" "$MW/extensions/ChemExtension/maintenance/refreshChemFormIndex.php" --onlyexplink -v
     fi
 done

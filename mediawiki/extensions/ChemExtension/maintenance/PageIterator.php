@@ -100,7 +100,7 @@ abstract class PageIterator extends Maintenance
     {
 
         print "Processing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ...\n";
-        new SMWDIProperty("_wpg");
+        new \SMW\DIProperty("_wpg");
         $id = $start;
         while (((!$end) || ($id <= $end)) && ($id > 0)) {
             $title = Title::newFromID($id);
@@ -176,7 +176,7 @@ abstract class PageIterator extends Maintenance
             $start = $title->getArticleID();
             $end = $title->getArticleID();
         } else {
-            $db = wfGetDB(DB_REPLICA);
+            $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
             $page_table = $db->tableName("page");
             $query = "SELECT MAX(page_id) as maxid FROM $page_table";
             $res = $db->query($query);
