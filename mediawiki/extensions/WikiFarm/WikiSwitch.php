@@ -10,8 +10,11 @@ if (!defined('MEDIAWIKI')) {
     exit;
 }
 global $IP;
-
 $solrCoreTemplate = getenv('WIKI_SOLR_TEMPLATE') ? getenv('WIKI_SOLR_TEMPLATE') : "$IP/extensions/WikiFarm/resources/mw";
+
+global $wgSharedTables;
+$wgSharedTables[] = 'wiki_farm';
+$wgSharedTables[] = 'wiki_farm_user';
 
 $filename = WikiSwitch::start();
 if ($filename) {

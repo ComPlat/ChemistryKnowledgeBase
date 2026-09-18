@@ -225,6 +225,15 @@ $wgGroupPermissions['sysop']['createpage']      = true;
 
 
 #################################################################
+#
+# Include local server settings, if they exist
+#
+#################################################################
+if (file_exists(__DIR__ . '/env.php')) {
+    require_once('env.php');
+}
+
+#################################################################
 # WikiFarm
 #################################################################
 # These settings are needed for the WikiGenerator (and can be overridden by env.php).
@@ -237,21 +246,11 @@ $solrBin          = getenv('WIKI_SOLR_BIN') ? getenv('WIKI_SOLR_BIN') : '/opt/so
 $wgWikiFarmAllowMissingEnv = true;
 $wgWikiFarmDefaultWikiId = 'main';
 $wgWikiFarmDBPattern = 'chem{wiki}';
-$wgWikiFarmDBPatternMappings = ['main' => 'chemmain143'];
 $wgWikiFarmScriptPathPattern = '/{wiki}/mediawiki';
 $wgWikiFarmEntryPoint = "/var/www/html/gateway";
 
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');
-
-#################################################################
-#
-# Include local server settings, if they exist
-#
-#################################################################
-if (file_exists(__DIR__ . '/env.php')) {
-    require_once('env.php');
-}
 
 
 #################################################################
