@@ -85,7 +85,6 @@ class WikiSwitch
     {
         global $IP;
         $wikiRootLocal = "$IP/env-farm-$wikiSelector";
-        $wikiRootWeb = "/$wikiSelector/env-farm-$wikiSelector";
 
         global $wgScriptPath;
         global $wgResourceBasePath;
@@ -102,9 +101,11 @@ class WikiSwitch
             $wgScriptPath = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmScriptPathPattern);
             $wgResourceBasePath = $wgScriptPath;
             $wgArticlePath = $wgScriptPath . "/$1";
+            $wikiRootWeb = "/$wgScriptPath/env-farm-$wikiSelector";
         } else {
             $wgScriptPath = "/$wikiSelector";
             $wgResourceBasePath = "/$wikiSelector";
+            $wikiRootWeb = "/$wikiSelector/env-farm-$wikiSelector";
         }
         if (isset($wgWikiFarmDBPattern)) {
             $wgDBname = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmDBPattern);
