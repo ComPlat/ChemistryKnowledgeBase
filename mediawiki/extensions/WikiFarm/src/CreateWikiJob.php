@@ -8,12 +8,13 @@ use Exception;
 class CreateWikiJob extends \Job {
 
     private WikiRepository $wikiRepository;
+    private LoggerUtils $loggerUtils;
 
     public function __construct( $title, $params ) {
         parent::__construct( 'CreateWikiJob', $title, $params );
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $this->wikiRepository = new WikiRepository($dbr);
-
+        $this->loggerUtils = new LoggerUtils('CreateWikiJob', 'WikiFarm');
     }
 
     public function run()
@@ -39,7 +40,9 @@ WIKICONFIG;
         try {
             $wikiGenerator->createNewWikiFromConfig(json_decode($wikiConfig));
             $this->wikiRepository->updateToCreated($wikiId);
+            $this->loggerUtils->log("Wiki $wikiName (wiki-ID: $wikiId) created");
         } catch (Exception $e) {
+            $this->loggerUtils->log("Failed to create wiki $wikiName (wiki-ID: $wikiId): " . $e->getMessage());
             $this->wikiRepository->updateToFailed($wikiId);
         }
     }

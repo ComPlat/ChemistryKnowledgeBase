@@ -36,17 +36,7 @@ class WikiRepository {
         return $wikiId;
     }
 
-    public function removeWikiJob($wikiId, $userId) {
-        $title = \Title::newFromText( "Wiki $wikiId/RemoveWikiJob" );
-        $jobParams = [ 'wikiId' => $wikiId ];
 
-        $this->updateToBeDeleted($wikiId);
-
-        $job = new RemoveWikiJob( $title, $jobParams );
-        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
-        $jobQueue->push( $job );
-        return $wikiId;
-    }
 
     public function updateToCreated($wikiId): void
     {
@@ -104,25 +94,6 @@ class WikiRepository {
                 'wiki_status' => $row->wiki_status,
 
             ];
-
-        }
-        return $results;
-    }
-
-    public function getAllWikis(): array
-    {
-        $results = [];
-        $res = $this->db->select('wiki_farm', ['id', 'wiki_name', 'wiki_status', 'created_at'],
-            ['wiki_status' => "CREATED" ]);
-        foreach ( $res as $row ) {
-            $results[] =
-                [
-                    'id' => $row->id,
-                    'wiki_name' => $row->wiki_name,
-                    'created_at' => $row->created_at,
-                    'wiki_status' => $row->wiki_status,
-
-                ];
 
         }
         return $results;

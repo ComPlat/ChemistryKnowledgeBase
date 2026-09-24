@@ -3,9 +3,11 @@
 namespace DIQA\WikiFarm\Endpoints;
 
 
+use DIQA\WikiFarm\RemoveWikiJob;
 use DIQA\WikiFarm\WikiRepository;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\SimpleHandler;
+use MediaWiki\Title\Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 
@@ -15,18 +17,26 @@ use Wikimedia\ParamValidator\ParamValidator;
 class RemoveWikiEndpoint extends SimpleHandler {
 
     public function run() {
-        global $wgUser;
 
         $params = $this->getValidatedParams();
+        $wikiId = $params['wikiId'];
 
         $lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
         $db = $lb->getConnection(DB_PRIMARY);
-        (new WikiRepository($db))->removeWikiJob($params['wikiId'], $wgUser->getId());
+        (new WikiRepository($db))->updateToBeDeleted($wikiId);
+
+        $title = Title::newFromText( "Wiki $wikiId/RemoveWikiJob" );
+        $jobParams = [ 'wikiId' => $wikiId ];
+
+        $job = new RemoveWikiJob( $title, $jobParams );
+        $jobQueue = MediaWikiServices::getInstance()->getJobQueueGroupFactory()->makeJobQueueGroup();
+        $jobQueue->push( $job );
 
         return ['result' => 'ok', 'wikiId' => $params['wikiId']];
     }
 
-    public function getParamSettings() {
+    public function getParamSettings(): array
+    {
         return [
 
             'wikiId' => [

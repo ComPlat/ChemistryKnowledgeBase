@@ -209,13 +209,7 @@ class WikiGenerator {
         global $mysqlBin, $wgDBuser, $wgDBpassword, $IP;
 
         $wikiID = $this->wikiConfig['wikiId'];
-        global $wgWikiFarmDBPattern;
-        if (isset($wgWikiFarmDBPattern)) {
-            $dbName = preg_replace('/\{wiki}/', $wikiID, $wgWikiFarmDBPattern);
-        } else {
-
-            $dbName = $wikiID . "_wikidb";
-        }
+        $dbName = $this->getDBName($wikiID);
         $command = "\"$mysqlBin\" -u $wgDBuser -p$wgDBpassword -e \"CREATE DATABASE $dbName\"";
         $this->log( " - Creating database with command: $command");
         $ret = $this->runShellCommand($command);
@@ -328,9 +322,11 @@ class WikiGenerator {
         $this->log( " - Removing env-folder $filename...");
         if (file_exists($filename)) {
             FileUtils::rrmdir($filename);
+        } else {
+            $this->log( "   env-folder $filename does not exist");
         }
 
-        $dbName = $wikiID."_wikidb";
+        $dbName = $this->getDBName($wikiID);
         $this->log( " - Removing database $dbName...");
         $dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_PRIMARY);
         $dbr->query("DROP DATABASE IF EXISTS $dbName");
@@ -338,6 +334,9 @@ class WikiGenerator {
         $this->log( " - Removing SOLR core...");
         $command = $this->removeSolrCoreCommand($wikiID);
         $ret = $this->runShellCommand($command);
+
+        $this->log( " - Removing Symlink...");
+        $this->removeSymlink($wikiID);
     }
 
     private function runShellCommand(string $command): int {
@@ -364,13 +363,36 @@ class WikiGenerator {
         $wikiID = $this->wikiConfig['wikiId'];
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // on Windows not possible
+            return;
+        }
+
+        $ret = $this->runShellCommand("sudo ln -s $wgWikiFarmEntryPoint $publicHtml/$wikiID");
+        if ($ret !== 0) {
+            throw new ValidationException("Creation of Symlink failed for '$wikiID' failed");
+        }
+    }
+
+    private function removeSymlink($wikiID): void {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            return;
+        }
+        global $publicHtml;
+        $ret = $this->runShellCommand("sudo rm $publicHtml/$wikiID");
+        if ($ret !== 0) {
+            $this->log("Could not remove symlink for '$wikiID'");
+        }
+    }
+
+    private function getDBName(string $wikiID): string {
+        global $wgWikiFarmDBPattern;
+        if (isset($wgWikiFarmDBPattern)) {
+            $dbName = preg_replace('/\{wiki}/', $wikiID, $wgWikiFarmDBPattern);
         } else {
 
-            $ret = $this->runShellCommand("sudo ln -s $wgWikiFarmEntryPoint $publicHtml/$wikiID");
-            if ($ret !== 0) {
-                throw new ValidationException("Creation of Symlink failed for '$wikiID' failed");
-            }
+            $dbName = $wikiID . "_wikidb";
         }
+
+        return $dbName;
     }
 
     /**
