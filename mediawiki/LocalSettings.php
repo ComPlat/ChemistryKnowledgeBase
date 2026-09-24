@@ -230,7 +230,7 @@ $wgGroupPermissions['sysop']['createpage']      = true;
 #
 #################################################################
 if (file_exists(__DIR__ . '/env.php')) {
-    require_once('env.php');
+    require_once(__DIR__ . '/env.php');
 }
 
 #################################################################
