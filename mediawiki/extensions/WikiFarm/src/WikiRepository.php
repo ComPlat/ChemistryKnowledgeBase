@@ -128,16 +128,6 @@ class WikiRepository {
         $this->db->endAtomic( __METHOD__ );
     }
 
-    public function removeUserFromWiki(User $user, $wikiId) {
-        $this->db->startAtomic( __METHOD__ );
-        $this->db->delete('wiki_farm_user',
-            [
-                'fk_user_id' => $user->getId(),
-                'fk_wiki_id' => $wikiId
-            ]);
-        $this->db->endAtomic( __METHOD__ );
-    }
-
     public function removeWiki($wikiId): void
     {
         $this->db->startAtomic( __METHOD__ );
