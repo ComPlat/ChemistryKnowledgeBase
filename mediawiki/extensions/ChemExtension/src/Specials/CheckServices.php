@@ -2,6 +2,7 @@
 
 namespace DIQA\ChemExtension\Specials;
 
+use DIQA\ChemExtension\CheckServiceRequest;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
 use DIQA\ChemExtension\PublicationImport\AIClient;
@@ -27,6 +28,7 @@ class CheckServices extends SpecialPage
 
     /**
      * @throws \OOUI\Exception
+     * @throws \Exception
      */
     function execute($par)
     {
@@ -34,39 +36,13 @@ class CheckServices extends SpecialPage
         $output = $this->getOutput();
         $this->setHeaders();
 
-        $servicesData = [
-            'RGroupState' => [
-                'class' => MoleculeRGroupServiceClientImpl::class,
-                'contact' => 'caman.nguyenthanh (at) gmail.com',
-                'name' => 'R-group service',
-            ],
-            'renderState' =>  [
-                'class' => MoleculeRendererClientImpl::class,
-                'contact' => 'pierre.tremouilhac (at) kit.edu',
-                'name' => 'Molecule render service',
-            ],
-            'tibState' => [
-                'class' => TIBClient::class,
-                'contact' => 'kuehn (at) diqa.de',
-                'name' => 'TIB service',
-            ],
-            'crossRef' => [
-                'class' => CrossRefAPI::class,
-                'contact' => 'kuehn (at) diqa.de',
-                'name' => 'CrossRef service',
-            ],
-            'openAlexApi' => [
-                'class' => OpenAlexAPI::class,
-                'contact' => 'kuehn (at) diqa.de',
-                'name' => 'OpenAlex service',
-            ],
-        ];
+        $servicesData = $this->getServicesData();
 
         $responses= $this->doParallelCheckRequests($servicesData);
 
-        $dataToRender = array_map(fn ($e) => $e['_error'] ?? true, $responses);
+        $serviceResponses = array_map(fn ($e) => $e['_error'] ?? true, $responses);
         $output->addHTML($this->blade->run("check-services", [
-            'responses' => $dataToRender,
+            'responses' => $serviceResponses,
             'servicesData' => $servicesData,
             'openAIState' => $this->checkOpenAIService(),
         ])
@@ -81,6 +57,9 @@ class CheckServices extends SpecialPage
     }
 
 
+    /**
+     * @throws \Exception
+     */
     public function doParallelCheckRequests($servicesData): array
     {
 
@@ -88,6 +67,9 @@ class CheckServices extends SpecialPage
         $handles = [];
         foreach ($servicesData as $i => $tuple) {
             $service = new $tuple['class'];
+            if (!($service instanceof CheckServiceRequest)) {
+                throw new \Exception("Service class '".get_class($service)."' must implement CheckServiceRequest");
+            }
             $handles[$i] = $service->check();
             if ($handles[$i] === false) {
                 continue;
@@ -128,6 +110,37 @@ class CheckServices extends SpecialPage
         }
         curl_multi_close($multi);
         return $responses;
+    }
+
+    private function getServicesData(): array
+    {
+        return [
+            'RGroupState' => [
+                'class' => MoleculeRGroupServiceClientImpl::class,
+                'contact' => 'caman.nguyenthanh (at) gmail.com',
+                'name' => 'R-group service',
+            ],
+            'renderState' => [
+                'class' => MoleculeRendererClientImpl::class,
+                'contact' => 'pierre.tremouilhac (at) kit.edu',
+                'name' => 'Molecule render service',
+            ],
+            'tibState' => [
+                'class' => TIBClient::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'TIB service',
+            ],
+            'crossRef' => [
+                'class' => CrossRefAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'CrossRef service',
+            ],
+            'openAlexApi' => [
+                'class' => OpenAlexAPI::class,
+                'contact' => 'kuehn (at) diqa.de',
+                'name' => 'OpenAlex service',
+            ],
+        ];
     }
 
 
