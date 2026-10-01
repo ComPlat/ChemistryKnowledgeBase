@@ -247,7 +247,9 @@ $wgWikiFarmAllowMissingEnv = true;
 $wgWikiFarmDefaultWikiId = 'main';
 $wgWikiFarmDBPattern = 'chem{wiki}';
 $wgWikiFarmScriptPathPattern = '/{wiki}/mediawiki';
+$wgWikiFarmScriptWikiIdPattern = 'wiki{wiki}';
 $wgWikiFarmEntryPoint = "/var/www/html/gateway";
+$wgWikiFarmForeignFileRepo = 'main';
 
 require_once ("extensions/WikiFarm/WikiSwitch.php");
 wfLoadExtension('WikiFarm');

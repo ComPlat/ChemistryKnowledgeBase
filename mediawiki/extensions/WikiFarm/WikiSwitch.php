@@ -89,41 +89,25 @@ class WikiSwitch
         global $IP;
         $wikiRootLocal = "$IP/env-farm-$wikiSelector";
 
+        // paths
         global $wgScriptPath;
         global $wgResourceBasePath;
-        global $wgDBname;
-        global $wgSitename;
         global $wgArticlePath;
         global $wgUsePathInfo;
         $wgUsePathInfo = true;
+        $wgScriptPath = $this->getWikiPaths($wikiSelector);
+        $wgResourceBasePath = $wgScriptPath;
+        $wgArticlePath = $wgScriptPath . "/$1";
+        $wikiRootWeb = "$wgScriptPath/env-farm-$wikiSelector";
 
-        global $fs2gBackendConfig, $fs2gBackend, $fsgSolrCore;
-        $fs2gBackend = 'solr';
-        global $wgWikiFarmDBPatternMappings, $wgWikiFarmDBPattern, $wgWikiFarmScriptPathPattern;
-        if (isset($wgWikiFarmScriptPathPattern)) {
-            $wgScriptPath = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmScriptPathPattern);
-            $wgResourceBasePath = $wgScriptPath;
-            $wgArticlePath = $wgScriptPath . "/$1";
-            $wikiRootWeb = "$wgScriptPath/env-farm-$wikiSelector";
-        } else {
-            $wgScriptPath = "/$wikiSelector";
-            $wgResourceBasePath = "/$wikiSelector";
-            $wikiRootWeb = "/$wikiSelector/env-farm-$wikiSelector";
-        }
-        if (isset($wgWikiFarmDBPattern)) {
-            $wgDBname = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmDBPattern);
-        } else {
-            $wgDBname = "{$wikiSelector}_wikidb";
-        }
-        if (array_key_exists($wikiSelector, $wgWikiFarmDBPatternMappings ?? [])) {
-            $wgDBname = $wgWikiFarmDBPatternMappings[$wikiSelector];
-        }
-        $wgSitename = $wikiSelector;
-        $fs2gBackendConfig = [
-            'indexName' => $wikiSelector,
-        ];
-        $fsgSolrCore = $wikiSelector;
+        // DB
+        global $wgDBname;
+        $wgDBname = $this->getDBName($wikiSelector);
 
+        // search
+        $this->configureSearch($wikiSelector);
+
+        // uploads
         global $wgCacheDirectory;
         global $wgFileCacheDirectory;
         $wgCacheDirectory = "$wikiRootLocal/cache";
@@ -152,9 +136,71 @@ class WikiSwitch
             $wgLogos['tagline'] = ['src' => "$wikiRootWeb/$tagLine", 'width' => 124, 'height' => 18];
         }
 
+        global $wgWikiFarmForeignFileRepo;
+        if (isset($wgWikiFarmForeignFileRepo)) {
+            $this->configureForeignFileRepo($wgWikiFarmForeignFileRepo);
+        }
+
+        // get wiki ID from URL
+        global $wgWikiFarmWikiId, $wgWikiFarmScriptWikiIdPattern;
+        $pattern = $wgWikiFarmScriptWikiIdPattern ?? '{wiki}';
+        $pattern = str_replace('{wiki}', '(\d+)', $pattern);
+        $wgWikiFarmWikiId = preg_match("/$pattern/", $wikiSelector, $matches) ? $matches[1] : null;
+
         global $wgDebugLogFile;
         $date = (new DateTime())->format('Y-m-d');
         $wgDebugLogFile = "$wikiRootLocal/logs/mw-debug_$date.log";
+    }
+
+    private function configureForeignFileRepo($wikiSelector): void
+    {
+        global $wgSharedDB, $wgForeignFileRepos;
+        $scriptPath = $this->getWikiPaths($wikiSelector);
+        $wikiRootWeb = "$scriptPath/env-farm-$wikiSelector";
+        $wgForeignFileRepos[] = [
+            'class' => ForeignAPIRepo::class,
+            'name' => $wgSharedDB,
+            'apibase' => "$scriptPath/api.php",
+            'url' => "$wikiRootWeb/images",
+            'thumbUrl' => "$wikiRootWeb/images/thumb",
+            'hashLevels' => 2,
+        ];
+    }
+
+    private function configureSearch($wikiSelector): void
+    {
+        global $fs2gBackendConfig, $fs2gBackend, $fsgSolrCore;
+        $fs2gBackend = 'solr';
+        $fs2gBackendConfig = [
+            'indexName' => $wikiSelector,
+        ];
+        $fsgSolrCore = $wikiSelector;
+    }
+
+    private function getDBName($wikiSelector): string {
+        global $wgWikiFarmDBPatternMappings, $wgWikiFarmDBPattern;
+        if (isset($wgWikiFarmDBPattern)) {
+            $dbName = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmDBPattern);
+        } else {
+            $dbName = "{$wikiSelector}_wikidb";
+        }
+        if (array_key_exists($wikiSelector, $wgWikiFarmDBPatternMappings ?? [])) {
+            $dbName = $wgWikiFarmDBPatternMappings[$wikiSelector];
+        }
+        return $dbName;
+    }
+
+    private function getWikiPaths($wikiSelector): string {
+        global $wgUsePathInfo;
+        $wgUsePathInfo = true;
+
+        global  $wgWikiFarmScriptPathPattern;
+        if (isset($wgWikiFarmScriptPathPattern)) {
+            $scriptPath = preg_replace('/\{wiki}/', $wikiSelector, $wgWikiFarmScriptPathPattern);
+        } else {
+            $scriptPath = "/$wikiSelector";
+        }
+        return $scriptPath;
     }
 
     private function findImage(string $wikiRootLocal, string $baseName): string

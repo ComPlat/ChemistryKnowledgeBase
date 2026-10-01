@@ -11,20 +11,25 @@ class WikiRepository {
     public const USER = "USER";
 
     private $db;
+    private $wikiFarmDB;
+    private $wikiFarmUserDB;
 
     /**
      * @param IMaintainableDatabase $db
      */
     public function __construct(IMaintainableDatabase $db)
     {
+        global $wgSharedDB;
         $this->db = $db;
+        $this->wikiFarmDB = $wgSharedDB.'.wiki_farm';
+        $this->wikiFarmUserDB = $wgSharedDB.'.wiki_farm_user';
     }
 
 
     public function createWikiInDB($name, $user): int
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->insert('wiki_farm',
+        $this->db->insert($this->wikiFarmDB,
             [
                 'fk_created_by' => $user->getId(),
                 'wiki_name' => $name,
@@ -41,7 +46,7 @@ class WikiRepository {
     public function updateToCreated($wikiId): void
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->update('wiki_farm',
+        $this->db->update($this->wikiFarmDB,
             [
                 'wiki_status' => 'CREATED'
             ],
@@ -55,7 +60,7 @@ class WikiRepository {
     public function updateToBeDeleted($wikiId): void
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->update('wiki_farm',
+        $this->db->update($this->wikiFarmDB,
             [
                 'wiki_status' => 'TO_BE_DELETED'
             ],
@@ -69,7 +74,7 @@ class WikiRepository {
     public function updateToFailed($wikiId): void
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->update('wiki_farm',
+        $this->db->update($this->wikiFarmDB,
             [
                 'wiki_status' => 'FAILED'
             ],
@@ -80,10 +85,30 @@ class WikiRepository {
         $this->db->endAtomic( __METHOD__ );
     }
 
+    public function getWikiById($id): array
+    {
+        global $wgSharedDB;
+        $results = [];
+        $res = $this->db->select($wgSharedDB.'.wiki_farm', ['id', 'wiki_name', 'wiki_status', 'created_at'],
+            ['id' => $id ]);
+        foreach ( $res as $row ) {
+            $results[] =
+                [
+                    'id' => $row->id,
+                    'wiki_name' => $row->wiki_name,
+                    'created_at' => $row->created_at,
+                    'wiki_status' => $row->wiki_status,
+
+                ];
+
+        }
+        return $results;
+    }
+
     public function getAllWikisCreatedById($userId): array
     {
         $results = [];
-        $res = $this->db->select('wiki_farm', ['id', 'wiki_name', 'wiki_status', 'created_at'],
+        $res = $this->db->select($this->wikiFarmDB, ['id', 'wiki_name', 'wiki_status', 'created_at'],
             ['fk_created_by' => $userId ]);
         foreach ( $res as $row ) {
             $results[] =
@@ -102,7 +127,7 @@ class WikiRepository {
     public function getAllUsersOfWiki($wikiId): array
     {
         $results = [];
-        $res = $this->db->select('wiki_farm_user', ['fk_user_id'], ['fk_wiki_id' => $wikiId ]);
+        $res = $this->db->select($this->wikiFarmUserDB, ['fk_user_id'], ['fk_wiki_id' => $wikiId ]);
         foreach ( $res as $row ) {
             $results[] = User::newFromId($row->fk_user_id);
 
@@ -113,12 +138,12 @@ class WikiRepository {
     public function addUserToWiki(array $users, $wikiId, $status_enum): void
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->delete('wiki_farm_user', [
+        $this->db->delete($this->wikiFarmUserDB, [
             'fk_wiki_id' => $wikiId,
             'status_enum' => self::USER
         ]);
         foreach($users as $user) {
-            $this->db->insert('wiki_farm_user',
+            $this->db->insert($this->wikiFarmUserDB,
                 [
                     'fk_user_id' => $user->getId(),
                     'fk_wiki_id' => $wikiId,
@@ -131,7 +156,7 @@ class WikiRepository {
     public function removeWiki($wikiId): void
     {
         $this->db->startAtomic( __METHOD__ );
-        $this->db->delete('wiki_farm',
+        $this->db->delete($this->wikiFarmDB,
             [
                 'id' => $wikiId
             ]);
