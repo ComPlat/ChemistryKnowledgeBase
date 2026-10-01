@@ -1,4 +1,16 @@
-Deny from 47.128
+# Mark the request as "production" based on the host name
+SetEnvIf Host "^(localhost|127\.0\.0\.1|.*\.local|.*\.test)(:[0-9]+)?$" IS_DEV
+
+AuthType Basic
+AuthName "Restricted Area"
+AuthUserFile /var/www/html/mediawiki/.htpasswd
+
+# Allow unrestricted access unless REQUIRE_AUTH is set
+<RequireAny>
+    Require env IS_DEV
+    Require valid-user
+</RequireAny>
+
 RewriteEngine On
 
 # Don't rewrite if the requested file/directory actually exists
