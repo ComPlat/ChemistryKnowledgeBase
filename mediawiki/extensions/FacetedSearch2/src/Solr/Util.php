@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\FacetedSearch2\SolrClient;
+namespace DIQA\FacetedSearch2\Solr;
 
 class Util {
     public static function splitResponse($res): array

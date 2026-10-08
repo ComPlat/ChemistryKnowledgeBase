@@ -35,7 +35,7 @@
 		"fs2-sort-order-preferences": "sort-alphabetically"
 	},
 	"ExtensionMessagesFiles": {
-		"FacetedSearch2Magic": "i18n/MagicWords.php"
+		"FacetedSearch2Magic": "i18n/MagicWordsAndAliases.php"
 	},
 	"MessagesDirs": {
 		"FacetedSearch2": [
@@ -55,11 +55,6 @@
 			"path": "/FacetedSearch2/v1/proxy/document-by-id",
 			"method": "POST",
 			"class": "DIQA\\FacetedSearch2\\Endpoints\\DocumentByIdEndpoint"
-		},
-		{
-			"path": "/FacetedSearch2/v1/proxy/stats",
-			"method": "POST",
-			"class": "DIQA\\FacetedSearch2\\Endpoints\\StatsSearchEndpoint"
 		},
 		{
 			"path": "/FacetedSearch2/v1/proxy/facets",
@@ -226,6 +221,10 @@
 			"value": false,
 			"description": "Show some files in an overlay. Either 'false' or array of file types ['pdf', 'png',...]"
 		},
+        "ExportLinkFormats": {
+            "value": [],
+            "description": "Shows export links in the specified formats: json, csv, rdf, rss"
+        },
 		"HeaderControlOrder": {
 			"value": [],
 			"description": "Order of controls in header"

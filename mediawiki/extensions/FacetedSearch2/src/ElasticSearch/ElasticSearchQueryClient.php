@@ -46,10 +46,11 @@ class ElasticSearchQueryClient extends AbstractElasticSearchClient implements Fa
     {
 
         try {
+            global $fs2gExtraPropertiesToRequest;
             $params = $this->getParamForIndex();
             $query = $this->getBaseQuery($q);
 
-            $extraProperties = array_map(fn($p) => Helper::toInternalName($p), $q->getExtraProperties());
+            $extraProperties = array_map(fn($p) => Helper::toInternalName($p), $fs2gExtraPropertiesToRequest);
             $includedProperties = ['__title', '__display', '__fulltext', '__categories', '__namespace', '__directCategories'];
             $includedProperties = array_merge($includedProperties, $extraProperties);
             $sorts = array_map(fn($s) => [

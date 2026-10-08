@@ -14,6 +14,26 @@ use SMWDataItem;
 
 class SMWReader {
 
+    private static function getISODateFromDataItem(\SMWDataItem $dataItem): string
+    {
+        $year = $dataItem->getYear();
+        $month = $dataItem->getMonth();
+        $day = $dataItem->getDay();
+
+        $hour = $dataItem->getHour();
+        $min = $dataItem->getMinute();
+        $sec = $dataItem->getSecond();
+
+        $month = strlen($month) === 1 ? "0$month" : $month;
+        $day = strlen($day) === 1 ? "0$day" : $day;
+        $hour = strlen($hour) === 1 ? "0$hour" : $hour;
+        $min = strlen($min) === 1 ? "0$min" : $min;
+        $sec = strlen($sec) === 1 ? "0$sec" : $sec;
+
+        // Required format: 1995-12-31T23:59:59Z
+        return "{$year}-{$month}-{$day}T{$hour}:{$min}:{$sec}Z";
+    }
+
     public function retrievePropertyValues($title, array &$doc): void
     {
         if (!defined('SMW_VERSION')) {
@@ -115,7 +135,7 @@ class SMWReader {
             case '_MDAT':
                 // used for sorting
                 /** @var SMWDITime $dataItem */
-                $valueXSD = FacetedSearchUtil::getISODateFromDataItem($dataItem);
+                $valueXSD = self::getISODateFromDataItem($dataItem);
                 return new PropertyValues(new Property($property->getKey(), Datatype::DATETIME),
                     [$valueXSD]);
             default: return null;
@@ -139,7 +159,7 @@ class SMWReader {
 
         $title = $dataItem->getTitle();
         $valueId = $title->getPrefixedText();
-        $valueLabel = FacetedSearchUtil::findDisplayTitle($title);
+        $valueLabel = MWDBReader::findDisplayTitle($title);
         return new PropertyValues(new Property($property->getLabel(), Datatype::WIKIPAGE),
             [new MWTitle($valueId, $valueLabel)]);
     }
@@ -156,7 +176,7 @@ class SMWReader {
         if ($type == SMWDataItem::TYPE_TIME) {
 
             // Required format: 1995-12-31T23:59:59Z
-            $valueXSD = FacetedSearchUtil::getISODateFromDataItem($dataItem);
+            $valueXSD = self::getISODateFromDataItem($dataItem);
 
             return new PropertyValues(new Property($property->getLabel(), Datatype::DATETIME),
                 [$valueXSD]);

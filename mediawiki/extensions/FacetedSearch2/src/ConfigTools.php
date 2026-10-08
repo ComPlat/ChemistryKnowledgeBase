@@ -6,8 +6,8 @@ use DIQA\FacetedSearch2\ElasticSearch\ElasticSearchQueryClient;
 use DIQA\FacetedSearch2\ElasticSearch\ElasticSearchUpdateClient;
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 use DIQA\FacetedSearch2\Model\Common\Property;
-use DIQA\FacetedSearch2\SolrClient\SolrRequestClient;
-use DIQA\FacetedSearch2\SolrClient\SolrUpdateClient;
+use DIQA\FacetedSearch2\Solr\SolrRequestClient;
+use DIQA\FacetedSearch2\Solr\SolrUpdateClient;
 use DIQA\FacetedSearch2\Utils\ArrayTools;
 use DIQA\FacetedSearch2\Utils\WikiTools;
 use SMW\DataTypeRegistry;
@@ -45,7 +45,7 @@ class ConfigTools
         }
         global $fs2gHeaderControlOrder;
         if (count($fs2gHeaderControlOrder) === 0) {
-            $fs2gHeaderControlOrder = ["sortView", "searchView", "saveSearchLink", "createArticleLink"];
+            $fs2gHeaderControlOrder = ["sortView", "searchView", "saveSearchLink",  "exportQueryLinks", "createArticleLink"];
         }
     }
 

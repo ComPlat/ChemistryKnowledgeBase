@@ -412,7 +412,7 @@ if (list == null) { return; }
 for (int i = 0; i < list.size(); i++) {
     if (list[i].title == params.title) {
         def props = ctx._source[list[i].property];
-        if (props == null) { return; } 
+        if (props == null) { continue; } 
         for (int j = 0; j < props.size(); j++) {
             if (props[j].title == params.title) {
                 props[j].display = params.newDisplay;

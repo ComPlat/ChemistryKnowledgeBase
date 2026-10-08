@@ -3,6 +3,7 @@
 namespace DIQA\FacetedSearch2;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use OutputPage;
 use RequestContext;
 use Skin;
@@ -58,13 +59,14 @@ class Setup
 
         define('FS2_EXTENSION_VERSION', true);
 
-        if (defined('ER_EXTENSION_VERSION')) {
+        global $fsgFacetedSearchForMW;
+        if (defined('ER_EXTENSION_VERSION') && ($fsgFacetedSearchForMW ?? true)) {
             // if old version is installed in parallel, keep the it the standard search and ignore the FS2 setting
             global $wgSpecialPages;
             $wgSpecialPages['Search'] = "DIQA\\FacetedSearch\\Specials\\FSFacetedSearchSpecial";
         } else {
             global $fs2gFacetedSearchForMW;
-            if (!($fs2gFacetedSearchForMW ?? false)) {
+            if (!($fs2gFacetedSearchForMW ?? true)) {
                 global $wgSpecialPages;
                 unset($wgSpecialPages['Search']);
             }
@@ -74,13 +76,13 @@ class Setup
 
         if ($fs2gEnableIncrementalIndexer) {
             $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-            $hookContainer->register('SMW::SQLStore::AfterDataUpdateComplete', 'DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUpdateDataAfter');
-            $hookContainer->register('UploadComplete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onUploadComplete');
-            $hookContainer->register('AfterImportPage','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onAfterImportPage');
-            $hookContainer->register('PageMoveCompleting','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onTitleMoveComplete');
-            $hookContainer->register('PageDelete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageDelete');
-            $hookContainer->register('ApprovedRevsRevisionApproved','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onRevisionApproved');
-            $hookContainer->register('PageSaveComplete','DIQA\FacetedSearch2\Update\FSIncrementalUpdater::onPageSaveComplete');
+            $hookContainer->register('SMW::SQLStore::AfterDataUpdateComplete', 'DIQA\FacetedSearch2\Update\Hooks::onUpdateDataAfter');
+            $hookContainer->register('UploadComplete','DIQA\FacetedSearch2\Update\Hooks::onUploadComplete');
+            $hookContainer->register('AfterImportPage','DIQA\FacetedSearch2\Update\Hooks::onAfterImportPage');
+            $hookContainer->register('PageMoveCompleting','DIQA\FacetedSearch2\Update\Hooks::onTitleMoveComplete');
+            $hookContainer->register('PageDelete','DIQA\FacetedSearch2\Update\Hooks::onPageDelete');
+            $hookContainer->register('ApprovedRevsRevisionApproved','DIQA\FacetedSearch2\Update\Hooks::onRevisionApproved');
+            $hookContainer->register('PageSaveComplete','DIQA\FacetedSearch2\Update\Hooks::onPageSaveComplete');
         }
     }
 
@@ -105,21 +107,25 @@ class Setup
         return true;
     }
 
-    private static function isSpecialPageOrProxy() {
+    private static function isSpecialPageOrProxy(): bool
+    {
+
         $currentTitle = RequestContext::getMain()->getTitle();
         $requestUrl = RequestContext::getMain()->getRequest()->getRequestURL();
         $isFacetedSearch2Page = !is_null($currentTitle)
-            && $currentTitle->getNamespace() === NS_SPECIAL
-            && ($currentTitle->getText() === 'FacetedSearch2' || $currentTitle->getText() === 'Search');
-        $isProxyEndpoint = strpos($requestUrl, '/FacetedSearch2/v1/proxy') > -1;
+            && ($currentTitle->isSpecial('FacetedSearch2')
+                || self::shouldReplaceDefaultSearch($currentTitle)
+            );
+        $isProxyEndpoint = str_contains($requestUrl, '/FacetedSearch2/v1/proxy');
         return $isFacetedSearch2Page || $isProxyEndpoint;
     }
 
     public static function onBeforePageDisplay(OutputPage $out, Skin $skin)
     {
-
         if (!is_null($out->getTitle())
-            && ($out->getTitle()->isSpecial("FacetedSearch2") || $out->getTitle()->isSpecial("Search"))) {
+            && ($out->getTitle()->isSpecial("FacetedSearch2")
+                || self::shouldReplaceDefaultSearch($out->getTitle()))
+        ) {
             self::checkIfCompiled();
             $out->addModules('ext.diqa.facetedsearch2');
             $out->addJsConfigVars('fs2gSMWLanguage', self::getMessagesFromSMW() );
@@ -147,6 +153,12 @@ class Setup
             }
         }
         return $jsVars;
+    }
+
+    private static function shouldReplaceDefaultSearch(Title $title): bool
+    {
+        global $fs2gFacetedSearchForMW;
+        return $title->isSpecial('Search') && ($fs2gFacetedSearchForMW ?? true);
     }
 
 

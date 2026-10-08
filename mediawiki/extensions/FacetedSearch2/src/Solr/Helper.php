@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\FacetedSearch2\SolrClient;
+namespace DIQA\FacetedSearch2\Solr;
 
 use DIQA\FacetedSearch2\Model\Common\Datatype;
 

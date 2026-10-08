@@ -15,31 +15,57 @@ use WikiPage;
 class MWDBReader
 {
     private SMWReader $smwReader;
-    private FileReader $fileReader;
+    private MWFileReader $fileReader;
     private BoostingCalculator $boostingCalculator;
 
     public function __construct()
     {
         $this->smwReader = new SMWReader();
-        $this->fileReader = new FileReader();
+        $this->fileReader = new MWFileReader();
         $this->boostingCalculator = new BoostingCalculator();
     }
 
-
     /**
-     * Updates the index for the given $wikiPage.
-     * It retrieves all semantic data of the new version and adds it to the index.
+     * Retrieves the display title from the properties table for the given page.
+     * It will probably only properly work if the DisplayTitles extension is installed and used.
+     * The default value is the pagename.
      *
-     * @param WikiPage $wikiPage
-     *         The article that changed.
-     * @param string|null $rawText
-     *        Optional content of the article. If it is null, the content of $wikiPage is
-     *        retrieved in this method.
-     * @param array $messages
-     *      User readable messages (out)
-     * @throws Exception
+     * This code is inspired by getDisplayTitle() from DisplayTitle\includes\DisplayTitleHooks.php
+     *
+     * @param Title $title
+     * @param ?WikiPage $wikipage (optional) if present redirects will be followed
+     * @return string smwh_displaytitle
      */
-    public function fromWikiPage(WikiPage $wikiPage, string $rawText = null, array &$messages = []): Document
+    public static function findDisplayTitle(Title $title, WikiPage $wikipage = null): string
+    {
+        $title = $title->createFragmentTarget('');
+        $originalPageName = $title->getText();
+
+        $redirect = false;
+        if ($wikipage) {
+            $redirectTarget = MediaWikiServices::getInstance()->getRedirectLookup()->getRedirectTarget($wikipage);
+            if (!is_null($redirectTarget)) {
+                $redirect = true;
+                $title = Title::makeTitle($redirectTarget->getNamespace(), $redirectTarget->getDBkey());
+            }
+        }
+
+        $id = $title->getArticleID();
+        $values = MediaWikiServices::getInstance()->getPageProps()->getProperties($title, 'displaytitle');
+
+        if (array_key_exists($id, $values)) {
+            $value = $values[$id];
+            if (trim(str_replace('&#160;', '', strip_tags($value))) !== '') {
+                return $value;
+            }
+        } elseif ($redirect) {
+            return $title->getPrefixedText();
+        }
+        return $originalPageName;
+    }
+
+
+    public function fromWikiPage(WikiPage $wikiPage, array &$messages = []): Document
     {
 
         $doc = [];
@@ -58,13 +84,13 @@ class MWDBReader
 
         $pageNamespace = $pageTitle->getNamespace();
         $pageDbKey = $pageTitle->getDBkey();
-        $text = $rawText ?? $this->getText($wikiPage, $doc, $messages);
+        $text = $this->getText($wikiPage, $doc, $messages);
 
         $doc['id'] = $pageID;
         $doc['smwh_namespace_id'] = $pageNamespace;
         $doc['smwh_title'] = $pageDbKey;
         $doc['smwh_full_text'] = $text;
-        $doc['smwh_displaytitle'] = FacetedSearchUtil::findDisplayTitle($pageTitle, $wikiPage);
+        $doc['smwh_displaytitle'] = self::findDisplayTitle($pageTitle, $wikiPage);
 
         if ($pageTitle->exists()) {
             $this->smwReader->retrievePropertyValues($pageTitle, $doc);
@@ -195,4 +221,36 @@ class MWDBReader
         return array_unique($smwhTemplates);
     }
 
+
+    public function getCategoryTuples()
+    {
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
+        $CATEGORY_NAMESPACE = NS_CATEGORY;
+        $sql = <<<SQL
+SELECT DISTINCT page_from.page_title AS from_category, cl_to AS to_category,
+       props_from.pp_value AS from_displaytitle, props_to.pp_value AS to_displaytitle
+
+FROM page page_from
+LEFT JOIN categorylinks ON page_from.page_id = categorylinks.cl_from
+LEFT JOIN page_props props_from ON props_from.pp_page = page_from.page_id AND props_from.pp_propname = 'displaytitle'
+
+LEFT JOIN page AS page_to ON categorylinks.cl_to = page_to.page_title AND page_to.page_namespace = $CATEGORY_NAMESPACE
+LEFT JOIN page_props props_to ON props_to.pp_page = page_to.page_id AND props_to.pp_propname = 'displaytitle'
+WHERE page_from.page_namespace = $CATEGORY_NAMESPACE
+SQL;
+
+        $res = $db->query($sql);
+        $results = [];
+        foreach ($res as $row) {
+            $results[] =
+                [
+                    'from' => $row->from_category,
+                    'to' => $row->to_category,
+                    'from_displaytitle' => $row->from_displaytitle ?? str_replace("_", " ", $row->from_category),
+                    'to_displaytitle' => $row->to_displaytitle ?? str_replace("_", " ", $row->to_category ?? ''),
+                ];
+
+        }
+        return $results;
+    }
 }

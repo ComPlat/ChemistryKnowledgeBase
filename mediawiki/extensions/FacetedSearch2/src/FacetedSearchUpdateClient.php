@@ -43,8 +43,16 @@ interface FacetedSearchUpdateClient
      */
     public function existsIndex(): bool;
 
+    /**
+     * Refreshes the index (i.e. makes query results consistent with recent updates)
+     * @return void
+     */
     public function refreshIndex(): void;
 
+    /**
+     * True if multiple update requests can be sent as one network request
+     * @return bool
+     */
     public function supportBulkUpdates(): bool;
 
 }

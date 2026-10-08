@@ -2,7 +2,7 @@
 
 namespace DIQA\FacetedSearch2\Utils;
 
-use DIQA\FacetedSearch2\Update\FacetedSearchUtil;
+use DIQA\FacetedSearch2\Update\MWDBReader;
 use MediaWiki\MediaWikiServices;
 use RequestContext;
 use MediaWiki\Title\Title;
@@ -45,14 +45,14 @@ class WikiTools {
         if (!defined('MEDIAWIKI')) {
             return ucfirst($title);
         }
-        return FacetedSearchUtil::findDisplayTitle(Title::newFromText($title, SMW_NS_PROPERTY));
+        return MWDBReader::findDisplayTitle(Title::newFromText($title, SMW_NS_PROPERTY));
     }
 
     public static function getDisplayTitleForCategory(string $title) {
         if (!defined('MEDIAWIKI')) {
             return ucfirst($title);
         }
-        return FacetedSearchUtil::findDisplayTitle(Title::newFromText($title, NS_CATEGORY));
+        return MWDBReader::findDisplayTitle(Title::newFromText($title, NS_CATEGORY));
     }
 
     public static function titleExists($text) {

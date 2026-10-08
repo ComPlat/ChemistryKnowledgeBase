@@ -34,6 +34,7 @@
 		"phpoffice/phpword": "^1.4",
 		"phpoffice/phppresentation": "^1.2",
 		"phpoffice/phpspreadsheet": "^4.0",
+		"diqa/formatter": "^1.2",
         "ext-dom": "*",
         "ext-libxml": "*",
         "ext-ctype": "*",
@@ -68,7 +69,7 @@
     },
     "autoload-dev": {
       "psr-4": {
-          "DIQA\\FacetedSearch2\\": [ "test/" ]
+          "DIQA\\FacetedSearch2\\": [ "test/src/" ]
       }
   },
 	"require-dev": {

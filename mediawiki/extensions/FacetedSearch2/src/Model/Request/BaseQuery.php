@@ -97,9 +97,12 @@ abstract class BaseQuery {
         return $this;
     }
 
-    public function applyMandatoryFilters(): BaseQuery
+    protected function applyMandatoryFilters(): BaseQuery
     {
         $allowedNamespaces = ConfigTools::getAllowedNamespaces();
+        if (empty($allowedNamespaces)) {
+            return $this;
+        }
         $intersectedNamespaces = array_intersect($allowedNamespaces, $this->getNamespaceFacets());
         $namespaceFacets = empty($this->getNamespaceFacets()) ? $allowedNamespaces : $intersectedNamespaces;
         $this->setNamespaceFacets($namespaceFacets);

@@ -8,11 +8,6 @@ use JsonMapper_Exception;
 class DocumentQuery extends BaseQuery {
 
     /**
-     * @var \DIQA\FacetedSearch2\Model\Common\Property[]
-     */
-    public $extraProperties = [];
-
-    /**
      * @var Sort[]
      */
     public $sorts = [];
@@ -28,14 +23,6 @@ class DocumentQuery extends BaseQuery {
         $mapper = new JsonMapper();
         return $mapper->map(json_decode($json), new DocumentQuery())
             ->applyMandatoryFilters();
-    }
-
-    /**
-     * @return \DIQA\FacetedSearch2\Model\Common\Property[]
-     */
-    public function getExtraProperties(): array
-    {
-        return $this->extraProperties;
     }
 
     /**
@@ -60,16 +47,6 @@ class DocumentQuery extends BaseQuery {
     public function getOffset(): ?int
     {
         return $this->offset;
-    }
-
-    /**
-     * @param \DIQA\FacetedSearch2\Model\Common\Property[] $extraProperties
-     * @return DocumentQuery
-     */
-    public function setExtraProperties(array $extraProperties): DocumentQuery
-    {
-        $this->extraProperties = $extraProperties;
-        return $this;
     }
 
     /**

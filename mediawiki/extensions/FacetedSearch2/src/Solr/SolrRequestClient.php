@@ -1,6 +1,6 @@
 <?php
 
-namespace DIQA\FacetedSearch2\SolrClient;
+namespace DIQA\FacetedSearch2\Solr;
 
 use DIQA\FacetedSearch2\ConfigTools;
 use DIQA\FacetedSearch2\FacetedSearchClient;
@@ -40,8 +40,9 @@ class SolrRequestClient implements FacetedSearchClient
 
     public function requestDocuments(DocumentQuery $q): DocumentsResponse
     {
+        global $fs2gExtraPropertiesToRequest;
         $queryParams = $this->getParams($q->searchText, $q->propertyFacets, $q->categoryFacets,
-            $q->namespaceFacets, $q->extraProperties);
+            $q->namespaceFacets, $fs2gExtraPropertiesToRequest);
         $sortsAndLimits = $this->encodeSortsAndLimits($q->sorts, $q->limit, $q->offset);
         $queryParams = array_merge($queryParams, $sortsAndLimits);
 

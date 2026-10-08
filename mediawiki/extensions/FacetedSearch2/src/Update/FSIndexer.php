@@ -7,34 +7,19 @@ use DIQA\FacetedSearch2\FacetedSearchDependantUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
-use Sanitizer;
 use SMW\DIProperty as SMWDIProperty;
 use SMW\DIWikiPage as SMWDIWikiPage;
-use SMW\Services\ServicesFactory as ApplicationFactory;
 use WikiPage;
 
 class FSIndexer
 {
 
-    public static function indexArticle(Title $title, &$messages = []): void
-    {
-        self::indexArticlesWithText([$title], null, $messages);
-    }
-
-    public static function indexArticles(array $titles, &$messages = []): void
-    {
-        self::indexArticlesWithText($titles, null, $messages);
-    }
-
-    /**
-     * @throws \Exception
-     */
     public static function indexArticleWithDependent($title, & $messages = []): void
     {
         $client = ConfigTools::getFacetedSearchUpdateClient();
         if ($client instanceof FacetedSearchDependantUpdates) {
             $smwDBReader = new MWDBReader();
-            $doc = $smwDBReader->fromWikiPage(new WikiPage($title), null, $messages);
+            $doc = $smwDBReader->fromWikiPage(new WikiPage($title), $messages);
             $client->updateDocumentWithDependant($doc);
         } else {
             $pagesToUpdate = [];
@@ -42,18 +27,18 @@ class FSIndexer
             $pagesToUpdate = array_merge($pagesToUpdate, self::retrieveDependent($title));
             $pagesToUpdate = array_unique($pagesToUpdate);
 
-            self::indexArticlesWithText($pagesToUpdate, null, $messages);
+            self::indexArticles($pagesToUpdate, $messages);
         }
 
     }
 
-    private static function indexArticlesWithText(array $titles, $text, &$messages = []): void
+    public static function indexArticles(array $titles, &$messages = []): void
     {
         $client = ConfigTools::getFacetedSearchUpdateClient();
         $smwDBReader = new MWDBReader();
         $documents = [];
         foreach ($titles as $title) {
-            $documents[] = $smwDBReader->fromWikiPage(new WikiPage($title), $text, $messages);
+            $documents[] = $smwDBReader->fromWikiPage(new WikiPage($title), $messages);
         }
         $client->updateDocuments(...$documents);
     }
@@ -73,20 +58,10 @@ class FSIndexer
         // The article with the new name has the same page id as before
         $wp = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromID($newid);
 
-        $content = $wp->getContent(RevisionRecord::RAW);
-        if ($content == null) {
-            $text = '';
-        } else {
-            $text = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wp);
-            $text = $text->getRawText() ?? '';
-            $text = Sanitizer::stripAllTags($text);
-        }
 
-        FSIndexer::indexArticlesWithText([$wp->getTitle()], $text);
+        self::indexArticles([$wp->getTitle()]);
 
     }
-
-
 
     private static function retrieveDependent($title): array
     {

@@ -5,15 +5,20 @@ namespace DIQA\FacetedSearch2\Maintenance;
 use DIQA\FacetedSearch2\ConfigTools;
 use DIQA\FacetedSearch2\Exceptions\BackendException;
 use DIQA\FacetedSearch2\Update\FSIndexer;
+use DIQA\Formatter\Color;
+use DIQA\Formatter\Config;
+use DIQA\Formatter\Formatter;
+use MediaWiki\Cache\LinkCache;
 use MediaWiki\MediaWikiServices;
-use Title;
+use MediaWiki\Title\Title;
+use Exception;
 
 /**
  * Updates the index.
  *
  */
 if (!file_exists(__DIR__ . '/../../../maintenance/Maintenance.php')) {
-    echo "No wiki context found!\n";
+    print "No wiki context found!\n";
     die();
 }
 require_once __DIR__ . '/../../../maintenance/Maintenance.php';
@@ -21,14 +26,19 @@ require_once __DIR__ . '/../../../maintenance/Maintenance.php';
 class UpdateIndex extends \Maintenance
 {
 
-    private $linkCache;
-    private $writeToStartidfile;
-    private $num_files = 0;
+    private LinkCache $linkCache;
+    private bool $writeToStartidfile;
+    private int $num_files = 0;
 
+    private Formatter $formatter;
+
+    /**
+     * @throws Exception
+     */
     public function __construct()
     {
         parent::__construct();
-        $this->addDescription( "Updates the backend index used for Faceted Search 2" );
+        $this->addDescription("Updates the backend index used for Faceted Search 2");
         $this->addOption('v', 'Verbose mode', false, false);
         $this->addOption('g', 'Get the maximum ID of pages that would be updated (all other parameters are ignored if this is present)', false, false);
         $this->addOption('d', 'Delay every 100 pages (miliseconds)', false, true);
@@ -39,18 +49,33 @@ class UpdateIndex extends \Maintenance
         $this->addOption('n', 'Number of IDs from Start-ID', false, true);
         $this->addOption('f', 'End-ID by Pagename', false, true);
         $this->addOption('startidfile', 'File containing ID to start processing and saves last processed ID to this file', false, true);
+
+        $useBulkUpdates = ConfigTools::getFacetedSearchUpdateClient()->supportBulkUpdates();
+        $config = new Config([$useBulkUpdates ? 24 : 8, 100, 15],
+            [Config::LEFT_ALIGN, Config::LEFT_ALIGN, Config::LEFT_ALIGN],
+            [
+                'borderPadding' => true
+            ]
+        );
+        $config->highlightWord("[ ERROR ]", Color::fromColor(Color::BLACK, Color::RED), 2)
+            ->highlightWord("[ WARNING ]", Color::fromColor(Color::BLACK, Color::YELLOW), 2)
+            ->highlightWord("[ SUCCESS ]", Color::fromColor(Color::BLACK, Color::GREEN), 2);
+        $this->formatter = new Formatter($config);
     }
 
-    public function execute()
+    /**
+     * @throws Exception
+     */
+    public function execute(): void
     {
-        if( !defined( 'FS2_EXTENSION_VERSION' ) ) {
-            echo("ERROR: The FacetedSearch2 extension is not properly installed or configured.\n");
+        if (!defined('FS2_EXTENSION_VERSION')) {
+            print("ERROR: The FacetedSearch2 extension is not properly installed or configured.\n");
             die(1);
         }
 
         $this->createIndexIfNecessary();
 
-        if( $this->hasOption('g') ) {
+        if ($this->hasOption('g')) {
             $max = $this->getMaxId();
             print "$max\n";
             return;
@@ -81,9 +106,10 @@ class UpdateIndex extends \Maintenance
     }
 
     /**
-     * Print Documatation header
+     * Print Documentation header
      */
-    private function printDocHeader() {
+    private function printDocHeader(): void
+    {
         print "Refreshing all semantic data in the index server!\n---\n" .
             " Some versions of PHP suffer from memory leaks in long-running scripts.\n" .
             " If your machine gets very slow after many pages (typically more than\n" .
@@ -100,29 +126,29 @@ class UpdateIndex extends \Maintenance
      *
      * @param int $start
      * @param int $end
+     * @throws Exception
      */
-    private function refreshPagesByIds($start, $end)
+    private function refreshPagesByIds(int $start, int $end): void
     {
         print "Processing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ...\n";
 
         $id = $start;
-        while (((! $end) || ($id <= $end)) && ($id > 0)) {
+        while (((!$end) || ($id <= $end)) && ($id > 0)) {
             $title = Title::newFromID($id);
-            if ($this->hasOption('v')) {
-                print sprintf("(%s) Processing ID %s ... [%s]\n",
-                    $this->num_files, $id, ! is_null($title) ? $title->getPrefixedText() : "-");
-            }
-            $id ++;
+
             if (is_null($title)) {
+                $id++;
                 continue;
             }
 
-            $this->updateIndex($title);
+            $this->updateIndex($title, $id);
+
+            $id++;
 
             if (($this->hasOption('d')) && (($this->num_files + 1) % 100 === 0)) {
                 usleep($this->getOption('d'));
             }
-            $this->num_files ++;
+            $this->num_files++;
             $this->linkCache->clear(); // avoid memory leaks
 
             if ($this->writeToStartidfile) {
@@ -140,31 +166,35 @@ class UpdateIndex extends \Maintenance
      *
      * @param int $start
      * @param int $end
+     * @throws Exception
      */
-    private function refreshPagesByIdsBulk($start, $end)
+    private function refreshPagesByIdsBulk(int $start, int $end): void
     {
-        print "Processing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ... (bulk mode)\n";
+        print "\nProcessing all IDs from $start to " . ($end ? "$end" : 'last ID') . " ...";
+        print "\nUsing bulk mode";
+        print "\n";
 
         $batchSize = 100;
         $titles = [];
         $id = $start;
         $lastIdInBatch = $start;
 
-        while (((! $end) || ($id <= $end)) && ($id > 0)) {
+        while (((!$end) || ($id <= $end)) && ($id > 0)) {
             $title = Title::newFromID($id);
 
-            $id ++;
+            $id++;
             if (is_null($title)) {
                 continue;
             }
 
             $titles[] = $title;
             $lastIdInBatch = $id;
-            $this->num_files ++;
+            $this->num_files++;
 
             if (count($titles) >= $batchSize) {
-                $this->logOnConsole($id, $batchSize, $titles);
-                $this->updateIndexWithBatch($titles);
+
+                $this->updateIndexWithBatch($titles, $start, $lastIdInBatch);
+                $start = $lastIdInBatch + 1;
                 $titles = [];
 
                 if ($this->hasOption('d')) {
@@ -180,8 +210,8 @@ class UpdateIndex extends \Maintenance
 
         // flush remaining titles
         if (count($titles) > 0) {
-            $this->logOnConsole($id, $batchSize, $titles);
-            $this->updateIndexWithBatch($titles);
+
+            $this->updateIndexWithBatch($titles, $start, $lastIdInBatch);
             $this->linkCache->clear();
 
             if ($this->writeToStartidfile) {
@@ -191,11 +221,9 @@ class UpdateIndex extends \Maintenance
     }
 
     /**
-     * Refresh given pages.
-     *
-     * @param array of string $pages Page titles
+     * @throws Exception
      */
-    private function refreshPages($pages)
+    private function refreshPages($pages): void
     {
         print "Refreshing specified pages!\n\n";
 
@@ -208,60 +236,52 @@ class UpdateIndex extends \Maintenance
 
             $title = Title::newFromText($page);
 
-            if (! is_null($title)) {
+            if (!is_null($title)) {
                 $this->updateIndex($title);
             }
 
-            $this->num_files ++;
+            $this->num_files++;
         }
 
     }
 
     /**
-     * Update index of $title.
-     *
-     * @param Title $title
+     * @throws Exception
      */
-    private function updateIndex($title) {
+    private function updateIndex($title, $id = null): void
+    {
 
         try {
             $messages = [];
-            FSIndexer::indexArticle($title, $messages);
-            if ($this->hasOption('x')) {
-                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s", $title->getPrefixedText());
+            FSIndexer::indexArticles([$title], $messages);
+
+            if ($this->hasOption('v')) {
+                print $this->formatter->formatLine($id ?? '', $title->getPrefixedText(), "[ SUCCESS ]");
+                print "\n";
             }
-            if (count($messages) > 0) {
-                print implode("\t\n", $messages);
-            }
+            $this->logWarnings($messages);
         } catch (Exception $e) {
-            print sprintf("\t[NOT INDEXED] [HTTP code %s]\n", $e->getCode());
-            if ($this->hasOption('x')) {
-                print sprintf("\t[NOT INDEXED] %s\n", $e->getMessage());
-                print sprintf("%s\n", $e->getTraceAsString());
-                print "---------------------------------------------------------\n";
-            }
+            print $this->formatter->formatLine($id ?? '', $title->getPrefixedText(), "[ ERROR ]");
+            print "\n";
+            $this->logExtendedErrorInfo($e);
         }
     }
 
-
-    private function updateIndexWithBatch(array $titles) {
+    /**
+     * @throws Exception
+     */
+    private function updateIndexWithBatch(array $titles, $start, $end): void
+    {
 
         try {
             $messages = [];
+            $this->logBulkProgress($start, $end, $titles, "");
             FSIndexer::indexArticles($titles, $messages);
-            if ($this->hasOption('x')) {
-                print sprintf("\t[SUCCESSFULLY INDEXED]\n%s", count($titles) . " pages");
-            }
-            if (count($messages) > 0) {
-                print "\n\n\t" . implode("\t\n", $messages) . "\n";
-            }
+            $this->logBulkProgress($start, $end, $titles, "[ SUCCESS ]");
+            $this->logWarnings($messages);
         } catch (Exception $e) {
-            print sprintf("\t[NOT INDEXED] [HTTP code %s]\n", $e->getCode());
-            if ($this->hasOption('x')) {
-                print sprintf("\t[NOT INDEXED] %s\n", $e->getMessage());
-                print sprintf("%s\n", $e->getTraceAsString());
-                print "---------------------------------------------------------\n";
-            }
+            $this->logBulkProgress($start, $end, $titles, "[ ERROR ]");
+            $this->logExtendedErrorInfo($e);
         }
     }
 
@@ -271,13 +291,13 @@ class UpdateIndex extends \Maintenance
      *
      * @return int
      */
-    private function getStartId()
+    private function getStartId(): int
     {
         $this->writeToStartidfile = false;
         if ($this->hasOption('s')) {
             $start = max(1, intval($this->getOption('s')));
         } elseif ($this->hasOption('startidfile')) {
-            if (! is_writable(file_exists($this->getOption('startidfile')) ? $this->getOption('startidfile') : dirname($this->getOption('startidfile')))) {
+            if (!is_writable(file_exists($this->getOption('startidfile')) ? $this->getOption('startidfile') : dirname($this->getOption('startidfile')))) {
                 die("Cannot use a startidfile that we can't write to.\n");
             }
             $this->writeToStartidfile = true;
@@ -299,9 +319,9 @@ class UpdateIndex extends \Maintenance
      *
      * @return int
      */
-    private function getEndId($start)
+    private function getEndId($start): int
     {
-        if ($this->hasOption('e')) { 
+        if ($this->hasOption('e')) {
             // Note: this might reasonably be larger than the page count
             $end = intval($this->getOption('e'));
 
@@ -319,14 +339,15 @@ class UpdateIndex extends \Maintenance
         return $end;
     }
 
-    private function getMaxId() {
-        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+    private function getMaxId(): int
+    {
+        $db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(DB_REPLICA);
         $page_table = $db->tableName("page");
         $query = "SELECT MAX(page_id) as maxid FROM $page_table";
         $res = $db->query($query);
-        if( $res->numRows() > 0 ) {
+        if ($res->numRows() > 0) {
             $row = $res->fetchObject();
-            if( $row ) {
+            if ($row) {
                 return $row->maxid;
             }
         }
@@ -355,7 +376,8 @@ class UpdateIndex extends \Maintenance
             $client->refreshIndex();
 
         } catch (BackendException $e) {
-            echo("\nERROR: Creating the index failed. Reason: " . $e->getMessage());
+            print("\nERROR: Creating the index failed. Reason: " . $e->getMessage());
+            print "\n";
             die(1);
         }
     }
@@ -378,26 +400,53 @@ class UpdateIndex extends \Maintenance
         }
     }
 
-    /**
-     * @param int $id
-     * @param int $batchSize
-     * @param array $titles
-     * @return void
-     */
-    private function logOnConsole(int $id, int $batchSize, array $titles): void
+    private function logBulkProgress(int $start, int $end, array $titles, string $status): void
     {
-        if ($this->hasOption('v')) {
-            $startFrom = $id - $batchSize;
-            $startTitle = $titles[0]->getPrefixedText();
-            $endTitle = $titles[count($titles) - 1]->getPrefixedText();
-            print sprintf("\nProcessing IDs [%s to %s] [%s to %s]...",
-                $startFrom, $id, self::shorten($startTitle), self::shorten($endTitle));
-
+        if (!$this->hasOption('v')) {
+            return;
+        }
+        $startTitle = $titles[0]->getPrefixedText();
+        $endTitle = $titles[count($titles) - 1]->getPrefixedText();
+        print $this->formatter->formatLine(sprintf("IDs [%s to %s]", $start, $end),
+            sprintf("[%s to %s]...", self::shorten($startTitle), self::shorten($endTitle)),
+            $status);
+        if ($status === '') {
+            print "\r";
+        } else {
+            print "\n";
         }
     }
 
-    private static function shorten(string $s) {
-        return mb_strlen($s) > 50 ?  trim(substr($s, 0, 50)) . "..." : $s;
+    private static function shorten(string $s): string
+    {
+        return mb_strlen($s) > 50 ? trim(substr($s, 0, 50)) . "..." : $s;
+    }
+
+
+    /**
+     * @throws Exception
+     */
+    public function logExtendedErrorInfo(Exception $e): void
+    {
+        if ($this->hasOption('x')) {
+            print $this->formatter->formatLine('', sprintf('HTTP code %s', $e->getCode()), '');
+            print "\n";
+            print $this->formatter->formatLine('', str_replace(["\n", "\r"], ' ', strip_tags($e->getMessage())), '');
+            print "\n";
+        }
+    }
+
+    /**
+     * @param array $messages
+     * @return void
+     * @throws Exception
+     */
+    public function logWarnings(array $messages): void
+    {
+        if (count($messages) > 0) {
+            print $this->formatter->formatLine('', implode(' ', $messages), "[ WARNING ]");
+            print "\n";
+        }
     }
 }
 

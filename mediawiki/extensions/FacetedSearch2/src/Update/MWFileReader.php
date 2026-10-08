@@ -16,7 +16,7 @@ use MediaWiki\Title\Title;
 use Smalot\PdfParser\Parser;
 use WikiPage;
 
-class FileReader
+class MWFileReader
 {
 
     public function getTextFromFile(WikiPage $wikiPage, array &$doc, array &$messages): string

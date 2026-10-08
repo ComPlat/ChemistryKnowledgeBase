@@ -18,7 +18,7 @@ use SMW\Store;
 use StatusValue;
 use WikiPage;
 
-class FSIncrementalUpdater  {
+class Hooks  {
 
     private function __construct() {
     }
@@ -51,6 +51,7 @@ class FSIncrementalUpdater  {
      * @param RevisionRecord $revisionRecord
      * @param EditResult $editResult
      * @return bool
+     * @throws Exception
      */
     public static function onPageSaveComplete( WikiPage $wikiPage, UserIdentity $user, string $summary,
                                                int $flags, RevisionRecord $revisionRecord, EditResult $editResult ) {
