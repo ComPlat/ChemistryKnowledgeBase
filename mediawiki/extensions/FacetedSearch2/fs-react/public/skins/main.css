@@ -12,13 +12,7 @@
     width: 100%;
 }
 
-#fs-facets {
-    overflow: hidden;
-}
 
-#fs-facets > div {
-    margin: 5px;
-}
 div.fs-boxes {
     margin-top: 3px;
     display: flex;
@@ -176,12 +170,19 @@ div.demoted {
 #fs-facets {
     display: flex;
     flex-direction: column;
+    overflow: clip;
+
+}
+
+#fs-facets > div {
+    margin: 5px;
 }
 
 #fs-facetview {
+    max-width: 100%;
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
+    overflow: clip;
 }
 
 
