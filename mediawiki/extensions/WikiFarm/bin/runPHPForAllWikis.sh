@@ -55,7 +55,7 @@ for dir in "$ROOT"/env-farm-*/; do
 
     echo "$WIKI"
     if source "$SCRIPT_DIR/setup.sh" "$WIKI"; then
-      echo "$PHP_BIN" $*
+      "$PHP_BIN" $*
     fi
     rc=$?
 
