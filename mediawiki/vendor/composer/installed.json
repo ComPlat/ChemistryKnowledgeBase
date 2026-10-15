@@ -958,6 +958,65 @@
             "install-path": "../../extensions/PageImport"
         },
         {
+            "name": "diqa/wiki-farm",
+            "version": "dev-main",
+            "version_normalized": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kkthek/wiki-farm.git",
+                "reference": "c29d644da0f7571738f0eb88bb8c0e8e86e3f034"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kkthek/wiki-farm/zipball/c29d644da0f7571738f0eb88bb8c0e8e86e3f034",
+                "reference": "c29d644da0f7571738f0eb88bb8c0e8e86e3f034",
+                "shasum": ""
+            },
+            "require": {
+                "composer/installers": "1.*,>=1.0.1|2.*",
+                "diqa/formatter": "^1.2",
+                "php": ">=8.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^12"
+            },
+            "time": "2026-10-15T14:15:04+00:00",
+            "default-branch": true,
+            "type": "mediawiki-extension",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "DIQA\\FacetedSearch2\\": [
+                        "src/"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Kai Kühn",
+                    "homepage": "https://diqa.de",
+                    "role": "Core developer"
+                }
+            ],
+            "description": "Provides a mechanism to run several independent wikis with one codebase",
+            "homepage": "https://www.semantic-mediawiki.org/wiki/WikiFarm",
+            "keywords": [
+                "Farm",
+                "mediawiki",
+                "wiki"
+            ],
+            "support": {
+                "email": "kuehn@diqa.de",
+                "issues": "https://support.diqa-pm.com/",
+                "source": "https://github.com/kkthek/wiki-farm/tree/main"
+            },
+            "install-path": "../../extensions/WikiFarm"
+        },
+        {
             "name": "eftec/bladeone",
             "version": "4.18",
             "version_normalized": "4.18.0.0",

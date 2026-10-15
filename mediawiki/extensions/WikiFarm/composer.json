@@ -1,0 +1,68 @@
+{
+  "name": "diqa/wiki-farm",
+  "type": "mediawiki-extension",
+  "description": "Provides a mechanism to run several independent wikis with one codebase",
+  "keywords": [
+    "Farm",
+    "Wiki",
+    "MediaWiki"
+  ],
+  "homepage": "https://www.semantic-mediawiki.org/wiki/WikiFarm",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Kai Kühn",
+      "homepage": "https://diqa.de",
+      "role": "Core developer"
+    }
+  ],
+  "support": {
+    "email": "kuehn@diqa.de",
+    "issues": "https://support.diqa-pm.com/"
+  },
+  "require": {
+    "php": ">=8.3.0",
+    "composer/installers": "1.*,>=1.0.1|2.*",
+    "diqa/formatter": "^1.2"
+  },
+  "suggest": {
+
+  },
+  "extra": {
+
+  },
+  "config": {
+    "process-timeout": 0,
+    "allow-plugins": {
+      "composer/installers": true,
+      "php-http/discovery": true
+    },
+    "policy": {
+      "advisories": {
+        "block": false
+      }
+    }
+  },
+  "scripts": {
+    "setup": "php maintenance/setupStore.php"
+  },
+  "autoload": {
+    "psr-4": {
+      "DIQA\\FacetedSearch2\\": [ "src/" ]
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DIQA\\FacetedSearch2\\": [ "test/src/" ]
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12"
+  },
+  "archive": {
+    "exclude": [
+      "/.git", "/.idea", "/test",
+      "/runTests.sh", "README.md"
+    ]
+  }
+}

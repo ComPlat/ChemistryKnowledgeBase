@@ -49,14 +49,14 @@ for dir in "$ROOT"/env-farm-*/; do
     # Remove prefix only if it is at the start (case-insensitive)
     shopt -s nocasematch
     if [[ "$name" == "$PREFIX"* ]]; then
-        OUT="${name#$PREFIX}"
+        WIKI="${name#$PREFIX}"
     else
-        OUT="$name"
+        WIKI="$name"
     fi
     shopt -u nocasematch
 
-    echo "$OUT"
-    "$RUN_SCRIPT" "$OUT"
+    echo "$WIKI"
+    "$RUN_SCRIPT" "$WIKI"
     rc=$?
 
     popd > /dev/null

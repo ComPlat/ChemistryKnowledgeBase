@@ -95,7 +95,7 @@ return array(
     'DIQA\\Formatter\\' => array($vendorDir . '/diqa/formatter/src', $vendorDir . '/diqa/formatter/test'),
     'DIQA\\FacetedSearch\\Maintenance\\' => array($baseDir . '/extensions/EnhancedRetrieval/maintenance'),
     'DIQA\\FacetedSearch\\' => array($baseDir . '/extensions/EnhancedRetrieval/src/FacetedSearch'),
-    'DIQA\\FacetedSearch2\\' => array($baseDir . '/extensions/FacetedSearch2/src'),
+    'DIQA\\FacetedSearch2\\' => array($baseDir . '/extensions/WikiFarm/src', $baseDir . '/extensions/FacetedSearch2/src'),
     'DIQA\\' => array($baseDir . '/extensions/PageImport/src', $baseDir . '/extensions/PageImport/test'),
     'Composer\\Semver\\' => array($vendorDir . '/composer/semver/src'),
     'Composer\\Pcre\\' => array($vendorDir . '/composer/pcre/src'),

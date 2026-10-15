@@ -555,7 +555,8 @@ class ComposerStaticInit_mediawiki_vendor
         ),
         'DIQA\\FacetedSearch2\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src',
+            0 => __DIR__ . '/../..' . '/extensions/WikiFarm/src',
+            1 => __DIR__ . '/../..' . '/extensions/FacetedSearch2/src',
         ),
         'DIQA\\' => 
         array (

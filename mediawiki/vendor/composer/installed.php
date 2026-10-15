@@ -131,6 +131,17 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'diqa/wiki-farm' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'c29d644da0f7571738f0eb88bb8c0e8e86e3f034',
+            'type' => 'mediawiki-extension',
+            'install_path' => __DIR__ . '/../../extensions/WikiFarm',
+            'aliases' => array(
+                0 => '9999999-dev',
+            ),
+            'dev_requirement' => false,
+        ),
         'eftec/bladeone' => array(
             'pretty_version' => '4.18',
             'version' => '4.18.0.0',

@@ -72,7 +72,8 @@ class WikiGenerator {
     /**
      * @throws ValidationException
      */
-    private function validatePrerequisites() {
+    private function validatePrerequisites(): void
+    {
         global $IP;
 
         $wikiID = $this->wikiConfig['wikiId'];
@@ -159,7 +160,8 @@ class WikiGenerator {
     /**
      * @throws ValidationException
      */
-    private function createEnvFolder() {
+    private function createEnvFolder(): void
+    {
 
         global $IP;
 
@@ -195,7 +197,8 @@ class WikiGenerator {
     /**
      * @throws ValidationException
      */
-    private function checkAndCopyFileToEnv($filePath, $wikiID, $destFilename) {
+    private function checkAndCopyFileToEnv($filePath, $wikiID, $destFilename): void
+    {
         global $IP;
         if (!copy($filePath, "$IP/env-farm-$wikiID/$destFilename")) {
             throw new ValidationException("Could not copy file '$filePath'");
@@ -205,7 +208,8 @@ class WikiGenerator {
     /**
      * @throws ValidationException
      */
-    private function createWikiDB() {
+    private function createWikiDB(): void
+    {
         global $mysqlBin, $wgDBuser, $wgDBpassword, $IP;
 
         $wikiID = $this->wikiConfig['wikiId'];
@@ -228,7 +232,8 @@ class WikiGenerator {
     /**
      * @throws ValidationException
      */
-    private function createSolrCore() {
+    private function createSolrCore(): void
+    {
         global $solrCoreTemplate;
 
         $wikiID = $this->wikiConfig['wikiId'];
@@ -272,7 +277,7 @@ class WikiGenerator {
         }
     }
 
-    private function initializeDB()
+    private function initializeDB(): void
     {
         global $IP, $phpBin;
         $wikiID = $this->wikiConfig['wikiId'];
@@ -293,7 +298,8 @@ class WikiGenerator {
         $ret = $this->runShellCommand("$setWikiId&& \"$phpBin\" $IP/maintenance/importImages.php --search-recursively --overwrite \"$wikiImageFolder\" 2>&1");
     }
 
-    private function populateSolrIndex() {
+    private function populateSolrIndex(): void
+    {
         global $IP, $phpBin;
         $wikiID = $this->wikiConfig['wikiId'];
 
@@ -315,7 +321,8 @@ class WikiGenerator {
         $this->runShellCommand("$setWikiId&& \"$phpBin\" $updateCommand -v 2>&1");
     }
 
-    public function rollback($wikiID) {
+    public function rollback($wikiID): void
+    {
         global $IP;
 
         $filename = "$IP/env-farm-$wikiID";

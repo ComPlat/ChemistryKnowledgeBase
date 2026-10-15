@@ -96,7 +96,8 @@
 		"mediawiki/display-title": "^4.0",
 		"diqa/enhanced-retrieval": "dev-master",
 		"ml/json-ld": "^1.2",
-		"diqa/faceted-search-2": "dev-main"
+		"diqa/faceted-search-2": "dev-main",
+		"diqa/wiki-farm": "dev-main"
 	},
 	"require-dev": {
 		"composer/spdx-licenses": "1.5.8",
