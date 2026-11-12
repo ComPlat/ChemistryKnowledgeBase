@@ -4,7 +4,7 @@ namespace DIQA\ChemExtension\Maintenance;
 
 use DIQA\ChemExtension\Eval\GoldAuditor;
 use DIQA\ChemExtension\Eval\GoldSetRepository;
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 
 /**
  * Load the required class
@@ -43,7 +43,7 @@ class auditGoldSet extends \Maintenance
             $this->fatalError("No gold set for topic '$topic'.");
         }
 
-        $client = AIClient::getAIClient();
+        $client = AIClientFactory::create();
         $auditor = new GoldAuditor($client, $threshold);
 
         $all = [];   // doi => findings[]

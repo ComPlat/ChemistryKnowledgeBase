@@ -6,29 +6,48 @@ use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use OpenAI;
 
+/**
+ * {@see AIClientInterface} for the OpenAI platform: Responses API with PDFs uploaded through
+ * the Files API, so the model reads layout, tables and figures natively.
+ *
+ * For the KIT KI-Toolbox and self-hosted models see {@see ChatCompletionsAIClient}.
+ */
 class AIClient implements AIClientInterface
 {
+    /** Reasoning effort sent when none is configured (behaviour before provider support). */
+    private const LEGACY_REASONING_EFFORT = 'none';
 
     private OpenAI\Client $client;
+    private AIProviderConfig $config;
+    private AIHttpTransport $http;
     private LoggerUtils $logger;
     private $lastUsage = null;
 
+    /**
+     * @deprecated since provider support; use {@see AIClientFactory::create()}. Kept so
+     *             existing callers keep working; returns the configured provider's client.
+     */
     static function getAIClient(): AIClientInterface {
-        global $wgCEUseAIClientMock;
-        return isset($wgCEUseAIClientMock) && $wgCEUseAIClientMock === true ? new AIClientMock() : new AIClient();
+        return AIClientFactory::create();
     }
 
-    private function __construct()
+    public function __construct(AIProviderConfig $config)
     {
-        global $wgOpenAIKey;
-        if (!isset($wgOpenAIKey)) {
-            throw new Exception('OpenAI-Key is missing. please configure $wgOpenAIKey');
+        if ($config->getApiKey() === null) {
+            throw new Exception('OpenAI-Key is missing. please configure $wgOpenAIKey or OPENAI_API_KEY');
         }
-        $yourApiKey = $wgOpenAIKey;
+        $this->config = $config;
         $this->logger = new LoggerUtils('AIClient', 'ChemExtension');
+        $this->http = new AIHttpTransport($config, $this->logger);
         $this->client = OpenAI::factory()
-            ->withApiKey($yourApiKey)
+            ->withApiKey($config->getApiKey())
+            ->withBaseUri($config->getBaseUrl())
             ->make();
+    }
+
+    public function describe(): string
+    {
+        return $this->config->describe();
     }
 
     /**
@@ -44,11 +63,8 @@ class AIClient implements AIClientInterface
     public function ping(): array
     {
         try {
-            global $wgOpenAIModel;
-            $model = $wgOpenAIModel ?? 'o3';
-
             $response = $this->client->responses()->create([
-                'model' => $model,
+                'model' => $this->config->getModel(),
                 'reasoning' => ['effort' => 'low'],
                 'input' => [
                     [
@@ -113,7 +129,6 @@ class AIClient implements AIClientInterface
 
         $file = tempnam(sys_get_temp_dir(), 'text') . ".txt";
         file_put_contents($file, $text);
-        print $text;
         $fileHandle = fopen($file, 'r');
         $response = $this->client->files()->upload([
             'purpose' => 'user_data',
@@ -132,8 +147,7 @@ class AIClient implements AIClientInterface
 
     /**
      * Builds the user content array from uploaded document file ids and (optional) image file ids
-     * (rendered PDF pages) for vision input. Public so EnsembleExtractor can construct a
-     * request body identical to what callAI would send, then fire N parallel POSTs itself.
+     * (rendered PDF pages) for vision input.
      */
     public function buildFileContent(array $fileIds, array $imageFileIds = []): array
     {
@@ -207,79 +221,46 @@ class AIClient implements AIClientInterface
         return $result;
     }
 
-    private const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
-    private const REQUEST_TIMEOUT_SECONDS = 600;
+    public function callAIParallel(array $fileIds, string $prompt, int $n, array $imageFileIds = []): array
+    {
+        $requestBody = $this->extractRequestParameters($prompt, $this->buildFileContent($fileIds, $imageFileIds));
+        return array_map(static function (array $response): array {
+            if ($response['error'] !== null) {
+                return ['text' => '', 'error' => $response['error']];
+            }
+            $text = self::extractOutputText($response['data']);
+            return ['text' => $text, 'error' => $text === '' ? 'empty output' : null];
+        }, $this->parallelPost($requestBody, $n));
+    }
 
     /**
-     * Fire $n identical HTTP POST requests to the OpenAI Responses endpoint concurrently
-     * using curl_multi. Returns an array of decoded JSON responses (one per handle, in the
-     * original order). Requests that error out have an "_error" key set instead of output.
+     * Fires $n identical POSTs to the Responses endpoint concurrently (curl_multi; the SDK has
+     * no async API). Wall-time is ~max(request_time), not the sum.
      *
-     * Wall-time is ~max(request_time), not sum — that's the whole point of running parallel.
-     *
-     * @param array $requestBody Body identical for every pass
-     * @param int   $n           Number of concurrent requests
-     * @return array<int, array>
+     * @return array<int, array{data: ?array, error: ?string}>
      */
     public function parallelPost(array $requestBody, int $n): array
     {
-        global $wgOpenAIKey;
-        if (empty($wgOpenAIKey)) {
-            throw new Exception('OpenAI-Key is missing. please configure $wgOpenAIKey');
-        }
-        $jsonBody = json_encode($requestBody);
-        if ($jsonBody === false) {
-            throw new Exception('failed to encode request body for parallel POST');
-        }
+        return $this->http->postJsonParallel('responses', $requestBody, $n);
+    }
 
-        $multi = curl_multi_init();
-        $handles = [];
-        for ($i = 0; $i < $n; $i++) {
-            $ch = curl_init(self::OPENAI_RESPONSES_URL);
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $jsonBody,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $wgOpenAIKey,
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => self::REQUEST_TIMEOUT_SECONDS,
-                CURLOPT_CONNECTTIMEOUT => 30,
-            ]);
-            curl_multi_add_handle($multi, $ch);
-            $handles[$i] = $ch;
+    /**
+     * Pulls the text out of a raw Responses API JSON response. The API returns a top-level
+     * `output_text` in some shapes and a nested `output[*].content[*].text` in others.
+     */
+    public static function extractOutputText(?array $response): string
+    {
+        if (isset($response['output_text']) && is_string($response['output_text'])) {
+            return $response['output_text'];
         }
-
-        // Drive the multi handle until all requests complete.
-        $running = 0;
-        do {
-            $status = curl_multi_exec($multi, $running);
-            if ($running > 0) {
-                curl_multi_select($multi, 1.0);
+        foreach (($response['output'] ?? []) as $item) {
+            foreach (($item['content'] ?? []) as $c) {
+                if (($c['type'] ?? '') === 'output_text' && isset($c['text']) && is_string($c['text'])) {
+                    return $c['text'];
+                }
             }
-        } while ($running > 0 && $status === CURLM_OK);
-
-        $responses = [];
-        foreach ($handles as $i => $ch) {
-            $body = curl_multi_getcontent($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErrno = curl_errno($ch);
-            if ($curlErrno !== 0) {
-                $responses[$i] = ['_error' => 'curl error: ' . curl_error($ch)];
-            } elseif ($httpCode !== 200) {
-                // Preserve the error message for logging, but leave output empty so merger skips.
-                $snippet = is_string($body) ? substr($body, 0, 500) : '';
-                $responses[$i] = ['_error' => "HTTP $httpCode: $snippet"];
-            } else {
-                $decoded = json_decode((string)$body, true);
-                $responses[$i] = is_array($decoded) ? $decoded : ['_error' => 'malformed json'];
-            }
-            curl_multi_remove_handle($multi, $ch);
-            curl_close($ch);
         }
-        curl_multi_close($multi);
-        return $responses;
+        return '';
     }
 
     /**
@@ -393,10 +374,9 @@ class AIClient implements AIClientInterface
             "type" => "input_text",
             "text" => $systemPrompt,
         ];
-        global $wgOpenAIModel, $wgOpenAIModelReasoning;
         return [
-            "model" => $wgOpenAIModel ?? "o3",
-            "reasoning" => ["effort" => $wgOpenAIModelReasoning ?? "none"],
+            "model" => $this->config->getModel(),
+            "reasoning" => ["effort" => $this->config->getReasoningEffort() ?? self::LEGACY_REASONING_EFFORT],
             "input" => [
                 [
                     "role" => "user",

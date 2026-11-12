@@ -35,13 +35,15 @@ python3 bin/optimize_local.py --topic Photocatalytic_CO2_conversion \
 Each iteration writes `eval/<Topic>/results/metrics.csv` + `trend.png/pdf`. Stop with Ctrl+C
 (prior iterations stay archived). Commit `results/*` + the exported prompt to archive the trend.
 
-## Turnkey (in-wiki / PHP) — once the OpenAI key is set
+## Turnkey (in-wiki / PHP) — once an AI provider is configured
 
 1. **Config** in `LocalSettings.php`:
    ```php
-   $wgOpenAIKey = 'sk-...';                              // required
+   $wgOpenAIKey = 'sk-...';                              // OpenAI (default provider)
+   // or the KIT KI-Toolbox / a self-hosted model, see doc/ChemExtension.md "AI provider":
+   // $wgCEAIProvider = 'kit'; $wgCEAIModel = 'azure.gpt-5.4';  // key: env KIT_TOOLBOX_API_KEY
    // optional:
-   $wgOpenAIModel = 'o3';                                // extraction/critic model
+   $wgOpenAIModel = 'o3';                                // extraction/critic model (openai)
    $wgOpenAIEmbeddingModel = 'text-embedding-3-small';   // prose similarity
    $wgCEUnpaywallEmail = 'you@kit.edu';                  // for OA PDF fetching
    ```
@@ -79,7 +81,13 @@ php maintenance/optimizeExtractionPrompt.php --topic Host_Guest_interaction --it
 php maintenance/optimizeExtractionPrompt.php --topic Host_Guest_interaction --iterations 5 --write
 ```
 
-It requires `$wgOpenAIKey` to be configured (used by `AIClient`).
+It requires a configured AI provider (see `doc/ChemExtension.md`, section *AI provider*).
+Override provider/model per run to compare models on the same gold set:
+
+```bash
+php maintenance/optimizeExtractionPrompt.php --topic Host_Guest_interaction --iterations 1 --dry-run \
+    --provider kit --model kit.mistral-small-4-119b-a8b
+```
 
 ## Layout
 
@@ -213,7 +221,7 @@ being trusted silently.
 
 **Secondary — prose similarity** — when a gold entry has a `prose` field, the AI prose (response
 minus the CSV block) is compared to the reference via embedding cosine similarity
-(`ProseSimilarityScorer` + `EmbeddingClient`, model `$wgOpenAIEmbeddingModel`). Disable with
+(`ProseSimilarityScorer` + `EmbeddingClient`, model `$wgCEAIEmbeddingModel` / `$wgOpenAIEmbeddingModel`, provider default otherwise). Disable with
 `--no-embeddings`. Kept as a low-weight support signal only.
 
 ## CLI options

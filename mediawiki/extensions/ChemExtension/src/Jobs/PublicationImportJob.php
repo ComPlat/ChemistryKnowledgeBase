@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\PublicationImport\EnsembleExtractor;
 use DIQA\ChemExtension\PublicationImport\ExperimentWikitextImporter;
@@ -121,7 +121,7 @@ class PublicationImportJob extends Job
         $prompt = $this->resolveImportPrompt();
         $this->logger->log("prompt for AI: " . $prompt);
 
-        $aiClient = AIClient::getAIClient();
+        $aiClient = AIClientFactory::create();
         $fileIds = $aiClient->uploadFiles($this->paths);
 
         // Consistency wrapper: if $wgAIExtractionPasses > 1, run the extractor N times in

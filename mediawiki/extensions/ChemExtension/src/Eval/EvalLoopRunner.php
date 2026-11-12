@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Eval;
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
@@ -20,7 +20,7 @@ use Exception;
  * The loop converges towards the metric; the best prompt across all iterations is returned and
  * can then be written to MediaWiki:Prompt_import_<Topic> (closing the loop with Teil B).
  *
- * Requires $wgOpenAIKey at runtime (used by AIClient). The PHP code itself is independent of the
+ * Requires a configured AI provider at runtime (see PublicationImport\AIProviderConfig). The PHP code itself is independent of the
  * key and the gold set, both of which are supplied by the operator.
  */
 class EvalLoopRunner
@@ -47,14 +47,14 @@ class EvalLoopRunner
     public function __construct(
         ?GoldSetRepository $goldRepo = null,
         ?ExtractionScorer $scorer = null,
-        ?AIClient $aiClient = null,
+        ?AIClientInterface $aiClient = null,
         ?PromptOptimizer $optimizer = null,
         ?callable $progress = null,
         ?ProseSimilarityScorer $proseScorer = null
     ) {
         $this->goldRepo = $goldRepo ?? new GoldSetRepository();
         $this->scorer = $scorer ?? new ExtractionScorer();
-        $this->aiClient = $aiClient ?? AIClient::getAIClient();
+        $this->aiClient = $aiClient ?? AIClientFactory::create();
         $this->optimizer = $optimizer ?? new PromptOptimizer($this->aiClient);
         $this->proseScorer = $proseScorer;
         $this->logger = new LoggerUtils('EvalLoopRunner', 'ChemExtension');

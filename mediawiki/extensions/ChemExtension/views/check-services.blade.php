@@ -13,7 +13,7 @@
         @endforeach
 
         <tr>
-            <td><span style="font-weight: bold">Open-AI service</span> (contact: kuehn (at) diqa.de)</td>
+            <td><span style="font-weight: bold">AI service</span> ({{$aiServiceName}}) (contact: kuehn (at) diqa.de)</td>
             <td class="check-service-state {{$openAIState === true ? 'check-service-state-ok' : 'check-service-state-not-ok'}}">
                <div title="{{$openAIState === true ? "": $openAIState}}">{{$openAIState === true ? 'OK': 'ERROR'}}</div>
             </td>

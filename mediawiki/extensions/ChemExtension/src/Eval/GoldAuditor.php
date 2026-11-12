@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Eval;
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\PublicationImport\AIClientInterface;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 
@@ -25,7 +25,7 @@ class GoldAuditor
 
     public function __construct(?AIClientInterface $client = null, float $threshold = 0.7)
     {
-        $this->client = $client ?? AIClient::getAIClient();
+        $this->client = $client ?? AIClientFactory::create();
         $this->threshold = $threshold;
         $this->logger = new LoggerUtils('GoldAuditor', 'ChemExtension');
     }

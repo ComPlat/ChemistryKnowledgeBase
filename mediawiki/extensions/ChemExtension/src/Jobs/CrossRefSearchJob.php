@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
 use DIQA\ChemExtension\PublicationSearch\DownloadLinkFinder;
 use DIQA\ChemExtension\PublicationSearch\PublicationSearchRepository;
@@ -56,7 +56,7 @@ class CrossRefSearchJob extends Job
 
     private function checkPublication(string $doi)
     {
-        $aiClient = AIClient::getAIClient();
+        $aiClient = AIClientFactory::create();
 
         $promptTitle = Title::newFromText('Publication_search_prompt', NS_MEDIAWIKI);
         if ($promptTitle->exists()) {
@@ -115,7 +115,7 @@ class CrossRefSearchJob extends Job
 
     private function checkSpecificPrompts(PublicationSearchResult $publication, array $allTopics): array
     {
-        $aiClient = AIClient::getAIClient();
+        $aiClient = AIClientFactory::create();
 
         $positiveResults = [];
         foreach ($allTopics as $topic) {

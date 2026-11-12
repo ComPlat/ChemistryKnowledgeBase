@@ -5,7 +5,7 @@ namespace DIQA\ChemExtension\Specials;
 use DIQA\ChemExtension\CheckServiceRequest;
 use DIQA\ChemExtension\MoleculeRenderer\MoleculeRendererClientImpl;
 use DIQA\ChemExtension\MoleculeRGroupBuilder\MoleculeRGroupServiceClientImpl;
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\PublicationSearch\CrossRefAPI;
 use DIQA\ChemExtension\PublicationSearch\OpenAlexAPI;
 use DIQA\ChemExtension\TIB\TibClient;
@@ -41,19 +41,28 @@ class CheckServices extends SpecialPage
         $responses= $this->doParallelCheckRequests($servicesData);
 
         $serviceResponses = array_map(fn ($e) => $e['_error'] ?? true, $responses);
+        $aiState = $this->checkAIService();
         $output->addHTML($this->blade->run("check-services", [
             'responses' => $serviceResponses,
             'servicesData' => $servicesData,
-            'openAIState' => $this->checkOpenAIService(),
+            'openAIState' => $aiState['state'],
+            'aiServiceName' => $aiState['name'],
         ])
         );
     }
 
-    private function checkOpenAIService()
+    /**
+     * @return array{name: string, state: true|string} state is true or an error message
+     */
+    private function checkAIService(): array
     {
-        $aiClient = AIClient::getAIClient();
+        try {
+            $aiClient = AIClientFactory::create();
+        } catch (\Exception $e) {
+            return ['name' => 'not configured', 'state' => $e->getMessage()];
+        }
         $result = $aiClient->ping();
-        return $result['ok'] ? true : $result['message'];
+        return ['name' => $aiClient->describe(), 'state' => $result['ok'] ? true : $result['message']];
     }
 
 
