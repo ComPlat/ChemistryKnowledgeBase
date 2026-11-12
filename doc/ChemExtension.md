@@ -484,6 +484,60 @@ checked on Special:CheckServices. They do not use authentication for now.
   * Client class: *MoleculeRendererClientImpl*
   * Base URL configuration: $moleculeRendererServiceUrl
 
+* *AI service (LLM)*
+
+  Used for publication import (extraction), tagging, spam detection and the extraction
+  evaluation loop. The backend is selectable, see *AI provider* below. Its status is shown on
+  Special:CheckServices.
+
+### AI provider
+
+All AI tasks go through `AIClientInterface`; `AIClientFactory::create()` returns the client for
+the configured provider:
+
+| Provider (`$wgCEAIProvider`) | Endpoint | Client | PDF input |
+|---|---|---|---|
+| `openai` (default) | OpenAI platform, Responses + Files API | `AIClient` | native |
+| `kit` | KIT KI-Toolbox `https://ki-toolbox.scc.kit.edu/api/v1` | `ChatCompletionsAIClient` | native for `azure.*` / `google.*`, extracted text for KIT-hosted models (`kit.*`, `alias.*-local`) |
+| `openai-compatible` | any OpenAI-compatible server (vLLM, Ollama, LM Studio, llama.cpp) | `ChatCompletionsAIClient` | extracted text |
+
+Configuration in `LocalSettings.php`:
+
+```php
+$wgCEAIProvider = 'kit';                 // openai | kit | openai-compatible
+$wgCEAIModel = 'azure.gpt-5.4';          // optional, provider default otherwise
+$wgCEAIReasoningEffort = 'medium';       // optional: none|minimal|low|medium|high|xhigh
+$wgCEAIEmbeddingModel = 'kit.qwen3-embedding-8b'; // optional, eval prose similarity only
+
+// optional per-provider settings: baseUrl, apiKey, model, reasoningEffort,
+// pdfInput (auto|native|text), timeout (s), maxRetries
+$wgCEAIProviders = [
+    'kit' => ['apiKey' => '...'],        // or env KIT_TOOLBOX_API_KEY
+    'openai-compatible' => [
+        'baseUrl' => 'http://localhost:11434/v1',
+        'model' => 'qwen3:32b',
+    ],
+];
+```
+
+API keys can be passed via environment instead (`OPENAI_API_KEY`, `KIT_TOOLBOX_API_KEY`,
+`CE_AI_API_KEY`). The previous OpenAI settings `$wgOpenAIKey`, `$wgOpenAIModel`,
+`$wgOpenAIModelReasoning` and `$wgOpenAIEmbeddingModel` keep working unchanged.
+
+Behaviour of the Chat Completions client:
+
+* PDFs are sent inline per request (there is no Files API). In text mode they are converted with
+  `pdftotext -layout` (poppler-utils, `$wgPdftoText`); scanned PDFs without text layer fail with
+  a clear error. If a model rejects native PDF input, the client falls back to text mode.
+* Structured outputs (`callAIWithSchema`) use `response_format: json_schema` (strict).
+* Ensemble extraction (`$wgAIExtractionPasses`) runs the passes concurrently for every provider.
+* Transient errors (timeouts, 408/409/429/5xx) are retried with exponential backoff, honouring
+  `Retry-After`.
+* `<think>…</think>` reasoning traces of open-weight models are stripped from the answer.
+
+To compare models on the gold set, pass `--provider` / `--model` to
+`maintenance/optimizeExtractionPrompt.php`.
+
 ### R-Group services
 #### Build molecules from molecule template
 

@@ -428,10 +428,17 @@ wfLoadExtension('ChemExtension');
 
 # ChemExtension: number of parallel AI extraction passes per publication import.
 # 1 = legacy single-call behaviour. 3 = ensemble (row-union + cell-majority merge) —
-# fires 3 concurrent OpenAI Responses calls via curl_multi and deterministically merges
+# fires 3 concurrent calls to the configured AI provider and deterministically merges
 # them so re-importing the same PDF gives the same wiki page. Cost ~3x per import,
 # wall-time ~1x. See src/PublicationImport/EnsembleExtractor.php.
 $wgAIExtractionPasses = 3;
+
+# ChemExtension: LLM backend for extraction and all other AI tasks.
+# 'openai' (default, uses $wgOpenAIKey) | 'kit' (KIT KI-Toolbox) | 'openai-compatible'
+# (self-hosted vLLM/Ollama/...). Keys belong in the environment (OPENAI_API_KEY,
+# KIT_TOOLBOX_API_KEY) or a non-versioned settings file. See doc/ChemExtension.md "AI provider".
+# $wgCEAIProvider = 'kit';
+# $wgCEAIModel = 'azure.gpt-5.4';
 
 
 $wgShowExceptionDetails = true;
