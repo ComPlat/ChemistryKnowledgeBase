@@ -9,6 +9,8 @@ use DIQA\ChemExtension\Eval\GoldSetRepository;
 use DIQA\ChemExtension\Eval\MoleculeResolver;
 use DIQA\ChemExtension\Eval\ProseSimilarityScorer;
 use DIQA\ChemExtension\Eval\TopicProfile;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
+use DIQA\ChemExtension\PublicationImport\AIProviderConfig;
 use DIQA\ChemExtension\Utils\WikiTools;
 use MediaWiki\Title\Title;
 
@@ -28,11 +30,12 @@ if (getenv('MW_INSTALL_PATH') !== false) {
  * field-by-field, and iteratively asks the model to improve the prompt. The best prompt is
  * (optionally) written back to MediaWiki:Prompt_import_<Topic>.
  *
- * Requires $wgOpenAIKey. Gold set under <extension>/eval/<Topic>/ (see Eval\GoldSetRepository).
+ * Requires a configured AI provider (see PublicationImport\AIProviderConfig). Gold set under <extension>/eval/<Topic>/ (see Eval\GoldSetRepository).
  *
  * Examples:
  *   php optimizeExtractionPrompt.php --topic Host_Guest_interaction --iterations 5 --dry-run
  *   php optimizeExtractionPrompt.php --topic Host_Guest_interaction --write
+ *   php optimizeExtractionPrompt.php --topic Host_Guest_interaction --provider kit --model kit.mistral-small-4-119b-a8b
  */
 class optimizeExtractionPrompt extends \Maintenance
 {
@@ -53,6 +56,8 @@ class optimizeExtractionPrompt extends \Maintenance
         $this->addOption('prompt-file', 'Seed the initial prompt from this file instead of the wiki page', false, true);
         $this->addOption('write', 'Write the best prompt back to the prompt page when finished');
         $this->addOption('dry-run', 'Do not write the prompt page (default behaviour)');
+        $this->addOption('provider', 'AI provider for this run: openai|kit|openai-compatible (default $wgCEAIProvider)', false, true);
+        $this->addOption('model', 'Model for this run (default $wgCEAIModel / provider default)', false, true);
         $this->addOption('export-prompt', 'Also write the best prompt to wikischema/MediaWiki/Prompt_import_<Topic>.wiki (version-controlled)');
     }
 
@@ -86,12 +91,16 @@ class optimizeExtractionPrompt extends \Maintenance
             new MoleculeResolver(),
             $profile->expectedUnits()
         );
-        $proseScorer = $this->hasOption('no-embeddings') ? null : new ProseSimilarityScorer(new EmbeddingClient());
+        $aiConfig = AIProviderConfig::fromGlobals($this->getOption('provider'), $this->getOption('model'));
+        $aiClient = AIClientFactory::create($aiConfig);
+        $this->output("AI backend: " . $aiClient->describe() . "\n");
+
+        $proseScorer = $this->hasOption('no-embeddings') ? null : new ProseSimilarityScorer(new EmbeddingClient($aiConfig));
 
         $runner = new EvalLoopRunner(
             $goldRepo,
             $scorer,
-            null,
+            $aiClient,
             null,
             fn($msg) => $this->output($msg . "\n"),
             $proseScorer

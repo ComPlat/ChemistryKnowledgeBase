@@ -3,7 +3,7 @@
 namespace DIQA\ChemExtension\Maintenance;
 
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\Utils\QueryUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Sanitizer;
@@ -96,7 +96,7 @@ class autoDeleteSpam extends \Maintenance
         $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         $text = Sanitizer::stripAllTags($parserOut->getText() ?? '');
 
-        $aiClient = AIClient::getAIClient();
+        $aiClient = AIClientFactory::create();
         $prompt = "$IP/extensions/ChemExtension/resources/ai-prompts/check_for_spam.txt";
         $aiText = $aiClient->callAIWithTextInputs([$text], file_get_contents($prompt));
         return strtolower(trim($aiText)) === 'yes';

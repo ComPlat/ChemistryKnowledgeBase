@@ -2,7 +2,7 @@
 
 namespace DIQA\ChemExtension\Jobs;
 
-use DIQA\ChemExtension\PublicationImport\AIClient;
+use DIQA\ChemExtension\PublicationImport\AIClientFactory;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use DIQA\ChemExtension\Utils\TemplateEditor;
 use DIQA\ChemExtension\Utils\WikiTools;
@@ -76,7 +76,7 @@ class PublicationTaggingJob extends Job
         $parserOut = MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput($content, $wikiPage);
         $text = Sanitizer::stripAllTags($parserOut->getText() ?? '');
 
-        $aiClient = AIClient::getAIClient();
+        $aiClient = AIClientFactory::create();
         $prompt = "$IP/extensions/ChemExtension/resources/ai-prompts/tagging_prompt.txt";
         $aiText = $aiClient->callAIWithTextInputs([$text], file_get_contents($prompt));
         return explode(",", $aiText);

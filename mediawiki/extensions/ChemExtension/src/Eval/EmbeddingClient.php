@@ -2,32 +2,49 @@
 
 namespace DIQA\ChemExtension\Eval;
 
+use DIQA\ChemExtension\PublicationImport\AIProviderConfig;
 use DIQA\ChemExtension\Utils\LoggerUtils;
 use Exception;
 use OpenAI;
 
 /**
- * Thin wrapper around the OpenAI embeddings endpoint, used by {@see ProseSimilarityScorer}
- * to compare AI-written prose against the human-written reference text semantically.
+ * Thin wrapper around the OpenAI-compatible embeddings endpoint of the configured AI provider,
+ * used by {@see ProseSimilarityScorer} to compare AI-written prose against the human-written
+ * reference text semantically.
  *
- * Configure the model via $wgOpenAIEmbeddingModel (default text-embedding-3-small).
- * Requires $wgOpenAIKey, like {@see \DIQA\ChemExtension\PublicationImport\AIClient}.
+ * Model: $wgCEAIEmbeddingModel (legacy: $wgOpenAIEmbeddingModel), otherwise the provider
+ * default (OpenAI: text-embedding-3-small, KIT: kit.qwen3-embedding-8b). Self-hosted servers
+ * need the model configured explicitly.
  */
 class EmbeddingClient
 {
+    private const DEFAULT_MODELS = [
+        AIProviderConfig::OPENAI => 'text-embedding-3-small',
+        AIProviderConfig::KIT => 'kit.qwen3-embedding-8b',
+    ];
+
     private $client;
     private $logger;
     private string $model;
 
-    public function __construct()
+    public function __construct(?AIProviderConfig $config = null)
     {
-        global $wgOpenAIKey, $wgOpenAIEmbeddingModel;
-        if (!isset($wgOpenAIKey)) {
-            throw new Exception('OpenAI-Key is missing. please configure $wgOpenAIKey');
+        $config = $config ?? AIProviderConfig::fromGlobals();
+        if ($config->requiresApiKey() && $config->getApiKey() === null) {
+            throw new Exception("API key for AI provider '{$config->getProvider()}' is missing (needed for embeddings).");
+        }
+        $model = $GLOBALS['wgCEAIEmbeddingModel'] ?? $GLOBALS['wgOpenAIEmbeddingModel']
+            ?? self::DEFAULT_MODELS[$config->getProvider()] ?? null;
+        if ($model === null) {
+            throw new Exception("No embedding model for AI provider '{$config->getProvider()}'. Set \$wgCEAIEmbeddingModel "
+                . "or run with --no-embeddings.");
         }
         $this->logger = new LoggerUtils('EmbeddingClient', 'ChemExtension');
-        $this->model = $wgOpenAIEmbeddingModel ?? 'text-embedding-3-small';
-        $this->client = OpenAI::factory()->withApiKey($wgOpenAIKey)->make();
+        $this->model = $model;
+        $this->client = OpenAI::factory()
+            ->withApiKey($config->getApiKey() ?? '')
+            ->withBaseUri($config->getBaseUrl())
+            ->make();
     }
 
     /**
