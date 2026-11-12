@@ -17,10 +17,9 @@ use Exception;
  * uploaded PDFs), then merge deterministically (row-union + cell-majority) via
  * {@see ExtractionMerger}. Same PDF/prompt → same wiki page, regardless of retries.
  *
- * Parallel by design: the N calls fire concurrently as HTTP POSTs to the OpenAI Responses
- * endpoint, so wall-time is ~1× a single call (not N×). Bypasses the OpenAI PHP SDK for the
- * parallel path since the SDK doesn't expose an async API; single-pass path stays on the SDK
- * for full retry/backoff behaviour and zero behaviour change.
+ * Parallel by design: the N calls fire concurrently via
+ * {@see AIClientInterface::callAIParallel()}, so wall-time is ~1× a single call (not N×).
+ * Works with every provider (OpenAI, KIT KI-Toolbox, self-hosted models).
  *
  * Backwards-compatible: N=1 short-circuits to a single AIClient::callAI call. Enable via
  * `$wgAIExtractionPasses = 3;` in LocalSettings.php.
@@ -59,32 +58,26 @@ class EnsembleExtractor
         }
         $this->logger->log("EnsembleExtractor: firing $n parallel extraction passes");
 
-        // Build ONE request body — all N passes use identical input (same PDFs, same prompt).
-        // The variation comes from o3's stochastic decoding on the server side.
-        $userContent = $this->aiClient->buildFileContent($fileIds, $imageFileIds);
-        $requestBody = $this->aiClient->extractRequestParameters($prompt, $userContent);
+        // All N passes use identical input (same PDFs, same prompt); the variation comes
+        // from the model's stochastic decoding on the server side.
+        $responses = $this->aiClient->callAIParallel($fileIds, $prompt, $n, $imageFileIds);
 
-        $responses = $this->aiClient->parallelPost($requestBody, $n);
-
-        // Extract output_text from each response. Failed passes contribute '' so the merger
-        // simply sees them as empty inputs and skips them; if ALL fail, merge returns ''.
+        // Failed passes are skipped; if ALL fail, there is nothing to merge.
         $passes = [];
         $ok = 0;
         foreach ($responses as $i => $resp) {
-            $text = self::extractOutputText($resp);
-            if ($text !== '') {
+            if ($resp['text'] !== '') {
                 $ok++;
-                $passes[] = $text;
+                $passes[] = $resp['text'];
             } else {
-                $err = $resp['_error'] ?? 'empty output';
-                $this->logger->warn("EnsembleExtractor: pass " . ($i + 1) . " failed: $err");
+                $this->logger->warn("EnsembleExtractor: pass " . ($i + 1) . " failed: " . ($resp['error'] ?? 'empty output'));
             }
         }
         $this->logger->log("EnsembleExtractor: $ok/$n passes succeeded, merging");
 
         if (empty($passes)) {
-            throw new Exception("EnsembleExtractor: all $n parallel passes failed — check API key, "
-                                . "credits, rate limits");
+            throw new Exception("EnsembleExtractor: all $n parallel passes failed on "
+                                . $this->aiClient->describe() . " — check API key, credits, rate limits");
         }
 
         $merged = ExtractionMerger::merge($passes);
@@ -93,30 +86,4 @@ class EnsembleExtractor
         return $merged;
     }
 
-
-
-    /**
-     * Pull the extracted text out of an OpenAI Responses API JSON response. The API returns
-     * a top-level `output_text` in some shapes and a nested `output[*].content[*].text` in
-     * others — handle both robustly, return '' when neither is present.
-     */
-    private static function extractOutputText(array $response): string
-    {
-        if (isset($response['output_text']) && is_string($response['output_text'])) {
-            return $response['output_text'];
-        }
-        if (isset($response['output']) && is_array($response['output'])) {
-            foreach ($response['output'] as $item) {
-                if (!isset($item['content']) || !is_array($item['content'])) {
-                    continue;
-                }
-                foreach ($item['content'] as $c) {
-                    if (($c['type'] ?? '') === 'output_text' && isset($c['text']) && is_string($c['text'])) {
-                        return $c['text'];
-                    }
-                }
-            }
-        }
-        return '';
-    }
 }
