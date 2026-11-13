@@ -33,14 +33,21 @@ use PhpOffice\PhpPresentation\Exception\FileNotFoundException;
 use PhpOffice\PhpPresentation\Exception\InvalidFileFormatException;
 use PhpOffice\PhpPresentation\PhpPresentation;
 use PhpOffice\PhpPresentation\PresentationProperties;
+use PhpOffice\PhpPresentation\Shape\AutoShape;
 use PhpOffice\PhpPresentation\Shape\Chart;
 use PhpOffice\PhpPresentation\Shape\Drawing\Base64;
 use PhpOffice\PhpPresentation\Shape\Drawing\Gd;
+use PhpOffice\PhpPresentation\Shape\Group;
 use PhpOffice\PhpPresentation\Shape\Hyperlink;
+use PhpOffice\PhpPresentation\Shape\Line;
 use PhpOffice\PhpPresentation\Shape\Placeholder;
 use PhpOffice\PhpPresentation\Shape\RichText;
+use PhpOffice\PhpPresentation\Shape\RichText\Numbering;
 use PhpOffice\PhpPresentation\Shape\RichText\Paragraph;
+use PhpOffice\PhpPresentation\Shape\Table;
 use PhpOffice\PhpPresentation\Shape\Table\Cell;
+use PhpOffice\PhpPresentation\ShapeContainerInterface;
+use PhpOffice\PhpPresentation\Shared\Metafile;
 use PhpOffice\PhpPresentation\Slide;
 use PhpOffice\PhpPresentation\Slide\AbstractSlide;
 use PhpOffice\PhpPresentation\Slide\Note;
@@ -64,6 +71,51 @@ use ZipArchive;
 class PowerPoint2007 implements ReaderInterface
 {
     /**
+     * The content types a package's main document part may have for it to be a presentation.
+     *
+     * A part is what its content type says it is; `/ppt/presentation.xml` is the name Office
+     * happens to give the part rather than one the specification requires, so the package is
+     * asked what its main document is instead of being searched for a well-known name.
+     *
+     * @var list<string>
+     */
+    private const MAIN_DOCUMENT_TYPES = [
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml',
+        'application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml',
+        'application/vnd.openxmlformats-officedocument.presentationml.template.main+xml',
+        'application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml',
+        'application/vnd.ms-powerpoint.slideshow.macroEnabled.main+xml',
+        'application/vnd.ms-powerpoint.template.macroEnabled.main+xml',
+    ];
+
+    private const REL_OFFICE_DOCUMENT = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument';
+    private const REL_CORE_PROPERTIES = 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties';
+    private const REL_CUSTOM_PROPERTIES = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties';
+    private const REL_VIEW_PROPS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/viewProps';
+    private const REL_PRES_PROPS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/presProps';
+    private const REL_SLIDE_LAYOUT = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout';
+    private const REL_NOTES_SLIDE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide';
+    private const REL_THEME = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme';
+    private const REL_NOTES_MASTER = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster';
+
+    /**
+     * The nine plots the Writer knows, by the element each is written as.
+     *
+     * @var array<string, class-string<Chart\Type\AbstractType>>
+     */
+    private const CHART_TYPES = [
+        'c:areaChart' => Chart\Type\Area::class,
+        'c:barChart' => Chart\Type\Bar::class,
+        'c:bar3DChart' => Chart\Type\Bar3D::class,
+        'c:doughnutChart' => Chart\Type\Doughnut::class,
+        'c:lineChart' => Chart\Type\Line::class,
+        'c:pieChart' => Chart\Type\Pie::class,
+        'c:pie3DChart' => Chart\Type\Pie3D::class,
+        'c:radarChart' => Chart\Type\Radar::class,
+        'c:scatterChart' => Chart\Type\Scatter::class,
+    ];
+
+    /**
      * Output Object.
      *
      * @var PhpPresentation
@@ -81,6 +133,20 @@ class PowerPoint2007 implements ReaderInterface
      * @var array<string, array<string, array<string, string>>>
      */
     protected $arrayRels = [];
+
+    /**
+     * Name of the main document part, without its leading slash.
+     *
+     * @var string
+     */
+    protected $mainPart = '';
+
+    /**
+     * Name of the part holding the relationships of the main document part.
+     *
+     * @var string
+     */
+    protected $mainRels = '';
 
     /**
      * @var SlideLayout[]
@@ -103,6 +169,21 @@ class PowerPoint2007 implements ReaderInterface
     protected $loadImages = true;
 
     /**
+     * The fonts of the theme of the part being read, by the reference that names each one in a
+     * typeface (`+mj-lt` is the Latin font for headings, `+mn-ea` the East Asian one for body text).
+     *
+     * @var array<string, string>
+     */
+    protected $themeFonts = [];
+
+    /**
+     * The fonts of the theme of each master slide, by the object id of the master.
+     *
+     * @var array<int, array<string, string>>
+     */
+    protected $themeFontsByMaster = [];
+
+    /**
      * Can the current \PhpOffice\PhpPresentation\Reader\ReaderInterface read the file?
      */
     public function canRead(string $pFilename): bool
@@ -120,17 +201,17 @@ class PowerPoint2007 implements ReaderInterface
             throw new FileNotFoundException($pFilename);
         }
 
-        $oZip = new ZipArchive();
         // Is it a zip ?
-        if (true === $oZip->open($pFilename)) {
-            // Is it an OpenXML Document ?
-            // Is it a Presentation ?
-            if (is_array($oZip->statName('[Content_Types].xml')) && is_array($oZip->statName('ppt/presentation.xml'))) {
-                return true;
-            }
+        if (!$this->openPackage($pFilename)) {
+            return false;
         }
 
-        return false;
+        // Is it an OpenXML Document, and does it relate to a presentation ?
+        $this->loadRels($this->relsOf(''));
+        $mainDocumentPart = $this->mainDocumentPart();
+
+        return null !== $mainDocumentPart
+            && in_array($this->contentTypeOf($mainDocumentPart), self::MAIN_DOCUMENT_TYPES, true);
     }
 
     /**
@@ -149,6 +230,139 @@ class PowerPoint2007 implements ReaderInterface
     }
 
     /**
+     * Open the package the presentation is read from.
+     */
+    protected function openPackage(string $pFilename): bool
+    {
+        $this->oZip = new ZipArchive();
+
+        return true === $this->oZip->open($pFilename);
+    }
+
+    /**
+     * Contents of one part of the package, or false when it holds no part of that name.
+     *
+     * @return false|string
+     */
+    protected function getFromName(string $path)
+    {
+        return $this->oZip->getFromName($path);
+    }
+
+    /**
+     * Name of the part holding a part's relationships.
+     *
+     * A part keeps them in a `_rels` folder beside it, in a file named after it, which is where
+     * `ppt/slides/slide1.xml` gets `ppt/slides/_rels/slide1.xml.rels`.
+     */
+    protected function relsOf(string $part): string
+    {
+        $folder = trim(dirname('/' . ltrim($part, '/')), '/');
+
+        return ('' === $folder ? '' : $folder . '/') . '_rels/' . basename($part) . '.rels';
+    }
+
+    /**
+     * Resolve a relationship target against the part the relationship was declared on.
+     *
+     * Targets are relative to the folder of their source part, so `../media/image1.png` declared
+     * on `ppt/slides/_rels/slide1.xml.rels` names `ppt/media/image1.png`.
+     */
+    protected function resolve(string $relsPart, string $target): string
+    {
+        $path = 0 === strncmp($target, '/', 1)
+            ? $target
+            : dirname('/' . ltrim($relsPart, '/'), 2) . '/' . $target;
+
+        $segments = [];
+        foreach (explode('/', $path) as $segment) {
+            if ('' === $segment || '.' === $segment) {
+                continue;
+            }
+            if ('..' === $segment) {
+                array_pop($segments);
+
+                continue;
+            }
+            $segments[] = $segment;
+        }
+
+        return implode('/', $segments);
+    }
+
+    /**
+     * Name of the part a relationship of the given type points at, or null when there is none.
+     */
+    protected function targetOfRel(string $relsPart, string $type): ?string
+    {
+        foreach ($this->arrayRels[$relsPart] ?? [] as $rel) {
+            if ($type === $rel['Type']) {
+                return $this->resolve($relsPart, $rel['Target']);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Contents of the part a relationship of the given type points at, or null when there is none.
+     */
+    protected function getFromRel(string $relsPart, string $type): ?string
+    {
+        $target = $this->targetOfRel($relsPart, $type);
+        if (null === $target) {
+            return null;
+        }
+        $contents = $this->getFromName($target);
+
+        return false === $contents ? null : $contents;
+    }
+
+    /**
+     * Name of the part the package relates to as its main document, or null when it relates to none.
+     */
+    protected function mainDocumentPart(): ?string
+    {
+        return $this->targetOfRel($this->relsOf(''), self::REL_OFFICE_DOCUMENT);
+    }
+
+    /**
+     * Content type of a part, as the package's content-type stream declares it.
+     *
+     * A part is covered either by an `Override` naming it or by the `Default` for its extension,
+     * and the first of those wins.
+     */
+    protected function contentTypeOf(string $part): ?string
+    {
+        $contentTypes = $this->getFromName('[Content_Types].xml');
+        if (false === $contentTypes) {
+            return null;
+        }
+        $xmlReader = new XMLReader();
+        // @phpstan-ignore-next-line
+        if (!$xmlReader->getDomFromString($contentTypes)) {
+            return null;
+        }
+
+        foreach ($xmlReader->getElements('*') as $node) {
+            if ($node instanceof DOMElement && 'Override' === $node->localName
+                && 0 === strcasecmp(ltrim($node->getAttribute('PartName'), '/'), $part)) {
+                return $node->getAttribute('ContentType');
+            }
+        }
+
+        $extension = pathinfo($part, PATHINFO_EXTENSION);
+        foreach ($xmlReader->getElements('*') as $node) {
+            if ($node instanceof DOMElement && 'Default' === $node->localName
+                && 0 === strcasecmp($node->getAttribute('Extension'), $extension)) {
+                return $node->getAttribute('ContentType');
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Load PhpPresentation Serialized file.
      */
     protected function loadFile(string $pFilename): PhpPresentation
@@ -158,37 +372,51 @@ class PowerPoint2007 implements ReaderInterface
         $this->oPhpPresentation->setAllMasterSlides([]);
         $this->filename = $pFilename;
 
-        $this->oZip = new ZipArchive();
-        $this->oZip->open($this->filename);
-        $docPropsCore = $this->oZip->getFromName('docProps/core.xml');
-        if (false !== $docPropsCore) {
+        $this->openPackage($this->filename);
+
+        // Every part below is reached from the package, and then from the main document part, by
+        // the relationship that points at it. `ppt/presentation.xml` and the names beside it are
+        // what Office happens to write rather than what the specification requires.
+        $packageRels = $this->relsOf('');
+        $this->loadRels($packageRels);
+
+        $docPropsCore = $this->getFromRel($packageRels, self::REL_CORE_PROPERTIES);
+        if (null !== $docPropsCore) {
             $this->loadDocumentProperties($docPropsCore);
         }
 
-        $docThumbnail = $this->oZip->getFromName('_rels/.rels');
+        $docThumbnail = $this->getFromName($packageRels);
         if ($docThumbnail !== false) {
             $this->loadThumbnailProperties($docThumbnail);
         }
 
-        $docPropsCustom = $this->oZip->getFromName('docProps/custom.xml');
-        if (false !== $docPropsCustom) {
+        $docPropsCustom = $this->getFromRel($packageRels, self::REL_CUSTOM_PROPERTIES);
+        if (null !== $docPropsCustom) {
             $this->loadCustomProperties($docPropsCustom);
         }
 
-        $pptViewProps = $this->oZip->getFromName('ppt/viewProps.xml');
-        if (false !== $pptViewProps) {
+        $mainDocumentPart = $this->mainDocumentPart();
+        if (null === $mainDocumentPart) {
+            return $this->oPhpPresentation;
+        }
+        $this->mainPart = $mainDocumentPart;
+        $this->mainRels = $this->relsOf($this->mainPart);
+        $this->loadRels($this->mainRels);
+
+        $pptViewProps = $this->getFromRel($this->mainRels, self::REL_VIEW_PROPS);
+        if (null !== $pptViewProps) {
             $this->loadViewProperties($pptViewProps);
         }
 
-        $pptPresentation = $this->oZip->getFromName('ppt/presentation.xml');
+        $pptPresentation = $this->getFromName($this->mainPart);
         if (false !== $pptPresentation) {
             $this->loadDocumentLayout($pptPresentation);
             $this->loadSlides($pptPresentation);
         }
 
-        $pptPresProps = $this->oZip->getFromName('ppt/presProps.xml');
-        if (false !== $pptPresProps) {
-            $this->loadPresentationProperties($pptPresentation);
+        $pptPresProps = $this->getFromRel($this->mainRels, self::REL_PRES_PROPS);
+        if (null !== $pptPresProps) {
+            $this->loadPresentationProperties($pptPresProps);
         }
 
         return $this->oPhpPresentation;
@@ -208,7 +436,8 @@ class PowerPoint2007 implements ReaderInterface
                 }
                 $type = $oElement->getAttribute('type');
                 $oLayout = $this->oPhpPresentation->getLayout();
-                if (DocumentLayout::LAYOUT_CUSTOM == $type) {
+                // ST_SlideSizeType allows an explicit "custom" value, which the library stores as LAYOUT_CUSTOM (an empty string)
+                if (DocumentLayout::LAYOUT_CUSTOM == $type || 'custom' === $type) {
                     $oLayout->setCX((float) $oElement->getAttribute('cx'));
                     $oLayout->setCY((float) $oElement->getAttribute('cy'));
                 } else {
@@ -235,22 +464,29 @@ class PowerPoint2007 implements ReaderInterface
                 '/cp:coreProperties/dc:title' => 'setTitle',
                 '/cp:coreProperties/dc:description' => 'setDescription',
                 '/cp:coreProperties/dc:subject' => 'setSubject',
+                '/cp:coreProperties/dc:language' => 'setLanguage',
                 '/cp:coreProperties/cp:keywords' => 'setKeywords',
                 '/cp:coreProperties/cp:category' => 'setCategory',
-                '/cp:coreProperties/dcterms:created' => 'setCreated',
-                '/cp:coreProperties/dcterms:modified' => 'setModified',
                 '/cp:coreProperties/cp:revision' => 'setRevision',
                 '/cp:coreProperties/cp:contentStatus' => 'setStatus',
+            ];
+            $arrayDateProperties = [
+                '/cp:coreProperties/dcterms:created' => 'setCreated',
+                '/cp:coreProperties/dcterms:modified' => 'setModified',
             ];
             $oProperties = $this->oPhpPresentation->getDocumentProperties();
             foreach ($arrayProperties as $path => $property) {
                 $oElement = $xmlReader->getElement($path);
                 if ($oElement instanceof DOMElement) {
-                    if ($oElement->hasAttribute('xsi:type') && 'dcterms:W3CDTF' == $oElement->getAttribute('xsi:type')) {
-                        $dateTime = DateTime::createFromFormat(DateTime::W3C, $oElement->nodeValue);
+                    $oProperties->{$property}((string) $oElement->nodeValue);
+                }
+            }
+            foreach ($arrayDateProperties as $path => $property) {
+                $oElement = $xmlReader->getElement($path);
+                if ($oElement instanceof DOMElement) {
+                    $dateTime = DateTime::createFromFormat(DateTime::W3C, (string) $oElement->nodeValue);
+                    if (false !== $dateTime) {
                         $oProperties->{$property}($dateTime->getTimestamp());
-                    } else {
-                        $oProperties->{$property}($oElement->nodeValue);
                     }
                 }
             }
@@ -270,7 +506,7 @@ class PowerPoint2007 implements ReaderInterface
             $path = $oElement->getAttribute('Target');
             $this->oPhpPresentation
                 ->getPresentationProperties()
-                ->setThumbnailPath('', PresentationProperties::THUMBNAIL_DATA, $this->oZip->getFromName($path));
+                ->setThumbnailPath('', PresentationProperties::THUMBNAIL_DATA, $this->getFromName($path));
         }
     }
 
@@ -284,7 +520,7 @@ class PowerPoint2007 implements ReaderInterface
         // @phpstan-ignore-next-line
         if ($xmlReader->getDomFromString($sPart)) {
             foreach ($xmlReader->getElements('/Properties/property[@fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"]') as $element) {
-                if (!$element->hasAttribute('name')) {
+                if (!$element instanceof DOMElement || !$element->hasAttribute('name')) {
                     continue;
                 }
                 $propertyName = $element->getAttribute('name');
@@ -383,8 +619,7 @@ class PowerPoint2007 implements ReaderInterface
         $xmlReader = new XMLReader();
         // @phpstan-ignore-next-line
         if ($xmlReader->getDomFromString($sPart)) {
-            $fileRels = 'ppt/_rels/presentation.xml.rels';
-            $this->loadRels($fileRels);
+            $fileRels = $this->mainRels;
             // Load the Masterslides
             $this->loadMasterSlides($xmlReader, $fileRels);
             // Continue with loading the slides
@@ -393,16 +628,16 @@ class PowerPoint2007 implements ReaderInterface
                     continue;
                 }
                 $rId = $oElement->getAttribute('r:id');
-                $pathSlide = isset($this->arrayRels[$fileRels][$rId]) ? $this->arrayRels[$fileRels][$rId]['Target'] : '';
+                $pathSlide = isset($this->arrayRels[$fileRels][$rId]) ? $this->resolve($fileRels, $this->arrayRels[$fileRels][$rId]['Target']) : '';
                 if (!empty($pathSlide)) {
-                    $pptSlide = $this->oZip->getFromName('ppt/' . $pathSlide);
+                    $pptSlide = $this->getFromName($pathSlide);
                     if (false !== $pptSlide) {
-                        $slideRels = 'ppt/slides/_rels/' . basename($pathSlide) . '.rels';
+                        $slideRels = $this->relsOf($pathSlide);
                         $this->loadRels($slideRels);
-                        $this->loadSlide($pptSlide, basename($pathSlide));
+                        $this->loadSlide($pptSlide, $pathSlide);
                         foreach ($this->arrayRels[$slideRels] as $rel) {
-                            if ('http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide' == $rel['Type']) {
-                                $this->loadSlideNote(basename($rel['Target']), $this->oPhpPresentation->getActiveSlide());
+                            if (self::REL_NOTES_SLIDE == $rel['Type']) {
+                                $this->loadSlideNote($this->resolve($slideRels, $rel['Target']), $this->oPhpPresentation->getActiveSlide());
                             }
                         }
                     }
@@ -424,12 +659,12 @@ class PowerPoint2007 implements ReaderInterface
             $rId = $oElement->getAttribute('r:id');
             // Get the path to the masterslide from the array with _rels files
             $pathMasterSlide = isset($this->arrayRels[$fileRels][$rId]) ?
-                $this->arrayRels[$fileRels][$rId]['Target'] : '';
+                $this->resolve($fileRels, $this->arrayRels[$fileRels][$rId]['Target']) : '';
             if (!empty($pathMasterSlide)) {
-                $pptMasterSlide = $this->oZip->getFromName('ppt/' . $pathMasterSlide);
+                $pptMasterSlide = $this->getFromName($pathMasterSlide);
                 if (false !== $pptMasterSlide) {
-                    $this->loadRels('ppt/slideMasters/_rels/' . basename($pathMasterSlide) . '.rels');
-                    $this->loadMasterSlide($pptMasterSlide, basename($pathMasterSlide));
+                    $this->loadRels($this->relsOf($pathMasterSlide));
+                    $this->loadMasterSlide($pptMasterSlide, $pathMasterSlide);
                 }
             }
         }
@@ -438,7 +673,7 @@ class PowerPoint2007 implements ReaderInterface
     /**
      * Extract data from slide.
      */
-    protected function loadSlide(string $sPart, string $baseFile): void
+    protected function loadSlide(string $sPart, string $partName): void
     {
         $xmlReader = new XMLReader();
         // @phpstan-ignore-next-line
@@ -447,7 +682,19 @@ class PowerPoint2007 implements ReaderInterface
             // Core
             $oSlide = $this->oPhpPresentation->createSlide();
             $this->oPhpPresentation->setActiveSlideIndex($this->oPhpPresentation->getSlideCount() - 1);
-            $oSlide->setRelsIndex('ppt/slides/_rels/' . $baseFile . '.rels');
+            $oSlide->setRelsIndex($this->relsOf($partName));
+
+            // Name
+            $oElement = $xmlReader->getElement('/p:sld/p:cSld');
+            if ($oElement instanceof DOMElement && $oElement->hasAttribute('name')) {
+                $oSlide->setName($oElement->getAttribute('name'));
+            }
+
+            // Visibility: an xsd:boolean, and a slide is shown unless it says otherwise
+            $oElement = $xmlReader->getElement('/p:sld');
+            if ($oElement instanceof DOMElement && $oElement->hasAttribute('show')) {
+                $oSlide->setIsVisible(!in_array($oElement->getAttribute('show'), ['0', 'false'], true));
+            }
 
             // Background
             $oElement = $xmlReader->getElement('/p:sld/p:cSld/p:bg/p:bgPr');
@@ -478,18 +725,11 @@ class PowerPoint2007 implements ReaderInterface
                 }
                 $oElementImage = $xmlReader->getElement('a:blipFill/a:blip', $oElement);
                 if ($oElementImage instanceof DOMElement) {
-                    $relImg = $this->arrayRels['ppt/slides/_rels/' . $baseFile . '.rels'][$oElementImage->getAttribute('r:embed')];
+                    $relImg = $this->arrayRels[$oSlide->getRelsIndex()][$oElementImage->getAttribute('r:embed')];
                     if (is_array($relImg)) {
                         // File
-                        $pathImage = 'ppt/slides/' . $relImg['Target'];
-                        $pathImage = explode('/', $pathImage);
-                        foreach ($pathImage as $key => $partPath) {
-                            if ('..' == $partPath) {
-                                unset($pathImage[$key - 1], $pathImage[$key]);
-                            }
-                        }
-                        $pathImage = implode('/', $pathImage);
-                        $contentImg = $this->oZip->getFromName($pathImage);
+                        $pathImage = $this->resolve($oSlide->getRelsIndex(), $relImg['Target']);
+                        $contentImg = $this->getFromName($pathImage);
 
                         $tmpBkgImg = tempnam(sys_get_temp_dir(), 'PhpPresentationReaderPpt2007Bkg');
                         file_put_contents($tmpBkgImg, $contentImg);
@@ -505,17 +745,28 @@ class PowerPoint2007 implements ReaderInterface
                 }
             }
 
+            // The fonts of the theme of the master the layout of the slide belongs to
+            $this->themeFonts = [];
+            foreach ($this->arrayRels[$oSlide->getRelsIndex()] as $valueRel) {
+                if (self::REL_SLIDE_LAYOUT == $valueRel['Type']) {
+                    $oLayout = $this->arraySlideLayouts[$this->resolve($oSlide->getRelsIndex(), $valueRel['Target'])] ?? null;
+                    $this->themeFonts = null === $oLayout ? [] : $this->themeFontsByMaster[spl_object_id($oLayout->getSlideMaster())] ?? [];
+
+                    break;
+                }
+            }
+
             // Shapes
             $arrayElements = $xmlReader->getElements('/p:sld/p:cSld/p:spTree/*');
             $this->loadSlideShapes($xmlReader, $oSlide, $arrayElements, $xmlReader);
 
             // Layout
             $oSlide = $this->oPhpPresentation->getActiveSlide();
-            foreach ($this->arrayRels['ppt/slides/_rels/' . $baseFile . '.rels'] as $valueRel) {
-                if ('http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout' == $valueRel['Type']) {
-                    $layoutBasename = basename($valueRel['Target']);
-                    if (array_key_exists($layoutBasename, $this->arraySlideLayouts)) {
-                        $oSlide->setSlideLayout($this->arraySlideLayouts[$layoutBasename]);
+            foreach ($this->arrayRels[$oSlide->getRelsIndex()] as $valueRel) {
+                if (self::REL_SLIDE_LAYOUT == $valueRel['Type']) {
+                    $layoutPart = $this->resolve($oSlide->getRelsIndex(), $valueRel['Target']);
+                    if (array_key_exists($layoutPart, $this->arraySlideLayouts)) {
+                        $oSlide->setSlideLayout($this->arraySlideLayouts[$layoutPart]);
                     }
 
                     break;
@@ -524,7 +775,7 @@ class PowerPoint2007 implements ReaderInterface
         }
     }
 
-    protected function loadMasterSlide(string $sPart, string $baseFile): void
+    protected function loadMasterSlide(string $sPart, string $partName): void
     {
         $xmlReader = new XMLReader();
         // @phpstan-ignore-next-line
@@ -532,7 +783,22 @@ class PowerPoint2007 implements ReaderInterface
             // Core
             $oSlideMaster = $this->oPhpPresentation->createMasterSlide();
             $oSlideMaster->setTextStyles(new TextStyle(false));
-            $oSlideMaster->setRelsIndex('ppt/slideMasters/_rels/' . $baseFile . '.rels');
+            $oSlideMaster->setRelsIndex($this->relsOf($partName));
+
+            // Load the theme first: the shapes and the layouts of the master name their fonts
+            // through it
+            $this->themeFonts = [];
+            foreach ($this->arrayRels[$oSlideMaster->getRelsIndex()] as $arrayRel) {
+                if (self::REL_THEME == $arrayRel['Type']) {
+                    $pptTheme = $this->getFromName($this->resolve($oSlideMaster->getRelsIndex(), $arrayRel['Target']));
+                    if (false !== $pptTheme) {
+                        $this->loadTheme($pptTheme, $oSlideMaster);
+                    }
+
+                    break;
+                }
+            }
+            $this->themeFontsByMaster[spl_object_id($oSlideMaster)] = $this->themeFonts;
 
             // Background
             $oElement = $xmlReader->getElement('/p:sldMaster/p:cSld/p:bg');
@@ -630,18 +896,6 @@ class PowerPoint2007 implements ReaderInterface
                 }
             }
 
-            // Load the theme
-            foreach ($this->arrayRels[$oSlideMaster->getRelsIndex()] as $arrayRel) {
-                if ('http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme' == $arrayRel['Type']) {
-                    $pptTheme = $this->oZip->getFromName('ppt/' . substr($arrayRel['Target'], strrpos($arrayRel['Target'], '../') + 3));
-                    if (false !== $pptTheme) {
-                        $this->loadTheme($pptTheme, $oSlideMaster);
-                    }
-
-                    break;
-                }
-            }
-
             // Load the Layoutslide
             foreach ($xmlReader->getElements('/p:sldMaster/p:sldLayoutIdLst/p:sldLayoutId') as $oElement) {
                 if (!($oElement instanceof DOMElement)) {
@@ -650,13 +904,13 @@ class PowerPoint2007 implements ReaderInterface
                 $rId = $oElement->getAttribute('r:id');
                 // Get the path to the masterslide from the array with _rels files
                 $pathLayoutSlide = isset($this->arrayRels[$oSlideMaster->getRelsIndex()][$rId]) ?
-                    $this->arrayRels[$oSlideMaster->getRelsIndex()][$rId]['Target'] : '';
+                    $this->resolve($oSlideMaster->getRelsIndex(), $this->arrayRels[$oSlideMaster->getRelsIndex()][$rId]['Target']) : '';
                 if (!empty($pathLayoutSlide)) {
-                    $pptLayoutSlide = $this->oZip->getFromName('ppt/' . substr($pathLayoutSlide, strrpos($pathLayoutSlide, '../') + 3));
+                    $pptLayoutSlide = $this->getFromName($pathLayoutSlide);
                     if (false !== $pptLayoutSlide) {
-                        $this->loadRels('ppt/slideLayouts/_rels/' . basename($pathLayoutSlide) . '.rels');
+                        $this->loadRels($this->relsOf($pathLayoutSlide));
                         $oSlideMaster->addSlideLayout(
-                            $this->loadLayoutSlide($pptLayoutSlide, basename($pathLayoutSlide), $oSlideMaster)
+                            $this->loadLayoutSlide($pptLayoutSlide, $pathLayoutSlide, $oSlideMaster)
                         );
                     }
                 }
@@ -664,14 +918,14 @@ class PowerPoint2007 implements ReaderInterface
         }
     }
 
-    protected function loadLayoutSlide(string $sPart, string $baseFile, SlideMaster $oSlideMaster): ?SlideLayout
+    protected function loadLayoutSlide(string $sPart, string $partName, SlideMaster $oSlideMaster): ?SlideLayout
     {
         $xmlReader = new XMLReader();
         // @phpstan-ignore-next-line
         if ($xmlReader->getDomFromString($sPart)) {
             // Core
             $oSlideLayout = new SlideLayout($oSlideMaster);
-            $oSlideLayout->setRelsIndex('ppt/slideLayouts/_rels/' . $baseFile . '.rels');
+            $oSlideLayout->setRelsIndex($this->relsOf($partName));
 
             // Name
             $oElement = $xmlReader->getElement('/p:sldLayout/p:cSld');
@@ -698,7 +952,7 @@ class PowerPoint2007 implements ReaderInterface
             // Shapes
             $oElements = $xmlReader->getElements('/p:sldLayout/p:cSld/p:spTree/*');
             $this->loadSlideShapes($xmlReader, $oSlideLayout, $oElements, $xmlReader);
-            $this->arraySlideLayouts[$baseFile] = &$oSlideLayout;
+            $this->arraySlideLayouts[$partName] = &$oSlideLayout;
 
             return $oSlideLayout;
         }
@@ -728,7 +982,59 @@ class PowerPoint2007 implements ReaderInterface
                     $oSlideMaster->addSchemeColor($oSchemeColor);
                 }
             }
+            $this->themeFonts = $this->readThemeFonts($xmlReader);
         }
+    }
+
+    /**
+     * The fonts of the theme of a master or a notes master.
+     *
+     * @return array<string, string>
+     */
+    protected function loadThemeFonts(string $masterPart): array
+    {
+        $masterRels = $this->relsOf($masterPart);
+        $this->loadRels($masterRels);
+        foreach ($this->arrayRels[$masterRels] ?? [] as $arrayRel) {
+            if (self::REL_THEME == $arrayRel['Type']) {
+                $pptTheme = $this->getFromName($this->resolve($masterRels, $arrayRel['Target']));
+                $xmlReader = new XMLReader();
+                // @phpstan-ignore-next-line
+                if (false !== $pptTheme && $xmlReader->getDomFromString($pptTheme)) {
+                    return $this->readThemeFonts($xmlReader);
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * The fonts of a theme, by the reference that names each one in a typeface. A script the
+     * theme gives no font of its own names none, and the text keeps the font it has.
+     *
+     * @return array<string, string>
+     */
+    protected function readThemeFonts(XMLReader $xmlReader): array
+    {
+        $fonts = [];
+        foreach (['mj' => 'a:majorFont', 'mn' => 'a:minorFont'] as $kind => $fontElement) {
+            foreach (['lt' => 'a:latin', 'ea' => 'a:ea', 'cs' => 'a:cs'] as $script => $scriptElement) {
+                $oElement = $xmlReader->getElement('/a:theme/a:themeElements/a:fontScheme/' . $fontElement . '/' . $scriptElement);
+                $fonts['+' . $kind . '-' . $script] = $oElement instanceof DOMElement ? $oElement->getAttribute('typeface') : '';
+            }
+        }
+
+        return $fonts;
+    }
+
+    /**
+     * The font a typeface names: itself, or the font of the theme a reference such as `+mn-lt`
+     * stands for, empty when the theme gives none.
+     */
+    protected function getTypeface(string $typeface): string
+    {
+        return $this->themeFonts[$typeface] ?? $typeface;
     }
 
     protected function loadSlideBackground(XMLReader $xmlReader, DOMElement $oElement, AbstractSlide $oSlide): void
@@ -765,15 +1071,8 @@ class PowerPoint2007 implements ReaderInterface
             $relImg = $this->arrayRels[$oSlide->getRelsIndex()][$oElementImage->getAttribute('r:embed')];
             if (is_array($relImg)) {
                 // File
-                $pathImage = 'ppt/slides/' . $relImg['Target'];
-                $pathImage = explode('/', $pathImage);
-                foreach ($pathImage as $key => $partPath) {
-                    if ('..' == $partPath) {
-                        unset($pathImage[$key - 1], $pathImage[$key]);
-                    }
-                }
-                $pathImage = implode('/', $pathImage);
-                $contentImg = $this->oZip->getFromName($pathImage);
+                $pathImage = $this->resolve($oSlide->getRelsIndex(), $relImg['Target']);
+                $contentImg = $this->getFromName($pathImage);
 
                 $tmpBkgImg = tempnam(sys_get_temp_dir(), 'PhpPresentationReaderPpt2007Bkg');
                 file_put_contents($tmpBkgImg, $contentImg);
@@ -786,75 +1085,218 @@ class PowerPoint2007 implements ReaderInterface
         }
     }
 
-    protected function loadSlideNote(string $baseFile, Slide $oSlide): void
+    protected function loadSlideNote(string $partName, Slide $oSlide): void
     {
-        $sPart = $this->oZip->getFromName('ppt/notesSlides/' . $baseFile);
+        $sPart = $this->getFromName($partName);
         $xmlReader = new XMLReader();
         // @phpstan-ignore-next-line
         if ($xmlReader->getDomFromString($sPart)) {
             $oNote = $oSlide->getNote();
+
+            // The notes master has a theme of its own
+            $this->themeFonts = [];
+            $notesRels = $this->relsOf($partName);
+            $this->loadRels($notesRels);
+            foreach ($this->arrayRels[$notesRels] ?? [] as $arrayRel) {
+                if (self::REL_NOTES_MASTER == $arrayRel['Type']) {
+                    $this->themeFonts = $this->loadThemeFonts($this->resolve($notesRels, $arrayRel['Target']));
+                }
+            }
 
             $arrayElements = $xmlReader->getElements('/p:notes/p:cSld/p:spTree/*');
             $this->loadSlideShapes($xmlReader, $oNote, $arrayElements, $xmlReader);
         }
     }
 
-    protected function loadShapeDrawing(XMLReader $document, DOMElement $node, AbstractSlide $oSlide): void
+    /**
+     * Read the decorative flag, stored as an extension of the non-visual properties of the shape.
+     *
+     * @param DOMElement $node the `p:cNvPr` element of the shape
+     *
+     * @return bool false when the shape says nothing about it
+     */
+    protected function loadShapeDecorative(XMLReader $document, DOMElement $node): bool
     {
-        // Core
-        $document->registerNamespace('asvg', 'http://schemas.microsoft.com/office/drawing/2016/SVG/main');
-        if ($document->getElement('p:blipFill/a:blip/a:extLst/a:ext/asvg:svgBlip', $node)) {
-            $oShape = new Base64();
-        } else {
-            $oShape = new Gd();
+        $document->registerNamespace('adec', 'http://schemas.microsoft.com/office/drawing/2017/decorative');
+        $oElement = $document->getElement('a:extLst/a:ext[@uri="{C183D7F6-B498-43B3-948B-1728B52AA6E4}"]/adec:decorative', $node);
+        if (!$oElement instanceof DOMElement) {
+            return false;
         }
-        $oShape->getShadow()->setVisible(false);
+
+        return in_array($oElement->getAttribute('val'), ['1', 'true'], true);
+    }
+
+    /**
+     * Read the hyperlink a shape carries as a whole, as opposed to one on a run of its text.
+     *
+     * @param DOMElement $node the `p:cNvPr` element of the shape
+     *
+     * @return null|Hyperlink null when the shape carries none
+     */
+    protected function loadShapeHyperlink(XMLReader $document, DOMElement $node): ?Hyperlink
+    {
+        $oElement = $document->getElement('a:hlinkClick', $node);
+
+        return $oElement instanceof DOMElement ? $this->loadHyperlink($document, $oElement, new Hyperlink()) : null;
+    }
+
+    /**
+     * Load a group of shapes.
+     *
+     * @param AbstractSlide|Note $oSlide
+     */
+    protected function loadShapeGroup(XMLReader $document, DOMElement $node, $oSlide, XMLReader $xmlReader, ShapeContainerInterface $oContainer): void
+    {
+        $oShape = new Group();
+        $oContainer->addShape($oShape);
+
+        $oElement = $document->getElement('p:nvGrpSpPr/p:cNvPr', $node);
+        if ($oElement instanceof DOMElement) {
+            $oShape->setName($oElement->hasAttribute('name') ? $oElement->getAttribute('name') : '');
+            $oShape->setDescription($oElement->hasAttribute('descr') ? $oElement->getAttribute('descr') : '');
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
+        }
+
+        $oElement = $document->getElement('p:grpSpPr/a:xfrm', $node);
+        if ($oElement instanceof DOMElement && $oElement->hasAttribute('rot')) {
+            $oShape->setRotation((int) CommonDrawing::angleToDegrees((int) $oElement->getAttribute('rot')));
+        }
+
+        $this->loadSlideShapes($document, $oSlide, $node->childNodes, $xmlReader, $oShape);
+        $this->loadGroupTransform($document, $node, $oShape);
+    }
+
+    /**
+     * Map the shapes of a group out of the child coordinate space declared by
+     * a:chOff/a:chExt and into the parent space declared by a:off/a:ext.
+     *
+     * A group carries no coordinates of its own in this library: its offset and
+     * extent are derived from the shapes it holds. So the mapping is baked into
+     * those shapes here, which leaves the group where the file says it is.
+     */
+    protected function loadGroupTransform(XMLReader $document, DOMElement $node, Group $oShape): void
+    {
+        $oXfrm = $document->getElement('p:grpSpPr/a:xfrm', $node);
+        if (!$oXfrm instanceof DOMElement) {
+            return;
+        }
+        $off = $this->loadGroupPoint($document, $oXfrm, 'a:off', 'x', 'y');
+        $chOff = $this->loadGroupPoint($document, $oXfrm, 'a:chOff', 'x', 'y');
+        if (null === $off || null === $chOff) {
+            return;
+        }
+        $ext = $this->loadGroupPoint($document, $oXfrm, 'a:ext', 'cx', 'cy');
+        $chExt = $this->loadGroupPoint($document, $oXfrm, 'a:chExt', 'cx', 'cy');
+        // A missing or zero a:chExt means the group is not scaled.
+        $scaleX = null !== $ext && null !== $chExt && 0 != $chExt[0] ? $ext[0] / $chExt[0] : 1.0;
+        $scaleY = null !== $ext && null !== $chExt && 0 != $chExt[1] ? $ext[1] / $chExt[1] : 1.0;
+        if ($off === $chOff && 1.0 === $scaleX && 1.0 === $scaleY) {
+            return;
+        }
+
+        $this->applyGroupTransform($oShape, $off, $chOff, $scaleX, $scaleY);
+    }
+
+    /**
+     * Read one a:off/a:ext/a:chOff/a:chExt pair, in pixels.
+     *
+     * Truncated to whole pixels, as every shape this is subtracted from already is:
+     * a shape written a third of a pixel past a:chOff has lost that third by the time
+     * it gets here, so a:chOff keeps the same grid and the two losses cancel. Keeping
+     * the fraction on one side of the subtraction only makes the difference worse,
+     * and a group scaled by eight multiplies whatever is left over.
+     *
+     * @return null|array{0: int, 1: int}
+     */
+    protected function loadGroupPoint(XMLReader $document, DOMElement $oXfrm, string $name, string $attrX, string $attrY): ?array
+    {
+        $oElement = $document->getElement($name, $oXfrm);
+        if (!$oElement instanceof DOMElement) {
+            return null;
+        }
+
+        return [
+            (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute($attrX)),
+            (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute($attrY)),
+        ];
+    }
+
+    /**
+     * @param array{0: int, 1: int} $off
+     * @param array{0: int, 1: int} $chOff
+     */
+    protected function applyGroupTransform(Group $oShape, array $off, array $chOff, float $scaleX, float $scaleY): void
+    {
+        foreach ($oShape->getShapeCollection() as $shape) {
+            if ($shape instanceof Group) {
+                // A nested group has no coordinates to move: it reports those of
+                // the shapes it holds, so the mapping goes straight through it.
+                $this->applyGroupTransform($shape, $off, $chOff, $scaleX, $scaleY);
+
+                continue;
+            }
+            $shape->setOffsetX((int) round(($shape->getOffsetX() - $chOff[0]) * $scaleX + $off[0]));
+            $shape->setOffsetY((int) round(($shape->getOffsetY() - $chOff[1]) * $scaleY + $off[1]));
+            if (1.0 !== $scaleX) {
+                $shape->setWidth((int) round($shape->getWidth() * $scaleX));
+            }
+            if (1.0 !== $scaleY) {
+                $shape->setHeight((int) round($shape->getHeight() * $scaleY));
+            }
+        }
+    }
+
+    protected function loadShapeDrawing(XMLReader $document, DOMElement $node, AbstractSlide $oSlide, ?ShapeContainerInterface $oContainer = null): void
+    {
+        $oContainer = $oContainer ?? $oSlide;
         // Variables
         $fileRels = $oSlide->getRelsIndex();
+
+        $imageFile = '';
+        $oElement = $document->getElement('p:blipFill/a:blip', $node);
+        if ($oElement instanceof DOMElement) {
+            if ($oElement->hasAttribute('r:embed') && isset($this->arrayRels[$fileRels][$oElement->getAttribute('r:embed')]['Target'])) {
+                $pathImage = $this->resolve($fileRels, $this->arrayRels[$fileRels][$oElement->getAttribute('r:embed')]['Target']);
+                $imageFile = (string) $this->getFromName($pathImage);
+            }
+        }
+
+        // Core
+        $document->registerNamespace('asvg', 'http://schemas.microsoft.com/office/drawing/2016/SVG/main');
+        $mimeType = null;
+        if ($document->getElement('p:blipFill/a:blip/a:extLst/a:ext/asvg:svgBlip', $node)) {
+            $mimeType = 'image/svg+xml';
+        } elseif (!empty($imageFile) && !getimagesizefromstring($imageFile)) {
+            // a metafile is no image GD can draw, and is kept as it is
+            $mimeType = Metafile::getMimeType($imageFile);
+        }
+        $oShape = null !== $mimeType ? new Base64() : new Gd();
+        $oShape->getShadow()->setVisible(false);
 
         $oElement = $document->getElement('p:nvPicPr/p:cNvPr', $node);
         if ($oElement instanceof DOMElement) {
             $oShape->setName($oElement->hasAttribute('name') ? $oElement->getAttribute('name') : '');
             $oShape->setDescription($oElement->hasAttribute('descr') ? $oElement->getAttribute('descr') : '');
-
-            // Hyperlink
-            $oElementHlinkClick = $document->getElement('a:hlinkClick', $oElement);
-            if (is_object($oElementHlinkClick)) {
-                $oShape->setHyperlink(
-                    $this->loadHyperlink($document, $oElementHlinkClick, $oShape->getHyperlink())
-                );
-            }
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
         }
 
-        $oElement = $document->getElement('p:blipFill/a:blip', $node);
-        if ($oElement instanceof DOMElement) {
-            if ($oElement->hasAttribute('r:embed') && isset($this->arrayRels[$fileRels][$oElement->getAttribute('r:embed')]['Target'])) {
-                $pathImage = 'ppt/slides/' . $this->arrayRels[$fileRels][$oElement->getAttribute('r:embed')]['Target'];
-                $pathImage = explode('/', $pathImage);
-                foreach ($pathImage as $key => $partPath) {
-                    if ('..' == $partPath) {
-                        unset($pathImage[$key - 1], $pathImage[$key]);
-                    }
+        if (!empty($imageFile)) {
+            if ($oShape instanceof Gd) {
+                $info = getimagesizefromstring($imageFile);
+                if (!$info) {
+                    return;
                 }
-                $pathImage = implode('/', $pathImage);
-                $imageFile = $this->oZip->getFromName($pathImage);
-                if (!empty($imageFile)) {
-                    if ($oShape instanceof Gd) {
-                        $info = getimagesizefromstring($imageFile);
-                        if (!$info) {
-                            return;
-                        }
-                        $oShape->setMimeType($info['mime']);
-                        $oShape->setRenderingFunction(str_replace('/', '', $info['mime']));
-                        $image = @imagecreatefromstring($imageFile);
-                        if (!$image) {
-                            return;
-                        }
-                        $oShape->setImageResource($image);
-                    } elseif ($oShape instanceof Base64) {
-                        $oShape->setData('data:image/svg+xml;base64,' . base64_encode($imageFile));
-                    }
+                $oShape->setMimeType($info['mime']);
+                $oShape->setRenderingFunction(str_replace('/', '', $info['mime']));
+                $image = @imagecreatefromstring($imageFile);
+                if (!$image) {
+                    return;
                 }
+                $oShape->setImageResource($image);
+            } elseif ($oShape instanceof Base64) {
+                $oShape->setData('data:' . $mimeType . ';base64,' . base64_encode($imageFile));
             }
         }
 
@@ -862,6 +1304,13 @@ class PowerPoint2007 implements ReaderInterface
         if ($oElement instanceof DOMElement) {
             $oFill = $this->loadStyleFill($document, $oElement);
             $oShape->setFill($oFill);
+
+            // a:ln is what the Writer writes a shape's Border as, and nothing read it back, so
+            // every shape loaded from a file wore the default border rather than its own
+            $oElementBorder = $document->getElement('a:ln', $oElement);
+            if ($oElementBorder instanceof DOMElement) {
+                $this->loadStyleBorder($document, $oElementBorder, $oShape->getBorder());
+            }
         }
 
         $oElement = $document->getElement('p:spPr/a:xfrm', $node);
@@ -897,7 +1346,7 @@ class PowerPoint2007 implements ReaderInterface
                 $this->loadShadow($document, $oElement)
             );
         }
-        $oSlide->addShape($oShape);
+        $oContainer->addShape($oShape);
     }
 
     /**
@@ -905,44 +1354,47 @@ class PowerPoint2007 implements ReaderInterface
      */
     protected function loadShadow(XMLReader $document, DOMElement $node): ?Shadow
     {
-        if ($node instanceof DOMElement) {
-            $aNodes = $document->getElements('*', $node);
-            foreach ($aNodes as $nodeShadow) {
-                $type = explode(':', $nodeShadow->tagName);
-                $type = array_pop($type);
-                if ($type == Shadow::TYPE_SHADOW_INNER || $type == Shadow::TYPE_SHADOW_OUTER || $type == Shadow::TYPE_REFLECTION) {
-                    $oShadow = new Shadow();
-                    $oShadow->setVisible(true);
-                    $oShadow->setType($type);
-                    if ($nodeShadow->hasAttribute('blurRad')) {
-                        $oShadow->setBlurRadius((int) CommonDrawing::emuToPixels((int) $nodeShadow->getAttribute('blurRad')));
-                    }
-                    if ($nodeShadow->hasAttribute('dist')) {
-                        $oShadow->setDistance((int) CommonDrawing::emuToPixels((int) $nodeShadow->getAttribute('dist')));
-                    }
-                    if ($nodeShadow->hasAttribute('dir')) {
-                        $oShadow->setDirection((int) CommonDrawing::angleToDegrees((int) $nodeShadow->getAttribute('dir')));
-                    }
-                    if ($nodeShadow->hasAttribute('algn')) {
-                        $oShadow->setAlignment($node->getAttribute('algn'));
-                    }
-
-                    // Get color define by prstClr
-                    $oSubElement = $document->getElement('a:prstClr', $nodeShadow);
-                    if ($oSubElement instanceof DOMElement && $oSubElement->hasAttribute('val')) {
-                        $oColor = new Color();
-                        $oColor->setRGB($oSubElement->getAttribute('val'));
-
-                        $oSubElt = $document->getElement('a:alpha', $oSubElement);
-                        if ($oSubElt instanceof DOMElement && $oSubElt->hasAttribute('val')) {
-                            $oColor->setAlpha((int) $oSubElt->getAttribute('val') / 1000);
-                        }
-
-                        $oShadow->setColor($oColor);
-                    }
-
-                    return $oShadow;
+        $aNodes = $document->getElements('*', $node);
+        foreach ($aNodes as $nodeShadow) {
+            if (!$nodeShadow instanceof DOMElement) {
+                continue;
+            }
+            $type = explode(':', $nodeShadow->tagName);
+            $type = array_pop($type);
+            if ($type == Shadow::TYPE_SHADOW_INNER || $type == Shadow::TYPE_SHADOW_OUTER || $type == Shadow::TYPE_REFLECTION) {
+                $oShadow = new Shadow();
+                $oShadow->setVisible(true);
+                $oShadow->setType($type);
+                if ($nodeShadow->hasAttribute('blurRad')) {
+                    $oShadow->setBlurRadius((int) CommonDrawing::emuToPixels((int) $nodeShadow->getAttribute('blurRad')));
                 }
+                if ($nodeShadow->hasAttribute('dist')) {
+                    $oShadow->setDistance((int) CommonDrawing::emuToPixels((int) $nodeShadow->getAttribute('dist')));
+                }
+                if ($nodeShadow->hasAttribute('dir')) {
+                    $oShadow->setDirection((int) CommonDrawing::angleToDegrees((int) $nodeShadow->getAttribute('dir')));
+                }
+                if ($nodeShadow->hasAttribute('algn')) {
+                    $oShadow->setAlignment($nodeShadow->getAttribute('algn'));
+                }
+
+                // The colour is written as `a:srgbClr` and only a preset one was read back.
+                // `loadStyleColor()` already reads a colour and the `a:alpha` inside it, and the
+                // alpha a shadow's colour carries is the shadow's own -- it is the one the Writer
+                // puts there -- so both are taken from it rather than parsed a second time here.
+                foreach (['a:srgbClr', 'a:prstClr'] as $colorElement) {
+                    $oSubElement = $document->getElement($colorElement, $nodeShadow);
+                    if (!$oSubElement instanceof DOMElement || !$oSubElement->hasAttribute('val')) {
+                        continue;
+                    }
+                    $oColor = $this->loadStyleColor($document, $oSubElement);
+                    $oShadow->setColor($oColor);
+                    $oShadow->setAlpha($oColor->getAlpha());
+
+                    break;
+                }
+
+                return $oShadow;
             }
         }
 
@@ -950,21 +1402,126 @@ class PowerPoint2007 implements ReaderInterface
     }
 
     /**
+     * Read a Line, which is written as a connection shape.
+     *
+     * The two ends the shape was given are the offset and the extent of its `a:xfrm`. An extent
+     * cannot be negative, so a line that runs right to left or bottom to top is written from the
+     * other end with `flipH` or `flipV` saying so, and the two ends are put back here.
+     *
      * @param AbstractSlide|Note $oSlide
      */
-    protected function loadShapeRichText(XMLReader $document, DOMElement $node, $oSlide): void
+    protected function loadShapeLine(XMLReader $document, DOMElement $node, $oSlide, ?ShapeContainerInterface $oContainer = null): void
     {
-        // Core
-        $oShape = $oSlide->createRichTextShape();
-        $oShape->setParagraphs([]);
-        // Variables
-        if ($oSlide instanceof AbstractSlide) {
-            $this->fileRels = $oSlide->getRelsIndex();
+        $fromX = $fromY = $width = $height = 0;
+
+        $oElement = $document->getElement('p:spPr/a:xfrm/a:off', $node);
+        if ($oElement instanceof DOMElement) {
+            $fromX = (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('x'));
+            $fromY = (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('y'));
         }
 
+        $oElement = $document->getElement('p:spPr/a:xfrm/a:ext', $node);
+        if ($oElement instanceof DOMElement) {
+            $width = (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('cx'));
+            $height = (int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('cy'));
+        }
+
+        $oElement = $document->getElement('p:spPr/a:xfrm', $node);
+        if ($oElement instanceof DOMElement) {
+            if ('1' === $oElement->getAttribute('flipH')) {
+                $fromX += $width;
+                $width = -$width;
+            }
+            if ('1' === $oElement->getAttribute('flipV')) {
+                $fromY += $height;
+                $height = -$height;
+            }
+        }
+
+        $oShape = new Line($fromX, $fromY, $fromX + $width, $fromY + $height);
+        ($oContainer ?? $oSlide)->addShape($oShape);
+
+        $oElement = $document->getElement('p:nvCxnSpPr/p:cNvPr', $node);
+        if ($oElement instanceof DOMElement) {
+            $oShape->setName($oElement->hasAttribute('name') ? $oElement->getAttribute('name') : '');
+            $oShape->setDescription($oElement->hasAttribute('descr') ? $oElement->getAttribute('descr') : '');
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
+        }
+    }
+
+    /**
+     * A `p:sp` is an AutoShape when it draws a preset other than a rectangle and is neither a text
+     * box nor a placeholder. The text of an AutoShape is a plain string, so a rectangle -- where
+     * PowerPoint keeps most of its formatted text -- stays a RichText, which keeps the formatting.
+     */
+    protected function isAutoShape(XMLReader $document, DOMElement $node): bool
+    {
+        $prst = $document->getAttribute('prst', $node, 'p:spPr/a:prstGeom');
+
+        return null !== $prst && AutoShape::TYPE_RECTANGLE !== $prst
+            && '1' !== $document->getAttribute('txBox', $node, 'p:nvSpPr/p:cNvSpPr')
+            && !$document->elementExists('p:nvSpPr/p:nvPr/p:ph', $node);
+    }
+
+    /**
+     * @param AbstractSlide|Note $oSlide
+     */
+    protected function loadShapeAutoShape(XMLReader $document, DOMElement $node, $oSlide, ?ShapeContainerInterface $oContainer = null): void
+    {
+        $oShape = new AutoShape();
+        ($oContainer ?? $oSlide)->addShape($oShape);
+        $this->loadShapeFrame($document, $node, $oShape);
+        $oShape->setType((string) $document->getAttribute('prst', $node, 'p:spPr/a:prstGeom'));
+
+        // the corner of a rounded rectangle is its `adj`, in 50000ths of half its shorter side
+        $adj = $document->getAttribute('fmla', $node, 'p:spPr/a:prstGeom/a:avLst/a:gd[@name="adj"]');
+        if (AutoShape::TYPE_ROUNDED_RECTANGLE === $oShape->getType() && null !== $adj && 1 === preg_match('/^val (\d+)$/', $adj, $matches)) {
+            $oShape->setRoundRectCorner((int) round((int) $matches[1] / 50000 * floor(min($oShape->getWidth(), $oShape->getHeight()) / 2)));
+        }
+
+        $oElement = $document->getElement('p:spPr', $node);
+        if ($oElement instanceof DOMElement) {
+            $oShape->setFill($this->loadStyleFill($document, $oElement));
+            $outline = $this->loadStyleOutline($document, $oElement);
+            if ($outline) {
+                $oShape->setOutline($outline);
+            }
+        }
+
+        $oElement = $document->getElement('p:spPr/a:effectLst', $node);
+        if ($oElement instanceof DOMElement) {
+            $oShape->setShadow($this->loadShadow($document, $oElement));
+        }
+
+        // a paragraph a line of the text, a break a line within one
+        $paragraphs = [];
+        foreach ($document->getElements('p:txBody/a:p', $node) as $oParagraph) {
+            if (!$oParagraph instanceof DOMElement) {
+                continue;
+            }
+            $text = '';
+            foreach ($document->getElements('a:r/a:t|a:fld/a:t|a:br', $oParagraph) as $oElement) {
+                $text .= 'a:br' === $oElement->nodeName ? "\n" : $oElement->textContent;
+            }
+            $paragraphs[] = $text;
+        }
+        $oShape->setText(implode("\n", $paragraphs));
+    }
+
+    /**
+     * The name, the alternative text, the link and the place of a `p:sp`.
+     *
+     * @param AutoShape|RichText $oShape
+     */
+    protected function loadShapeFrame(XMLReader $document, DOMElement $node, $oShape): void
+    {
         $oElement = $document->getElement('p:nvSpPr/p:cNvPr', $node);
         if ($oElement instanceof DOMElement) {
             $oShape->setName($oElement->hasAttribute('name') ? $oElement->getAttribute('name') : '');
+            $oShape->setDescription($oElement->hasAttribute('descr') ? $oElement->getAttribute('descr') : '');
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
         }
 
         $oElement = $document->getElement('p:spPr/a:xfrm', $node);
@@ -991,6 +1548,23 @@ class PowerPoint2007 implements ReaderInterface
                 $oShape->setHeight((int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('cy')));
             }
         }
+    }
+
+    /**
+     * @param AbstractSlide|Note $oSlide
+     */
+    protected function loadShapeRichText(XMLReader $document, DOMElement $node, $oSlide, ?ShapeContainerInterface $oContainer = null): void
+    {
+        // Core
+        $oShape = new RichText();
+        ($oContainer ?? $oSlide)->addShape($oShape);
+        $oShape->setParagraphs([]);
+        // Variables
+        if ($oSlide instanceof AbstractSlide) {
+            $this->fileRels = $oSlide->getRelsIndex();
+        }
+
+        $this->loadShapeFrame($document, $node, $oShape);
 
         $oElement = $document->getElement('p:nvSpPr/p:nvPr/p:ph', $node);
         if ($oElement instanceof DOMElement) {
@@ -1011,20 +1585,29 @@ class PowerPoint2007 implements ReaderInterface
         // FBU-20210202+ Read body definitions
         $bodyPr = $document->getElement('p:txBody/a:bodyPr', $node);
         if ($bodyPr instanceof DOMElement) {
+            // the insets are EMU in the file and pixels in the model, which is the unit the
+            // Writer converts back from
             if ($bodyPr->hasAttribute('lIns')) {
-                $oShape->setInsetLeft((int) $bodyPr->getAttribute('lIns'));
+                $oShape->setInsetLeft(CommonDrawing::emuToPixels((int) $bodyPr->getAttribute('lIns')));
             }
             if ($bodyPr->hasAttribute('tIns')) {
-                $oShape->setInsetTop((int) $bodyPr->getAttribute('tIns'));
+                $oShape->setInsetTop(CommonDrawing::emuToPixels((int) $bodyPr->getAttribute('tIns')));
             }
             if ($bodyPr->hasAttribute('rIns')) {
-                $oShape->setInsetRight((int) $bodyPr->getAttribute('rIns'));
+                $oShape->setInsetRight(CommonDrawing::emuToPixels((int) $bodyPr->getAttribute('rIns')));
             }
             if ($bodyPr->hasAttribute('bIns')) {
-                $oShape->setInsetBottom((int) $bodyPr->getAttribute('bIns'));
+                $oShape->setInsetBottom(CommonDrawing::emuToPixels((int) $bodyPr->getAttribute('bIns')));
             }
             if ($bodyPr->hasAttribute('anchorCtr')) {
                 $oShape->setVerticalAlignCenter((int) $bodyPr->getAttribute('anchorCtr'));
+            }
+            if ($bodyPr->hasAttribute('rtlCol')) {
+                $oShape->setColumnsRTL((bool) (int) $bodyPr->getAttribute('rtlCol'));
+            }
+            // `none` and `square` are the two values a shape's wrap holds, spelled the same way
+            if ($bodyPr->hasAttribute('wrap')) {
+                $oShape->setWrap($bodyPr->getAttribute('wrap'));
             }
         }
 
@@ -1034,12 +1617,20 @@ class PowerPoint2007 implements ReaderInterface
                 $this->loadParagraph($document, $oElement, $oShape);
             }
         }
+        $this->loadNumericStartAts($oShape->getParagraphs());
 
         $oElement = $document->getElement('p:spPr', $node);
         if ($oElement instanceof DOMElement) {
             $oShape->setFill(
                 $this->loadStyleFill($document, $oElement)
             );
+
+            // a:ln is what the Writer writes a shape's Border as, and nothing read it back, so
+            // every shape loaded from a file wore the default border rather than its own
+            $oElementBorder = $document->getElement('a:ln', $oElement);
+            if ($oElementBorder instanceof DOMElement) {
+                $this->loadStyleBorder($document, $oElementBorder, $oShape->getBorder());
+            }
         }
 
         if (count($oShape->getParagraphs()) > 0) {
@@ -1047,13 +1638,14 @@ class PowerPoint2007 implements ReaderInterface
         }
     }
 
-    protected function loadShapeTable(XMLReader $document, DOMElement $node, AbstractSlide $oSlide): void
+    protected function loadShapeTable(XMLReader $document, DOMElement $node, AbstractSlide $oSlide, ?ShapeContainerInterface $oContainer = null): void
     {
         $this->fileRels = $oSlide->getRelsIndex();
 
-        $oShape = $oSlide->createTableShape();
+        $oShape = new Table();
+        ($oContainer ?? $oSlide)->addShape($oShape);
 
-        $oElement = $document->getElement('p:cNvPr', $node);
+        $oElement = $document->getElement('p:nvGraphicFramePr/p:cNvPr', $node);
         if ($oElement instanceof DOMElement) {
             if ($oElement->hasAttribute('name')) {
                 $oShape->setName($oElement->getAttribute('name'));
@@ -1061,6 +1653,8 @@ class PowerPoint2007 implements ReaderInterface
             if ($oElement->hasAttribute('descr')) {
                 $oShape->setDescription($oElement->getAttribute('descr'));
             }
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
         }
 
         $oElement = $document->getElement('p:xfrm/a:off', $node);
@@ -1082,6 +1676,11 @@ class PowerPoint2007 implements ReaderInterface
                 $oShape->setHeight((int) CommonDrawing::emuToPixels((int) $oElement->getAttribute('cy')));
             }
         }
+
+        $oElement = $document->getElement('a:graphic/a:graphicData/a:tbl/a:tblPr', $node);
+        // Both attributes default to false when the element or the attribute is absent
+        $oShape->setFirstRow($oElement instanceof DOMElement && in_array($oElement->getAttribute('firstRow'), ['1', 'true'], true));
+        $oShape->setBandRow($oElement instanceof DOMElement && in_array($oElement->getAttribute('bandRow'), ['1', 'true'], true));
 
         $arrayElements = $document->getElements('a:graphic/a:graphicData/a:tbl/a:tblGrid/a:gridCol', $node);
         $oShape->setNumColumns($arrayElements->length);
@@ -1124,6 +1723,7 @@ class PowerPoint2007 implements ReaderInterface
                         $this->loadParagraph($document, $oElementPara, $oCell);
                     }
                 }
+                $this->loadNumericStartAts($oCell->getParagraphs());
 
                 $oElementTcPr = $document->getElement('a:tcPr', $oElementCell);
                 if ($oElementTcPr instanceof DOMElement) {
@@ -1185,13 +1785,14 @@ class PowerPoint2007 implements ReaderInterface
         }
     }
 
-    protected function loadShapeChart(XMLReader $document, DOMElement $node, AbstractSlide $oSlide): void
+    protected function loadShapeChart(XMLReader $document, DOMElement $node, AbstractSlide $oSlide, ?ShapeContainerInterface $oContainer = null): void
     {
+        $oContainer = $oContainer ?? $oSlide;
         $this->fileRels = $oSlide->getRelsIndex();
 
         $oShape = new Chart();
 
-        $oElement = $document->getElement('p:cNvPr', $node);
+        $oElement = $document->getElement('p:nvGraphicFramePr/p:cNvPr', $node);
         if ($oElement instanceof DOMElement) {
             if ($oElement->hasAttribute('name')) {
                 $oShape->setName($oElement->getAttribute('name'));
@@ -1199,6 +1800,8 @@ class PowerPoint2007 implements ReaderInterface
             if ($oElement->hasAttribute('descr')) {
                 $oShape->setDescription($oElement->getAttribute('descr'));
             }
+            $oShape->setDecorative($this->loadShapeDecorative($document, $oElement));
+            $oShape->setHyperlink($this->loadShapeHyperlink($document, $oElement));
         }
 
         $oElement = $document->getElement('p:xfrm/a:off', $node);
@@ -1223,110 +1826,31 @@ class PowerPoint2007 implements ReaderInterface
 
         $chartElement = $document->getElement('a:graphic/a:graphicData/c:chart', $node);
         if ($chartElement->hasAttribute('r:id') && isset($this->arrayRels[$this->fileRels][$chartElement->getAttribute('r:id')]['Target'])) {
-            $pathImage = 'ppt/slides/' . $this->arrayRels[$this->fileRels][$chartElement->getAttribute('r:id')]['Target'];
-            $pathImage = explode('/', $pathImage);
-            foreach ($pathImage as $key => $partPath) {
-                if ('..' == $partPath) {
-                    unset($pathImage[$key - 1], $pathImage[$key]);
-                }
-            }
-            $pathChart = implode('/', $pathImage);
-            $fileChart = $this->oZip->getFromName($pathChart);
+            $pathChart = $this->resolve($this->fileRels, $this->arrayRels[$this->fileRels][$chartElement->getAttribute('r:id')]['Target']);
+            $fileChart = $this->getFromName($pathChart);
             if (false !== $fileChart) {
                 $xmlReader = new XMLReader();
                 // @phpstan-ignore-next-line
                 if ($xmlReader->getDomFromString($fileChart)) {
-                    if ($oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:autoTitleDeleted')) {
-                        $oShape->getTitle()->setVisible(false);
+                    $oElementTitle = $xmlReader->getElement('/c:chartSpace/c:chart/c:title');
+                    if ($oElementTitle instanceof DOMElement) {
+                        $this->loadChartTitle($xmlReader, $oElementTitle, $oShape);
+                    } elseif ($oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:autoTitleDeleted')) {
+                        // An xsd:boolean that is true when `val` is left out. A title of the chart's own
+                        // shows whatever it says; it only hides the one the application would make up
+                        $oShape->getTitle()->setVisible(!in_array($oElement->getAttribute('val'), ['', '1', 'true'], true));
                     }
 
-                    if ($oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:plotArea/c:barChart')) {
-                        $shapeType = new Chart\Type\Bar();
+                    // `c:lang` is no guide: LibreOffice writes en-US there whatever the chart is in.
+                    // The text says it, a run first and then the end of a paragraph, and a chart in
+                    // the language of the document is left to take it from the document.
+                    $oElement = $xmlReader->getElement('//a:rPr[@lang]') ?? $xmlReader->getElement('//a:endParaRPr[@lang]');
+                    if ($oElement instanceof DOMElement && $oElement->getAttribute('lang') !== $this->oPhpPresentation->getDocumentProperties()->getLanguage()) {
+                        $oShape->setLanguage($oElement->getAttribute('lang'));
+                    }
 
-                        $elementBarDir = $xmlReader->getElement('c:barDir', $oElement);
-                        if ($elementBarDir instanceof DOMElement) {
-                            $shapeType->setBarDirection($elementBarDir->getAttribute('val'));
-                        }
-
-                        $elementGrouping = $xmlReader->getElement('c:grouping', $oElement);
-                        if ($elementGrouping instanceof DOMElement) {
-                            $shapeType->setBarGrouping($elementGrouping->getAttribute('val'));
-                        }
-
-                        $elementSeries = $xmlReader->getElements('c:ser', $oElement);
-                        foreach ($elementSeries as $elementSerie) {
-                            $series = new Chart\Series();
-                            if ($elementTitle = $xmlReader->getElement('c:tx/c:strRef/c:strCache/c:pt/c:v', $elementSerie)) {
-                                $series->setTitle($elementTitle->nodeValue);
-                            }
-
-                            $numPoints = 0;
-                            $elementCategory = $xmlReader->getElement('c:cat/c:strRef/c:strCache', $elementSerie);
-                            if ($elementCategoryNumPoints = $xmlReader->getElement('c:ptCount', $elementCategory)) {
-                                $numPoints = (int) $elementCategoryNumPoints->getAttribute('val');
-                            }
-                            $elementValue = $xmlReader->getElement('c:val/c:numRef/c:numCache', $elementSerie);
-                            for ($inc = 0; $inc < $numPoints; ++$inc) {
-                                $key = '';
-                                $val = '0';
-                                if ($subElementCategory = $xmlReader->getElement('c:pt[@idx="' . $inc . '"]/c:v', $elementCategory)) {
-                                    $key = $subElementCategory->nodeValue;
-                                }
-                                if ($subElementValue = $xmlReader->getElement('c:pt[@idx="' . $inc . '"]/c:v', $elementValue)) {
-                                    $val = $subElementValue->nodeValue;
-                                }
-                                $series->addValue($key, $val);
-                            }
-
-                            if ($elementFill = $xmlReader->getElement('c:spPr', $elementSerie)) {
-                                $series->setFill(
-                                    $this->loadStyleFill($xmlReader, $elementFill)
-                                );
-                            }
-
-                            if ($elementFill = $xmlReader->getElement('a:ln', $elementSerie)) {
-                                $series->setOutline(
-                                    $this->loadStyleOutline($xmlReader, $elementFill)
-                                );
-                            }
-
-                            if ($elementShowLegendKey = $xmlReader->getElement('c:dLbls/c:showLegendKey', $elementSerie)) {
-                                $series->setShowLegendKey((bool) $elementShowLegendKey->getAttribute('val'));
-                            }
-
-                            if ($elementShowVal = $xmlReader->getElement('c:dLbls/c:showVal', $elementSerie)) {
-                                $series->setShowValue((bool) $elementShowVal->getAttribute('val'));
-                            }
-
-                            if ($elementShowCatName = $xmlReader->getElement('c:dLbls/c:showCatName', $elementSerie)) {
-                                $series->setShowCategoryName((bool) $elementShowCatName->getAttribute('val'));
-                            }
-
-                            if ($elementShowSerName = $xmlReader->getElement('c:dLbls/c:showSerName', $elementSerie)) {
-                                $series->setShowSeriesName((bool) $elementShowSerName->getAttribute('val'));
-                            }
-
-                            if ($elementShowPercent = $xmlReader->getElement('c:dLbls/c:showPercent', $elementSerie)) {
-                                $series->setShowPercentage((bool) $elementShowPercent->getAttribute('val'));
-                            }
-
-                            if ($elementShowLeaderLines = $xmlReader->getElement('c:dLbls/c:showLeaderLines', $elementSerie)) {
-                                $series->setShowLeaderLines((bool) $elementShowLeaderLines->getAttribute('val'));
-                            }
-
-                            $shapeType->addSeries($series);
-                        }
-
-                        $elementGapWidth = $xmlReader->getElement('c:gapWidth', $oElement);
-                        if ($elementGapWidth instanceof DOMElement) {
-                            $shapeType->setGapWidthPercent((int) $elementGapWidth->getAttribute('val'));
-                        }
-
-                        $elementOverlap = $xmlReader->getElement('c:overlap', $oElement);
-                        if ($elementOverlap instanceof DOMElement) {
-                            $shapeType->setOverlapWidthPercent((int) $elementOverlap->getAttribute('val'));
-                        }
-
+                    $shapeType = $this->loadTypeChart($xmlReader);
+                    if ($shapeType instanceof Chart\Type\AbstractType) {
                         $oShape->getPlotArea()->setType($shapeType);
                     }
 
@@ -1345,7 +1869,7 @@ class PowerPoint2007 implements ReaderInterface
                             $oShape->getPlotArea()->getAxisX()->setMajorTickMark($elementMajorTickMark->getAttribute('val'));
                         }
                         if ($elementMinorTickMark = $xmlReader->getElement('c:minorTickMark', $oElement)) {
-                            $oShape->getPlotArea()->getAxisX()->setMajorTickMark($elementMinorTickMark->getAttribute('val'));
+                            $oShape->getPlotArea()->getAxisX()->setMinorTickMark($elementMinorTickMark->getAttribute('val'));
                         }
                         if ($elementTickLabelPosition = $xmlReader->getElement('c:tickLblPos', $oElement)) {
                             $oShape->getPlotArea()->getAxisX()->setTickLabelPosition($elementTickLabelPosition->getAttribute('val'));
@@ -1360,6 +1884,8 @@ class PowerPoint2007 implements ReaderInterface
                                 $oShape->getPlotArea()->getAxisX()->setOutline($outline);
                             }
                         }
+
+                        $this->loadAxisText($xmlReader, $oElement, $oShape->getPlotArea()->getAxisX());
                     }
 
                     if ($oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:plotArea/c:valAx')) {
@@ -1377,7 +1903,7 @@ class PowerPoint2007 implements ReaderInterface
                             $oShape->getPlotArea()->getAxisY()->setMajorTickMark($elementMajorTickMark->getAttribute('val'));
                         }
                         if ($elementMinorTickMark = $xmlReader->getElement('c:minorTickMark', $oElement)) {
-                            $oShape->getPlotArea()->getAxisY()->setMajorTickMark($elementMinorTickMark->getAttribute('val'));
+                            $oShape->getPlotArea()->getAxisY()->setMinorTickMark($elementMinorTickMark->getAttribute('val'));
                         }
                         if ($elementTickLabelPosition = $xmlReader->getElement('c:tickLblPos', $oElement)) {
                             $oShape->getPlotArea()->getAxisY()->setTickLabelPosition($elementTickLabelPosition->getAttribute('val'));
@@ -1385,11 +1911,13 @@ class PowerPoint2007 implements ReaderInterface
                         if ($elementCrosses = $xmlReader->getElement('c:crosses', $oElement)) {
                             $oShape->getPlotArea()->getAxisY()->setCrossesAt($elementCrosses->getAttribute('val'));
                         }
-                        if ($elementFill = $xmlReader->getElement('c:spPr/a:ln', $oElement)) {
+                        if ($elementFill = $xmlReader->getElement('c:spPr', $oElement)) {
                             if ($outline = $this->loadStyleOutline($xmlReader, $elementFill)) {
                                 $oShape->getPlotArea()->getAxisY()->setOutline($outline);
                             }
                         }
+
+                        $this->loadAxisText($xmlReader, $oElement, $oShape->getPlotArea()->getAxisY());
                     }
 
                     if ($oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:legend')) {
@@ -1407,7 +1935,226 @@ class PowerPoint2007 implements ReaderInterface
                     }
                 }
             }
-            $oSlide->addShape($oShape);
+            $oContainer->addShape($oShape);
+        }
+    }
+
+    /**
+     * Read the plot of a chart, whichever of the nine kinds it is.
+     *
+     * `c:plotArea` holds exactly one of these elements, and the name of it is the whole of what
+     * says which chart this is: a doughnut and a pie carry the same series, the same categories and
+     * the same labels, and differ by the element they sit in.
+     */
+    protected function loadTypeChart(XMLReader $xmlReader): ?Chart\Type\AbstractType
+    {
+        foreach (self::CHART_TYPES as $name => $class) {
+            $oElement = $xmlReader->getElement('/c:chartSpace/c:chart/c:plotArea/' . $name);
+            if (!$oElement instanceof DOMElement) {
+                continue;
+            }
+
+            $shapeType = new $class();
+            $this->loadTypeChartProperties($xmlReader, $oElement, $shapeType);
+
+            foreach ($xmlReader->getElements('c:ser', $oElement) as $elementSerie) {
+                if ($elementSerie instanceof DOMElement) {
+                    $shapeType->addSeries($this->loadSeries($xmlReader, $elementSerie));
+                }
+            }
+
+            return $shapeType;
+        }
+
+        return null;
+    }
+
+    /**
+     * The settings that belong to the kind of chart this is, rather than to its series.
+     *
+     * Read by what the type can be told rather than by which element it came from: `c:gapWidth` is
+     * written by the bar charts and by the doughnut, and only the first has somewhere to put it.
+     */
+    protected function loadTypeChartProperties(XMLReader $xmlReader, DOMElement $oElement, Chart\Type\AbstractType $shapeType): void
+    {
+        if ($shapeType instanceof Chart\Type\AbstractTypeBar) {
+            $element = $xmlReader->getElement('c:barDir', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setBarDirection($element->getAttribute('val'));
+            }
+
+            $element = $xmlReader->getElement('c:grouping', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setBarGrouping($element->getAttribute('val'));
+            }
+
+            $element = $xmlReader->getElement('c:gapWidth', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setGapWidthPercent((int) $element->getAttribute('val'));
+            }
+
+            $element = $xmlReader->getElement('c:overlap', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setOverlapWidthPercent((int) $element->getAttribute('val'));
+            }
+        }
+
+        if ($shapeType instanceof Chart\Type\Doughnut) {
+            $element = $xmlReader->getElement('c:holeSize', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setHoleSize((int) $element->getAttribute('val'));
+            }
+
+            $element = $xmlReader->getElement('c:firstSliceAng', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setFirstSliceAngle((int) $element->getAttribute('val'));
+            }
+        }
+
+        // Written inside the first series, and held on the type: a pie explodes as a whole, and a
+        // line is smooth or is not, whatever the file repeats for every series it has.
+        if ($shapeType instanceof Chart\Type\AbstractTypePie) {
+            $element = $xmlReader->getElement('c:ser/c:explosion', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setExplosion((int) $element->getAttribute('val'));
+            }
+        }
+
+        if ($shapeType instanceof Chart\Type\AbstractTypeLine) {
+            $element = $xmlReader->getElement('c:ser/c:smooth', $oElement);
+            if ($element instanceof DOMElement) {
+                $shapeType->setIsSmooth((bool) $element->getAttribute('val'));
+            }
+        }
+    }
+
+    /**
+     * The points a series holds, from whichever element of it holds them.
+     *
+     * A chart written with a worksheet points at the cells and keeps a copy of what it last read
+     * there (`c:numRef/c:numCache`); one written without a worksheet holds the points itself
+     * (`c:numLit`). The two carry the same `c:ptCount` and the same `c:pt`. Whether they are called
+     * `str` or `num` follows the values rather than the axis, so both are looked for on both. A
+     * scatter chart calls its two axes `c:xVal` and `c:yVal` where every other chart says `c:cat`
+     * and `c:val`, and means the same by them.
+     */
+    private function loadSeriesPoints(XMLReader $xmlReader, DOMElement $elementSerie, string ...$names): ?DOMElement
+    {
+        foreach ($names as $name) {
+            foreach (['c:strRef/c:strCache', 'c:numRef/c:numCache', 'c:strLit', 'c:numLit'] as $holder) {
+                $element = $xmlReader->getElement($name . '/' . $holder, $elementSerie);
+                if ($element instanceof DOMElement) {
+                    return $element;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Read one `c:ser`, which is the same element whatever chart holds it.
+     */
+    protected function loadSeries(XMLReader $xmlReader, DOMElement $elementSerie): Chart\Series
+    {
+        $series = new Chart\Series();
+        // The name of the series is a cell of the worksheet when there is one, and the text itself
+        // when there is not.
+        $elementTitle = $xmlReader->getElement('c:tx/c:strRef/c:strCache/c:pt/c:v', $elementSerie)
+            ?? $xmlReader->getElement('c:tx/c:v', $elementSerie);
+        if ($elementTitle instanceof DOMElement) {
+            $series->setTitle($elementTitle->nodeValue);
+        }
+
+        $numPoints = 0;
+        $elementCategory = $this->loadSeriesPoints($xmlReader, $elementSerie, 'c:cat', 'c:xVal');
+        if ($elementCategoryNumPoints = $xmlReader->getElement('c:ptCount', $elementCategory)) {
+            $numPoints = (int) $elementCategoryNumPoints->getAttribute('val');
+        }
+        $elementValue = $this->loadSeriesPoints($xmlReader, $elementSerie, 'c:val', 'c:yVal');
+        for ($inc = 0; $inc < $numPoints; ++$inc) {
+            $key = '';
+            $val = '0';
+            if ($subElementCategory = $xmlReader->getElement('c:pt[@idx="' . $inc . '"]/c:v', $elementCategory)) {
+                $key = $subElementCategory->nodeValue;
+            }
+            if ($subElementValue = $xmlReader->getElement('c:pt[@idx="' . $inc . '"]/c:v', $elementValue)) {
+                $val = $subElementValue->nodeValue;
+            }
+            $series->addValue($key, $val);
+        }
+
+        if ($elementFill = $xmlReader->getElement('c:spPr', $elementSerie)) {
+            $series->setFill(
+                $this->loadStyleFill($xmlReader, $elementFill)
+            );
+        }
+
+        if ($elementFill = $xmlReader->getElement('a:ln', $elementSerie)) {
+            $series->setOutline(
+                $this->loadStyleOutline($xmlReader, $elementFill)
+            );
+        }
+
+        $this->loadSeriesDataPoints($xmlReader, $elementSerie, $series);
+
+        // the plate the data labels sit on, which is a `c:spPr` of its own inside `c:dLbls`
+        if ($elementFill = $xmlReader->getElement('c:dLbls/c:spPr', $elementSerie)) {
+            $series->setLabelFill(
+                $this->loadStyleFill($xmlReader, $elementFill)
+            );
+        }
+
+        if ($elementShowLegendKey = $xmlReader->getElement('c:dLbls/c:showLegendKey', $elementSerie)) {
+            $series->setShowLegendKey((bool) $elementShowLegendKey->getAttribute('val'));
+        }
+
+        if ($elementShowVal = $xmlReader->getElement('c:dLbls/c:showVal', $elementSerie)) {
+            $series->setShowValue((bool) $elementShowVal->getAttribute('val'));
+        }
+
+        if ($elementShowCatName = $xmlReader->getElement('c:dLbls/c:showCatName', $elementSerie)) {
+            $series->setShowCategoryName((bool) $elementShowCatName->getAttribute('val'));
+        }
+
+        if ($elementShowSerName = $xmlReader->getElement('c:dLbls/c:showSerName', $elementSerie)) {
+            $series->setShowSeriesName((bool) $elementShowSerName->getAttribute('val'));
+        }
+
+        if ($elementShowPercent = $xmlReader->getElement('c:dLbls/c:showPercent', $elementSerie)) {
+            $series->setShowPercentage((bool) $elementShowPercent->getAttribute('val'));
+        }
+
+        if ($elementShowLeaderLines = $xmlReader->getElement('c:dLbls/c:showLeaderLines', $elementSerie)) {
+            $series->setShowLeaderLines((bool) $elementShowLeaderLines->getAttribute('val'));
+        }
+
+        return $series;
+    }
+
+    /**
+     * PowerPoint writes the start of a numbering on every paragraph of it, so a paragraph whose
+     * start is the one of the numbering it continues is given none, and continues it the same.
+     * A numbering that begins at the number after the last one of its level and scheme -- 1, 2,
+     * a paragraph with no marker, then 3 -- is read as continuing that one.
+     *
+     * @param array<int, Paragraph> $paragraphs
+     */
+    protected function loadNumericStartAts(array $paragraphs): void
+    {
+        $numbering = new Numbering($paragraphs);
+        $continuedStartAts = $numbering->getContinuedStartAts();
+        foreach ($numbering->getResumedStartAts() as $key => $resumedStartAt) {
+            $bullet = $paragraphs[$key]->getBulletStyle();
+            if (null !== $bullet && null !== $resumedStartAt && $resumedStartAt === $bullet->getBulletNumericStartAt()) {
+                $bullet->setBulletNumericStartAt(null)->setBulletNumericContinue();
+            }
+        }
+        foreach ($continuedStartAts as $key => $continuedStartAt) {
+            $bullet = $paragraphs[$key]->getBulletStyle();
+            if (null !== $bullet && $continuedStartAt === $bullet->getBulletNumericStartAt()) {
+                $bullet->setBulletNumericStartAt(null);
+            }
         }
     }
 
@@ -1467,8 +2214,9 @@ class PowerPoint2007 implements ReaderInterface
 
             $oElementBuFont = $document->getElement('a:buFont', $oSubElement);
             if ($oElementBuFont instanceof DOMElement) {
-                if ($oElementBuFont->hasAttribute('typeface')) {
-                    $oParagraph->getBulletStyle()->setBulletFont($oElementBuFont->getAttribute('typeface'));
+                $typeface = $this->getTypeface($oElementBuFont->getAttribute('typeface'));
+                if ('' !== $typeface) {
+                    $oParagraph->getBulletStyle()->setBulletFont($typeface);
                 }
             }
             $oElementBuChar = $document->getElement('a:buChar', $oSubElement);
@@ -1484,9 +2232,8 @@ class PowerPoint2007 implements ReaderInterface
                 if ($oElementBuAutoNum->hasAttribute('type')) {
                     $oParagraph->getBulletStyle()->setBulletNumericStyle($oElementBuAutoNum->getAttribute('type'));
                 }
-                if ($oElementBuAutoNum->hasAttribute('startAt') && 1 != $oElementBuAutoNum->getAttribute('startAt')) {
-                    $oParagraph->getBulletStyle()->setBulletNumericStartAt($oElementBuAutoNum->getAttribute('startAt'));
-                }
+                // no start is a start of 1; loadNumericStartAts() drops the ones that only continue a numbering
+                $oParagraph->getBulletStyle()->setBulletNumericStartAt($oElementBuAutoNum->hasAttribute('startAt') ? $oElementBuAutoNum->getAttribute('startAt') : 1);
             }
             $oElementBuClr = $document->getElement('a:buClr', $oSubElement);
             if ($oElementBuClr instanceof DOMElement) {
@@ -1501,7 +2248,7 @@ class PowerPoint2007 implements ReaderInterface
                 $oParagraph->getBulletStyle()->setBulletColor($oColor);
             }
         }
-        $arraySubElements = $document->getElements('(a:r|a:br)', $oElement);
+        $arraySubElements = $document->getElements('(a:r|a:br|a:fld)', $oElement);
         foreach ($arraySubElements as $oSubElement) {
             if (!($oSubElement instanceof DOMElement)) {
                 continue;
@@ -1509,11 +2256,18 @@ class PowerPoint2007 implements ReaderInterface
             if ('a:br' == $oSubElement->tagName) {
                 $oParagraph->createBreak();
             }
-            if ('a:r' == $oSubElement->tagName) {
+            // A field is a run whose text the application recomputes -- a slide number, a date.
+            // `CT_TextField` holds the same `a:rPr` and `a:t` as a run does (ECMA-376), so it is
+            // read the same way: what the field says is a stand-in, but how it is styled is not.
+            if ('a:r' == $oSubElement->tagName || 'a:fld' == $oSubElement->tagName) {
                 $oElementrPr = $document->getElement('a:rPr', $oSubElement);
-                if (is_object($oElementrPr)) {
-                    $oText = $oParagraph->createTextRun();
 
+                // `a:rPr` is optional (ECMA-376, CT_RegularTextRun), and Keynote's export leaves it
+                // out, so the run is made before its properties are looked at rather than by them
+                $oText = 'a:fld' == $oSubElement->tagName
+                    ? $oParagraph->createField($oSubElement->getAttribute('type'))
+                    : $oParagraph->createTextRun();
+                if ($oElementrPr instanceof DOMElement) {
                     if ($oElementrPr->hasAttribute('b')) {
                         $att = $oElementrPr->getAttribute('b');
                         $oText->getFont()->setBold('true' == $att || '1' == $att ? true : false);
@@ -1542,14 +2296,14 @@ class PowerPoint2007 implements ReaderInterface
                     }
                     // Color
                     $oElementSrgbClr = $document->getElement('a:solidFill/a:srgbClr', $oElementrPr);
-                    if (is_object($oElementSrgbClr) && $oElementSrgbClr->hasAttribute('val')) {
+                    if ($oElementSrgbClr instanceof DOMElement && $oElementSrgbClr->hasAttribute('val')) {
                         $oColor = new Color();
                         $oColor->setRGB($oElementSrgbClr->getAttribute('val'));
                         $oText->getFont()->setColor($oColor);
                     }
                     // Hyperlink
                     $oElementHlinkClick = $document->getElement('a:hlinkClick', $oElementrPr);
-                    if (is_object($oElementHlinkClick)) {
+                    if ($oElementHlinkClick instanceof DOMElement) {
                         $oText->setHyperlink(
                             $this->loadHyperlink($document, $oElementHlinkClick, $oText->getHyperlink())
                         );
@@ -1558,28 +2312,30 @@ class PowerPoint2007 implements ReaderInterface
                     // Font
                     $oElementFontFormat = null;
                     $oElementFontFormatComplexScript = $document->getElement('a:cs', $oElementrPr);
-                    if (is_object($oElementFontFormatComplexScript)) {
+                    if ($oElementFontFormatComplexScript instanceof DOMElement) {
                         $oText->getFont()->setFormat(Font::FORMAT_COMPLEX_SCRIPT);
                         $oElementFontFormat = $oElementFontFormatComplexScript;
                     }
                     $oElementFontFormatEastAsian = $document->getElement('a:ea', $oElementrPr);
-                    if (is_object($oElementFontFormatEastAsian)) {
+                    if ($oElementFontFormatEastAsian instanceof DOMElement) {
                         $oText->getFont()->setFormat(Font::FORMAT_EAST_ASIAN);
                         $oElementFontFormat = $oElementFontFormatEastAsian;
                     }
                     $oElementFontFormatLatin = $document->getElement('a:latin', $oElementrPr);
-                    if (is_object($oElementFontFormatLatin)) {
+                    if ($oElementFontFormatLatin instanceof DOMElement) {
                         $oText->getFont()->setFormat(Font::FORMAT_LATIN);
                         $oElementFontFormat = $oElementFontFormatLatin;
                     }
-                    if (is_object($oElementFontFormat) && $oElementFontFormat->hasAttribute('typeface')) {
-                        $oText->getFont()->setName($oElementFontFormat->getAttribute('typeface'));
+                    $typeface = $oElementFontFormat instanceof DOMElement ? $this->getTypeface($oElementFontFormat->getAttribute('typeface')) : '';
+                    if ('' !== $typeface) {
+                        $oText->getFont()->setName($typeface);
                     }
                     // Font definition
                     $oElementFont = $document->getElement('a:latin', $oElementrPr);
                     if ($oElementFont instanceof DOMElement) {
-                        if ($oElementFont->hasAttribute('typeface')) {
-                            $oText->getFont()->setName($oElementFont->getAttribute('typeface'));
+                        $typeface = $this->getTypeface($oElementFont->getAttribute('typeface'));
+                        if ('' !== $typeface) {
+                            $oText->getFont()->setName($typeface);
                         }
                         if ($oElementFont->hasAttribute('panose')) {
                             $oText->getFont()->setPanose($oElementFont->getAttribute('panose'));
@@ -1588,11 +2344,16 @@ class PowerPoint2007 implements ReaderInterface
                             $oText->getFont()->setPitchFamily((int) $oElementFont->getAttribute('pitchFamily'));
                         }
                         if ($oElementFont->hasAttribute('charset')) {
-                            $oText->getFont()->setCharset((int) $oElementFont->getAttribute('charset'));
+                            $charset = (int) $oElementFont->getAttribute('charset');
+                            $oText->getFont()->setCharset($charset < 0 ? $charset + 256 : $charset);
                         }
                     }
-
-                    $oSubSubElement = $document->getElement('a:t', $oSubElement);
+                }
+                // The run now exists whether or not it had properties, so the text it holds has
+                // to be looked for rather than assumed: a run without `a:t` is malformed, but it
+                // is the reader that would raise the error
+                $oSubSubElement = $document->getElement('a:t', $oSubElement);
+                if ($oSubSubElement instanceof DOMElement) {
                     $oText->setText($oSubSubElement->nodeValue);
                 }
             }
@@ -1605,7 +2366,15 @@ class PowerPoint2007 implements ReaderInterface
             $hyperlink->setTooltip($element->getAttribute('tooltip'));
         }
         if ($element->hasAttribute('r:id') && isset($this->arrayRels[$this->fileRels][$element->getAttribute('r:id')]['Target'])) {
-            $hyperlink->setUrl($this->arrayRels[$this->fileRels][$element->getAttribute('r:id')]['Target']);
+            $target = $this->arrayRels[$this->fileRels][$element->getAttribute('r:id')]['Target'];
+            // A link to another slide is a relationship to its part, and the action says so. Without
+            // this the slide number is lost and only the raw part name, `slide2.xml`, comes back.
+            if ('ppaction://hlinksldjump' === $element->getAttribute('action')
+                && 1 === preg_match('/slide(\d+)\.xml$/', $target, $matches)) {
+                $hyperlink->setSlideNumber((int) $matches[1]);
+            } else {
+                $hyperlink->setUrl($target);
+            }
         }
         if ($subElementExt = $xmlReader->getElement('a:extLst/a:ext', $element)) {
             if ($subElementExt->hasAttribute('uri') && $subElementExt->getAttribute('uri') == '{A12FA001-AC4F-418D-AE19-62706E023703}') {
@@ -1647,11 +2416,47 @@ class PowerPoint2007 implements ReaderInterface
         $oColor->setRGB($oElement->getAttribute('val'));
         $oElementAlpha = $xmlReader->getElement('a:alpha', $oElement);
         if ($oElementAlpha instanceof DOMElement && $oElementAlpha->hasAttribute('val')) {
-            $alpha = strtoupper(dechex((int) (((int) $oElementAlpha->getAttribute('val') / 1000) / 100) * 255));
-            $oColor->setRGB($oElement->getAttribute('val'), $alpha);
+            // `a:alpha` counts in thousandths of a percent, which is the percent `setAlpha()` takes
+            // and turns into the hex pair in front of the colour. Doing that arithmetic here read
+            // every alpha but `FF` back as none at all, and wrote it as a single character, which
+            // took the first digit of the colour with it.
+            $oColor->setAlpha((int) round((int) $oElementAlpha->getAttribute('val') / 1000));
         }
 
         return $oColor;
+    }
+
+    /**
+     * Read the fill and the outline carried by the data points of a serie.
+     *
+     * @param DOMElement $oElement the `c:ser` element of the serie
+     */
+    protected function loadSeriesDataPoints(XMLReader $xmlReader, DOMElement $oElement, Chart\Series $series): void
+    {
+        foreach ($xmlReader->getElements('c:dPt', $oElement) as $oElementDataPoint) {
+            if (!$oElementDataPoint instanceof DOMElement) {
+                continue;
+            }
+            $oElementIndex = $xmlReader->getElement('c:idx', $oElementDataPoint);
+            $oElementProperties = $xmlReader->getElement('c:spPr', $oElementDataPoint);
+            if (!$oElementIndex instanceof DOMElement || !$oElementProperties instanceof DOMElement) {
+                continue;
+            }
+            $index = (int) $oElementIndex->getAttribute('val');
+
+            $oFill = $this->loadStyleFill($xmlReader, $oElementProperties);
+            if ($oFill) {
+                $series->setDataPointFill($index, $oFill);
+            } elseif ($xmlReader->getElement('a:noFill', $oElementProperties) instanceof DOMElement) {
+                // A data point stating that it has no fill of its own
+                $series->setDataPointFill($index, new Fill());
+            }
+
+            $oOutline = $this->loadStyleOutline($xmlReader, $oElementProperties);
+            if ($oOutline) {
+                $series->setDataPointOutline($index, $oOutline);
+            }
+        }
     }
 
     protected function loadStyleFill(XMLReader $xmlReader, DOMElement $oElement): ?Fill
@@ -1680,6 +2485,29 @@ class PowerPoint2007 implements ReaderInterface
             return $oFill;
         }
 
+        // Pattern fill. `prst` is what names the pattern, and it is optional in the schema, so a
+        // `a:pattFill` without one names none -- there is no fill type to read it back as, and it
+        // is written by nothing that knows what it is doing. Read as the absence of a fill, the
+        // way an element this reader does not know is.
+        $oElementFill = $xmlReader->getElement('a:pattFill', $oElement);
+        if ($oElementFill instanceof DOMElement
+            && in_array($oElementFill->getAttribute('prst'), Fill::PATTERN_TYPES, true)) {
+            $oFill = new Fill();
+            $oFill->setFillType($oElementFill->getAttribute('prst'));
+
+            $oElementColor = $xmlReader->getElement('a:fgClr/a:srgbClr', $oElementFill);
+            if ($oElementColor instanceof DOMElement) {
+                $oFill->setStartColor($this->loadStyleColor($xmlReader, $oElementColor));
+            }
+
+            $oElementColor = $xmlReader->getElement('a:bgClr/a:srgbClr', $oElementFill);
+            if ($oElementColor instanceof DOMElement) {
+                $oFill->setEndColor($this->loadStyleColor($xmlReader, $oElementColor));
+            }
+
+            return $oFill;
+        }
+
         // Solid fill
         $oElementFill = $xmlReader->getElement('a:solidFill', $oElement);
         if ($oElementFill instanceof DOMElement) {
@@ -1690,6 +2518,16 @@ class PowerPoint2007 implements ReaderInterface
             if ($oElementColor instanceof DOMElement) {
                 $oFill->setStartColor($this->loadStyleColor($xmlReader, $oElementColor));
             }
+
+            return $oFill;
+        }
+
+        // No fill. This is a fill, and it is not the same thing as the absence of one below:
+        // `a:noFill` is what the file says when something asked to stay transparent.
+        $oElementFill = $xmlReader->getElement('a:noFill', $oElement);
+        if ($oElementFill instanceof DOMElement) {
+            $oFill = new Fill();
+            $oFill->setFillType(Fill::FILL_NONE);
 
             return $oFill;
         }
@@ -1715,9 +2553,101 @@ class PowerPoint2007 implements ReaderInterface
         return null;
     }
 
+    /**
+     * The `a:defRPr` a chart writes for a font: the same attributes a run carries, on an element
+     * that styles a whole paragraph rather than a piece of one.
+     */
+    protected function loadStyleFont(XMLReader $xmlReader, DOMElement $oElement, Font $oFont): void
+    {
+        if ($oElement->hasAttribute('b')) {
+            $oFont->setBold('true' == $oElement->getAttribute('b') || '1' == $oElement->getAttribute('b'));
+        }
+        if ($oElement->hasAttribute('i')) {
+            $oFont->setItalic('true' == $oElement->getAttribute('i') || '1' == $oElement->getAttribute('i'));
+        }
+        if ($oElement->hasAttribute('strike')) {
+            $oFont->setStrikethrough($oElement->getAttribute('strike'));
+        }
+        if ($oElement->hasAttribute('u')) {
+            $oFont->setUnderline($oElement->getAttribute('u'));
+        }
+        if ($oElement->hasAttribute('sz')) {
+            $oFont->setSize((int) ((int) $oElement->getAttribute('sz') / 100));
+        }
+        if ($oElement->hasAttribute('baseline')) {
+            $oFont->setBaseline((int) $oElement->getAttribute('baseline'));
+        }
+        $oElementColor = $xmlReader->getElement('a:solidFill/a:srgbClr', $oElement);
+        if ($oElementColor instanceof DOMElement) {
+            $oFont->setColor($this->loadStyleColor($xmlReader, $oElementColor));
+        }
+        $oElementLatin = $xmlReader->getElement('a:latin', $oElement);
+        $typeface = $oElementLatin instanceof DOMElement ? $this->getTypeface($oElementLatin->getAttribute('typeface')) : '';
+        if ('' !== $typeface) {
+            $oFont->setName($typeface);
+        }
+    }
+
+    /**
+     * The title of a chart: its text, and the font of its first run, where the writer puts it.
+     *
+     * @param DOMElement $oElement the `c:title` element of the chart
+     */
+    protected function loadChartTitle(XMLReader $xmlReader, DOMElement $oElement, Chart $oShape): void
+    {
+        $oTitle = $oShape->getTitle();
+        $title = '';
+        foreach ($xmlReader->getElements('c:tx/c:rich/a:p/a:r/a:t', $oElement) as $oElementText) {
+            $title .= $oElementText->nodeValue;
+        }
+        if ('' !== $title) {
+            $oTitle->setText($title);
+        }
+
+        $oElementFont = $xmlReader->getElement('c:tx/c:rich/a:p/a:r/a:rPr', $oElement);
+        if ($oElementFont instanceof DOMElement) {
+            $this->loadStyleFont($xmlReader, $oElementFont, $oTitle->getFont());
+        }
+    }
+
+    /**
+     * The text of an axis: the title it was given, how that title is turned and styled, and the
+     * font of the tick labels. All four are written by this library and none was read back.
+     *
+     * @param DOMElement $oElement the `c:catAx` or `c:valAx` element of the axis
+     */
+    protected function loadAxisText(XMLReader $xmlReader, DOMElement $oElement, Chart\Axis $oAxis): void
+    {
+        $oElementTitle = $xmlReader->getElement('c:title/c:tx/c:rich', $oElement);
+        if ($oElementTitle instanceof DOMElement) {
+            $title = '';
+            foreach ($xmlReader->getElements('a:p/a:r/a:t', $oElementTitle) as $oElementText) {
+                $title .= $oElementText->nodeValue;
+            }
+            if ('' !== $title) {
+                $oAxis->setTitle($title);
+            }
+
+            $oElementBody = $xmlReader->getElement('a:bodyPr', $oElementTitle);
+            if ($oElementBody instanceof DOMElement && $oElementBody->hasAttribute('rot')) {
+                $oAxis->setTitleRotation((int) CommonDrawing::angleToDegrees((int) $oElementBody->getAttribute('rot')));
+            }
+
+            $oElementFont = $xmlReader->getElement('a:p/a:pPr/a:defRPr', $oElementTitle);
+            if ($oElementFont instanceof DOMElement) {
+                $this->loadStyleFont($xmlReader, $oElementFont, $oAxis->getFont());
+            }
+        }
+
+        $oElementFont = $xmlReader->getElement('c:txPr/a:p/a:pPr/a:defRPr', $oElement);
+        if ($oElementFont instanceof DOMElement) {
+            $this->loadStyleFont($xmlReader, $oElementFont, $oAxis->getTickLabelFont());
+        }
+    }
+
     protected function loadRels(string $fileRels): void
     {
-        $sPart = $this->oZip->getFromName($fileRels);
+        $sPart = $this->getFromName($fileRels);
         if (false !== $sPart) {
             $xmlReader = new XMLReader();
             // @phpstan-ignore-next-line
@@ -1738,11 +2668,16 @@ class PowerPoint2007 implements ReaderInterface
     /**
      * @param AbstractSlide|Note $oSlide
      * @param DOMNodeList<DOMNode> $oElements
+     * @param null|ShapeContainerInterface $oContainer where to put the shapes; the slide itself unless we are inside a group
      *
      * @internal param $baseFile
      */
-    protected function loadSlideShapes(XMLReader $document, $oSlide, DOMNodeList $oElements, XMLReader $xmlReader): void
+    protected function loadSlideShapes(XMLReader $document, $oSlide, DOMNodeList $oElements, XMLReader $xmlReader, ?ShapeContainerInterface $oContainer = null): void
     {
+        $oContainer = $oContainer ?? $oSlide;
+        if ($oSlide instanceof AbstractSlide) {
+            $this->fileRels = $oSlide->getRelsIndex();
+        }
         foreach ($oElements as $oNode) {
             if (!($oNode instanceof DOMElement)) {
                 continue;
@@ -1751,22 +2686,34 @@ class PowerPoint2007 implements ReaderInterface
                 case 'p:graphicFrame':
                     if ($oSlide instanceof AbstractSlide) {
                         if ($document->elementExists('a:graphic/a:graphicData/a:tbl', $oNode)) {
-                            $this->loadShapeTable($xmlReader, $oNode, $oSlide);
+                            $this->loadShapeTable($xmlReader, $oNode, $oSlide, $oContainer);
                         }
                         if ($document->elementExists('a:graphic/a:graphicData/c:chart', $oNode)) {
-                            $this->loadShapeChart($xmlReader, $oNode, $oSlide);
+                            $this->loadShapeChart($xmlReader, $oNode, $oSlide, $oContainer);
                         }
                     }
 
                     break;
                 case 'p:pic':
                     if ($this->loadImages && $oSlide instanceof AbstractSlide) {
-                        $this->loadShapeDrawing($xmlReader, $oNode, $oSlide);
+                        $this->loadShapeDrawing($xmlReader, $oNode, $oSlide, $oContainer);
                     }
 
                     break;
                 case 'p:sp':
-                    $this->loadShapeRichText($xmlReader, $oNode, $oSlide);
+                    if ($this->isAutoShape($xmlReader, $oNode)) {
+                        $this->loadShapeAutoShape($xmlReader, $oNode, $oSlide, $oContainer);
+                    } else {
+                        $this->loadShapeRichText($xmlReader, $oNode, $oSlide, $oContainer);
+                    }
+
+                    break;
+                case 'p:cxnSp':
+                    $this->loadShapeLine($xmlReader, $oNode, $oSlide, $oContainer);
+
+                    break;
+                case 'p:grpSp':
+                    $this->loadShapeGroup($xmlReader, $oNode, $oSlide, $xmlReader, $oContainer);
 
                     break;
                 default:

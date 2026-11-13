@@ -16,7 +16,7 @@ You can set up your own Solr server. Please use the SOLR-schema given in:
 
 * Run in MW root folder:
 
-      composer require diqa/faceted-search-2 --no-dev
+      composer require diqa/faceted-search-2 --no-update
 
 * OR add the extension to composer-local.json
 

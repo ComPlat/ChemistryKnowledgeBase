@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenTelemetry\API\Configuration;
 
 use function class_alias;
+use OpenTelemetry\API\Behavior\Internal\ConfiguredLogger;
 use OpenTelemetry\API\Logs\LoggerProviderInterface;
 use OpenTelemetry\API\Logs\NoopLoggerProvider;
 use OpenTelemetry\API\Metrics\MeterProviderInterface;
@@ -12,25 +13,43 @@ use OpenTelemetry\API\Metrics\Noop\NoopMeterProvider;
 use OpenTelemetry\API\Trace\NoopTracerProvider;
 use OpenTelemetry\API\Trace\TracerProviderInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 final class Context
 {
-    /** @psalm-var class-string-map<T, T> */
+    /**
+     * @var array<class-string, object>
+     * @psalm-var class-string-map<T, T>
+     */
     private array $extensions = [];
 
     public function __construct(
         public readonly TracerProviderInterface $tracerProvider = new NoopTracerProvider(),
         public readonly MeterProviderInterface $meterProvider = new NoopMeterProvider(),
         public readonly LoggerProviderInterface $loggerProvider = new NoopLoggerProvider(),
-        public readonly LoggerInterface $logger = new NullLogger(),
+        public readonly LoggerInterface $logger = new ConfiguredLogger(),
     ) {
     }
 
+    public function withMeterProvider(MeterProviderInterface $meterProvider): self
+    {
+        $ctx = new self($this->tracerProvider, $meterProvider, $this->loggerProvider, $this->logger);
+        $ctx->extensions = $this->extensions;
+
+        return $ctx;
+    }
+
+    public function withLogger(LoggerInterface $logger): self
+    {
+        $ctx = new self($this->tracerProvider, $this->meterProvider, $this->loggerProvider, $logger);
+        $ctx->extensions = $this->extensions;
+
+        return $ctx;
+    }
+
     /**
-     * @psalm-template T of object
-     * @psalm-param T $extension
-     * @psalm-param class-string<T>|null $type
+     * @template T of object
+     * @param T $extension
+     * @param class-string<T>|null $type
      */
     public function withExtension(object $extension, ?string $type = null): self
     {
@@ -43,8 +62,8 @@ final class Context
     }
 
     /**
-     * @psalm-template T of object
-     * @psalm-param class-string<T> $type
+     * @template T of object
+     * @param class-string<T> $type
      * @psalm-return T|null
      */
     public function getExtension(string $type): ?object

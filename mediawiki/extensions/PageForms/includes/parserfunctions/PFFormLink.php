@@ -56,7 +56,7 @@ class PFFormLink {
 		$hasPopup = $hasReturnTo = false;
 		$className = static::class;
 		if ( $className == 'PFQueryFormLink' ) {
-			$inLinkStr = wfMessage( 'runquery' )->parse();
+			$inLinkStr = wfMessage( 'runquery' )->text();
 		}
 		$inCreatePage = false;
 		$classStr = '';
@@ -201,6 +201,9 @@ class PFFormLink {
 			}
 		}
 		if ( $inLinkType == 'button' || $inLinkType == 'post button' ) {
+			// The 'oo-ui-layout' class is needed for at least the Timeless skin.
+			$classStr = 'oo-ui-layout ' . $classStr;
+
 			$parser->getOutput()->setEnableOOUI( true );
 			OutputPage::setupOOUI();
 			$buttonAttrs = [

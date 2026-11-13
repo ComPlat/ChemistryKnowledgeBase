@@ -670,6 +670,8 @@ class PFFormField {
 						// The form is submitted with "displaytitle (title)" format, so we need to map it back.
 						if ( $this->hasFieldArg( 'remote autocompletion' ) ) {
 							$hasList = $cur_values['is_list'] ?? false;
+							// Don't map 'is_list' because it's not an actual value, of course.
+							unset( $cur_values['is_list'] );
 							// The key containing the actual title of the page
 							$cur_values = array_keys( PFMappingUtils::getLabelsForTitles( $cur_values, true ) );
 							if ( $hasList ) {
@@ -738,6 +740,15 @@ class PFFormField {
 	public function valueStringToLabels( $valueString, $delimiter, $formSubmitted ) {
 		if ( $valueString === null || trim( $valueString ) === '' ||
 			$this->mPossibleValues === null ) {
+			return $valueString;
+		}
+		// List inputs that map internal values to display labels themselves at
+		// render time (using "possible_values") must receive the raw internal
+		// values (e.g. page names), not labels. Converting here would lose the
+		// internal value and corrupt any value whose label contains the
+		// delimiter (e.g. a display title "Hoi, Hoi" with a "," delimiter). See
+		// PFTokensInput / PFCheckboxesInput / PFListBoxInput / PFTreeInput. (T427758)
+		if ( in_array( $this->mInputType, [ 'tokens', 'checkboxes', 'listbox', 'tree' ], true ) ) {
 			return $valueString;
 		}
 		if ( $delimiter !== null ) {

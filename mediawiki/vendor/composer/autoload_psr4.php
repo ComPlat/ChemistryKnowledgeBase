@@ -92,10 +92,9 @@ return array(
     'Elastic\\Elasticsearch\\' => array($vendorDir . '/elasticsearch/elasticsearch/src'),
     'Deserializers\\' => array($vendorDir . '/serialization/serialization/src/Deserializers'),
     'DataValues\\' => array($vendorDir . '/data-values/common/src/DataValues', $vendorDir . '/data-values/data-values/src'),
+    'DIQA\\WikiFarm\\' => array($baseDir . '/extensions/WikiFarm/src'),
     'DIQA\\Formatter\\' => array($vendorDir . '/diqa/formatter/src', $vendorDir . '/diqa/formatter/test'),
-    'DIQA\\FacetedSearch\\Maintenance\\' => array($baseDir . '/extensions/EnhancedRetrieval/maintenance'),
-    'DIQA\\FacetedSearch\\' => array($baseDir . '/extensions/EnhancedRetrieval/src/FacetedSearch'),
-    'DIQA\\FacetedSearch2\\' => array($baseDir . '/extensions/WikiFarm/src', $baseDir . '/extensions/FacetedSearch2/src'),
+    'DIQA\\FacetedSearch2\\' => array($baseDir . '/extensions/FacetedSearch2/src'),
     'DIQA\\' => array($baseDir . '/extensions/PageImport/src', $baseDir . '/extensions/PageImport/test'),
     'Composer\\Semver\\' => array($vendorDir . '/composer/semver/src'),
     'Composer\\Pcre\\' => array($vendorDir . '/composer/pcre/src'),
@@ -106,5 +105,4 @@ return array(
     'CLDRPluralRuleParser\\' => array($vendorDir . '/wikimedia/cldr-plural-rule-parser/src'),
     'Bootstrap\\Tests\\' => array($baseDir . '/extensions/Bootstrap/tests/phpunit'),
     'Bootstrap\\' => array($baseDir . '/extensions/Bootstrap/src'),
-    'Apache\\Solr\\' => array($baseDir . '/extensions/EnhancedRetrieval/src/SolrPhpClient/Apache/Solr'),
 );

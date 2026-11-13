@@ -62,10 +62,6 @@ abstract class AbstractDecoratorWriter extends \PhpOffice\PhpPresentation\Writer
      */
     protected function writeBorder(XMLWriter $objWriter, Border $pBorder, string $pElementName = 'L', bool $isMarker = false): void
     {
-        if (!($pBorder instanceof Border)) {
-            return;
-        }
-
         if (Border::LINE_NONE == $pBorder->getLineStyle() && '' == $pElementName && !$isMarker) {
             return;
         }
@@ -84,15 +80,19 @@ abstract class AbstractDecoratorWriter extends \PhpOffice\PhpPresentation\Writer
         $objWriter->writeAttribute('algn', 'ctr');
 
         // Fill?
+        $borderColor = $pBorder->getColor();
         if (Border::LINE_NONE == $pBorder->getLineStyle()) {
             // a:noFill
             $objWriter->writeElement('a:noFill', null);
-        } else {
+        } elseif (null !== $borderColor) {
             // a:solidFill
             $objWriter->startElement('a:solidFill');
-            $this->writeColor($objWriter, $pBorder->getColor());
+            $this->writeColor($objWriter, $borderColor);
             $objWriter->endElement();
         }
+        // A border that names no colour is written without a fill of its own. The group is optional
+        // in CT_LineProperties, and leaving it out is how the line takes its colour from the theme;
+        // the width, the compound and the dash below are written either way.
 
         // Dash
         $objWriter->startElement('a:prstDash');
@@ -137,13 +137,20 @@ abstract class AbstractDecoratorWriter extends \PhpOffice\PhpPresentation\Writer
         $objWriter->endElement();
     }
 
+    /**
+     * @param null|Fill $pFill a data point that has no fill in the sparse map of its series arrives
+     *                         here as `null`; a shape whose fill was taken away arrives as `FILL_UNSET`
+     */
     protected function writeFill(XMLWriter $objWriter, ?Fill $pFill): void
     {
-        if (!$pFill) {
+        // A fill nobody asked for is written as nothing at all, so that the shape takes the one its
+        // theme or its placeholder gives it. This is what a `null` fill has always been written as.
+        if (null === $pFill || Fill::FILL_UNSET == $pFill->getFillType()) {
             return;
         }
 
-        // Is it a fill?
+        // A fill refused outright is `a:noFill` -- without this it would fall through to the
+        // pattern fill at the end
         if (Fill::FILL_NONE == $pFill->getFillType()) {
             $objWriter->writeElement('a:noFill');
 
@@ -210,6 +217,14 @@ abstract class AbstractDecoratorWriter extends \PhpOffice\PhpPresentation\Writer
     {
         // a:pattFill
         $objWriter->startElement('a:pattFill');
+
+        // The pattern itself. Without `prst` the element carries two colours and no pattern, which
+        // is what every pattern fill written here used to come out as -- and it is valid, because
+        // the schema has the attribute optional, so nothing ever said so. A fill type that names no
+        // preset is written as it was before, rather than as an attribute the schema would refuse.
+        if (in_array($pFill->getFillType(), Fill::PATTERN_TYPES, true)) {
+            $objWriter->writeAttribute('prst', $pFill->getFillType());
+        }
 
         // fgClr
         $objWriter->startElement('a:fgClr');

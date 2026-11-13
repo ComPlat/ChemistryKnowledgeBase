@@ -48,12 +48,12 @@
   },
   "autoload": {
     "psr-4": {
-      "DIQA\\FacetedSearch2\\": [ "src/" ]
+      "DIQA\\WikiFarm\\": [ "src/" ]
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "DIQA\\FacetedSearch2\\": [ "test/src/" ]
+      "DIQA\\WikiFarm\\": [ "test/src/" ]
     }
   },
   "require-dev": {

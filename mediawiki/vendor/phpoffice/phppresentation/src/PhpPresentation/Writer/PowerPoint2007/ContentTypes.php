@@ -25,6 +25,7 @@ use PhpOffice\Common\XMLWriter;
 use PhpOffice\PhpPresentation\Shape\Chart as ShapeChart;
 use PhpOffice\PhpPresentation\Shape\Comment;
 use PhpOffice\PhpPresentation\Shape\Drawing\AbstractDrawingAdapter;
+use PhpOffice\PhpPresentation\Shared\Metafile;
 
 /**
  * \PhpOffice\PhpPresentation\Writer\PowerPoint2007\ContentTypes.
@@ -48,9 +49,6 @@ class ContentTypes extends AbstractDecoratorWriter
 
         // XML
         $this->writeDefaultContentType($objWriter, 'xml', 'application/xml');
-
-        // SVG
-        $this->writeDefaultContentType($objWriter, 'svg', 'image/svg+xml');
 
         // Presentation
         $this->writeOverrideContentType($objWriter, '/ppt/presentation.xml', 'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml');
@@ -89,7 +87,7 @@ class ContentTypes extends AbstractDecoratorWriter
             if (count($oSlide->getNote()->getShapeCollection()) > 0) {
                 $this->writeOverrideContentType($objWriter, '/ppt/notesSlides/notesSlide' . ($i + 1) . '.xml', 'application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml');
             }
-            foreach ($oSlide->getShapeCollection() as $oShape) {
+            foreach ($this->flattenShapes($oSlide->getShapeCollection()) as $oShape) {
                 if ($oShape instanceof Comment) {
                     $this->writeOverrideContentType($objWriter, '/ppt/comments/comment' . ($i + 1) . '.xml', 'application/vnd.openxmlformats-officedocument.presentationml.comments+xml');
                     $hasComments = true;
@@ -106,11 +104,12 @@ class ContentTypes extends AbstractDecoratorWriter
         // Add media content-types
         $aMediaContentTypes = [];
 
-        // GIF, JPEG, PNG
+        // GIF, JPEG, PNG, SVG
         $aMediaContentTypes['gif'] = 'image/gif';
         $aMediaContentTypes['jpg'] = 'image/jpeg';
         $aMediaContentTypes['jpeg'] = 'image/jpeg';
         $aMediaContentTypes['png'] = 'image/png';
+        $aMediaContentTypes['svg'] = 'image/svg+xml';
         foreach ($aMediaContentTypes as $key => $value) {
             $this->writeDefaultContentType($objWriter, $key, $value);
         }
@@ -132,6 +131,18 @@ class ContentTypes extends AbstractDecoratorWriter
             } elseif ($shapeIndex instanceof AbstractDrawingAdapter) {
                 $extension = strtolower($shapeIndex->getExtension());
                 $mimeType = $shapeIndex->getMimeType();
+
+                // Normalize any odd returns (some environments report "image/svg")
+                if ($extension === 'svg') {
+                    $mimeType = 'image/svg+xml';
+                }
+                // PowerPoint names the metafiles by their `x-` types, whatever the environment says
+                if ($extension === 'wmf') {
+                    $mimeType = Metafile::MIME_WMF;
+                }
+                if ($extension === 'emf') {
+                    $mimeType = Metafile::MIME_EMF;
+                }
 
                 if (!isset($aMediaContentTypes[$extension])) {
                     $aMediaContentTypes[$extension] = $mimeType;

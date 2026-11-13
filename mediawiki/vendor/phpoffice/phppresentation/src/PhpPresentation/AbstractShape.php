@@ -69,7 +69,7 @@ abstract class AbstractShape implements ComparableInterface
     protected $height;
 
     /**
-     * @var null|Fill
+     * @var Fill
      */
     private $fill;
 
@@ -90,7 +90,7 @@ abstract class AbstractShape implements ComparableInterface
     /**
      * Shadow.
      *
-     * @var null|Shadow
+     * @var Shadow
      */
     protected $shadow;
 
@@ -119,6 +119,20 @@ abstract class AbstractShape implements ComparableInterface
     protected $name = '';
 
     /**
+     * Description, exposed to assistive technologies as the alternative text.
+     *
+     * @var string
+     */
+    protected $description = '';
+
+    /**
+     * Decorative, ie the shape is ignored by assistive technologies.
+     *
+     * @var bool
+     */
+    protected $decorative = false;
+
+    /**
      * Create a new self.
      */
     public function __construct()
@@ -139,12 +153,8 @@ abstract class AbstractShape implements ComparableInterface
         $this->container = null;
         $this->name = $this->name;
         $this->border = clone $this->border;
-        if (isset($this->fill)) {
-            $this->fill = clone $this->fill;
-        }
-        if (isset($this->shadow)) {
-            $this->shadow = clone $this->shadow;
-        }
+        $this->fill = clone $this->fill;
+        $this->shadow = clone $this->shadow;
         if (isset($this->placeholder)) {
             $this->placeholder = clone $this->placeholder;
         }
@@ -214,6 +224,46 @@ abstract class AbstractShape implements ComparableInterface
     public function setName(string $pValue = ''): self
     {
         $this->name = $pValue;
+
+        return $this;
+    }
+
+    /**
+     * Get Description.
+     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    /**
+     * Set Description.
+     *
+     * @return static
+     */
+    public function setDescription(string $pValue = ''): self
+    {
+        $this->description = $pValue;
+
+        return $this;
+    }
+
+    /**
+     * Is the shape decorative, ie ignored by assistive technologies?
+     */
+    public function isDecorative(): bool
+    {
+        return $this->decorative;
+    }
+
+    /**
+     * Set the shape as decorative, ie ignored by assistive technologies.
+     *
+     * @return static
+     */
+    public function setDecorative(bool $pValue = true): self
+    {
+        $this->decorative = $pValue;
 
         return $this;
     }
@@ -335,14 +385,21 @@ abstract class AbstractShape implements ComparableInterface
         return $this;
     }
 
-    public function getFill(): ?Fill
+    public function getFill(): Fill
     {
         return $this->fill;
     }
 
+    /**
+     * A shape is born with a fill, and asking for it to be taken away replaces it with one of type
+     * `Fill::FILL_UNSET` rather than with a null: every writer reads it without asking whether it is
+     * there. A shape that never named a fill writes none, which is what a null used to mean.
+     *
+     * @param null|Fill $pValue passing `null` is deprecated, pass a `Fill` of type `Fill::FILL_UNSET`
+     */
     public function setFill(?Fill $pValue = null): self
     {
-        $this->fill = $pValue;
+        $this->fill = $pValue ?? (new Fill())->setFillType(Fill::FILL_UNSET);
 
         return $this;
     }
@@ -352,17 +409,27 @@ abstract class AbstractShape implements ComparableInterface
         return $this->border;
     }
 
-    public function getShadow(): ?Shadow
+    public function setBorder(Border $border): self
+    {
+        $this->border = $border;
+
+        return $this;
+    }
+
+    public function getShadow(): Shadow
     {
         return $this->shadow;
     }
 
     /**
+     * A shape is born with a shadow, and asking for it to be taken away replaces it with a fresh
+     * one rather than with a null: every writer reads it without asking whether it is there.
+     *
      * @return $this
      */
     public function setShadow(?Shadow $pValue = null)
     {
-        $this->shadow = $pValue;
+        $this->shadow = $pValue ?? new Shadow();
 
         return $this;
     }
@@ -404,7 +471,7 @@ abstract class AbstractShape implements ComparableInterface
      */
     public function getHashCode(): string
     {
-        return md5((is_object($this->container) ? $this->container->getHashCode() : '') . $this->offsetX . $this->offsetY . $this->width . $this->height . $this->rotation . (null === $this->getFill() ? '' : $this->getFill()->getHashCode()) . (null === $this->shadow ? '' : $this->shadow->getHashCode()) . (null === $this->hyperlink ? '' : $this->hyperlink->getHashCode()) . __CLASS__);
+        return md5((is_object($this->container) ? $this->container->getHashCode() : '') . $this->offsetX . $this->offsetY . $this->width . $this->height . $this->rotation . $this->getFill()->getHashCode() . (null === $this->shadow ? '' : $this->shadow->getHashCode()) . (null === $this->hyperlink ? '' : $this->hyperlink->getHashCode()) . __CLASS__);
     }
 
     /**

@@ -22,6 +22,7 @@ namespace PhpOffice\PhpPresentation\Shape\Drawing;
 
 use PhpOffice\Common\File as CommonFile;
 use PhpOffice\PhpPresentation\Exception\FileNotFoundException;
+use PhpOffice\PhpPresentation\Shared\Metafile;
 
 class File extends AbstractDrawingAdapter
 {
@@ -55,7 +56,17 @@ class File extends AbstractDrawingAdapter
 
         if ($pVerifyFile) {
             if (0 == $this->width && 0 == $this->height) {
-                [$this->width, $this->height] = getimagesize($this->getPath());
+                // Not every file a shape can carry is one `getimagesize()` can measure -- an SVG
+                // and a video both come back as `false`, and a size of nothing is what they had
+                // before this asked.
+                $imageSize = getimagesize($this->getPath());
+                if (!is_array($imageSize)) {
+                    // a metafile has a size too, which only phpoffice/wmf can measure
+                    $imageSize = Metafile::getImageSize(CommonFile::fileGetContents($this->getPath()));
+                }
+                if (is_array($imageSize)) {
+                    [$this->width, $this->height] = $imageSize;
+                }
             }
         }
 
@@ -69,7 +80,20 @@ class File extends AbstractDrawingAdapter
 
     public function getExtension(): string
     {
-        return pathinfo($this->getPath(), PATHINFO_EXTENSION);
+        $extension = pathinfo($this->getPath(), PATHINFO_EXTENSION);
+        if ('' !== $extension || !CommonFile::fileExists($this->getPath())) {
+            return $extension;
+        }
+
+        // a path is free to carry no extension; the contents still say what the image is
+        $contents = CommonFile::fileGetContents($this->getPath());
+        $image = getimagesizefromstring($contents);
+        if (is_array($image)) {
+            return (string) image_type_to_extension($image[2], false);
+        }
+        $mimeType = Metafile::getMimeType($contents);
+
+        return null !== $mimeType ? (string) Metafile::getExtension($mimeType) : '';
     }
 
     public function getMimeType(): string
@@ -77,13 +101,14 @@ class File extends AbstractDrawingAdapter
         if (!CommonFile::fileExists($this->getPath())) {
             throw new FileNotFoundException($this->getPath());
         }
-        $image = getimagesizefromstring(CommonFile::fileGetContents($this->getPath()));
+        $contents = CommonFile::fileGetContents($this->getPath());
+        $image = getimagesizefromstring($contents);
 
         if (is_array($image)) {
             return image_type_to_mime_type($image[2]);
         }
 
-        return mime_content_type($this->getPath());
+        return Metafile::getMimeType($contents) ?? mime_content_type($this->getPath());
     }
 
     public function getIndexedFilename(): string

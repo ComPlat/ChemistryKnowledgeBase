@@ -170,6 +170,9 @@ div.demoted {
 #fs-facets {
     display: flex;
     flex-direction: column;
+    white-space: break-spaces;
+    word-break: break-all;
+    text-overflow: ellipsis;
     overflow: clip;
 
 }
@@ -180,9 +183,7 @@ div.demoted {
 
 #fs-facetview {
     max-width: 100%;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: clip;
+
 }
 
 

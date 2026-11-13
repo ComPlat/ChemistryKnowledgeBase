@@ -46,6 +46,13 @@ class Series implements ComparableInterface
     protected $dataPointFills = [];
 
     /**
+     * DataPointOutlines (key/value).
+     *
+     * @var array<int, Outline>
+     */
+    protected $dataPointOutlines = [];
+
+    /**
      * Data Label Number Format.
      *
      * @var string
@@ -58,14 +65,21 @@ class Series implements ComparableInterface
     protected $separator;
 
     /**
-     * @var null|Fill
+     * @var Fill
      */
     protected $fill;
 
     /**
-     * @var null|Font
+     * @var Font
      */
     protected $font;
+
+    /**
+     * The fill behind the data labels, not behind the series itself.
+     *
+     * @var Fill
+     */
+    protected $labelFill;
 
     /**
      * @var string
@@ -134,7 +148,7 @@ class Series implements ComparableInterface
     /**
      * Values (key/value).
      *
-     * @var array<string, null|string>
+     * @var array<array-key, null|string>
      */
     private $values = [];
 
@@ -146,11 +160,13 @@ class Series implements ComparableInterface
     private $hashIndex;
 
     /**
-     * @param array<string, null|string> $values
+     * @param array<array-key, null|string> $values
      */
     public function __construct(string $title = 'Series Title', array $values = [])
     {
         $this->fill = new Fill();
+        // the labels are born with no fill of their own: the application draws them as it always did
+        $this->labelFill = (new Fill())->setFillType(Fill::FILL_UNSET);
         $this->font = new Font();
         $this->font->setName('Calibri');
         $this->font->setSize(9);
@@ -204,14 +220,43 @@ class Series implements ComparableInterface
         return $this;
     }
 
-    public function getFill(): ?Fill
+    public function getFill(): Fill
     {
         return $this->fill;
     }
 
+    /**
+     * A series is born with a fill, and asking for it to be taken away replaces it with one of type
+     * `Fill::FILL_UNSET` rather than with a null: every writer reads it without asking whether it is
+     * there. A series that never named a fill leaves the colour to the application, which is what a
+     * null used to mean.
+     *
+     * @param null|Fill $fill passing `null` is deprecated, pass a `Fill` of type `Fill::FILL_UNSET`
+     */
     public function setFill(?Fill $fill = null): self
     {
-        $this->fill = $fill;
+        $this->fill = $fill ?? (new Fill())->setFillType(Fill::FILL_UNSET);
+
+        return $this;
+    }
+
+    /**
+     * The fill drawn behind the data labels. A series that never named one carries a fill of type
+     * `Fill::FILL_UNSET`, which is written as nothing at all.
+     */
+    public function getLabelFill(): Fill
+    {
+        return $this->labelFill;
+    }
+
+    /**
+     * A semi-transparent plate under the labels is a `Fill::FILL_SOLID` whose colour carries an
+     * alpha, e.g. `new Color('D6FFFFFF')`. Asking for the fill to be taken away replaces it with
+     * one of type `Fill::FILL_UNSET` rather than with a null, as `setFill()` does.
+     */
+    public function setLabelFill(?Fill $fill = null): self
+    {
+        $this->labelFill = $fill ?? (new Fill())->setFillType(Fill::FILL_UNSET);
 
         return $this;
     }
@@ -229,6 +274,16 @@ class Series implements ComparableInterface
     }
 
     /**
+     * @param int $dataPointIndex data point index
+     */
+    public function setDataPointFill(int $dataPointIndex, Fill $fill): self
+    {
+        $this->dataPointFills[$dataPointIndex] = $fill;
+
+        return $this;
+    }
+
+    /**
      * @return Fill[]
      */
     public function getDataPointFills(): array
@@ -237,9 +292,52 @@ class Series implements ComparableInterface
     }
 
     /**
+     * @param int $dataPointIndex data point index
+     */
+    public function getDataPointOutline(int $dataPointIndex): Outline
+    {
+        if (!isset($this->dataPointOutlines[$dataPointIndex])) {
+            $this->dataPointOutlines[$dataPointIndex] = new Outline();
+        }
+
+        return $this->dataPointOutlines[$dataPointIndex];
+    }
+
+    /**
+     * @param int $dataPointIndex data point index
+     */
+    public function setDataPointOutline(int $dataPointIndex, Outline $outline): self
+    {
+        $this->dataPointOutlines[$dataPointIndex] = $outline;
+
+        return $this;
+    }
+
+    /**
+     * @return Outline[]
+     */
+    public function getDataPointOutlines(): array
+    {
+        return $this->dataPointOutlines;
+    }
+
+    /**
+     * The indexes of the data points carrying a fill or an outline of their own.
+     *
+     * @return array<int, int>
+     */
+    public function getDataPointIndexes(): array
+    {
+        $indexes = array_keys($this->dataPointFills + $this->dataPointOutlines);
+        sort($indexes);
+
+        return $indexes;
+    }
+
+    /**
      * Get Values.
      *
-     * @return array<string, null|string>
+     * @return array<array-key, null|string>
      */
     public function getValues(): array
     {
@@ -249,7 +347,7 @@ class Series implements ComparableInterface
     /**
      * Set Values.
      *
-     * @param array<string, null|string> $values
+     * @param array<array-key, null|string> $values
      */
     public function setValues(array $values = []): self
     {
@@ -400,7 +498,7 @@ class Series implements ComparableInterface
     /**
      * Get font.
      */
-    public function getFont(): ?Font
+    public function getFont(): Font
     {
         return $this->font;
     }
@@ -412,7 +510,7 @@ class Series implements ComparableInterface
      */
     public function setFont(?Font $pFont = null): self
     {
-        $this->font = $pFont;
+        $this->font = $pFont ?? new Font();
 
         return $this;
     }

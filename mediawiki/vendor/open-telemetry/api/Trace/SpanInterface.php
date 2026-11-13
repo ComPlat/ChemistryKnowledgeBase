@@ -9,6 +9,8 @@ use OpenTelemetry\Context\ImplicitContextKeyedInterface;
 use Throwable;
 
 /**
+ * Implementations MUST be safe for concurrent use, for example from multiple fibers.
+ *
  * @see https://github.com/open-telemetry/opentelemetry-specification/blob/v1.6.1/specification/trace/api.md#span-operations
  */
 interface SpanInterface extends ImplicitContextKeyedInterface
@@ -100,7 +102,7 @@ interface SpanInterface extends ImplicitContextKeyedInterface
     /**
      * @see https://github.com/open-telemetry/opentelemetry-specification/blob/v1.6.1/specification/trace/api.md#set-status
      *
-     * @psalm-param StatusCode::STATUS_* $code
+     * @param StatusCode::STATUS_* $code
      */
     public function setStatus(string $code, ?string $description = null): SpanInterface;
 

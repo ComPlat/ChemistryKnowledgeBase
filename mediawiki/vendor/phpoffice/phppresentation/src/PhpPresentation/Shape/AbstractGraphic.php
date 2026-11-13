@@ -43,13 +43,6 @@ abstract class AbstractGraphic extends AbstractShape implements ComparableInterf
     private $imageIndex = 0;
 
     /**
-     * Description.
-     *
-     * @var string
-     */
-    protected $description;
-
-    /**
      * Proportional resize.
      *
      * @var bool
@@ -70,7 +63,6 @@ abstract class AbstractGraphic extends AbstractShape implements ComparableInterf
     {
         // Initialise values
         $this->name = '';
-        $this->description = '';
         $this->resizeProportional = true;
 
         // Set image index
@@ -97,30 +89,6 @@ abstract class AbstractGraphic extends AbstractShape implements ComparableInterf
     public function getImageIndex()
     {
         return $this->imageIndex;
-    }
-
-    /**
-     * Get Description.
-     *
-     * @return string
-     */
-    public function getDescription()
-    {
-        return $this->description;
-    }
-
-    /**
-     * Set Description.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setDescription($pValue = '')
-    {
-        $this->description = $pValue;
-
-        return $this;
     }
 
     /**
@@ -170,17 +138,25 @@ abstract class AbstractGraphic extends AbstractShape implements ComparableInterf
      */
     public function setWidthAndHeight(int $width = 0, int $height = 0)
     {
-        $xratio = $width / $this->width;
-        $yratio = $height / $this->height;
-        if ($this->resizeProportional && !(0 == $width || 0 == $height)) {
+        // There is a proportion to keep only when all four numbers are there: a shape with no
+        // dimensions yet has no ratio, and neither has one asked for a zero dimension. Where
+        // there is none to keep, both dimensions are set as they are asked for.
+        if ($this->resizeProportional && 0 != $width && 0 != $height && 0 != $this->width && 0 != $this->height) {
+            $xratio = $width / $this->width;
+            $yratio = $height / $this->height;
             if (($xratio * $this->height) < $height) {
-                $this->height = (int) ceil($xratio * $this->height);
                 $this->width = $width;
+                $this->height = (int) ceil($xratio * $this->height);
             } else {
                 $this->width = (int) ceil($yratio * $this->width);
                 $this->height = $height;
             }
+
+            return $this;
         }
+
+        $this->width = $width;
+        $this->height = $height;
 
         return $this;
     }

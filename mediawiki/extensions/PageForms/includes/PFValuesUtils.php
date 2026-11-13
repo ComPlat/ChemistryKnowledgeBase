@@ -9,7 +9,6 @@
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
-use SMW\SMWQueryProcessor;
 
 class PFValuesUtils {
 
@@ -62,13 +61,7 @@ class PFValuesUtils {
 	 * @return array
 	 */
 	public static function getCategoriesForPage( $title ) {
-		$db = PFUtils::getReadDB();
-		if ( !$db->fieldExists( 'categorylinks', 'cl_to', __METHOD__ ) ) {
-			// MW 1.45+
-			// Just call the original function, instead of
-			// trying to create a simplified version of it.
-			return $title->getParentCategories();
-		}
+		$dbr = PFUtils::getReadDB();
 
 		$categories = [];
 		$titlekey = $title->getArticleID();
@@ -76,8 +69,24 @@ class PFValuesUtils {
 			// Something's wrong - exit
 			return $categories;
 		}
+
+		if ( !$dbr->fieldExists( 'categorylinks', 'cl_to', __METHOD__ ) ) {
+			// MW 1.45+
+			$res = $dbr->newSelectQueryBuilder()
+				->select( 'lt_title' )
+				->from( 'categorylinks' )
+				->join( 'linktarget', null, 'cl_target_id = lt_id' )
+				->where( [ 'cl_from' => $titlekey, 'lt_namespace' => NS_CATEGORY ] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
+			foreach ( $res as $row ) {
+				$categories[] = $row->lt_title;
+			}
+			return $categories;
+		}
+
 		$conditions = [ 'cl_from' => $titlekey ];
-		$res = $db->select(
+		$res = $dbr->select(
 			'categorylinks',
 			'DISTINCT cl_to',
 			$conditions,
@@ -848,23 +857,59 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 * Helper function to get an array of values out of what may be either
 	 * an array or a delimited string.
 	 *
+	 * The values returned are always the "raw" internal values (e.g. page
+	 * names), never their display labels. Mapping internal values to display
+	 * labels (display titles, "mapping property", etc.) is the responsibility
+	 * of the individual input, which keeps the value/label association intact
+	 * - see PFValuesUtils::getValueLabelMap() and
+	 * PFMappingUtils::getMappedValuesForInput(). Converting to labels here was
+	 * lossy: it discarded the internal value and corrupted any value whose
+	 * label contained the delimiter (e.g. a display title "Hoi, Hoi" with a
+	 * "," delimiter). (T427758)
+	 *
 	 * @param string[]|string $value
 	 * @param string $delimiter
 	 * @return string[]
 	 */
 	public static function getValuesArray( $value, $delimiter ) {
-		global $wgPageFormsUseDisplayTitle;
-
 		if ( is_array( $value ) ) {
 			return $value;
 		} elseif ( $value == null ) {
 			return [];
 		} else {
-			$values = array_map( 'trim', explode( $delimiter, $value ) );
-			return $wgPageFormsUseDisplayTitle
-				? array_values( PFMappingUtils::getLabelsForTitles( $values ) )
-				: $values;
+			return array_map( 'trim', explode( $delimiter, $value ) );
 		}
+	}
+
+	/**
+	 * Normalize a field's "possible_values" into an associative
+	 * [ internalValue => displayLabel ] map.
+	 *
+	 * Mapped fields (display titles, "mapping property"/"mapping template"/
+	 * Cargo mapping) already provide an associative [ pageName => label ]
+	 * array. Unmapped fields provide an indexed list of values, with labels
+	 * supplied separately via "value_labels". This collapses both shapes into
+	 * a single representation so inputs can render value=internal, text=label
+	 * consistently. (T427758)
+	 *
+	 * @param array $possibleValues
+	 * @param array|null $valueLabels
+	 * @return array
+	 */
+	public static function getValueLabelMap( array $possibleValues, ?array $valueLabels = null ) {
+		$map = [];
+		foreach ( $possibleValues as $key => $value ) {
+			if ( is_string( $key ) ) {
+				// Associative: already [ internalValue => label ].
+				$map[$key] = $value;
+			} else {
+				// Indexed: $value is the internal value; look up its label.
+				$map[$value] = ( $valueLabels !== null && array_key_exists( $value, $valueLabels ) )
+					? $valueLabels[$value]
+					: $value;
+			}
+		}
+		return $map;
 	}
 
 	public static function getValuesFromExternalURL( $external_url_alias, $substring ) {

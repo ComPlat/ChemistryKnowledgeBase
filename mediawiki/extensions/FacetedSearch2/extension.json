@@ -1,9 +1,9 @@
 {
 	"name": "FacetedSearch2",
 	"author": [
-		"[https://www.diqa.de DIQA]"
+		"Kai Kühn ([https://www.diqa.de DIQA])"
 	],
-	"url": "https://github.com/kkthek/faceted-search2",
+	"url": "https://github.com/kkthek/faceted-search-2",
 	"descriptionmsg": "facetedsearch2-desc",
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
@@ -62,9 +62,9 @@
 			"class": "DIQA\\FacetedSearch2\\Endpoints\\FacetQueryEndpoint"
 		},
         {
-          "path": "/FacetedSearch2/v1/proxy/category-tree",
-          "method": "POST",
-          "class": "DIQA\\FacetedSearch2\\Endpoints\\CategoryTreeEndpoint"
+            "path": "/FacetedSearch2/v1/proxy/category-tree",
+            "method": "POST",
+            "class": "DIQA\\FacetedSearch2\\Endpoints\\CategoryTreeEndpoint"
         }
 	],
 	"config_prefix": "fs2g",
@@ -223,7 +223,7 @@
 		},
         "ExportLinkFormats": {
             "value": [],
-            "description": "Shows export links in the specified formats: json, csv, rdf, rss"
+            "description": "Shows export links in the specified formats: json, csv, rdf, rss. Requires the 'SMW'-extension to be installed."
         },
 		"HeaderControlOrder": {
 			"value": [],
@@ -251,7 +251,7 @@
 		},
 		"DateTimeZone": {
 			"value": "Europe/Berlin",
-			"description": "Adds/Subtracts an offset regarding the timezone to the datatime values which are stored in UTC"
+			"description": "Adds/Subtracts an offset regarding the timezone to the datetime values which are stored in UTC"
 		},
         "TagCloudProperty": {
             "value": false,

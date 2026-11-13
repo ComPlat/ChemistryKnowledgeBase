@@ -23,12 +23,11 @@ final class Header
             foreach (self::splitList($value) as $val) {
                 $part = [];
                 foreach (self::splitParameters($val) as $kvp) {
-                    if (preg_match_all('/<[^>]+>|[^=]+/', $kvp, $matches)) {
-                        $m = $matches[0];
-                        if (isset($m[1])) {
-                            $part[trim($m[0], $trimmed)] = trim($m[1], $trimmed);
+                    if (preg_match('/^=*(<[^>]+>|[^=]+)=*(.*)$/Ds', $kvp, $matches)) {
+                        if ($matches[2] !== '') {
+                            $part[trim($matches[1], $trimmed)] = trim($matches[2], $trimmed);
                         } else {
-                            $part[] = trim($m[0], $trimmed);
+                            $part[] = trim($matches[1], $trimmed);
                         }
                     }
                 }
@@ -95,6 +94,8 @@ final class Header
      */
     public static function normalize($header): array
     {
+        \trigger_deprecation('guzzlehttp/psr7', '2.3', 'Header::normalize() is deprecated and will be removed in guzzlehttp/psr7 3.0. Use Header::splitList() instead.');
+
         $result = [];
         foreach ((array) $header as $value) {
             foreach (self::splitList($value) as $parsed) {
@@ -142,7 +143,7 @@ final class Header
                 }
 
                 if (!$isQuoted && $value[$i] === ',') {
-                    $v = \trim($v);
+                    $v = \trim($v, " \n\r\t\0\x0B");
                     if ($v !== '') {
                         $result[] = $v;
                     }
@@ -167,7 +168,7 @@ final class Header
                 $v .= $value[$i];
             }
 
-            $v = \trim($v);
+            $v = \trim($v, " \n\r\t\0\x0B");
             if ($v !== '') {
                 $result[] = $v;
             }

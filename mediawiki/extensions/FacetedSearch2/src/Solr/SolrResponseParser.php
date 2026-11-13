@@ -167,7 +167,7 @@ class SolrResponseParser {
         return $long;
     }
 
-    public function parseFacetResponse(): FacetResponse {
+    public function parseFacetResponse(array $statProperties = []): FacetResponse {
         $r = null;
         $propertyValueCount = [] /* @var PropertyValueCount[] */;
         $ranges = [];
@@ -201,6 +201,18 @@ class SolrResponseParser {
             $ranges[$property->title][] = $r;
             $properties[$property->title] = $property;
         }
+
+        // fill with properties that have empty ranges
+        foreach( $statProperties as $p) {
+            if (array_key_exists($p->getTitle(), $properties)) {
+                continue;
+            }
+            $propertyWithURL = new PropertyWithURL($p->getTitle(), $p->getTitle(), $p->getType(),
+                WikiTools::createURLForProperty($p->getTitle()));
+            $properties[$p->getTitle()] = $propertyWithURL;
+            $ranges[$p->getTitle()][] = new ValueCount(null, null, null, 0);
+        }
+
         foreach ($properties as $key => $property) {
             $propertyValueCount[] = new PropertyValueCount($property, $ranges[$key]);
         }

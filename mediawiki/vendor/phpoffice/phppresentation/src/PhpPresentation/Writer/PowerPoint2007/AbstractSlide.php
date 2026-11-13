@@ -34,11 +34,14 @@ use PhpOffice\PhpPresentation\Shape\Drawing\AbstractDrawingAdapter;
 use PhpOffice\PhpPresentation\Shape\Drawing\File as ShapeDrawingFile;
 use PhpOffice\PhpPresentation\Shape\Drawing\Gd as ShapeDrawingGd;
 use PhpOffice\PhpPresentation\Shape\Group;
+use PhpOffice\PhpPresentation\Shape\Hyperlink;
 use PhpOffice\PhpPresentation\Shape\Line;
 use PhpOffice\PhpPresentation\Shape\Media;
 use PhpOffice\PhpPresentation\Shape\Placeholder;
 use PhpOffice\PhpPresentation\Shape\RichText;
 use PhpOffice\PhpPresentation\Shape\RichText\BreakElement;
+use PhpOffice\PhpPresentation\Shape\RichText\Field;
+use PhpOffice\PhpPresentation\Shape\RichText\Numbering;
 use PhpOffice\PhpPresentation\Shape\RichText\Paragraph;
 use PhpOffice\PhpPresentation\Shape\RichText\Run;
 use PhpOffice\PhpPresentation\Shape\RichText\TextElement;
@@ -50,11 +53,99 @@ use PhpOffice\PhpPresentation\Style\Alignment;
 use PhpOffice\PhpPresentation\Style\Border;
 use PhpOffice\PhpPresentation\Style\Bullet;
 use PhpOffice\PhpPresentation\Style\Color;
+use PhpOffice\PhpPresentation\Style\Fill;
 use PhpOffice\PhpPresentation\Style\Font;
 use PhpOffice\PhpPresentation\Style\Shadow;
 
 abstract class AbstractSlide extends AbstractDecoratorWriter
 {
+    /**
+     * Write the relationships of every hyperlink in a slide, a layout or a master: on a shape, on a
+     * run of its text and on a run in a table cell.
+     *
+     * @param string $slidesPath where the slides are from the part being written, empty from a slide
+     */
+    protected function writeHyperlinkRelations(AbstractSlideAlias $pSlide, XMLWriter $objWriter, int $relId, string $slidesPath = ''): int
+    {
+        // Loop trough hyperlinks and write relationships
+        foreach ($this->flattenShapes($pSlide->getShapeCollection()) as $shape) {
+            // Hyperlink on shape
+            if ($shape->hasHyperlink()) {
+                $this->writeHyperlinkRelationship($objWriter, $shape->getHyperlink(), $relId, $slidesPath);
+            }
+
+            // Hyperlink on rich text run
+            if ($shape instanceof RichText) {
+                foreach ($shape->getParagraphs() as $paragraph) {
+                    foreach ($paragraph->getRichTextElements() as $element) {
+                        if ($element instanceof Run || $element instanceof TextElement) {
+                            if ($element->hasHyperlink()) {
+                                $this->writeHyperlinkRelationship($objWriter, $element->getHyperlink(), $relId, $slidesPath);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Hyperlink in table
+            if ($shape instanceof ShapeTable) {
+                // Rows
+                $countRows = count($shape->getRows());
+                for ($row = 0; $row < $countRows; ++$row) {
+                    // Cells in rows
+                    $countCells = count($shape->getRow($row)->getCells());
+                    for ($cell = 0; $cell < $countCells; ++$cell) {
+                        $currentCell = $shape->getRow($row)->getCell($cell);
+                        // Paragraphs in cell
+                        foreach ($currentCell->getParagraphs() as $paragraph) {
+                            // RichText in paragraph
+                            foreach ($paragraph->getRichTextElements() as $element) {
+                                // Run or Text in RichText
+                                if ($element instanceof Run || $element instanceof TextElement) {
+                                    if ($element->hasHyperlink()) {
+                                        $this->writeHyperlinkRelationship($objWriter, $element->getHyperlink(), $relId, $slidesPath);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $relId;
+    }
+
+    /**
+     * Write the relationship a hyperlink needs, and remember the id it was given.
+     *
+     * A hyperlink that was never given a url has nothing to point at: the `a:hlinkClick` it is
+     * written as says to colour the text as a link, and there is no relationship to make. Writing
+     * one anyway leaves the package with an external target that is the empty string.
+     *
+     * @param string $slidesPath where the slides are from the part being written, empty from a slide
+     */
+    protected function writeHyperlinkRelationship(XMLWriter $objWriter, Hyperlink $hyperlink, int &$relId, string $slidesPath = ''): void
+    {
+        if ($hyperlink->isInternal()) {
+            $hyperlink->relationId = 'rId' . $relId;
+            $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', $slidesPath . 'slide' . $hyperlink->getSlideNumber() . '.xml');
+            ++$relId;
+
+            return;
+        }
+
+        if ('' === $hyperlink->getUrl()) {
+            $hyperlink->relationId = '';
+
+            return;
+        }
+
+        $hyperlink->relationId = 'rId' . $relId;
+        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
+        ++$relId;
+    }
+
     /**
      * @return mixed
      */
@@ -62,14 +153,14 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
     {
         if (count($pSlideMaster->getShapeCollection()) > 0) {
             // Loop trough images and write relationships
-            foreach ($pSlideMaster->getShapeCollection() as $shape) {
+            foreach ($this->flattenShapes($pSlideMaster->getShapeCollection()) as $shape) {
                 if ($shape instanceof ShapeDrawingFile || $shape instanceof ShapeDrawingGd) {
                     // Write relationship for image drawing
                     $this->writeRelationship(
                         $objWriter,
                         $relId,
                         'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
-                        '../media/' . str_replace(' ', '_', $shape->getIndexedFilename())
+                        '../media/' . str_replace(' ', '_', $this->writtenPart($shape)->getIndexedFilename())
                     );
                     $shape->relationId = 'rId' . $relId;
                     ++$relId;
@@ -79,36 +170,10 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
                         $objWriter,
                         $relId,
                         'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart',
-                        '../charts/' . $shape->getIndexedFilename()
+                        '../charts/' . $this->writtenPart($shape)->getIndexedFilename()
                     );
                     $shape->relationId = 'rId' . $relId;
                     ++$relId;
-                } elseif ($shape instanceof Group) {
-                    foreach ($shape->getShapeCollection() as $subShape) {
-                        if ($subShape instanceof ShapeDrawingFile ||
-                            $subShape instanceof ShapeDrawingGd
-                        ) {
-                            // Write relationship for image drawing
-                            $this->writeRelationship(
-                                $objWriter,
-                                $relId,
-                                'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
-                                '../media/' . str_replace(' ', '_', $subShape->getIndexedFilename())
-                            );
-                            $subShape->relationId = 'rId' . $relId;
-                            ++$relId;
-                        } elseif ($subShape instanceof ShapeChart) {
-                            // Write relationship for chart drawing
-                            $this->writeRelationship(
-                                $objWriter,
-                                $relId,
-                                'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart',
-                                '../charts/' . $subShape->getIndexedFilename()
-                            );
-                            $subShape->relationId = 'rId' . $relId;
-                            ++$relId;
-                        }
-                    }
                 }
             }
         }
@@ -154,6 +219,48 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
     }
 
     /**
+     * Write the decorative flag of a shape. It is an extension of `p:cNvPr`, so it has to be
+     * written as its last child.
+     *
+     * @param XMLWriter $objWriter XML Writer
+     */
+    protected function writeShapeDecorative(XMLWriter $objWriter, AbstractShape $shape): void
+    {
+        if (!$shape->isDecorative()) {
+            return;
+        }
+
+        // a:extLst
+        $objWriter->startElement('a:extLst');
+        $this->writeShapeDecorativeExtension($objWriter, $shape);
+        // > a:extLst
+        $objWriter->endElement();
+    }
+
+    /**
+     * Write the decorative extension of a shape, for callers writing their own `a:extLst`.
+     *
+     * @param XMLWriter $objWriter XML Writer
+     */
+    protected function writeShapeDecorativeExtension(XMLWriter $objWriter, AbstractShape $shape): void
+    {
+        if (!$shape->isDecorative()) {
+            return;
+        }
+
+        // a:ext
+        $objWriter->startElement('a:ext');
+        $objWriter->writeAttribute('uri', '{C183D7F6-B498-43B3-948B-1728B52AA6E4}');
+        // a:ext\adec:decorative
+        $objWriter->startElement('adec:decorative');
+        $objWriter->writeAttribute('xmlns:adec', 'http://schemas.microsoft.com/office/drawing/2017/decorative');
+        $objWriter->writeAttribute('val', '1');
+        $objWriter->endElement();
+        // > a:ext
+        $objWriter->endElement();
+    }
+
+    /**
      * Write txt.
      *
      * @param XMLWriter $objWriter XML Writer
@@ -172,10 +279,12 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         } else {
             $objWriter->writeAttribute('name', $shape->getName());
         }
+        $objWriter->writeAttribute('descr', $shape->getDescription());
         // Hyperlink
         if ($shape->hasHyperlink()) {
             $this->writeHyperlink($objWriter, $shape);
         }
+        $this->writeShapeDecorative($objWriter, $shape);
         // > p:sp\p:nvSpPr
         $objWriter->endElement();
         // p:sp\p:nvSpPr\p:cNvSpPr
@@ -245,7 +354,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
             if (RichText::WRAP_SQUARE != $shape->getWrap()) {
                 $objWriter->writeAttribute('wrap', $shape->getWrap());
             }
-            $objWriter->writeAttribute('rtlCol', '0');
+            $objWriter->writeAttribute('rtlCol', $shape->isColumnsRTL() ? '1' : '0');
             if (RichText::OVERFLOW_OVERFLOW != $shape->getHorizontalOverflow()) {
                 $objWriter->writeAttribute('horzOverflow', $shape->getHorizontalOverflow());
             }
@@ -337,6 +446,8 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->writeAttribute('id', $shapeId);
         $objWriter->writeAttribute('name', $shape->getName());
         $objWriter->writeAttribute('descr', $shape->getDescription());
+        $this->writeHyperlink($objWriter, $shape);
+        $this->writeShapeDecorative($objWriter, $shape);
         $objWriter->endElement();
         // p:graphicFrame/p:nvGraphicFramePr/p:cNvGraphicFramePr
         $objWriter->startElement('p:cNvGraphicFramePr');
@@ -379,8 +490,8 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->startElement('a:tbl');
         // p:graphicFrame/a:graphic/a:graphicData/a:tbl/a:tblPr
         $objWriter->startElement('a:tblPr');
-        $objWriter->writeAttribute('firstRow', '1');
-        $objWriter->writeAttribute('bandRow', '1');
+        $objWriter->writeAttributeIf($shape->isFirstRow(), 'firstRow', '1');
+        $objWriter->writeAttributeIf($shape->isBandRow(), 'bandRow', '1');
         $objWriter->endElement();
         // p:graphicFrame/a:graphic/a:graphicData/a:tbl/a:tblGrid
         $objWriter->startElement('a:tblGrid');
@@ -482,17 +593,19 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
                 $borderBottom = $currentCell->getBorders()->getBottom();
                 $borderDiagonalDown = $currentCell->getBorders()->getDiagonalDown();
                 $borderDiagonalUp = $currentCell->getBorders()->getDiagonalUp();
-                // Fix PowerPoint implementation
+                // Two cells share the edge between them, and PowerPoint draws it once. The rule is
+                // taken from the neighbour when the neighbour is the one that asked for it -- so the
+                // side that is inspected has to be the side that is copied, the one facing this cell.
                 if ($hasNextCellRight) {
                     $nextCellRight = $shape->getRow($row)->getCell($cell + 1);
-                    if ($nextCellRight->getBorders()->getRight()->getHashCode() != $defaultBorder->getHashCode()) {
+                    if ($nextCellRight->getBorders()->getLeft()->getHashCode() != $defaultBorder->getHashCode()) {
                         $borderRight = $nextCellRight->getBorders()->getLeft();
                     }
                 }
                 if ($hasNextRowBelow) {
                     $nextRowBelow = $shape->getRow($row + 1);
                     $nextCellBelow = $nextRowBelow->getCell($cell);
-                    if ($nextCellBelow->getBorders()->getBottom()->getHashCode() != $defaultBorder->getHashCode()) {
+                    if ($nextCellBelow->getBorders()->getTop()->getHashCode() != $defaultBorder->getHashCode()) {
                         $borderBottom = $nextCellBelow->getBorders()->getTop();
                     }
                 }
@@ -504,7 +617,20 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
                 $this->writeBorder($objWriter, $borderDiagonalDown, 'TlToBr');
                 $this->writeBorder($objWriter, $borderDiagonalUp, 'BlToTr');
                 // Fill
-                $this->writeFill($objWriter, $currentCell->getFill());
+                // A cell that was given no fill of its own is painted with the fill of its row,
+                // which OOXML cannot store on the row itself. A cell set to `FILL_NONE` asked for
+                // no fill and keeps its `a:noFill`, even where its row is painted
+                $fill = $currentCell->getFill();
+                if (Fill::FILL_UNSET === $fill->getFillType()) {
+                    $fill = $shape->getRow($row)->getFill();
+                }
+                if (Fill::FILL_UNSET === $fill->getFillType()) {
+                    // Neither the cell nor its row named a fill. PowerPoint would leave `a:tcPr`
+                    // empty and let the table style paint it; this library writes no table styles
+                    // yet, so the cell keeps the `a:noFill` it has always been written with
+                    $fill = new Fill();
+                }
+                $this->writeFill($objWriter, $fill);
                 $objWriter->endElement();
                 $objWriter->endElement();
             }
@@ -524,13 +650,14 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
      */
     protected function writeParagraphs(XMLWriter $objWriter, array $paragraphs): void
     {
+        $continuedStartAts = (new Numbering($paragraphs))->getContinuedStartAts();
         // Loop trough paragraphs
-        foreach ($paragraphs as $paragraph) {
+        foreach ($paragraphs as $key => $paragraph) {
             // a:p
             $objWriter->startElement('a:p');
 
             // a:pPr
-            $this->writeParagraphStyles($objWriter, $paragraph, false);
+            $this->writeParagraphStyles($objWriter, $paragraph, false, $continuedStartAts[$key] ?? null);
 
             // Loop trough rich text elements
             $elements = $paragraph->getRichTextElements();
@@ -538,6 +665,21 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
                 if ($element instanceof BreakElement) {
                     // a:br
                     $objWriter->writeElement('a:br', null);
+                } elseif ($element instanceof Field) {
+                    // a:fld
+                    $objWriter->startElement('a:fld');
+                    $objWriter->writeAttribute('id', $this->getGUID());
+                    $objWriter->writeAttributeIf('' !== $element->getType(), 'type', $element->getType());
+
+                    // a:rPr
+                    $this->writeRunStyles($objWriter, $element);
+
+                    // a:t
+                    $objWriter->startElement('a:t');
+                    $objWriter->writeCData(Text::controlCharacterPHP2OOXML($element->getText()));
+                    $objWriter->endElement();
+
+                    $objWriter->endElement();
                 } elseif ($element instanceof Run || $element instanceof TextElement) {
                     // a:r
                     $objWriter->startElement('a:r');
@@ -562,8 +704,10 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
 
     /**
      * Write Paragraph Styles (a:pPr).
+     *
+     * @param null|int $continuedStartAt the start of the numbering the paragraph continues, if it continues one
      */
-    protected function writeParagraphStyles(XMLWriter $objWriter, Paragraph $paragraph, bool $isPlaceholder = false): void
+    protected function writeParagraphStyles(XMLWriter $objWriter, Paragraph $paragraph, bool $isPlaceholder = false, ?int $continuedStartAt = null): void
     {
         $objWriter->startElement('a:pPr');
         $objWriter->writeAttribute('algn', $paragraph->getAlignment()->getHorizontal());
@@ -623,9 +767,10 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
                     // a:buAutoNum
                     $objWriter->startElement('a:buAutoNum');
                     $objWriter->writeAttribute('type', $paragraph->getBulletStyle()->getBulletNumericStyle());
-                    if ($paragraph->getBulletStyle()->getBulletNumericStartAt() != 1) {
-                        $objWriter->writeAttribute('startAt', $paragraph->getBulletStyle()->getBulletNumericStartAt());
-                    }
+                    // PowerPoint numbers on while the start stays the same, so the start of the
+                    // numbering is written on every paragraph of it, as PowerPoint writes it
+                    $startAt = $paragraph->getBulletStyle()->getBulletNumericStartAt() ?? $continuedStartAt ?? 1;
+                    $objWriter->writeAttributeIf(1 != $startAt, 'startAt', $startAt);
                     $objWriter->endElement();
                 }
             }
@@ -643,7 +788,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->startElement('a:rPr');
 
         // Lang
-        $objWriter->writeAttribute('lang', ($element->getLanguage() ? $element->getLanguage() : 'en-US'));
+        $objWriter->writeAttribute('lang', $element->getLanguage() ?: $this->getPresentation()->getDocumentProperties()->getLanguage());
 
         $objWriter->writeAttributeIf($element->getFont()->isBold(), 'b', '1');
         $objWriter->writeAttributeIf($element->getFont()->isItalic(), 'i', '1');
@@ -689,10 +834,13 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
             'pitchFamily',
             $element->getFont()->getPitchFamily()
         );
+        // the schema calls this a byte, so the charsets above 127 are spelled as the
+        // negative value that byte holds: Arabic is 178 to the model and -78 to the file
+        $charset = $element->getFont()->getCharset();
         $objWriter->writeAttributeIf(
-            $element->getFont()->getCharset() !== Font::CHARSET_DEFAULT,
+            $charset !== Font::CHARSET_DEFAULT,
             'charset',
-            dechex($element->getFont()->getCharset())
+            (string) ($charset > 127 ? $charset - 256 : $charset)
         );
         $objWriter->endElement();
 
@@ -716,7 +864,10 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         // p:cNvPr
         $objWriter->startElement('p:cNvPr');
         $objWriter->writeAttribute('id', $shapeId);
-        $objWriter->writeAttribute('name', '');
+        $objWriter->writeAttribute('name', $shape->getName());
+        $objWriter->writeAttribute('descr', $shape->getDescription());
+        $this->writeHyperlink($objWriter, $shape);
+        $this->writeShapeDecorative($objWriter, $shape);
         $objWriter->endElement();
         // p:cNvCxnSpPr
         $objWriter->writeElement('p:cNvCxnSpPr', null);
@@ -745,6 +896,8 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
             $objWriter->writeAttribute('cy', CommonDrawing::pixelsToEmu($shape->getHeight()));
             $objWriter->endElement();
         } elseif ($shape->getWidth() < 0 && $shape->getHeight() < 0) {
+            $objWriter->writeAttribute('flipH', 1);
+            $objWriter->writeAttribute('flipV', 1);
             // a:off
             $objWriter->startElement('a:off');
             $objWriter->writeAttribute('x', CommonDrawing::pixelsToEmu($shape->getOffsetX() + $shape->getWidth()));
@@ -768,7 +921,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
             $objWriter->writeAttribute('cy', CommonDrawing::pixelsToEmu(-$shape->getHeight()));
             $objWriter->endElement();
         } elseif ($shape->getWidth() < 0) {
-            $objWriter->writeAttribute('flipV', 1);
+            $objWriter->writeAttribute('flipH', 1);
             // a:off
             $objWriter->startElement('a:off');
             $objWriter->writeAttribute('x', CommonDrawing::pixelsToEmu($shape->getOffsetX() + $shape->getWidth()));
@@ -790,6 +943,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
 
         $objWriter->endElement();
         $this->writeBorder($objWriter, $shape->getBorder(), '');
+        $this->writeShadow($objWriter, $shape->getShadow());
         $objWriter->endElement();
         $objWriter->endElement();
     }
@@ -1154,8 +1308,10 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         // p:sp\p:nvSpPr\p:cNvPr
         $objWriter->startElement('p:cNvPr');
         $objWriter->writeAttribute('id', $shapeId);
-        $objWriter->writeAttribute('name', '');
-        $objWriter->writeAttribute('descr', '');
+        $objWriter->writeAttribute('name', $shape->getName());
+        $objWriter->writeAttribute('descr', $shape->getDescription());
+        $this->writeHyperlink($objWriter, $shape);
+        $this->writeShapeDecorative($objWriter, $shape);
         // p:sp\p:nvSpPr\p:cNvPr\
         $objWriter->endElement();
         // p:sp\p:nvSpPr\p:cNvSpPr
@@ -1187,14 +1343,38 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         // p:sp\p:spPr\a:prstGeom
         $objWriter->startElement('a:prstGeom');
         $objWriter->writeAttribute('prst', $shape->getType());
-        // p:sp\p:spPr\a:prstGeom\a:avLst
-        $objWriter->writeElement('a:avLst');
-        // p:sp\p:spPr\a:prstGeom\
+
+        // a:avLst (+ optional adj for roundRect)
+        $needsAdj = ($shape->getType() === AutoShape::TYPE_ROUNDED_RECTANGLE);
+        $cornerPx = $shape->getRoundRectCorner();
+
+        if ($needsAdj && $cornerPx !== null) {
+            $minHalf = (int) floor(min($shape->getWidth(), $shape->getHeight()) / 2);
+
+            if ($minHalf > 0) {
+                $adj = (int) round($cornerPx / $minHalf * 50000);
+                $adj = max(0, min(50000, $adj));
+
+                $objWriter->startElement('a:avLst');
+                $objWriter->startElement('a:gd');
+                $objWriter->writeAttribute('name', 'adj');
+                $objWriter->writeAttribute('fmla', 'val ' . (string) $adj);
+                $objWriter->endElement(); // a:gd
+                $objWriter->endElement(); // a:avLst
+            } else {
+                // invalid size, just emit empty avLst
+                $objWriter->writeElement('a:avLst');
+            }
+        } else {
+            $objWriter->writeElement('a:avLst');
+        }
         $objWriter->endElement();
         // Fill
         $this->writeFill($objWriter, $shape->getFill());
         // Outline
         $this->writeOutline($objWriter, $shape->getOutline());
+        // Shadow
+        $this->writeShadow($objWriter, $shape->getShadow());
 
         // p:sp\p:spPr\
         $objWriter->endElement();
@@ -1250,6 +1430,8 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->writeAttribute('id', $shapeId);
         $objWriter->writeAttribute('name', $shape->getName());
         $objWriter->writeAttribute('descr', $shape->getDescription());
+        $this->writeHyperlink($objWriter, $shape);
+        $this->writeShapeDecorative($objWriter, $shape);
         $objWriter->endElement();
         // p:cNvGraphicFramePr
         $objWriter->writeElement('p:cNvGraphicFramePr', null);
@@ -1316,15 +1498,19 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
             $this->writeHyperlink($objWriter, $shape);
         }
 
-        if ($shape instanceof AbstractDrawingAdapter && $shape->getExtension() == 'svg') {
+        $hasCreationId = $shape instanceof AbstractDrawingAdapter && $shape->getExtension() == 'svg';
+        if ($hasCreationId || $shape->isDecorative()) {
             $objWriter->startElement('a:extLst');
-            $objWriter->startElement('a:ext');
-            $objWriter->writeAttribute('uri', '{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}');
-            $objWriter->startElement('a16:creationId');
-            $objWriter->writeAttribute('xmlns:a16', 'http://schemas.microsoft.com/office/drawing/2014/main');
-            $objWriter->writeAttribute('id', '{F8CFD691-5332-EB49-9B42-7D7B3DB9185D}');
-            $objWriter->endElement();
-            $objWriter->endElement();
+            if ($hasCreationId) {
+                $objWriter->startElement('a:ext');
+                $objWriter->writeAttribute('uri', '{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}');
+                $objWriter->startElement('a16:creationId');
+                $objWriter->writeAttribute('xmlns:a16', 'http://schemas.microsoft.com/office/drawing/2014/main');
+                $objWriter->writeAttribute('id', '{F8CFD691-5332-EB49-9B42-7D7B3DB9185D}');
+                $objWriter->endElement();
+                $objWriter->endElement();
+            }
+            $this->writeShapeDecorativeExtension($objWriter, $shape);
             $objWriter->endElement();
         }
 
@@ -1473,10 +1659,12 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->startElement('p:nvGrpSpPr');
         // p:cNvPr
         $objWriter->startElement('p:cNvPr');
-        $objWriter->writeAttribute('name', 'Group ' . $shapeId++);
         $objWriter->writeAttribute('id', $shapeId);
+        $objWriter->writeAttribute('name', $group->getName());
+        $objWriter->writeAttribute('descr', $group->getDescription());
+        $this->writeHyperlink($objWriter, $group);
+        $this->writeShapeDecorative($objWriter, $group);
         $objWriter->endElement(); // p:cNvPr
-        // NOTE: Re: $shapeId This seems to be how PowerPoint 2010 does business.
         // p:cNvGrpSpPr
         $objWriter->writeElement('p:cNvGrpSpPr', null);
         // p:nvPr
@@ -1486,6 +1674,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->startElement('p:grpSpPr');
         // a:xfrm
         $objWriter->startElement('a:xfrm');
+        $objWriter->writeAttributeIf(0 != $group->getRotation(), 'rot', CommonDrawing::degreesToAngle($group->getRotation()));
         // a:off
         $objWriter->startElement('a:off');
         $objWriter->writeAttribute('x', CommonDrawing::pixelsToEmu($group->getOffsetX()));
@@ -1507,6 +1696,7 @@ abstract class AbstractSlide extends AbstractDecoratorWriter
         $objWriter->writeAttribute('cy', CommonDrawing::pixelsToEmu($group->getExtentY()));
         $objWriter->endElement(); // a:chExt
         $objWriter->endElement(); // a:xfrm
+        $this->writeShadow($objWriter, $group->getShadow());
         $objWriter->endElement(); // p:grpSpPr
 
         $this->writeShapeCollection($objWriter, $group->getShapeCollection(), $shapeId);

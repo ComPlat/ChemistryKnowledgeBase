@@ -19,20 +19,22 @@
         }
     ],
     "require": {
-        "php": "^7.1|^8.0",
+        "php": "^7.4|^8.0",
         "ext-xml": "*",
         "ext-zip": "*",
         "phpoffice/common": "^1",
-        "phpoffice/phpspreadsheet": "^1.9 || ^2.0 || ^3.0 || ^4.0"
+        "phpoffice/phpspreadsheet": "^1.9 || ^2.0 || ^3.0 || ^4.0 || ^5.0"
     },
     "require-dev": {
         "phpunit/phpunit": ">=7.0",
         "phpmd/phpmd": "2.*",
-        "phpstan/phpstan": "^0.12.88 || ^1.0.0",
+        "phpoffice/wmf": "^0.2.1",
+        "phpstan/phpstan": "^2.2,!=2.2.11",
         "dompdf/dompdf": "^3.1"
     },
     "suggest": {
-        "ext-gd": "Required to add images"
+        "ext-gd": "Required to add images",
+        "phpoffice/wmf": "Allows adding WMF, EMF and EMF+ images (requires ext-gd)"
     },
     "autoload": {
         "psr-4": {
@@ -65,7 +67,8 @@
             "php samples/Sample_19_SlideMaster.php",
             "php samples/Sample_20_SlideLayout.php",
             "php samples/Sample_21_AutoShape.php",
-            "php samples/Sample_22_ExternalSlide.php"
+            "php samples/Sample_22_ExternalSlide.php",
+            "php samples/Sample_23_Field.php"
         ]
     }
 }

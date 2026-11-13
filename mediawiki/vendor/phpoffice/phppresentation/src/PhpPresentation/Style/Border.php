@@ -46,6 +46,17 @@ class Border implements ComparableInterface
     public const DASH_SYSDOT = 'sysDot';
 
     /**
+     * Every dash style a border can be given.
+     *
+     * @var array<int, string>
+     */
+    public const DASH_STYLES = [
+        self::DASH_DASH, self::DASH_DASHDOT, self::DASH_DOT, self::DASH_LARGEDASH,
+        self::DASH_LARGEDASHDOT, self::DASH_LARGEDASHDOTDOT, self::DASH_SOLID,
+        self::DASH_SYSDASH, self::DASH_SYSDASHDOT, self::DASH_SYSDASHDOTDOT, self::DASH_SYSDOT,
+    ];
+
+    /**
      * Line width.
      *
      * @var float
@@ -69,7 +80,7 @@ class Border implements ComparableInterface
     /**
      * Border color.
      *
-     * @var Color
+     * @var null|Color
      */
     private $color;
 
@@ -147,6 +158,9 @@ class Border implements ComparableInterface
 
     /**
      * Get Border Color.
+     *
+     * A `null` means no colour was named for this border, not that it has none: the writers leave
+     * the colour out of the file and the line takes the one its theme or its parent style gives it.
      */
     public function getColor(): ?Color
     {
@@ -155,6 +169,11 @@ class Border implements ComparableInterface
 
     /**
      * Set Border Color.
+     *
+     * A border is born black. Passing `null` takes that colour away again rather than replacing it
+     * with another, and the line is then written without a colour of its own -- `a:ln` with no fill
+     * of its own in PowerPoint2007, no `svg:stroke-color` in ODPresentation. The width, the line
+     * style and the dash style are written either way.
      */
     public function setColor(?Color $color = null): self
     {
@@ -174,7 +193,7 @@ class Border implements ComparableInterface
             $this->lineStyle
             . $this->lineWidth
             . $this->dashStyle
-            . $this->color->getHashCode()
+            . (null === $this->color ? '' : $this->color->getHashCode())
             . __CLASS__
         );
     }

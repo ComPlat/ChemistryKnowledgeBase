@@ -50,8 +50,10 @@ class PFUtils {
 	 */
 	public static function linkForSpecialPage( $linkRenderer, $specialPageName ) {
 		$specialPage = self::getSpecialPage( $specialPageName );
+		// SpecialPage::getDescription() returns Message since 1.45 and string before.
+		$desc = $specialPage->getDescription();
 		return $linkRenderer->makeKnownLink( $specialPage->getPageTitle(),
-			htmlspecialchars( $specialPage->getDescription() ) );
+			$desc instanceof Message ? $desc->text() : $desc );
 	}
 
 	/**
@@ -69,7 +71,7 @@ class PFUtils {
 		global $wgTitle;
 
 		if ( $title === null ) {
-			return null;
+			return '';
 		} elseif ( $wgTitle !== null && $title->equals( $wgTitle ) ) {
 			// Display bolded text instead of a link.
 			return Linker::makeSelfLinkObj( $title, $msg );

@@ -100,13 +100,27 @@ class MetaInfManifest extends AbstractDecoratorWriter
             }
         }
 
+        // Background image of the master page
+        $oBkgImage = $this->getMasterBackground();
+        if ($oBkgImage instanceof Image) {
+            $arrayImage = getimagesize($oBkgImage->getPath());
+            $mimeType = image_type_to_mime_type($arrayImage[2]);
+
+            $objWriter->startElement('manifest:file-entry');
+            $objWriter->writeAttribute('manifest:media-type', $mimeType);
+            $objWriter->writeAttribute('manifest:full-path', 'Pictures/' . str_replace(' ', '_', $oBkgImage->getIndexedFilename(Styles::MASTER_PAGE_STYLE)));
+            $objWriter->endElement();
+        }
+
         if ($this->getPresentation()->getPresentationProperties()->getThumbnailPath()) {
             $pathThumbnail = $this->getPresentation()->getPresentationProperties()->getThumbnailPath();
             // Size : 128x128 pixel
             // PNG : 8bit, non-interlaced with full alpha transparency
             $gdImage = imagecreatefromstring(file_get_contents($pathThumbnail));
             if ($gdImage) {
-                imagedestroy($gdImage);
+                if (PHP_VERSION_ID < 80000) {
+                    imagedestroy($gdImage);
+                }
                 $objWriter->startElement('manifest:file-entry');
                 $objWriter->writeAttribute('manifest:media-type', 'image/png');
                 $objWriter->writeAttribute('manifest:full-path', 'Thumbnails/thumbnail.png');

@@ -97,7 +97,7 @@ class SolrRequestClient implements FacetedSearchClient
         }
         $queryParams['facet.query'] = $facetQueries;
         $response = new SolrResponseParser($this->requestSOLR($queryParams));
-        $result = $response->parseFacetResponse();
+        $result = $response->parseFacetResponse($statsQuery->getStatsProperties());
 
         $facetPropertiesWithConstraints = array_filter($q->getPropertyValueQueries(), fn($e) => $e->hasConstraints());
         foreach ($facetPropertiesWithConstraints as $v) {

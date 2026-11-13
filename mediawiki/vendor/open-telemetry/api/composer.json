@@ -17,13 +17,16 @@
         }
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "open-telemetry/context": "^1.4",
-        "psr/log": "^1.1|^2.0|^3.0",
-        "symfony/polyfill-php82": "^1.26"
+        "psr/log": "^1.1|^2.0|^3.0"
     },
     "conflict": {
-        "open-telemetry/sdk": "<=1.11"
+        "open-telemetry/sdk": "<=1.11",
+        "open-telemetry/sdk-configuration": "<0.10"
+    },
+    "suggest": {
+        "symfony/config": "To implement a ComponentProvider for declarative configuration"
     },
     "autoload": {
         "psr-4": {
@@ -35,9 +38,13 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.8.x-dev"
+            "dev-main": "1.11.x-dev"
         },
         "spi": {
+            "OpenTelemetry\\API\\Configuration\\Config\\ComponentProvider": [
+                "OpenTelemetry\\API\\Baggage\\Propagation\\Config\\TextMapPropagatorBaggage",
+                "OpenTelemetry\\API\\Trace\\Propagation\\Config\\TextMapPropagatorTraceContext"
+            ],
             "OpenTelemetry\\API\\Instrumentation\\AutoInstrumentation\\HookManagerInterface": [
                 "OpenTelemetry\\API\\Instrumentation\\AutoInstrumentation\\ExtensionHookManager"
             ]

@@ -27,6 +27,7 @@ use PhpOffice\Common\XMLWriter;
 use PhpOffice\PhpPresentation\Shape\Group;
 use PhpOffice\PhpPresentation\Shape\RichText;
 use PhpOffice\PhpPresentation\Shape\Table;
+use PhpOffice\PhpPresentation\Slide\Background\Color as BackgroundColor;
 use PhpOffice\PhpPresentation\Slide\Background\Image;
 use PhpOffice\PhpPresentation\Style\Border;
 use PhpOffice\PhpPresentation\Style\Fill;
@@ -34,11 +35,23 @@ use PhpOffice\PhpPresentation\Style\Fill;
 class Styles extends AbstractDecoratorWriter
 {
     /**
+     * The name of the style the master page is drawn with.
+     */
+    public const MASTER_PAGE_STYLE = 'sPres0';
+
+    /**
      * Stores font styles draw:gradient nodes.
      *
      * @var array<int, string>
      */
     protected $arrayGradient = [];
+
+    /**
+     * Stores draw:hatch nodes.
+     *
+     * @var array<int, string>
+     */
+    protected $arrayHatch = [];
 
     /**
      * Stores font styles draw:stroke-dash nodes.
@@ -108,18 +121,11 @@ class Styles extends AbstractDecoratorWriter
 
         // office:styles
         $objWriter->startElement('office:styles');
-        // style:style
-        $objWriter->startElement('style:style');
-        $objWriter->writeAttribute('style:name', 'sPres0');
-        $objWriter->writeAttribute('style:display-name', 'sPres0');
-        $objWriter->writeAttribute('style:family', 'presentation');
-        // style:graphic-properties
-        $objWriter->startElement('style:graphic-properties');
-        $objWriter->writeAttribute('draw:fill-color', '#ffffff');
-        // > style:graphic-properties
-        $objWriter->endElement();
-        // > style:style
-        $objWriter->endElement();
+        // The image a master page is filled with, which the style below names
+        $oMasterBackground = $this->getMasterBackground();
+        if ($oMasterBackground instanceof Image) {
+            $this->writeBackgroundStyle($objWriter, $oMasterBackground, self::MASTER_PAGE_STYLE);
+        }
 
         foreach ($this->getPresentation()->getAllSlides() as $keySlide => $oSlide) {
             foreach ($oSlide->getShapeCollection() as $shape) {
@@ -133,7 +139,7 @@ class Styles extends AbstractDecoratorWriter
             }
             $oBkgImage = $oSlide->getBackground();
             if ($oBkgImage instanceof Image) {
-                $this->writeBackgroundStyle($objWriter, $oBkgImage, $keySlide);
+                $this->writeBackgroundStyle($objWriter, $oBkgImage, (string) $keySlide);
             }
         }
         // > office:styles
@@ -141,6 +147,29 @@ class Styles extends AbstractDecoratorWriter
 
         // office:automatic-styles
         $objWriter->startElement('office:automatic-styles');
+        // The style the master page is drawn with. ODF keeps the background of a page in a
+        // drawing-page style, not on the page itself, and this one has to be an automatic style:
+        // LibreOffice ignores it among the common styles of office:styles.
+        // style:style
+        $objWriter->startElement('style:style');
+        $objWriter->writeAttribute('style:name', self::MASTER_PAGE_STYLE);
+        $objWriter->writeAttribute('style:display-name', self::MASTER_PAGE_STYLE);
+        $objWriter->writeAttribute('style:family', 'drawing-page');
+        // style:drawing-page-properties
+        $objWriter->startElement('style:drawing-page-properties');
+        if ($oMasterBackground instanceof BackgroundColor) {
+            $objWriter->writeAttribute('draw:fill', 'solid');
+            $objWriter->writeAttribute('draw:fill-color', '#' . $oMasterBackground->getColor()->getRGB());
+        }
+        if ($oMasterBackground instanceof Image) {
+            $objWriter->writeAttribute('draw:fill', 'bitmap');
+            $objWriter->writeAttribute('draw:fill-image-name', 'background_' . self::MASTER_PAGE_STYLE);
+            $objWriter->writeAttribute('style:repeat', 'stretch');
+        }
+        // > style:drawing-page-properties
+        $objWriter->endElement();
+        // > style:style
+        $objWriter->endElement();
         // style:page-layout
         $objWriter->startElement('style:page-layout');
         $objWriter->writeAttribute('style:name', $stylePageLayout);
@@ -168,7 +197,7 @@ class Styles extends AbstractDecoratorWriter
         $objWriter->writeAttribute('style:name', 'Standard');
         $objWriter->writeAttribute('style:display-name', 'Standard');
         $objWriter->writeAttribute('style:page-layout-name', $stylePageLayout);
-        $objWriter->writeAttribute('draw:style-name', 'sPres0');
+        $objWriter->writeAttribute('draw:style-name', self::MASTER_PAGE_STYLE);
         $objWriter->endElement();
         $objWriter->endElement();
 
@@ -188,6 +217,9 @@ class Styles extends AbstractDecoratorWriter
             if (!in_array($oFill->getHashCode(), $this->arrayGradient)) {
                 $this->writeGradientFill($objWriter, $oFill);
             }
+        }
+        if (isset(self::HATCH_ODF[$oFill->getFillType()]) && !in_array($oFill->getHashCode(), $this->arrayHatch)) {
+            $this->writeHatchFill($objWriter, $oFill);
         }
         $oBorder = $shape->getBorder();
         if (Border::DASH_SOLID != $oBorder->getDashStyle()) {
@@ -280,10 +312,16 @@ class Styles extends AbstractDecoratorWriter
     {
         foreach ($shape->getRows() as $row) {
             foreach ($row->getCells() as $cell) {
-                if (Fill::FILL_GRADIENT_LINEAR == $cell->getFill()->getFillType()) {
-                    if (!in_array($cell->getFill()->getHashCode(), $this->arrayGradient)) {
-                        $this->writeGradientFill($objWriter, $cell->getFill());
+                // A cell that was given no fill of its own is painted with the fill of its row,
+                // so that one needs its gradient defined too
+                $fill = Fill::FILL_UNSET == $cell->getFill()->getFillType() ? $row->getFill() : $cell->getFill();
+                if (Fill::FILL_GRADIENT_LINEAR == $fill->getFillType()) {
+                    if (!in_array($fill->getHashCode(), $this->arrayGradient)) {
+                        $this->writeGradientFill($objWriter, $fill);
                     }
+                }
+                if (isset(self::HATCH_ODF[$fill->getFillType()]) && !in_array($fill->getHashCode(), $this->arrayHatch)) {
+                    $this->writeHatchFill($objWriter, $fill);
                 }
             }
         }
@@ -324,13 +362,35 @@ class Styles extends AbstractDecoratorWriter
     }
 
     /**
+     * Write the hatch a pattern fill is drawn as.
+     *
+     * Only the patterns ODF can say are written; a pattern that is not a family of lines is
+     * painted solid by the caller and names no hatch at all.
+     */
+    protected function writeHatchFill(XMLWriter $objWriter, Fill $oFill): void
+    {
+        [$style, $rotation, $distance] = self::HATCH_ODF[$oFill->getFillType()];
+
+        $objWriter->startElement('draw:hatch');
+        $objWriter->writeAttribute('draw:name', 'hatch_' . $oFill->getHashCode());
+        $objWriter->writeAttribute('draw:display-name', 'hatch_' . $oFill->getHashCode());
+        $objWriter->writeAttribute('draw:style', $style);
+        $objWriter->writeAttribute('draw:color', '#' . $oFill->getStartColor()->getRGB());
+        $objWriter->writeAttribute('draw:distance', $distance);
+        $objWriter->writeAttribute('draw:rotation', (string) $rotation);
+        $objWriter->endElement();
+
+        $this->arrayHatch[] = $oFill->getHashCode();
+    }
+
+    /**
      * Write the background image style.
      */
-    protected function writeBackgroundStyle(XMLWriter $objWriter, Image $oBkgImage, int $numSlide): void
+    protected function writeBackgroundStyle(XMLWriter $objWriter, Image $oBkgImage, string $numSlide): void
     {
         $objWriter->startElement('draw:fill-image');
-        $objWriter->writeAttribute('draw:name', 'background_' . (string) $numSlide);
-        $objWriter->writeAttribute('xlink:href', 'Pictures/' . str_replace(' ', '_', $oBkgImage->getIndexedFilename((string) $numSlide)));
+        $objWriter->writeAttribute('draw:name', 'background_' . $numSlide);
+        $objWriter->writeAttribute('xlink:href', 'Pictures/' . str_replace(' ', '_', $oBkgImage->getIndexedFilename($numSlide)));
         $objWriter->writeAttribute('xlink:type', 'simple');
         $objWriter->writeAttribute('xlink:show', 'embed');
         $objWriter->writeAttribute('xlink:actuate', 'onLoad');

@@ -4,7 +4,7 @@
 			"DIQA Projektmanagement GmbH"
 		]
 	},
-	"facetedsearch2-desc":      "Faceted search",
+    "facetedsearch2-desc":      "Replaces the wiki standard search by a faceted search which uses data from Semantic-Mediawiki (if installed)",
 	"facetedsearch2":           "Faceted search",
 
 	"fs-score": 			    "Relevance",
@@ -17,6 +17,7 @@
 	"fs-search-button": 		"Search",
 	"fs-link-to-search": 		"Copy link to search",
 	"fs-no-facets-selected": 	"no facets selected",
+	"fs-no-results": 	        "no results",
 	"fs-selected-facets": 		"Selected facets",
 	"fs-available-properties": 	"Available property facets",
 	"fs-available-categories": 	"Available category facets",

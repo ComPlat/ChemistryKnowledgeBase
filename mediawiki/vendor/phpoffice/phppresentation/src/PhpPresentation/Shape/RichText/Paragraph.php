@@ -50,7 +50,7 @@ class Paragraph implements ComparableInterface
     /**
      * Font.
      *
-     * @var null|Font
+     * @var Font
      */
     private $font;
 
@@ -130,7 +130,7 @@ class Paragraph implements ComparableInterface
     /**
      * Get font.
      */
-    public function getFont(): ?Font
+    public function getFont(): Font
     {
         return $this->font;
     }
@@ -138,11 +138,11 @@ class Paragraph implements ComparableInterface
     /**
      * Set font.
      *
-     * @param null|Font $pFont Font
+     * @param null|Font $pFont Font, or null to go back to a fresh one
      */
     public function setFont(?Font $pFont = null): self
     {
-        $this->font = $pFont;
+        $this->font = $pFont ?? new Font();
 
         return $this;
     }
@@ -213,6 +213,21 @@ class Paragraph implements ComparableInterface
         $this->addText($objText);
 
         return $objText;
+    }
+
+    /**
+     * Create field (a run whose text the application recomputes).
+     *
+     * @param string $type Field type
+     * @param string $pText Text the field last had, for whoever cannot compute it
+     */
+    public function createField(string $type = Field::TYPE_SLIDENUM, string $pText = ''): Field
+    {
+        $field = new Field($type, $pText);
+        $field->setFont(clone $this->font);
+        $this->addText($field);
+
+        return $field;
     }
 
     /**

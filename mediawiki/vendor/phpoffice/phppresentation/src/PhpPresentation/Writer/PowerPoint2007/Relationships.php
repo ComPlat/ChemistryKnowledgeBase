@@ -70,7 +70,9 @@ class Relationships extends AbstractDecoratorWriter
         if ($thumnbail) {
             $gdImage = imagecreatefromstring($thumnbail);
             if ($gdImage) {
-                imagedestroy($gdImage);
+                if (PHP_VERSION_ID < 80000) {
+                    imagedestroy($gdImage);
+                }
                 // Relationship docProps/thumbnail.jpeg
                 $this->writeRelationship($objWriter, $idxRelation, 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail', 'docProps/thumbnail.jpeg');
                 // $idxRelation++;
@@ -124,7 +126,7 @@ class Relationships extends AbstractDecoratorWriter
 
         // Comments Authors
         foreach ($this->getPresentation()->getAllSlides() as $oSlide) {
-            foreach ($oSlide->getShapeCollection() as $oShape) {
+            foreach ($this->flattenShapes($oSlide->getShapeCollection()) as $oShape) {
                 if (!($oShape instanceof Comment)) {
                     continue;
                 }

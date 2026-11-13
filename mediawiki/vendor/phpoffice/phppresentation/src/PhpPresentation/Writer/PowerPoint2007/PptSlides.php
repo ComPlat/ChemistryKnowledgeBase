@@ -26,12 +26,8 @@ use PhpOffice\Common\XMLWriter;
 use PhpOffice\PhpPresentation\Shape\Chart as ShapeChart;
 use PhpOffice\PhpPresentation\Shape\Comment;
 use PhpOffice\PhpPresentation\Shape\Drawing as ShapeDrawing;
-use PhpOffice\PhpPresentation\Shape\Group;
+use PhpOffice\PhpPresentation\Shape\Hyperlink;
 use PhpOffice\PhpPresentation\Shape\Media;
-use PhpOffice\PhpPresentation\Shape\RichText;
-use PhpOffice\PhpPresentation\Shape\RichText\Run;
-use PhpOffice\PhpPresentation\Shape\RichText\TextElement;
-use PhpOffice\PhpPresentation\Shape\Table as ShapeTable;
 use PhpOffice\PhpPresentation\ShapeContainerInterface;
 use PhpOffice\PhpPresentation\Slide;
 use PhpOffice\PhpPresentation\Slide\Background\Image;
@@ -108,18 +104,18 @@ class PptSlides extends AbstractSlide
                     if ($currentShape instanceof Media) {
                         // Write relationship for image drawing
                         $currentShape->relationId = 'rId' . $relId;
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/video', '../media/' . $currentShape->getIndexedFilename());
+                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/video', '../media/' . $this->writtenPart($currentShape)->getIndexedFilename());
                         ++$relId;
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.microsoft.com/office/2007/relationships/media', '../media/' . $currentShape->getIndexedFilename());
+                        $this->writeRelationship($objWriter, $relId, 'http://schemas.microsoft.com/office/2007/relationships/media', '../media/' . $this->writtenPart($currentShape)->getIndexedFilename());
                         ++$relId;
                     } elseif ($currentShape instanceof ShapeDrawing\AbstractDrawingAdapter) {
                         // Write relationship for image drawing
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image', '../media/' . $currentShape->getIndexedFilename());
+                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image', '../media/' . $this->writtenPart($currentShape)->getIndexedFilename());
                         $currentShape->relationId = 'rId' . $relId;
                         ++$relId;
                     } elseif ($currentShape instanceof ShapeChart) {
                         // Write relationship for chart drawing
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart', '../charts/' . $currentShape->getIndexedFilename());
+                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart', '../charts/' . $this->writtenPart($currentShape)->getIndexedFilename());
                         $currentShape->relationId = 'rId' . $relId;
                         ++$relId;
                     } elseif ($currentShape instanceof ShapeContainerInterface) {
@@ -137,180 +133,19 @@ class PptSlides extends AbstractSlide
             ++$relId;
         }
 
-        // Write hyperlink relationships?
-        if (count($pSlide->getShapeCollection()) > 0) {
-            // Loop trough hyperlinks and write relationships
-            foreach ($pSlide->getShapeCollection() as $shape) {
-                // Hyperlink on shape
-                if ($shape->hasHyperlink()) {
-                    // Write relationship for hyperlink
-                    $hyperlink = $shape->getHyperlink();
-                    $hyperlink->relationId = 'rId' . $relId;
-
-                    if (!$hyperlink->isInternal()) {
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                    } else {
-                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                    }
-
-                    ++$relId;
-                }
-
-                // Hyperlink on rich text run
-                if ($shape instanceof RichText) {
-                    foreach ($shape->getParagraphs() as $paragraph) {
-                        foreach ($paragraph->getRichTextElements() as $element) {
-                            if ($element instanceof Run || $element instanceof TextElement) {
-                                if ($element->hasHyperlink()) {
-                                    // Write relationship for hyperlink
-                                    $hyperlink = $element->getHyperlink();
-                                    $hyperlink->relationId = 'rId' . $relId;
-
-                                    if (!$hyperlink->isInternal()) {
-                                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                                    } else {
-                                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                                    }
-
-                                    ++$relId;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Hyperlink in table
-                if ($shape instanceof ShapeTable) {
-                    // Rows
-                    $countRows = count($shape->getRows());
-                    for ($row = 0; $row < $countRows; ++$row) {
-                        // Cells in rows
-                        $countCells = count($shape->getRow($row)->getCells());
-                        for ($cell = 0; $cell < $countCells; ++$cell) {
-                            $currentCell = $shape->getRow($row)->getCell($cell);
-                            // Paragraphs in cell
-                            foreach ($currentCell->getParagraphs() as $paragraph) {
-                                // RichText in paragraph
-                                foreach ($paragraph->getRichTextElements() as $element) {
-                                    // Run or Text in RichText
-                                    if ($element instanceof Run || $element instanceof TextElement) {
-                                        if ($element->hasHyperlink()) {
-                                            // Write relationship for hyperlink
-                                            $hyperlink = $element->getHyperlink();
-                                            $hyperlink->relationId = 'rId' . $relId;
-
-                                            if (!$hyperlink->isInternal()) {
-                                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                                            } else {
-                                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                                            }
-
-                                            ++$relId;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if ($shape instanceof Group) {
-                    foreach ($shape->getShapeCollection() as $subShape) {
-                        // Hyperlink on shape
-                        if ($subShape->hasHyperlink()) {
-                            // Write relationship for hyperlink
-                            $hyperlink = $subShape->getHyperlink();
-                            $hyperlink->relationId = 'rId' . $relId;
-
-                            if (!$hyperlink->isInternal()) {
-                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                            } else {
-                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                            }
-
-                            ++$relId;
-                        }
-
-                        // Hyperlink on rich text run
-                        if ($subShape instanceof RichText) {
-                            foreach ($subShape->getParagraphs() as $paragraph) {
-                                foreach ($paragraph->getRichTextElements() as $element) {
-                                    if ($element instanceof Run || $element instanceof TextElement) {
-                                        if ($element->hasHyperlink()) {
-                                            // Write relationship for hyperlink
-                                            $hyperlink = $element->getHyperlink();
-                                            $hyperlink->relationId = 'rId' . $relId;
-
-                                            if (!$hyperlink->isInternal()) {
-                                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                                            } else {
-                                                $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                                            }
-
-                                            ++$relId;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Hyperlink in table
-                        if ($subShape instanceof ShapeTable) {
-                            // Rows
-                            $countRows = count($subShape->getRows());
-                            for ($row = 0; $row < $countRows; ++$row) {
-                                // Cells in rows
-                                $countCells = count($subShape->getRow($row)->getCells());
-                                for ($cell = 0; $cell < $countCells; ++$cell) {
-                                    $currentCell = $subShape->getRow($row)->getCell($cell);
-                                    // Paragraphs in cell
-                                    foreach ($currentCell->getParagraphs() as $paragraph) {
-                                        // RichText in paragraph
-                                        foreach ($paragraph->getRichTextElements() as $element) {
-                                            // Run or Text in RichText
-                                            if ($element instanceof Run || $element instanceof TextElement) {
-                                                if ($element->hasHyperlink()) {
-                                                    // Write relationship for hyperlink
-                                                    $hyperlink = $element->getHyperlink();
-                                                    $hyperlink->relationId = 'rId' . $relId;
-
-                                                    if (!$hyperlink->isInternal()) {
-                                                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', $hyperlink->getUrl(), 'External');
-                                                    } else {
-                                                        $this->writeRelationship($objWriter, $relId, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', 'slide' . $hyperlink->getSlideNumber() . '.xml');
-                                                    }
-
-                                                    ++$relId;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Write hyperlink relationships
+        $relId = $this->writeHyperlinkRelations($pSlide, $objWriter, $relId);
 
         // Write comment relationships
         if (count($pSlide->getShapeCollection()) > 0) {
             $hasSlideComment = false;
 
-            // Loop trough images and write relationships
-            foreach ($pSlide->getShapeCollection() as $shape) {
+            // Loop trough comments and write relationships
+            foreach ($this->flattenShapes($pSlide->getShapeCollection()) as $shape) {
                 if ($shape instanceof Comment) {
                     $hasSlideComment = true;
 
                     break;
-                } elseif ($shape instanceof Group) {
-                    foreach ($shape->getShapeCollection() as $subShape) {
-                        if ($subShape instanceof Comment) {
-                            $hasSlideComment = true;
-
-                            break 2;
-                        }
-                    }
                 }
             }
 
@@ -352,6 +187,7 @@ class PptSlides extends AbstractSlide
 
         // p:sld/p:cSld
         $objWriter->startElement('p:cSld');
+        $objWriter->writeAttributeIf(null !== $pSlide->getName(), 'name', $pSlide->getName());
 
         // Background
         if ($pSlide->getBackground() instanceof Slide\AbstractBackground) {

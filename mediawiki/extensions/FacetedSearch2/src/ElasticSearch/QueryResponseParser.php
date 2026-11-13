@@ -163,21 +163,23 @@ class QueryResponseParser {
             $toInternalName = Helper::toInternalName($property);
             $buckets = $aggregations[$toInternalName]['buckets'] ?? [];
             if (count($buckets) === 0) {
-                continue;
+                $valueCounts = [new ValueCount(null, null, null, 0)];
+            } else {
+
+                $valueCounts = array_map(function ($b) use ($property) {
+                    if ($property->getType() === Datatype::DATETIME) {
+                        $from = $b['from_as_string'];
+                        $to = $b['to_as_string'];
+
+                    } else {
+                        $from = $b['from'];
+                        $to = $b['to'];
+                    }
+                    return ValueCount::fromRange(new Range($from, $to), $b['doc_count']);
+                }, $buckets);
+
+                $valueCounts = array_values(array_filter($valueCounts, fn($vc) => $vc->count > 0));
             }
-
-            $valueCounts = array_map(function ($b) use ($property) {
-                if ($property->getType() === Datatype::DATETIME) {
-                    $from = $b['from_as_string'];
-                    $to = $b['to_as_string'];
-
-                } else {
-                    $from = $b['from'];
-                    $to = $b['to'];
-                }
-                return ValueCount::fromRange(new Range($from, $to), $b['doc_count']);
-            }, $buckets);
-            $valueCounts = array_values(array_filter($valueCounts, fn($vc) => $vc->count > 0));
 
             $propertyValueCounts[] = new PropertyValueCount(PropertyWithURL::fromProperty(
                 $property,
