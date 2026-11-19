@@ -122,7 +122,7 @@ class ExperimentLink
                 if (!is_null($defaultUnit)) {
                     $convertedUnits[$templateParam] = $defaultUnit;
                 }
-                $printRequests[] = QueryUtils::newPropertyPrintRequest($p, $defaultUnit ?? null);
+                $printRequests[] = QueryUtils::newPropertyPrintRequest($p, $defaultUnit ?? '');
             }
         }
         $selectExperimentQuery = self::buildQuery($parameters['form'], $selectExperimentQuery, $restrictToPagesQuery, $onlyIncluded);
