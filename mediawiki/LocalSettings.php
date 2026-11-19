@@ -546,6 +546,9 @@ $fs2gFacetControlOrder = ["selectedFacetLabel", "selectedFacetView", "selectedCa
 $fs2gShowCategoryTree = true;
 $fs2gTagCloudProperty = "Tag";
 $fs2gCategoryTreeRoot = "Topic";
+$fs2gShowSortOrder = true;
+$fs2gShowCategories = false;
+$fs2gShowSolrScore = true;
 wfLoadExtension( 'FacetedSearch2' );
 
 #################################################################
@@ -589,9 +592,7 @@ wfLoadExtension( 'DisplayTitle' );
 $wgAllowDisplayTitle = true; // defaults to true
 $wgRestrictDisplayTitle = false; // defaults to true
 $wgDisplayTitleHideSubtitle = true;
-$fsgShowSortOrder = true;
-$fsgShowCategories = false;
-$fsgShowSolrScore = true;
+
 
 #################################################################
 # Visual Editor
