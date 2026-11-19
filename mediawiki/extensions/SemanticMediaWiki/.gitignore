@@ -28,7 +28,6 @@ composer.lock
 .phpunit.result.cache
 
 composer
-installer
 .env
 .envrc
 conf
