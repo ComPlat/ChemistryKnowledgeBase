@@ -2,15 +2,19 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Maintenance\Maintenance;
+use MediaWiki\MediaWikiServices;
 use Onoi\MessageReporter\MessageReporter;
-use SMW\DIProperty;
-use SMW\Exception\PredefinedPropertyLabelMismatchException;
-use SMW\MediaWiki\HookDispatcher;
 use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\SetupFile;
 use SMW\SQLStore\SQLStore;
 use SMW\SQLStore\TableFieldUpdater;
 use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
+use stdClass;
+use Wikimedia\Rdbms\IExpression;
+use Wikimedia\Rdbms\IResultWrapper;
 
 /**
  * Load the required class
@@ -29,7 +33,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  *
  * @author mwjames
  */
-class updateEntityCollation extends \Maintenance {
+class updateEntityCollation extends Maintenance {
 
 	/**
 	 * Incomplete task message
@@ -37,44 +41,33 @@ class updateEntityCollation extends \Maintenance {
 	const ENTITY_COLLATION_INCOMPLETE = 'smw-updateentitycollation-incomplete';
 
 	/**
-	 * @var Store
+	 * @var SQLStore
 	 */
 	private $store;
 
-	/**
-	 * @var HookDispatcher
-	 */
-	private $hookDispatcher;
+	private ?HookContainer $hookContainer = null;
 
 	/**
 	 * @var MessageReporter
 	 */
 	private $messageReporter;
 
-	/**
-	 * @var int
-	 */
-	private $lastId = 0;
-
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = 'Update the smw_sort field (relying on the $smwgEntityCollation setting)';
 		$this->addOption( 's', 'ID starting point', false, true );
+		$this->setBatchSize( 1000 );
 	}
 
 	/**
-	 * @since 3.2
-	 *
-	 * @param HookDispatcher $hookDispatcher
+	 * @since 7.0.0
 	 */
-	public function setHookDispatcher( HookDispatcher $hookDispatcher ) {
-		$this->hookDispatcher = $hookDispatcher;
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
 	}
 
 	/**
 	 * @since 3.2
-	 *
-	 * @param MessageReporter $messageReporter
 	 */
 	public function setMessageReporter( MessageReporter $messageReporter ) {
 		$this->messageReporter = $messageReporter;
@@ -93,7 +86,10 @@ class updateEntityCollation extends \Maintenance {
 	 * @see Maintenance::execute
 	 */
 	public function execute() {
-		if ( ( $maintenanceCheck = new MaintenanceCheck() )->canExecute() === false ) {
+		global $wgCategoryCollation;
+
+		$maintenanceCheck = new MaintenanceCheck();
+		if ( !$maintenanceCheck->canExecute() ) {
 			exit( $maintenanceCheck->getMessage() );
 		}
 
@@ -101,12 +97,13 @@ class updateEntityCollation extends \Maintenance {
 		$maintenanceFactory = $applicationFactory->newMaintenanceFactory();
 		$setupFile = $applicationFactory->singleton( 'SetupFile' );
 
+		// @phan-suppress-next-line PhanTypeMismatchProperty
 		$this->store = $applicationFactory->getStore(
 			SQLStore::class
 		);
 
-		if ( $this->hookDispatcher === null ) {
-			$this->hookDispatcher = $applicationFactory->getHookDispatcher();
+		if ( $this->hookContainer === null ) {
+			$this->hookContainer = MediaWikiServices::getInstance()->getHookContainer();
 		}
 
 		if ( $this->messageReporter === null ) {
@@ -130,7 +127,6 @@ class updateEntityCollation extends \Maintenance {
 		);
 
 		$smwgEntityCollation = $applicationFactory->getSettings()->get( 'smwgEntityCollation' );
-		$wgCategoryCollation = $GLOBALS['wgCategoryCollation'];
 
 		if ( $smwgEntityCollation !== $wgCategoryCollation ) {
 			$this->informAboutDifferences( $smwgEntityCollation, $wgCategoryCollation );
@@ -148,8 +144,8 @@ class updateEntityCollation extends \Maintenance {
 			$cliMsgFormatter->firstCol( '... fetching from table ...', 3 )
 		);
 
-		$rows = $this->fetchRows();
-		$count = $rows->numRows();
+		$startId = (int)$this->getOption( 's', 0 );
+		$count = $this->countRows( $startId );
 
 		$this->messageReporter->reportMessage(
 			$cliMsgFormatter->secondCol( CliMsgFormatter::OK )
@@ -159,7 +155,7 @@ class updateEntityCollation extends \Maintenance {
 			$cliMsgFormatter->twoCols( "... found `smw_sort` field records ...", "$count (rows)", 3 )
 		);
 
-		$this->runUpdate( $rows, $count );
+		$this->runUpdate( $startId, $count );
 		$this->messageReporter->reportMessage( "\n   ... done.\n" );
 
 		$setupFile->removeIncompleteTask( self::ENTITY_COLLATION_INCOMPLETE );
@@ -170,10 +166,13 @@ class updateEntityCollation extends \Maintenance {
 			]
 		);
 
-		$this->hookDispatcher->onAfterUpdateEntityCollationComplete( $this->store, $this->messageReporter );
+		$this->hookContainer->run(
+			'SMW::Maintenance::AfterUpdateEntityCollationComplete',
+			[ $this->store, $this->messageReporter ]
+		);
 	}
 
-	private function informAboutDifferences( $smwgEntityCollation, $wgCategoryCollation ) {
+	private function informAboutDifferences( $smwgEntityCollation, $categoryCollation ) {
 		$cliMsgFormatter = new CliMsgFormatter();
 
 		$this->messageReporter->reportMessage(
@@ -182,7 +181,7 @@ class updateEntityCollation extends \Maintenance {
 
 		$text = [
 			"The `smwgEntityCollation` and `wgCategoryCollation` have different",
-			"collation settings and may therefore result in an inconsitent sorting",
+			"collation settings and may therefore result in an inconsistent sorting",
 			"display for entities."
 		];
 
@@ -199,94 +198,103 @@ class updateEntityCollation extends \Maintenance {
 		);
 
 		$this->messageReporter->reportMessage(
-			$cliMsgFormatter->twoCols( '... `$wgCategoryCollation`', $wgCategoryCollation, 3, '.' )
+			$cliMsgFormatter->twoCols( '... `$wgCategoryCollation`', $categoryCollation, 3, '.' )
 		);
 	}
 
-	private function fetchRows() {
+	private function countRows( int $startId ): int {
+		return (int)$this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( 'COUNT(*)' )
+			->from( SQLStore::ID_TABLE )
+			->where( $this->newConditions( $startId ) )
+			->caller( __METHOD__ )
+			->fetchField();
+	}
+
+	private function runUpdate( int $startId, int $count ): void {
 		$connection = $this->store->getConnection( 'mw.db' );
-
-		$this->lastId = (int)$connection->selectField(
-			SQLStore::ID_TABLE,
-			'MAX(smw_id)',
-			'',
-			__METHOD__
-		);
-
-		$condition = '';
-
-		$condition .= " smw_iw!=" . $connection->addQuotes( SMW_SQL3_SMWIW_OUTDATED );
-		$condition .= " AND smw_iw!=" . $connection->addQuotes( SMW_SQL3_SMWDELETEIW );
-
-		if ( $this->hasOption( 's' ) ) {
-			$condition .= ' AND smw_id > ' . $connection->addQuotes( $this->getOption( 's' ) );
-		}
-
-		return $connection->select(
-			SQLStore::ID_TABLE,
-			[
-				'smw_id',
-				'smw_title',
-				'smw_sortkey'
-			],
-			$condition,
-			__METHOD__,
-			[ 'ORDER BY' => 'smw_id' ]
-		);
-	}
-
-	private function runUpdate( $rows, $count ) {
-		$tableFieldUpdater = new TableFieldUpdater(
-			$this->store
-		);
-
+		$tableFieldUpdater = new TableFieldUpdater( $this->store );
 		$cliMsgFormatter = new CliMsgFormatter();
-		$property = new DIProperty( '_SKEY' );
-		$i = 0;
+		$statsFlusher = PeriodicStatsFlusher::newFromGlobalState();
+		$lastId = $this->fetchLastId();
+		$afterId = $startId;
+		$updated = 0;
+		$rows = $this->fetchBatch( $afterId );
 
-		foreach ( $rows as $row ) {
+		while ( $rows->numRows() > 0 ) {
+			$sortKeys = [];
 
-			if ( $row->smw_title === '' ) {
-				continue;
+			foreach ( $rows as $row ) {
+				$afterId = (int)$row->smw_id;
+				$sortKeys[$afterId] = $this->getSortKey( $row );
 			}
 
-			$dataItem = $this->store->getObjectIds()->getDataItemById(
-				$row->smw_id
+			// Commit per batch: each commit waits for a disk sync
+			$connection->doSectionTransaction(
+				__METHOD__,
+				static function () use ( $sortKeys, $statsFlusher, $tableFieldUpdater ): void {
+					foreach ( $sortKeys as $id => $sortKey ) {
+						$statsFlusher->tick();
+						$tableFieldUpdater->updateSortField( $id, $sortKey );
+					}
+				}
 			);
 
-			$pv = $this->store->getPropertyValues( $dataItem, $property );
-			$search = $this->getSortKey( $row, $pv );
-
-			if ( $search === '' && $row->smw_title !== '' ) {
-				$search = str_replace( '_', ' ', $row->smw_title );
-			}
-
-			$progress = $cliMsgFormatter->progressCompact( ++$i, $count, $row->smw_id, $this->lastId );
+			// Report only committed IDs, so that the shown ID is a safe `-s` to resume from
+			$updated += $rows->numRows();
+			$progress = $cliMsgFormatter->progressCompact( $updated, $count, $afterId, $lastId );
 
 			$this->messageReporter->reportMessage(
 				$cliMsgFormatter->twoColsOverride( "... updating entity (current/last) ...", $progress, 3 )
 			);
 
-			$tableFieldUpdater->updateSortField( $row->smw_id, $search );
+			$this->waitForReplication();
+			$rows = $this->fetchBatch( $afterId );
 		}
 	}
 
-	private function getSortKey( $row, $pv ) {
-		if ( $pv !== [] ) {
-			return end( $pv )->getString();
-		}
+	private function fetchLastId(): int {
+		return (int)$this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( 'MAX(smw_id)' )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchField();
+	}
 
-		if ( $row->smw_title[0] !== '_' ) {
+	private function fetchBatch( int $afterId ): IResultWrapper {
+		return $this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( [
+				'smw_id',
+				'smw_title',
+				'smw_sortkey'
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( $this->newConditions( $afterId ) )
+			->orderBy( 'smw_id' )
+			->limit( $this->getBatchSize() )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+	}
+
+	/**
+	 * @return IExpression[]
+	 */
+	private function newConditions( int $afterId ): array {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		return [
+			$connection->expr( 'smw_iw', '!=', [ SMW_SQL3_SMWIW_OUTDATED, SMW_SQL3_SMWDELETEIW ] ),
+			$connection->expr( 'smw_title', '!=', '' ),
+			$connection->expr( 'smw_id', '>', $afterId )
+		];
+	}
+
+	private function getSortKey( stdClass $row ): string {
+		if ( $row->smw_sortkey !== '' ) {
 			return $row->smw_sortkey;
 		}
 
-		try {
-			$property = new DIProperty( $row->smw_title );
-		} catch ( PredefinedPropertyLabelMismatchException $e ) {
-			return $row->smw_sortkey;
-		}
-
-		return $property->getCanonicalLabel();
+		return str_replace( '_', ' ', $row->smw_title );
 	}
 
 }

@@ -18,17 +18,17 @@
 
 namespace MediaWiki\Extension\OATHAuth;
 
+use ErrorPageError;
 use InvalidArgumentException;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\OATHAuth\Notifications\Manager;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
-use MediaWiki\User\User;
+use MediaWiki\User\UserIdentity;
 use MWException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -65,18 +65,19 @@ class OATHUserRepository implements LoggerAwareInterface {
 	}
 
 	/**
-	 * @param User $user
+	 * @param UserIdentity $user
 	 * @return OATHUser
 	 * @throws ConfigException
 	 * @throws MWException
 	 */
-	public function findByUser( User $user ) {
+	public function findByUser( UserIdentity $user ) {
 		$oathUser = $this->cache->get( $user->getName() );
 		if ( !$oathUser ) {
 			$uid = $this->centralIdLookupFactory->getLookup()
 				->centralIdFromLocalUser( $user );
 			$oathUser = new OATHUser( $user, $uid );
 			$this->loadKeysFromDatabase( $oathUser );
+
 			$this->cache->set( $user->getName(), $oathUser );
 		}
 		return $oathUser;
@@ -94,7 +95,6 @@ class OATHUserRepository implements LoggerAwareInterface {
 		}
 		$prevUser = $this->findByUser( $user->getUser() );
 		$userId = $this->centralIdLookupFactory->getLookup()->centralIdFromLocalUser( $user->getUser() );
-		$moduleId = null;
 
 		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
 		$dbw->startAtomic( __METHOD__ );
@@ -106,17 +106,12 @@ class OATHUserRepository implements LoggerAwareInterface {
 			->caller( __METHOD__ )
 			->execute();
 
-		if ( $user->getKeys() ) {
-			// if we have keys, then it means we also have a module, lets fetch it
-			// TODO: get the moduleId from the key instead of user once we support multiple keys
-			$moduleId = $this->moduleRegistry->getModuleId( $user->getModule()->getName() );
-		}
 		foreach ( $user->getKeys() as $key ) {
 			$dbw->newInsertQueryBuilder()
 				->insertInto( 'oathauth_devices' )
 				->row( [
 					'oad_user' => $userId,
-					'oad_type' => $moduleId,
+					'oad_type' => $this->moduleRegistry->getModuleId( $key->getModule() ),
 					'oad_data' => FormatJson::encode( $key->jsonSerialize() )
 				] )
 				->caller( __METHOD__ )
@@ -158,20 +153,30 @@ class OATHUserRepository implements LoggerAwareInterface {
 	 * @return IAuthKey
 	 */
 	public function createKey( OATHUser $user, IModule $module, array $keyData, string $clientInfo ): IAuthKey {
-		if ( $user->getModule() && $user->getModule()->getName() !== $module->getName() ) {
-			throw new InvalidArgumentException(
-				"User already has a key from a different module enabled ({$user->getModule()->getName()})"
-			);
+		$otherEnabledModule = null;
+		foreach ( $user->getKeys() as $key ) {
+			if ( $key->getModule() !== $module->getName() ) {
+				$otherEnabledModule = $this->moduleRegistry->getModuleByKey( $key->getModule() );
+				break;
+			}
+		}
+		if ( $otherEnabledModule ) {
+			throw new ErrorPageError( 'errorpagetitle', 'oathauth-error-multiple-modules',
+				[ $module->getDisplayName(), $otherEnabledModule->getDisplayName() ] );
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()->centralIdFromLocalUser( $user->getUser() );
+		$uid = $user->getCentralId();
+		if ( !$uid ) {
+			throw new InvalidArgumentException( "Can't persist a key for user with no central ID available" );
+		}
+
 		$moduleId = $this->moduleRegistry->getModuleId( $module->getName() );
 
 		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
 		$dbw->newInsertQueryBuilder()
 			->insertInto( 'oathauth_devices' )
 			->row( [
-				'oad_user' => $userId,
+				'oad_user' => $uid,
 				'oad_type' => $moduleId,
 				'oad_data' => FormatJson::encode( $keyData ),
 				'oad_created' => $dbw->timestamp(),
@@ -193,7 +198,6 @@ class OATHUserRepository implements LoggerAwareInterface {
 		] );
 
 		if ( !$hasExistingKey ) {
-			$user->setModule( $module );
 			Manager::notifyEnabled( $user );
 		}
 
@@ -213,14 +217,11 @@ class OATHUserRepository implements LoggerAwareInterface {
 			throw new InvalidArgumentException( 'updateKey() can only be used with already existing keys' );
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-
 		$dbw = $this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' );
 		$dbw->newUpdateQueryBuilder()
 			->table( 'oathauth_devices' )
 			->set( [ 'oad_data' => FormatJson::encode( $key->jsonSerialize() ) ] )
-			->where( [ 'oad_user' => $userId, 'oad_id' => $keyId ] )
+			->where( [ 'oad_user' => $user->getCentralId(), 'oad_id' => $keyId ] )
 			->caller( __METHOD__ )
 			->execute();
 
@@ -228,6 +229,23 @@ class OATHUserRepository implements LoggerAwareInterface {
 			'keyId' => $keyId,
 			'user' => $user->getUser()->getName(),
 		] );
+	}
+
+	/**
+	 * @param OATHUser $user
+	 * @param array $where Conditions to pass to DeleteQueryBuilder::where().
+	 * @return void
+	 */
+	private function removeSomeKeys( OATHUser $user, array $where ): void {
+		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
+			->newDeleteQueryBuilder()
+			->deleteFrom( 'oathauth_devices' )
+			->where( [ 'oad_user' => $user->getCentralId() ] )
+			->where( $where )
+			->caller( __METHOD__ )
+			->execute();
+
+		$this->cache->delete( $user->getUser()->getName() );
 	}
 
 	/**
@@ -242,42 +260,36 @@ class OATHUserRepository implements LoggerAwareInterface {
 			throw new InvalidArgumentException( 'A non-persisted key cannot be removed' );
 		}
 
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
-			->newDeleteQueryBuilder()
-			->deleteFrom( 'oathauth_devices' )
-			->where( [ 'oad_user' => $userId, 'oad_id' => $keyId ] )
-			->caller( __METHOD__ )
-			->execute();
-
-		// TODO: figure this out from the key itself
-		// After calling ->disable(), getModule() will return null so this
-		// has to be done before.
-		$keyType = $user->getModule()->getName();
-
-		// Remove the key from the user object
-		$user->setKeys(
-			array_values(
-				array_filter(
-					$user->getKeys(),
-					static function ( IAuthKey $key ) use ( $keyId ) {
-						return $key->getId() !== $keyId;
-					}
-				)
-			)
-		);
-
-		if ( !$user->getKeys() ) {
-			$user->setModule( null );
-		}
-
-		$userName = $user->getUser()->getName();
-		$this->cache->delete( $userName );
+		$this->removeSomeKeys( $user, [ 'oad_id' => $keyId ] );
+		$user->removeKey( $key );
 
 		$this->logger->info( 'OATHAuth removed {oathtype} key {key} for {user} from {clientip}', [
 			'key' => $keyId,
-			'user' => $userName,
+			'user' => $user->getUser()->getName(),
+			'clientip' => $clientInfo,
+			'oathtype' => $key->getModule(),
+		] );
+
+		Manager::notifyDisabled( $user, $self );
+	}
+
+	/**
+	 * @param OATHUser $user
+	 * @param string $keyType As in IModule::getName()
+	 * @param string $clientInfo
+	 * @param bool $self Whether they disabled it themselves
+	 */
+	public function removeAllOfType( OATHUser $user, string $keyType, string $clientInfo, bool $self ) {
+		$moduleId = $this->moduleRegistry->getModuleId( $keyType );
+		if ( !$moduleId ) {
+			throw new InvalidArgumentException( 'Invalid key type: ' . $keyType );
+		}
+
+		$this->removeSomeKeys( $user, [ 'oad_type' => $moduleId ] );
+		$user->removeKeysForModule( $keyType );
+
+		$this->logger->info( 'OATHAuth removed {oathtype} keys for {user} from {clientip}', [
+			'user' => $user->getUser()->getName(),
 			'clientip' => $clientInfo,
 			'oathtype' => $keyType,
 		] );
@@ -302,37 +314,29 @@ class OATHUserRepository implements LoggerAwareInterface {
 	 * @param bool $self Whether they disabled it themselves
 	 */
 	public function removeAll( OATHUser $user, $clientInfo, bool $self ) {
-		$userId = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
-		$this->dbProvider->getPrimaryDatabase( 'virtual-oathauth' )
-			->newDeleteQueryBuilder()
-			->deleteFrom( 'oathauth_devices' )
-			->where( [ 'oad_user' => $userId ] )
-			->caller( __METHOD__ )
-			->execute();
+		$this->removeSomeKeys( $user, [] );
 
-		// TODO: figure this out from the key itself
-		// After calling ->disable(), getModule() will return null so this
-		// has to be done before.
-		$keyType = $user->getModule()->getName();
-
+		$keyTypes = array_unique( array_map(
+			static fn ( IAuthKey $key ) => $key->getModule(),
+			$user->getKeys()
+		) );
 		$user->disable();
 
-		$userName = $user->getUser()->getName();
-		$this->cache->delete( $userName );
-
 		$this->logger->info( 'OATHAuth disabled for {user} from {clientip}', [
-			'user' => $userName,
+			'user' => $user->getUser()->getName(),
 			'clientip' => $clientInfo,
-			'oathtype' => $keyType,
+			'oathtype' => implode( ',', $keyTypes ),
 		] );
 
 		Manager::notifyDisabled( $user, $self );
 	}
 
 	private function loadKeysFromDatabase( OATHUser $user ): void {
-		$uid = $this->centralIdLookupFactory->getLookup()
-			->centralIdFromLocalUser( $user->getUser() );
+		$uid = $user->getCentralId();
+		if ( !$uid ) {
+			// T379442
+			return;
+		}
 
 		$res = $this->dbProvider
 			->getReplicaDatabase( 'virtual-oathauth' )
@@ -348,26 +352,11 @@ class OATHUserRepository implements LoggerAwareInterface {
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
-		$module = null;
-
 		// Clear stored key list before loading keys
 		$user->disable();
 
 		foreach ( $res as $row ) {
-			if ( $module && $row->oat_name !== $module->getName() ) {
-				// Not supported by current application-layer code.
-				throw new RuntimeException( "User {$uid} has multiple different two-factor modules defined" );
-			}
-
-			if ( !$module ) {
-				$module = $this->moduleRegistry->getModuleByKey( $row->oat_name );
-				$user->setModule( $module );
-
-				if ( !$module ) {
-					throw new MWException( 'oathauth-module-invalid' );
-				}
-			}
-
+			$module = $this->moduleRegistry->getModuleByKey( $row->oat_name );
 			$keyData = FormatJson::decode( $row->oad_data, true );
 			$user->addKey( $module->newKey( $keyData + [ 'id' => (int)$row->oad_id ] ) );
 		}

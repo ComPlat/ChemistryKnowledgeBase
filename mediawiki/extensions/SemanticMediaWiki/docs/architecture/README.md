@@ -28,7 +28,7 @@ Some conventions to help developers and the project to maintain a consistent pro
 
 - The top-level namespace is `SMW` and each component should be placed in a namespace that represents the main responsibility of the component
 - [`PSR-4`](https://www.php-fig.org/psr/psr-4/) is used for resolving classes and namespaces in the `src` directory (`includes` is the legacy folder that doesn't necessarily follow any of the policies or conventions mentioned in this document)
-- Development happens against the master branch (see also the [release process](https://www.semantic-mediawiki.org/wiki/Release_process)) and will be release according the the available release plan, backports should be cherry-picked and merged into the targeted branch
+- Development happens against the master branch (see also the [release process](../RELEASE-PROCESS.md)) and will be release according the the available release plan, backports should be cherry-picked and merged into the targeted branch
 - Semantic MediaWiki tries to depend only on a selected pool of MediaWiki core classes (`Title`, `Wikipage`, `ParserOutput`, `RevisionRecord`, `Language` ... ) to minimize the potential for breakage during release changes
 - It is expected that each new class and functionality is covered by corresponding unit tests and if the functionality spans into different components integration tests are required as well to ensure that the behaviour is tested across components and produces deterministic and observable outputs.
 
@@ -70,32 +70,31 @@ Some conventions to help developers and the project to maintain a consistent pro
 
 ## Testing
 
-The `Semantic MediaWiki` software alone deploys ~7400 tests (as of July 2019) which are __required to pass__ before changes can be merged into the repository.
+All tests are __required to pass__ before changes can be merged into the repository.
 
-Tests are commonly divided into [unit][glossary] and [integration tests][glossary] where unit tests represent an isolated unit (or component) to be tested and normally doesn't require a database or other repository connection (e.g. triple store etc.). Integration tests on the other hand provide the means to test the interplay with other components by directly interacting with MediaWiki and its services. For example, about 80% of the CI running time is spend on executing integration tests as they normally run a full integration cycle (parsing, storing, reading, HTML generating etc.).
+Tests are commonly divided into [unit][glossary] and [integration tests][glossary]. Unit tests cover an isolated unit (or component) and normally don't require a database or other repository connection (e.g. triple store). Integration tests verify the interplay between components by interacting with MediaWiki and its services directly. About 80% of CI running time is spent on integration tests as they run a full cycle (parsing, storing, reading, HTML generation, etc.).
 
 For an introduction on "How to use `PHPUnit`" and "How to write integration tests using `JSONScript`" see the relevant section in this [document](https://github.com/SemanticMediaWiki/SemanticMediaWiki/blob/master/tests/README.md).
 
 ### Continuous integration (CI)
 
-The project uses [Travis-CI](https://travis-ci.org/SemanticMediaWiki/SemanticMediaWiki) to run its tests on different platforms with different services enabled to provide a wide range of  environments including MySQL, SQLite, and Postgres.
+The project uses [GitHub Actions](https://github.com/SemanticMediaWiki/SemanticMediaWiki/actions) to run its tests across multiple MediaWiki and PHP versions. CI uses the same Docker-based setup as local development.
 
-- [`.travis.yml`](https://github.com/SemanticMediaWiki/SemanticMediaWiki/blob/master/.travis.yml) testing matrix
-- Settings and [configurations](https://github.com/SemanticMediaWiki/SemanticMediaWiki/blob/master/tests/travis/README.md) to tune the Travis-CI setup
+- [`.github/workflows/main.yml`](https://github.com/SemanticMediaWiki/SemanticMediaWiki/blob/master/.github/workflows/main.yml) — workflow and testing matrix
+- See the [development environment guide](../DEVELOPMENT.md) for how to set up and run tests locally
 
 ## Create a pull request
 
 Before creating a pull request it is recommended to:
 
 - Read this document
-- Install [git](https://www.semantic-mediawiki.org/wiki/Help:Using_Git)
-- Install/clone `Semantic MediaWiki` with `@dev` (with development happening against the master branch)
-- Run `composer test` locally (see the test section) and verify that your installation and test environment are setup correctly
+- Set up the [development environment](../DEVELOPMENT.md)
+- Run `make composer-test` locally and verify that tests pass
 
 ### First PR
 
 - Send a PR with subject [first pr] to the [`Semantic MediaWiki`](https://github.com/SemanticMediaWiki/SemanticMediaWiki/) repository and verify that your git setup works and you are able to replicate changes against the master branch
-- Get yourself familiar with the [Travis-CI](https://travis-ci.org/SemanticMediaWiki/SemanticMediaWiki) environment and observe how a PR triggers CI jobs and review the output of those jobs (important when a job doesn't pass and you need to find the cause for a failure)
+- Observe how a PR triggers [CI jobs](https://github.com/SemanticMediaWiki/SemanticMediaWiki/actions) and review the output of those jobs (important when a job doesn't pass and you need to find the cause for a failure)
 
 ### Preparing a PR
 

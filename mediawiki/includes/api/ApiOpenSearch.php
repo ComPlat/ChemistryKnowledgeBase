@@ -245,7 +245,6 @@ class ApiOpenSearch extends ApiBase {
 				$descriptions = [];
 				$urls = [];
 				foreach ( $results as $r ) {
-                    if ( $r['title']->isSubpage()) continue;
 					$terms[] = $r['title']->getPrefixedText();
 					$descriptions[] = strval( $r['extract'] );
 					$urls[] = $r['url'];

@@ -2,9 +2,11 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\Maintenance\Maintenance;
 use Onoi\MessageReporter\MessageReporter;
 use SMW\Exporter\ExporterFactory;
 use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
 
 /**
  * Load the required class
@@ -47,7 +49,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  * @author Markus Krötzsch
  * @author mwjames
  */
-class dumpRDF extends \Maintenance {
+class dumpRDF extends Maintenance {
 
 	/**
 	 * @var MessageReporter
@@ -86,8 +88,6 @@ class dumpRDF extends \Maintenance {
 
 	/**
 	 * @since 3.2
-	 *
-	 * @param MessageReporter $messageReporter
 	 */
 	public function setMessageReporter( MessageReporter $messageReporter ) {
 		$this->messageReporter = $messageReporter;
@@ -112,7 +112,8 @@ class dumpRDF extends \Maintenance {
 	 * @since 2.0
 	 */
 	public function execute() {
-		if ( ( $maintenanceCheck = new MaintenanceCheck() )->canExecute() === false ) {
+		$maintenanceCheck = new MaintenanceCheck();
+		if ( !$maintenanceCheck->canExecute() ) {
 			exit( $maintenanceCheck->getMessage() );
 		}
 
@@ -192,6 +193,10 @@ class dumpRDF extends \Maintenance {
 
 		$exportController = $exporterFactory->newExportController(
 			$exporterFactory->newRDFXMLSerializer()
+		);
+
+		$exportController->setStatsFlusher(
+			PeriodicStatsFlusher::newFromGlobalState()
 		);
 
 		if ( $pages !== [] ) {

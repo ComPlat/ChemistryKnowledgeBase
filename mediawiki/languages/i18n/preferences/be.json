@@ -13,7 +13,8 @@
 			"ZlyiLev",
 			"Дзяніс Тутэйшы",
 			"Тест",
-			"Хомелка"
+			"Хомелка",
+			"Ucukor"
 		]
 	},
 	"preferences": "Параметры",
@@ -143,7 +144,7 @@
 	"underline-always": "Заўсёды",
 	"tog-showhiddencats": "Паказаць схаваныя катэгорыі",
 	"tog-showrollbackconfirmation": "Паказваць акно пацвярджэння пры націску спасылкі адкату",
-	"tog-forcesafemode": "Заўсёды ўключаць [[mw:Manual:Safemode|бяспечны рэжым]]",
+	"tog-forcesafemode": "Заўсёды ўключаць [[mw:Special:MyLanguage/Manual:Safemode|бяспечны рэжым]]",
 	"prefs-help-forcesafemode": "Адключыць вікі-скрыпты і табліцы стыляў.",
 	"prefs-editing": "Праца",
 	"prefs-description-editing": "Наладзьце, як вы ўносіце, адсочваеце і правяраеце праўкі.",
@@ -156,7 +157,8 @@
 	"editfont-sansserif": "Без засечак",
 	"editfont-serif": "З засечкамі",
 	"tog-minordefault": "Прадвызначана пазначаць усе праўкі як дробныя",
-	"tog-forceeditsummary": "Папярэджваць пра пустое поле тлумачэння праўкі (або апісанне стандартнай адмены)",
+	"tog-forceeditsummary": "Папярэджваць пра пустое поле тлумачэння праўкі (або апісанне стандартнага скасавання)",
+	"tog-editrecovery": "Уключыць функцыю [[Special:EditRecovery|{{int:editrecovery}}]]",
 	"tog-useeditwarning": "Папярэдзіць мяне, калі я пакідаю старонку з незахаванымі праўкамі",
 	"prefs-preview": "Перадпаказ",
 	"tog-previewonfirst": "Перадпрагляд пры пачатку рэдагавання",

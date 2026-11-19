@@ -1371,6 +1371,31 @@ config-schema:
             Defines what namespaces thumbnails will be displayed for in Special:Search.
             This is the list of namespaces for which thumbnails (or a placeholder in
             the absence of a thumbnail) will be shown:
+    ThumbnailSteps:
+        default: null
+        type:
+            - array
+            - 'null'
+        description: |-
+            Array of image widths used as steps for thumbnail sizes.
+            Requested thumbnail widths are rounded up to the nearest step
+            The thumbnail with smallest step that has larger value than requested will be shown
+            but it will be downsized via HTML values.
+            It increases the bandwidth to the users by serving slightly large thumbnail sizes they
+            have requested but it will save resources by de-duplicating thumbnail generation and storage.
+            Note that these steps are "best effort" and MediaWiki might decide to use the requested size
+            for any reason.
+            @see MediaWiki\Media\ImageHandler::getSteppedThumbWidth
+            @since 1.43.7
+    ThumbnailStepsRatio:
+        default: null
+        type:
+            - number
+            - 'null'
+        description: |-
+            Ratio of images that will use the thumbnail steps
+            This is to allow for gradual roll out of thumbnail steps. It should be a number between 0 and 1.
+            The precision of this value is up to 0.001, anything below that will be ignored.
     ThumbnailBuckets:
         default: null
         type:
@@ -1531,6 +1556,7 @@ config-schema:
         description: |-
             Site admin email address.
             Defaults to "wikiadmin@$wgServerName" (in Setup.php).
+            @see $wgHTTPUserAgentContact
     PasswordSender:
         default: false
         description: |-
@@ -4516,7 +4542,7 @@ config-schema:
             @since 1.36
     ReauthenticateTime:
         default:
-            default: 300
+            default: 3600
         type: object
         additionalProperties:
             type: integer
@@ -5489,8 +5515,7 @@ config-schema:
             proxies
             @since 1.16
     DnsBlacklistUrls:
-        default:
-            - http.dnsbl.sorbs.net.
+        default: []
         type: array
         description: |-
             List of DNS blacklists to use, if $wgEnableDnsBlacklist is true.
@@ -5897,6 +5922,12 @@ config-schema:
             This should be set in LocalSettings.php, otherwise $wgSecretKey will
             be used.
             @since 1.27
+    EnableUnsafeXsltOption:
+        default: false
+        description: |-
+            Enable the deprecated xslt option in the Action API.
+            This is unsafe and allows users with the editinterface right to perform XSS.
+            @see https://phabricator.wikimedia.org/T401995
     CookieExpiration:
         default: 2592000
         description: 'Default cookie lifetime, in seconds. Setting to 0 makes all cookies session-only.'
@@ -6469,8 +6500,10 @@ config-schema:
         description: 'Fully specified path to git binary'
     GitRepositoryViewers:
         default:
-            'https://(?:[a-z0-9_]+@)?gerrit.wikimedia.org/r/(?:p/)?(.*)': 'https://gerrit.wikimedia.org/g/%R/+/%H'
-            'ssh://(?:[a-z0-9_]+@)?gerrit.wikimedia.org:29418/(.*)': 'https://gerrit.wikimedia.org/g/%R/+/%H'
+            'https://(?:[a-z0-9_]+@)?gerrit\.wikimedia\.org/r/(?:p/)?(.*)': 'https://gerrit.wikimedia.org/g/%R/+/%H'
+            'ssh://(?:[a-z0-9_]+@)?gerrit\.wikimedia\.org:29418/(.*)': 'https://gerrit.wikimedia.org/g/%R/+/%H'
+            'https://github\.com/(.*?)(\.git)?': 'https://github.com/$1/commit/%H'
+            'git@github\.com:(.*?)(\.git)?': 'https://github.com/$1/commit/%H'
         type: object
         description: |-
             Map GIT repository URLs to viewer URLs to provide links in Special:Version
@@ -7746,26 +7779,6 @@ config-schema:
         description: |-
             Additional REST API Route files.
             A common usage is to enable development/experimental endpoints only on test wikis.
-    RestSandboxSpecs:
-        default: {  }
-        type: object
-        additionalProperties:
-            type: object
-            properties: { url: { type: string, format: url }, name: { type: string }, msg: { type: string, description: 'a message key' } }
-            required: [url]
-        description: |-
-            A list of OpenAPI specs to be made available for exploration on
-            Special:RestSandbox. If none are given, Special:RestSandbox is disabled.
-            This is an associative array, arbitrary spec IDs to spec descriptions.
-            Each spec description is an array with the following keys:
-            - url: the URL that will return the OpenAPI spec.
-            - name: the name of the API, to be shown on Special:RestSandbox.
-              Ignored if msg is given.
-            - msg: a message key for the name of the API, to be shown on
-              Special:RestSandbox.
-            @unstable Introduced in 1.43. We may want to rename or change this to
-            accommodate the need to list external APIs in a central discovery
-            document.
     MaxShellMemory:
         default: 307200
         description: 'Maximum amount of virtual memory available to shell processes under linux, in KiB.'
@@ -7887,6 +7900,22 @@ config-schema:
         description: |-
             Timeout for HTTP requests done internally for transwiki imports, in seconds.
             @since 1.29
+    HTTPUserAgentContact:
+        default: false
+        type:
+            - string
+            - boolean
+        description: |-
+            Contact URL and/or email address in the User-Agent header of outgoing HTTP requests
+            This defaults to $wgCanonicalServer and is placed in parentheses after
+            `MediaWiki/{MW_VERSION}` in the default user agent string for all outgoing HTTP
+            requests, including via HttpRequestFactory, ForeignAPIRepo, and MultiHttpClient.
+            If you operate an intranet wiki, or a wiki farm with many different domain, it is
+            recommended to override this and set a fixed public homepage or email address instead.
+            @since 1.47 (also backported to 1.43.10, 1.45.5, 1.46.1)
+            @see $wgEmergencyContact
+            @see MediaWiki\Http\HttpRequestFactory::getUserAgent
+            @see https://www.mediawiki.org/wiki/InstantCommons#User-Agent_Policy
     AsyncHTTPTimeout:
         default: 25
         description: 'Timeout for Asynchronous (background) HTTP requests, in seconds.'
@@ -8029,7 +8058,7 @@ config-schema:
             For details about what data is sent, see: https://www.mediawiki.org/wiki/Manual:$wgPingback
             For the pingback privacy policy, see:
             https://wikimediafoundation.org/wiki/MediaWiki_Pingback_Privacy_Statement
-            Aggregate pingback data is available at: https://pingback.wmflabs.org/
+            Aggregate pingback data is available at: https://pingback.wmcloud.org/
             @since 1.28
     OriginTrials:
         default: []

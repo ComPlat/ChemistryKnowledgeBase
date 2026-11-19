@@ -11,7 +11,6 @@ use Wikimedia\Assert\UnreachableException;
  * Over time, more functions can be migrated out of various other files here.
  * @module
  */
-
 class PHPUtils {
 	/**
 	 * Convert a counter to a Base64 encoded string.
@@ -160,13 +159,10 @@ class PHPUtils {
 		} else {
 			$ss = substr( $s, $start, $length );
 		}
-		if ( $ss === false ) {
-			$ss = '';
-		}
-		if ( strlen( $ss ) === 0 ) {
+		if ( $ss === '' ) {
 			return $ss;
 		}
-		$firstChar = ord( $ss );
+		$firstChar = ord( $ss[0] );
 		Assert::invariant(
 			( $firstChar & 0xC0 ) !== 0x80,
 			'Bad UTF-8 at start of string'

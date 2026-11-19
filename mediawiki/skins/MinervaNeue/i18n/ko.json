@@ -15,7 +15,11 @@
 			"Ykhwong",
 			"관인생략",
 			"아라",
-			"Suleiman the Magnificent Television"
+			"Suleiman the Magnificent Television",
+			"Whatback11",
+			"YeBoy371",
+			"Tensama0415",
+			"解浪"
 		]
 	},
 	"minerva-last-modified-date": "$1 $2에 마지막으로 편집됨",
@@ -27,7 +31,7 @@
 	"mobile-frontend-editor-redlink-explain": "이 문서는 아직 만들어지지 않았습니다.",
 	"mobile-frontend-editor-redlink-leave": "아니요, 괜찮습니다.",
 	"mobile-frontend-history": "이 문서의 편집 역사를 봅니다.",
-	"mobile-frontend-home-button": "대문",
+	"mobile-frontend-home-button": "홈",
 	"mobile-frontend-language-article-heading": "언어",
 	"mobile-frontend-languages-not-available": "이 문서는 다른 언어로 읽을 수 없습니다.",
 	"mobile-frontend-main-menu-button-tooltip": "주 메뉴 열기",
@@ -43,7 +47,7 @@
 	"minerva-meta-data-issues-section-header": "문단 문제",
 	"mobile-frontend-pageaction-edit-tooltip": "이 문서의 선두 문단을 편집합니다",
 	"mobile-frontend-placeholder": "{{SITENAME}} 검색",
-	"mobile-frontend-random-button": "임의의 문서로",
+	"mobile-frontend-random-button": "임의 문서로",
 	"mobile-frontend-redirected-from": "\"[[$1]]\"에서 넘어옴",
 	"mobile-frontend-talk-back-to-filepage": "\"$1\" 파일로 돌아갑니다.",
 	"mobile-frontend-talk-back-to-page": "\"$1\" 문서로 돌아갑니다.",
@@ -73,5 +77,7 @@
 	"skin-minerva-mobile-option-MinervaShowCategories": "분류",
 	"skin-minerva-mobile-option-MinervaShowCategories-description": "문서 분류 보기",
 	"skin-minerva-recentchanges-warning-enhanced-not-supported": "유감스럽지만, 문서별 그룹화는 모바일에서는 가능하지 않습니다. 페이지별 그룹화를 원하신다면 데스크탑 사이트를 방문해 주세요.",
-	"skin-minerva-night-mode-unavailable": "\"라이트\" 색상 테마로만 제공되는 페이지입니다."
+	"skin-minerva-night-mode-unavailable": "\"라이트\" 색상 테마로만 제공되는 페이지입니다.",
+	"minerva.css": "/* 이 CSS 설정은 미네르바 노이에 스킨을 사용하는 사용자에게 적용됩니다 */",
+	"minerva.js": "/* 이 자바스크립트 설정은 미네르바 노이에 스킨을 사용하는 사용자에게 적용됩니다 */"
 }

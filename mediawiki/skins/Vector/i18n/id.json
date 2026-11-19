@@ -16,7 +16,10 @@
 			"Rex",
 			"Robifr",
 			"Veracious",
-			"William Surya Permana"
+			"William Surya Permana",
+			"NikolasKHF",
+			"Penyuwangi",
+			"Hidayatsrf"
 		]
 	},
 	"skinname-vector": "Vektor",
@@ -58,6 +61,7 @@
 	"vector-feature-custom-font-size-1-label": "Standar",
 	"vector-feature-custom-font-size-2-label": "Besar",
 	"skin-theme-name": "Warna",
+	"skin-theme-description": "[Versi eksperimental, kemungkinan besar akan mengalami masalah] Mengurangi cahaya yang dipancarkan oleh layar perangkat.",
 	"skin-theme-day-label": "Terang",
 	"skin-theme-night-label": "Gelap",
 	"skin-theme-os-label": "Otomatis",
@@ -85,8 +89,8 @@
 	"vector-2022-prefs-talkpage": "[[mw:Talk:Reading/Web/Desktop_Improvements|Diskusi]]",
 	"tooltip-vector-anon-user-menu-title": "Opsi lainnya",
 	"vector-page-tools-nav-label": "Peralatan halaman",
-	"vector-prefs-limited-width": "Aktifkan mode lebar terbatas",
-	"vector-prefs-limited-width-help": "Aktifkan mode lebar terbatas untuk meningkatkan pengalaman membaca.",
+	"vector-prefs-limited-width": "Nyalakan mode lebar terbatas",
+	"vector-prefs-limited-width-help": "Nyalakan mode lebar terbatas untuk meningkatkan pengalaman membaca.",
 	"empty-language-selector-body": "Konten halaman tidak didukung dalam bahasa lain.",
 	"vector-toc-unpinned-popup": "Daftar isi telah dipindahkan ke sini.",
 	"vector-page-tools-unpinned-popup": "Menu perkakas telah dipindahkan ke sini.",

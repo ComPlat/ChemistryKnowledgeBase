@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ильгиз"
+		]
+	},
+	"linterrors": "Lint errors хаталары",
+	"linter-category-bogus-image-options": "Файлларның фиктив параметрлары",
+	"linter-category-missing-end-tag": "Ябучы тэг юк"
+}

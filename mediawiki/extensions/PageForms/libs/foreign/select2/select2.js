@@ -4496,8 +4496,8 @@ S2.define('select2/dropdown/attachBody',[
     };
 
     var viewport = {
-      top: window.document.body.scrollTop,
-      bottom: window.document.body.scrollTop + $window.height()
+      top: $window.scrollTop(),
+      bottom: $window.scrollTop() + $window.height()
     };
 
     var enoughRoomAbove = viewport.top < (offset.top - dropdown.height);
@@ -4530,8 +4530,6 @@ S2.define('select2/dropdown/attachBody',[
     }
 
     css.top -= parentOffset.top;
-    var ffOffset = $window.scrollTop() === 0 ? window.document.body.scrollTop : 0;
-    css.top += ffOffset;
     css.left -= parentOffset.left;
     //fix for rtl forms
     if( 'rtl' == $('html').attr('dir') ){

@@ -2,11 +2,13 @@
 
 namespace SMW\SQLStore;
 
-use SMW\DIProperty;
+use Psr\Log\LoggerInterface;
+use SMW\DataItems\Property;
 use SMW\Listener\ChangeListener\ChangeListeners\PropertyChangeListener;
 use SMW\Parameters;
 use SMW\SQLStore\Exception\TableMissingIdFieldException;
 use SMW\Store;
+use Wikimedia\Rdbms\DBError;
 
 /**
  * @private
@@ -18,35 +20,26 @@ use SMW\Store;
  */
 class PropertyTableUpdater {
 
-	/**
-	 * @var Store
-	 */
-	private $store;
+	private ?PropertyChangeListener $propertyChangeListener = null;
 
 	/**
-	 * @var PropertyStatisticsStore
+	 * @var int[] Usage count changes by property ID
 	 */
-	private $propertyStatisticsStore;
+	private array $usageCountChanges = [];
 
 	/**
-	 * @var PropertyChangeListener
+	 * @var true[] IDs of the properties and categories to touch, as keys
 	 */
-	private $propertyChangeListener;
-
-	/**
-	 * @var array
-	 */
-	private $stats = [];
+	private array $sharedIds = [];
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param Store $store
-	 * @param PropertyStatisticsStore $propertyStatisticsStore
 	 */
-	public function __construct( Store $store, PropertyStatisticsStore $propertyStatisticsStore ) {
-		$this->store = $store;
-		$this->propertyStatisticsStore = $propertyStatisticsStore;
+	public function __construct(
+		private readonly Store $store,
+		private readonly PropertyStatisticsStore $propertyStatisticsStore,
+		private readonly LoggerInterface $logger,
+	) {
 	}
 
 	/**
@@ -54,25 +47,24 @@ class PropertyTableUpdater {
 	 *
 	 * @param PropertyChangeListener $propertyChangeListener
 	 */
-	public function setPropertyChangeListener( PropertyChangeListener $propertyChangeListener ) {
+	public function setPropertyChangeListener( PropertyChangeListener $propertyChangeListener ): void {
 		$this->propertyChangeListener = $propertyChangeListener;
 	}
 
 	/**
-	 * Update all property tables and any dependent data (hashes,
-	 * statistics, etc.) by inserting/deleting the given values. The ID of
-	 * the page that is updated, and the hashes of the properties must be
-	 * given explicitly (the hashes could not be computed from the insert
-	 * and delete data alone anyway).
+	 * Update all property tables and any dependent data (hashes, etc.) by
+	 * inserting/deleting the given values. The ID of the page that is
+	 * updated, and the hashes of the properties must be given explicitly
+	 * (the hashes could not be computed from the insert and delete data
+	 * alone anyway). The usage counts and touched fields of the properties
+	 * and categories involved are written by writeSharedRowsOnCommit().
 	 *
 	 * @since 3.0
 	 *
 	 * @param int $id
 	 * @param Parameters $parameters
 	 */
-	public function update( $id, Parameters $parameters ) {
-		$this->stats = [];
-
+	public function update( $id, Parameters $parameters ): void {
 		$insert_rows = $parameters->get( 'insert_rows' );
 		$delete_rows = $parameters->get( 'delete_rows' );
 
@@ -91,10 +83,68 @@ class PropertyTableUpdater {
 		if ( $insert_rows !== [] || $delete_rows !== [] ) {
 			$this->store->getObjectIds()->setPropertyTableHashes( $id, $new_hashes );
 		}
+	}
 
-		$this->propertyStatisticsStore->addToUsageCounts(
-			$this->stats
+	/**
+	 * Writes the usage counts and touched fields of the properties and categories that update()
+	 * and addToUsageCount() changed once the open transaction commits, in one transaction of
+	 * their own, and drops them if it rolls back. Every page using a property or category shares
+	 * these rows, so writing them inside a page update's transaction makes concurrent updates
+	 * conflict and roll back each other's data.
+	 *
+	 * @since 7.4.1
+	 */
+	public function writeSharedRowsOnCommit(): void {
+		$usageCountChanges = array_filter( $this->usageCountChanges );
+		$sharedIds = array_keys( $this->sharedIds );
+		$this->discardSharedRows();
+
+		if ( $usageCountChanges === [] && $sharedIds === [] ) {
+			return;
+		}
+
+		// Concurrent writers then lock the rows in the same order and cannot deadlock
+		ksort( $usageCountChanges );
+		sort( $sharedIds );
+
+		$this->store->getConnection( 'mw.db' )->onTransactionCommitOrIdle(
+			fn () => $this->writeSharedRows( $usageCountChanges, $sharedIds )
 		);
+	}
+
+	private function writeSharedRows( array $usageCountChanges, array $sharedIds ): void {
+		try {
+			$this->store->getConnection( 'mw.db' )->doSectionTransaction(
+				__METHOD__,
+				function () use ( $usageCountChanges, $sharedIds ): void {
+					$this->propertyStatisticsStore->addToUsageCounts( $usageCountChanges );
+					$this->update_touched( $sharedIds );
+				}
+			);
+		} catch ( DBError $e ) {
+			// The page's data has committed, so the update has not failed
+			$this->logger->warning(
+				'Writing the usage counts and touched fields of properties and categories failed: {error}',
+				[ 'error' => $e->getMessage(), 'exception' => $e ]
+			);
+		}
+	}
+
+	/**
+	 * Adds a usage count change for writeSharedRowsOnCommit() to write.
+	 *
+	 * @since 7.4.1
+	 */
+	public function addToUsageCount( int $pid, int $change ): void {
+		$this->usageCountChanges[$pid] = ( $this->usageCountChanges[$pid] ?? 0 ) + $change;
+	}
+
+	/**
+	 * @since 7.4.1
+	 */
+	public function discardSharedRows(): void {
+		$this->usageCountChanges = [];
+		$this->sharedIds = [];
 	}
 
 	/**
@@ -105,7 +155,7 @@ class PropertyTableUpdater {
 	 * @param array $insert_rows
 	 * @param array $delete_rows
 	 */
-	private function doUpdate( array $insert_rows, array $delete_rows ) {
+	private function doUpdate( array $insert_rows, array $delete_rows ): void {
 		$propertyTables = $this->store->getPropertyTables();
 		$ids = [];
 
@@ -148,8 +198,8 @@ class PropertyTableUpdater {
 	 * @param array $rows array of rows to insert/delete
 	 * @param bool $insert
 	 */
-	private function update_rows( PropertyTableDefinition $propertyTable, array $rows, $insert ) {
-		if ( empty( $rows ) ) {
+	private function update_rows( PropertyTableDefinition $propertyTable, array $rows, bool $insert ): void {
+		if ( $rows === [] ) {
 			return;
 		}
 
@@ -161,7 +211,7 @@ class PropertyTableUpdater {
 
 		if ( $propertyTable->isFixedPropertyTable() ) {
 
-			$property = new DIProperty(
+			$property = new Property(
 				$propertyTable->getFixedProperty()
 			);
 
@@ -174,31 +224,31 @@ class PropertyTableUpdater {
 				$pid = $row['p_id'];
 			}
 
-			$this->propertyChangeListener->recordChange(
-				$pid,
-				[ 'row' => $row, 'is_insert' => $insert ]
-			);
-
-			if ( !array_key_exists( $pid, $this->stats ) ) {
-				$this->stats[$pid] = 0;
+			if ( !isset( $pid ) ) {
+				continue;
 			}
 
-			$this->stats[$pid] += ( $insert ? 1 : -1 );
+			$this->propertyChangeListener->recordChange(
+				$pid,
+				[ 'row' => $row ]
+			);
+
+			$this->addToUsageCount( $pid, $insert ? 1 : -1 );
 		}
 	}
 
-	private function insert( PropertyTableDefinition $propertyTable, array $rows ) {
+	private function insert( PropertyTableDefinition $propertyTable, array $rows ): void {
 		$connection = $this->store->getConnection( 'mw.db' );
 		$tableName = $propertyTable->getName();
 
-		$connection->insert(
-			$tableName,
-			$rows,
-			__METHOD__ . "-$tableName"
-		);
+		$connection->newInsertQueryBuilder()
+			->insertInto( $tableName )
+			->rows( $rows )
+			->caller( __METHOD__ . "-$tableName" )
+			->execute();
 	}
 
-	private function delete( PropertyTableDefinition $propertyTable, array $rows ) {
+	private function delete( PropertyTableDefinition $propertyTable, array $rows ): void {
 		$condition = '';
 		$connection = $this->store->getConnection( 'mw.db' );
 
@@ -233,40 +283,42 @@ class PropertyTableUpdater {
 
 		$condition = "s_id=" . $connection->addQuotes( $sid ) . " AND ($condition)";
 
-		$connection->delete(
-			$tableName,
-			[ $condition ],
-			__METHOD__ . "-$tableName"
-		);
+		$connection->newDeleteQueryBuilder()
+			->deleteFrom( $tableName )
+			->where( $condition )
+			->caller( __METHOD__ . "-$tableName" )
+			->execute();
 	}
 
-	private function aggregate_ids( &$ids, $propertyTable, $rows ) {
+	private function aggregate_ids( array &$ids, $propertyTable, $rows ): void {
 		$isCategory = false;
 
 		if ( $propertyTable->isFixedPropertyTable() ) {
 
-			$property = new DIProperty(
+			$property = new Property(
 				$propertyTable->getFixedProperty()
 			);
 
 			$pid = $this->store->getObjectIds()->makeSMWPropertyID( $property );
 			$isCategory = $property->getKey() === '_INST';
+			$this->sharedIds[$pid] = true;
 		}
 
 		foreach ( $rows as $row ) {
-			$sid = $isCategory ? $row['o_id'] : $row['s_id'];
-			$ids[$sid] = true;
-
-			// Individual pid? or fixed?
-			if ( isset( $row['p_id'] ) ) {
-				$pid = $row['p_id'];
+			if ( $isCategory ) {
+				$this->sharedIds[$row['o_id']] = true;
+			} else {
+				$ids[$row['s_id']] = true;
 			}
 
-			$ids[$pid] = true;
+			// Individual pid for non-fixed tables
+			if ( isset( $row['p_id'] ) ) {
+				$this->sharedIds[$row['p_id']] = true;
+			}
 		}
 	}
 
-	private function update_touched( $ids ) {
+	private function update_touched( array $ids ): void {
 		if ( $ids === [] ) {
 			return;
 		}
@@ -274,21 +326,12 @@ class PropertyTableUpdater {
 		$connection = $this->store->getConnection( 'mw.db' );
 		$touched = $connection->timestamp();
 
-		// Updating across the entity table with some properties (Modification
-		// date etc.) to see more frequent updates than others. Do we need to use
-		// onTransctionIdle( ... ) to avoid locking the rows for succeeding
-		// updates?
-
-		$connection->update(
-			SQLStore::ID_TABLE,
-			[
-				'smw_touched' => $touched
-			],
-			[
-				'smw_id' => $ids
-			],
-			__METHOD__
-		);
+		$connection->newUpdateQueryBuilder()
+			->update( SQLStore::ID_TABLE )
+			->set( [ 'smw_touched' => $touched ] )
+			->where( [ 'smw_id' => $ids ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 }

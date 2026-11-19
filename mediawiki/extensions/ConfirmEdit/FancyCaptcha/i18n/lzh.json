@@ -3,10 +3,14 @@
 		"authors": [
 			"Crowley666",
 			"LaMagiaaa",
-			"Suchichi02"
+			"Suchichi02",
+			"Ouclie",
+			"XiaoAnIsMe"
 		]
 	},
 	"fancycaptcha-captcha": "安檢",
+	"fancycaptcha-accountcreate": "爲護此共筆而不爲自栞之戶所侵，子須書下匡之字（[[Special:Captcha/help|詳訊]]）：",
 	"fancycaptcha-edit": "欲纂此頁，鍵入圖示之碼　([[Special:Captcha/help|幫助]])：",
-	"fancycaptcha-imgcaptcha-ph": "輸圖中文字"
+	"fancycaptcha-imgcaptcha-ph": "輸圖中文字",
+	"fancycaptcha-reload-text": "重整"
 }

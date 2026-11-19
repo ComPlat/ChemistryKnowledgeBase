@@ -2,6 +2,8 @@
 
 namespace SMW\SQLStore\EntityStore;
 
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 use SMW\MediaWiki\Connection\Database;
 use SMW\SQLStore\SQLStore;
 use SMW\Utils\HmacSerializer;
@@ -9,37 +11,34 @@ use SMW\Utils\HmacSerializer;
 /**
  * @private
  *
- * @license GNU GPL v2
+ * @license GPL-2.0-or-later
  * @since 3.1
  *
  * @author mwjames
  */
 class SequenceMapFinder {
 
-	/**
-	 * @var Database
-	 */
-	private $connection;
+	use LoggerAwareTrait;
 
 	/**
-	 * @var IdCacheManager
+	 * Logged when a persisted sequence map cannot be deserialized, for example
+	 * after $wgSecretKey changed.
 	 */
-	private $idCacheManager;
+	private const CORRUPT_MAP_WARNING = 'Sequence map for entity {id} could not be deserialized and was treated as empty; this can happen after $wgSecretKey changed.';
 
 	/**
-	 * @var
+	 * @var array
 	 */
-	private $preloaded = [];
+	private array $preloaded = [];
 
 	/**
 	 * @since 3.1
-	 *
-	 * @param Database $connection
-	 * @param IdCacheManager $idCacheManager
 	 */
-	public function __construct( Database $connection, IdCacheManager $idCacheManager ) {
-		$this->connection = $connection;
-		$this->idCacheManager = $idCacheManager;
+	public function __construct(
+		private readonly Database $connection,
+		private readonly IdCacheManager $idCacheManager,
+	) {
+		$this->logger = new NullLogger();
 	}
 
 	/**
@@ -50,7 +49,7 @@ class SequenceMapFinder {
 	 * @param int $sid
 	 * @param array|null $map
 	 */
-	public function setMap( $sid, ?array $map = null ) {
+	public function setMap( $sid, ?array $map = null ): void {
 		if ( $map === null ) {
 			return;
 		}
@@ -61,18 +60,19 @@ class SequenceMapFinder {
 			$map = null;
 		}
 
-		$this->connection->upsert(
-			SQLStore::ID_AUXILIARY_TABLE,
-			[
+		$this->connection->newInsertQueryBuilder()
+			->insertInto( SQLStore::ID_AUXILIARY_TABLE )
+			->row( [
 				'smw_id' => $sid,
 				'smw_seqmap' => $map
-			],
-			'smw_id',
-			[
+			] )
+			->onDuplicateKeyUpdate()
+			->uniqueIndexFields( [ 'smw_id' ] )
+			->set( [
 				'smw_seqmap' => $map
-			],
-			__METHOD__
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	/**
@@ -82,24 +82,21 @@ class SequenceMapFinder {
 	 *
 	 * @return array
 	 */
-	public function findMapById( $sid ) {
+	public function findMapById( $sid ): array {
 		$omap = [];
 		$cache = $this->idCacheManager->get( 'sequence.map' );
 
-		if ( ( $map = $cache->fetch( $sid ) ) !== false ) {
+		$map = $cache->fetch( (string)$sid );
+		if ( $map !== false ) {
 			return $map;
 		}
 
-		$row = $this->connection->selectRow(
-			SQLStore::ID_AUXILIARY_TABLE,
-			[
-				'smw_seqmap'
-			],
-			[
-				'smw_id' => $sid
-			],
-			__METHOD__
-		);
+		$row = $this->connection->newSelectQueryBuilder()
+			->select( [ 'smw_seqmap' ] )
+			->from( SQLStore::ID_AUXILIARY_TABLE )
+			->where( [ 'smw_id' => $sid ] )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		if ( $row !== false ) {
 			$omap = $row->smw_seqmap;
@@ -113,9 +110,21 @@ class SequenceMapFinder {
 			$map = [];
 		} else {
 			$map = HmacSerializer::uncompress( $omap );
+
+			// uncompress() returns false when the stored blob cannot be
+			// deserialized (for example when it was written under a different
+			// $wgSecretKey); fall back to an empty map so the array return type
+			// always holds.
+			if ( !is_array( $map ) ) {
+				$this->logger->warning(
+					self::CORRUPT_MAP_WARNING,
+					[ 'id' => $sid ]
+				);
+				$map = [];
+			}
 		}
 
-		$cache->save( $sid, $map );
+		$cache->save( (string)$sid, $map );
 
 		return $map;
 	}
@@ -125,7 +134,7 @@ class SequenceMapFinder {
 	 *
 	 * @param array $ids
 	 */
-	public function prefetchSequenceMap( array $ids ) {
+	public function prefetchSequenceMap( array $ids ): void {
 		sort( $ids );
 		$hash = md5( json_encode( $ids ) );
 
@@ -135,17 +144,12 @@ class SequenceMapFinder {
 
 		$cache = $this->idCacheManager->get( 'sequence.map' );
 
-		$rows = $this->connection->select(
-			$this->connection->tablename( SQLStore::ID_AUXILIARY_TABLE ),
-			[
-				'smw_id',
-				'smw_seqmap'
-			],
-			[
-				'smw_id' => $ids
-			],
-			__METHOD__
-		);
+		$rows = $this->connection->newSelectQueryBuilder()
+			->select( [ 'smw_id', 'smw_seqmap' ] )
+			->from( SQLStore::ID_AUXILIARY_TABLE )
+			->where( [ 'smw_id' => $ids ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$inverted_ids = array_flip( $ids );
 
@@ -163,16 +167,27 @@ class SequenceMapFinder {
 				$map = [];
 			}
 
+			// A blob that fails to deserialize yields false; cache an empty map
+			// instead so a later findMapById() gets a cache hit rather than
+			// re-running the SELECT.
+			if ( !is_array( $map ) ) {
+				$this->logger->warning(
+					self::CORRUPT_MAP_WARNING,
+					[ 'id' => $id ]
+				);
+				$map = [];
+			}
+
 			// Removes those that found a matching pair
 			unset( $inverted_ids[$id] );
 
-			$cache->save( $id, $map );
+			$cache->save( (string)$id, $map );
 		}
 
 		// For all leftovers, store them as empty to avoid
 		// running individual SELECTS
 		foreach ( $inverted_ids as $id => $pos ) {
-			$cache->save( $id, [] );
+			$cache->save( (string)$id, [] );
 		}
 
 		$this->preloaded[$hash] = true;

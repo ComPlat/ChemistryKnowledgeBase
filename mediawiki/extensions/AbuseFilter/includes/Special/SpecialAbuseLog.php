@@ -31,7 +31,6 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
@@ -758,7 +757,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 						->getPrivacyLevel();
 				} catch ( CentralDBNotAvailableException $_ ) {
 					// Conservatively assume that it's hidden and protected, like in AbuseLogPager::doFormatRow
-					$privacyLevel = Flags::FILTER_HIDDEN & Flags::FILTER_USES_PROTECTED_VARS;
+					$privacyLevel = Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
 				}
 			}
 
@@ -800,7 +799,7 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 
 		// Load data
 		$vars = $this->varBlobStore->loadVarDump( $row );
-		$varsArray = $this->varManager->dumpAllVars( $vars, true );
+		$varsArray = $this->varManager->dumpAllVars( $vars, $this->afPermissionManager->getProtectedVariables() );
 		$shouldLogProtectedVarAccess = false;
 
 		// If a non-protected filter and a protected filter have overlapping conditions,
@@ -1212,13 +1211,15 @@ class SpecialAbuseLog extends AbuseFilterSpecialPage {
 		if ( !$row->afl_rev_id ) {
 			return self::VISIBILITY_VISIBLE;
 		}
-		$revRec = MediaWikiServices::getInstance()
+		$vis = (int)MediaWikiServices::getInstance()
 			->getRevisionLookup()
-			->getRevisionById( (int)$row->afl_rev_id );
-		if ( !$revRec || $revRec->getVisibility() === 0 ) {
+			->getRevisionById( (int)$row->afl_rev_id )
+			?->getVisibility();
+		if ( $vis === 0 ) {
 			return self::VISIBILITY_VISIBLE;
 		}
-		return $revRec->audienceCan( RevisionRecord::SUPPRESSED_ALL, RevisionRecord::FOR_THIS_USER, $authority )
+
+		return AbuseFilterPermissionManager::hasRevisionAccess( $vis, $authority )
 			? self::VISIBILITY_VISIBLE
 			: self::VISIBILITY_HIDDEN_IMPLICIT;
 	}

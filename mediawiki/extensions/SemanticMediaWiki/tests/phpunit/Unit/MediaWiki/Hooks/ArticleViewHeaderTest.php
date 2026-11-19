@@ -1,0 +1,229 @@
+<?php
+
+namespace SMW\Tests\Unit\MediaWiki\Hooks;
+
+use Article;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Output\OutputPage;
+use PHPUnit\Framework\TestCase;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DependencyValidator;
+use SMW\DependencyValidatorFactory;
+use SMW\MediaWiki\Hooks\ArticleViewHeader;
+use SMW\NamespaceExaminer;
+use SMW\Settings;
+use SMW\SQLStore\EntityStore\EntityIdManager;
+use SMW\Store;
+use SMW\Tests\TestEnvironment;
+
+/**
+ * @covers \SMW\MediaWiki\Hooks\ArticleViewHeader
+ * @group semantic-mediawiki
+ *
+ * @license GPL-2.0-or-later
+ * @since 3.0
+ *
+ * @author mwjames
+ */
+class ArticleViewHeaderTest extends TestCase {
+
+	private $store;
+	private $namespaceExaminer;
+	private $settings;
+	private $dependencyValidator;
+	private $dependencyValidatorFactory;
+	private $jobQueue;
+	private $testEnvironment;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->namespaceExaminer = $this->createMock( NamespaceExaminer::class );
+
+		$entityIdManager = $this->createMock( EntityIdManager::class );
+
+		$this->store = $this->getMockBuilder( Store::class )
+			->disableOriginalConstructor()
+			->setMethods( [ 'getObjectIds' ] )
+			->getMockForAbstractClass();
+
+		$this->store->method( 'getObjectIds' )->willReturn( $entityIdManager );
+
+		$this->settings = $this->createMock( Settings::class );
+
+		$this->dependencyValidator = $this->createMock( DependencyValidator::class );
+
+		$this->dependencyValidatorFactory = $this->createMock( DependencyValidatorFactory::class );
+		$this->dependencyValidatorFactory->method( 'newDependencyValidator' )->willReturn( $this->dependencyValidator );
+
+		$this->jobQueue = $this->getMockBuilder( '\SMW\MediaWiki\JobQueue' )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$this->testEnvironment = new TestEnvironment();
+		$this->testEnvironment->registerObject( 'JobQueue', $this->jobQueue );
+	}
+
+	protected function tearDown(): void {
+		$this->testEnvironment->tearDown();
+		parent::tearDown();
+	}
+
+	private function newInstance(): ArticleViewHeader {
+		return new ArticleViewHeader(
+			$this->store,
+			$this->namespaceExaminer,
+			$this->settings,
+			$this->dependencyValidatorFactory
+		);
+	}
+
+	private function newArticleFor( $title ): Article {
+		$article = $this->createMock( Article::class );
+		$article->method( 'getTitle' )->willReturn( $title );
+		return $article;
+	}
+
+	public function testCanConstruct() {
+		$this->assertInstanceOf(
+			ArticleViewHeader::class,
+			$this->newInstance()
+		);
+	}
+
+	public function testProcessOnCategory() {
+		$subject = WikiPage::newFromText( __METHOD__, NS_CATEGORY );
+		$property = new Property( Property::TYPE_CHANGE_PROP );
+
+		$this->namespaceExaminer->method( 'isSemanticEnabled' )->willReturn( true );
+
+		$this->settings->method( 'get' )
+			->willReturnMap( [
+				[ 'smwgChangePropagationWatchlist', [ '_SUBC' ] ],
+				[ 'smwgChangePropagationProtection', false ],
+			] );
+
+		$semanticData = $this->getMockBuilder( SemanticData::class )
+			->setConstructorArgs( [ WikiPage::newFromText( 'Foo' ) ] )
+			->getMock();
+
+		$semanticData->expects( $this->once() )
+			->method( 'hasProperty' )
+			->with( $property )
+			->willReturn( true );
+
+		$this->store->method( 'getSemanticData' )->willReturn( $semanticData );
+
+		$this->jobQueue->method( 'hasPendingJob' )->willReturn( true );
+
+		$output = $this->createMock( OutputPage::class );
+		$output->expects( $this->once() )->method( 'addHTML' );
+
+		$context = $this->createMock( RequestContext::class );
+		$context->method( 'getOutput' )->willReturn( $output );
+
+		$page = $this->createMock( Article::class );
+		$page->method( 'getTitle' )->willReturn( $subject->getTitle() );
+		$page->method( 'getContext' )->willReturn( $context );
+
+		$outputDone = '';
+		$useParserCache = '';
+
+		$this->newInstance()->onArticleViewHeader( $page, $outputDone, $useParserCache );
+
+		$this->assertFalse( $useParserCache );
+	}
+
+	public function testStaleChangePropagationMarkerUsesParserCacheOnCategory() {
+		$subject = WikiPage::newFromText( __METHOD__, NS_CATEGORY );
+		$property = new Property( Property::TYPE_CHANGE_PROP );
+
+		$this->namespaceExaminer->method( 'isSemanticEnabled' )->willReturn( true );
+
+		$this->settings->method( 'get' )
+			->willReturnMap( [
+				[ 'smwgChangePropagationWatchlist', [ '_SUBC' ] ],
+				[ 'smwgChangePropagationProtection', false ],
+			] );
+
+		$semanticData = $this->getMockBuilder( SemanticData::class )
+			->setConstructorArgs( [ WikiPage::newFromText( 'Foo' ) ] )
+			->getMock();
+
+		$semanticData->method( 'hasProperty' )
+			->with( $property )
+			->willReturn( true );
+
+		$this->store->method( 'getSemanticData' )->willReturn( $semanticData );
+
+		// #4344: the `_CHGPRO` marker lingers but no dispatch job is pending, so
+		// no lock banner is shown and the parser cache remains usable.
+		$this->jobQueue->method( 'hasPendingJob' )->willReturn( false );
+		$this->jobQueue->method( 'getQueueSize' )->willReturn( 0 );
+
+		$output = $this->createMock( OutputPage::class );
+
+		$context = $this->createMock( RequestContext::class );
+		$context->method( 'getOutput' )->willReturn( $output );
+
+		$page = $this->createMock( Article::class );
+		$page->method( 'getTitle' )->willReturn( $subject->getTitle() );
+		$page->method( 'getContext' )->willReturn( $context );
+
+		$outputDone = '';
+		$useParserCache = '';
+
+		$this->newInstance()->onArticleViewHeader( $page, $outputDone, $useParserCache );
+
+		$this->assertTrue( $useParserCache );
+	}
+
+	public function testProcessOnNoCategory() {
+		$subject = WikiPage::newFromText( __METHOD__ );
+
+		$this->namespaceExaminer->method( 'isSemanticEnabled' )->willReturn( false );
+
+		$page = $this->createMock( Article::class );
+		$page->method( 'getTitle' )->willReturn( $subject->getTitle() );
+		$page->expects( $this->never() )->method( 'getContext' );
+
+		$outputDone = '';
+		$useParserCache = '';
+
+		$this->assertTrue(
+			$this->newInstance()->onArticleViewHeader( $page, $outputDone, $useParserCache )
+		);
+	}
+
+	public function testHasArchaicDependency() {
+		$subject = WikiPage::newFromText( __METHOD__ );
+
+		$this->namespaceExaminer->method( 'isSemanticEnabled' )->willReturn( true );
+
+		$this->settings->method( 'get' )
+			->willReturnMap( [
+				[ 'smwgChangePropagationWatchlist', [ '_SUBC' ] ],
+			] );
+
+		$this->dependencyValidator->expects( $this->once() )
+			->method( 'hasArchaicDependencies' )
+			->willReturn( true );
+
+		$this->dependencyValidator->expects( $this->once() )
+			->method( 'markTitle' );
+
+		$outputDone = '';
+		$useParserCache = '';
+
+		$this->assertTrue(
+			$this->newInstance()->onArticleViewHeader(
+				$this->newArticleFor( $subject->getTitle() ),
+				$outputDone,
+				$useParserCache
+			)
+		);
+	}
+
+}

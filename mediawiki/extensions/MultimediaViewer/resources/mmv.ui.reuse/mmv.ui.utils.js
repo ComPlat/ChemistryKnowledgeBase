@@ -50,7 +50,7 @@ class Utils {
 			.addClass( 'mw-mmv-pt-0 mw-mmv-pb-0' ) // override padding provided by ".oo-ui-buttonElement-framed.oo-ui-labelElement > .oo-ui-buttonElement-button, button"
 			.attr( 'title', title )
 			.append( $( '<span>' ).addClass( 'cdx-button__icon cdx-button__icon--copy' ).attr( 'aria-hidden', 'true' ) )
-			.append( mw.msg( 'multimediaviewer-copy-button' ) )
+			.append( mw.message( 'multimediaviewer-copy-button' ).escaped() )
 			.on( 'click', () => {
 				// navigator.clipboard() is not supported in Safari 11.1, iOS Safari 11.3-11.4
 				if ( navigator.clipboard && navigator.clipboard.writeText ) {
@@ -160,7 +160,7 @@ class Utils {
 	 */
 	static getPossibleImageSizesForHtml( width, height ) {
 		const buckets = {
-			small: { width: 640, height: 480 },
+			small: { width: 500, height: 480 },
 			medium: { width: 1280, height: 720 }, // HD ready = 720p
 			large: { width: 1920, height: 1080 }, // Full HD = 1080p
 			xl: { width: 3840, height: 2160 } // 4K = 2160p

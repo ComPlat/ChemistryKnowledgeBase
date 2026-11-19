@@ -2,8 +2,11 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\Maintenance\Maintenance;
 use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Setup;
+use SMW\SQLStore\SQLStore;
+use SMW\Utils\PeriodicStatsFlusher;
 
 /**
  * Load the required class
@@ -24,7 +27,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  *
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-class rebuildPropertyStatistics extends \Maintenance {
+class rebuildPropertyStatistics extends Maintenance {
 
 	public function __construct() {
 		parent::__construct();
@@ -47,8 +50,12 @@ class rebuildPropertyStatistics extends \Maintenance {
 		$maintenanceHelper->initRuntimeValues();
 
 		$statisticsRebuilder = $maintenanceFactory->newPropertyStatisticsRebuilder(
-			$applicationFactory->getStore( 'SMW\SQLStore\SQLStore' ),
+			$applicationFactory->getStore( SQLStore::class ),
 			[ $this, 'reportMessage' ]
+		);
+
+		$statisticsRebuilder->setStatsFlusher(
+			PeriodicStatsFlusher::newFromGlobalState()
 		);
 
 		$statisticsRebuilder->rebuild();

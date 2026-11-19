@@ -2,9 +2,9 @@
 
 namespace SMW\SQLStore;
 
-use Psr\Log\LoggerAwareTrait;
 use SMW\MediaWiki\Connection\Database;
 use SMW\SQLStore\Exception\PropertyStatisticsInvalidArgumentException;
+use Wikimedia\Rdbms\IDatabase;
 
 /**
  * Simple implementation of PropertyStatisticsTable using MediaWikis
@@ -18,49 +18,10 @@ use SMW\SQLStore\Exception\PropertyStatisticsInvalidArgumentException;
  */
 class PropertyStatisticsStore {
 
-	use LoggerAwareTrait;
-
-	/**
-	 * @var Database
-	 */
-	private $connection;
-
-	/**
-	 * @var bool
-	 */
-	private $isCommandLineMode = false;
-
-	/**
-	 * @var bool
-	 */
-	private $onTransactionIdle = false;
-
 	/**
 	 * @since 1.9
-	 *
-	 * @param Database $connection
 	 */
-	public function __construct( Database $connection ) {
-		$this->connection = $connection;
-	}
-
-	/**
-	 * @see https://www.mediawiki.org/wiki/Manual:$wgCommandLineMode
-	 * Indicates whether MW is running in command-line mode or not.
-	 *
-	 * @since 2.5
-	 *
-	 * @param bool $isCommandLineMode
-	 */
-	public function isCommandLineMode( $isCommandLineMode ) {
-		$this->isCommandLineMode = $isCommandLineMode;
-	}
-
-	/**
-	 * @since 2.5
-	 */
-	public function waitOnTransactionIdle() {
-		$this->onTransactionIdle = !$this->isCommandLineMode;
+	public function __construct( private Database $connection ) {
 	}
 
 	/**
@@ -74,7 +35,7 @@ class PropertyStatisticsStore {
 	 *
 	 * @return bool Success indicator
 	 */
-	public function addToUsageCount( $pid, $value ) {
+	public function addToUsageCount( $pid, $value ): bool {
 		$usageVal = 0;
 		$nullVal = 0;
 
@@ -97,17 +58,15 @@ class PropertyStatisticsStore {
 			return true;
 		}
 
-		$this->connection->update(
-			SQLStore::PROPERTY_STATISTICS_TABLE,
-			[
+		$this->connection->newUpdateQueryBuilder()
+			->update( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->set( [
 				$this->safeIncrement( 'usage_count', $usageVal ),
-				$this->safeIncrement( 'null_count', $nullVal )
-			],
-			[
-				'p_id' => $pid
-			],
-			__METHOD__
-		);
+				$this->safeIncrement( 'null_count', $nullVal ),
+			] )
+			->where( [ 'p_id' => $pid ] )
+			->caller( __METHOD__ )
+			->execute();
 
 		return true;
 	}
@@ -120,18 +79,10 @@ class PropertyStatisticsStore {
 	 *
 	 * @return string
 	 */
-	private function safeIncrement( string $field, int $delta ) {
+	private function safeIncrement( string $field, int $delta ): string {
 		if ( $delta < 0 ) {
-			if ( version_compare( MW_VERSION, '1.42', '>=' ) ) {
-				return $field . '=' . $this->connection->conditional(
-					$this->connection->expr( $field, '>=', abs( $delta ) ),
-					$field . ' - ' . $this->connection->addQuotes( abs( $delta ) ),
-					0
-				);
-			}
-
 			return $field . '=' . $this->connection->conditional(
-				$field . ' >= ' . $this->connection->addQuotes( abs( $delta ) ),
+				$this->connection->expr( $field, '>=', abs( $delta ) ),
 				$field . ' - ' . $this->connection->addQuotes( abs( $delta ) ),
 				0
 			);
@@ -153,22 +104,10 @@ class PropertyStatisticsStore {
 	 *
 	 * @return bool Success indicator
 	 */
-	public function addToUsageCounts( array $additions ) {
+	public function addToUsageCounts( array $additions ): bool {
 		$success = true;
 
 		if ( $additions === [] ) {
-			return $success;
-		}
-
-		$method = __METHOD__;
-
-		if ( $this->onTransactionIdle ) {
-			$this->connection->onTransactionCommitOrIdle( function () use ( $method, $additions ) {
-				$this->log( $method . ' (onTransactionIdle)' );
-				$this->onTransactionIdle = false;
-				$this->addToUsageCounts( $additions );
-			} );
-
 			return $success;
 		}
 
@@ -191,12 +130,12 @@ class PropertyStatisticsStore {
 	 * @since 1.9
 	 *
 	 * @param int $propertyId
-	 * @param int $value
+	 * @param int|array $value
 	 *
 	 * @return bool Success indicator
 	 * @throws PropertyStatisticsInvalidArgumentException
 	 */
-	public function insertUsageCount( $propertyId, $value ) {
+	public function insertUsageCount( $propertyId, $value ): bool {
 		$usageCount = 0;
 		$nullCount = 0;
 
@@ -215,20 +154,21 @@ class PropertyStatisticsStore {
 			throw new PropertyStatisticsInvalidArgumentException( 'The property id to add must be a positive integer' );
 		}
 
-		$this->connection->upsert(
-			SQLStore::PROPERTY_STATISTICS_TABLE,
-			[
+		$this->connection->newInsertQueryBuilder()
+			->insertInto( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->row( [
 				'usage_count' => $usageCount,
-				'null_count' => $nullCount,
-				'p_id' => $propertyId,
-			],
-			[ [ 'p_id' ] ],
-			[
+				'null_count'  => $nullCount,
+				'p_id'        => $propertyId,
+			] )
+			->onDuplicateKeyUpdate()
+			->uniqueIndexFields( [ 'p_id' ] )
+			->set( [
 				'usage_count' => $usageCount,
-				'null_count' => $nullCount,
-			],
-			__METHOD__
-		);
+				'null_count'  => $nullCount,
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
 		return true;
 	}
@@ -242,21 +182,17 @@ class PropertyStatisticsStore {
 	 *
 	 * @return int
 	 */
-	public function getUsageCount( $propertyId ) {
+	public function getUsageCount( $propertyId ): int {
 		if ( !is_int( $propertyId ) ) {
 			return 0;
 		}
 
-		$row = $this->connection->selectRow(
-			SQLStore::PROPERTY_STATISTICS_TABLE,
-			[
-				'usage_count'
-			],
-			[
-				'p_id' => $propertyId,
-			],
-			__METHOD__
-		);
+		$row = $this->connection->newSelectQueryBuilder()
+			->select( [ 'usage_count' ] )
+			->from( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->where( [ 'p_id' => $propertyId ] )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		return $row !== false ? (int)$row->usage_count : 0;
 	}
@@ -276,27 +212,24 @@ class PropertyStatisticsStore {
 	 *
 	 * @return array
 	 */
-	public function getUsageCounts( array $propertyIds ) {
+	public function getUsageCounts( array $propertyIds ): array {
 		if ( $propertyIds === [] ) {
 			return [];
 		}
 
-		$propertyStatistics = $this->connection->select(
-			$this->connection->tablename( SQLStore::PROPERTY_STATISTICS_TABLE ),
-			[
-				'usage_count',
-				'p_id',
-			],
-			[
-				'p_id' => $propertyIds,
-			],
-			__METHOD__
-		);
+		$propertyStatistics = $this->connection->newSelectQueryBuilder()
+			->select( [ 'usage_count', 'p_id' ] )
+			->from( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->where( [ 'p_id' => $propertyIds ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$usageCounts = [];
 
 		foreach ( $propertyStatistics as $propertyStatistic ) {
+			// phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.assert
 			assert( ctype_digit( $propertyStatistic->p_id ) );
+			// phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.assert
 			assert( ctype_digit( $propertyStatistic->usage_count ) );
 
 			$usageCounts[(int)$propertyStatistic->p_id] = (int)$propertyStatistic->usage_count;
@@ -309,23 +242,13 @@ class PropertyStatisticsStore {
 	 * Deletes all rows in the table.
 	 *
 	 * @since 1.9
-	 *
-	 * @return bool Success indicator
 	 */
-	public function deleteAll() {
-		return $this->connection->delete(
-			SQLStore::PROPERTY_STATISTICS_TABLE,
-			'*',
-			__METHOD__
-		);
-	}
-
-	private function log( $message, $context = [] ) {
-		if ( $this->logger === null ) {
-			return;
-		}
-
-		$this->logger->info( $message, $context );
+	public function deleteAll(): void {
+		$this->connection->newDeleteQueryBuilder()
+			->deleteFrom( SQLStore::PROPERTY_STATISTICS_TABLE )
+			->where( IDatabase::ALL_ROWS )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 }

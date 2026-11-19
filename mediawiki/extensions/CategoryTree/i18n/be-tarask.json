@@ -5,7 +5,9 @@
 			"EugeneZelenko",
 			"Jim-by",
 			"Red Winged Duck",
-			"Wizardist"
+			"Wizardist",
+			"Renessaince",
+			"Ucukor"
 		]
 	},
 	"categorytree": "Дрэва катэгорыяў",
@@ -18,7 +20,7 @@
 	"categorytree-parents": "Продкі",
 	"categorytree-mode-label": "Рэжым:",
 	"categorytree-mode-categories": "толькі катэгорыі",
-	"categorytree-mode-pages": "старонкі за выключэньнем файлаў",
+	"categorytree-mode-pages": "старонкі, акрамя файлаў",
 	"categorytree-mode-all": "усе старонкі",
 	"categorytree-collapse": "згарнуць",
 	"categorytree-expand": "разгарнуць",
@@ -35,5 +37,6 @@
 	"categorytree-no-pages": "няма старонак ці падкатэгорыяў",
 	"categorytree-not-found": "Катэгорыя <i>$1</i> ня знойдзена",
 	"categorytree-error": "Праблема загрузкі зьвестак.",
-	"categorytree-retry": "Калі ласка, пачакайце і паспрабуйце яшчэ раз."
+	"categorytree-retry": "Калі ласка, пачакайце і паспрабуйце яшчэ раз.",
+	"categorytree-deprecation-category": "Старонкі, якія выкарыстоўваюць састарэлыя парамэтры дрэва катэгорый"
 }

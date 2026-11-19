@@ -100,12 +100,12 @@ class SimpleCaptcha {
 	 * @return array
 	 */
 	public function getCaptcha() {
-		$a = mt_rand( 0, 100 );
-		$b = mt_rand( 0, 10 );
+		$a = random_int( 0, 100 );
+		$b = random_int( 0, 10 );
 
 		/* Minus sign is used in the question. UTF-8,
 		   since the api uses text/plain, not text/html */
-		$op = mt_rand( 0, 1 ) ? '+' : '−';
+		$op = random_int( 0, 1 ) ? '+' : '−';
 
 		// No space before and after $op, to ensure correct
 		// directionality.
@@ -357,27 +357,30 @@ class SimpleCaptcha {
 	}
 
 	/**
-	 * Check if the current IP is allowed to skip captchas. This checks
-	 * the whitelist from two sources.
-	 *  1) From the server-side config array $wgCaptchaWhitelistIP
+	 * Check if the current IP is allowed to skip solving a captcha.
+	 * This checks the bypass list from two sources.
+	 *  1) From the server-side config array $wgCaptchaWhitelistIP (deprecated) or $wgCaptchaBypassIPs
 	 *  2) From the local [[MediaWiki:Captcha-ip-whitelist]] message
 	 *
-	 * @return bool true if whitelisted, false if not
+	 * @return bool true if the IP can bypass a captcha, false if not
 	 */
-	private function isIPWhitelisted() {
-		global $wgCaptchaWhitelistIP, $wgRequest;
+	private function canIPBypassCaptcha() {
+		global $wgCaptchaWhitelistIP, $wgCaptchaBypassIPs, $wgRequest;
 		$ip = $wgRequest->getIP();
 
-		if ( $wgCaptchaWhitelistIP ) {
-			if ( IPUtils::isInRanges( $ip, $wgCaptchaWhitelistIP ) ) {
-				return true;
-			}
+		// Deprecated; to be removed later
+		if ( $wgCaptchaWhitelistIP && IPUtils::isInRanges( $ip, $wgCaptchaWhitelistIP ) ) {
+			return true;
 		}
 
-		$whitelistMsg = wfMessage( 'captcha-ip-whitelist' )->inContentLanguage();
-		if ( !$whitelistMsg->isDisabled() ) {
-			$whitelistedIPs = $this->getWikiIPWhitelist( $whitelistMsg );
-			if ( IPUtils::isInRanges( $ip, $whitelistedIPs ) ) {
+		if ( $wgCaptchaBypassIPs && IPUtils::isInRanges( $ip, $wgCaptchaBypassIPs ) ) {
+			return true;
+		}
+
+		$msg = wfMessage( 'captcha-ip-whitelist' )->inContentLanguage();
+		if ( !$msg->isDisabled() ) {
+			$allowedIPs = $this->getWikiIPBypassList( $msg );
+			if ( IPUtils::isInRanges( $ip, $allowedIPs ) ) {
 				return true;
 			}
 		}
@@ -386,41 +389,39 @@ class SimpleCaptcha {
 	}
 
 	/**
-	 * Get the on-wiki IP whitelist stored in [[MediaWiki:Captcha-ip-whitelist]]
-	 * page from cache if possible.
+	 * Get the on-wiki IP bypass list stored on a MediaWiki page from cache if possible.
 	 *
-	 * @param Message $msg whitelist Message on wiki
-	 * @return array whitelisted IP addresses or IP ranges, empty array if no whitelist
+	 * @param Message $msg Message on wiki with IP lists
+	 * @return array Allowed IP addresses or IP ranges, empty array if none
 	 */
-	private function getWikiIPWhitelist( Message $msg ) {
+	private function getWikiIPBypassList( Message $msg ) {
 		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
-		$cacheKey = $cache->makeKey( 'confirmedit', 'ipwhitelist' );
+		$cacheKey = $cache->makeKey( 'confirmedit', 'ipbypasslist' );
 
-		$cachedWhitelist = $cache->get( $cacheKey );
-		if ( $cachedWhitelist === false ) {
-			// Could not retrieve from cache so build the whitelist directly
-			// from the wikipage
-			$whitelist = $this->buildValidIPs(
-				explode( "\n", $msg->plain() )
-			);
-			// And then store it in cache for one day. This cache is cleared on
-			// modifications to the whitelist page.
-			// @see MediaWiki\Extension\ConfirmEdit\Hooks::onPageSaveComplete()
-			$cache->set( $cacheKey, $whitelist, 86400 );
-		} else {
-			// Whitelist from the cache
-			$whitelist = $cachedWhitelist;
+		$cached = $cache->get( $cacheKey );
+		if ( $cached !== false ) {
+			return $cached;
 		}
 
-		return $whitelist;
+		// Could not retrieve from cache, so build the list directly
+		// from the MediaWiki page
+		$list = $this->buildValidIPs(
+			explode( "\n", $msg->plain() )
+		);
+		// And then store it in cache for one day.
+		// This cache is cleared on modifications to the wiki page.
+		// @see MediaWiki\Extension\ConfirmEdit\Hooks::onPageSaveComplete()
+		$cache->set( $cacheKey, $list, 86400 );
+
+		return $list;
 	}
 
 	/**
 	 * From a list of unvalidated input, get all the valid
 	 * IP addresses and IP ranges from it.
 	 *
-	 * Note that only lines with just the IP address or IP range is considered
-	 * as valid. Whitespace is allowed but if there is any other character on
+	 * Note that only lines with just the IP address or the IP range is considered
+	 * as valid. Whitespace is allowed, but if there is any other character on
 	 * the line, it's not considered as a valid entry.
 	 *
 	 * @param string[] $input
@@ -705,12 +706,12 @@ class SimpleCaptcha {
 	}
 
 	/**
-	 * Filter callback function for URL whitelisting
+	 * Filter callback function for URL allow-listing
 	 * @param string $url string to check
-	 * @return bool true if unknown, false if whitelisted
+	 * @return bool true if unknown, false if allowed
 	 */
 	private function filterLink( $url ) {
-		global $wgCaptchaWhitelist;
+		global $wgCaptchaWhitelist, $wgCaptchaIgnoredUrls;
 		static $regexes = null;
 
 		if ( $regexes === null ) {
@@ -720,8 +721,12 @@ class SimpleCaptcha {
 				? []
 				: $this->buildRegexes( explode( "\n", $source->plain() ) );
 
+			// DEPRECATED
 			if ( $wgCaptchaWhitelist !== false ) {
 				array_unshift( $regexes, $wgCaptchaWhitelist );
+			}
+			if ( $wgCaptchaIgnoredUrls !== false ) {
+				array_unshift( $regexes, $wgCaptchaIgnoredUrls );
 			}
 		}
 
@@ -735,8 +740,8 @@ class SimpleCaptcha {
 	}
 
 	/**
-	 * Build regex from whitelist
-	 * @param string[] $lines string from [[MediaWiki:Captcha-addurl-whitelist]]
+	 * Build regex from list of URLs
+	 * @param string[] $lines string from MediaWiki page
 	 * @return string[] Regexes
 	 * @private
 	 */
@@ -748,7 +753,7 @@ class SimpleCaptcha {
 		$lines = array_filter( array_map( 'trim', preg_replace( '/#.*$/', '', $lines ) ) );
 
 		# No lines, don't make a regex which will match everything
-		if ( count( $lines ) == 0 ) {
+		if ( count( $lines ) === 0 ) {
 			wfDebug( "No lines\n" );
 			return [];
 		} else {
@@ -1002,7 +1007,7 @@ class SimpleCaptcha {
 
 	/**
 	 * @param WebRequest $request
-	 * @return array [ captcha ID, captcha solution ]
+	 * @return string[]|null[] [ captcha ID, captcha solution ]
 	 */
 	protected function getCaptchaParamsFromRequest( WebRequest $request ) {
 		$index = $request->getVal( 'wpCaptchaId' );
@@ -1014,8 +1019,8 @@ class SimpleCaptcha {
 	 * Checks, if the user reached the amount of false CAPTCHAs and give him some vacation
 	 * or run self::passCaptcha() and clear counter if correct.
 	 *
-	 * @param string $index Captcha idenitifier
-	 * @param string $word Captcha solution
+	 * @param string|null $index Captcha identifier
+	 * @param string|null $word Captcha solution
 	 * @param User $user User for throttling captcha solving attempts
 	 * @return bool
 	 * @see self::passCaptcha()
@@ -1052,8 +1057,8 @@ class SimpleCaptcha {
 	/**
 	 * Given a required captcha run, test form input for correct
 	 * input on the open session.
-	 * @param string $index Captcha idenitifier
-	 * @param string $word Captcha solution
+	 * @param string|null $index Captcha identifier
+	 * @param string|null $word Captcha solution
 	 * @return bool if passed, false if failed or new session
 	 */
 	protected function passCaptcha( $index, $word ) {
@@ -1061,6 +1066,12 @@ class SimpleCaptcha {
 		// if the CAPTCHA was already checked - Bug T94276
 		if ( $this->isCaptchaSolved() !== null ) {
 			return (bool)$this->isCaptchaSolved();
+		}
+
+		if ( $index === null ) {
+			$this->log( "new captcha session" );
+			// If no captcha ID was passed, we need to start a new session (T384858).
+			return false;
 		}
 
 		$info = $this->retrieveCaptcha( $index );
@@ -1108,8 +1119,8 @@ class SimpleCaptcha {
 	 */
 	public function storeCaptcha( $info ) {
 		if ( !isset( $info['index'] ) ) {
-			// Assign random index if we're not udpating
-			$info['index'] = strval( mt_rand() );
+			// Assign random index if we're not updating
+			$info['index'] = (string)random_int( 0, PHP_INT_MAX );
 		}
 		CaptchaStore::get()->store( $info['index'], $info );
 		return $info['index'];
@@ -1242,8 +1253,12 @@ class SimpleCaptcha {
 			return true;
 		}
 
-		if ( $this->isIPWhitelisted() ) {
-			wfDebug( "ConfirmEdit: user IP is whitelisted" );
+		if ( $this->canIPBypassCaptcha() ) {
+			wfDebug( "ConfirmEdit: user IP can bypass captcha" );
+			return true;
+		}
+		if ( $user->isSystemUser() ) {
+			wfDebug( "ConfirmEdit: system user skips captcha\n" );
 			return true;
 		}
 

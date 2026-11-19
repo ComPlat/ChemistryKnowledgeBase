@@ -2,7 +2,7 @@
 
 namespace SMW\MediaWiki\Api\Tasks;
 
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
 use SMW\MediaWiki\JobQueue;
 
 /**
@@ -14,17 +14,43 @@ use SMW\MediaWiki\JobQueue;
 class JobListTask extends Task {
 
 	/**
-	 * @var JobQueue
+	 * $allowedJobs lists the job types the post-edit process may run, keyed by
+	 * type; a caller cannot run any type outside this set.
+	 *
+	 * @since 3.1
 	 */
-	private $jobQueue;
+	public function __construct(
+		private readonly JobQueue $jobQueue,
+		private readonly array $allowedJobs = []
+	) {
+	}
 
 	/**
-	 * @since 3.1
+	 * Runs queued jobs on behalf of the caller, so the caller must be
+	 * authorized to edit the subject page rather than merely holding a
+	 * wiki-wide right. The legitimate post-edit flow acts on the page the
+	 * caller just saved.
 	 *
-	 * @param JobQueue $jobQueue
+	 * @since 7.3.1
 	 */
-	public function __construct( JobQueue $jobQueue ) {
-		$this->jobQueue = $jobQueue;
+	public function getAuthorizationSubject( array $parameters ): ?string {
+		return $parameters['subject'] ?? '';
+	}
+
+	/**
+	 * Only the job types the post-edit process itself emits may be run, so a
+	 * caller cannot pop and run arbitrary queued jobs of its own choosing.
+	 *
+	 * @since 7.3.1
+	 */
+	public function requestedWorkIsPermitted( array $parameters ): bool {
+		$requested = $parameters['jobs'] ?? [];
+
+		if ( !is_array( $requested ) ) {
+			return true;
+		}
+
+		return array_diff_key( $requested, $this->allowedJobs ) === [];
 	}
 
 	/**
@@ -34,12 +60,12 @@ class JobListTask extends Task {
 	 *
 	 * @return array
 	 */
-	public function process( array $parameters ) {
+	public function process( array $parameters ): array {
 		if ( !isset( $parameters['subject'] ) || $parameters['subject'] === '' ) {
 			return [ 'done' => false ];
 		}
 
-		$subject = DIWikiPage::doUnserialize( $parameters['subject'] );
+		$subject = WikiPage::doUnserialize( $parameters['subject'] );
 		$title = $subject->getTitle();
 
 		if ( $title === null ) {

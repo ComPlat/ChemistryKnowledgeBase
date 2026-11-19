@@ -4,8 +4,9 @@ namespace SMW\Serializers;
 
 use OutOfBoundsException;
 use Serializers\Serializer;
-use SMW\SemanticData;
-use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\DataItems\Property;
+use SMW\DataModel\SemanticData;
+use SMW\Store;
 
 /**
  * @license GPL-2.0-or-later
@@ -16,11 +17,17 @@ use SMW\Services\ServicesFactory as ApplicationFactory;
 class SemanticDataSerializer implements Serializer {
 
 	/**
+	 * @since 7.0.0
+	 */
+	public function __construct( private readonly Store $store ) {
+	}
+
+	/**
 	 * @see Serializer::serialize
 	 *
 	 * @since  1.9
 	 */
-	public function serialize( $semanticData, $includeInverse = false ) {
+	public function serialize( $semanticData, $includeInverse = false ): array {
 		if ( !$semanticData instanceof SemanticData ) {
 			throw new OutOfBoundsException( 'Object is not supported' );
 		}
@@ -38,7 +45,7 @@ class SemanticDataSerializer implements Serializer {
 		return $data + [ 'serializer' => __CLASS__, 'version' => 2 ];
 	}
 
-	private function doSerialize( SemanticData $semanticData ) {
+	private function doSerialize( SemanticData $semanticData ): array {
 		$data = [
 			'subject' => $semanticData->getSubject()->getSerialization(),
 			'data'    => $this->doSerializeProperty( $semanticData )
@@ -62,7 +69,7 @@ class SemanticDataSerializer implements Serializer {
 	 * @param SemanticData $semanticData The semantic data of the current subject.
 	 * @return array List of serialized direct properties with their values.
 	 */
-	private function doSerializeProperty( $semanticData ) {
+	private function doSerializeProperty( SemanticData $semanticData ): array {
 		$properties = [];
 
 		foreach ( $semanticData->getProperties() as $property ) {
@@ -83,15 +90,15 @@ class SemanticDataSerializer implements Serializer {
 	 * @param SemanticData $semanticData The semantic data of the current subject.
 	 * @return array List of serialized inverse properties and referencing subjects.
 	 */
-	private function doSerializeInverseProperties( SemanticData $semanticData ) {
+	private function doSerializeInverseProperties( SemanticData $semanticData ): array {
 		$inverseData = [];
 		$dataItem = $semanticData->getSubject();
 
-		$store = ApplicationFactory::getInstance()->getStore();
+		$store = $this->store;
 		$incomingProperties = $store->getInProperties( $dataItem );
 		$semanticDataIncoming = new SemanticData( $dataItem );
 
-		if ( isset( $incomingProperties ) && count( $incomingProperties ) > 0 ) {
+		if ( count( $incomingProperties ?? [] ) > 0 ) {
 			foreach ( $incomingProperties as $property ) {
 				$subjects = $store->getPropertySubjects( $property, $dataItem );
 
@@ -126,7 +133,7 @@ class SemanticDataSerializer implements Serializer {
 	 *
 	 * @return array
 	 */
-	private function doSerializeDataItem( $semanticData, $property ) {
+	private function doSerializeDataItem( SemanticData $semanticData, Property $property ): array {
 		$dataItems = [];
 
 		foreach ( $semanticData->getPropertyValues( $property ) as $dataItem ) {
@@ -144,7 +151,7 @@ class SemanticDataSerializer implements Serializer {
 	 *
 	 * @return array
 	 */
-	protected function doSerializeSubSemanticData( $subSemanticData ) {
+	protected function doSerializeSubSemanticData( $subSemanticData ): array {
 		$subobjects = [];
 
 		foreach ( $subSemanticData as $semanticData ) {

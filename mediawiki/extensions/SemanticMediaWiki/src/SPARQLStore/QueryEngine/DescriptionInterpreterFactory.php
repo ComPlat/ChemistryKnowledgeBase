@@ -11,6 +11,7 @@ use SMW\SPARQLStore\QueryEngine\DescriptionInterpreters\NamespaceDescriptionInte
 use SMW\SPARQLStore\QueryEngine\DescriptionInterpreters\SomePropertyInterpreter;
 use SMW\SPARQLStore\QueryEngine\DescriptionInterpreters\ThingDescriptionInterpreter;
 use SMW\SPARQLStore\QueryEngine\DescriptionInterpreters\ValueDescriptionInterpreter;
+use SMW\Utils\ConceptExpansionGuard;
 
 /**
  * @license GPL-2.0-or-later
@@ -27,7 +28,7 @@ class DescriptionInterpreterFactory {
 	 *
 	 * @return DispatchingDescriptionInterpreter
 	 */
-	public function newDispatchingDescriptionInterpreter( ConditionBuilder $conditionBuilder ) {
+	public function newDispatchingDescriptionInterpreter( ConditionBuilder $conditionBuilder ): DispatchingDescriptionInterpreter {
 		$dispatchingDescriptionInterpreter = new DispatchingDescriptionInterpreter();
 
 		$dispatchingDescriptionInterpreter->addDefaultInterpreter(
@@ -59,7 +60,10 @@ class DescriptionInterpreterFactory {
 		);
 
 		$dispatchingDescriptionInterpreter->addInterpreter(
-			new ConceptDescriptionInterpreter( $conditionBuilder )
+			new ConceptDescriptionInterpreter(
+				$conditionBuilder,
+				new ConceptExpansionGuard( ConceptExpansionGuard::DEFAULT_MAX_EXPANSIONS )
+			)
 		);
 
 		return $dispatchingDescriptionInterpreter;

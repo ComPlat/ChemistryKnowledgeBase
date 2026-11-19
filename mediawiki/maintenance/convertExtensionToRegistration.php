@@ -68,7 +68,6 @@ class ConvertExtensionToRegistration extends Maintenance {
 	protected function getAllGlobals() {
 		$processor = new ReflectionClass( ExtensionProcessor::class );
 		$settings = $processor->getProperty( 'globalSettings' );
-		$settings->setAccessible( true );
 		return array_merge( $settings->getValue(), self::FORMER_GLOBALS );
 	}
 
@@ -103,7 +102,7 @@ class ConvertExtensionToRegistration extends Maintenance {
 
 		foreach ( $vars as $name => $value ) {
 			$realName = substr( $name, 2 ); // Strip 'wg'
-			if ( $realName === false ) {
+			if ( $realName === '' ) {
 				continue;
 			}
 

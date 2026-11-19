@@ -23,7 +23,9 @@ use Base32\Base32;
 use DomainException;
 use Exception;
 use jakobo\HOTP\HOTP;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\OATHAuth\IAuthKey;
+use MediaWiki\Extension\OATHAuth\Module\TOTP;
 use MediaWiki\Extension\OATHAuth\Notifications\Manager;
 use MediaWiki\Extension\OATHAuth\OATHAuthServices;
 use MediaWiki\Extension\OATHAuth\OATHUser;
@@ -72,13 +74,22 @@ class TOTPKey implements IAuthKey {
 	public static function newFromRandom() {
 		$object = new self(
 			null,
-			Base32::encode( random_bytes( 10 ) ),
+			// 26 bytes to give at least 128 bits (26 * 8 = 208 bits of entropy)
+			// https://phabricator.wikimedia.org/T396951
+			self::removeBase32Padding( Base32::encode( random_bytes( 26 ) ) ),
 			[]
 		);
 
 		$object->regenerateScratchTokens();
 
 		return $object;
+	}
+
+	/**
+	 * @see T408225, T401393
+	 */
+	private static function removeBase32Padding( string $paddedBase32String ): string {
+		return rtrim( $paddedBase32String, '=' );
 	}
 
 	/**
@@ -168,7 +179,7 @@ class TOTPKey implements IAuthKey {
 		// Remove any whitespace from the received token, which can be an intended group separator
 		$token = preg_replace( '/\s+/', '', $token );
 
-		$clientIP = $user->getUser()->getRequest()->getIP();
+		$clientIP = RequestContext::getMain()->getRequest()->getIP();
 
 		$logger = $this->getLogger();
 
@@ -245,6 +256,11 @@ class TOTPKey implements IAuthKey {
 	public function isScratchToken( $token ) {
 		$token = preg_replace( '/\s+/', '', $token );
 		return in_array( $token, $this->recoveryCodes, true );
+	}
+
+	/** @inheritDoc */
+	public function getModule(): string {
+		return TOTP::MODULE_NAME;
 	}
 
 	/**

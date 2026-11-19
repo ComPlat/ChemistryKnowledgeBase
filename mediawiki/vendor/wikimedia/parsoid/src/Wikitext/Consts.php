@@ -109,7 +109,7 @@ class Consts {
 				'table', 'td', 'th', 'time', 'tr', 'tt',
 				'u', 'ul',
 				'var',
-				'wbr','img','a'
+				'wbr',
 			] ),
 		];
 

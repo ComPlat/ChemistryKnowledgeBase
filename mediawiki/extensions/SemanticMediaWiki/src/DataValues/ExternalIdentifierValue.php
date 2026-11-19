@@ -2,7 +2,9 @@
 
 namespace SMW\DataValues;
 
-use SMW\DIProperty;
+use MediaWiki\Html\Html;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
 
 /**
  * @private
@@ -36,7 +38,7 @@ class ExternalIdentifierValue extends StringValue {
 	 *
 	 * @param string $value
 	 */
-	protected function parseUserValue( $value ) {
+	protected function parseUserValue( $value ): void {
 		parent::parseUserValue( $value );
 	}
 
@@ -74,7 +76,7 @@ class ExternalIdentifierValue extends StringValue {
 			$url = '[' . $uri . ' ' . $this->m_caption . ']';
 		}
 
-		return \Html::rawElement(
+		return Html::rawElement(
 			'span',
 			[
 				'class' => 'plainlinks smw-eid'
@@ -98,7 +100,7 @@ class ExternalIdentifierValue extends StringValue {
 		$this->m_caption = str_replace( '\,', ',', $this->m_caption );
 
 		if ( $linker === null ) {
-			return $this->m_caption;
+			return smwfXMLContentEncode( $this->m_caption );
 		}
 
 		$uri = $this->makeUri(
@@ -106,16 +108,16 @@ class ExternalIdentifierValue extends StringValue {
 		);
 
 		if ( !$this->isValid() ) {
-			return $this->m_caption;
+			return smwfXMLContentEncode( $this->m_caption );
 		}
 
-		return \Html::rawElement(
+		return Html::rawElement(
 			'a',
 			[
 				'href'   => $uri,
 				'target' => '_blank'
 			],
-			$this->m_caption
+			smwfXMLContentEncode( $this->m_caption )
 		);
 	}
 
@@ -136,7 +138,7 @@ class ExternalIdentifierValue extends StringValue {
 	/**
 	 * @since 2.5
 	 *
-	 * @return DataItem
+	 * @return DataItem|string
 	 */
 	public function getUri() {
 		if ( !$this->isValid() ) {
@@ -151,7 +153,7 @@ class ExternalIdentifierValue extends StringValue {
 		return $dataValue->getDataItem();
 	}
 
-	private function makeUri( $value ) {
+	private function makeUri( $value ): ?string {
 		if ( $this->uri !== null ) {
 			return $this->uri;
 		}
@@ -162,17 +164,17 @@ class ExternalIdentifierValue extends StringValue {
 
 		if ( $dataItem === null ) {
 			$this->addErrorMsg( 'smw-datavalue-external-identifier-formatter-missing' );
-			return;
+			return null;
 		}
 
 		$dataValue = $this->dataValueServiceFactory->getDataValueFactory()->newDataValueByItem(
 			$dataItem,
-			new DIProperty( '_PEFU' )
+			new Property( '_PEFU' )
 		);
 
 		if ( $dataValue->getErrors() !== [] ) {
 			$this->addError( $dataValue->getErrors() );
-			return;
+			return null;
 		}
 
 		$parameters = [];
@@ -192,10 +194,14 @@ class ExternalIdentifierValue extends StringValue {
 			}
 		}
 
-		return $this->uri = $dataValue->substituteAndFormatUri( $value, $parameters );
+		$this->uri = $dataValue->substituteAndFormatUri( $value, $parameters );
+		return $this->uri;
 	}
 
-	private function filterParameters( &$value ) {
+	/**
+	 * @return string[]
+	 */
+	private function filterParameters( &$value ): array {
 		$parameters = [];
 		$matches = [];
 
@@ -221,8 +227,8 @@ class ExternalIdentifierValue extends StringValue {
 		return $parameters;
 	}
 
-	private function makeNonlinkedWikiText( $url ) {
-		return str_replace( ':', '&#58;', $url );
+	private function makeNonlinkedWikiText( $url ): string|array {
+		return str_replace( ':', '&#58;', $url ?? '' );
 	}
 
 }

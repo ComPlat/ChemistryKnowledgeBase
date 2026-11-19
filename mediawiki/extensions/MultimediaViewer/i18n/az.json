@@ -6,7 +6,8 @@
 			"Serkanland",
 			"Toghrul Rahimli",
 			"Wertuose",
-			"Əkrəm Cəfər"
+			"Əkrəm Cəfər",
+			"Əkrəm"
 		]
 	},
 	"multimediaviewer-desc": "Tam ekran interfeysində kiçik şəkilləri daha böyük ölçüdə genişləndirin",
@@ -23,7 +24,6 @@
 	"multimediaviewer-thumbnail-error": "Bağışlayın, faylı göstərmək mümkün olmadı",
 	"multimediaviewer-thumbnail-error-description": "Çox güman ki, texniki problem var. Davam edərsə, $1 edə bilərsiniz. Xəta: $2",
 	"multimediaviewer-thumbnail-error-retry": "yenidən cəhd et",
-	"multimediaviewer-thumbnail-error-report": "problemi bildirin",
 	"multimediaviewer-license-cc-pd": "İctimai mülkiyyət",
 	"multimediaviewer-license-pd": "İctimai mülkiyyət",
 	"multimediaviewer-license-default": "Lisenziyaya bax",
@@ -100,7 +100,7 @@
 	"multimediaviewer-download-attribution-cta-header": "Müəllifi qeyd etməlisiniz",
 	"multimediaviewer-download-optional-attribution-cta-header": "Müəllifi qeyd edə bilərsiniz",
 	"multimediaviewer-download-attribution-cta": "Necə edildiyini göstər",
-	"multimediaviewer-copy-button": "Kopyala",
+	"multimediaviewer-copy-button": "Kopiyala",
 	"multimediaviewer-download-attribution-copy": "Bu fayl üçün müəlliflik mətnini seç və surətini çıxar (əgər dəstəklənirsə).",
 	"multimediaviewer-reuse-warning-deletion": "Bu fayl silinmək üçün nəzərdə tutulub.",
 	"multimediaviewer-reuse-warning-nonfree": "Bu faylın azad lisenziyası yoxdur.",
@@ -117,6 +117,5 @@
 	"multimediaviewer-enable-alert": "\"Media nümayişetdiricisi\" hazırda deaktivdir",
 	"multimediaviewer-disable-info-title": "\"Media nümayişetdiricisi\" deaktiv edildi",
 	"multimediaviewer-disable-info": "Siz hələ də Media Nümayiş etdiricisi ilə fərdi fayllara baxa bilərsiniz.",
-	"multimediaviewer-errorreport-privacywarning": "Xətanın detalları hesabata əlavə olunur və bu, ictimaiyyət üçün açıq olacaq. Əgər bununla bağlı narahatçılığınız varsa, aşağıdakı hesabatı redaktə edə və paylaşmaq istəmədiyiniz bütün məlumatları silə bilərsiniz.",
 	"multimediaviewer-loading": "Media Viewer yüklənir."
 }

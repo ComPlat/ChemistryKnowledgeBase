@@ -11,8 +11,8 @@ use Wikimedia\Parsoid\DOM\Element;
 use Wikimedia\Parsoid\DOM\Node;
 use Wikimedia\Parsoid\DOM\Text;
 use Wikimedia\Parsoid\Utils\DOMCompat\TokenList;
+use Wikimedia\Parsoid\Wt2Html\TreeBuilder\DOMBuilder;
 use Wikimedia\Parsoid\Wt2Html\XMLSerializer;
-use Wikimedia\RemexHtml\DOM\DOMBuilder;
 use Wikimedia\RemexHtml\HTMLData;
 use Wikimedia\RemexHtml\Tokenizer\Tokenizer;
 use Wikimedia\RemexHtml\TreeBuilder\Dispatcher;
@@ -86,6 +86,7 @@ class DOMCompat {
 			$nodeName = self::nodeName( $element );
 			if ( $nodeName === 'body' || $nodeName === 'frameset' ) {
 				// Caching!
+				// @phan-suppress-next-line PhanTypeMismatchProperty
 				$document->body = $element;
 				// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
 				return $element;
@@ -111,6 +112,7 @@ class DOMCompat {
 		foreach ( $document->documentElement->childNodes as $element ) {
 			/** @var Element $element */
 			if ( self::nodeName( $element ) === 'head' ) {
+				// @phan-suppress-next-line PhanTypeMismatchProperty
 				$document->head = $element; // Caching!
 				// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
 				return $element;
@@ -374,19 +376,7 @@ class DOMCompat {
 	 * @param string $html
 	 */
 	public static function setInnerHTML( $element, string $html ): void {
-		$domBuilder = new class( [
-			'suppressHtmlNamespace' => true,
-		] ) extends DOMBuilder {
-			/** @inheritDoc */
-			protected function createDocument(
-				?string $doctypeName = null,
-				?string $public = null,
-				?string $system = null
-			) {
-				// @phan-suppress-next-line PhanTypeMismatchReturn
-				return DOMCompat::newDocument( $doctypeName === 'html' );
-			}
-		};
+		$domBuilder = new DOMBuilder; // Our version, not Remex's
 		$treeBuilder = new TreeBuilder( $domBuilder );
 		$dispatcher = new Dispatcher( $treeBuilder );
 		$tokenizer = new Tokenizer( $dispatcher, $html, [ 'ignoreErrors' => true ] );
@@ -526,5 +516,28 @@ class DOMCompat {
 	 */
 	private static function or( ...$args ) {
 		return implode( '|', $args );
+	}
+
+	/**
+	 * Return HTMLTemplateElement#content
+	 *
+	 * In the PHP DOM, <template> elements do not have a dedicated
+	 * DocumentFragment and children are stored directly under the
+	 * Element.  In the HTML5 spec, the contents are stored in a
+	 * DocumentFragment with a unique owner document.
+	 *
+	 * Bridge this gap by returning the <template> element for
+	 * PHP's DOM, or the DocumentFragment for an HTML5-compliant DOM.
+	 *
+	 * @param Element $node A <template> element
+	 * @return Element|DocumentFragment Either the element (for PHP compat)
+	 *  or the DocumentFragment which is the template's "content"
+	 */
+	public static function getTemplateElementContent( $node ) {
+		if ( isset( $node->content ) ) {
+			// @phan-suppress-next-line PhanUndeclaredProperty only in IDLeDOM
+			return $node->content;
+		}
+		return $node;
 	}
 }

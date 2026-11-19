@@ -3,10 +3,12 @@
 namespace SMW\Tests\Utils\Runners;
 
 use DomainException;
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Maintenance\Maintenance;
 use Onoi\MessageReporter\MessageReporterAwareTrait;
 use RuntimeException;
-use SMW\MediaWiki\HookDispatcherAwareTrait;
 use SMW\Services\ServicesFactory as ApplicationFactory;
+use Wikimedia\TestingAccessWrapper;
 
 /**
  * Running maintenance scripts via phpunit is not really possible but instead
@@ -24,22 +26,26 @@ use SMW\Services\ServicesFactory as ApplicationFactory;
 class MaintenanceRunner {
 
 	use MessageReporterAwareTrait;
-	use HookDispatcherAwareTrait;
 
-	protected $maintenanceClass = null;
-	protected $options = [];
+	private ?HookContainer $hookContainer = null;
+
 	protected $output = null;
 	protected $quiet = false;
 
 	/**
-	 * @since 1.9.2
-	 *
-	 * @param string $maintenanceClass
-	 * @param array $options
+	 * @since 7.0.0
 	 */
-	public function __construct( $maintenanceClass, $options = [] ) {
-		$this->maintenanceClass = $maintenanceClass;
-		$this->options = $options;
+	public function setHookContainer( HookContainer $hookContainer ): void {
+		$this->hookContainer = $hookContainer;
+	}
+
+	/**
+	 * @since 1.9.2
+	 */
+	public function __construct(
+		protected $maintenanceClass,
+		protected $options = [],
+	) {
 	}
 
 	/**
@@ -82,8 +88,14 @@ class MaintenanceRunner {
 		ApplicationFactory::getInstance()->clear();
 		$maintenance = new $this->maintenanceClass;
 
-		if ( !( $maintenance instanceof \Maintenance ) ) {
+		if ( !( $maintenance instanceof Maintenance ) ) {
 			throw new DomainException( "Expected a Maintenance instance" );
+		}
+
+		// From MediaWiki 1.46, fatalError() exits the test run instead of
+		// throwing unless the script is marked as under test
+		if ( property_exists( Maintenance::class, 'isTesting' ) ) {
+			TestingAccessWrapper::newFromObject( $maintenance )->isTesting = true;
 		}
 
 		// isset/ null
@@ -100,16 +112,20 @@ class MaintenanceRunner {
 			$maintenance->setMessageReporter( $this->messageReporter );
 		}
 
-		if ( $this->hookDispatcher !== null && method_exists( $maintenance, 'setHookDispatcher' ) ) {
-			$maintenance->setHookDispatcher( $this->hookDispatcher );
+		if ( $this->hookContainer !== null && method_exists( $maintenance, 'setHookContainer' ) ) {
+			$maintenance->setHookContainer( $this->hookContainer );
 		}
 
 		ob_start();
-		$result = $maintenance->execute();
-		$this->output = ob_get_contents();
 
-		while ( ob_get_level() > $obLevel ) {
-			ob_end_clean();
+		try {
+			$result = $maintenance->execute();
+		} finally {
+			$this->output = ob_get_contents();
+
+			while ( ob_get_level() > $obLevel ) {
+				ob_end_clean();
+			}
 		}
 
 		return $result;

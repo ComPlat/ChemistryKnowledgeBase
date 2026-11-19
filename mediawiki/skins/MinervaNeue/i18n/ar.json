@@ -21,7 +21,10 @@
 			"ديفيد",
 			"زكريا",
 			"علاء",
-			"محمد أحمد عبد الفتاح"
+			"محمد أحمد عبد الفتاح",
+			"Cigaryno",
+			"Mdktb",
+			"Mohammed Qays"
 		]
 	},
 	"minerva-last-modified-date": "آخر تعديل بتاريخ $1، في $2",
@@ -36,10 +39,10 @@
 	"mobile-frontend-home-button": "الصفحة الرئيسة",
 	"mobile-frontend-language-article-heading": "اللغة",
 	"mobile-frontend-languages-not-available": "هذه الصفحة غير متوفرة بلغات أخرى.",
-	"mobile-frontend-main-menu-button-tooltip": "افتح القائمة الرئيسية",
+	"mobile-frontend-main-menu-button-tooltip": "افتح القائمة الرئيسة",
 	"mobile-frontend-main-menu-contributions": "مساهمات",
 	"mobile-frontend-main-menu-login": "تسجيل الدخول",
-	"mobile-frontend-main-menu-logout": "خروج",
+	"mobile-frontend-main-menu-logout": "تسجيل الخروج",
 	"mobile-frontend-main-menu-nearby": "بالقرب من هنا",
 	"mobile-frontend-main-menu-settings": "الإعدادات",
 	"mobile-frontend-main-menu-watchlist": "قائمة المراقبة",
@@ -50,7 +53,7 @@
 	"mobile-frontend-pageaction-edit-tooltip": "تحرير مقطع المقدمة في هذه الصفحة",
 	"mobile-frontend-placeholder": "ابحث في {{SITENAME}}",
 	"mobile-frontend-random-button": "عشوائي",
-	"mobile-frontend-redirected-from": "تم التحويل من \"[[$1]]\"",
+	"mobile-frontend-redirected-from": "حُوِّلَت من \"[[$1]]\"",
 	"mobile-frontend-talk-back-to-filepage": "عد إلى الملف «$1».",
 	"mobile-frontend-talk-back-to-page": "عُد إلى صفحة \"$1\".",
 	"mobile-frontend-talk-back-to-projectpage": "عد إلى صفحة المشروع «$1»",

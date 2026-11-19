@@ -2,10 +2,12 @@
 
 namespace SMW\MediaWiki\Jobs;
 
+use MediaWiki\Title\Title;
 use SMW\MediaWiki\Job;
-use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\MediaWiki\JobFactory;
 use SMW\SQLStore\QueryEngine\FulltextSearchTableFactory;
-use Title;
+use SMW\Store;
+use Throwable;
 
 /**
  * @license GPL-2.0-or-later
@@ -17,55 +19,89 @@ class FulltextSearchTableRebuildJob extends Job {
 
 	/**
 	 * @since 2.5
-	 *
-	 * @param Title $title
-	 * @param array $params job parameters
 	 */
-	public function __construct( Title $title, $params = [] ) {
+	public function __construct(
+		Title $title,
+		array $params,
+		Store $store,
+		private readonly JobFactory $jobFactory
+	) {
 		parent::__construct( 'smw.fulltextSearchTableRebuild', $title, $params );
+		$this->setStore( $store );
 	}
 
 	/**
+	 * Runs a rebuild job in one of three ways:
+	 * by table, in batch mode or full.
+	 *
 	 * @see Job::run
 	 *
-	 * @since  2.5
+	 * @since 2.5
 	 */
-	public function run() {
+	public function run(): bool {
 		if ( $this->waitOnCommandLineMode() ) {
 			return true;
 		}
 
 		$fulltextSearchTableFactory = new FulltextSearchTableFactory();
 
-		// Only the SQLStore is supported
 		$searchTableRebuilder = $fulltextSearchTableFactory->newSearchTableRebuilder(
-			ApplicationFactory::getInstance()->getStore( '\SMW\SQLStore\SQLStore' )
+			$this->store
 		);
 
 		if ( $this->hasParameter( 'table' ) ) {
 			$searchTableRebuilder->rebuildByTable( $this->getParameter( 'table' ) );
-		} elseif ( $this->hasParameter( 'mode' ) && $this->getParameter( 'mode' ) === 'full' ) {
-			$searchTableRebuilder->rebuild();
 		} else {
-			$searchTableRebuilder->flushTable();
-			$this->createJobsFromTableList( $searchTableRebuilder->getQualifiedTableList() );
+			// Also jobs queued with mode 'full' before 7.4.1
+			try {
+				$this->rebuildChunk( $searchTableRebuilder );
+			} catch ( Throwable $e ) {
+				$this->setLastError( $e->getMessage() );
+				return false;
+			}
 		}
 
 		return true;
 	}
 
-	private function createJobsFromTableList( $tableList ) {
-		if ( $tableList === [] ) {
+	/**
+	 * Rebuilds one 'window' of subject IDs and if that wasn't the
+	 * last window, queues a job for the next one in row. Ensures that
+	 * - Each job does a bounded amount of work (`batchSize` subject IDs)
+	 * - A job that fails or times out can simply be run again because
+	 * a window replaces its own entries.
+	 *
+	 * @since 7.4.0
+	 *
+	 * Parameters: `fromSid` (default: 0) and `batchSize`
+	 * (default: \SearchTableRebuilder::DEFAULT_BATCH_SIZE).
+	 *
+	 * @param \SMW\SQLStore\QueryEngine\Fulltext\SearchTableRebuilder $searchTableRebuilder
+	 *
+	 * @return void
+	 * @throws Throwable
+	 */
+	private function rebuildChunk( $searchTableRebuilder ): void {
+		$fromSid = max( 0, (int)$this->getParameter( 's', 0 ) );
+		$batchSize = (int)$this->getParameter( 'n', $searchTableRebuilder::DEFAULT_BATCH_SIZE );
+		$batchSize = $batchSize > 0 ? $batchSize : $searchTableRebuilder::DEFAULT_BATCH_SIZE;
+
+		try {
+			$nextSid = $searchTableRebuilder->rebuildChunk( $fromSid, $batchSize );
+		} catch ( Throwable $e ) {
+			throw $e;
+		}
+
+		if ( $nextSid === null ) {
 			return;
 		}
 
-		foreach ( $tableList as $tableName ) {
-			$fulltextSearchTableRebuildJob = new self( $this->getTitle(), [
-				'table' => $tableName
-			] );
+		$job = $this->jobFactory->newFulltextSearchTableRebuildJob(
+			$this->getTitle(),
+			[ 's' => $nextSid, 'n' => $batchSize ]
+		);
 
-			$fulltextSearchTableRebuildJob->insert();
-		}
+		$job->insert();
 	}
 
 }

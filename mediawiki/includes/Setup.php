@@ -91,12 +91,6 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	exit( 1 );
 }
 
-// PHP must not be configured to overload mbstring functions. (T5782, T122807)
-// This was deprecated by upstream in PHP 7.2 and was removed in PHP 8.0.
-if ( ini_get( 'mbstring.func_overload' ) ) {
-	die( 'MediaWiki does not support installations where mbstring.func_overload is non-zero.' );
-}
-
 // The MW_ENTRY_POINT constant must always exists, to make it safe to access.
 // For compat, we do support older and custom MW entrypoints that don't set this,
 // in which case we assign a default here.
@@ -129,15 +123,17 @@ require_once MW_INSTALL_PATH . '/includes/Defines.php';
 // Assert that composer dependencies were successfully loaded
 if ( !interface_exists( LoggerInterface::class ) ) {
 	$message = (
-		'MediaWiki requires the <a href="https://github.com/php-fig/log">PSR-3 logging ' .
-		"library</a> to be present. This library is not embedded directly in MediaWiki's " .
-		"git repository and must be installed separately by the end user.\n\n" .
+		'<strong>Error: Missing external libraries.</strong> ' .
+		'MediaWiki depends on external libraries bundled with most MediaWiki distributions. ' .
+		"When installing MediaWiki from its Git reposistory, these must be installed separately.\n\n" .
 		'Please see the <a href="https://www.mediawiki.org/wiki/Download_from_Git' .
 		'#Fetch_external_libraries">instructions for installing libraries</a> on mediawiki.org ' .
-		'for help on installing the required components.'
+		'for help on installing the required libraries.'
 	);
+	http_response_code( 500 );
 	echo $message;
-	trigger_error( $message, E_USER_ERROR );
+	error_log( $message );
+	exit( 1 );
 }
 
 // Deprecated global variable for backwards-compatibility.
@@ -367,6 +363,9 @@ if ( $wgCanonicalServer === false ) {
 	$wgCanonicalServer = MediaWikiServices::getInstance()->getUrlUtils()->getCanonicalServer();
 }
 $wgVirtualRestConfig['global']['domain'] = $wgCanonicalServer;
+if ( $wgHTTPUserAgentContact === false ) {
+	$wgHTTPUserAgentContact = $wgCanonicalServer;
+}
 
 if ( $wgServerName !== false ) {
 	wfWarn( '$wgServerName should be derived from $wgCanonicalServer, '

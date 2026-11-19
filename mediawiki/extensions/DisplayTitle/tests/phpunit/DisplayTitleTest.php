@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Extension\DisplayTitle\Tests;
 
-use CommentStoreComment;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ParserOptions;
 use RequestContext;
-use Title;
 use WikitextContent;
 
 /**
@@ -58,7 +58,7 @@ class DisplayTitleTest extends MediaWikiIntegrationTestCase {
 		$parserOptions->setRemoveComments( true );
 		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
 		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
-		$actual = $parserOutput->getText();
+		$actual = $parserOutput->runOutputPipeline( $parserOptions )->getContentHolderText();
 
 		$this->assertStringContainsString( '>' . $expectedLinkText . '</a>', $actual, $testName );
 	}
@@ -600,7 +600,7 @@ class DisplayTitleTest extends MediaWikiIntegrationTestCase {
 		$parserOptions->setRemoveComments( true );
 		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
 		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
-		$actual = $parserOutput->getText();
+		$actual = $parserOutput->runOutputPipeline( $parserOptions )->getContentHolderText();
 
 		$this->assertStringContainsString( '>' . $expectedLinkText . '</a>', $actual, $testName );
 	}
@@ -870,7 +870,7 @@ class DisplayTitleTest extends MediaWikiIntegrationTestCase {
 		$parserOptions->setRemoveComments( true );
 		$contentRenderer = $this->getServiceContainer()->getContentRenderer();
 		$parserOutput = $contentRenderer->getParserOutput( $content, $title->toPageIdentity(), null, $parserOptions );
-		$actual = $parserOutput->getText();
+		$actual = $parserOutput->runOutputPipeline( $parserOptions )->getContentHolderText();
 
 		$this->assertStringNotContainsString( '>Zebra</a>', $actual, $testName );
 	}

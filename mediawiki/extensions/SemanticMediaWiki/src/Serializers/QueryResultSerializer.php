@@ -2,21 +2,21 @@
 
 namespace SMW\Serializers;
 
+use MediaWiki\Title\Title;
 use OutOfBoundsException;
 use Serializers\DispatchableSerializer;
+use SMW\DataItems\DataItem;
 use SMW\DataValueFactory;
 use SMW\Query\PrintRequest;
 use SMW\Query\QueryResult;
 use SMW\Query\Result\ResultArray;
-use SMWDataItem as DataItem;
-use Title;
 
 /**
- * Class for serializing SMWDataItem and QueryResult objects to a context
+ * Class for serializing DataItem and QueryResult objects to a context
  * independent object consisting of arrays and associative arrays, which can
  * be fed directly to json_encode, the MediaWiki API, and similar serializers.
  *
- * This class is distinct from SMWSerializer and the SMWExpData object
+ * This class is distinct from SMWSerializer and the ExpData object
  * it takes, in that here semantic context is lost.
  *
  * @ingroup Serializers
@@ -28,17 +28,14 @@ use Title;
  */
 class QueryResultSerializer implements DispatchableSerializer {
 
-	/**
-	 * @var int
-	 */
-	private static $version = 2;
+	private static int $version = 2;
 
 	/**
 	 * @since 3.0
 	 *
 	 * @param int $version
 	 */
-	public function version( $version ) {
+	public function version( $version ): void {
 		self::$version = (int)$version;
 	}
 
@@ -50,7 +47,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 	 * @return array
 	 * @throws OutOfBoundsException
 	 */
-	public function serialize( $queryResult ) {
+	public function serialize( $queryResult ): array {
 		if ( !( $this->isSerializerFor( $queryResult ) ) ) {
 			throw new OutOfBoundsException( 'Object was not identified as a QueryResult instance' );
 		}
@@ -63,7 +60,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 	 *
 	 * @since  1.9
 	 */
-	public function isSerializerFor( $queryResult ) {
+	public function isSerializerFor( $queryResult ): bool {
 		return $queryResult instanceof QueryResult;
 	}
 
@@ -72,19 +69,27 @@ class QueryResultSerializer implements DispatchableSerializer {
 	 *
 	 * @since 1.7
 	 *
-	 * @param SMWDataItem $dataItem
+	 * @param DataItem $dataItem
 	 *
-	 * @return mixed
+	 * @return array|string|int|float
 	 */
-	public static function getSerialization( DataItem $dataItem, $printRequest = null ) {
+	public static function getSerialization( DataItem $dataItem, $printRequest = null ): array|string|int|float {
 		switch ( $dataItem->getDIType() ) {
 			case DataItem::TYPE_WIKIPAGE:
 				// Support for a deserializable _rec type with 0.6
 				if ( $printRequest !== null && strpos( $printRequest->getTypeID(), '_rec' ) !== false ) {
 					$recordValue = DataValueFactory::getInstance()->newDataValueByItem(
 						$dataItem,
-						$printRequest->getData()->getDataItem()
+						$printRequest->getProperty()
 					);
+
+					// A record that cannot be resolved (e.g. a monolingual text value
+					// without a container reference) carries an error item instead of
+					// the semantic data the loop below relies on.
+					if ( $recordValue->getDataItem()->getDIType() === DataItem::TYPE_ERROR ) {
+						$result = [];
+						break;
+					}
 
 					$recordDiValues = [];
 
@@ -94,13 +99,13 @@ class QueryResultSerializer implements DispatchableSerializer {
 						$recordDiValues[$label] = [
 							'label'  => $label,
 							'key'    => $property->getKey(),
-							'typeid' => $property->findPropertyTypeID(),
+							'typeid' => $property->findPropertyValueType(),
 							'item'   => []
 						];
 
 						foreach ( $recordValue->getDataItem()->getSemanticData()->getPropertyValues( $property ) as $value ) {
 
-							if ( $property->findPropertyTypeID() === '_qty' ) {
+							if ( $property->findPropertyValueType() === '_qty' ) {
 								$dataValue = DataValueFactory::getInstance()->newDataValueByItem( $value, $property );
 
 								$recordDiValues[$label]['item'][] = [
@@ -137,13 +142,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 				// we will not be able to determine the unit
 				// (unit is part of the datavalue object)
 				if ( $printRequest !== null && $printRequest->getTypeID() === '_qty' ) {
-					$diProperty = $printRequest->getData()->getDataItem();
-
-					if ( $printRequest->isMode( \SMW\Query\PrintRequest::PRINT_CHAIN ) ) {
-						$diProperty = $printRequest->getData()->getLastPropertyChainValue()->getDataItem();
-					}
-
-					$dataValue = DataValueFactory::getInstance()->newDataValueByItem( $dataItem, $diProperty );
+					$dataValue = DataValueFactory::getInstance()->newDataValueByItem( $dataItem, $printRequest->getProperty() );
 
 					$result = [
 						'value' => $dataValue->getNumber(),
@@ -179,7 +178,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 	 *
 	 * @return array
 	 */
-	public static function getSerializedQueryResult( QueryResult $queryResult ) {
+	public static function getSerializedQueryResult( QueryResult $queryResult ): array {
 		$results = [];
 		$printRequests = [];
 
@@ -249,7 +248,10 @@ class QueryResultSerializer implements DispatchableSerializer {
 		return $serialization;
 	}
 
-	private static function serialize_printrequest( $printRequest ) {
+	/**
+	 * @return mixed[]
+	 */
+	private static function serialize_printrequest( $printRequest ): array {
 		$serialized = [
 			'label'  => $printRequest->getLabel(),
 			'key'    => '',
@@ -263,7 +265,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 
 		if ( $printRequest->isMode( PrintRequest::PRINT_CHAIN ) ) {
 			$serialized['chain'] = $data->getDataItem()->getString();
-			$serialized['key'] = $data->getLastPropertyChainValue()->getDataItem()->getKey();
+			$serialized['key'] = $printRequest->getProperty()->getKey();
 		}
 
 		if ( !$printRequest->isMode( PrintRequest::PRINT_PROP ) ) {
@@ -282,7 +284,7 @@ class QueryResultSerializer implements DispatchableSerializer {
 		}
 
 		// To match internal properties like _MDAT
-		$serialized['key'] = $data->getDataItem()->getKey();
+		$serialized['key'] = $printRequest->getProperty()->getKey();
 
 		return $serialized;
 	}

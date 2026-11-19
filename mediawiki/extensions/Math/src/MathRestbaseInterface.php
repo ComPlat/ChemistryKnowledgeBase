@@ -190,10 +190,10 @@ class MathRestbaseInterface {
 		self::batchGetMathML( $rbis, $multiHttpClient );
 	}
 
-	private function getMultiHttpClient() {
-		global $wgMathConcurrentReqs;
+	private function getMultiHttpClient(): MultiHttpClient {
+		global $wgMathHTTPProxy, $wgMathConcurrentReqs;
 		$multiHttpClient = MediaWikiServices::getInstance()->getHttpRequestFactory()->createMultiClient(
-			[ 'maxConnsPerHost' => $wgMathConcurrentReqs ] );
+			[ 'maxConnsPerHost' => $wgMathConcurrentReqs, 'proxy' => $wgMathHTTPProxy ] );
 
 		return $multiHttpClient;
 	}
@@ -303,7 +303,7 @@ class MathRestbaseInterface {
 		return $this->type;
 	}
 
-	private function setErrorMessage( $msg ) {
+	private function setErrorMessage( string $msg ) {
 		$this->error = (object)[ 'error' => (object)[ 'message' => $msg ] ];
 	}
 

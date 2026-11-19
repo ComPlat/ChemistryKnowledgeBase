@@ -2,8 +2,9 @@
 
 namespace SMW\SPARQLStore\QueryEngine\DescriptionInterpreters;
 
-use SMW\DIProperty;
-use SMW\DIWikiPage;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\Export\Exporter;
 use SMW\Query\Language\ConceptDescription;
 use SMW\Query\Language\Conjunction;
 use SMW\Query\Language\Description;
@@ -12,7 +13,7 @@ use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\SPARQLStore\QueryEngine\Condition\FalseCondition;
 use SMW\SPARQLStore\QueryEngine\ConditionBuilder;
 use SMW\SPARQLStore\QueryEngine\DescriptionInterpreter;
-use SMWExporter as Exporter;
+use SMW\Utils\ConceptExpansionGuard;
 
 /**
  * @license GPL-2.0-or-later
@@ -23,23 +24,15 @@ use SMWExporter as Exporter;
  */
 class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 
-	/**
-	 * @var ConditionBuilder
-	 */
-	private $conditionBuilder;
-
-	/**
-	 * @var Exporter
-	 */
-	private $exporter;
+	private Exporter $exporter;
 
 	/**
 	 * @since 2.1
-	 *
-	 * @param ConditionBuilder|null $conditionBuilder
 	 */
-	public function __construct( ?ConditionBuilder $conditionBuilder = null ) {
-		$this->conditionBuilder = $conditionBuilder;
+	public function __construct(
+		private readonly ConditionBuilder $conditionBuilder,
+		private readonly ConceptExpansionGuard $expansionGuard,
+	) {
 		$this->exporter = Exporter::getInstance();
 	}
 
@@ -48,7 +41,7 @@ class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function canInterpretDescription( Description $description ) {
+	public function canInterpretDescription( Description $description ): bool {
 		return $description instanceof ConceptDescription;
 	}
 
@@ -58,23 +51,11 @@ class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 	 * {@inheritDoc}
 	 */
 	public function interpretDescription( Description $description ) {
-		$joinVariable = $this->conditionBuilder->getJoinVariable();
-		$orderByProperty = $this->conditionBuilder->getOrderByProperty();
-
-		$conceptDescription = $this->getConceptDescription(
-			$description->getConcept()
-		);
-
-		if ( $conceptDescription === '' ) {
-			return new FalseCondition();
-		}
-
-		$hash = 'concept-' . $conceptDescription->getQueryString();
-
-		$this->conditionBuilder->getCircularReferenceGuard()->mark( $hash );
-
-		if ( $this->conditionBuilder->getCircularReferenceGuard()->isCircular( $hash ) ) {
-
+		// Bound the total concept expansion for this query build. The circular
+		// reference guard below only blocks a true cycle; an acyclic fan-out
+		// (shared sub-concepts reached by several disjuncts) is otherwise
+		// re-expanded once per path and grows without limit.
+		if ( !$this->expansionGuard->acquire() ) {
 			$this->conditionBuilder->addError(
 				[ 'smw-query-condition-circular', $description->getQueryString() ]
 			);
@@ -82,23 +63,51 @@ class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 			return new FalseCondition();
 		}
 
-		$this->conditionBuilder->setJoinVariable( $joinVariable );
-		$this->conditionBuilder->setOrderByProperty( $orderByProperty );
+		try {
+			$joinVariable = $this->conditionBuilder->getJoinVariable();
+			$orderByProperty = $this->conditionBuilder->getOrderByProperty();
 
-		$condition = $this->conditionBuilder->mapDescriptionToCondition(
-			$conceptDescription
-		);
+			$conceptDescription = $this->getConceptDescription(
+				$description->getConcept()
+			);
 
-		$this->conditionBuilder->getCircularReferenceGuard()->unmark( $hash );
+			if ( $conceptDescription === '' ) {
+				return new FalseCondition();
+			}
 
-		return $condition;
+			$hash = 'concept-' . $conceptDescription->getQueryString();
+
+			$this->conditionBuilder->getCircularReferenceGuard()->mark( $hash );
+
+			if ( $this->conditionBuilder->getCircularReferenceGuard()->isCircular( $hash ) ) {
+
+				$this->conditionBuilder->addError(
+					[ 'smw-query-condition-circular', $description->getQueryString() ]
+				);
+
+				return new FalseCondition();
+			}
+
+			$this->conditionBuilder->setJoinVariable( $joinVariable );
+			$this->conditionBuilder->setOrderByProperty( $orderByProperty );
+
+			$condition = $this->conditionBuilder->mapDescriptionToCondition(
+				$conceptDescription
+			);
+
+			$this->conditionBuilder->getCircularReferenceGuard()->unmark( $hash );
+
+			return $condition;
+		} finally {
+			$this->expansionGuard->release();
+		}
 	}
 
-	private function getConceptDescription( DIWikiPage $concept ) {
+	private function getConceptDescription( WikiPage $concept ) {
 		$applicationFactory = ApplicationFactory::getInstance();
 
 		$value = $applicationFactory->getStore()->getSemanticData( $concept )->getPropertyValues(
-			new DIProperty( '_CONC' )
+			new Property( '_CONC' )
 		);
 
 		if ( $value === null || $value === [] ) {
@@ -107,7 +116,7 @@ class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 
 		$value = end( $value );
 
-		$description = $applicationFactory->newQueryParser()->getQueryDescription(
+		$description = $applicationFactory->getQueryFactory()->newQueryParser()->getQueryDescription(
 			$value->getConceptQuery()
 		);
 
@@ -116,7 +125,7 @@ class ConceptDescriptionInterpreter implements DescriptionInterpreter {
 		return $description;
 	}
 
-	private function findCircularDescription( $concept, $description ) {
+	private function findCircularDescription( $concept, $description ): void {
 		if ( $description instanceof ConceptDescription ) {
 			if ( $description->getConcept()->equals( $concept ) ) {
 				$this->conditionBuilder->addError(

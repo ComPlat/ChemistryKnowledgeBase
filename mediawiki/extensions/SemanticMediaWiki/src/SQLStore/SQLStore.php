@@ -3,24 +3,28 @@
 namespace SMW\SQLStore;
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use RuntimeException;
-use SMW\DIConcept;
-use SMW\DIProperty;
-use SMW\DIWikiPage;
-use SMW\Query\QueryResult;
+use SMW\DataItems\Concept;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\DataValues\WikiPageValue;
+use SMW\Lookup\CachedListLookup;
+use SMW\MediaWiki\Connection\Database;
+use SMW\Query\Query;
 use SMW\RequestOptions;
-use SMW\SemanticData;
 use SMW\Services\ServicesContainer;
 use SMW\SQLStore\EntityStore\DataItemHandler;
 use SMW\SQLStore\EntityStore\DataItemHandlerFactory;
+use SMW\SQLStore\EntityStore\EntityIdManager;
 use SMW\SQLStore\EntityStore\EntityLookup;
-use SMW\SQLStore\Lookup\CachedListLookup;
 use SMW\SQLStore\Rebuilder\Rebuilder;
+use SMW\SQLStore\TableBuilder\Table;
+use SMW\SQLStore\TableBuilder\TableBuilder;
 use SMW\Store;
-use SMWDataItem as DataItem;
-use SMWQuery as Query;
-use SMWWikiPageValue;
-use Title;
+use Wikimedia\Rdbms\IDatabase;
 
 /*
  * Virtual "interwiki prefix" for old-style special SMW objects (no longer used)
@@ -119,37 +123,31 @@ class SQLStore extends Store {
 	const ID_AUXILIARY_TABLE = 'smw_object_aux';
 
 	/**
+	 * Name of the table that holds install-state metadata previously stored
+	 * in `.smw.json` (upgrade key, maintenance mode, incomplete-task flags,
+	 * etc).
+	 *
+	 * @since 7.0.0
+	 */
+	const META_TABLE = 'smw_meta';
+
+	/**
 	 * Identifies the UPDATE transaction
 	 */
 	const UPDATE_TRANSACTION = 'sql/transaction/update';
 
-	/**
-	 * @var SQLStoreFactory
-	 */
-	private $factory;
+	private SQLStoreFactory $factory;
+
+	private ?PropertyTableInfoFetcher $propertyTableInfoFetcher = null;
+
+	private ?PropertyTableIdReferenceFinder $propertyTableIdReferenceFinder = null;
+
+	private ?DataItemHandlerFactory $dataItemHandlerFactory = null;
+
+	private ?EntityLookup $entityLookup = null;
 
 	/**
-	 * @var PropertyTableInfoFetcher|null
-	 */
-	private $propertyTableInfoFetcher = null;
-
-	/**
-	 * @var PropertyTableIdReferenceFinder
-	 */
-	private $propertyTableIdReferenceFinder;
-
-	/**
-	 * @var DataItemHandlerFactory
-	 */
-	private $dataItemHandlerFactory;
-
-	/**
-	 * @var EntityLookup
-	 */
-	private $entityLookup;
-
-	/**
-	 * @var ServicesContainer
+	 * @var ?ServicesContainer
 	 */
 	protected $servicesContainer;
 
@@ -157,14 +155,11 @@ class SQLStore extends Store {
 	 * Object to access the SMW IDs table.
 	 *
 	 * @since 1.8
-	 * @var \SMW\SQLStore\EntityStore\EntityIdManager
+	 * @var EntityIdManager
 	 */
 	public $smwIds;
 
-	/**
-	 * @var SQLStoreUpdater
-	 */
-	private $updater;
+	private ?SQLStoreUpdater $updater = null;
 
 	/**
 	 * @since 1.8
@@ -179,7 +174,7 @@ class SQLStore extends Store {
 	 *
 	 * @param SQLStoreFactory $factory
 	 */
-	public function setFactory( SQLStoreFactory $factory ) {
+	public function setFactory( SQLStoreFactory $factory ): void {
 		$this->factory = $factory;
 	}
 
@@ -208,7 +203,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getSemanticData( DIWikiPage $subject, $filter = false ) {
+	public function getSemanticData( WikiPage $subject, $filter = false ) {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -221,7 +216,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getPropertyValues( $subject, DIProperty $property, $requestOptions = null ) {
+	public function getPropertyValues( $subject, Property $property, $requestOptions = null ) {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -234,7 +229,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getProperties( DIWikiPage $subject, $requestOptions = null ) {
+	public function getProperties( WikiPage $subject, $requestOptions = null ): array {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -247,7 +242,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getPropertySubjects( DIProperty $property, $dataItem, $requestOptions = null ) {
+	public function getPropertySubjects( Property $property, $dataItem, $requestOptions = null ) {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -260,7 +255,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getAllPropertySubjects( DIProperty $property, $requestoptions = null ) {
+	public function getAllPropertySubjects( Property $property, $requestoptions = null ) {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -273,7 +268,7 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function getInProperties( DataItem $value, $requestoptions = null ) {
+	public function getInProperties( DataItem $value, $requestoptions = null ): array {
 		if ( $this->entityLookup === null ) {
 			$this->entityLookup = $this->factory->newEntityLookup();
 		}
@@ -281,14 +276,12 @@ class SQLStore extends Store {
 		return $this->entityLookup->getInProperties( $value, $requestoptions );
 	}
 
-///// Writing methods /////
-
 	public function deleteSubject( Title $title ) {
 		if ( $this->updater === null ) {
 			$this->updater = $this->factory->newUpdater();
 		}
 
-		$subject = DIWikiPage::newFromTitle( $title );
+		$subject = WikiPage::newFromTitle( $title );
 
 		$status = $this->updater->deleteSubject( $title );
 
@@ -328,15 +321,15 @@ class SQLStore extends Store {
 		$status = $this->updater->changeTitle( $oldTitle, $newTitle, $pageId, $redirectId );
 
 		$this->doDeferredCachedListLookupUpdate(
-			DIWikiPage::newFromTitle( $oldTitle )
+			WikiPage::newFromTitle( $oldTitle )
 		);
 
 		return $status;
 	}
 
-	private function doDeferredCachedListLookupUpdate( DIWikiPage $subject ) {
+	private function doDeferredCachedListLookupUpdate( WikiPage $subject ): void {
 		if ( $subject->getNamespace() !== SMW_NS_PROPERTY ) {
-			return null;
+			return;
 		}
 
 		$deferredCallableUpdate = $this->factory->newDeferredCallableCachedListLookupUpdate();
@@ -356,7 +349,7 @@ class SQLStore extends Store {
 	 *
 	 * @param Query $query
 	 *
-	 * @return QueryResult|string|int depends on $query->querymode
+	 * @return mixed depends on $query->querymode
 	 */
 	public function getQueryResult( Query $query ) {
 		$result = null;
@@ -386,7 +379,7 @@ class SQLStore extends Store {
 	 *
 	 * @return CachedListLookup
 	 */
-	public function getPropertiesSpecial( $requestOptions = null ) {
+	public function getPropertiesSpecial( $requestOptions = null ): CachedListLookup {
 		return $this->factory->newPropertyUsageCachedListLookup( $requestOptions );
 	}
 
@@ -395,7 +388,7 @@ class SQLStore extends Store {
 	 *
 	 * @return CachedListLookup
 	 */
-	public function getUnusedPropertiesSpecial( $requestOptions = null ) {
+	public function getUnusedPropertiesSpecial( $requestOptions = null ): CachedListLookup {
 		return $this->factory->newUnusedPropertyCachedListLookup( $requestOptions );
 	}
 
@@ -404,7 +397,7 @@ class SQLStore extends Store {
 	 *
 	 * @return CachedListLookup
 	 */
-	public function getWantedPropertiesSpecial( $requestOptions = null ) {
+	public function getWantedPropertiesSpecial( $requestOptions = null ): CachedListLookup {
 		return $this->factory->newUndeclaredPropertyCachedListLookup( $requestOptions );
 	}
 
@@ -444,11 +437,86 @@ class SQLStore extends Store {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function drop( $verbose = true ) {
+	public function drop( $verbose = true ): bool {
 		$installer = $this->factory->newInstaller();
 		$installer->setMessageReporter( $this->messageReporter );
 
 		return $installer->uninstall( $verbose );
+	}
+
+	/**
+	 * Runs storage backend table optimization independently of the setup routine.
+	 *
+	 * @since 7.1.0
+	 */
+	public function optimize(): bool {
+		$tableOptimizer = $this->factory->newTableOptimizer( $this->messageReporter );
+
+		$tableOptimizer->runForTables(
+			$this->factory->newTableSchemaManager()->getTables()
+		);
+
+		return true;
+	}
+
+	/**
+	 * Gives the empty tables of user-defined fixed properties ($smwgFixedProperties)
+	 * the columns of the type currently declared for each property.
+	 *
+	 * A table with values is left to setupStore.php, as dropping a column empties
+	 * values that a rebuild does not restore unless it rewrites the entity. Without
+	 * a stored type, the property's page may still declare the type the table has.
+	 *
+	 * @since 7.4.0
+	 */
+	public function updateFixedPropertyTables(): void {
+		$connection = $this->getConnection( DB_PRIMARY );
+		$tableBuilder = TableBuilder::factory( $connection );
+		$tableSchemaManager = $this->factory->newTableSchemaManager();
+
+		foreach ( $this->getPropertyTables() as $propertyTable ) {
+			if ( !$propertyTable->isFixedPropertyTable() || $propertyTable->getFixedProperty()[0] === '_' ) {
+				continue;
+			}
+
+			$table = $tableSchemaManager->findTable( $propertyTable->getName() );
+
+			if (
+				$table !== null &&
+				$this->hasStoredType( $propertyTable->getFixedProperty() ) &&
+				$this->isEmptyAndMissingColumn( $connection, $table )
+			) {
+				$tableBuilder->create( $table );
+			}
+		}
+	}
+
+	private function hasStoredType( string $propertyKey ): bool {
+		$subject = ( new Property( $propertyKey ) )->getDiWikiPage();
+
+		return $this->getPropertyValues( $subject, new Property( Property::TYPE_HAS_TYPE ) ) !== [];
+	}
+
+	private function isEmptyAndMissingColumn( IDatabase $connection, Table $table ): bool {
+		$tableName = $table->getName();
+
+		$hasValues = $connection->newSelectQueryBuilder()
+			->select( '1' )
+			->from( $tableName )
+			->caller( __METHOD__ )
+			->fetchField() !== false;
+
+		if ( $hasValues ) {
+			return false;
+		}
+
+		foreach ( array_keys( $table->get( 'fields' ) ) as $field ) {
+			if ( !$connection->fieldExists( $tableName, $field, __METHOD__ ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public function refreshData( &$id, $count, $namespaces = false, $usejobs = true ): Rebuilder {
@@ -477,7 +545,7 @@ class SQLStore extends Store {
 	 *
 	 * @return array of error strings (empty if no errors occurred)
 	 */
-	public function refreshConceptCache( Title $concept ) {
+	public function refreshConceptCache( Title $concept ): array {
 		return $this->factory->newMasterConceptCache()->refreshConceptCache( $concept );
 	}
 
@@ -488,7 +556,7 @@ class SQLStore extends Store {
 	 *
 	 * @param Title $concept
 	 */
-	public function deleteConceptCache( $concept ) {
+	public function deleteConceptCache( Title $concept ): void {
 		$this->factory->newMasterConceptCache()->deleteConceptCache( $concept );
 	}
 
@@ -502,11 +570,11 @@ class SQLStore extends Store {
 	 *
 	 * @since 1.8
 	 *
-	 * @param Title|SMWWikiPageValue $concept
+	 * @param Title|WikiPageValue $concept
 	 *
-	 * @return DIConcept|null
+	 * @return Concept|null
 	 */
-	public function getConceptCacheStatus( $concept ) {
+	public function getConceptCacheStatus( $concept ): ?Concept {
 		return $this->factory->newSlaveConceptCache()->getStatus( $concept );
 	}
 
@@ -522,7 +590,7 @@ class SQLStore extends Store {
 	 *
 	 * @return array
 	 */
-	public function getSQLOptions( ?RequestOptions $requestOptions = null, $valueCol = '' ) {
+	public function getSQLOptions( ?RequestOptions $requestOptions = null, $valueCol = '' ): array {
 		return RequestOptionsProcessor::getSQLOptions( $requestOptions, $valueCol );
 	}
 
@@ -538,7 +606,7 @@ class SQLStore extends Store {
 	 *
 	 * @return string
 	 */
-	public function getSQLConditions( ?RequestOptions $requestOptions = null, $valueCol = '', $labelCol = '', $addAnd = true ) {
+	public function getSQLConditions( ?RequestOptions $requestOptions = null, $valueCol = '', $labelCol = '', $addAnd = true ): string {
 		return RequestOptionsProcessor::getSQLConditions( $this, $requestOptions, $valueCol, $labelCol, $addAnd );
 	}
 
@@ -552,7 +620,7 @@ class SQLStore extends Store {
 	 *
 	 * @return DataItem[]
 	 */
-	public function applyRequestOptions( array $data, ?RequestOptions $requestOptions = null ) {
+	public function applyRequestOptions( array $data, ?RequestOptions $requestOptions = null ): array {
 		return RequestOptionsProcessor::applyRequestOptions( $this, $data, $requestOptions );
 	}
 
@@ -581,18 +649,18 @@ class SQLStore extends Store {
 	/**
 	 * PropertyTableInfoFetcher::findTableIdForProperty
 	 *
-	 * @param DIProperty $property
+	 * @param Property $property
 	 *
-	 * @return string
+	 * @return string|null
 	 */
-	public function findPropertyTableID( DIProperty $property ) {
+	public function findPropertyTableID( Property $property ) {
 		return $this->getPropertyTableInfoFetcher()->findTableIdForProperty( $property );
 	}
 
 	/**
 	 * PropertyTableInfoFetcher::getPropertyTableDefinitions
 	 *
-	 * @return \SMW\SQLStore\PropertyTableDefinition[]
+	 * @return PropertyTableDefinition[]
 	 */
 	public function getPropertyTables() {
 		return $this->getPropertyTableInfoFetcher()->getPropertyTableDefinitions();
@@ -603,7 +671,7 @@ class SQLStore extends Store {
 	 *
 	 * @since 1.9
 	 *
-	 * @return \SMW\SQLStore\EntityStore\EntityIdManager
+	 * @return EntityIdManager
 	 */
 	public function getObjectIds() {
 		return $this->smwIds;
@@ -614,7 +682,7 @@ class SQLStore extends Store {
 	 *
 	 * @since 1.9.1.1
 	 */
-	public function clear() {
+	public function clear(): void {
 		parent::clear();
 		$this->factory->newSemanticDataLookup()->clear();
 		$this->propertyTableInfoFetcher = null;
@@ -627,9 +695,9 @@ class SQLStore extends Store {
 	 *
 	 * @param string|null $type
 	 *
-	 * @return array
+	 * @return array|string
 	 */
-	public function getInfo( $type = null ) {
+	public function getInfo( $type = null ): string|array {
 		if ( $type === 'store' ) {
 			return 'SMWSQLStore';
 		}
@@ -648,7 +716,7 @@ class SQLStore extends Store {
 	/**
 	 * @since 2.1
 	 *
-	 * @param string $type
+	 * @param int|string $type
 	 *
 	 * @return Database
 	 */
@@ -661,7 +729,7 @@ class SQLStore extends Store {
 	 *
 	 * @return PropertyTableInfoFetcher
 	 */
-	public function getPropertyTableInfoFetcher() {
+	public function getPropertyTableInfoFetcher(): PropertyTableInfoFetcher {
 		if ( $this->propertyTableInfoFetcher === null ) {
 			$this->propertyTableInfoFetcher = $this->factory->newPropertyTableInfoFetcher();
 		}
@@ -674,7 +742,7 @@ class SQLStore extends Store {
 	 *
 	 * @return PropertyTableIdReferenceFinder
 	 */
-	public function getPropertyTableIdReferenceFinder() {
+	public function getPropertyTableIdReferenceFinder(): PropertyTableIdReferenceFinder {
 		if ( $this->propertyTableIdReferenceFinder === null ) {
 			$this->propertyTableIdReferenceFinder = $this->factory->newPropertyTableIdReferenceFinder();
 		}
@@ -685,7 +753,7 @@ class SQLStore extends Store {
 	/**
 	 * @return ServicesContainer
 	 */
-	protected function newServicesContainer() {
+	protected function newServicesContainer(): ServicesContainer {
 		return $this->factory->newServicesContainer();
 	}
 

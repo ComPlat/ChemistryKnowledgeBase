@@ -23,12 +23,12 @@ namespace MediaWiki\Extension\DisplayTitle;
 
 use HtmlArmor;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\PageProps;
 use MediaWiki\Page\RedirectLookup;
 use MediaWiki\Page\WikiPageFactory;
-use NamespaceInfo;
-use OutputPage;
-use PageProps;
-use Title;
+use MediaWiki\Title\NamespaceInfo;
+use MediaWiki\Title\Title;
 
 class DisplayTitleService {
 	public const CONSTRUCTOR_OPTIONS = [
@@ -37,48 +37,14 @@ class DisplayTitleService {
 		'DisplayTitleFollowRedirects'
 	];
 
-	/**
-	 * @var bool
-	 */
-	private $hideSubtitle;
+	private bool $hideSubtitle;
+	private array $excludes;
+	private bool $followRedirects;
+	private NamespaceInfo $namespaceInfo;
+	private RedirectLookup $redirectLookup;
+	private PageProps $pageProps;
+	private WikiPageFactory $wikiPageFactory;
 
-	/**
-	 * @var array
-	 */
-	private $excludes;
-
-	/**
-	 * @var bool
-	 */
-	private $followRedirects;
-
-	/**
-	 * @var NamespaceInfo
-	 */
-	private $namespaceInfo;
-
-	/**
-	 * @var RedirectLookup
-	 */
-	private $redirectLookup;
-
-	/**
-	 * @var PageProps
-	 */
-	private $pageProps;
-
-	/**
-	 * @var WikiPageFactory
-	 */
-	private $wikiPageFactory;
-
-	/**
-	 * @param ServiceOptions $options
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param RedirectLookup $redirectLookup
-	 * @param PageProps $pageProps
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct(
 		ServiceOptions $options,
 		NamespaceInfo $namespaceInfo,
@@ -126,7 +92,7 @@ class DisplayTitleService {
 		}
 
 		$customized = false;
-		if ( isset( $html ) ) {
+		if ( $html !== null ) {
 			$text = null;
 			if ( is_string( $html ) ) {
 				$text = str_replace( '_', ' ', $html );

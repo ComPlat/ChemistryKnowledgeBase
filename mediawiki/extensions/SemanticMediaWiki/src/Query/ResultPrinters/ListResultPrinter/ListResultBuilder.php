@@ -2,10 +2,11 @@
 
 namespace SMW\Query\ResultPrinters\ListResultPrinter;
 
-use Linker;
+use MediaWiki\Linker\Linker;
 use SMW\Localizer\Message;
 use SMW\Query\QueryResult;
 use SMW\Query\ResultPrinters\PrefixParameterProcessor;
+use SMW\Query\ResultPrinters\SeparatorEscaper;
 
 /**
  * Class ListResultBuilder
@@ -17,7 +18,7 @@ use SMW\Query\ResultPrinters\PrefixParameterProcessor;
  */
 class ListResultBuilder {
 
-	private static $defaultConfigurations = [
+	private static array $defaultConfigurations = [
 		'*' => [
 			'value-open-tag' => '<span class="smw-value">',
 			'value-close-tag' => '</span>',
@@ -61,40 +62,33 @@ class ListResultBuilder {
 		],
 	];
 
-	/** @var Linker|null */
-	private $linker = null;
-
-	/** @var QueryResult */
-	private $queryResult;
-
-	/** @var ParameterDictionary */
-	private $configuration;
-	private $templateRendererFactory;
+	private ParameterDictionary $configuration;
+	private ?TemplateRendererFactory $templateRendererFactory = null;
 	private $listPlainByDefault;
 
-	public function __construct( QueryResult $queryResult, Linker $linker, ?bool $listPlainByDefault = null ) {
-		$this->linker = $linker;
-		$this->queryResult = $queryResult;
+	public function __construct(
+		private readonly QueryResult $queryResult,
+		private readonly Linker $linker,
+		?bool $listPlainByDefault = null,
+	) {
 		$this->configuration = new ParameterDictionary();
 		$this->listPlainByDefault = $listPlainByDefault ?? $GLOBALS['smwgPlainList'];
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getResultText() {
+	public function getResultText( int $outputMode = SMW_OUTPUT_HTML ): string {
 		$this->prepareBuilt();
+		$this->set( 'output-mode', $outputMode );
 
 		return $this->getTemplateCall( 'introtemplate' ) .
 			$this->get( 'result-open-tag' ) .
 
-			implode( $this->get( 'sep' ), $this->getRowTexts() ) .
+			implode( SeparatorEscaper::escape( $this->get( 'sep' ), $outputMode ), $this->getRowTexts() ) .
 
 			$this->get( 'result-close-tag' ) .
 			$this->getTemplateCall( 'outrotemplate' );
 	}
 
-	private function prepareBuilt() {
+	private function prepareBuilt(): void {
 		$format = $this->getEffectiveFormat();
 
 		$this->configuration->setDefault(
@@ -141,17 +135,17 @@ class ListResultBuilder {
 	}
 
 	/**
-	 * @param string|string[] $setting
+	 * @param string|array<string,mixed> $setting
 	 * @param string|null $value
 	 */
-	public function set( $setting, $value = null ) {
+	public function set( $setting, $value = null ): void {
 		$this->configuration->set( $setting, $value );
 	}
 
 	/**
 	 * @return string[]
 	 */
-	private function getDefaultsFromI18N() {
+	private function getDefaultsFromI18N(): array {
 		return [
 			'field-label-separator' => Message::get( 'smw-format-list-field-label-separator' ),
 			'other-fields-open' => Message::get( 'smw-format-list-other-fields-open' ),
@@ -164,8 +158,13 @@ class ListResultBuilder {
 	 *
 	 * @return string
 	 */
-	private function replaceVariables( $subject ) {
-		return str_replace( [ '$START$', '$CLASS$' ], [ htmlspecialchars( $this->get( 'offset' ) + 1 ), htmlspecialchars( $this->get( 'class' ) ) ], $subject );
+	private function replaceVariables( $subject ): string {
+		return str_replace(
+			[ '$START$', '$CLASS$' ],
+			[ htmlspecialchars( (string)( $this->get( 'offset' ) + 1 ) ),
+			htmlspecialchars( $this->get( 'class' ) ) ],
+			$subject
+		);
 	}
 
 	/**
@@ -173,7 +172,7 @@ class ListResultBuilder {
 	 *
 	 * @return string
 	 */
-	private function getTemplateCall( $param ) {
+	private function getTemplateCall( string $param ): string {
 		$templatename = $this->get( $param );
 
 		if ( $templatename === '' ) {
@@ -189,7 +188,7 @@ class ListResultBuilder {
 	/**
 	 * @return TemplateRendererFactory
 	 */
-	private function getTemplateRendererFactory() {
+	private function getTemplateRendererFactory(): TemplateRendererFactory {
 		if ( $this->templateRendererFactory === null ) {
 			$this->templateRendererFactory = new TemplateRendererFactory( $this->getQueryResult() );
 			$this->templateRendererFactory->setUserparam( $this->get( 'userparam' ) );
@@ -201,14 +200,14 @@ class ListResultBuilder {
 	/**
 	 * @return QueryResult
 	 */
-	private function getQueryResult() {
+	private function getQueryResult(): QueryResult {
 		return $this->queryResult;
 	}
 
 	/**
 	 * @return string[]
 	 */
-	private function getRowTexts() {
+	private function getRowTexts(): array {
 		$queryResult = $this->getQueryResult();
 		$queryResult->reset();
 
@@ -216,14 +215,15 @@ class ListResultBuilder {
 		$num = $queryResult->getQuery()->getOffset();
 		$rowBuilder = $this->getRowBuilder();
 
-		while ( ( $row = $queryResult->getNext() ) !== false ) {
-
+		$row = $queryResult->getNext();
+		while ( $row !== false ) {
 			$rowTexts[] =
 				$this->get( 'row-open-tag' ) .
 				$rowBuilder->getRowText( $row, $num ) .
 				$this->get( 'row-close-tag' );
 
 			$num++;
+			$row = $queryResult->getNext();
 		}
 
 		return $rowTexts;
@@ -232,7 +232,7 @@ class ListResultBuilder {
 	/**
 	 * @return RowBuilder
 	 */
-	private function getRowBuilder() {
+	private function getRowBuilder(): RowBuilder {
 		if ( $this->get( 'template' ) === '' ) {
 			$rowBuilder = new SimpleRowBuilder();
 			$rowBuilder->setLinker( $this->linker );

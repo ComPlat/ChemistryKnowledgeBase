@@ -14,7 +14,8 @@
 			"Srdjan m",
 			"Zoranzoki21",
 			"Михајло Анђелковић",
-			"Сербијана"
+			"Сербијана",
+			"Aca"
 		]
 	},
 	"echo-desc": "Систем за обавештавање корисника о догађајима и порукама",
@@ -189,7 +190,7 @@
 	"notification-header-thank-you-10-edit": "Управо {{GENDER:$2|сте}} направили десету измену. Хвала {{GENDER:$2|вам}} и само тако наставите!",
 	"notification-header-thank-you-100-edit": "Управо {{GENDER:$2|сте}} направили стоту измену. Хвала {{GENDER:$2|вам}} пуно.",
 	"notification-header-thank-you-1000-edit": "Управо {{GENDER:$2|сте}} направили хиљадиту измену. Хвала {{GENDER:$2|вам}} на фантастичном доприносу.",
-	"notification-header-thank-you-10000-edit": "Управо {{GENDER:$2|сте}} направили десет-хиљадиту измену. Хвала {{GENDER:$2|вам}} пуно.",
+	"notification-header-thank-you-10000-edit": "Управо {{GENDER:$2|сте}} направили десетохиљадиту измену. Хвала {{GENDER:$2|вам}} пуно.",
 	"notification-header-thank-you-100000-edit": "Управо {{GENDER:$2|сте}} направили сто-хиљадиту измену. Хвала {{GENDER:$2|вам}} на феноменалном доприносу.",
 	"notification-header-thank-you-1000000-edit": "Управо {{GENDER:$2|сте}} направили милиониту измену. Хвала {{GENDER:$2|вам}} на задивљујућем доприносу.",
 	"notification-header-thank-you-10000000-edit": "Управо {{GENDER:$2|сте}} направили 10-милиониту измену. Хвала {{GENDER:$2|вам}} на невероватној посвећености.",
@@ -198,7 +199,7 @@
 	"notification-link-article-reminder": "Прикажи страницу",
 	"notification-link-api-triggered": "Прикажи страницу",
 	"notification-header-reverted": "$2 je {{GENDER:$2|опозвао|опозвала}} {{PLURAL:$4|Вашу измену странице <strong>$3</strong>|Ваше измене странице <strong>$3</strong>}}.",
-	"notification-header-emailuser": "$1 Вам {{GENDER:$2|шаље}} имејл.",
+	"notification-header-emailuser": "$1 Вам је {{GENDER:$2|послао|послала}} имејл",
 	"notification-edit-user-page-email-subject": "$1 је {{GENDER:$2|уредио|уредила}} Вашу {{GENDER:$3|корисничку}} страницу на {{SITENAME}}",
 	"notification-edit-talk-page-email-subject2": "$1 {{GENDER:$3|Вам}} је {{GENDER:$2|оставио|оставила}} поруку на {{SITENAME}}",
 	"notification-page-linked-email-subject": "Страница коју {{GENDER:$3|сте}} направили је повезана на {{SITENAME}}",
@@ -243,8 +244,10 @@
 	"notification-header-foreign-notice": "Обавештења са {{PLURAL:$5|другог викија|$5 друга викија|$5 других викија}}",
 	"notification-header-foreign-all": "Обавештења са {{PLURAL:$5|другог викија|$5 друга викија|$5 других викија}}",
 	"echo-foreign-wiki-lang": "$1 — $2",
+	"grant-echo-read-notifications": "приступ сопственим обавештењима",
 	"right-echo-create": "слање обавештења другима",
 	"action-echo-create": "шаљете обавештења другима",
+	"right-echo-read-notifications": "приступ сопственим обавештењима",
 	"group-push-subscription-manager": "Менаџери претплата за обавештења",
 	"group-push-subscription-manager-member": "{{GENDER:$1|менаџер претплата за обавештења}}"
 }

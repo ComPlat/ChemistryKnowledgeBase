@@ -187,6 +187,15 @@ class AuthManager implements LoggerAwareInterface {
 	 */
 	public const REMEMBER_ME = 'rememberMe';
 
+	/**
+	 * @internal To be used by primary authentication providers only.
+	 * @var string Primary providers can set this to false after login to prevent the
+	 *   login from being considered user interaction. This is important for some security
+	 *   features which generally interpret a recent login as proof of account ownership
+	 *   (vs. a stolen session).
+	 */
+	public const LOGIN_WAS_INTERACTIVE = 'loginWasInteractive';
+
 	/** Call pre-authentication providers */
 	private const CALL_PRE = 1;
 
@@ -893,10 +902,8 @@ class AuthManager implements LoggerAwareInterface {
 					] );
 				return $response;
 			}
-			$this->logger->info( 'Login for {user} succeeded from {clientip}', [
-				'user' => $user->getName(),
-				'clientip' => $this->request->getIP(),
-			] );
+			$this->logger->info( 'Login for {user} succeeded from {clientIp}',
+				$this->request->getSecurityLogContext( $user ) );
 			$rememberMeConfig = $this->config->get( MainConfigNames::RememberMe );
 			if ( $rememberMeConfig === RememberMeAuthenticationRequest::ALWAYS_REMEMBER ) {
 				$rememberMe = true;
@@ -918,7 +925,8 @@ class AuthManager implements LoggerAwareInterface {
 				$rememberMe = ( $req && $req->rememberMe ) ||
 					$this->getAuthenticationSessionData( self::REMEMBER_ME );
 			}
-			$this->setSessionDataForUser( $user, $rememberMe );
+			$loginWasInteractive = $this->getAuthenticationSessionData( self::LOGIN_WAS_INTERACTIVE, true );
+			$this->setSessionDataForUser( $user, $rememberMe, $loginWasInteractive );
 			$this->callMethodOnProviders( self::CALL_ALL, 'postAuthentication', [ $user, $response ] );
 			$performer = $session->getUser();
 			$session->remove( self::AUTHN_STATE );
@@ -996,19 +1004,33 @@ class AuthManager implements LoggerAwareInterface {
 			}
 		}
 
+		$oldStatus = $status;
+
 		$this->getHookRunner()->onSecuritySensitiveOperationStatus(
 			$status, $operation, $session, $timeSinceLogin );
+
+		if ( $status !== $oldStatus ) {
+			$this->logger->info(
+				__METHOD__ . ': {operation} changed from {oldstatus} to {status} for {user} in ' .
+				'SecuritySensitiveOperationStatusHook hook',
+				[
+					'operation' => $operation,
+					'oldstatus' => $oldStatus,
+					'status' => $status,
+				] + $this->getRequest()->getSecurityLogContext( $session->getUser() )
+			);
+		}
 
 		// If authentication is not possible, downgrade from "REAUTH" to "FAIL".
 		if ( !$this->canAuthenticateNow() && $status === self::SEC_REAUTH ) {
 			$status = self::SEC_FAIL;
 		}
 
-		$this->logger->info( __METHOD__ . ": $operation is $status for '{user}'",
+		$this->logger->info( __METHOD__ . ": {operation} is {status} for '{user}'",
 			[
-				'user' => $session->getUser()->getName(),
-				'clientip' => $this->getRequest()->getIP(),
-			]
+				'operation' => $operation,
+				'status' => $status,
+			] + $this->getRequest()->getSecurityLogContext( $session->getUser() )
 		);
 
 		return $status;
@@ -1348,6 +1370,19 @@ class AuthManager implements LoggerAwareInterface {
 	 */
 	public function beginAccountCreation( Authority $creator, array $reqs, $returnToUrl ) {
 		$session = $this->request->getSession();
+		if ( $creator->isTemp() ) {
+			// For a temp account creating a permanent account, we do not want the temporary
+			// account to be associated with the created permanent account. To avoid this,
+			// set the session user to a new anonymous user, save it, and set the request
+			// context from the new session user account. (T393628)
+			$creator = $this->userFactory->newAnonymous();
+			$session->setUser( $creator );
+			// Ensure the temporary account username is also cleared from the session, this is set
+			// in TempUserCreator::acquireAndStashName
+			$session->remove( 'TempUser:name' );
+			$session->save();
+			$this->setRequestContextUserFromSessionUser();
+		}
 		if ( !$this->canCreateAccounts() ) {
 			// Caller should have called canCreateAccounts()
 			$session->remove( self::ACCOUNT_CREATION_STATE );
@@ -1440,6 +1475,10 @@ class AuthManager implements LoggerAwareInterface {
 
 		$session->setSecret( self::ACCOUNT_CREATION_STATE, $state );
 		$session->persist();
+		$this->logger->debug( __METHOD__ . ': Proceeding with account creation for {username} by {creator}', [
+			'username' => $user->getName(),
+			'creator' => $creator->getUser()->getName(),
+		] );
 
 		return $this->continueAccountCreation( $reqs );
 	}
@@ -1944,7 +1983,7 @@ class AuthManager implements LoggerAwareInterface {
 			$user->loadFromId( IDBAccessObject::READ_LATEST );
 			if ( $login ) {
 				$remember = $source === self::AUTOCREATE_SOURCE_TEMP;
-				$this->setSessionDataForUser( $user, $remember );
+				$this->setSessionDataForUser( $user, $remember, false );
 			}
 			return Status::newGood()->warning( 'userexists' );
 		}
@@ -2087,7 +2126,7 @@ class AuthManager implements LoggerAwareInterface {
 					] );
 					if ( $login ) {
 						$remember = $source === self::AUTOCREATE_SOURCE_TEMP;
-						$this->setSessionDataForUser( $user, $remember );
+						$this->setSessionDataForUser( $user, $remember, false );
 					}
 					$status = Status::newGood()->warning( 'userexists' );
 				} else {
@@ -2146,7 +2185,7 @@ class AuthManager implements LoggerAwareInterface {
 
 		if ( $login ) {
 			$remember = $source === self::AUTOCREATE_SOURCE_TEMP;
-			$this->setSessionDataForUser( $user, $remember );
+			$this->setSessionDataForUser( $user, $remember, false );
 		}
 
 		return Status::newGood();
@@ -2829,9 +2868,11 @@ class AuthManager implements LoggerAwareInterface {
 	/**
 	 * Log the user in
 	 * @param User $user
-	 * @param bool|null $remember
+	 * @param bool|null $remember The "remember me" flag.
+	 * @param bool $isReauthentication Whether creating this session should count as a recent
+	 *   authentication for $wgReauthenticateTime checks.
 	 */
-	private function setSessionDataForUser( $user, $remember = null ) {
+	private function setSessionDataForUser( $user, $remember = null, $isReauthentication = true ) {
 		$session = $this->request->getSession();
 		$delay = $session->delaySave();
 
@@ -2843,8 +2884,10 @@ class AuthManager implements LoggerAwareInterface {
 		if ( $remember !== null ) {
 			$session->setRememberUser( $remember );
 		}
-		$session->set( 'AuthManager:lastAuthId', $user->getId() );
-		$session->set( 'AuthManager:lastAuthTimestamp', time() );
+		if ( $isReauthentication ) {
+			$session->set( 'AuthManager:lastAuthId', $user->getId() );
+			$session->set( 'AuthManager:lastAuthTimestamp', time() );
+		}
 		$session->persist();
 
 		\Wikimedia\ScopedCallback::consume( $delay );
@@ -2902,14 +2945,13 @@ class AuthManager implements LoggerAwareInterface {
 		}
 		if ( !$proceed ) {
 			$this->logger->info(
-				$action . ' action for {user} from {clientip} prevented by '
+				$action . ' action for {user} from {clientIp} prevented by '
 					. 'AuthManagerVerifyAuthentication hook: {reason}',
 				[
 					'user' => $user ? $user->getName() : '<null>',
-					'clientip' => $this->request->getIP(),
 					'reason' => $response->message->getKey(),
 					'primaryId' => $primaryId,
-				]
+				] + $this->request->getSecurityLogContext( $user )
 			);
 		}
 		return $proceed;

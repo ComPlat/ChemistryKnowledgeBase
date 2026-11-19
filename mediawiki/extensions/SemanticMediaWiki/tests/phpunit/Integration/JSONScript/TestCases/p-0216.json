@@ -1,0 +1,145 @@
+{
+	"description": "Test `{{#property_link:}}` parser function output parity with the `[[Foo::@@@]]` annotation syntax (#5624, #1855, `wgContLang=en`, `wgLang=en`)",
+	"setup": [
+		{
+			"namespace": "SMW_NS_PROPERTY",
+			"page": "Has date",
+			"contents": "[[Has type::Date]] {{#set: Has property description=Some text with a link to [http://example.org/ foo] and <li>stripped `li` in title element</li>@en}}"
+		},
+		{
+			"namespace": "SMW_NS_PROPERTY",
+			"page": "P106",
+			"contents": "[[Has type::Text]] [[Has preferred property label::occupation@en]] [[Has preferred property label::직업@ko]] [[Has preferred property label::職業@ja]] [[Has property description::人物の職業。「専門分野」@ja]] [[Has property description::대상 인물의 직업@ko]]"
+		},
+		{
+			"page": "Example/P0216/1",
+			"contents": "{{#property_link:Has date}}"
+		},
+		{
+			"page": "Example/P0216/2",
+			"contents": "{{#property_link:Has date|With extra caption}}"
+		},
+		{
+			"page": "Example/P0216/3",
+			"contents": "{{#property_link:P106}}"
+		},
+		{
+			"page": "Example/P0216/4",
+			"contents": "{{#property_link:P106|WithCaption}}"
+		},
+		{
+			"page": "Example/P0216/5",
+			"contents": "{{#property_link:Has date|#}}"
+		},
+		{
+			"page": "Example/P0216/6",
+			"contents": "{{#property_link:Has nonexistent property}}"
+		},
+		{
+			"page": "Example/P0216/7",
+			"contents": "{{#property_link:Fo%o}}"
+		},
+		{
+			"page": "Example/P0216/8",
+			"contents": "{{#property_link:}}"
+		}
+	],
+	"tests": [
+		{
+			"type": "parser",
+			"about": "#0 same output as `[[Has date::@@@]]` (p-0212 #0)",
+			"subject": "Example/P0216/1",
+			"assert-output": {
+				"to-contain": [
+					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\" data-content=\"",
+					"data-content=\"&lt;p&gt;Some text with a link to &lt;a rel=&quot;nofollow&quot; class=&quot;external text&quot; href=&quot;http&#58;//example.org/&quot;&gt;foo&lt;/a&gt;", "<span class=\"smwttcontent\"></span>",
+					"title=\"Property:Has date\">Has date</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#1 same output as `[[Has date::@@@|With extra caption]]` (p-0212 #1)",
+			"subject": "Example/P0216/2",
+			"assert-output": {
+				"to-contain": [
+					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\" data-content=\"",
+					"data-content=\"&lt;p&gt;Some text with a link to &lt;a rel=&quot;nofollow&quot; class=&quot;external text&quot; href=&quot;http&#58;//example.org/&quot;&gt;foo&lt;/a&gt;", "<span class=\"smwttcontent\"></span>",
+					"title=\"Property:Has date\">With extra caption</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#2 same output as `[[P106::@@@]]` (p-0212 #5)",
+			"subject": "Example/P0216/3",
+			"assert-output": {
+				"to-contain": [
+					"title=\"Property:P106\">occupation</a>",
+					"<span title=\"P106\"><sup>ᵖ</sup>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#3 same output as `[[P106::@@@|WithCaption]]` (p-0212 #6)",
+			"subject": "Example/P0216/4",
+			"assert-output": {
+				"to-contain": [
+					"title=\"Property:P106\">WithCaption</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#4 same output as `[[Has date::@@@|#]]` (p-0212 #7)",
+			"subject": "Example/P0216/5",
+			"assert-output": {
+				"to-contain": [
+					"<span class=\"smw-property nolink\">Has date</span>",
+					"data-content=\"&lt;p&gt;Some text with a link to"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#5 same output as `[[Has nonexistent property::@@@]]` (p-0212 #8)",
+			"subject": "Example/P0216/6",
+			"assert-output": {
+				"to-contain": [
+					"class=\"new\"",
+					"title=\"Property:Has nonexistent property (page does not exist)\">Has nonexistent property</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#6 same output as `[[Fo%o::@@@]]` (p-0212 #9)",
+			"subject": "Example/P0216/7",
+			"assert-output": {
+				"to-contain": [
+					"<div class=\"mw-content-ltr mw-parser-output\" lang=\"en\" dir=\"ltr\"></div>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#7 empty property name renders nothing",
+			"subject": "Example/P0216/8",
+			"assert-output": {
+				"to-contain": [
+					"<div class=\"mw-content-ltr mw-parser-output\" lang=\"en\" dir=\"ltr\"></div>"
+				]
+			}
+		}
+	],
+	"settings": {
+		"wgContLang": "en",
+		"wgLang": "en"
+	},
+	"meta": {
+		"version": "2",
+		"is-incomplete": false,
+		"debug": false
+	}
+}

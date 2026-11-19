@@ -20,36 +20,26 @@ namespace SMW\Query\Parser;
 class TermParser {
 
 	/**
-	 * @var
+	 * Upper bound on the number of compact `in:(...)`/`has:(...)` expressions
+	 * expanded per term. Expansion past this bound is skipped so a term packed
+	 * with compact expressions cannot force an unbounded amount of parsing work.
 	 */
-	private $standard_prefix = [ 'in:', 'phrase:', 'not:', 'has:', 'category:' ];
+	private const MAX_COMPACT_EXPRESSIONS = 1000;
 
 	/**
-	 * @var
+	 * @var array
 	 */
-	private static $cache = [];
+	private array $standard_prefix = [ 'in:', 'phrase:', 'not:', 'has:', 'category:' ];
 
 	/**
-	 * The `prefix_map` is expected to contain assignments of prefixes that link
-	 * to a collection of properties. The prefix is used as short-cut to cover a
-	 * range of disjunctive query declarations to simplify the creation of a
-	 * query construct such as:
-	 *
-	 * - Prefix map: `'keyword' => [ 'Has keyword', 'Keyword' ]`
-	 * - Input: `keyword:foo bar`
-	 * - Output: `([[Has keyword::foo bar]] || [[Keyword::foo bar]])`
-	 *
-	 * @var
+	 * @var array
 	 */
-	private $prefix_map = [];
+	private static array $cache = [];
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param array $prefix_map
 	 */
-	public function __construct( array $prefix_map = [] ) {
-		$this->prefix_map = $prefix_map;
+	public function __construct( private readonly array $prefix_map = [] ) {
 	}
 
 	/**
@@ -171,10 +161,11 @@ class TermParser {
 			$k++;
 		}
 
-		return self::$cache[$hash] = $this->normalize( $term );
+		self::$cache[$hash] = $this->normalize( $term );
+		return self::$cache[$hash];
 	}
 
-	private function close( &$custom, $prefix ) {
+	private function close( &$custom, string $prefix ): string {
 		// Standard closing
 		if ( $custom === '' ) {
 			return "]]";
@@ -199,7 +190,7 @@ class TermParser {
 		return '(' . implode( '||', $terms ) . ')';
 	}
 
-	private function normalize( $term ) {
+	private function normalize( $term ): string|array {
 		return str_replace(
 			[ ')[[', ']](', '(', ')', '||', '&&', 'AND', 'OR', ']][[', '[[[[', ']]]]', '  ' ],
 			[ ') [[', ']] (', '<q>', '</q>', ' || ', ' && ', ' AND ', ' OR ', ']] [[', '[[', ']]', ' ' ],
@@ -207,44 +198,56 @@ class TermParser {
 		);
 	}
 
-	private function normalize_compact_form( $exp, $pattern, &$term ) {
+	private function normalize_compact_form( string $exp, string $pattern, &$term ): void {
 		if ( strpos( $term, "$exp:(" ) === false ) {
 			return;
 		}
 
-		preg_match_all( "/$exp:\((.*?)\)/", $term, $matches );
+		$expanded = 0;
 
-		foreach ( $matches[0] as $match ) {
-			$orig = $match;
-			$match = str_replace( "$exp:(", '', $match );
+		// Rewrite every compact expression in a single pass so the work stays
+		// linear in the term length, and stop after MAX_COMPACT_EXPRESSIONS so a
+		// term packed with compact expressions cannot force unbounded parsing.
+		$term = preg_replace_callback(
+			"/$exp:\((.*?)\)/",
+			static function ( array $m ) use ( $exp, $pattern, &$expanded ): string {
+				$expanded++;
 
-			if ( substr( $match, -1 ) === ')' ) {
-				$match = substr( $match, 0, -1 );
-			}
-
-			$terms = preg_split(
-				"/(in:)|(phrase:)|(not:)|(has:)|(category:)$pattern|(&&)|(AND)|(OR)|(\|\|)|(\()|(\)|(\[\[))/",
-				$match,
-				-1,
-				PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
-			);
-
-			$replace = '';
-
-			foreach ( $terms as $t ) {
-				$t = trim( $t );
-
-				if ( in_array( $t, [ '&&', 'AND', '||', 'OR' ] ) ) {
-					$replace .= " $t ";
-				} elseif ( $t === ')' ) {
-					$replace .= "$t";
-				} else {
-					$replace .= "$exp:$t";
+				if ( $expanded > self::MAX_COMPACT_EXPRESSIONS ) {
+					return $m[0];
 				}
-			}
 
-			$term = str_replace( $orig, $replace, $term );
-		}
+				$match = str_replace( "$exp:(", '', $m[0] );
+
+				if ( substr( $match, -1 ) === ')' ) {
+					$match = substr( $match, 0, -1 );
+				}
+
+				$terms = preg_split(
+					"/(in:)|(phrase:)|(not:)|(has:)|(category:)$pattern|(&&)|(AND)|(OR)|(\|\|)|(\()|(\)|(\[\[))/",
+					$match,
+					-1,
+					PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
+				);
+
+				$replace = '';
+
+				foreach ( $terms as $t ) {
+					$t = trim( $t );
+
+					if ( in_array( $t, [ '&&', 'AND', '||', 'OR' ] ) ) {
+						$replace .= " $t ";
+					} elseif ( $t === ')' ) {
+						$replace .= "$t";
+					} else {
+						$replace .= "$exp:$t";
+					}
+				}
+
+				return $replace;
+			},
+			$term
+		) ?? $term;
 	}
 
 }

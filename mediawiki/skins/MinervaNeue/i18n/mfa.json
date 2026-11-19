@@ -1,10 +1,18 @@
 {
 	"@metadata": {
 		"authors": [
-			"Mirlim"
+			"Mirlim",
+			"Lam Takuma",
+			"EmpAhmadK"
 		]
 	},
-	"mobile-frontend-home-button": "Lame Utamo",
-	"mobile-frontend-main-menu-login": "Log masuk",
-	"mobile-frontend-random-button": "Kók sé"
+	"mobile-frontend-history": "Keléh sjaroh nnyuténg muko ni.",
+	"mobile-frontend-home-button": "Muko Utamo",
+	"mobile-frontend-language-article-heading": "Bahaso",
+	"mobile-frontend-main-menu-login": "Log masók",
+	"mobile-frontend-main-menu-nearby": "Hok ddekak",
+	"mobile-frontend-main-menu-settings": "Tetakpae",
+	"mobile-frontend-placeholder": "Cari dalae {{SITENAME}}",
+	"mobile-frontend-random-button": "Kók sé",
+	"minerva-page-actions-overflow": "Lagi"
 }

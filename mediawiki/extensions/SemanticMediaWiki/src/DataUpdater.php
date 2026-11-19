@@ -2,15 +2,24 @@
 
 namespace SMW;
 
+use Exception;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
-use Onoi\EventDispatcher\EventDispatcherAwareTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use Psr\Log\LoggerAwareTrait;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage as DIWikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\EventDispatcher\EventDispatcher;
 use SMW\MediaWiki\Deferred\TransactionalCallableUpdate as DeferredUpdate;
+use SMW\MediaWiki\Jobs\UpdateJob;
+use SMW\MediaWiki\PageCreator;
 use SMW\MediaWiki\RevisionGuardAwareTrait;
 use SMW\Property\ChangePropagationNotifier;
 use SMW\Services\ServicesFactory as ApplicationFactory;
-use Title;
+use Wikimedia\Rdbms\DBError;
 use WikiPage;
 
 /**
@@ -34,27 +43,18 @@ class DataUpdater {
 
 	use RevisionGuardAwareTrait;
 	use LoggerAwareTrait;
-	use EventDispatcherAwareTrait;
 
-	/**
-	 * @var Store
-	 */
-	private $store;
+	private Store $store;
 
-	/**
-	 * @var SemanticData
-	 */
-	private $semanticData;
+	private SemanticData $semanticData;
 
-	/**
-	 * @var ChangePropagationNotifier
-	 */
-	private $changePropagationNotifier;
+	private ChangePropagationNotifier $changePropagationNotifier;
 
-	/**
-	 * @var bool|null
-	 */
-	private $canCreateUpdateJob = null;
+	private PageCreator $pageCreator;
+
+	private EventDispatcher $eventDispatcher;
+
+	private ?bool $canCreateUpdateJob = null;
 
 	/**
 	 * @var bool
@@ -66,32 +66,30 @@ class DataUpdater {
 	 */
 	private $isCommandLineMode = false;
 
-	/**
-	 * @var bool|string
-	 */
-	private $isChangeProp = false;
+	private bool $isChangeProp = false;
+
+	private bool $isDeferrableUpdate = false;
 
 	/**
-	 * @var bool
-	 */
-	private $isDeferrableUpdate = false;
-
-	/**
-	 * @var string
+	 * @var string|array
 	 */
 	private $origin = '';
 
 	/**
 	 * @since  1.9
-	 *
-	 * @param Store $store
-	 * @param SemanticData $semanticData
-	 * @param ChangePropagationNotifier $changePropagationNotifier
 	 */
-	public function __construct( Store $store, SemanticData $semanticData, ChangePropagationNotifier $changePropagationNotifier ) {
+	public function __construct(
+		Store $store,
+		SemanticData $semanticData,
+		ChangePropagationNotifier $changePropagationNotifier,
+		PageCreator $pageCreator,
+		EventDispatcher $eventDispatcher
+	) {
 		$this->store = $store;
 		$this->semanticData = $semanticData;
 		$this->changePropagationNotifier = $changePropagationNotifier;
+		$this->pageCreator = $pageCreator;
+		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
@@ -102,7 +100,7 @@ class DataUpdater {
 	 *
 	 * @param bool $isCommandLineMode
 	 */
-	public function isCommandLineMode( $isCommandLineMode ) {
+	public function isCommandLineMode( $isCommandLineMode ): void {
 		$this->isCommandLineMode = $isCommandLineMode;
 	}
 
@@ -111,7 +109,7 @@ class DataUpdater {
 	 *
 	 * @param bool $isChangeProp
 	 */
-	public function isChangeProp( $isChangeProp ) {
+	public function isChangeProp( $isChangeProp ): void {
 		$this->isChangeProp = (bool)$isChangeProp;
 	}
 
@@ -120,25 +118,23 @@ class DataUpdater {
 	 *
 	 * @param bool $isDeferrableUpdate
 	 */
-	public function isDeferrableUpdate( $isDeferrableUpdate ) {
+	public function isDeferrableUpdate( $isDeferrableUpdate ): void {
 		$this->isDeferrableUpdate = (bool)$isDeferrableUpdate;
 	}
 
 	/**
 	 * @since 2.5
 	 *
-	 * @param string $origin
+	 * @param string|array $origin
 	 */
-	public function setOrigin( $origin ) {
+	public function setOrigin( $origin ): void {
 		$this->origin = $origin;
 	}
 
 	/**
 	 * @since 1.9
-	 *
-	 * @return DIWikiPage
 	 */
-	public function getSubject() {
+	public function getSubject(): DIWikiPage {
 		return $this->semanticData->getSubject();
 	}
 
@@ -147,7 +143,7 @@ class DataUpdater {
 	 *
 	 * @param bool $canCreateUpdateJob
 	 */
-	public function canCreateUpdateJob( $canCreateUpdateJob ) {
+	public function canCreateUpdateJob( $canCreateUpdateJob ): void {
 		$this->canCreateUpdateJob = (bool)$canCreateUpdateJob;
 	}
 
@@ -160,13 +156,8 @@ class DataUpdater {
 	 * running an update more than once for the same RevID.
 	 *
 	 * @since 3.1
-	 *
-	 * @param Title $title
-	 * @param int|null &$latestRevID
-	 *
-	 * @return bool
 	 */
-	public function isSkippable( Title $title, ?int &$latestRevID = null ) {
+	public function isSkippable( Title $title, ?int &$latestRevID = null ): bool {
 		if ( $this->revisionGuard->isSkippableUpdate( $title, $latestRevID ) ) {
 			return true;
 		}
@@ -177,22 +168,20 @@ class DataUpdater {
 			$title->getInterwiki()
 		);
 
-		return $associatedRev == $latestRevID;
+		return $associatedRev === $latestRevID;
 	}
 
 	/**
 	 * @since 1.9
-	 *
-	 * @return bool
 	 */
-	public function doUpdate() {
+	public function doUpdate(): bool {
 		if ( !$this->canUpdate() ) {
 			return false;
 		}
 
 		DeferredUpdate::releasePendingUpdates();
 
-		if ( $this->isDeferrableUpdate === false || $this->isCommandLineMode ) {
+		if ( !$this->isDeferrableUpdate || $this->isCommandLineMode ) {
 			return $this->runUpdate();
 		}
 
@@ -216,10 +205,6 @@ class DataUpdater {
 			]
 		);
 
-		$deferredUpdate->setFingerprint(
-			$hash
-		);
-
 		$deferredUpdate->setLogger(
 			$this->logger
 		);
@@ -234,7 +219,7 @@ class DataUpdater {
 		return true;
 	}
 
-	private function canUpdate() {
+	private function canUpdate(): bool {
 		$title = $this->getSubject()->getTitle();
 
 		// Protect against null and namespace -1 see Bug 50153
@@ -250,19 +235,19 @@ class DataUpdater {
 	 * check if semantic data should be processed and displayed for a page in
 	 * the given namespace
 	 */
-	public function runUpdate() {
+	public function runUpdate(): bool {
 		$applicationFactory = ApplicationFactory::getInstance();
 
 		if ( $this->canCreateUpdateJob === null ) {
-			$this->canCreateUpdateJob( $applicationFactory->getSettings()->get( 'smwgEnableUpdateJobs' ) );
+			$this->canCreateUpdateJob(
+				$applicationFactory->getSettings()->get( 'smwgEnableUpdateJobs' )
+			);
 		}
 
 		$user = null;
 		$title = $this->getSubject()->getTitle();
 
-		$wikiPage = $applicationFactory->newPageCreator()->createPage(
-			$title
-		);
+		$wikiPage = $this->pageCreator->createPage( $title );
 
 		// For example, when using `SemanticApprovedRevs` the guard here ensures
 		// that the revision reference is the same that lead to an update during
@@ -286,32 +271,41 @@ class DataUpdater {
 		// In case of a restricted update, only the protection update is required
 		// hence the process bails-out early to avoid unnecessary DB connections
 		// or updates
-		if ( $this->checkUpdateEditProtection( $wikiPage, $user ) === true ) {
+		if ( $this->checkUpdateEditProtection( $wikiPage ) === true ) {
 			return true;
 		}
 
 		$this->checkChangePropagation();
-		$this->updateData();
 
-		$context = [
-			'context' => 'DataUpdater',
-			'subject' => $this->getSubject()
-		];
-
-		$this->eventDispatcher->dispatch( 'InvalidatePropertySpecificationLookupCache', $context );
+		try {
+			$this->updateData();
+		} catch ( DBError $e ) {
+			$this->queueRetry( $e );
+			throw $e;
+		} finally {
+			// Also when the update fails, as the store may already have saved the data
+			$this->eventDispatcher->dispatch(
+				'InvalidatePropertySpecificationLookupCache',
+				[ 'context' => 'DataUpdater', 'subject' => $this->getSubject() ]
+			);
+		}
 
 		return true;
 	}
 
-	private function addAnnotations( Title $title, WikiPage $wikiPage, $revision, $user ) {
+	private function addAnnotations( Title $title, WikiPage $wikiPage, $revision, ?User $user ) {
 		$applicationFactory = ApplicationFactory::getInstance();
 
 		if ( $revision !== null ) {
-			$this->processSemantics = $applicationFactory->getNamespaceExaminer()->isSemanticEnabled( $title->getNamespace() );
+			$this->processSemantics =
+				$applicationFactory->getNamespaceExaminer()->isSemanticEnabled(
+					$title->getNamespace()
+				);
 		}
 
 		if ( !$this->processSemantics ) {
-			return $this->semanticData = new SemanticData( $this->getSubject() );
+			$this->semanticData = new SemanticData( $this->getSubject() );
+			return $this->semanticData;
 		}
 
 		$pageInfoProvider = $applicationFactory->newMwCollaboratorFactory()->newPageInfoProvider(
@@ -320,7 +314,9 @@ class DataUpdater {
 			$user
 		);
 
-		$this->semanticData->setExtensionData( 'revision_id', $revision->getId() );
+		if ( $revision !== null ) {
+			$this->semanticData->setExtensionData( 'revision_id', $revision->getId() );
+		}
 
 		$propertyAnnotatorFactory = $applicationFactory->singleton( 'PropertyAnnotatorFactory' );
 
@@ -344,7 +340,7 @@ class DataUpdater {
 					$title->getDBKey(),
 					$pageInfoProvider->getNativeData()
 				);
-			} catch ( \Exception $e ) {
+			} catch ( Exception ) {
 				$schema = null;
 			}
 
@@ -369,12 +365,19 @@ class DataUpdater {
 			);
 	}
 
-	private function checkUpdateEditProtection( $wikiPage, $user ) {
+	private function checkUpdateEditProtection( $wikiPage ) {
 		$applicationFactory = ApplicationFactory::getInstance();
 
-		$editProtectionUpdater = $applicationFactory->create( 'EditProtectionUpdater',
+		// Authorize the annotation-driven protection change against the user
+		// performing the current action rather than the page's latest-revision
+		// author. A change to a transcluded `Is edit protected` annotation
+		// re-parses the including page, whose last author may hold the
+		// edit-protection right, which would otherwise let an unprivileged edit of
+		// a transcluded template flip the including page's protection.
+		$editProtectionUpdater = $applicationFactory->create(
+			'EditProtectionUpdater',
 			$wikiPage,
-			$user
+			RequestContext::getMain()->getUser()
 		);
 
 		$editProtectionUpdater->doUpdateFrom( $this->semanticData );
@@ -386,7 +389,7 @@ class DataUpdater {
 	 * @note Comparison must happen *before* the storage update;
 	 * even finding uses of a property fails after its type changed.
 	 */
-	private function checkChangePropagation() {
+	private function checkChangePropagation(): void {
 		// canCreateUpdateJob: if it is not enabled there's not much to do here
 		// isChangeProp: means the update is part of the ChangePropagationDispatchJob
 		// therefore skip
@@ -397,7 +400,7 @@ class DataUpdater {
 		$this->changePropagationNotifier->checkAndNotify( $this->semanticData );
 	}
 
-	private function updateData() {
+	private function updateData(): bool {
 		$this->store->setOption(
 			Store::OPT_CREATE_UPDATE_JOB,
 			$this->canCreateUpdateJob
@@ -422,7 +425,42 @@ class DataUpdater {
 		return true;
 	}
 
-	private function checkForPossibleRedirectPreUpdate( SemanticData $semanticData ) {
+	/**
+	 * Nothing else stores the page's data again once its update failed. Update jobs cannot create
+	 * update jobs; one that fails in the job queue is retried by the queue.
+	 */
+	private function queueRetry( DBError $e ): void {
+		$applicationFactory = ApplicationFactory::getInstance();
+
+		if ( !$this->canCreateUpdateJob || !$applicationFactory->getSettings()->get( 'smwgEnableUpdateJobs' ) ) {
+			return;
+		}
+
+		$title = $this->getSubject()->getTitle();
+
+		try {
+			$applicationFactory->newJobFactory()->newUpdateJob(
+				$title,
+				[ UpdateJob::FORCED_UPDATE => true, 'origin' => 'DataUpdater' ]
+			)->lazyPush();
+		} catch ( Exception $queueError ) {
+			// The caller has to see why the update failed, not why queuing its retry failed
+			$this->logger->warning(
+				'Queuing an update job for {title} failed: {error}',
+				[ 'role' => 'production', 'title' => $title->getPrefixedDBkey(), 'error' => $queueError->getMessage() ]
+			);
+			return;
+		}
+
+		$this->logger->info(
+			'Queued an update job for {title} because storing its semantic data failed: {error}',
+			[ 'role' => 'production', 'title' => $title->getPrefixedDBkey(), 'error' => $e->getMessage() ]
+		);
+	}
+
+	private function checkForPossibleRedirectPreUpdate(
+		SemanticData $semanticData
+	): SemanticData {
 		// Check only during online-mode so that when a user operates Special:MovePage
 		// or #redirect the same process is applied
 		if ( !$this->canCreateUpdateJob ) {
@@ -430,19 +468,24 @@ class DataUpdater {
 		}
 
 		$redirects = $semanticData->getPropertyValues(
-			new DIProperty( '_REDI' )
+			new Property( '_REDI' )
 		);
 
 		$target = end( $redirects );
 
-		if ( $target === false || $semanticData->getSubject()->equals( $target ) ) {
+		if ( $target === false || $semanticData->getSubject()->equals( $target ) ||
+			!$target instanceof DIWikiPage
+		) {
 			return $semanticData;
 		}
 
 		return $this->updateRedirectTarget( $semanticData, $target );
 	}
 
-	private function updateRedirectTarget( SemanticData $semanticData, DIWikiPage $target ) {
+	private function updateRedirectTarget(
+		SemanticData $semanticData,
+		DIWikiPage $target
+	): SemanticData {
 		$subject = $semanticData->getSubject();
 
 		// The general rule is that a redirect page is not expected to contain
@@ -457,7 +500,7 @@ class DataUpdater {
 		// safeguard so that even when text contains annotations there are removed
 		// from the `Store`.
 		$semanticData = new SemanticData( $subject );
-		$semanticData->addPropertyObjectValue( new DIProperty( '_REDI' ), $target );
+		$semanticData->addPropertyObjectValue( new Property( '_REDI' ), $target );
 
 		// #895
 		// Force a manual changeTitle before the general update otherwise

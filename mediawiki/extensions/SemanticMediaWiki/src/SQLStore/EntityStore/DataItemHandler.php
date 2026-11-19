@@ -2,8 +2,10 @@
 
 namespace SMW\SQLStore\EntityStore;
 
+use SMW\DataItems\DataItem;
+use SMW\Exception\DataItemException;
+use SMW\SQLStore\EntityStore\Exception\DataItemHandlerException;
 use SMW\SQLStore\SQLStore;
-use SMWDataItem as DataItem;
 
 /**
  * Classes extending this represent all store layout that is known about a certain dataitem
@@ -20,15 +22,12 @@ abstract class DataItemHandler {
 	 */
 	const IHINT_PSUBJECTS = 'ihint.psubjects';
 
-	/**
-	 * @var SQLStore
-	 */
-	protected $store;
+	protected SQLStore $store;
 
 	/**
 	 * @var int
 	 */
-	protected $fieldTypeFeatures = false;
+	protected $fieldTypeFeatures = 0;
 
 	/**
 	 * @var null|string
@@ -49,7 +48,7 @@ abstract class DataItemHandler {
 	 *
 	 * @param int $fieldTypeFeatures
 	 */
-	public function setFieldTypeFeatures( $fieldTypeFeatures ) {
+	public function setFieldTypeFeatures( $fieldTypeFeatures ): void {
 		$this->fieldTypeFeatures = $fieldTypeFeatures;
 	}
 
@@ -60,16 +59,18 @@ abstract class DataItemHandler {
 	 *
 	 * @return bool
 	 */
-	public function hasFeature( $feature ) {
+	public function hasFeature( $feature ): bool {
 		return ( (int)$this->fieldTypeFeatures & $feature ) != 0;
 	}
 
 	/**
 	 * @since 3.0
 	 *
-	 * @param boolean
+	 * @param string $dbType
+	 *
+	 * @return bool
 	 */
-	public function isDbType( $dbType ) {
+	public function isDbType( $dbType ): bool {
 		if ( $this->dbType === null ) {
 			$this->dbType = $this->store->getConnection( 'mw.db' )->getType();
 		}
@@ -113,7 +114,7 @@ abstract class DataItemHandler {
 
 	/**
 	 * Return an array of additional indexes that should be provided for
-	 * the table using this DI handler. By default, \SMW\SQLStore\SQLStore will
+	 * the table using this DI handler. By default, SQLStore will
 	 * already create indexes for all standard select operations, based
 	 * on the indexfield provided by getIndexField(). Hence, most handlers
 	 * do not need to define any indexes.
@@ -121,7 +122,7 @@ abstract class DataItemHandler {
 	 * @since 1.8
 	 * @return array
 	 */
-	public function getTableIndexes() {
+	public function getTableIndexes(): array {
 		return [];
 	}
 
@@ -134,7 +135,7 @@ abstract class DataItemHandler {
 	 *
 	 * @return string
 	 */
-	public function getIndexHint( $key ) {
+	public function getIndexHint( $key ): string {
 		return '';
 	}
 
@@ -151,6 +152,21 @@ abstract class DataItemHandler {
 	 * @return array
 	 */
 	abstract public function getWhereConds( DataItem $dataItem );
+
+	/**
+	 * Representations of the same DataItem that may still be present in the
+	 * store from before a storage format change, keyed as in getWhereConds().
+	 * Queries match these alongside the current form so that data written by an
+	 * earlier version keeps matching until it is rebuilt.
+	 *
+	 * Returns an empty array when there is no such form to match.
+	 *
+	 * @since 7.3.0
+	 * @internal
+	 */
+	public function getLegacyWhereConds( DataItem $dataItem ): array {
+		return [];
+	}
 
 	/**
 	 * Return an array of fields=>values that is to be inserted when
@@ -198,22 +214,22 @@ abstract class DataItemHandler {
 	 *
 	 * @return string
 	 */
-	public function getSortField() {
+	public function getSortField(): string {
 		return '';
 	}
 
 	/**
 	 * Create a dataitem from an array of DB keys or a single DB key
-	 * string. May throw an DataItemException if the given DB keys
-	 * cannot be converted back into a dataitem. Each implementation
-	 * of this method must otherwise run without errors for both array
-	 * and string inputs.
+	 * string. May throw a DataItemException or DataItemHandlerException
+	 * if the given DB keys cannot be converted back into a dataitem.
+	 * Each implementation of this method must otherwise run without
+	 * errors for both array and string inputs.
 	 *
 	 * @since 1.8
 	 *
 	 * @param array|string $dbkeys
 	 *
-	 * @throws DataItemException
+	 * @throws DataItemException|DataItemHandlerException
 	 * @return DataItem
 	 */
 	abstract public function dataItemFromDBKeys( $dbkeys );
@@ -224,7 +240,7 @@ abstract class DataItemHandler {
 	 * @param array|string $dbkeys
 	 *
 	 * @return DataItem
-	 * @throws DataItemException
+	 * @throws DataItemException|DataItemHandlerException
 	 */
 	public function newFromDBKeys( $dbkeys ) {
 		return $this->dataItemFromDBKeys( $dbkeys );

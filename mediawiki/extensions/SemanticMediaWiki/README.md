@@ -5,6 +5,11 @@
 [![Download count](https://poser.pugx.org/mediawiki/semantic-media-wiki/downloads)](https://packagist.org/packages/mediawiki/semantic-media-wiki)
 [![codecov](https://codecov.io/gh/SemanticMediaWiki/SemanticMediaWiki/graph/badge.svg?token=yl1GVLwRwo)](https://codecov.io/gh/SemanticMediaWiki/SemanticMediaWiki)
 [![License](https://poser.pugx.org/mediawiki/semantic-media-wiki/license)](COPYING)
+[![OpenCollective](https://img.shields.io/opencollective/all/smw)](https://opencollective.com/smw)
+
+[![Mastodon](https://img.shields.io/mastodon/follow/110757101470614905)](https://mastodon.social/@smw@wikis.world)
+[![Bluesky](https://img.shields.io/bluesky/followers/semanticmw.bsky.social)](https://bsky.app/profile/semanticmw.bsky.social)
+[![X](https://img.shields.io/twitter/follow/semanticmw)](https://x.com/#!/semanticmw)
 
 **Semantic MediaWiki** (a.k.a. SMW) is a free, open-source extension to [MediaWiki](https://www.semantic-mediawiki.org/wiki/MediaWiki) – the wiki software that
 powers Wikipedia – that lets you store and query data within the wiki's pages.
@@ -42,12 +47,14 @@ to the version of the code it bundles with. The most critical files are linked b
 
 ## Support
 
-[![Chatroom](https://www.semantic-mediawiki.org/w/thumb.php?f=Comment-alt-solid.svg&width=35)](https://www.semantic-mediawiki.org/wiki/Semantic_MediaWiki_chatroom)
-[![Twitter](https://www.semantic-mediawiki.org/w/thumb.php?f=Twitter-square.svg&width=35)](https://twitter.com/#!/semanticmw)
-[![Facebook](https://www.semantic-mediawiki.org/w/thumb.php?f=Facebook-square.svg&width=35)](https://www.facebook.com/pages/Semantic-MediaWiki/160459700707245)
-[![LinkedIn](https://www.semantic-mediawiki.org/w/thumb.php?f=LinkedIn-square.svg&width=35)]([https://twitter.com/#!/semanticmw](https://www.linkedin.com/groups/2482811/))
-[![YouTube](https://www.semantic-mediawiki.org/w/thumb.php?f=Youtube-square.svg&width=35)](https://www.youtube.com/c/semanticmediawiki)
-[![Mailing lists](https://www.semantic-mediawiki.org/w/thumb.php?f=Envelope-square.svg&width=35)](https://www.semantic-mediawiki.org/wiki/Semantic_MediaWiki_mailing_lists)
+<a href="https://www.semantic-mediawiki.org/wiki/Semantic_MediaWiki_chatroom"><img src="https://www.semantic-mediawiki.org/w/images/7/7f/Comment-alt-solid.svg" width="35" alt="Chatroom"></a>
+<a href="https://mastodon.social/@smw@wikis.world"><img src="https://www.semantic-mediawiki.org/w/images/a/a4/Mastodon-square.svg" width="35" alt="Mastodon"></a>
+<a href="https://bsky.app/profile/semanticmw.bsky.social"><img src="https://www.semantic-mediawiki.org/w/images/c/c2/Bluesky.svg" width="35" alt="Bluesky"></a>
+<a href="https://x.com/#!/semanticmw"><img src="https://www.semantic-mediawiki.org/w/images/7/78/Twitter-square.svg" width="35" alt="Twitter"></a>
+<a href="https://www.facebook.com/pages/Semantic-MediaWiki/160459700707245"><img src="https://www.semantic-mediawiki.org/w/images/f/f0/Facebook-square.svg" width="35" alt="Facebook"></a>
+<a href="https://www.linkedin.com/groups/2482811/"><img src="https://www.semantic-mediawiki.org/w/images/e/ea/LinkedIn-square.svg" width="35" alt="LinkedIn"></a>
+<a href="https://www.youtube.com/c/semanticmediawiki"><img src="https://www.semantic-mediawiki.org/w/images/1/13/Youtube-square.svg" width="35" alt="YouTube"></a>
+<a href="https://www.semantic-mediawiki.org/wiki/Semantic_MediaWiki_mailing_lists"><img src="https://www.semantic-mediawiki.org/w/images/5/5e/Envelope-square.svg" width="35" alt="Mailing lists"></a>
 
 Primary support channels:
 

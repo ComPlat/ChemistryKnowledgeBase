@@ -9,7 +9,8 @@
 			"Semso98",
 			"Srdjan m",
 			"Srđan",
-			"TMg"
+			"TMg",
+			"Aca"
 		]
 	},
 	"tooltip-ca-ve-edit": "Uredite ovu stranicu",
@@ -30,6 +31,7 @@
 	"visualeditor-changedesc-mwtransclusion": "Promijenjeni parametri šablona",
 	"visualeditor-desc": "Vizualni uređivač za MediaWiki",
 	"visualeditor-descriptionpagelink": "Project:Vizualni uređivač",
+	"visualeditor-dialog-extension-abandonedit": "Jeste li sigurni da želite zatvoriti ovaj dijaloški okvir bez čuvanja izmjena?",
 	"visualeditor-dialog-media-alttext-section": "Alternativni tekst",
 	"visualeditor-dialog-media-alttext-section-help": "Ovo možete koristiti kako biste napisali opis za osobe koje ne mogu vidjeti ovu stavku. Opis bi trebao biti toliko sadržajan da osobe mogu razumjeti svrhu i informaciju koje im pruža ova stavka. Ovo je od velikog značaja slijepim korisnicima i drugim osobama koje koriste softver za čitanje stavki s ekrana ili preglednike koji samo prikazuju tekst.",
 	"visualeditor-dialog-media-change-image": "Promijeni sliku",
@@ -244,6 +246,8 @@
 	"visualeditor-mwpredialog-title": "Unaprijed formatirani obični tekst",
 	"visualeditor-mwsignature-tool": "Vaš potpis",
 	"visualeditor-preference-visualeditor": "Uključi vizualni uređivač",
+	"visualeditor-preference-newwikitexteditor-enable": "Koristi režim uređivanja wikiteksta unutar vizualnog uređivača umjesto prebacivanja na drugi uređivač",
+	"visualeditor-preference-newwikitexteditor-help": "Ponekad se naziva \"uređivač wikiteksta iz 2017.\"",
 	"visualeditor-preference-tabs": "Režim uređivanja:",
 	"visualeditor-preference-tabs-multi-tab": "Prikaži kartice oba uređivača",
 	"visualeditor-preference-tabs-prefer-ve": "Otvori vizualni uređivač kad god je moguće",
@@ -272,7 +276,7 @@
 	"visualeditor-section-body-placeholder": "Novi odlomak",
 	"visualeditor-section-title-placeholder": "Naslov",
 	"visualeditor-settings-tool": "Postavke stranice",
-	"visualeditor-special-characters-group-other": "Često korišteni",
+	"visualeditor-special-characters-group-other": "Često korišteno",
 	"visualeditor-templatesused-tool": "Korišteni šabloni",
 	"visualeditor-toload": "Uređivač će se sad učitati. Ako i nakon nekoliko sekundi budete vidjeli ovu poruku, [$1 osvježite stranicu].",
 	"visualeditor-version-label": "Verzija",

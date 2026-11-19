@@ -970,13 +970,16 @@ class Hooks implements
 	 * @param array &$links Array of URLs to append to.
 	 */
 	public function onSkinTemplateNavigation__Universal( $skinTemplate, &$links ): void {
-		$user = $skinTemplate->getUser();
-		if ( !$user->isRegistered() ) {
+		if ( !$skinTemplate->getAuthority()->isRegistered() ) {
+			return;
+		}
+		if ( !$skinTemplate->getAuthority()->isAllowed( 'echo-read-notifications' ) ) {
 			return;
 		}
 
 		$title = $skinTemplate->getTitle();
 		$out = $skinTemplate->getOutput();
+		$user = $skinTemplate->getUser();
 
 		$subtractions = $this->processMarkAsRead( $user, $out->getRequest(), $title );
 
@@ -1493,9 +1496,10 @@ class Hooks implements
 		$echoPerUserBlacklist = $this->config->get( ConfigNames::PerUserBlacklist );
 		if ( $echoPerUserBlacklist ) {
 			$id = $target ? $this->centralIdLookup->centralIdFromLocalUser( $target ) : 0;
-			$list = MultiUsernameFilter::splitIds(
-				$this->userOptionsManager->getOption( $user, 'echo-notifications-blacklist' )
-			);
+			$notificationList = $this->userOptionsManager->getOption( $user, 'echo-notifications-blacklist' );
+			$list = $notificationList ? MultiUsernameFilter::splitIds(
+				$notificationList
+			) : [];
 			$fields[ 'echo-notifications-blacklist'] = [
 				'type' => 'check',
 				'label-message' => [

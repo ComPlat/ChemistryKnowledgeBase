@@ -2,14 +2,18 @@
 
 namespace SMW\Maintenance;
 
-use Onoi\Cache\Cache;
 use Onoi\MessageReporter\MessageReporterAwareTrait;
+use SMW\DataItems\DataItem;
+use SMW\MediaWiki\Api\Tasks\Task;
+use SMW\MediaWiki\Connection\Database;
 use SMW\SQLStore\PropertyTableInfoFetcher;
 use SMW\SQLStore\RedirectStore;
 use SMW\SQLStore\SQLStore;
 use SMW\Store;
 use SMW\Utils\CliMsgFormatter;
-use SMWDataItem as DataItem;
+use SMW\Utils\PeriodicStatsFlusher;
+use Traversable;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * @license GPL-2.0-or-later
@@ -21,25 +25,24 @@ class DuplicateEntitiesDisposer {
 
 	use MessageReporterAwareTrait;
 
-	/**
-	 * @var Store
-	 */
-	private $store;
+	private const BATCH_SIZE = 1000;
 
-	/**
-	 * @var Store
-	 */
-	private $cache;
+	private ?PeriodicStatsFlusher $statsFlusher = null;
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param Store $store
-	 * @param Cache|null $cache
 	 */
-	public function __construct( Store $store, ?Cache $cache = null ) {
-		$this->store = $store;
-		$this->cache = $cache;
+	public function __construct(
+		private Store $store,
+		private ?BagOStuff $cache = null,
+	) {
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function setStatsFlusher( PeriodicStatsFlusher $statsFlusher ): void {
+		$this->statsFlusher = $statsFlusher;
 	}
 
 	/**
@@ -51,10 +54,8 @@ class DuplicateEntitiesDisposer {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param Iterator|array $duplicates
 	 */
-	public function verifyAndDispose( $duplicates ) {
+	public function verifyAndDispose( mixed $duplicates ): void {
 		if ( !$this->is_iterable( $duplicates ) ) {
 			return;
 		}
@@ -68,11 +69,11 @@ class DuplicateEntitiesDisposer {
 		}
 
 		if ( $this->cache !== null ) {
-			$this->cache->delete( \SMW\MediaWiki\Api\Tasks\Task::makeCacheKey( 'duplicate-lookup' ) );
+			$this->cache->delete( Task::makeCacheKey( 'duplicate-lookup' ) );
 		}
 	}
 
-	private function doDispose( $duplicates ) {
+	private function doDispose( $duplicates ): void {
 		$cliMsgFormatter = new CliMsgFormatter();
 		$logs = [];
 
@@ -139,95 +140,106 @@ class DuplicateEntitiesDisposer {
 	 *
 	 * @since 3.0
 	 */
-	private function is_iterable( $obj ) {
-		return is_array( $obj ) || ( is_object( $obj ) && ( $obj instanceof \Traversable ) );
+	private function is_iterable( mixed $obj ): bool {
+		return is_array( $obj ) || ( is_object( $obj ) && ( $obj instanceof Traversable ) );
 	}
 
-	private function wikipage_table( $table, $duplicates, &$log ) {
+	private function wikipage_table( string $table, array $duplicates, array &$log ): void {
+		$this->replaceDuplicates(
+			$table,
+			$duplicates,
+			[ 's_id', 'p_id', 'o_id' ],
+			static fn ( array $duplicate ): string => "{$duplicate['s_id']}, {$duplicate['p_id']}, {$duplicate['o_id']}",
+			$log
+		);
+	}
+
+	private function redi_table( string $table, array $duplicates, array &$log ): void {
+		$this->replaceDuplicates(
+			$table,
+			$duplicates,
+			[ 's_title', 's_namespace', 'o_id' ],
+			static fn ( array $duplicate ): string => "{$duplicate['o_id']} ({$duplicate['s_title']}#{$duplicate['s_namespace']})",
+			$log
+		);
+	}
+
+	/**
+	 * Replaces every copy of each duplicated tuple with a single one, in batches that each commit
+	 * as a whole, so that a run that stops partway cannot leave a tuple without a copy
+	 *
+	 * @param string $table
+	 * @param array[] $duplicates
+	 * @param string[] $fields The fields that identify a tuple
+	 * @param callable(array): string $describe
+	 * @param array &$log
+	 */
+	private function replaceDuplicates(
+		string $table,
+		array $duplicates,
+		array $fields,
+		callable $describe,
+		array &$log
+	): void {
 		$connection = $this->store->getConnection( 'mw.db' );
 		$log[] = "   ... $table ...";
-		$i = 0;
+		$position = 0;
 
-		foreach ( $duplicates as $duplicate ) {
-
-			if ( $i > 0 && ( $i ) % CliMsgFormatter::MAX_LEN === 0 ) {
-				$this->messageReporter->reportMessage( "\n       " );
-			} elseif ( $i == 0 ) {
-				$this->messageReporter->reportMessage( "       " );
+		foreach ( array_chunk( $duplicates, self::BATCH_SIZE ) as $batch ) {
+			foreach ( $batch as $duplicate ) {
+				$this->reportProgress( $position++ );
+				$log[] = [ 'DELETE' => $describe( $duplicate ) ];
 			}
 
-			$this->messageReporter->reportMessage( '.' );
-			$log[] = [ 'DELETE' => $duplicate['s_id'] . ", " . $duplicate['p_id'] . ', ' . $duplicate['o_id'] ];
-
-			$connection->delete(
-				$table,
-				[
-					's_id' => $duplicate['s_id'],
-					'p_id' => $duplicate['p_id'],
-					'o_id' => $duplicate['o_id'],
-				],
-				__METHOD__
+			$connection->doSectionTransaction(
+				__METHOD__,
+				fn () => $this->replaceBatch( $connection, $table, $batch, $fields )
 			);
-
-			$connection->insert(
-				$table,
-				[
-					's_id' => $duplicate['s_id'],
-					'p_id' => $duplicate['p_id'],
-					'o_id' => $duplicate['o_id'],
-				],
-				__METHOD__
-			);
-
-			$i++;
 		}
 	}
 
-	private function redi_table( $table, $duplicates, &$log ) {
-		$connection = $this->store->getConnection( 'mw.db' );
-		$log[] = "   ... $table ...";
-		$i = 0;
+	/**
+	 * @param Database $connection
+	 * @param string $table
+	 * @param array[] $batch
+	 * @param string[] $fields
+	 */
+	private function replaceBatch( Database $connection, string $table, array $batch, array $fields ): void {
+		// Each tuple needs its own DELETE, as its WHERE differs, but their copies go into one INSERT
+		$insertBuilder = $connection->newInsertQueryBuilder()
+			->insertInto( $table )
+			->caller( __METHOD__ );
 
-		foreach ( $duplicates as $duplicate ) {
+		$copies = 0;
 
-			if ( $i > 0 && ( $i ) % CliMsgFormatter::MAX_LEN === 0 ) {
-				$this->messageReporter->reportMessage( "\n       " );
-			} elseif ( $i == 0 ) {
-				$this->messageReporter->reportMessage( "       " );
+		foreach ( $batch as $duplicate ) {
+			if ( $this->statsFlusher !== null ) {
+				$this->statsFlusher->tick();
 			}
 
-			$this->messageReporter->reportMessage( '.' );
-			$log[] = [ 'DELETE' => $duplicate['o_id'] . " (" . $duplicate['s_title'] . '#' . $duplicate['s_namespace'] . ")" ];
+			$tuple = array_intersect_key( $duplicate, array_flip( $fields ) );
 
-			$connection->delete(
-				$table,
-				[
-					's_title' => $duplicate['s_title'],
-					's_namespace' => $duplicate['s_namespace'],
-					'o_id' => $duplicate['o_id'],
-				],
-				__METHOD__
-			);
+			$connection->newDeleteQueryBuilder()
+				->deleteFrom( $table )
+				->where( $tuple )
+				->caller( __METHOD__ )
+				->execute();
 
-			if ( $duplicate['s_title'] === '' ) {
+			// A tuple with an empty value, such as a redirect without a title, gets no copy
+			if ( in_array( '', $tuple, true ) ) {
 				continue;
 			}
 
-			$connection->insert(
-				$table,
-				[
-					's_title' => $duplicate['s_title'],
-					's_namespace' => $duplicate['s_namespace'],
-					'o_id' => $duplicate['o_id'],
-				],
-				__METHOD__
-			);
+			$insertBuilder->row( $tuple );
+			$copies++;
+		}
 
-			$i++;
+		if ( $copies > 0 ) {
+			$insertBuilder->execute();
 		}
 	}
 
-	private function id_table( $table, $duplicates, &$log ) {
+	private function id_table( string $table, $duplicates, &$log ): void {
 		$propertyTableIdReferenceDisposer = $this->store->service( 'PropertyTableIdReferenceDisposer' );
 		$propertyTableIdReferenceDisposer->setRedirectRemoval( true );
 
@@ -238,26 +250,23 @@ class DuplicateEntitiesDisposer {
 
 		foreach ( $duplicates as $duplicate ) {
 
-			if ( $i > 0 && ( $i ) % CliMsgFormatter::MAX_LEN === 0 ) {
-				$this->messageReporter->reportMessage( "\n       " );
-			} elseif ( $i == 0 ) {
-				$this->messageReporter->reportMessage( "       " );
+			if ( $this->statsFlusher !== null ) {
+				$this->statsFlusher->tick();
 			}
 
-			$this->messageReporter->reportMessage( '.' );
-			$res = $connection->select(
-				SQLStore::ID_TABLE,
-				[
-					'smw_id',
-				],
-				[
+			$this->reportProgress( $i );
+
+			$res = $connection->newSelectQueryBuilder()
+				->select( [ 'smw_id' ] )
+				->from( SQLStore::ID_TABLE )
+				->where( [
 					'smw_title' => $duplicate['smw_title'],
 					'smw_namespace' => $duplicate['smw_namespace'],
 					'smw_iw' => $duplicate['smw_iw'],
 					'smw_subobject' => $duplicate['smw_subobject']
-				],
-				__METHOD__
-			);
+				] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 
 			$hash = $duplicate['smw_title'] . '#' . $duplicate['smw_namespace'] . '#' . $duplicate['smw_iw'] . '#' . $duplicate['smw_subobject'];
 
@@ -272,6 +281,16 @@ class DuplicateEntitiesDisposer {
 
 			$i++;
 		}
+	}
+
+	private function reportProgress( int $position ): void {
+		if ( $position === 0 ) {
+			$this->messageReporter->reportMessage( "       " );
+		} elseif ( $position % CliMsgFormatter::MAX_LEN === 0 ) {
+			$this->messageReporter->reportMessage( "\n       " );
+		}
+
+		$this->messageReporter->reportMessage( '.' );
 	}
 
 }

@@ -7,7 +7,8 @@
 			"Milicevic01",
 			"Obsuser",
 			"Zoranzoki21",
-			"Сербијана"
+			"Сербијана",
+			"Aca"
 		]
 	},
 	"multimediaviewer-desc": "Увећава минијатуре преко целог екрана",
@@ -23,7 +24,6 @@
 	"multimediaviewer-thumbnail-error": "Није могуће приказати датотеку",
 	"multimediaviewer-thumbnail-error-description": "Изгледа да је дошло до техничког проблема. $1 ако се настави. Грешка: $2",
 	"multimediaviewer-thumbnail-error-retry": "Покушајте поново",
-	"multimediaviewer-thumbnail-error-report": "пријавите проблем",
 	"multimediaviewer-license-cc-pd": "Јавно власништво",
 	"multimediaviewer-license-pd": "Јавно власништво",
 	"multimediaviewer-license-default": "Лиценца",
@@ -43,7 +43,7 @@
 	"multimediaviewer-share-tab": "Дељење",
 	"multimediaviewer-embed-tab": "Уградња",
 	"multimediaviewer-download": "Преузми",
-	"multimediaviewer-download-link": "Преузмите ову датотеку",
+	"multimediaviewer-download-link": "Преузимање датотеке",
 	"multimediaviewer-download-preview-link-title": "Прикажи у прегледачу",
 	"multimediaviewer-download-original-button-name": "Преузми оригиналну датотеку",
 	"multimediaviewer-download-small-button-name": "Преузми у малој величини",

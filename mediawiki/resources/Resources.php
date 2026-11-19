@@ -30,6 +30,7 @@ use MediaWiki\Parser\Sanitizer;
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\ResourceLoader\CodexModule;
 use MediaWiki\ResourceLoader\Context;
+use MediaWiki\ResourceLoader\DateFormatterConfig;
 use MediaWiki\ResourceLoader\FilePath;
 use MediaWiki\ResourceLoader\ForeignApiModule;
 use MediaWiki\ResourceLoader\LessVarFileModule;
@@ -723,6 +724,20 @@ return [
 			'confirmleave-warning',
 		],
 	],
+	'mediawiki.DateFormatter' => [
+		'localBasePath' => MW_INSTALL_PATH . '/resources/src/mediawiki.DateFormatter',
+		'remoteBasePath' => "$wgResourceBasePath/resources/src/mediawiki.DateFormatter",
+		'packageFiles' => [
+			'DateFormatter.js',
+			[
+				'name' => 'config.json',
+				'callback' => [ DateFormatterConfig::class, 'getData' ]
+			]
+		],
+		'dependencies' => [
+			'user.options',
+		]
+	],
 	'mediawiki.debug' => [
 		'scripts' => [
 			'resources/src/mediawiki.debug/jquery.footHovzer.js',
@@ -1166,7 +1181,8 @@ return [
 			],
 		],
 		'dependencies' => 'mediawiki.util',
-		'deprecated' => '[1.43] Please use browser native URL.',
+		'deprecated' =>
+			'[1.43] Please use browser native URL. See https://www.mediawiki.org/wiki/Migrating_mw.Uri_to_URL',
 	],
 	'mediawiki.user' => [
 		'scripts' => 'resources/src/mediawiki.user.js',
@@ -1196,6 +1212,8 @@ return [
 				MainConfigNames::GenerateThumbnailOnParse,
 				MainConfigNames::LoadScript,
 				MainConfigNames::AutoCreateTempUser,
+				MainConfigNames::ThumbnailSteps,
+				MainConfigNames::ThumbnailStepsRatio,
 			] ],
 			[ 'name' => 'portletLinkOptions.json', 'callback' => [ Skin::class, 'getPortletLinkOptions' ] ],
 			[
@@ -1684,6 +1702,7 @@ return [
 			} ],
 		],
 		'dependencies' => [
+			'mediawiki.user',
 			'mediawiki.util',
 			'mediawiki.api'
 		],
@@ -2115,6 +2134,7 @@ return [
 			'apisandbox-request-php-label',
 			'apisandbox-request-time',
 			'apisandbox-request-post',
+			'apisandbox-request-post2',
 			'apisandbox-request-formdata',
 			'apisandbox-results-fixtoken',
 			'apisandbox-results-fixtoken-fail',
@@ -2132,30 +2152,6 @@ return [
 			'word-separator',
 			'and'
 		],
-	],
-	'mediawiki.special.restsandbox.styles' => [
-		'styles' => [
-			'resources/src/mediawiki.special.restsandbox/restsandbox.css',
-		],
-	],
-	'mediawiki.special.restsandbox' => [
-		'localBasePath' => MW_INSTALL_PATH . '/resources',
-		'remoteBasePath' => "$wgResourceBasePath/resources",
-		'packageFiles' => [
-			"src/mediawiki.special.restsandbox/restsandbox.js",
-			"lib/swagger-ui/swagger-ui-bundle.js",
-			"lib/swagger-ui/swagger-ui-standalone-preset.js",
-			[
-				'name' => 'src/mediawiki.special.restsandbox/config.json',
-				'config' => [ 'RestSandboxSpecs' ],
-			],
-		],
-		'styles' => [
-			'lib/swagger-ui/swagger-ui.css',
-		],
-		'dependencies' => [
-			'mediawiki.special.restsandbox.styles'
-		]
 	],
 	'mediawiki.special.block' => [
 		'localBasePath' => MW_INSTALL_PATH . '/resources/src',

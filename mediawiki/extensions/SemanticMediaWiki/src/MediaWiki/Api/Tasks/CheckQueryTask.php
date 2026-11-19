@@ -2,10 +2,10 @@
 
 namespace SMW\MediaWiki\Api\Tasks;
 
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
+use SMW\Query\Query;
+use SMW\Query\QueryProcessor;
 use SMW\Store;
-use SMWQuery as Query;
-use SMWQueryProcessor as QueryProcessor;
 
 /**
  * @license GPL-2.0-or-later
@@ -16,17 +16,21 @@ use SMWQueryProcessor as QueryProcessor;
 class CheckQueryTask extends Task {
 
 	/**
-	 * @var Store
+	 * @since 3.1
 	 */
-	private $store;
+	public function __construct( private readonly Store $store ) {
+	}
 
 	/**
-	 * @since 3.1
+	 * Runs a caller-supplied query with the subject as its context page, so the
+	 * caller must be authorized to edit that specific page rather than merely
+	 * holding a wiki-wide right. The legitimate post-edit flow checks the query
+	 * on the page the caller just saved.
 	 *
-	 * @param Store $store
+	 * @since 7.4.0
 	 */
-	public function __construct( Store $store ) {
-		$this->store = $store;
+	public function getAuthorizationSubject( array $parameters ): ?string {
+		return $parameters['subject'] ?? '';
 	}
 
 	/**
@@ -36,12 +40,12 @@ class CheckQueryTask extends Task {
 	 *
 	 * @return array
 	 */
-	public function process( array $parameters ) {
+	public function process( array $parameters ): array {
 		if ( $parameters['subject'] === '' || $parameters['query'] === '' ) {
 			return [ 'done' => false ];
 		}
 
-		$subject = DIWikiPage::doUnserialize(
+		$subject = WikiPage::doUnserialize(
 			$parameters['subject']
 		);
 

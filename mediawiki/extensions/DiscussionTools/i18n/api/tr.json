@@ -13,6 +13,7 @@
 	"apierror-discussiontools-commentid-notfound": "'$1' kimliğine sahip yorum bulunamadı.",
 	"apierror-discussiontools-commentname-ambiguous": "'$1' adında birden fazla yorum bulundu, <var>commentid</var> gerekli.",
 	"apierror-discussiontools-commentname-notfound": "'$1' isimli yorum bulunamadı.",
+	"apierror-discussiontools-findcomment-pagenevertalk": "Sayfa hiç tartışma içermemiş.",
 	"apierror-discussiontools-formtoken-used": "Yorum zaten yayımlandı. Görmek için sayfayı yenileyin.",
 	"apierror-discussiontools-subscription-failed-add": "Bu konuya abone olunamadı.",
 	"apierror-discussiontools-subscription-failed-remove": "Bu konunun aboneliğinden çıkılamadı.",
@@ -41,5 +42,7 @@
 	"apihelp-discussiontoolssubscribe-param-commentname": "Abone olunacak (veya abonelikten çıkılacak) konunun adı",
 	"apihelp-discussiontoolssubscribe-param-page": "Konunun göründüğü bir sayfa",
 	"apihelp-discussiontoolssubscribe-param-subscribe": "Abone olmak için true, ayrılmak için false",
-	"apihelp-discussiontoolssubscribe-summary": "Bir konu hakkında bildirim almak için abone ol (ya da abonelikten çık)."
+	"apihelp-discussiontoolssubscribe-summary": "Bir konu hakkında bildirim almak için abone ol (ya da abonelikten çık).",
+	"apihelp-discussiontoolsthank-param-commentid": "Teşekkür edilecek yorumun kimliği.",
+	"apihelp-discussiontoolsthank-summary": "Yorum için herkese açık bir teşekkür bildirimi gönderin."
 }

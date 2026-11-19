@@ -8,7 +8,6 @@ $baseDir = dirname($vendorDir);
 return array(
     'TextCat' => array($vendorDir . '/wikimedia/textcat/src'),
     'Smalot\\PdfParser\\' => array($vendorDir . '/smalot/pdfparser/src'),
-    'SemanticMediaWiki' => array($baseDir . '/extensions/SemanticMediaWiki/includes/SemanticMediaWiki.php'),
     'Net' => array($vendorDir . '/pear/net_smtp', $vendorDir . '/pear/net_socket'),
     'Mail' => array($vendorDir . '/pear/mail_mime', $vendorDir . '/pear/mail'),
     'ML\\IRI' => array($vendorDir . '/ml/iri'),
@@ -17,5 +16,5 @@ return array(
     'JsonMapper' => array($vendorDir . '/netresearch/jsonmapper/src'),
     'Console' => array($vendorDir . '/pear/console_getopt'),
     'CSSMin' => array($vendorDir . '/wikimedia/minify/src'),
-    '' => array($vendorDir . '/cssjanus/cssjanus/src'),
+    '' => array($vendorDir . '/wikimedia/cssjanus/src'),
 );

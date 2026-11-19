@@ -12,7 +12,8 @@
 			"Rapsar",
 			"SaldırganSincap",
 			"Sezgin İbiş",
-			"Vito Genovese"
+			"Vito Genovese",
+			"ToprakM"
 		]
 	},
 	"linterrors": "Lint hataları",
@@ -23,6 +24,7 @@
 	"linter-category-deletable-table-tag": "Silinmesi gereken tablo etiketi",
 	"linter-category-deletable-table-tag-desc": "Bu sayfalarda silinmesi gereken tablo etiketleri var.",
 	"linter-category-duplicate-ids": "Yinelenen kimlikler",
+	"linter-category-duplicate-ids-desc": "Bu sayfalar yinelenen id özniteliğine sahip öğeler barındırmaktadır.",
 	"linter-category-fostered": "Desteklenen içerik",
 	"linter-category-fostered-desc": "Bu sayfaların içeriği teşvik edilmiştir.",
 	"linter-category-html5-misnesting": "HTML5 ve HTML4'te farklı oluşturmaya sahip yanlış iç içe geçmiş etiket",
@@ -75,7 +77,7 @@
 	"linter-heading-high-priority": "Yüksek öncelik",
 	"linter-heading-low-priority": "Düşük öncelik",
 	"linter-heading-medium-priority": "Orta öncelik",
-	"linter-namespace-mismatch": "Açılır listede belirtilen ad alanı, sağlanan başlık metnindeki ad alanıyla eşleşmiyor.",
+	"linter-namespace-mismatch": "Açılır listede belirtilen ad alanları, sağlanan başlık metnindeki ad alanıyla eşleşmiyor.",
 	"linter-numerrors": "($1 hata)",
 	"linter-page-edit": "değiştir",
 	"linter-page-history": "geçmiş",
@@ -85,7 +87,7 @@
 	"linter-pager-deletable-table-tag-details": "Silinecek tablo etiketi",
 	"linter-pager-details-header": "Ek bilgi",
 	"linter-pager-html5-misnesting-details": "Yanlış yerleştirme (şimdi bozuk)",
-	"linter-pager-inline-media-caption-details": "Altyazılı satır içi medya",
+	"linter-pager-inline-media-caption-details": "Görünmez altyazı",
 	"linter-pager-large-tables-details": "Taşınabilir görünüm için büyük olan tablo",
 	"linter-pager-misc-tidy-replacement-issues-details": "Çeşitli biçimlendirme hataları",
 	"linter-pager-misnested-tag-details": "İç içe geçmiş ve hatalı yerleştirilmiş etiket",

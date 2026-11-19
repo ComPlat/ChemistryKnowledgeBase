@@ -2,8 +2,9 @@
 
 namespace SMW\DataValues\ValueFormatters;
 
-use SMWDataValue as DataValue;
-use SMWOutputs as Outputs;
+use SMW\DataValues\DataValue;
+use SMW\DataValues\StringValue;
+use SMW\MediaWiki\Outputs;
 
 /**
  * @license GPL-2.0-or-later
@@ -18,19 +19,18 @@ class CodeStringValueFormatter extends StringValueFormatter {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function isFormatterFor( DataValue $dataValue ) {
+	public function isFormatterFor( DataValue $dataValue ): bool {
 		return $dataValue->getTypeID() === '_cod';
 	}
 
 	/**
-	 * @param \SMW\DataValues\StringValue $dataValue
+	 * @param StringValue $dataValue
 	 * @param int $type
 	 * @param mixed $linker
 	 *
-	 * @return string
 	 * @see StringValueFormatter::doFormat
 	 */
-	protected function doFormat( $dataValue, $type, $linker ) {
+	protected function doFormat( $dataValue, $type, $linker ): string {
 		$abbreviate = $type === self::WIKI_LONG || $type === self::HTML_LONG;
 		$text = $dataValue->getDataItem()->getString();
 
@@ -41,7 +41,10 @@ class CodeStringValueFormatter extends StringValueFormatter {
 		Outputs::requireResource( 'ext.smw.styles' );
 
 		if ( $this->isJson( $text ) ) {
-			$result = self::asJson( $text );
+			// The pretty-printed JSON is emitted verbatim into HTML, so escape
+			// any markup its string values may carry, matching the escaping the
+			// non-JSON branch below and the base StringValueFormatter apply.
+			$result = smwfXMLContentEncode( (string)self::asJson( $text ) );
 		} else {
 			// This disables all active wiki and HTML markup:
 			$result = str_replace(
@@ -62,10 +65,8 @@ class CodeStringValueFormatter extends StringValueFormatter {
 	 * @since 2.5
 	 *
 	 * @param string $string
-	 *
-	 * @return string
 	 */
-	public static function asJson( $string, $flag = 0 ) {
+	public static function asJson( $string, $flag = 0 ): string|false {
 		if ( $flag > 0 ) {
 			return json_encode( json_decode( $string ), $flag );
 		}
@@ -73,12 +74,13 @@ class CodeStringValueFormatter extends StringValueFormatter {
 		return json_encode( json_decode( $string ), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	}
 
-	private function isJson( $string ) {
+	private function isJson( $string ): bool {
 		// Don't bother
 		if ( substr( $string, 0, 1 ) !== '{' ) {
 			return false;
 		}
 
+		// @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
 		json_decode( $string );
 
 		return ( json_last_error() == JSON_ERROR_NONE );

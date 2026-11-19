@@ -19,7 +19,7 @@
 	"mobile-frontend-main-menu-logout": "Čáládât olgos",
 	"mobile-frontend-main-menu-nearby": "Alda",
 	"mobile-frontend-main-menu-settings": "Asâttâsah",
-	"mobile-frontend-main-menu-watchlist": "Tarkkumlisto",
+	"mobile-frontend-main-menu-watchlist": "Čuávvumlisto",
 	"mobile-frontend-meta-data-issues": "Siijđo čuolmah",
 	"mobile-frontend-meta-data-issues-categories": "Tiätu taan kategoriast",
 	"mobile-frontend-meta-data-issues-header": "Siijđo čuolmah",
@@ -34,6 +34,7 @@
 	"minerva-page-actions-overflow": "Lase",
 	"minerva-page-actions-language-switcher": "Kielah",
 	"minerva-page-actions-history": "Historjá",
+	"minerva-prefs-talkpage": "[https://www.mediawiki.org/wiki/Skin_talk:Minerva_Neue Savâstâllâm]",
 	"skin-minerva-issue-learn-more": "Lasetiäđuh",
 	"skin-minerva-mobile-option-MinervaShowCategories": "Luokah",
 	"skin-minerva-mobile-option-MinervaShowCategories-description": "Čääiti siijđo luokaid"

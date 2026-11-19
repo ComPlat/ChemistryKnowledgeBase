@@ -2,9 +2,11 @@
 
 namespace SMW;
 
-use Onoi\EventDispatcher\EventDispatcherAwareTrait;
+use MediaWiki\Title\Title;
+use SMW\DataItems\WikiPage;
+use SMW\EventDispatcher\EventDispatcher;
 use SMW\SQLStore\QueryDependency\DependencyLinksValidator;
-use Title;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * @license GPL-2.0-or-later
@@ -14,76 +16,25 @@ use Title;
  */
 class DependencyValidator {
 
-	use EventDispatcherAwareTrait;
-
-	/**
-	 * @var NamespaceExaminer
-	 */
-	private $namespaceExaminer;
-
-	/**
-	 * @var DependencyLinksValidator
-	 */
-	private $dependencyLinksValidator;
-
-	/**
-	 * @var EntityCache
-	 */
-	private $entityCache;
-
-	/**
-	 * @var int
-	 */
-	private $cacheTTL = 3600;
-
-	/**
-	 * @var string
-	 */
-	private $eTag;
-
-	/**
-	 * @var array Title IDs marked as having outdated dependencies.
-	 */
-	private static $titles = [];
+	private static array $titles = [];
 
 	/**
 	 * @since 3.1
-	 *
-	 * @param NamespaceExaminer $namespaceExaminer
-	 * @param DependencyLinksValidator $dependencyLinksValidator
-	 * @param EntityCache $entityCache
 	 */
-	public function __construct( NamespaceExaminer $namespaceExaminer, DependencyLinksValidator $dependencyLinksValidator, EntityCache $entityCache ) {
-		$this->namespaceExaminer = $namespaceExaminer;
-		$this->dependencyLinksValidator = $dependencyLinksValidator;
-		$this->entityCache = $entityCache;
-	}
-
-	/**
-	 * @since 3.1
-	 *
-	 * @param int $cacheTTL
-	 */
-	public function setCacheTTL( $cacheTTL ) {
-		$this->cacheTTL = $cacheTTL;
-	}
-
-	/**
-	 * @since 3.1
-	 *
-	 * @param string eTag
-	 */
-	public function setETag( $eTag ) {
-		$this->eTag = $eTag;
+	public function __construct(
+		private readonly NamespaceExaminer $namespaceExaminer,
+		private readonly DependencyLinksValidator $dependencyLinksValidator,
+		private readonly BagOStuff $cache,
+		private readonly int $cacheTTL,
+		private readonly EventDispatcher $eventDispatcher
+	) {
 	}
 
 	/**
 	 * @since 2.2
-	 *
-	 * @return int
 	 */
-	public static function makeCacheKey( Title $title ) {
-		return EntityCache::makeCacheKey( 'parsercacheinvalidator', $title->getPrefixedDBKey() );
+	public function makeCacheKey( Title $title ): string {
+		return $this->cache->makeKey( 'smw', 'parsercache', 'dirty', md5( $title->getPrefixedDBKey() ) );
 	}
 
 	/**
@@ -94,8 +45,8 @@ class DependencyValidator {
 	 *
 	 * @param Title $title
 	 */
-	public function markTitle( Title $title ) {
-		self::$titles[$title->getPrefixedText()] = true;
+	public function markTitle( Title $title ): void {
+		self::$titles[$title->getPrefixedText() ?? ''] = true;
 	}
 
 	/**
@@ -106,20 +57,20 @@ class DependencyValidator {
 	 * @return bool
 	 */
 	public static function hasLikelyOutdatedDependencies( Title $title ): bool {
-		return self::$titles[$title->getPrefixedText()] ?? false;
+		return self::$titles[$title->getPrefixedText() ?? ''] ?? false;
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param DIWikiPage $subject
+	 * @param WikiPage $subject
 	 *
 	 * @return bool
 	 */
-	public function hasArchaicDependencies( DIWikiPage $subject ) {
+	public function hasArchaicDependencies( WikiPage $subject ): bool {
 		$title = $subject->getTitle();
 
-		if ( $this->namespaceExaminer->isSemanticEnabled( $title->getNamespace() ) === false ) {
+		if ( !$this->namespaceExaminer->isSemanticEnabled( $title->getNamespace() ) ) {
 			return false;
 		}
 
@@ -137,40 +88,26 @@ class DependencyValidator {
 
 		$this->eventDispatcher->dispatch( 'InvalidateResultCache', $context );
 
-		// The parser cache is rejected, store for which key the request has
-		// happened since the `smw_touched` is only updated once and given that
-		// an anon/logged-in user create a different eTag (ParserCache) key
-		// this will allows us to distinguish them later
+		// Called before the request's parser cache lookup, so the re-parse that
+		// lookup triggers is cached after this time and kept.
 		$key = $this->makeCacheKey( $title );
+		$this->cache->set( $key, wfTimestampNow(), $this->cacheTTL );
 
-		// Genuine rejection based on `hasArchaicDependencies` therefore override
-		// any previous sub keys
-		$this->entityCache->overrideSub( $key, $this->eTag, 'hasArchaicDependencies', $this->cacheTTL );
-
-		// Disable the parser cache even before `RejectParserCacheValue` comes into play
 		return true;
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param DIWikiPage $subject
-	 *
-	 * @return bool
+	 * @param Title $title
+	 * @param string $cacheTime TS_MW cache time of the cached output
 	 */
-	public function canKeepParserCache( DIWikiPage $subject ) {
-		$key = $this->makeCacheKey( $subject->getTitle() );
+	public function canKeepParserCache( Title $title, string $cacheTime ): bool {
+		$markedAt = $this->cache->get( $this->makeCacheKey( $title ) );
 
-		// Test for a recent rejection, being unrelated etc.
-		if (
-			$this->entityCache->contains( $key ) === false ||
-			$this->entityCache->fetchSub( $key, $this->eTag ) ) {
-			return true;
-		}
-
-		$this->entityCache->saveSub( $key, $this->eTag, 'hasArchaicDependencies', $this->cacheTTL );
-
-		return false;
+		// As CacheTime::expired() does for page_touched, a cache time in the
+		// same second as the marker counts as current.
+		return $markedAt === false || $cacheTime >= $markedAt;
 	}
 
 }

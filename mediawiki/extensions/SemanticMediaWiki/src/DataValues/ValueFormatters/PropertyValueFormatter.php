@@ -2,14 +2,15 @@
 
 namespace SMW\DataValues\ValueFormatters;
 
+use MediaWiki\Html\Html;
 use RuntimeException;
+use SMW\DataValues\DataValue;
 use SMW\DataValues\PropertyValue;
-use SMW\Highlighter;
+use SMW\Formatters\Highlighter;
 use SMW\Localizer\Localizer;
 use SMW\Localizer\Message;
 use SMW\Property\SpecificationLookup;
-use SMW\Services\ServicesFactory as ApplicationFactory;
-use SMWDataValue as DataValue;
+use SMW\PropertyLabelFinder;
 
 /**
  * @license GPL-2.0-or-later
@@ -20,17 +21,12 @@ use SMWDataValue as DataValue;
 class PropertyValueFormatter extends DataValueFormatter {
 
 	/**
-	 * @var SpecificationLookup
-	 */
-	private $propertySpecificationLookup;
-
-	/**
 	 * @since 3.0
-	 *
-	 * @param SpecificationLookup $propertySpecificationLookup
 	 */
-	public function __construct( SpecificationLookup $propertySpecificationLookup ) {
-		$this->propertySpecificationLookup = $propertySpecificationLookup;
+	public function __construct(
+		private readonly SpecificationLookup $propertySpecificationLookup,
+		private readonly PropertyLabelFinder $propertyLabelFinder,
+	) {
 	}
 
 	/**
@@ -38,7 +34,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function isFormatterFor( DataValue $dataValue ) {
+	public function isFormatterFor( DataValue $dataValue ): bool {
 		return $dataValue instanceof PropertyValue;
 	}
 
@@ -59,7 +55,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 		$this->dataValue = $dataValue;
 
 		$type = $options[0];
-		$linker = isset( $options[1] ) ? $options[1] : null;
+		$linker = $options[1] ?? null;
 
 		if ( !$this->dataValue->isVisible() ) {
 			return '';
@@ -77,7 +73,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 			return $this->getSearchLabel();
 		}
 
-		$wikiPageValue = $this->prepareWikiPageValue( $linker );
+		$wikiPageValue = $this->prepareWikiPageValue();
 		$text = '';
 
 		if ( $wikiPageValue === null ) {
@@ -85,14 +81,11 @@ class PropertyValueFormatter extends DataValueFormatter {
 		}
 
 		if ( $type === self::WIKI_SHORT ) {
-			$text = $this->doHighlightText(
-				$wikiPageValue->getShortWikiText( $linker ),
-				$this->dataValue->getOption( PropertyValue::OPT_HIGHLIGHT_LINKER ) ? $linker : null
-			);
+			$text = $this->doHighlightText( $wikiPageValue->getShortWikiText( $linker ) );
 		}
 
 		if ( $type === self::HTML_SHORT ) {
-			$text = $this->doHighlightText( $wikiPageValue->getShortHTMLText( $linker ), $linker );
+			$text = $this->doHighlightText( $wikiPageValue->getShortHTMLText( $linker ) );
 		}
 
 		if ( $type === self::WIKI_LONG ) {
@@ -100,7 +93,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 		}
 
 		if ( $type === self::HTML_LONG ) {
-			$text = $this->doHighlightText( $wikiPageValue->getLongHTMLText( $linker ), $linker );
+			$text = $this->doHighlightText( $wikiPageValue->getLongHTMLText( $linker ) );
 		}
 
 		return $text . $this->hintPreferredLabelUse();
@@ -112,7 +105,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 	 * - displayTitle goes before translation
 	 * - translation goes before "normal" label
 	 */
-	private function getFormattedLabel( $linker = null ) {
+	private function getFormattedLabel( $linker = null ): string {
 		$property = $this->dataValue->getDataItem();
 		$output = '';
 		$displayTitle = '';
@@ -123,8 +116,11 @@ class PropertyValueFormatter extends DataValueFormatter {
 
 		$label = $preferredLabel;
 
-		if ( $preferredLabel === '' && ( $label = $this->findTranslatedPropertyLabel( $property ) ) === '' ) {
-			$label = $property->getLabel();
+		if ( $preferredLabel === '' ) {
+			$label = $this->findTranslatedPropertyLabel( $property );
+			if ( $label === '' ) {
+				$label = $property->getLabel();
+			}
 		}
 
 		if ( $this->dataValue->getWikiPageValue() !== null ) {
@@ -163,7 +159,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 
 		// Output both according to the formatting rule set forth by
 		if ( $canonicalLabel !== $label ) {
-			$canonicalLabel = \Html::rawElement(
+			$canonicalLabel = Html::rawElement(
 				'span', [ 'style' => 'font-size:small;' ], '(' . $canonicalLabel . ')' );
 			$output = $output . '&nbsp;' . $canonicalLabel;
 		}
@@ -176,15 +172,19 @@ class PropertyValueFormatter extends DataValueFormatter {
 		$languageCode = $this->dataValue->getOption( PropertyValue::OPT_USER_LANGUAGE );
 		$asCanonicalLabel = $this->dataValue->getOption( PropertyValue::OPT_CANONICAL_LABEL, false );
 
-		if ( $asCanonicalLabel === false && ( $preferredLabel = $property->getPreferredLabel( $languageCode ) ) !== '' ) {
-			return $preferredLabel;
+		if ( $asCanonicalLabel === false ) {
+			$preferredLabel = $property->getPreferredLabel( $languageCode );
+			if ( $preferredLabel !== '' ) {
+				return $preferredLabel;
+			}
 		}
 
 		if ( $this->dataValue->getWikiPageValue() !== null && $this->dataValue->getWikiPageValue()->getDisplayTitle() !== '' ) {
 			return $this->dataValue->getWikiPageValue()->getDisplayTitle();
 		}
 
-		if ( ( $translatedPropertyLabel = $this->findTranslatedPropertyLabel( $property ) ) !== '' ) {
+		$translatedPropertyLabel = $this->findTranslatedPropertyLabel( $property );
+		if ( $translatedPropertyLabel !== '' ) {
 			return $translatedPropertyLabel;
 		}
 
@@ -199,14 +199,17 @@ class PropertyValueFormatter extends DataValueFormatter {
 	private function getSearchLabel() {
 		$wikiPageValue = $this->dataValue->getWikiPageValue();
 
-		if ( $wikiPageValue !== null && ( $displayTitle = $wikiPageValue->getDisplayTitle() ) !== '' ) {
-			return $displayTitle;
+		if ( $wikiPageValue !== null ) {
+			$displayTitle = $wikiPageValue->getDisplayTitle();
+			if ( $displayTitle !== '' ) {
+				return $displayTitle;
+			}
 		}
 
 		return $this->dataValue->getDataItem()->getLabel();
 	}
 
-	private function prepareWikiPageValue( $linker = null ) {
+	private function prepareWikiPageValue() {
 		$wikiPageValue = $this->dataValue->getWikiPageValue();
 
 		if ( $wikiPageValue === null ) {
@@ -218,26 +221,44 @@ class PropertyValueFormatter extends DataValueFormatter {
 
 		if ( $caption !== false && $caption !== '' ) {
 			$wikiPageValue->setCaption( $caption );
-		} elseif ( ( $preferredLabel = $this->dataValue->getPreferredLabel() ) !== '' ) {
+			return $wikiPageValue;
+		}
+
+		$preferredLabel = $this->dataValue->getPreferredLabel();
+		if ( $preferredLabel !== '' ) {
 			$wikiPageValue->setCaption( $preferredLabel );
-		} elseif ( ( $translatedPropertyLabel = $this->findTranslatedPropertyLabel( $property ) ) !== '' ) {
+			return $wikiPageValue;
+		}
+
+		$translatedPropertyLabel = $this->findTranslatedPropertyLabel( $property );
+		if ( $translatedPropertyLabel !== '' ) {
 			$wikiPageValue->setCaption( $translatedPropertyLabel );
-		} elseif ( ( $preferredCaption = $wikiPageValue->getPreferredCaption() ) !== '' ) {
+			return $wikiPageValue;
+		}
+
+		$preferredCaption = $wikiPageValue->getPreferredCaption();
+		if ( $preferredCaption !== '' ) {
 			// Do care for the displaytitle!
 			$wikiPageValue->setCaption( $preferredCaption );
-		} else {
-			$wikiPageValue->setCaption( $property->getLabel() );
+			return $wikiPageValue;
 		}
+
+		$wikiPageValue->setCaption( $property->getLabel() );
 
 		return $wikiPageValue;
 	}
 
-	private function doHighlightText( $text, $linker = null ) {
+	private function doHighlightText( string $text ): string {
 		$content = '';
 
-		if ( !$this->canHighlight( $content, $linker ) ) {
+		if ( !$this->canHighlight( $content ) ) {
 			return $text;
 		}
+
+		// The tooltip title and (for predefined properties) the localized
+		// property description are rendered in the viewer's interface language,
+		// so the rendered output is not cache-stable across languages.
+		$this->dataValue->recordUserLanguageOutput();
 
 		$highlighter = Highlighter::factory(
 			Highlighter::TYPE_PROPERTY,
@@ -248,31 +269,35 @@ class PropertyValueFormatter extends DataValueFormatter {
 			[
 				'userDefined' => $this->dataValue->getDataItem()->isUserDefined(),
 				'caption' => $text,
-				'content' => $content !== '' ? $content : Message::get( 'smw_isspecprop' )
+				'content' => $content !== '' ? $content : Message::get( 'smw_isspecprop' ),
+				'data-content' => $content !== '' ? $content : null
 			]
 		);
 
 		return $highlighter->getHtml();
 	}
 
-	private function canHighlight( &$propertyDescription, $linker ) {
+	private function canHighlight( string &$propertyDescription ): bool {
 		if ( $this->dataValue->getOption( PropertyValue::OPT_NO_HIGHLIGHT ) === true ) {
 			return false;
 		}
 
 		$dataItem = $this->dataValue->getDataItem();
 
-		$propertyDescription = $this->propertySpecificationLookup->getPropertyDescriptionByLanguageCode(
+		// The popup renders the description as HTML on every surface, so the
+		// rendered form is requested here rather than left to the surrounding
+		// page parse, which would re-process it and turn bare URLs inside
+		// pre-rendered markup into nested, broken links (#5494)
+		$propertyDescription = $this->propertySpecificationLookup->getPropertyDescriptionAsHtml(
 			$dataItem,
-			$this->dataValue->getOption( PropertyValue::OPT_USER_LANGUAGE ),
-			$linker
+			$this->dataValue->getOption( PropertyValue::OPT_USER_LANGUAGE )
 		);
 
 		return !$dataItem->isUserDefined() || $propertyDescription !== '';
 	}
 
-	private function hintPreferredLabelUse() {
-		if ( !$this->dataValue->isEnabledFeature( SMW_DV_PROV_LHNT ) ||
+	private function hintPreferredLabelUse(): string {
+		if ( !$this->dataValue->hasFeature( SMW_DV_PROV_LHNT ) ||
 			$this->dataValue->getOption( PropertyValue::OPT_NO_PREF_LHNT ) ) {
 			return '';
 		}
@@ -301,7 +326,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 			return '';
 		}
 
-		return '&nbsp;' . \Html::rawElement(
+		return '&nbsp;' . Html::rawElement(
 			'span',
 			[
 				'title' => $property->getCanonicalLabel()
@@ -310,7 +335,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 		);
 	}
 
-	private function findTranslatedPropertyLabel( $property ) {
+	private function findTranslatedPropertyLabel( $property ): string {
 		// User-defined properties don't have any translatable label (this is
 		// what the preferred label is for)
 		if ( $property->isUserDefined() ) {
@@ -323,7 +348,7 @@ class PropertyValueFormatter extends DataValueFormatter {
 			$prefix = '-';
 		}
 
-		return $prefix . ApplicationFactory::getInstance()->getPropertyLabelFinder()->findPropertyLabelFromIdByLanguageCode(
+		return $prefix . $this->propertyLabelFinder->findPropertyLabelFromIdByLanguageCode(
 			$property->getKey(),
 			$this->dataValue->getOption( PropertyValue::OPT_USER_LANGUAGE )
 		);

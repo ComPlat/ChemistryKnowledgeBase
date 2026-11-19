@@ -17,7 +17,12 @@
 	"attributes": {
 		"OATHAuth": {
 			"Modules": {
-				"totp": "\\MediaWiki\\Extension\\OATHAuth\\Module\\TOTP::factory"
+				"totp": {
+					"class": "\\MediaWiki\\Extension\\OATHAuth\\Module\\TOTP",
+					"services": [
+						"OATHUserRepository"
+					]
+				}
 			}
 		}
 	},
@@ -131,7 +136,8 @@
 			"class": "\\MediaWiki\\Extension\\OATHAuth\\Special\\DisableOATHForUser",
 			"services": [
 				"OATHUserRepository",
-				"UserFactory"
+				"UserFactory",
+				"CentralIdLookup"
 			]
 		},
 		"OATHManage": {
@@ -145,7 +151,8 @@
 			"class": "\\MediaWiki\\Extension\\OATHAuth\\Special\\VerifyOATHForUser",
 			"services": [
 				"OATHUserRepository",
-				"UserFactory"
+				"UserFactory",
+				"CentralIdLookup"
 			]
 		}
 	},
@@ -183,7 +190,13 @@
 		"oath": "internal"
 	},
 	"APIModules": {
-		"oathvalidate": "\\MediaWiki\\Extension\\OATHAuth\\Api\\Module\\ApiOATHValidate"
+		"oathvalidate": {
+			"class": "\\MediaWiki\\Extension\\OATHAuth\\Api\\Module\\ApiOATHValidate",
+			"services": [
+				"OATHUserRepository",
+				"UserFactory"
+			]
+		}
 	},
 	"APIMetaModules": {
 		"oath": {
@@ -204,10 +217,29 @@
 				10,
 				60
 			]
+		},
+		"disableoath": {
+			"&can-bypass": false,
+			"user": [
+				5,
+				60
+			],
+			"user-global": [
+				5,
+				60
+			]
+		},
+		"verify-2fa": {
+			"&can-bypass": false,
+			"user": [
+				5,
+				60
+			],
+			"user-global": [
+				5,
+				60
+			]
 		}
-	},
-	"ReauthenticateTime": {
-		"oathauth-enable": 60
 	},
 	"load_composer_autoloader": true,
 	"LogTypes": [

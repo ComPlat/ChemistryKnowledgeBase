@@ -3,7 +3,6 @@
 namespace SMW\Query;
 
 use SMW\ProcessingErrorMsgHandler;
-use SMWQuery as Query;
 
 /**
  * @license GPL-2.0-or-later
@@ -16,34 +15,21 @@ class DebugFormatter {
 
 	const JSON_FORMAT = 'json';
 
-	/**
-	 * @var string
-	 */
-	private $type = '';
+	private string $format = '';
 
-	/**
-	 * @var string
-	 */
-	private $format = '';
-
-	/**
-	 * @var string
-	 */
-	private $name = '';
+	private string $name = '';
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string|null $type
-	 * @param string $format
 	 */
-	public function __construct( ?string $type = '', string $format = '' ) {
-		$this->type = $type;
-
+	public function __construct(
+		private readonly ?string $type = '',
+		string $format = '',
+	) {
 		// Use a more expressive explain output
 		// https://dev.mysql.com/doc/refman/5.6/en/explain.html
 		// https://mariadb.com/kb/en/mariadb/explain-formatjson-in-mysql/
-		if ( $type === 'mysql' && $format === self::JSON_FORMAT ) {
+		if ( $this->type === 'mysql' && $format === self::JSON_FORMAT ) {
 			$this->format = 'FORMAT=json';
 		}
 	}
@@ -53,7 +39,7 @@ class DebugFormatter {
 	 *
 	 * @param string $name
 	 */
-	public function setName( string $name ) {
+	public function setName( string $name ): void {
 		$this->name = $name;
 	}
 
@@ -74,15 +60,15 @@ class DebugFormatter {
 	 * contexts.
 	 *
 	 * @param $entries array of name => value of informative entries to display
-	 * @param null $query SMWQuery or null, if given add basic data about this query as well
+	 * @param Query|null $query Query or null, if given add basic data about this query as well
 	 *
 	 * @return string
 	 */
-	public function buildHTML( array $entries, ?Query $query = null ) {
+	public function buildHTML( array $entries, ?Query $query = null ): string {
 		if ( $query instanceof Query ) {
 			$preEntries = [];
 			$description = $query->getDescription();
-			$queryString = str_replace( '[', '&#91;', $description->getQueryString() ?? '' );
+			$queryString = str_replace( '[', '&#91;', htmlspecialchars( $description->getQueryString() ?? '', ENT_QUOTES ) );
 
 			$preEntries['ASK Query'] = '<div class="smwpre">' . $queryString . '</div>';
 			$entries = array_merge( $preEntries, $entries );
@@ -95,7 +81,7 @@ class DebugFormatter {
 			);
 
 			foreach ( $queryErrors as $error ) {
-				$errors .= $error . '<br />';
+				$errors .= $this->escape( (string)$error ) . '<br />';
 			}
 
 			if ( $errors === '' ) {
@@ -129,7 +115,7 @@ class DebugFormatter {
 	 *
 	 * @return string
 	 */
-	public function prettifyExplain( iterable $res ) {
+	public function prettifyExplain( iterable $res ): string {
 		$output = '';
 
 		// https://dev.mysql.com/doc/refman/5.0/en/explain-output.html
@@ -151,13 +137,13 @@ class DebugFormatter {
 			foreach ( $res as $row ) {
 
 				if ( isset( $row->EXPLAIN ) ) {
-					return '<div class="smwpre">' . $row->EXPLAIN . '</div>';
+					return '<div class="smwpre">' . $this->escape( $row->EXPLAIN ) . '</div>';
 				}
 
 				$possible_keys = $row->possible_keys;
 				$ref = $row->ref;
 
-				if ( strpos( $possible_keys, ',' ) !== false ) {
+				if ( strpos( $possible_keys ?? '', ',' ) !== false ) {
 					$possible_keys = implode( ', ', explode( ',', $possible_keys ) );
 				}
 
@@ -165,17 +151,17 @@ class DebugFormatter {
 					$ref = implode( ', ', explode( ',', $ref ) );
 				}
 
-				$output .= "<tr style='vertical-align: top;'><td>" . $row->id .
-				"</td><td>" . $row->select_type .
-				"</td><td>" . $row->table .
-				"</td><td>" . $row->type .
-				"</td><td>" . $possible_keys .
-				"</td><td>" . $row->key .
-				"</td><td>" . $row->key_len .
-				"</td><td>" . $ref .
-				"</td><td>" . $row->rows .
-				"</td><td>" . ( $row->filtered ?? '' ) .
-				"</td><td>" . $row->Extra . "</td></tr>";
+				$output .= "<tr style='vertical-align: top;'><td>" . $this->escape( $row->id ) .
+				"</td><td>" . $this->escape( $row->select_type ) .
+				"</td><td>" . $this->escape( $row->table ) .
+				"</td><td>" . $this->escape( $row->type ) .
+				"</td><td>" . $this->escape( $possible_keys ) .
+				"</td><td>" . $this->escape( $row->key ) .
+				"</td><td>" . $this->escape( $row->key_len ) .
+				"</td><td>" . $this->escape( $ref ) .
+				"</td><td>" . $this->escape( $row->rows ) .
+				"</td><td>" . $this->escape( $row->filtered ?? '' ) .
+				"</td><td>" . $this->escape( $row->Extra ) . "</td></tr>";
 			}
 
 			$output .= '</table></div>';
@@ -186,7 +172,10 @@ class DebugFormatter {
 
 			foreach ( $res as $row ) {
 				foreach ( $row as $key => $value ) {
-					$output .= str_replace( [ ' ', '->' ], [ '&nbsp;', '└── ' ], $value ) . '<br>';
+					// Escape < and & (leaving > intact) so the -> tree-branch
+					// substitution below still matches while markup is neutralised.
+					$safeValue = str_replace( [ '&', '<' ], [ '&amp;', '&lt;' ], $value ?? '' );
+					$output .= str_replace( [ ' ', '->' ], [ '&nbsp;', '└── ' ], $safeValue ) . '<br>';
 				}
 			}
 
@@ -196,9 +185,10 @@ class DebugFormatter {
 		if ( $this->type === 'sqlite' ) {
 			$output .= 'QUERY PLAN' . "<br>";
 			$plan = '';
-			$last = count( $res ) - 1;
+			$resArray = is_array( $res ) ? $res : iterator_to_array( $res, false );
+			$last = count( $resArray ) - 1;
 
-			foreach ( $res as $k => $row ) {
+			foreach ( $resArray as $k => $row ) {
 
 				// https://www.sqlite.org/eqp.html notes "... output format did change
 				// substantially with the version 3.24.0 release ..."
@@ -207,7 +197,7 @@ class DebugFormatter {
 				}
 
 				$marker = $k === $last ? '└──' : '├──';
-				$plan .= "<div style='margin-left:15px;'>$marker [" . $row->id . '] `' . $row->detail . "`</div>";
+				$plan .= "<div style='margin-left:15px;'>$marker [" . $this->escape( $row->id ) . '] `' . $this->escape( $row->detail ) . "`</div>";
 			}
 
 			if ( $plan === '' ) {
@@ -227,7 +217,7 @@ class DebugFormatter {
 	 *
 	 * @return string
 	 */
-	public function prettifySPARQL( $sparql ) {
+	public function prettifySPARQL( $sparql ): string {
 		$sparql = str_replace(
 			[
 				'[',
@@ -257,11 +247,12 @@ class DebugFormatter {
 	 *
 	 * @return string
 	 */
-	public function prettifySQL( $sql, $alias ) {
+	public function prettifySQL( $sql, $alias ): string {
+		$sql = $this->escape( $sql );
 		$matches = [];
 		$i = 0;
 
-		$sql = preg_replace_callback( '/NOT IN .*\)/', static function ( $m ) use ( &$matches, &$i ) {
+		$sql = preg_replace_callback( '/NOT IN .*\)/', static function ( array $m ) use ( &$matches, &$i ): string {
 			$i++;
 
 			$string = str_replace( [ 'AND ((' ], [ "AND (<br>   (" ], $m[0] );
@@ -315,6 +306,13 @@ class DebugFormatter {
 		}
 
 		return '<div class="smwpre">' . $sql . '</div>';
+	}
+
+	/**
+	 * Escape a value for output in an HTML element-content context.
+	 */
+	private function escape( string|int|float|null $value ): string {
+		return htmlspecialchars( (string)( $value ?? '' ), ENT_QUOTES );
 	}
 
 }

@@ -1,9 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Bosogo"
+			"Bosogo",
+			"Baydastann"
 		]
 	},
-	"citethispage-link": "Бул баракты цытаталоо",
+	"citethispage": "Булак катары келтирүү",
+	"citethispage-link": "Бул баракты булак катары келтирүү",
+	"tooltip-citethispage": "Бул баракты булак катары кантип келтирүү керектиги тууралуу маалымат",
 	"citethispage-change-target": "Барак:"
 }

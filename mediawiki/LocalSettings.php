@@ -259,7 +259,6 @@ wfLoadExtension('WikiFarm');
 # SMW
 #################################################################
 wfLoadExtension( 'SemanticMediaWiki' );
-enableSemantics(explode( '://', $wgServer)[1]);
 
 $smwgChangePropagationProtection = false;
 $smwgNamespacesWithSemanticLinks[NS_USER] = true;
@@ -288,8 +287,7 @@ $smwgQConceptCaching = CONCEPT_CACHE_NONE;
 $smwgQConceptCacheLifetime = 24 * 60;
 
 # also allow iframe-tags in template expansion of query results
-use SMW\Query\ResultPrinters\ResultPrinter;
-ResultPrinter::$maxRecursionDepth = 8;
+//\SMW\Query\ResultPrinters\ResultPrinter::$maxRecursionDepth = 8;
 
 # execute updates directly after page-save
 # cf. https://www.semantic-mediawiki.org/wiki/Deferred_updates

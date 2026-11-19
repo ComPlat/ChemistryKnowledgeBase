@@ -2,8 +2,11 @@
 
 namespace SMW\DataValues;
 
+use MediaWiki\Language\LanguageCode;
+use SMW\DataItems\Blob;
 use SMW\Localizer\Localizer;
-use SMWDIBlob as DIBlob;
+
+// phpcs:disable MediaWiki.Commenting.ClassAnnotations.UnrecognizedAnnotation
 
 /**
  * Handles a string value to adhere the BCP47 normative content declaration for
@@ -25,7 +28,7 @@ class LanguageCodeValue extends StringValue {
 	const TYPE_ID = '__lcode';
 
 	/**
-	 * nonstandardLanguageCodeMapping
+	 * @var array|null
 	 */
 	private $nonstandardLanguageCodeMapping;
 
@@ -34,7 +37,7 @@ class LanguageCodeValue extends StringValue {
 	 */
 	public function __construct( $typeid = '' ) {
 		parent::__construct( self::TYPE_ID );
-		$this->nonstandardLanguageCodeMapping = \LanguageCode::getNonstandardLanguageCodeMapping();
+		$this->nonstandardLanguageCodeMapping = LanguageCode::getNonstandardLanguageCodeMapping();
 	}
 
 	/**
@@ -42,7 +45,7 @@ class LanguageCodeValue extends StringValue {
 	 *
 	 * @param string $userValue
 	 */
-	protected function parseUserValue( $userValue ) {
+	protected function parseUserValue( $userValue ): void {
 		$languageCode = Localizer::asBCP47FormattedLanguageCode( $userValue );
 
 		if ( $languageCode === '' ) {
@@ -57,7 +60,7 @@ class LanguageCodeValue extends StringValue {
 		// their canonical form (e.g. de-x-formal to de-formal)
 		$mappedLanguageCode = array_search( $languageCode, $this->nonstandardLanguageCodeMapping ) ?: $languageCode;
 
-		if ( !$this->getOption( self::OPT_QUERY_CONTEXT ) && !Localizer::isKnownLanguageTag( $mappedLanguageCode ) ) {
+		if ( !$this->getOption( self::OPT_QUERY_CONTEXT ) && !$this->isKnownLanguageCode( $mappedLanguageCode ) ) {
 			$this->addErrorMsg( [
 				'smw-datavalue-languagecode-invalid',
 				$mappedLanguageCode
@@ -65,7 +68,20 @@ class LanguageCodeValue extends StringValue {
 			return;
 		}
 
-		$this->m_dataitem = new DIBlob( $mappedLanguageCode );
+		$this->m_dataitem = new Blob( $mappedLanguageCode );
+	}
+
+	/**
+	 * MediaWiki only knows a limited set of tags, so also accept a well-formed
+	 * BCP47 tag (e.g. ja-Latn-hepburn) when its primary language is known
+	 */
+	private function isKnownLanguageCode( string $languageCode ): bool {
+		if ( Localizer::isKnownLanguageTag( $languageCode ) ) {
+			return true;
+		}
+
+		return LanguageCode::isWellFormedLanguageTag( $languageCode ) &&
+			Localizer::isKnownLanguageTag( explode( '-', $languageCode )[0] );
 	}
 
 }

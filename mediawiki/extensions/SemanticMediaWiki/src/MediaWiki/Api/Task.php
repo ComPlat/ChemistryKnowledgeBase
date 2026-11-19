@@ -2,8 +2,13 @@
 
 namespace SMW\MediaWiki\Api;
 
-use ApiBase;
-use RequestContext;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Context\RequestContext;
+use SMW\DataItems\WikiPage;
+use SMW\Exception\DataItemException;
+use SMW\MediaWiki\Api\Tasks\Task as TaskHandler;
+use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * Module to support various tasks initiate using the API interface
@@ -17,7 +22,16 @@ class Task extends ApiBase {
 
 	const CACHE_NAMESPACE = 'smw:api:task';
 
-	private TaskFactory $taskFactory;
+	/**
+	 * @since 7.0.0
+	 */
+	public function __construct(
+		ApiMain $main,
+		string $action,
+		private readonly TaskFactory $taskFactory
+	) {
+		parent::__construct( $main, $action );
+	}
 
 	/**
 	 * @since 3.0
@@ -26,14 +40,14 @@ class Task extends ApiBase {
 	 *
 	 * @return string
 	 */
-	public static function makeCacheKey( $key ) {
+	public static function makeCacheKey( $key ): string {
 		return smwfCacheKey( self::CACHE_NAMESPACE, [ $key ] );
 	}
 
 	/**
 	 * @see ApiBase::execute
 	 */
-	public function execute() {
+	public function execute(): void {
 		$params = $this->extractRequestParams();
 
 		$parameters = json_decode(
@@ -45,8 +59,12 @@ class Task extends ApiBase {
 			$this->dieWithError( [ 'smw-api-invalid-parameters' ] );
 		}
 
-		$this->taskFactory = new TaskFactory();
 		$task = $this->taskFactory->newByType( $params['task'], $this->getUser() );
+
+		// Authorize before running. This module is not otherwise
+		// access-controlled: `needsToken( 'csrf' )` is satisfied by the public
+		// anonymous token and does not gate on rights.
+		$this->authorizeTask( $task, $parameters );
 
 		// If the `uselang` isn't set then inject the language from the
 		// logged-in user
@@ -69,48 +87,56 @@ class Task extends ApiBase {
 	}
 
 	/**
+	 * Authorize the caller for a task. A task that acts on a caller-supplied
+	 * page (via getAuthorizationSubject) is authorized against that specific
+	 * page, so a caller cannot drive the task for a title it may not edit
+	 * merely by holding a wiki-wide right. Every other task gates on its
+	 * global getRequiredPermission() right.
+	 */
+	private function authorizeTask( TaskHandler $task, array $parameters ): void {
+		$subject = $task->getAuthorizationSubject( $parameters );
+
+		if ( $subject === null ) {
+			$this->checkUserRightsAny( $task->getRequiredPermission() );
+		} else {
+			try {
+				$title = WikiPage::doUnserialize( $subject )->getTitle();
+			} catch ( DataItemException ) {
+				$title = null;
+			}
+
+			if ( $title === null ) {
+				$this->dieWithError( [ 'smw-api-invalid-parameters' ] );
+			}
+
+			if ( !$this->getAuthority()->authorizeWrite( 'edit', $title ) ) {
+				$this->dieWithError( 'apierror-permissiondenied-generic', 'permissiondenied' );
+			}
+		}
+
+		if ( !$task->requestedWorkIsPermitted( $parameters ) ) {
+			$this->dieWithError( 'apierror-permissiondenied-generic', 'permissiondenied' );
+		}
+	}
+
+	/**
 	 * @codeCoverageIgnore
 	 * @see ApiBase::getAllowedParams
 	 *
 	 * @return array
 	 */
-	public function getAllowedParams() {
-		$taskFactory = new TaskFactory();
-
+	public function getAllowedParams(): array {
 		return [
 			'task' => [
-				ApiBase::PARAM_REQUIRED => true,
-				ApiBase::PARAM_TYPE => $taskFactory->getAllowedTypes()
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => $this->taskFactory->getAllowedTypes(),
+				ApiBase::PARAM_HELP_MSG => 'apihelp-smwtask-param-task',
 			],
 			'params' => [
-				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				ApiBase::PARAM_HELP_MSG => 'apihelp-smwtask-param-params',
 			],
-		];
-	}
-
-	/**
-	 * @codeCoverageIgnore
-	 * @see ApiBase::getParamDescription
-	 *
-	 * @return array
-	 */
-	public function getParamDescription() {
-		return [
-			'task' => 'Defines the task type',
-			'params' => 'JSON encoded parameters that matches the selected type requirement'
-		];
-	}
-
-	/**
-	 * @codeCoverageIgnore
-	 * @see ApiBase::getDescription
-	 *
-	 * @return array
-	 */
-	public function getDescription() {
-		return [
-			'Semantic MediaWiki API module to invoke and execute tasks (for internal use only)'
 		];
 	}
 
@@ -118,7 +144,7 @@ class Task extends ApiBase {
 	 * @codeCoverageIgnore
 	 * @see ApiBase::needsToken
 	 */
-	public function needsToken() {
+	public function needsToken(): string {
 		return 'csrf';
 	}
 
@@ -126,7 +152,7 @@ class Task extends ApiBase {
 	 * @codeCoverageIgnore
 	 * @see ApiBase::mustBePosted
 	 */
-	public function mustBePosted() {
+	public function mustBePosted(): bool {
 		return true;
 	}
 
@@ -134,29 +160,16 @@ class Task extends ApiBase {
 	 * @codeCoverageIgnore
 	 * @see ApiBase::isWriteMode
 	 */
-	public function isWriteMode() {
+	public function isWriteMode(): bool {
 		return true;
 	}
 
 	/**
-	 * @codeCoverageIgnore
-	 * @see ApiBase::getExamples
-	 *
-	 * @return array
-	 */
-	protected function getExamples() {
-		return [
-			'api.php?action=smwtask&task=update&params={ "subject": "Foo" }',
-		];
-	}
-
-	/**
-	 * @codeCoverageIgnore
 	 * @see ApiBase::getExamplesMessages
 	 *
 	 * @return array
 	 */
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=smwtask&task=update&params={ "subject": "Foo" }'
 				=> 'smw-apihelp-smwtask-example-update'
@@ -169,18 +182,8 @@ class Task extends ApiBase {
 	 *
 	 * @return string
 	 */
-	public function getHelpUrls() {
+	public function getHelpUrls(): string {
 		return 'https://www.semantic-mediawiki.org/wiki/Help:API:smwtask';
-	}
-
-	/**
-	 * @codeCoverageIgnore
-	 * @see ApiBase::getVersion
-	 *
-	 * @return string
-	 */
-	public function getVersion() {
-		return __CLASS__ . ':' . SMW_VERSION;
 	}
 
 }

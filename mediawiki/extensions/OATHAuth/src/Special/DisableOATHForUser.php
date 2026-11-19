@@ -8,9 +8,9 @@ use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\OATHAuth\OATHUserRepository;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\Message\Message;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MWException;
@@ -23,17 +23,21 @@ class DisableOATHForUser extends FormSpecialPage {
 
 	private UserFactory $userFactory;
 
+	private CentralIdLookup $centralIdLookup;
+
 	/**
 	 * @param OATHUserRepository $userRepo
 	 * @param UserFactory $userFactory
+	 * @param CentralIdLookup $centralIdLookup
 	 */
-	public function __construct( $userRepo, $userFactory ) {
+	public function __construct( $userRepo, $userFactory, $centralIdLookup ) {
 		// messages used: disableoathforuser (display "name" on Special:SpecialPages),
 		// right-oathauth-disable-for-user, action-oathauth-disable-for-user
 		parent::__construct( 'DisableOATHForUser', 'oathauth-disable-for-user' );
 
 		$this->userRepo = $userRepo;
 		$this->userFactory = $userFactory;
+		$this->centralIdLookup = $centralIdLookup;
 	}
 
 	/**
@@ -71,13 +75,6 @@ class DisableOATHForUser extends FormSpecialPage {
 	 */
 	protected function getDisplayFormat() {
 		return 'ooui';
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function requiresUnblock() {
-		return false;
 	}
 
 	/**
@@ -130,19 +127,20 @@ class DisableOATHForUser extends FormSpecialPage {
 	 */
 	public function onSubmit( array $formData ) {
 		$user = $this->userFactory->newFromName( $formData['user'] );
-		if ( !$user || ( $user->getId() === 0 ) ) {
+		// T393253 - Check the username is valid, but don't check if it exists on the local wiki.
+		// Instead, check there is a valid central ID.
+		if ( !$user || $this->centralIdLookup->centralIdFromName( $formData['user'] ) === 0 ) {
 			return [ 'oathauth-user-not-found' ];
+		}
+
+		if ( $this->getUser()->pingLimiter( 'disableoath' ) ) {
+			return [ 'oathauth-throttled' ];
 		}
 
 		$oathUser = $this->userRepo->findByUser( $user );
 
 		if ( !$oathUser->isTwoFactorAuthEnabled() ) {
 			return [ 'oathauth-user-not-does-not-have-oath-enabled' ];
-		}
-
-		if ( $this->getUser()->pingLimiter( 'disableoath', 0 ) ) {
-			// Arbitrary duration given here
-			return [ 'oathauth-throttled', Message::durationParam( 60 ) ];
 		}
 
 		$this->userRepo->removeAll( $oathUser, $this->getRequest()->getIP(), false );

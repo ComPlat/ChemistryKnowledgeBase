@@ -5,11 +5,15 @@
 		]
 	},
 	"discussiontools-defaultsummary-reply": "Jawab",
+	"discussiontools-newtopic-missing-title": "Tulung bagi tajuk topik bincang {{GENDER:|kita}}.",
+	"discussiontools-newtopic-placeholder-title": "Tajuk",
 	"discussiontools-replylink": "{{GENDER:|jawab}}",
 	"discussiontools-replywidget-advanced": "Dapan",
 	"discussiontools-replywidget-cancel": "Kinsil",
 	"discussiontools-replywidget-mode-source": "Sumber",
 	"discussiontools-replywidget-mode-visual": "Visual",
+	"discussiontools-replywidget-newtopic": "{{GENDER:|Kasih tambah}} topik",
+	"discussiontools-replywidget-placeholder-newtopic": "Katarangan",
 	"discussiontools-replywidget-placeholder-reply": "{{GENDER:|Jawab}} {{BIDI:$1}}",
 	"discussiontools-replywidget-preview": "Nampak dulu",
 	"discussiontools-replywidget-reply": "{{GENDER:|Jawab}}",
@@ -24,5 +28,6 @@
 	"discussiontools-topicsubscription-button-unsubscribe-label": "Buang langgan",
 	"discussiontools-topicsubscription-notify-subscribed-body": "{{GENDER:|Kita}} akan dapat pemberitahuan tentang komen baru dalam tajuk ni.",
 	"discussiontools-topicsubscription-notify-subscribed-title": "{{GENDER:|Kita}} sudah langgan!",
+	"discussiontools-topicsubscription-notify-unsubscribed-body": "{{GENDER:|Kita}} ndak akan dapat bagitau tentang komen baru dalam topik ni.",
 	"discussiontools-topicsubscription-notify-unsubscribed-title": "{{GENDER:|Kita}} sudah buang langgan."
 }

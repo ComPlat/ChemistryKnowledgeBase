@@ -304,7 +304,7 @@ class TokenUtils {
 					}
 
 					// Process attributes
-					if ( isset( $t->attribs ) ) {
+					if ( $t->attribs !== null ) {
 						for ( $j = 0, $m = count( $t->attribs );  $j < $m;  $j++ ) {
 							$a = $t->attribs[$j];
 							if ( is_array( $a->k ) ) {
@@ -445,7 +445,8 @@ class TokenUtils {
 					break;
 
 				default:
-					throw new \InvalidArgumentException( '$s is not UTF-8' );
+					throw new \InvalidArgumentException(
+						bin2hex( $s ) . " (dumped via php bin2hex) is not valid UTF-8" );
 			}
 		}
 
@@ -493,7 +494,7 @@ class TokenUtils {
 			}
 		} );
 		self::convertOffsets( $s, $from, $to, $offsets );
-		self::collectOffsets( $tokens, static function ( $sr ) use ( &$offsets ) {
+		self::collectOffsets( $tokens, static function ( $sr ) {
 			if ( $sr instanceof DomSourceRange ) {
 				// Adjust widths back from being character offsets
 				if ( $sr->openWidth !== null ) {
@@ -635,6 +636,7 @@ class TokenUtils {
 				self::hasDOMFragmentType( $token )
 			) {
 				// Handle dom fragments
+				// @phan-suppress-next-line PhanTypeInvalidDimOffset
 				$domFragment = $opts['env']->getDOMFragment(
 					$token->dataParsoid->html
 				);

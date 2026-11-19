@@ -1,5 +1,6 @@
 <?php
 
+// phpcs:disable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
 namespace SMW\MediaWiki;
 
 use Collation;
@@ -19,42 +20,23 @@ class Collator {
 	const base64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	const base64hex = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
 
-	/**
-	 * @var Collator
-	 */
-	private static $instance = [];
-
-	/**
-	 * @var Collation
-	 */
-	private $collation;
-
-	/**
-	 * @var string
-	 */
-	private $collationName;
+	private static array $instance = [];
 
 	/**
 	 * @private
 	 *
 	 * @since 3.0
-	 *
-	 * @param Collation $collation
-	 * @param string $collationName
 	 */
-	public function __construct( Collation $collation, $collationName = '' ) {
-		$this->collation = $collation;
-		$this->collationName = $collationName;
+	public function __construct(
+		private readonly Collation $collation,
+		private $collationName = '',
+	) {
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string $collationName
-	 *
-	 * @return Collator
 	 */
-	public static function singleton( $collationName = '' ) {
+	public static function singleton( string $collationName = '' ): Collator {
 		$collationName = $collationName === '' ? $GLOBALS['smwgEntityCollation'] : $collationName;
 
 		if ( !isset( self::$instance[$collationName] ) ) {
@@ -77,12 +59,8 @@ class Collator {
 	 * bit-per-bit.
 	 *
 	 * @since 3.0
-	 *
-	 * @param string $text
-	 *
-	 * @return string
 	 */
-	public function armor( $text, $source = '' ) {
+	public function armor( string $text ): string {
 		if ( strpos( $this->collationName, 'uca' ) === false ) {
 			return $text;
 		}
@@ -93,24 +71,41 @@ class Collator {
 	/**
 	 * @since 3.0
 	 *
-	 * The output could be a binary string, it can be armored with the method `armor`.
-	 *
-	 * @param string $text
-	 *
-	 * @return string
+	 * The output could be a binary string, it can be armored with the method
+	 * `armor`. Input the collation cannot process is returned unchanged.
 	 */
-	public function getSortKey( $text ) {
-		return $this->collation->getSortKey( $text );
+	public function getSortKey( string $text ): string {
+		$sortKey = $this->collation->getSortKey( $text );
+
+		// `IcuCollation` delegates to intl, which returns `false` for input it
+		// cannot convert to UTF-16 — most notably a sort key it produced itself.
+		// Without weak mode coercing that to an empty string, every affected
+		// entity would compare equal to every other one.
+		if ( $sortKey === false ) {
+			return $text;
+		}
+
+		return $sortKey;
+	}
+
+	/**
+	 * Storage-safe sort key: the collation sort key of `$text`, armored so the
+	 * result is always valid UTF-8 (see `armor`).
+	 *
+	 * For `uca-*` collations the raw sort key is a binary blob that cannot be
+	 * stored in a text column such as Postgres `TEXT` (#7049); for the other
+	 * collations `armor` is a no-op and the value is returned unchanged.
+	 *
+	 * @since 7.2.0
+	 */
+	public function armoredSortKey( string $text ): string {
+		return $this->armor( $this->getSortKey( $text ) );
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string $text
-	 *
-	 * @return string
 	 */
-	public function getFirstLetter( $text ) {
+	public function getFirstLetter( string $text ): string {
 		// Add check otherwise the Collation instance returns with a
 		// "Uninitialized string offset: 0"
 		if ( $text === '' ) {
@@ -122,14 +117,11 @@ class Collator {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string $old
-	 * @param string $new
-	 *
-	 * @return bool
 	 */
-	public function isIdentical( $old, $new ) {
-		return $this->collation->getSortKey( $old ) === $this->collation->getSortKey( $new );
+	public function isIdentical( string $old, string $new ): bool {
+		// Through `getSortKey` so that input the collation rejects compares on
+		// its own text instead of every such value comparing equal
+		return $this->getSortKey( $old ) === $this->getSortKey( $new );
 	}
 
 }

@@ -14,10 +14,11 @@
 			"TomatoCake",
 			"Umherirrender",
 			"Kallichore",
-			"Woytecr"
+			"Woytecr",
+			"Kghbln"
 		]
 	},
-	"discussiontools": "Diskussions-Werkzeuge",
+	"discussiontools": "Discussion Tools",
 	"discussiontools-autotopicsubpopup-body": "Du erhältst eine Benachrichtigung, wenn jemand einen neuen Kommentar zu dieser Diskussion verfasst. Du kannst deine Benachrichtigungseinstellungen in den Einstellungen anpassen.",
 	"discussiontools-autotopicsubpopup-dismiss": "Okay, verstanden.",
 	"discussiontools-autotopicsubpopup-preferences": "Einstellungen bearbeiten",
@@ -79,7 +80,7 @@
 	"discussiontools-newtopicssubscription-notify-subscribed-title": "{{GENDER:|Du}} hast abonniert!",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-body": "{{GENDER:|Du}} erhältst keine Benachrichtigungen mehr, wenn auf dieser Seite neue Themen gestartet werden.",
 	"discussiontools-newtopicssubscription-notify-unsubscribed-title": "{{GENDER:|Du}} hast diese Benachrichtigung abbestellt.",
-	"discussiontools-notification-added-topic-header": "Neues Thema „<strong>$4</strong>“ erstellt am <strong>$3</strong> von $2.",
+	"discussiontools-notification-added-topic-header": "Neues Thema „<strong>$4</strong>“ erstellt auf <strong>$3</strong> von $2.",
 	"discussiontools-notification-added-topic-header-bundled": "{{PLURAL:$1|Ein neues Thema|$1 neue Themen|100=Über 99 neue Themen}} auf „<strong>$2</strong>“.",
 	"discussiontools-notification-added-topic-view": "Thema ansehen",
 	"discussiontools-notification-comment-thank-header": "$1 {{GENDER:$2|dankte}} {{GENDER:$4|dir}} für deinen Kommentar „<strong>$3</strong>“.",
@@ -116,7 +117,7 @@
 	"discussiontools-preference-newtopictool-help": "Zeigt dir ein Formular zum Hinzufügen neuer Abschnitte direkt auf der Seite an.",
 	"discussiontools-preference-replytool": "Schnelles Antworten aktivieren",
 	"discussiontools-preference-replytool-help": "Zeigt dir einen Link an, über den du mit einem Klick Kommentare auf Diskussionsseiten beantworten kannst.",
-	"discussiontools-preference-sourcemodetoolbar": "Aktivieren der Bearbeitungswerkzeuge im Wikitextmodus",
+	"discussiontools-preference-sourcemodetoolbar": "Bearbeitungswerkzeuge im Wikitextmodus aktivieren",
 	"discussiontools-preference-sourcemodetoolbar-help": "Fügt dem Quelltextmodus der Funktionen „Schnelles Antworten“ und „Schnelles Hinzufügen von Abschnitten“ eine Werkzeugleiste mit Schnellzugriffen zum Anpingen und Ergänzen von Links hinzu.",
 	"discussiontools-preference-summary": "Du kannst in der [https://www.mediawiki.org/wiki/Special:MyLanguage/Talk_pages_project/Feature_summary Zusammenfassung] mehr über diese Funktion erfahren.",
 	"discussiontools-preference-topicsubscription": "Abschnittsabonnement aktivieren",

@@ -3,10 +3,11 @@
 namespace SMW\Elastic\Indexer\Replication;
 
 use RuntimeException;
-use SMW\DIProperty;
+use SMW\DataItems\Property;
+use SMW\DataItems\Time;
 use SMW\Elastic\Connection\Client as ElasticClient;
 use SMW\Elastic\QueryEngine\FieldMapper;
-use SMWDITime as DITime;
+use SMW\SQLStore\EntityStore\EntityIdManager;
 
 /**
  * @license GPL-2.0-or-later
@@ -21,20 +22,12 @@ class ReplicationStatus {
 	 */
 	private $elasticClient;
 
-	/**
-	 * @var FieldMapper
-	 */
-	private $fieldMapper;
-
-	private ElasticClient $connection;
+	private FieldMapper $fieldMapper;
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param ElasticClient $connection
 	 */
-	public function __construct( ElasticClient $connection ) {
-		$this->connection = $connection;
+	public function __construct( private readonly ElasticClient $connection ) {
 		$this->fieldMapper = new FieldMapper();
 	}
 
@@ -55,6 +48,7 @@ class ReplicationStatus {
 			throw new RuntimeException( "`$key` as accessor is unknown!" );
 		}
 
+		// @phan-suppress-next-line PhanParamTooFewUnpack
 		return $this->{$key}( ...$args );
 	}
 
@@ -79,37 +73,97 @@ class ReplicationStatus {
 	 *
 	 * @param string $id
 	 *
-	 * @return
+	 * @return mixed[]
 	 */
-	private function modification_date_associated_revision( $id ) {
+	private function modification_date_associated_revision( $id ): array {
 		$params = [
 			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
 			'id'    => $id,
 		];
 
 		if ( !$this->connection->exists( $params ) ) {
-			return [ 'modification_date' => false, 'associated_revision' => 0 ];
+			return $this->newStatusFromSource( [] );
 		}
 
-		$pid = $this->fieldMapper->getPID( \SMW\SQLStore\EntityStore\EntityIdManager::$special_ids['_MDAT'] );
-		$field = $this->fieldMapper->getField( new DIProperty( '_MDAT' ) );
+		$doc = $this->connection->get( $params + [ '_source_includes' => $this->statusFields() ] );
 
-		$doc = $this->connection->get( $params + [ '_source_includes' => [ "$pid.$field", "subject.rev_id" ] ] );
+		return $this->newStatusFromSource( $doc['_source'] ?? [] );
+	}
 
-		if ( isset( $doc['_source'][$pid][$field] ) ) {
-			$date = end( $doc['_source'][$pid][$field] );
-			$modification_date = DITime::newFromJD( $date, DITime::CM_GREGORIAN, DITime::PREC_YMDT );
+	/**
+	 * Reads the existence, modification date and associated revision of each document in one request
+	 *
+	 * @since 7.4.1
+	 *
+	 * @param int[] $ids
+	 *
+	 * @return array<int, array{exists: bool, modification_date: Time|false, associated_revision: mixed}>
+	 */
+	public function getStatusOfDocuments( array $ids ): array {
+		$response = $this->connection->mget( [
+			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
+			'body' => [ 'ids' => array_values( $ids ) ],
+			'_source_includes' => $this->statusFields()
+		] );
+
+		$found = [];
+
+		foreach ( $response['docs'] ?? [] as $doc ) {
+			// For example, a shard that is unavailable
+			if ( isset( $doc['error'] ) ) {
+				throw new RuntimeException( "Reading document {$doc['_id']} failed: " . json_encode( $doc['error'] ) );
+			}
+
+			if ( $doc['found'] ?? false ) {
+				$found[(int)$doc['_id']] = $doc['_source'] ?? [];
+			}
+		}
+
+		$statuses = [];
+
+		foreach ( $ids as $id ) {
+			$statuses[$id] = [ 'exists' => isset( $found[$id] ) ] + $this->newStatusFromSource( $found[$id] ?? [] );
+		}
+
+		return $statuses;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function statusFields(): array {
+		[ $pid, $field ] = $this->modificationDateField();
+
+		return [ "$pid.$field", 'subject.rev_id' ];
+	}
+
+	/**
+	 * @return array{modification_date: Time|false, associated_revision: mixed}
+	 */
+	private function newStatusFromSource( array $source ): array {
+		[ $pid, $field ] = $this->modificationDateField();
+
+		if ( isset( $source[$pid][$field] ) ) {
+			$date = end( $source[$pid][$field] );
+			$modification_date = Time::newFromJD( $date, Time::CM_GREGORIAN, Time::PREC_YMDT );
 		} else {
 			$modification_date = false;
 		}
 
-		if ( isset( $doc['_source']['subject']['rev_id'] ) ) {
-			$associated_revision = $doc['_source']['subject']['rev_id'];
-		} else {
-			$associated_revision = 0;
-		}
+		return [
+			'modification_date' => $modification_date,
+			'associated_revision' => $source['subject']['rev_id'] ?? 0
+		];
+	}
 
-		return [ 'modification_date' => $modification_date, 'associated_revision' => $associated_revision ];
+	/**
+	 * @return string[] The property ID and the field that hold the modification date in a document
+	 */
+	private function modificationDateField(): array {
+		return [
+			$this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] ),
+			$this->fieldMapper->getField( new Property( '_MDAT' ) )
+		];
 	}
 
 	/**
@@ -117,10 +171,9 @@ class ReplicationStatus {
 	 *
 	 * @param string $id
 	 *
-	 * @return bool|DITime
 	 * @throws RuntimeException
 	 */
-	public function getModificationDate( $id ) {
+	public function getModificationDate( $id ): false|Time {
 		$params = [
 			'index' => $this->connection->getIndexName( ElasticClient::TYPE_DATA ),
 			'id'    => $id,
@@ -130,8 +183,8 @@ class ReplicationStatus {
 			return false;
 		}
 
-		$pid = $this->fieldMapper->getPID( \SMW\SQLStore\EntityStore\EntityIdManager::$special_ids['_MDAT'] );
-		$field = $this->fieldMapper->getField( new DIProperty( '_MDAT' ) );
+		$pid = $this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] );
+		$field = $this->fieldMapper->getField( new Property( '_MDAT' ) );
 
 		$doc = $this->connection->get( $params + [ '_source_includes' => [ "$pid.$field" ] ] );
 
@@ -139,10 +192,10 @@ class ReplicationStatus {
 			return false;
 		}
 
-		$dataItem = DITime::newFromJD(
+		$dataItem = Time::newFromJD(
 			end( $doc['_source'][$pid][$field] ),
-			DITime::CM_GREGORIAN,
-			DITime::PREC_YMDT
+			Time::CM_GREGORIAN,
+			Time::PREC_YMDT
 		);
 
 		return $dataItem;
@@ -177,7 +230,7 @@ class ReplicationStatus {
 	/**
 	 * @since 3.0
 	 */
-	private function refresh_interval() {
+	private function refresh_interval(): ?string {
 		$refresh_interval = null;
 
 		$settings = $this->connection->getSettings(
@@ -198,9 +251,9 @@ class ReplicationStatus {
 	/**
 	 * @since 3.0
 	 */
-	private function last_update() {
-		$pid = $this->fieldMapper->getPID( \SMW\SQLStore\EntityStore\EntityIdManager::$special_ids['_MDAT'] );
-		$field = $this->fieldMapper->getField( new DIProperty( '_MDAT' ) );
+	private function last_update(): string {
+		$pid = $this->fieldMapper->getPID( EntityIdManager::$special_ids['_MDAT'] );
+		$field = $this->fieldMapper->getField( new Property( '_MDAT' ) );
 
 		$params = $this->fieldMapper->exists( "$pid.$field" );
 
@@ -226,12 +279,12 @@ class ReplicationStatus {
 			}
 
 			foreach ( $result['hits'] as $key => $value ) {
-				foreach ( $value as $key => $v ) {
-					if ( $key === '_source' ) {
-						$time = DITime::newFromJD(
+				foreach ( $value as $k => $v ) {
+					if ( $k === '_source' ) {
+						$time = Time::newFromJD(
 							end( $v[$pid][$field] ),
-							DITime::CM_GREGORIAN,
-							DITime::PREC_YMDT
+							Time::CM_GREGORIAN,
+							Time::PREC_YMDT
 						);
 					}
 				}

@@ -2,7 +2,7 @@
 
 namespace SMW\MediaWiki\Api\Tasks;
 
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
 use SMW\Indicator\EntityExaminerIndicatorsFactory;
 use SMW\MediaWiki\Permission\PermissionExaminer;
 use SMW\MediaWiki\Permission\PermissionExaminerAware;
@@ -16,30 +16,25 @@ use SMW\Store;
  */
 class EntityExaminerTask extends Task implements PermissionExaminerAware {
 
-	/**
-	 * @var Store
-	 */
-	private $store;
-
-	/**
-	 * @var EntityExaminerIndicatorsFactory
-	 */
-	private $entityExaminerIndicatorsFactory;
-
-	/**
-	 * @var PermissionExaminer
-	 */
-	private $permissionExaminer;
+	private ?PermissionExaminer $permissionExaminer = null;
 
 	/**
 	 * @since 3.2
-	 *
-	 * @param Store $store
-	 * @param EntityExaminerIndicatorsFactory $entityExaminerIndicatorsFactory
 	 */
-	public function __construct( Store $store, EntityExaminerIndicatorsFactory $entityExaminerIndicatorsFactory ) {
-		$this->store = $store;
-		$this->entityExaminerIndicatorsFactory = $entityExaminerIndicatorsFactory;
+	public function __construct(
+		private readonly Store $store,
+		private readonly EntityExaminerIndicatorsFactory $entityExaminerIndicatorsFactory,
+	) {
+	}
+
+	/**
+	 * Runs on page views for any reader; per-indicator visibility is enforced
+	 * separately via the injected PermissionExaminer.
+	 *
+	 * @since 7.3.0
+	 */
+	public function getRequiredPermission(): string {
+		return 'read';
 	}
 
 	/**
@@ -48,7 +43,7 @@ class EntityExaminerTask extends Task implements PermissionExaminerAware {
 	 *
 	 * @param PermissionExaminer $permissionExaminer
 	 */
-	public function setPermissionExaminer( PermissionExaminer $permissionExaminer ) {
+	public function setPermissionExaminer( PermissionExaminer $permissionExaminer ): void {
 		$this->permissionExaminer = $permissionExaminer;
 	}
 
@@ -64,7 +59,7 @@ class EntityExaminerTask extends Task implements PermissionExaminerAware {
 			return [ 'done' => false ];
 		}
 
-		$subject = DIWikiPage::doUnserialize(
+		$subject = WikiPage::doUnserialize(
 			$parameters['subject']
 		);
 

@@ -16,7 +16,8 @@
 			"Tacsipacsi",
 			"Thibaut120094",
 			"Umherirrender",
-			"Verdy p"
+			"Verdy p",
+			"Stjn"
 		]
 	},
 	"skinname-vector": "{{name}}",
@@ -62,8 +63,8 @@
 	"vector-feature-custom-font-size-2-label": "Label for large font size.  An item in a list that has the title {{msg-mw|Vector-feature-custom-font-size-name}} and that includes the following items:\n* {{msg-mw|vector-feature-custom-font-size-0-label}}\n* {{msg-mw|vector-feature-custom-font-size-1-label}}\n* {{msg-mw|vector-feature-custom-font-size-2-label}}",
 	"skin-theme-name": "Label for setting that allows you to change theme. A title of a list that includes the following items:\n* {{msg-mw|skin-theme-os-label}}\n* {{msg-mw|skin-theme-day-label}}\n* {{msg-mw|skin-theme-night-label}}",
 	"skin-theme-description": "Description for dark/night mode.",
-	"skin-theme-day-label": "Label for light theme (standard mode). A title of a list that has the title {{msg-mw|skin-theme-name}}, and that includes the following items:\n* {{msg-mw|skin-theme-os-label}}\n* {{msg-mw|skin-theme-day-label}}\n* {{msg-mw|skin-theme-night-label}}",
-	"skin-theme-night-label": "Label for night theme (dark/night mode). \"Dark\" should be translated consistently with {{msg-mw|Skin-minerva-night-mode-launch-subtitle}}.",
+	"skin-theme-day-label": "Label for light theme (standard mode). A part of the list that has the title {{msg-mw|skin-theme-name}}, and that includes the following items:\n* {{msg-mw|skin-theme-os-label}}\n* {{msg-mw|skin-theme-day-label}}\n* {{msg-mw|skin-theme-night-label}}",
+	"skin-theme-night-label": "Label for night theme (dark/night mode). A part of the list that has the title {{msg-mw|skin-theme-name}}, and that includes the following items:\n* {{msg-mw|skin-theme-os-label}}\n* {{msg-mw|skin-theme-day-label}}\n* {{msg-mw|skin-theme-night-label}}",
 	"skin-theme-os-label": "Label for night theme (automatic mode which respects any operating system setting).",
 	"skin-theme-exclusion-notice": "Text that informs you that the page is always in light mode. The word \"light\" should be consistent with {{msg-mw|Skin-theme-day-label}}.",
 	"vector-search-loader": "Text to display below search input while the search suggestion module is loading",
@@ -72,7 +73,7 @@
 	"vector-toc-label": "Heading of table of contents\n\n{{Identical|Content}}",
 	"vector-toc-beginning": "Shown in the table of contents: Text of link to the beginning of the article.",
 	"vector-toc-toggle-button-label": "Used to label TOC section toggle buttons for screen readers\n\n* $1 – The name of the TOC section to show/hide",
-	"vector-anon-user-menu-pages": "Label describing the anon editor links in the anon user menu",
+	"vector-anon-user-menu-pages": "Label describing the logged out editor links in the anon user menu. Appears after clicking the three dots menu next to \"Log in\" at the top of the screen in Vector 2022 (on wikis where temporary accounts aren't enabled).\n\n[[File:Pages for logged out editors.png|200px]]",
 	"vector-anon-user-menu-pages-learn": "Lowercase text of link that goes to Help:Introduction and helps the user learn more about editing",
 	"vector-anon-user-menu-pages-label": "Accessible version of 'vector-anon-user-menu-pages' link text, prompts user to learn more about editing",
 	"vector-main-menu-tooltip": "Used as title attribute for main menu icon on hover.",

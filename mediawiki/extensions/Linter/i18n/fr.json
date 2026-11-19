@@ -19,7 +19,10 @@
 			"Urhixidur",
 			"Verdy p",
 			"Wladek92",
-			"Mahabarata"
+			"Mahabarata",
+			"EmDashUser002",
+			"Escargot bleu",
+			"Raveloaritiana Mamisoa"
 		]
 	},
 	"linterrors": "Erreurs d’analyse Lint",
@@ -37,7 +40,7 @@
 	"linter-category-fostered-transparent-desc": "Ces pages ont du contenu invisible et mal placé dans un tableau.",
 	"linter-category-html5-misnesting": "Balise mal imbriquée avec des rendus différents en HTML5 et HTML4",
 	"linter-category-html5-misnesting-desc": "Ces balises mal imbriquées auront des comportements différents en HTML5 par rapport à HTML4.",
-	"linter-category-night-mode-unaware-background-color": "Règle de style inline définie pour la couleur d'arrière-plan sans couleur de texte correspondante",
+	"linter-category-night-mode-unaware-background-color": "Règle de style inline définie pour la couleur d’arrière-plan sans couleur de texte correspondante",
 	"linter-category-night-mode-unaware-background-color-desc": "Ces pages ont des règles de style en ligne de couleur d'arrière-plan mais aucune couleur de texte correspondante, ce qui empêche le mode sombre de fonctionner",
 	"linter-category-misc-tidy-replacement-issues": "Problèmes divers",
 	"linter-category-misc-tidy-replacement-issues-desc": "Ces pages présentent d’autres problèmes qui font qu’elles sont rendues différemment de ce qu’elles étaient auparavant.",
@@ -89,10 +92,9 @@
 	"linter-heading-low-priority": "Priorité basse",
 	"linter-heading-medium-priority": "Priorité moyenne",
 	"linter-namespace-mismatch": "Les espaces de noms spécifiés dans la liste de sélection ne correspondent pas à celui fourni dans le texte du titre.",
-	"linter-numerrors": "($1 erreur{{PLURAL:$1||s}})",
+	"linter-numerrors": "($1 {{PLURAL:$1|erreur|erreurs}})",
 	"linter-page-edit": "modifier",
 	"linter-page-history": "historique",
-	"linter-page-title-edit": "$1 ($2)",
 	"linter-page-viewsource": "voir la source",
 	"linter-pager-bogus-image-options-details": "Option de fichier erronée",
 	"linter-pager-category-header": "Catégorie",

@@ -43,6 +43,8 @@
 	"vector-feature-custom-font-size-0-label": "Lita",
 	"vector-feature-custom-font-size-1-label": "Standard",
 	"vector-feature-custom-font-size-2-label": "Stor",
+	"skin-theme-name": "Farge",
+	"skin-theme-os-label": "Automatisk",
 	"vector-search-loader": "Hentar søkeforslag",
 	"vector-searchsuggest-containing": "Søk etter sider som inneheld <strong class=\"cdx-typeahead-search__search-footer__query\">$1</strong>",
 	"vector-intro-page": "Help:Introduksjon",
@@ -74,5 +76,6 @@
 	"vector-main-menu-unpinned-popup": "Hovudmenyen har flytta hit.",
 	"vector-appearance-unpinned-popup": "Utsjånadsmenyen har flytta hit.",
 	"vector-2022-beta-preview-label": "Lesetilgjenge (Vector 2022)",
-	"vector-2022-beta-preview-description": "Få tidleg tilgang til nye funksjonar for lesetilgjenge, som t.d. typografiske betringar og nattmodus."
+	"vector-2022-beta-preview-description": "Få tidleg tilgang til nye funksjonar for lesetilgjenge, som t.d. typografiske betringar og nattmodus.",
+	"vector-night-mode-issue-reporting-link-label": "Rapporter eit problem med mørk modus"
 }

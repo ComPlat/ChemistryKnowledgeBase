@@ -2,20 +2,23 @@
 
 namespace SMW\SPARQLStore\QueryEngine\DescriptionInterpreters;
 
-use SMW\DIProperty;
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\Export\Exporter;
 use SMW\Exporter\Element\ExpElement;
 use SMW\Exporter\Element\ExpNsResource;
 use SMW\Exporter\Serializer\TurtleSerializer;
 use SMW\Query\Language\Description;
 use SMW\Query\Language\SomeProperty;
+use SMW\Query\Language\ThingDescription;
+use SMW\SPARQLStore\QueryEngine\Condition\Condition;
 use SMW\SPARQLStore\QueryEngine\Condition\FalseCondition;
 use SMW\SPARQLStore\QueryEngine\Condition\FilterCondition;
 use SMW\SPARQLStore\QueryEngine\Condition\SingletonCondition;
 use SMW\SPARQLStore\QueryEngine\Condition\WhereCondition;
 use SMW\SPARQLStore\QueryEngine\ConditionBuilder;
 use SMW\SPARQLStore\QueryEngine\DescriptionInterpreter;
-use SMWDataItem as DataItem;
-use SMWExporter as Exporter;
+use UnexpectedValueException;
 
 /**
  * @license GPL-2.0-or-later
@@ -26,23 +29,12 @@ use SMWExporter as Exporter;
  */
 class SomePropertyInterpreter implements DescriptionInterpreter {
 
-	/**
-	 * @var ConditionBuilder
-	 */
-	private $conditionBuilder;
-
-	/**
-	 * @var Exporter
-	 */
-	private $exporter;
+	private Exporter $exporter;
 
 	/**
 	 * @since 2.1
-	 *
-	 * @param ConditionBuilder|null $conditionBuilder
 	 */
-	public function __construct( ?ConditionBuilder $conditionBuilder = null ) {
-		$this->conditionBuilder = $conditionBuilder;
+	public function __construct( private readonly ?ConditionBuilder $conditionBuilder = null ) {
 		$this->exporter = Exporter::getInstance();
 	}
 
@@ -51,7 +43,7 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function canInterpretDescription( Description $description ) {
+	public function canInterpretDescription( Description $description ): bool {
 		return $description instanceof SomeProperty;
 	}
 
@@ -60,15 +52,31 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 	 *
 	 * {@inheritDoc}
 	 */
-	public function interpretDescription( Description $description ) {
+	public function interpretDescription( Description $description ): Condition {
+		if ( !$description instanceof SomeProperty ) {
+			throw new UnexpectedValueException(
+				'Expected SomeProperty description'
+			);
+		}
+
 		$joinVariable = $this->conditionBuilder->getJoinVariable();
 		$orderByProperty = $this->conditionBuilder->getOrderByProperty();
 
 		$property = $description->getProperty();
+		$innerDescription = $description->getDescription();
+
+		if ( $this->isNegatedPropertyExistenceDescription( $innerDescription ) ) {
+			return $this->createConditionForNegatedPropertyExistence(
+				$description,
+				$property,
+				$joinVariable,
+				$orderByProperty
+			);
+		}
 
 		[ $innerOrderByProperty, $innerCondition, $innerJoinVariable ] = $this->doResolveInnerConditionRecursively(
 			$property,
-			$description->getDescription()
+			$innerDescription
 		);
 
 		if ( $innerCondition instanceof FalseCondition ) {
@@ -128,11 +136,143 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 		return $result;
 	}
 
-	private function doResolveInnerConditionRecursively( DIProperty $property, Description $description ) {
+	private function isNegatedPropertyExistenceDescription( Description $description ): bool {
+		return $description instanceof ThingDescription && $description->isNegation === true;
+	}
+
+	private function createConditionForNegatedPropertyExistence(
+		SomeProperty $description,
+		Property $property,
+		string $joinVariable,
+		$orderByProperty
+	): WhereCondition {
+		$namespaces = [];
+		$objectName = '?' . $this->conditionBuilder->getNextVariable();
+
+		[ $subjectName, $objectName, $nonInverseProperty ] = $this->doExchangeForWhenInversePropertyIsUsed(
+			$property,
+			$objectName,
+			$joinVariable
+		);
+
+		$propertyName = $this->findMostSuitablePropertyRepresentation(
+			$property,
+			$nonInverseProperty,
+			$namespaces
+		);
+
+		$absencePattern = 'FILTER NOT EXISTS {' . "\n" .
+			$this->createPropertyAbsencePattern(
+				$nonInverseProperty,
+				$subjectName,
+				$propertyName,
+				$objectName,
+				$description->getHierarchyDepth(),
+				$namespaces
+			) .
+			'}' . "\n";
+
+		// A bare FILTER NOT EXISTS does not bind its variable. When this
+		// condition binds the result variable, bind it to a graph pattern so the
+		// condition is self-contained (safe); otherwise it breaks inside a UNION
+		// branch (disjunction), or when a weak condition suppresses the base
+		// pattern that convertConditionToString() would otherwise inject.
+		// When nested inside a property chain the join variable is a fresh
+		// intermediate already bound by the enclosing property triple, so no
+		// binding is added: it would be redundant, and a shared binding variable
+		// would wrongly couple sibling chain conditions.
+		if ( $joinVariable === $this->conditionBuilder->getResultVariable() ) {
+			$swivtPageResource = $this->exporter->newExpNsResourceById( 'swivt', 'page' );
+			$condition = '?' . $joinVariable . ' ' . $swivtPageResource->getQName() . " ?url .\n" . $absencePattern;
+			$isSafe = true;
+		} else {
+			$condition = $absencePattern;
+			$isSafe = false;
+		}
+
+		$result = new WhereCondition( $condition, $isSafe, $namespaces );
+
+		$this->conditionBuilder->addOrderByDataForProperty(
+			$result,
+			$joinVariable,
+			$orderByProperty,
+			DataItem::TYPE_WIKIPAGE
+		);
+
+		return $result;
+	}
+
+	private function createPropertyAbsencePattern(
+		Property $property,
+		string $subjectName,
+		string $propertyName,
+		string $objectName,
+		$depth,
+		array &$namespaces
+	): string {
+		if ( !$this->canUsePropertyHierarchyInAbsencePattern( $property, $depth ) ) {
+			return "$subjectName $propertyName $objectName .\n";
+		}
+
+		[ $propertyByVariable, $subpropertyPathCondition, $subpropertyPathNamespaces ] = $this->createSubpropertyPathPattern(
+			$propertyName,
+			$depth
+		);
+		$namespaces = array_merge( $namespaces, $subpropertyPathNamespaces );
+
+		return $subpropertyPathCondition .
+			"$subjectName $propertyByVariable $objectName .\n";
+	}
+
+	private function createSubpropertyPathPattern( string $propertyName, $depth ): array {
+		$subPropExpElement = $this->exporter->getSpecialPropertyResource( '_SUBP', SMW_NS_PROPERTY );
+
+		// A discret depth other than 0 or 1 is difficult to achieve
+		// @see https://stackoverflow.com/questions/18126949/limit-the-sparql-query-result-to-first-level-in-hierarchy
+		// Path operator is defined as:
+		// - elt* ZeroOrMorePath
+		// - elt? ZeroOrOnePath
+		$pathOp = $depth > 1 || $depth === null ? '*' : '?';
+
+		$propertyByVariable = '?' . $this->conditionBuilder->getNextVariable( 'sp' );
+
+		return [
+			$propertyByVariable,
+			"$propertyByVariable " . $subPropExpElement->getQName() . "$pathOp $propertyName .\n",
+			[ $subPropExpElement->getNamespaceId() => $subPropExpElement->getNamespace() ]
+		];
+	}
+
+	private function canUsePropertyHierarchyInAbsencePattern( Property $property, $depth ): bool {
+		if ( !$this->canUsePropertyHierarchy( $property, $depth ) ) {
+			return false;
+		}
+
+		if ( $this->conditionBuilder->getHierarchyLookup() == null || !$this->conditionBuilder->getHierarchyLookup()->hasSubproperty( $property ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private function canUsePropertyHierarchy( Property $property, $depth ): bool {
+		if ( !$this->conditionBuilder->isSetFlag( SMW_SPARQL_QF_SUBP ) ) {
+			return false;
+		}
+
+		if ( !$property->isUserDefined() ) {
+			return false;
+		}
+
+		return $depth === null || $depth >= 1;
+	}
+
+	private function doResolveInnerConditionRecursively( Property $property, Description $description ): array {
 		$innerOrderByProperty = null;
 
+		$key = $property->getKey();
 		// Find out if we should order by the values of this property
-		if ( array_key_exists( $property->getKey(), $this->conditionBuilder->getSortKeys() ) ) {
+		if ( array_key_exists( $key, $this->conditionBuilder->getSortKeys() ) ) {
 			$innerOrderByProperty = $property;
 		}
 
@@ -149,7 +289,7 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 		return [ $innerOrderByProperty, $innerCondition, $innerJoinVariable ];
 	}
 
-	private function findObjectNameFromInnerCondition( $innerCondition, $innerJoinVariable, &$namespaces ) {
+	private function findObjectNameFromInnerCondition( $innerCondition, string $innerJoinVariable, array &$namespaces ): string {
 		if ( !$innerCondition instanceof SingletonCondition ) {
 			return '?' . $innerJoinVariable;
 		}
@@ -169,7 +309,7 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 		return $objectName;
 	}
 
-	private function findMostSuitablePropertyRepresentation( DIProperty $property, DIProperty $nonInverseProperty, &$namespaces ) {
+	private function findMostSuitablePropertyRepresentation( Property $property, Property $nonInverseProperty, array &$namespaces ) {
 		$redirectByVariable = $this->conditionBuilder->tryToFindRedirectVariableForDataItem(
 			$nonInverseProperty->getDiWikiPage()
 		);
@@ -195,10 +335,16 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 			$namespaces[$propertyExpElement->getNamespaceId()] = $propertyExpElement->getNamespace();
 		}
 
+		if ( $propertyExpElement === null ) {
+			throw new UnexpectedValueException(
+				'Expected ExpElement for property representation'
+			);
+		}
+
 		return TurtleSerializer::getTurtleNameForExpElement( $propertyExpElement );
 	}
 
-	private function doExchangeForWhenInversePropertyIsUsed( DIProperty $property, $objectName, $joinVariable ) {
+	private function doExchangeForWhenInversePropertyIsUsed( Property $property, string $objectName, string $joinVariable ): array {
 		$subjectName = '?' . $joinVariable;
 		$nonInverseProperty = $property;
 
@@ -207,13 +353,13 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 		if ( $property->isInverse() ) {
 			$subjectName = $objectName;
 			$objectName = '?' . $joinVariable;
-			$nonInverseProperty = new DIProperty( $property->getKey(), false );
+			$nonInverseProperty = new Property( $property->getKey(), false );
 		}
 
 		return [ $subjectName, $objectName, $nonInverseProperty ];
 	}
 
-	private function concatenateToConditionString( $subjectName, $propertyName, $objectName, $innerCondition ) {
+	private function concatenateToConditionString( $subjectName, $propertyName, $objectName, $innerCondition ): string {
 		$condition = "$subjectName $propertyName $objectName .\n";
 
 		$innerConditionString = $innerCondition->getCondition() . $innerCondition->getWeakConditionString();
@@ -235,26 +381,21 @@ class SomePropertyInterpreter implements DescriptionInterpreter {
 	 *
 	 * @see http://www.w3.org/TR/sparql11-query/#propertypath-arbitrary-length
 	 */
-	private function tryToAddPropertyPathForSaturatedHierarchy( &$condition, DIProperty $property, &$propertyName, $depth ) {
-		if ( !$this->conditionBuilder->isSetFlag( SMW_SPARQL_QF_SUBP ) || !$property->isUserDefined() || ( $depth !== null && $depth < 1 ) ) {
-			return null;
+	private function tryToAddPropertyPathForSaturatedHierarchy( &$condition, Property $property, &$propertyName, $depth ): void {
+		if ( !$this->canUsePropertyHierarchy( $property, $depth ) ) {
+			return;
 		}
 
 		if ( $this->conditionBuilder->getHierarchyLookup() == null || !$this->conditionBuilder->getHierarchyLookup()->hasSubproperty( $property ) ) {
-			return null;
+			return;
 		}
 
-		$subPropExpElement = $this->exporter->getSpecialPropertyResource( '_SUBP', SMW_NS_PROPERTY );
-
-		// A discret depth other than 0 or 1 is difficult to achieve
-		// @see https://stackoverflow.com/questions/18126949/limit-the-sparql-query-result-to-first-level-in-hierarchy
-		// Path operator is defined as:
-		// - elt* ZeroOrMorePath
-		// - elt? ZeroOrOnePath
-		$pathOp = $depth > 1 || $depth === null ? '*' : '?';
-
-		$propertyByVariable = '?' . $this->conditionBuilder->getNextVariable( 'sp' );
-		$condition->weakConditions[$propertyName] = "\n" . "$propertyByVariable " . $subPropExpElement->getQName() . "$pathOp $propertyName .\n" . "";
+		[ $propertyByVariable, $subpropertyPathCondition, $subpropertyPathNamespaces ] = $this->createSubpropertyPathPattern(
+			$propertyName,
+			$depth
+		);
+		$condition->namespaces = array_merge( $condition->namespaces, $subpropertyPathNamespaces );
+		$condition->weakConditions[$propertyName] = "\n" . $subpropertyPathCondition;
 		$propertyName = $propertyByVariable;
 	}
 

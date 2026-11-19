@@ -2,9 +2,11 @@
 
 namespace SMW\Tests\Utils;
 
+use MediaWiki\Content\TextContent;
+use MediaWiki\Title\Title;
 use SMW\Services\ServicesFactory;
-use Title;
 use UnexpectedValueException;
+use WikiPage;
 
 /**
  * @license GPL-2.0-or-later
@@ -26,7 +28,7 @@ class PageReader {
 	 * @throws UnexpectedValueException
 	 */
 	public function getPage() {
-		if ( $this->page instanceof \WikiPage ) {
+		if ( $this->page instanceof WikiPage ) {
 			return $this->page;
 		}
 
@@ -41,17 +43,17 @@ class PageReader {
 	 * @return text
 	 */
 	public function getContentAsText( Title $title ) {
-		$this->page = new \WikiPage( $title );
+		$this->page = new WikiPage( $title );
 		$content = $this->page->getContent();
 
-		return $content->getNativeData();
+		return $content instanceof TextContent ? $content->getText() : '';
 	}
 
 	/**
 	 * @since 2.2
 	 */
 	public function getEditInfo( Title $title ) {
-		$this->page = new \WikiPage( $title );
+		$this->page = new WikiPage( $title );
 
 		$editInfo = ServicesFactory::getInstance()->newMwCollaboratorFactory()->newEditInfo(
 			$this->getPage()

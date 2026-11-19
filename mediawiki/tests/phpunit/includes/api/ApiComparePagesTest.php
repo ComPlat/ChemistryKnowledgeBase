@@ -138,8 +138,6 @@ class ApiComparePagesTest extends ApiTestCase {
 			],
 			'comment' => 'Test for ApiComparePages',
 		] );
-
-		Title::clearCaches(); // Otherwise it has the wrong latest revision for some reason
 	}
 
 	protected function doReplacements( &$value ) {
@@ -406,7 +404,7 @@ class ApiComparePagesTest extends ApiTestCase {
 					]
 				],
 			],
-			'Basic diff, text with revision and PST' => [
+			'Basic diff, text with revision and PST as sysop' => [
 				[
 					'fromslots' => 'main',
 					'fromtext-main' => 'From text',
@@ -422,6 +420,7 @@ class ApiComparePagesTest extends ApiTestCase {
 							. '<tr><td class="diff-marker" data-marker="−"></td><td class="diff-deletedline diff-side-deleted"><div><del class="diffchange diffchange-inline">From </del>text</div></td><td class="diff-marker" data-marker="+"></td><td class="diff-addedline diff-side-added"><div><ins class="diffchange diffchange-inline">To </ins>text <ins class="diffchange diffchange-inline">ApiComparePagesTest B</ins></div></td></tr>' . "\n",
 					]
 				],
+				false, true
 			],
 			'Basic diff, text with deleted revision and PST' => [
 				[
@@ -772,7 +771,7 @@ class ApiComparePagesTest extends ApiTestCase {
 					]
 				],
 			],
-			'Basic diff, deprecated text with revision and PST' => [
+			'Basic diff, deprecated text with revision and PST as sysop' => [
 				[
 					'fromtext' => 'From text',
 					'torev' => '{{REPL:revB2}}',
@@ -787,6 +786,7 @@ class ApiComparePagesTest extends ApiTestCase {
 							. '<tr><td class="diff-marker" data-marker="−"></td><td class="diff-deletedline diff-side-deleted"><div><del class="diffchange diffchange-inline">From </del>text</div></td><td class="diff-marker" data-marker="+"></td><td class="diff-addedline diff-side-added"><div><ins class="diffchange diffchange-inline">To </ins>text <ins class="diffchange diffchange-inline">ApiComparePagesTest B</ins></div></td></tr>' . "\n",
 					]
 				],
+				false, true
 			],
 			'Basic diff, deprecated text with deleted revision and PST' => [
 				[
@@ -1074,5 +1074,48 @@ class ApiComparePagesTest extends ApiTestCase {
 			// @todo Add a test for using 'tosection-foo' without 'totext-foo' (can't do it with main)
 		];
 		// phpcs:enable
+	}
+
+	/**
+	 * Assert that read access restrictions are enforced (T397521).
+	 */
+	public function testNoReadAccess() {
+		$this->overrideConfigValue( MainConfigNames::DiffEngine, 'php' );
+
+		$params = [
+			'fromrev' => '{{REPL:revA2}}',
+			'torelative' => 'cur',
+			'prop' => 'ids',
+			'action' => 'compare',
+			'errorformat' => 'none',
+		];
+
+		$this->doReplacements( $params );
+
+		$performer = static::getTestUser()->getAuthority();
+
+		// Emulate access restrictions as implemented by Lockdown and similar
+		// extensions.
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( $title, $user, $action, &$result ) {
+				if ( $action === 'read' ) {
+					$result = 'badaccess-group0';
+					return false;
+				}
+
+				return true;
+			}
+		);
+
+		$expectedCode = 'permissiondenied';
+
+		try {
+			$this->doApiRequest( $params, null, false, $performer );
+			$this->fail( 'Expected exception not thrown' );
+		} catch ( ApiUsageException $ex ) {
+			$this->assertApiErrorCode( $expectedCode, $ex,
+				"Exception with code $expectedCode" );
+		}
 	}
 }

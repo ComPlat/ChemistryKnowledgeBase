@@ -127,7 +127,6 @@ abstract class SiteConfig {
 		if ( is_string( $configOrSpec ) || isset( $configOrSpec['class'] ) || isset( $configOrSpec['factory'] ) ) {
 			// Treat this as an object factory spec for an ExtensionModule
 			// ObjectFactory::createObject accepts an array, not just a callable (phan bug)
-			// @phan-suppress-next-line PhanTypeInvalidCallableArraySize
 			$module = $this->getObjectFactory()->createObject( $configOrSpec, [
 				'allowClassName' => true,
 				'assertClass' => ExtensionModule::class,
@@ -450,7 +449,10 @@ abstract class SiteConfig {
 	 * @return string
 	 */
 	public function ucfirst( string $str ): string {
-		$o = ord( $str );
+		if ( $str === '' ) {
+			return '';
+		}
+		$o = ord( $str[0] );
 		if ( $o < 96 ) { // if already uppercase...
 			return $str;
 		} elseif ( $o < 128 ) {
@@ -1202,7 +1204,15 @@ abstract class SiteConfig {
 		$pats = [
 			'ISBN' => '(?:\.\.?/)*(?i:' . $nsAliases . ')(?:%3[Aa]|:)'
 				. '(?i:' . $pageAliases . ')(?:%2[Ff]|/)(?P<ISBN>\d+[Xx]?)',
-			'RFC' => '[^/]*//tools\.ietf\.org/html/rfc(?P<RFC>\w+)',
+			// Recently the target url for RFCs changed from
+			// tools.ietf.org to datatracker.ietf.org/docs.
+			// Given edit stash storage on Wikimedia wikis, we need to retain the
+			// old mapping to ensure html->wt can handle that HTML properly
+			// But, 3rd party wikis with Parsoid HTML in their caches will also
+			// need this b/c support for much longer. Once the MW LTS release with
+			// tools.ietf.org EOLs, we can remove the tools.ietf.org string here.
+			// T382963 tracks the eventual removal of this b/c.
+			'RFC' => '[^/]*//(?:datatracker\.ietf\.org/doc|tools\.ietf\.org)/html/rfc(?P<RFC>\w+)',
 			'PMID' => '[^/]*//www\.ncbi\.nlm\.nih\.gov/pubmed/(?P<PMID>\w+)\?dopt=Abstract',
 		];
 		// T145590: remove patterns for disabled magic links

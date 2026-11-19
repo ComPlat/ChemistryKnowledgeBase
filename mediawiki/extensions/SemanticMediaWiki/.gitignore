@@ -15,14 +15,17 @@ vendor/
 extensions/
 build/logs/
 build/release/build-*
+node_modules/
+coverage/
+.nyc_output/
 
 composer.phar
 composer.lock
 
 .idea/
 .smw.json
+.smw.json.migrated
 .phpunit.result.cache
-src/Tesa/.phpunit.result.cache
 
 composer
 installer

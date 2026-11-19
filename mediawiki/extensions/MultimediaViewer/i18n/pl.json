@@ -16,7 +16,8 @@
 			"Railfail536",
 			"SemanticPioneer",
 			"Tar Lócesilion",
-			"WTM"
+			"WTM",
+			"PanWor"
 		]
 	},
 	"multimediaviewer-desc": "Powiększ miniatury ilustracji do wielkości ekranu",
@@ -25,6 +26,7 @@
 	"multimediaviewer-repository-local": "Więcej szczegółów",
 	"multimediaviewer-datetime-created": "Utworzony: $1",
 	"multimediaviewer-datetime-uploaded": "Przesłany: $1",
+	"multimediaviewer-credit": "$1 – $2",
 	"multimediaviewer-credit-fallback": "Pokaż informacje o autorze",
 	"multimediaviewer-multiple-authors": "{{PLURAL:$1|jeden inny autor|$1 innych autorów}}",
 	"multimediaviewer-multiple-authors-combine": "$1 i $2",
@@ -33,7 +35,6 @@
 	"multimediaviewer-thumbnail-error": "Niestety, nie można wyświetlić pliku",
 	"multimediaviewer-thumbnail-error-description": "Wygląda na to, że mamy problem techniczny. Możesz $1, jeśli będzie nadal występował. Błąd: $2",
 	"multimediaviewer-thumbnail-error-retry": "ponowić próbę",
-	"multimediaviewer-thumbnail-error-report": "zgłosić problem",
 	"multimediaviewer-license-cc-pd": "Domena publiczna",
 	"multimediaviewer-license-pd": "Domena publiczna",
 	"multimediaviewer-license-default": "Zobacz licencję",
@@ -56,6 +57,7 @@
 	"multimediaviewer-restriction-trademarked": "Ten obraz zawiera treści, które mogą podlegać prawom dotyczącym znaków towarowych.",
 	"multimediaviewer-restriction-default": "Ten obraz może być ograniczony przepisami prawa poza prawem autorskim. Szczegółowe informacje można znaleźć na stronie opisu pliku.",
 	"multimediaviewer-restriction-default-and-others": "Ten obraz może być dodatkowo ograniczony przez inne przepisy prawne poza prawem autorskim. Szczegółowe informacje można znaleźć na stronie opisu pliku.",
+	"multimediaviewer-geoloc-coord": "$1°$2′$3″$4",
 	"multimediaviewer-geolocation": "Położenie: $1",
 	"multimediaviewer-reuse-link": "Podziel się tym plikiem lub umieść go",
 	"multimediaviewer-reuse-loading-placeholder": "Wczytywanie…",
@@ -94,7 +96,7 @@
 	"multimediaviewer-description-page-button-text": "Więcej szczegółów o pliku",
 	"multimediaviewer-description-page-popup-text": "Więcej szczegółów na temat tego pliku $1",
 	"multimediaviewer-commons-subtitle": "Repozytorium wolnych mediów",
-	"multimediaviewer-view-expanded": "Otwórz w Media Viewer",
+	"multimediaviewer-view-expanded": "Otwórz w przeglądarce multimediów",
 	"multimediaviewer-view-config": "Konfiguracja",
 	"multimediaviewer-close-popup-text": "Zamknij narzędzie (Esc)",
 	"multimediaviewer-fullscreen-popup-text": "Pokaż w trybie pełnoekranowym",
@@ -112,8 +114,8 @@
 	"multimediaviewer-copy-button": "Kopiuj",
 	"multimediaviewer-download-attribution-copy": "Zaznacz o skopiuj (jeżeli wspierane) tekst autorstwa tego pliku",
 	"multimediaviewer-reuse-warning-deletion": "Ten plik jest rozważany do usunięcia.",
-	"multimediaviewer-reuse-warning-nonfree": "Ten plik nie posiada wolnej licencji.",
-	"multimediaviewer-reuse-warning-noattribution": "Ten plik nie posiada żadnych informacji dotyczących autorstwa.",
+	"multimediaviewer-reuse-warning-nonfree": "Ten plik nie ma wolnej licencji.",
+	"multimediaviewer-reuse-warning-noattribution": "Ten plik nie zawiera żadnych informacji dotyczących autorstwa.",
 	"multimediaviewer-reuse-warning-generic": "Przed użyciem sprawdź [$1 jego szczegóły].",
 	"multimediaviewer-attr-plain": "Zwykły tekst",
 	"multimediaviewer-disable-confirmation-header": "Wyłączyłeś Media Viewer",
@@ -126,6 +128,5 @@
 	"multimediaviewer-enable-alert": "Media Viewer jest wyłączony",
 	"multimediaviewer-disable-info-title": "Wyłączyłeś Media Viewer",
 	"multimediaviewer-disable-info": "Wciąż możesz oglądać poszczególne pliki za pomocą Media Viewera",
-	"multimediaviewer-errorreport-privacywarning": "Szczegóły błędu są dołączane do zgłoszenia, które będzie publicznie widoczne. Jeśli nie czujesz się z tym komfortowo, możesz zmodyfikować swoje zgłoszenie i usunąć dane, których nie chcesz udostępniać.",
 	"multimediaviewer-loading": "Wczytywanie przeglądarki multimediów."
 }

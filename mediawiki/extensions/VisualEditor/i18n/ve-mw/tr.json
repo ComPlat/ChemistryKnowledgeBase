@@ -39,7 +39,8 @@
 			"TurkishStyles",
 			"Uncitoyen",
 			"Uğurkent",
-			"Violetanka"
+			"Violetanka",
+			"Vito Genovese"
 		]
 	},
 	"collabpad-doctitle": "CollabPad: $1",
@@ -70,8 +71,8 @@
 	"visualeditor-ca-createlocaldescriptionsource": "Yerel açıklama kaynağı ekle",
 	"visualeditor-ca-createsource": "Kaynak oluştur",
 	"visualeditor-ca-editlocaldescriptionsource": "Yerel açıklama kaynağını düzenle",
-	"visualeditor-ca-editsource": "Kaynağı değiştir",
-	"visualeditor-ca-editsource-section": "kaynağı değiştir",
+	"visualeditor-ca-editsource": "Kaynağı düzenle",
+	"visualeditor-ca-editsource-section": "kaynağı düzenle",
 	"visualeditor-ca-editsource-section-hint": "Bölümün kaynak kodunu değiştir: $1",
 	"visualeditor-categories-tool": "Kategoriler",
 	"visualeditor-changedesc-mwcategory-sortkey-changed": "Sıralama anahtarı $1 iken $2 olarak değiştirildi",
@@ -206,7 +207,7 @@
 	"visualeditor-dialog-transclusion-back-confirmation-prompt": "Aramaya geri dönülsün mü? Değişiklikleriniz kaybolacak ve bu geri alınamaz.",
 	"visualeditor-dialog-transclusion-close-confirmation-prompt": "Şablon düzenleyici kapatılsın mı? Değişiklikleriniz kaybolacak ve bu geri alınamaz.",
 	"visualeditor-dialog-transclusion-collapse-options": "Seçenekleri gizle",
-	"visualeditor-dialog-transclusion-confirmation-discard": "Düzenlemeleri sil",
+	"visualeditor-dialog-transclusion-confirmation-discard": "Değişiklikleri sil",
 	"visualeditor-dialog-transclusion-confirmation-reject": "Düzenlemeye devam et",
 	"visualeditor-dialog-transclusion-contextitem-description": "Oluşturulan: $1",
 	"visualeditor-dialog-transclusion-contextitem-loading": "Yükleniyor...",
@@ -379,7 +380,7 @@
 	"visualeditor-savedialog-title-save": "Değişikliklerinizi kaydedin",
 	"visualeditor-section-body-placeholder": "Yeni bölüm",
 	"visualeditor-section-title-placeholder": "Konu",
-	"visualeditor-loaderror-revidconflict": "Sunucu tarafından döndürülen düzeltme kimlikleri eşleşmiyor (belge: $1, meta veri: $2)",
+	"visualeditor-loaderror-revidconflict": "Sunucu tarafından döndürülen düzeltme kimlikleri eşleşmiyor (belge: $1, üstveri: $2)",
 	"visualeditor-loaderror-wrongmode": "Düzenleyiciyi yanlış modda yüklemeyi denedi (veri türü: \"$1\", düzenleyici modu: \"$2\").",
 	"visualeditor-settings-tool": "Sayfa ayarları",
 	"visualeditor-special-characters-group-other": "Sık kullanılan",

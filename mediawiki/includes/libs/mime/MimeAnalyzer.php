@@ -438,7 +438,7 @@ class MimeAnalyzer implements LoggerAwareInterface {
 			'svg',
 
 			// 3D formats
-			'stl',
+			'stl', 'glb',
 		];
 		return in_array( strtolower( $extension ), $types );
 	}
@@ -588,6 +588,9 @@ class MimeAnalyzer implements LoggerAwareInterface {
 			'%PDF'             => 'application/pdf',
 			'gimp xcf'         => 'image/x-xcf',
 
+			// 3D
+			"glTF"             => 'model/gltf-binary',
+
 			// Some forbidden fruit...
 			'MZ'               => 'application/octet-stream', // DOS/Windows executable
 			"\xca\xfe\xba\xbe" => 'application/octet-stream', // Mach-O binary
@@ -609,8 +612,8 @@ class MimeAnalyzer implements LoggerAwareInterface {
 				// Next byte is datasize, then data (sizes larger than 1 byte are stupid muxers)
 				$data = substr( $head16k, $doctype + 3, 8 );
 				if ( str_starts_with( $data, "matroska" ) ) {
-					$this->logger->info( __METHOD__ . ": recognized file as video/x-matroska" );
-					return "video/x-matroska";
+					$this->logger->info( __METHOD__ . ": recognized file as video/matroska" );
+					return "video/matroska";
 				}
 
 				if ( str_starts_with( $data, "webm" ) ) {

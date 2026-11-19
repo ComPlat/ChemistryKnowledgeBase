@@ -30,6 +30,26 @@
 		{
 			"page": "Example/P0212/5",
 			"contents": "[[P106::@@@ko|#]]"
+		},
+		{
+			"page": "Example/P0212/6",
+			"contents": "[[P106::@@@]]"
+		},
+		{
+			"page": "Example/P0212/7",
+			"contents": "[[P106::@@@|WithCaption]]"
+		},
+		{
+			"page": "Example/P0212/8",
+			"contents": "[[Has date::@@@|#]]"
+		},
+		{
+			"page": "Example/P0212/9",
+			"contents": "[[Has nonexistent property::@@@]]"
+		},
+		{
+			"page": "Example/P0212/10",
+			"contents": "[[Fo%o::@@@]]"
 		}
 	],
 	"tests": [
@@ -39,8 +59,8 @@
 			"subject": "Example/P0212/1",
 			"assert-output": {
 				"to-contain": [
-					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\">",
-					"<span class=\"smwttcontent\">Some text with a link to <a rel=\"nofollow\" class=\"external text\" href=\"http://example.org/\">foo</a> and &lt;li&gt;stripped `li` in title element&lt;/li&gt;</span>",
+					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\" data-content=\"",
+					"data-content=\"&lt;p&gt;Some text with a link to &lt;a rel=&quot;nofollow&quot; class=&quot;external text&quot; href=&quot;http://example.org/&quot;&gt;foo&lt;/a&gt;", "<span class=\"smwttcontent\"></span>",
 					"title=\"Property:Has date\">Has date</a>"
 				]
 			}
@@ -51,8 +71,8 @@
 			"subject": "Example/P0212/2",
 			"assert-output": {
 				"to-contain": [
-					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\">",
-					"<span class=\"smwttcontent\">Some text with a link to <a rel=\"nofollow\" class=\"external text\" href=\"http://example.org/\">foo</a> and &lt;li&gt;stripped `li` in title element&lt;/li&gt;</span>",
+					"<span class=\"smw-highlighter\" data-type=\"1\" data-state=\"inline\" data-title=\"Property\" title=\"Some text with a link to foo and stripped `li` in title element\" data-content=\"",
+					"data-content=\"&lt;p&gt;Some text with a link to &lt;a rel=&quot;nofollow&quot; class=&quot;external text&quot; href=&quot;http://example.org/&quot;&gt;foo&lt;/a&gt;", "<span class=\"smwttcontent\"></span>",
 					"title=\"Property:Has date\">With extra caption</a>"
 				]
 			}
@@ -63,7 +83,7 @@
 			"subject": "Example/P0212/3",
 			"assert-output": {
 				"to-contain": [
-					"<span class=\"smw-property\">.*title=\"Property:P106\">職業</a></span></span><span class=\"smwttcontent\">人物の職業。「専門分野」</span></span>&#160;<span title=\"P106\"><sup>ᵖ</sup>"
+					"<span class=\"smw-property\">.*title=\"Property:P106\">職業</a></span></span><span class=\"smwttcontent\"></span></span>&#160;<span title=\"P106\"><sup>ᵖ</sup>", "data-content=\"人物の職業。「専門分野」\""
 				]
 			}
 		},
@@ -73,7 +93,7 @@
 			"subject": "Example/P0212/4",
 			"assert-output": {
 				"to-contain": [
-					"<span class=\"smw-property\">.*title=\"Property:P106\">WithCaption</a></span></span><span class=\"smwttcontent\">대상 인물의 직업</span></span>"
+					"<span class=\"smw-property\">.*title=\"Property:P106\">WithCaption</a></span></span><span class=\"smwttcontent\"></span></span>", "data-content=\"대상 인물의 직업\""
 				]
 			}
 		},
@@ -83,7 +103,60 @@
 			"subject": "Example/P0212/5",
 			"assert-output": {
 				"to-contain": [
-					"<span class=\"smw-highlighter\" .* title=\"대상 인물의 직업\"><span class=\"smwtext\"><span class=\"smw-property nolink\">직업</span></span><span class=\"smwttcontent\">대상 인물의 직업</span></span>&#160;<span title=\"P106\"><sup>ᵖ</sup></span>"
+					"<span class=\"smw-highlighter\" .* title=\"대상 인물의 직업\" data-content=\"대상 인물의 직업\"><span class=\"smwtext\"><span class=\"smw-property nolink\">직업</span></span><span class=\"smwttcontent\"></span></span>&#160;<span title=\"P106\"><sup>ᵖ</sup></span>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#5 plain `@@@` on a property with preferred labels resolves the label by user language",
+			"subject": "Example/P0212/6",
+			"assert-output": {
+				"to-contain": [
+					"title=\"Property:P106\">occupation</a>",
+					"<span title=\"P106\"><sup>ᵖ</sup>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#6 caption overrides the preferred label",
+			"subject": "Example/P0212/7",
+			"assert-output": {
+				"to-contain": [
+					"title=\"Property:P106\">WithCaption</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#7 (no link) with tooltip from the property description",
+			"subject": "Example/P0212/8",
+			"assert-output": {
+				"to-contain": [
+					"<span class=\"smw-property nolink\">Has date</span>",
+					"data-content=\"&lt;p&gt;Some text with a link to"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#8 nonexistent property renders a red link",
+			"subject": "Example/P0212/9",
+			"assert-output": {
+				"to-contain": [
+					"class=\"new\"",
+					"title=\"Property:Has nonexistent property (page does not exist)\">Has nonexistent property</a>"
+				]
+			}
+		},
+		{
+			"type": "parser",
+			"about": "#9 invalid property name renders nothing",
+			"subject": "Example/P0212/10",
+			"assert-output": {
+				"to-contain": [
+					"<div class=\"mw-content-ltr mw-parser-output\" lang=\"en\" dir=\"ltr\"></div>"
 				]
 			}
 		}
@@ -93,9 +166,6 @@
 		"wgLang": "en"
 	},
 	"meta": {
-		"skip-on": {
-			"mysql": "Failed assertions, check implementation of MediaWikiIntegrationTestCase."
-		},
 		"version": "2",
 		"is-incomplete": false,
 		"debug": false

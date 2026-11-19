@@ -2,20 +2,22 @@
 
 namespace SMW\Elastic\Indexer;
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Content\TextContent;
+use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use Onoi\MessageReporter\MessageReporterAwareTrait;
 use Psr\Log\LoggerAwareTrait;
 use RuntimeException;
-use SMW\DIWikiPage;
-use SMW\Elastic\Connection\Client as ElasticClient;
+use SMW\DataItems\WikiPage;
+use SMW\Elastic\Connection\Client;
 use SMW\Elastic\Jobs\IndexerRecoveryJob;
 use SMW\MediaWiki\Collator;
 use SMW\MediaWiki\RevisionGuardAwareTrait;
 use SMW\Store;
 use SMW\Utils\Timer;
-use Title;
 
 /**
  * @license GPL-2.0-or-later
@@ -34,91 +36,57 @@ class Indexer {
 	 */
 	const REQUIRE_SAFE_REPLICATION = 'replication/safe';
 
-	/**
-	 * @var Store
-	 */
-	private $store;
+	private ?FileIndexer $fileIndexer = null;
 
-	/**
-	 * @var Bulk
-	 */
-	private $bulk;
+	private string $origin = '';
 
-	/**
-	 * @var FileIndexer
-	 */
-	private $fileIndexer;
+	private bool $isRebuild = false;
 
-	/**
-	 * @var string
-	 */
-	private $origin = '';
-
-	/**
-	 * @var bool
-	 */
-	private $isRebuild = false;
-
-	/**
-	 * @var
-	 */
-	private $versions = [];
+	private array $versions = [];
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param Store $store
-	 * @param Bulk $bulk
 	 */
-	public function __construct( Store $store, Bulk $bulk ) {
-		$this->store = $store;
-		$this->bulk = $bulk;
+	public function __construct(
+		private Store $store,
+		private Bulk $bulk,
+		private readonly TitleFactory $titleFactory,
+		private readonly RevisionLookup $revisionLookup,
+	) {
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param $versions
 	 */
-	public function setVersions( array $versions ) {
+	public function setVersions( array $versions ): void {
 		$this->versions = $versions;
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string $origin
 	 */
-	public function setOrigin( $origin ) {
+	public function setOrigin( string $origin ): void {
 		$this->origin = $origin;
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param DIWikiPage $dataItem
-	 *
-	 * @return string
 	 */
-	public function getId( DIWikiPage $dataItem ) {
+	public function getId( WikiPage $dataItem ): int {
 		return $this->store->getObjectIds()->getId( $dataItem );
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @return bool
 	 */
-	public function isAccessible() {
+	public function isAccessible(): bool {
 		return $this->canReplicate();
 	}
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param bool $isRebuild
 	 */
-	public function isRebuild( $isRebuild = true ) {
+	public function isRebuild( bool $isRebuild = true ): void {
 		$this->isRebuild = $isRebuild;
 	}
 
@@ -133,12 +101,8 @@ class Indexer {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param string $type
-	 *
-	 * @return string
 	 */
-	public function getIndexName( $type ) {
+	public function getIndexName( string $type ): string {
 		$index = $this->store->getConnection( 'elastic' )->getIndexName( $type );
 
 		// If the rebuilder has set a specific version, use it to avoid writing to
@@ -152,22 +116,23 @@ class Indexer {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param array $idList
 	 */
-	public function delete( array $idList, $isConcept = false ) {
+	public function delete( array $idList, bool $isConcept = false ): void {
 		if ( $idList === [] ) {
 			return;
 		}
 
-		$title = Title::newFromText( $this->origin . ':' . md5( json_encode( $idList ) ) );
+		$title = $this->titleFactory->newFromText(
+			$this->origin . ':' . md5( json_encode( $idList ) )
+		);
 
 		if ( !$this->canReplicate() ) {
-			return IndexerRecoveryJob::pushFromParams( $title, [ 'delete' => $idList ] );
+			IndexerRecoveryJob::pushFromParams( $title, [ 'delete' => $idList ] );
+			return;
 		}
 
 		$params = [
-			'_index' => $this->getIndexName( ElasticClient::TYPE_DATA )
+			'_index' => $this->getIndexName( Client::TYPE_DATA )
 		];
 
 		$this->bulk->clear();
@@ -182,22 +147,19 @@ class Indexer {
 			if ( $isConcept ) {
 				$this->bulk->delete(
 					[
-						'_index' => $this->getIndexName( ElasticClient::TYPE_LOOKUP ),
+						'_index' => $this->getIndexName( Client::TYPE_LOOKUP ),
 						'_id' => md5( $id )
 					]
 				);
 			}
 		}
 
-		$response = $this->bulk->execute();
+		$this->bulk->execute();
+
+		$response = $this->bulk->getResponse();
 
 		$this->logger->info(
-			[
-				'Indexer',
-				'Deleted list',
-				'procTime (in sec): {procTime}',
-				'Response: {response}'
-			],
+			'Indexer Deleted list procTime (in sec): {procTime} Response: {response}',
 			[
 				'method' => __METHOD__,
 				'role' => 'developer',
@@ -210,15 +172,13 @@ class Indexer {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param DIWikiPage $dataItem
-	 * @param array $data
 	 */
-	public function create( DIWikiPage $dataItem, array $data = [] ) {
+	public function create( WikiPage $dataItem, array $data = [] ): void {
 		$title = $dataItem->getTitle();
 
 		if ( !$this->canReplicate() ) {
-			return IndexerRecoveryJob::pushFromParams( $title, [ 'create' => $dataItem->getHash() ] );
+			IndexerRecoveryJob::pushFromParams( $title, [ 'create' => $dataItem->getHash() ] );
+			return;
 		}
 
 		if ( $dataItem->getId() == 0 ) {
@@ -232,7 +192,7 @@ class Indexer {
 		$connection = $this->store->getConnection( 'elastic' );
 
 		$params = [
-			'index' => $this->getIndexName( ElasticClient::TYPE_DATA ),
+			'index' => $this->getIndexName( Client::TYPE_DATA ),
 			'id'	=> $dataItem->getId()
 		];
 
@@ -240,11 +200,7 @@ class Indexer {
 		$response = $connection->index( $params + [ 'body' => $data ] );
 
 		$this->logger->info(
-			[
-				'Indexer',
-				'Create ({subject}, {id})',
-				'Response: {response}'
-			],
+			'Indexer Create ({subject}, {id}) Response: {response}',
 			[
 				'method' => __METHOD__,
 				'role' => 'developer',
@@ -258,13 +214,9 @@ class Indexer {
 
 	/**
 	 * @since 3.0
-	 *
-	 * @param DIWikiPage|Title|int $id
-	 *
-	 * @return string
 	 */
-	public function fetchNativeData( $id ) {
-		if ( $id instanceof DIWikiPage ) {
+	public function fetchNativeData( WikiPage|Title|int $id ): string {
+		if ( $id instanceof WikiPage ) {
 			$id = $id->getTitle();
 		}
 
@@ -276,7 +228,7 @@ class Indexer {
 			return '';
 		}
 
-		$revision = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $id );
+		$revision = $this->revisionLookup->getRevisionById( $id );
 
 		if ( $revision == null ) {
 			return '';
@@ -284,40 +236,30 @@ class Indexer {
 
 		$content = $revision->getContent( SlotRecord::MAIN, RevisionRecord::RAW );
 
-		return $content->getNativeData();
+		return $content instanceof TextContent ? $content->getText() : '';
 	}
 
 	/**
 	 * @since 3.2
-	 *
-	 * @param Document $document
-	 * @param string $type
 	 */
-	public function indexDocument( Document $document, $type = self::REQUIRE_SAFE_REPLICATION ) {
+	public function indexDocument(
+		Document $document,
+		string $type = self::REQUIRE_SAFE_REPLICATION
+	): void {
 		Timer::start( __METHOD__ );
 
 		$subject = $document->getSubject();
 
 		if ( $type === self::REQUIRE_SAFE_REPLICATION && !$this->canReplicate() ) {
-			return IndexerRecoveryJob::pushFromDocument( $document );
+			IndexerRecoveryJob::pushFromDocument( $document );
+			return;
 		}
 
-		$params = [
-			'_index' => $this->getIndexName( ElasticClient::TYPE_DATA )
-		];
-
-		$this->bulk->clear();
-		$this->bulk->head( $params );
-
-		$this->bulk->infuseDocument( $document );
-		$this->bulk->execute();
+		$this->sendDocuments( [ $document ] );
 
 		$this->logger->info(
-			[ 'Indexer',
-				'Data index completed ({subject}, {id})',
-				'procTime (in sec): {procTime}',
-				'Response: {response}'
-			],
+			'Indexer Data index completed ({subject}, {id}) '
+				. 'procTime (in sec): {procTime} Response: {response}',
 			[
 				'method' => __METHOD__,
 				'role' => 'developer',
@@ -330,38 +272,82 @@ class Indexer {
 		);
 	}
 
-	private function canReplicate() {
+	/**
+	 * Sends the documents in one bulk request, without the replication check of indexDocument()
+	 *
+	 * @since 7.4.1
+	 *
+	 * @param Document[] $documents
+	 */
+	public function indexDocuments( array $documents ): void {
+		if ( $documents === [] ) {
+			return;
+		}
+
+		Timer::start( __METHOD__ );
+
+		$this->sendDocuments( $documents );
+
+		// The client returns a string when the whole request failed, which loses all of its documents,
+		// so they are sent again one at a time to lose only those that fail again
+		if ( is_string( $this->bulk->getResponse() ) && count( $documents ) > 1 ) {
+			foreach ( $documents as $document ) {
+				$this->sendDocuments( [ $document ] );
+			}
+		}
+
+		$this->logger->info(
+			'Indexer Data index completed ({count} documents) procTime (in sec): {procTime} Response: {response}',
+			[
+				'method' => __METHOD__,
+				'role' => 'developer',
+				'origin' => $this->origin,
+				'count' => count( $documents ),
+				'procTime' => Timer::getElapsedTime( __METHOD__ ),
+				'response' => $this->bulk->getResponse()
+			]
+		);
+	}
+
+	/**
+	 * @param Document[] $documents
+	 */
+	private function sendDocuments( array $documents ): void {
+		$this->bulk->clear();
+		$this->bulk->head( [ '_index' => $this->getIndexName( Client::TYPE_DATA ) ] );
+
+		foreach ( $documents as $document ) {
+			$this->bulk->infuseDocument( $document );
+		}
+
+		$this->bulk->execute();
+	}
+
+	private function canReplicate(): bool {
 		$connection = $this->store->getConnection( 'elastic' );
 
 		// Make sure a node is available and is not locked by the rebuilder
-		if ( !$connection->hasLock( ElasticClient::TYPE_DATA ) && $connection->ping() ) {
+		if ( !$connection->hasLock( Client::TYPE_DATA ) && $connection->ping() ) {
 			return true;
 		}
 
 		return false;
 	}
 
-	private function makeSubject( DIWikiPage $subject ) {
+	private function makeSubject( WikiPage $subject ): array {
 		$title = $subject->getDBKey();
 
-		if ( $subject->getNamespace() !== SMW_NS_PROPERTY || $title[0] !== '_' ) {
+		if ( $subject->getNamespace() !== SMW_NS_PROPERTY || !str_starts_with( $title ?? '', '_' ) ) {
 			$title = str_replace( '_', ' ', $title );
 		}
 
-		$sort = $subject->getSortKey();
-		$sort = Collator::singleton()->getSortKey( $sort );
+		// #7079 Keep in step with `DocumentCreator::makeSubject`: `create`
+		// replaces the whole document, so a value derived differently here would
+		// undo what `DocumentCreator` wrote.
+		$sort = Collator::singleton()->armoredSortKey( $subject->getSortKey() );
 
-		// Use collated sort field if available
-		if ( $subject->getOption( 'sort', '' ) !== '' ) {
-			$sort = $subject->getOption( 'sort' );
-		}
-
-		// This may loose some non valif UTF-8 characters as it is required by ES
-		// to be strict UTF-8 otherwise the ES indexer will fail with a serialization
-		// error because ES only allows UTF-8 but when the collator applies something
-		// like `uca-default-u-kn` it can produce characters not valid for/by
-		// ES hence the sorting compared to the SQLStore will be different (given
-		// the DB stores the byte representation)
+		// Elasticsearch rejects a document that is not strict UTF-8, and a
+		// collation is free to emit anything
 		$sort = mb_convert_encoding( $sort, 'UTF-8', 'UTF-8' );
 
 		return [

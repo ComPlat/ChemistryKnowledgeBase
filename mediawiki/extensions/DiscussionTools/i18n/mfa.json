@@ -1,0 +1,33 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mirlim"
+		]
+	},
+	"discussiontools-defaultsummary-reply": "Jawak",
+	"discussiontools-newtopic-missing-title": "Mitok buwi tajók nok wak topik bbicae {{GENDER:|dèmo}}.",
+	"discussiontools-newtopic-placeholder-title": "Pekaro",
+	"discussiontools-replylink": "{{GENDER:|jawak}}",
+	"discussiontools-replywidget-advanced": "Lanjókte",
+	"discussiontools-replywidget-cancel": "Tok jadi",
+	"discussiontools-replywidget-mode-source": "Sumbo",
+	"discussiontools-replywidget-mode-visual": "Visual",
+	"discussiontools-replywidget-newtopic": "{{GENDER:|Tamboh}} topik",
+	"discussiontools-replywidget-placeholder-newtopic": "Keterenge",
+	"discussiontools-replywidget-placeholder-reply": "{{GENDER:|Jawak}} ko {{BIDI:$1}}",
+	"discussiontools-replywidget-preview": "Keléh awa-awa",
+	"discussiontools-replywidget-reply": "{{GENDER:|Jawak}}",
+	"discussiontools-replywidget-summary": "Ppendek crito",
+	"discussiontools-replywidget-watchthis": "Tamboh muko ni kak [[Special:Watchlist|snara prati]] dèmo",
+	"discussiontools-topicheader-authorcount": "$1 {{PLURAL:$1|ore}} dale bbice",
+	"discussiontools-topicheader-commentcount": "$1 {{PLURAL:$1|ulase}}",
+	"discussiontools-topicheader-latestcomment": "Ulase lloni: $1",
+	"discussiontools-topicsubscription-button-subscribe": "langge",
+	"discussiontools-topicsubscription-button-subscribe-label": "Langge",
+	"discussiontools-topicsubscription-button-unsubscribe": "tok sé langge",
+	"discussiontools-topicsubscription-button-unsubscribe-label": "Tok sé langge",
+	"discussiontools-topicsubscription-notify-subscribed-body": "{{GENDER:|Dèmo}} pah ni ado trimo broyak pasa ulasae-ulasae baru dalae topik ni.",
+	"discussiontools-topicsubscription-notify-subscribed-title": "{{GENDER:|Dèmo}} doh langgae yo!",
+	"discussiontools-topicsubscription-notify-unsubscribed-body": "{{GENDER:|Dèmo}} pah ni tok trimo doh broyak pasa ulasae-ulasae baru dale topik ni.",
+	"discussiontools-topicsubscription-notify-unsubscribed-title": "{{GENDER:|Dèmo}} tok sé doh langgae yo."
+}

@@ -8,10 +8,11 @@
 			"Sfic",
 			"Shyam123.ckp",
 			"Siddhartha Ghai",
-			"Wikiuser13"
+			"Wikiuser13",
+			"Saurmandal"
 		]
 	},
-	"categorytree": "श्रेणीवृक्ष",
+	"categorytree": "श्रेणी वृक्ष",
 	"categorytree-portlet": "श्रेणियाँ",
 	"categorytree-legend": "श्रेणीवृक्ष दिखायें",
 	"categorytree-desc": "विकि की [[Special:CategoryTree|श्रेणी संरचना]] देखें",
@@ -20,7 +21,7 @@
 	"categorytree-go": "वृक्ष दिखायें",
 	"categorytree-parents": "पालक",
 	"categorytree-mode-label": "मोड:",
-	"categorytree-mode-categories": "सिर्फ़ श्रेणीयाँ",
+	"categorytree-mode-categories": "केवल श्रेणियाँ",
 	"categorytree-mode-pages": "फ़ाइलों के अतिरिक्त पृष्ठ",
 	"categorytree-mode-all": "सभी पृष्ठ",
 	"categorytree-collapse": "छोटा करें",
@@ -38,5 +39,9 @@
 	"categorytree-no-pages": "कोई पृष्ठ या उपश्रेणीयाँ नहीं हैं",
 	"categorytree-not-found": "श्रेणी <i>$1</i> नहीं मिली",
 	"categorytree-error": "डाटा लोड करने में समस्या।",
-	"categorytree-retry": "कृपया थोड़े समय पश्चात पुनः यत्न करें।"
+	"categorytree-retry": "कृपया थोड़े समय पश्चात पुनः यत्न करें।",
+	"categorytree-onlyroot-message": "[https://phabricator.wikimedia.org/T290062 T290062]: <code>onlyroot</code> पैरामीटर पदावनत है। इसकी जगह <code>depth=\"0\"</code> का प्रयोग करें।",
+	"categorytree-deprecation-warning": "'''चेतावनी:''' यह पृष्ठ पदावनत पैरामीटर के साथ <code>&lt;categorytree&gt;</code> का उपयोग करता है।",
+	"categorytree-deprecation-category": "पदावनत categorytree पैरामीटर्स का उपयोग करने वाले पृष्ठ",
+	"categorytree-deprecation-category-desc": "पृष्ठ <code>onlyroot</code> जैसे पदावनत पैरामीटर्स का उपयोग करता है।"
 }

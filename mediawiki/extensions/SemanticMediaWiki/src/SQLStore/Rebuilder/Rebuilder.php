@@ -3,15 +3,18 @@
 namespace SMW\SQLStore\Rebuilder;
 
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\MediaWikiServices;
-use SMW\DIWikiPage;
-use SMW\MediaWiki\TitleFactory;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
+use SMW\DataItems\WikiPage;
+use SMW\DataModel\SemanticData;
+use SMW\MediaWiki\JobFactory;
+use SMW\MediaWiki\Jobs\UpdateJob;
+use SMW\NamespaceExaminer;
 use SMW\PropertyRegistry;
-use SMW\SemanticData;
-use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\SQLStore\PropertyTableIdReferenceDisposer;
 use SMW\SQLStore\SQLStore;
 use SMW\Utils\Lru;
+use stdClass;
 
 /**
  * @private
@@ -27,90 +30,40 @@ use SMW\Utils\Lru;
 class Rebuilder {
 
 	/**
-	 * @var SQLStore
-	 */
-	private $store;
-
-	/**
-	 * @var TitleFactory
-	 */
-	private $titleFactory;
-
-	/**
-	 * @var EntityValidator
-	 */
-	private $entityValidator;
-
-	/**
-	 * @var PropertyTableIdReferenceDisposer
-	 */
-	private $propertyTableIdReferenceDisposer;
-
-	/**
-	 * @var JobFactory
-	 */
-	private $jobFactory;
-
-	/**
 	 * @var NamespaceExaminer
 	 */
 	private $namespaceExaminer;
 
-	/**
-	 * @var HookContainer
-	 */
-	private $hookContainer;
-
-	/**
-	 * @var array
-	 */
-	private $options;
+	private ?array $options = null;
 
 	/**
 	 * @var array|false
 	 */
 	private $namespaces = false;
 
-	/**
-	 * @var int
-	 */
-	private $iterationLimit = 1;
+	private int $iterationLimit = 1;
 
-	/**
-	 * @var int
-	 */
-	private $progress = 1;
+	private int|float $progress = 1;
 
-	/**
-	 * @var array
-	 */
-	private $dispatchedEntities = [];
+	private int $knownMaxId = 0;
 
-	/**
-	 * @var array
-	 */
-	private $updateJobs = [];
+	private array $dispatchedEntities = [];
 
-	/**
-	 * @var Lru
-	 */
-	private $lru;
+	private array $updateJobs = [];
+
+	private Lru $lru;
 
 	/**
 	 * @since 2.3
-	 *
-	 * @param SQLStore $store
-	 * @param TitleFactory $titleFactory
-	 * @param EntityValidator $entityValidator
-	 * @param PropertyTableIdReferenceDisposer $propertyTableIdReferenceDisposer
 	 */
-	public function __construct( SQLStore $store, TitleFactory $titleFactory, EntityValidator $entityValidator, PropertyTableIdReferenceDisposer $propertyTableIdReferenceDisposer ) {
-		$this->store = $store;
-		$this->titleFactory = $titleFactory;
-		$this->entityValidator = $entityValidator;
-		$this->propertyTableIdReferenceDisposer = $propertyTableIdReferenceDisposer;
-		$this->jobFactory = ApplicationFactory::getInstance()->newJobFactory();
-		$this->hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly TitleFactory $titleFactory,
+		private readonly EntityValidator $entityValidator,
+		private readonly PropertyTableIdReferenceDisposer $propertyTableIdReferenceDisposer,
+		private readonly JobFactory $jobFactory,
+		private readonly HookContainer $hookContainer,
+	) {
 		$this->lru = new Lru( 10000 );
 	}
 
@@ -119,7 +72,7 @@ class Rebuilder {
 	 *
 	 * @param array $options
 	 */
-	public function setOptions( array $options ) {
+	public function setOptions( array $options ): void {
 		$this->options = $options;
 	}
 
@@ -144,7 +97,7 @@ class Rebuilder {
 	 *
 	 * @param array|false $namespaces
 	 */
-	public function setRestrictionToNamespaces( $namespaces ) {
+	public function setRestrictionToNamespaces( $namespaces ): void {
 		$this->namespaces = $namespaces;
 	}
 
@@ -153,7 +106,7 @@ class Rebuilder {
 	 *
 	 * @param int $iterationLimit
 	 */
-	public function setDispatchRangeLimit( $iterationLimit ) {
+	public function setDispatchRangeLimit( $iterationLimit ): void {
 		$this->iterationLimit = (int)$iterationLimit;
 	}
 
@@ -162,22 +115,20 @@ class Rebuilder {
 	 *
 	 * @return int
 	 */
-	public function getMaxId() {
+	public function getMaxId(): int {
 		$db = $this->store->getConnection( 'mw.db' );
 
-		$maxByPageId = (int)$db->selectField(
-			'page',
-			'MAX(page_id)',
-			'',
-			__METHOD__
-		);
+		$maxByPageId = (int)$db->newSelectQueryBuilder()
+			->select( [ 'MAX(page_id)' ] )
+			->from( 'page' )
+			->caller( __METHOD__ )
+			->fetchField();
 
-		$maxBySmwId = (int)$db->selectField(
-			SQLStore::ID_TABLE,
-			'MAX(smw_id)',
-			'',
-			__METHOD__
-		);
+		$maxBySmwId = (int)$db->newSelectQueryBuilder()
+			->select( [ 'MAX(smw_id)' ] )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchField();
 
 		return max( $maxByPageId, $maxBySmwId );
 	}
@@ -190,7 +141,7 @@ class Rebuilder {
 	 *
 	 * @return int
 	 */
-	public function getEstimatedProgress() {
+	public function getEstimatedProgress(): int|float {
 		return $this->progress;
 	}
 
@@ -199,7 +150,7 @@ class Rebuilder {
 	 *
 	 * @return array
 	 */
-	public function getDispatchedEntities() {
+	public function getDispatchedEntities(): array {
 		return $this->dispatchedEntities;
 	}
 
@@ -211,7 +162,7 @@ class Rebuilder {
 	 *
 	 * @param int &$id
 	 */
-	public function rebuild( &$id ) {
+	public function rebuild( &$id ): int|float {
 		$this->updateJobs = [];
 		$this->dispatchedEntities = [];
 
@@ -222,16 +173,13 @@ class Rebuilder {
 		// was nothing done in this run?
 		$emptyRange = true;
 
+		// Entity rows first: once a title is dispatched, its redirect and interwiki rows are skipped
+		$this->matchAsSubject( $id, $emptyRange );
 		$this->matchAsTitle( $id );
 
 		if ( $this->updateJobs !== [] ) {
 			$emptyRange = false;
 		}
-
-		$this->matchAsSubject( $id, $emptyRange );
-
-		// Deprecated since 2.3, use 'SMW::SQLStore::BeforeDataRebuildJobInsert'
-		$this->hookContainer->run( 'smwRefreshDataJobs', [ &$this->updateJobs ] );
 
 		$this->hookContainer->run( 'SMW::SQLStore::BeforeDataRebuildJobInsert', [ $this->store, &$this->updateJobs ] );
 
@@ -246,10 +194,46 @@ class Rebuilder {
 		// -1 means that no next position is available
 		$this->next_position( $id, $emptyRange );
 
-		return $this->progress = $id > 0 && $this->getMaxId() !== 0 ? $id / $this->getMaxId() : 1;
+		// The estimate needs no exact highest ID, so fetch it again only once the position has passed it
+		if ( $id > $this->knownMaxId ) {
+			$this->knownMaxId = $this->getMaxId();
+		}
+
+		$this->progress = $id > 0 && $this->knownMaxId !== 0 ? $id / $this->knownMaxId : 1;
+		return $this->progress;
 	}
 
-	private function matchAsTitle( $id ) {
+	/**
+	 * Bulk-fetches Title objects for a list of MediaWiki page IDs.
+	 *
+	 * @param int[] $ids
+	 *
+	 * @return Title[]
+	 */
+	private function newTitlesFromIDs( array $ids ): array {
+		if ( $ids === [] ) {
+			return [];
+		}
+
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		$res = $connection->newSelectQueryBuilder()
+			->select( [ 'page_id', 'page_namespace', 'page_title' ] )
+			->from( 'page' )
+			->where( [ 'page_id' => $ids ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		$titles = [];
+
+		foreach ( $res as $row ) {
+			$titles[] = $this->titleFactory->newFromRow( $row );
+		}
+
+		return $titles;
+	}
+
+	private function matchAsTitle( $id ): void {
 		// Update by MediaWiki page id --> make sure we get all pages.
 		$tids = [];
 
@@ -258,13 +242,9 @@ class Rebuilder {
 			$tids[] = $i;
 		}
 
-		$titles = $this->titleFactory->newFromIDs( $tids );
+		$titles = $this->newTitlesFromIDs( $tids );
 
 		foreach ( $titles as $title ) {
-
-			if ( $this->lru->get( $title->getDBKey() . '#' . $title->getNamespace() ) !== null ) {
-				continue;
-			}
 
 			if ( ( $this->namespaces == false ) || ( in_array( $title->getNamespace(), $this->namespaces ) ) ) {
 				$this->addJob( $title );
@@ -274,7 +254,7 @@ class Rebuilder {
 		}
 	}
 
-	private function matchAsSubject( $id, &$emptyRange ) {
+	private function matchAsSubject( $id, bool &$emptyRange ): void {
 		// update by internal SMW id --> make sure we get all objects in SMW
 		$connection = $this->store->getConnection( 'mw.db' );
 
@@ -282,9 +262,8 @@ class Rebuilder {
 		// MWCallableUpdate::doUpdate: transaction round 'SMW\MediaWiki\Jobs\RefreshJob::run' already started"
 		$this->propertyTableIdReferenceDisposer->waitOnTransactionIdle();
 
-		$res = $connection->select(
-			SQLStore::ID_TABLE,
-			[
+		$res = $connection->newSelectQueryBuilder()
+			->select( [
 				'smw_id',
 				'smw_title',
 				'smw_namespace',
@@ -292,14 +271,15 @@ class Rebuilder {
 				'smw_subobject',
 				'smw_sortkey',
 				'smw_proptable_hash',
-				'smw_rev'
-			],
-			[
+				'smw_rev',
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( [
 				"smw_id >= $id ",
-				" smw_id < " . $connection->addQuotes( $id + $this->iterationLimit )
-			],
-			__METHOD__
-		);
+				" smw_id < " . $connection->addQuotes( $id + $this->iterationLimit ),
+			] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		foreach ( $res as $row ) {
 
@@ -324,7 +304,7 @@ class Rebuilder {
 		}
 	}
 
-	private function checkRow( $row ) {
+	private function checkRow( $row ): void {
 		// Find page to refresh, even for special properties:
 		if ( $row->smw_title != '' && $row->smw_title[0] != '_' ) {
 			$titleKey = $row->smw_title;
@@ -359,15 +339,7 @@ class Rebuilder {
 			}
 
 			// objects representing pages
-			$title = $this->titleFactory->makeTitleSafe(
-				$row->smw_namespace,
-				$titleKey
-			);
-
-			if ( $title !== null ) {
-				$this->dispatchedEntities[] = [ 's' => $title->getPrefixedDBKey() ];
-				$this->addJob( $title, $row );
-			}
+			$this->dispatchIfPageIsMissing( $row, $titleKey );
 		} elseif ( $this->entityValidator->isRedirect( $row ) ) {
 
 			if ( $this->lru->get( $hash ) !== null || $titleKey === '' ) {
@@ -376,15 +348,7 @@ class Rebuilder {
 
 			// TODO: special treatment of redirects needed, since the store will
 			// not act on redirects that did not change according to its records
-			$title = $this->titleFactory->makeTitleSafe(
-				$row->smw_namespace,
-				$titleKey
-			);
-
-			if ( $title !== null && !$title->exists() ) {
-				$this->dispatchedEntities[] = [ 's' => $title->getPrefixedDBKey() ];
-				$this->addJob( $title, $row );
-			}
+			$this->dispatchIfPageIsMissing( $row, $titleKey );
 
 			$this->propertyTableIdReferenceDisposer->cleanUpTableEntriesById( $row->smw_id );
 		} elseif ( $this->entityValidator->isOutdated( $row ) ) { // remove outdated internal object references
@@ -395,7 +359,7 @@ class Rebuilder {
 				return;
 			}
 
-			$subject = new DIWikiPage( $titleKey, $row->smw_namespace, $row->smw_iw );
+			$subject = new WikiPage( $titleKey, $row->smw_namespace, $row->smw_iw );
 			$this->store->updateData( new SemanticData( $subject ) );
 			$this->dispatchedEntities[] = [ 's' => $subject ];
 		}
@@ -413,14 +377,27 @@ class Rebuilder {
 		}
 	}
 
-	private function setDeleteFlag( $id, $title, $ns ) {
+	private function dispatchIfPageIsMissing( stdClass $row, string $titleKey ): void {
+		$title = $this->titleFactory->makeTitleSafe(
+			$row->smw_namespace,
+			$titleKey
+		);
+
+		// An existing page is updated through its page ID in matchAsTitle()
+		if ( $title !== null && !$title->exists() ) {
+			$this->dispatchedEntities[] = [ 's' => $title->getPrefixedDBKey() ];
+			$this->addJob( $title, $row );
+		}
+	}
+
+	private function setDeleteFlag( $id, $title, $ns ): void {
 		$this->store->getObjectIds()->updateInterwikiField(
 			$id,
-			new DIWikiPage( $title, $ns, SMW_SQL3_SMWDELETEIW )
+			new WikiPage( $title, $ns, SMW_SQL3_SMWDELETEIW )
 		);
 	}
 
-	private function removeDuplicates( $row, $duplicates ) {
+	private function removeDuplicates( $row, $duplicates ): void {
 		// Instead of copying ID's across DB tables have the re-parse to ensure
 		// that all property value ID's are reassigned together while the duplicate
 		// is marked for removal until the next run
@@ -437,41 +414,38 @@ class Rebuilder {
 		}
 	}
 
-	private function next_position( &$id, $emptyRange ) {
+	private function next_position( &$id, bool $emptyRange ): void {
 		$nextPosition = $id + $this->iterationLimit;
 		$db = $this->store->getConnection( 'mw.db' );
 
 		// nothing found, check if there will be more pages later on
 		if ( $emptyRange && $nextPosition > SQLStore::FIXED_PROPERTY_ID_UPPERBOUND ) {
 
-			$nextByPageId = (int)$db->selectField(
-				'page',
-				'page_id',
-				"page_id >= $nextPosition",
-				__METHOD__,
-				[
-					'ORDER BY' => "page_id ASC"
-				]
-			);
+			$nextByPageId = (int)$db->newSelectQueryBuilder()
+				->select( [ 'page_id' ] )
+				->from( 'page' )
+				->where( [ "page_id >= $nextPosition" ] )
+				->orderBy( 'page_id', 'ASC' )
+				->caller( __METHOD__ )
+				->fetchField();
 
-			$nextBySmwId = (int)$db->selectField(
-				SQLStore::ID_TABLE,
-				'smw_id',
-				"smw_id >= $nextPosition",
-				__METHOD__,
-				[
-					'ORDER BY' => "smw_id ASC"
-				]
-			);
+			$nextBySmwId = (int)$db->newSelectQueryBuilder()
+				->select( [ 'smw_id' ] )
+				->from( SQLStore::ID_TABLE )
+				->where( [ "smw_id >= $nextPosition" ] )
+				->orderBy( 'smw_id', 'ASC' )
+				->caller( __METHOD__ )
+				->fetchField();
 
-			// Next position is determined by the pool with the maxId
-			$nextPosition = $nextBySmwId != 0 && $nextBySmwId > $nextByPageId ? $nextBySmwId : $nextByPageId;
+			// Continue at the nearer of the two, so that no row of either table is skipped
+			$candidates = array_filter( [ $nextByPageId, $nextBySmwId ] );
+			$nextPosition = $candidates === [] ? 0 : min( $candidates );
 		}
 
-		$id = $nextPosition ? $nextPosition : -1;
+		$id = $nextPosition ?: -1;
 	}
 
-	private function hasSkippableRevision( $title, $row = false ) {
+	private function hasSkippableRevision( $title, stdClass|false $row = false ): bool {
 		if ( $this->getOption( 'force-update' ) ) {
 			return false;
 		}
@@ -479,16 +453,17 @@ class Rebuilder {
 		return $this->getOption( 'revision-mode' ) && $this->entityValidator->hasLatestRevID( $title, $row );
 	}
 
-	private function addDispatchRecord( $key, $row ) {
+	private function addDispatchRecord( string $key, $row ): void {
 		$this->dispatchedEntities[] = [ $key => $row->smw_title . '#' . $row->smw_namespace . '#' . $row->smw_subobject ];
 	}
 
-	private function addJob( $title, $row = false ) {
+	private function addJob( $title, stdClass|false $row = false ): void {
 		$hash = $title->getDBKey() . '#' . $title->getNamespace();
 		$this->lru->set( $hash, true );
 
-		if ( $this->hasSkippableRevision( $title, $row = false ) ) {
-			return $this->dispatchedEntities[] = [ 'skipped' => $title->getPrefixedDBKey() ];
+		if ( $this->hasSkippableRevision( $title, $row ) ) {
+			$this->dispatchedEntities[] = [ 'skipped' => $title->getPrefixedDBKey() ];
+			return;
 		}
 
 		$params = [
@@ -496,7 +471,7 @@ class Rebuilder {
 		];
 
 		if ( $this->getOption( 'shallow-update' ) ) {
-			$params += [ 'shallowUpdate' => true ];
+			$params += [ UpdateJob::SHALLOW_UPDATE => true ];
 		} elseif ( $this->getOption( 'force-update' ) ) {
 			$params += [ 'forcedUpdate' => true ];
 		}

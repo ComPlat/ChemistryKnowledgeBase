@@ -2,9 +2,12 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\Maintenance\Maintenance;
 use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Setup;
+use SMW\SQLStore\SQLStore;
 use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
 
 /**
  * Load the required class
@@ -23,7 +26,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  *
  * @author mwjames
  */
-class removeDuplicateEntities extends \Maintenance {
+class removeDuplicateEntities extends Maintenance {
 
 	/**
 	 * @since 3.0
@@ -76,8 +79,12 @@ class removeDuplicateEntities extends \Maintenance {
 		$maintenanceHelper->initRuntimeValues();
 
 		$duplicateEntitiesDisposer = $maintenanceFactory->newDuplicateEntitiesDisposer(
-			$applicationFactory->getStore( 'SMW\SQLStore\SQLStore' ),
+			$applicationFactory->getStore( SQLStore::class ),
 			[ $this, 'reportMessage' ]
+		);
+
+		$duplicateEntitiesDisposer->setStatsFlusher(
+			PeriodicStatsFlusher::newFromGlobalState()
 		);
 
 		$this->reportMessage(

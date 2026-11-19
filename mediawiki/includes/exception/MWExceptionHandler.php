@@ -259,6 +259,12 @@ class MWExceptionHandler {
 		$file = null,
 		$line = null
 	) {
+		// E_STRICT is deprecated since PHP 8.4 (T375707).
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		if ( defined( 'E_STRICT' ) && $level == @constant( 'E_STRICT' ) ) {
+			$level = E_USER_NOTICE;
+		}
+
 		// Map PHP error constant to a PSR-3 severity level.
 		// Avoid use of "DEBUG" or "INFO" levels, unless the
 		// error should evade error monitoring and alerts.
@@ -293,10 +299,6 @@ class MWExceptionHandler {
 			case E_USER_WARNING:
 				// Used by wfWarn(), MWDebug::warning()
 				$prefix = 'PHP Warning: ';
-				$severity = LogLevel::WARNING;
-				break;
-			case E_STRICT:
-				$prefix = 'PHP Strict Standards: ';
 				$severity = LogLevel::WARNING;
 				break;
 			case E_DEPRECATED:
@@ -793,6 +795,17 @@ TXT;
 	 */
 	private static function callLogExceptionHook( Throwable $e, bool $suppressed ) {
 		try {
+			// It's possible for the exception handler to be triggered during service container
+			// initialization, e.g. if an autoloaded file triggers deprecation warnings.
+			// To avoid a difficult-to-debug autoload loop, avoid attempting to initialize the service
+			// container here. (T380456).
+			// The exception handler is also triggered when autoloading of HookRunner class fails,
+			// > Uncaught Error: Class "MediaWiki\HookContainer\HookRunner" not found
+			// Avoid use of the not-loaded class here, as that override the real error.
+			if ( !MediaWikiServices::hasInstance() || !class_exists( HookRunner::class, false ) ) {
+				return;
+			}
+
 			( new HookRunner( MediaWikiServices::getInstance()->getHookContainer() ) )
 				->onLogException( $e, $suppressed );
 		} catch ( RecursiveServiceDependencyException $e ) {

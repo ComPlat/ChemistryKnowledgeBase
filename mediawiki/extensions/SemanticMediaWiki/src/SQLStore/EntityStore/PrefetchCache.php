@@ -2,13 +2,13 @@
 
 namespace SMW\SQLStore\EntityStore;
 
-use SMW\DIProperty;
-use SMW\DIWikiPage;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
 use SMW\RequestOptions;
 use SMW\SQLStore\SQLStore;
 
 /**
- * @license GNU GPL v2
+ * @license GPL-2.0-or-later
  * @since 3.1
  *
  * @author mwjames
@@ -16,69 +16,81 @@ use SMW\SQLStore\SQLStore;
 class PrefetchCache {
 
 	/**
-	 * @var SQLStore
+	 * Fetched values grouped by value cache key, then subject ID.
+	 *
+	 * @var array
 	 */
-	private $store;
+	private array $valuesByCacheKey = [];
 
 	/**
-	 * @var PrefetchItemLookup
+	 * Set of bulk prefetch lookups that have already been executed, grouped
+	 * by value cache key and subject set fingerprint.
+	 *
+	 * This does not store values. It only prevents running the same bulk lookup
+	 * twice while values remain stored in $valuesByCacheKey.
+	 *
+	 * @var array
 	 */
-	private $prefetchItemLookup;
-
-	/**
-	 * @var
-	 */
-	private $cache = [];
-
-	/**
-	 * @var
-	 */
-	private $lookupCache = [];
+	private array $executedPrefetchLookups = [];
 
 	/**
 	 * @since 3.1
-	 *
-	 * @param SQLStore $store
-	 * @param PrefetchItemLookup $prefetchItemLookup
 	 */
-	public function __construct( SQLStore $store, PrefetchItemLookup $prefetchItemLookup ) {
-		$this->store = $store;
-		$this->prefetchItemLookup = $prefetchItemLookup;
+	public function __construct(
+		private readonly SQLStore $store,
+		private readonly PrefetchItemLookup $prefetchItemLookup,
+	) {
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param DIProperty $property
+	 * @param Property $property
+	 * @param RequestOptions $requestOptions
 	 *
 	 * @return bool
 	 */
-	public function isCached( DIProperty $property ) {
-		return isset( $this->cache[$property->getKey()] );
+	public function isCached( Property $property, RequestOptions $requestOptions ): bool {
+		return isset( $this->valuesByCacheKey[self::makeCacheKey( $property, $requestOptions )] );
 	}
 
 	/**
 	 * @since 3.1
 	 */
-	public function clear() {
-		$this->cache = [];
-		$this->lookupCache = [];
+	public function clear(): void {
+		$this->valuesByCacheKey = [];
+		$this->executedPrefetchLookups = [];
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param DIProperty $property
+	 * @param Property $property
 	 * @param RequestOptions $requestOptions
+	 *
+	 * @return string
 	 */
-	public static function makeCacheKey( DIProperty $property, RequestOptions $requestOptions ) {
+	public static function makeCacheKey( Property $property, RequestOptions $requestOptions ): string {
 		$key = $property->getKey();
 
-		// Use the .dot notation to distingish it from other prrintouts that
-		// use the same property
-		if ( isset( $requestOptions->isChain ) && $requestOptions->isChain ) {
-			$key .= '#' . $requestOptions->isChain;
-			$key .= '#' . $property->isInverse();
+		// This value cache key is the contract between prefetch(), isCached(),
+		// and getPropertyValues(). It is not shared with lower-level lookup
+		// caches.
+		//
+		// Format:
+		// <property-key>[#isChain][#isInverse][#isFirstChain]#valueOptions:<discriminator>
+		//
+		// Context markers are appended in a fixed order and each marker is
+		// self-identifying, so chain, inverse, and value-affecting request
+		// options cannot contaminate values cached for the same property key.
+		// This is a normalized value identity, not a reversible serialization
+		// of RequestOptions.
+		if ( $requestOptions->isChain ) {
+			$key .= '#' . 'isChain';
+		}
+
+		if ( $property->isInverse() ) {
+			$key .= '#' . 'isInverse';
 		}
 
 		// T:P0467, requires an extra identification to ensure the test passes
@@ -87,59 +99,70 @@ class PrefetchCache {
 			$key .= '#' . 'isFirstChain';
 		}
 
+		// RequestOptions::getValueHash() is the single source of truth for which
+		// request options change the selected values; see its guard test.
+		$key .= '#valueOptions:' . $requestOptions->getValueHash();
+
 		return $key;
 	}
 
 	/**
-	 * Prefetch related data into the cache in order for the `LookupCache::get`
-	 * to return the individual data.
+	 * Prefetch related data so getPropertyValues() can return individual
+	 * subject values without issuing one lookup per subject.
 	 *
 	 * @since 3.1
 	 *
-	 * @param DIWikiPage[] $subjects
-	 * @param DIProperty $property
+	 * @param WikiPage[] $subjects
+	 * @param Property $property
 	 * @param RequestOptions $requestOptions
 	 */
-	public function prefetch( array $subjects, DIProperty $property, RequestOptions $requestOptions ) {
-		$fingerprint = '';
+	public function prefetch( array $subjects, Property $property, RequestOptions $requestOptions ): void {
 		$this->store->getObjectIds()->warmUpCache( $subjects );
+
+		$fingerprint = '';
 
 		foreach ( $subjects as $subject ) {
 			$fingerprint .= $subject->getHash();
 		}
 
-		$requestOptions->setOption( RequestOptions::PREFETCH_FINGERPRINT, md5( $fingerprint ) );
-		$key = $this->makeCacheKey( $property, $requestOptions );
+		$valueCacheKey = $this->makeCacheKey( $property, $requestOptions );
+		$subjectSetFingerprint = md5( $fingerprint );
 
-		// Use an aggressive cache strategy to avoid repetitive queries especially
-		// when called as part of a printrequest chain
-		$lookupKey = md5( $key . '#' . $fingerprint );
-
-		if ( isset( $this->lookupCache[$lookupKey] ) ) {
+		if ( isset( $this->executedPrefetchLookups[$valueCacheKey][$subjectSetFingerprint] ) ) {
 			return;
 		}
+
+		// Lower-level lookup caches use PREFETCH_FINGERPRINT as the subject-set
+		// part of their bulk request identity. Keep that request identity on a
+		// clone so it cannot leak into this value cache key or the caller's
+		// RequestOptions instance.
+		$lookupRequestOptions = clone $requestOptions;
+		$lookupRequestOptions->setOption( RequestOptions::PREFETCH_FINGERPRINT, $subjectSetFingerprint );
 
 		$result = $this->prefetchItemLookup->getPropertyValues(
 			$subjects,
 			$property,
-			$requestOptions
+			$lookupRequestOptions
 		);
 
-		$this->cache[$key] = $result;
-		$this->lookupCache[$lookupKey] = true;
+		// Merge in newly fetched subjects without replacing values that are
+		// already cached for this value identity.
+		$this->valuesByCacheKey[$valueCacheKey] =
+			( $this->valuesByCacheKey[$valueCacheKey] ?? [] ) + $result;
+		$this->executedPrefetchLookups[$valueCacheKey][$subjectSetFingerprint] = true;
 	}
 
 	/**
 	 * @since 3.1
 	 *
-	 * @param DIWikiPage $subject
-	 * @param DIProperty $property
+	 * @param WikiPage $subject
+	 * @param Property $property
 	 * @param RequestOptions $requestOptions
 	 *
-	 * @return
+	 * @return array
 	 */
-	public function getPropertyValues( DIWikiPage $subject, DIProperty $property, RequestOptions $requestOptions ) {
-		$key = $this->makeCacheKey( $property, $requestOptions );
+	public function getPropertyValues( WikiPage $subject, Property $property, RequestOptions $requestOptions ): array {
+		$valueCacheKey = $this->makeCacheKey( $property, $requestOptions );
 
 		// 0 is the default ID of the subject, if it already has an ID,
 		// there is no need to do a DB query for the ID.
@@ -153,11 +176,11 @@ class PrefetchCache {
 				true
 			);
 
-		if ( !isset( $this->cache[$key][$sid] ) ) {
+		if ( !isset( $this->valuesByCacheKey[$valueCacheKey][$sid] ) ) {
 			return [];
 		}
 
-		return array_values( $this->cache[$key][$sid] );
+		return array_values( $this->valuesByCacheKey[$valueCacheKey][$sid] );
 	}
 
 }

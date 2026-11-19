@@ -31,7 +31,8 @@
 			"Vojtěch Dostál",
 			"Walter Klosse",
 			"YjM",
-			"ශ්වෙත"
+			"ශ්වෙත",
+			"Comfyquiettree"
 		]
 	},
 	"collabpad-doctitle": "CollabPad: $1",
@@ -84,7 +85,6 @@
 	"visualeditor-dialog-media-info-meta-artist": "Autor: $1",
 	"visualeditor-dialog-media-info-moreinfo": "Další informace",
 	"visualeditor-dialog-media-info-readmore": "Číst dál",
-	"visualeditor-dialog-media-info-separator": "·",
 	"visualeditor-dialog-media-info-uploaded": "Načteno: $1",
 	"visualeditor-dialog-media-page-advanced": "Pokročilá nastavení",
 	"visualeditor-dialog-media-page-general": "Obecná nastavení",
@@ -272,6 +272,7 @@
 	"visualeditor-linkinspector-educationpopup-text": "Důležitá slova provažte s dalšími články na wiki či dokonce jinými weby. Čtenářům to pomůže lépe pochopit kontext.",
 	"visualeditor-linkinspector-educationpopup-title": "Odkazy",
 	"visualeditor-linkinspector-illegal-title": "Neplatný název stránky",
+	"visualeditor-linkinspector-invalid-blocked": "Komunita této wiki se rozhodla zablokovat odkazy na tento web. Zkuste prosím jiný odkaz.",
 	"visualeditor-linkinspector-invalid-external": "Zadejte celé URL, např. https://example.org",
 	"visualeditor-linknodeinspector-add-label": "Přidat popisek",
 	"visualeditor-linknodeinspector-title": "Jednoduchý odkaz",

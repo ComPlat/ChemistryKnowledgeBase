@@ -2,11 +2,17 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\Maintenance\Maintenance;
 use SMW\Elastic\ElasticStore;
+use SMW\Elastic\Indexer\Rebuilder\Rebuilder;
+use SMW\MediaWiki\JobQueue;
 use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Setup;
 use SMW\SetupFile;
+use SMW\SQLStore\SQLStore;
+use SMW\Store;
 use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
 
 /**
  * Load the required class
@@ -25,7 +31,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  *
  * @author mwjames
  */
-class rebuildElasticIndex extends \Maintenance {
+class rebuildElasticIndex extends Maintenance {
 
 	/**
 	 * @var Store
@@ -122,7 +128,7 @@ class rebuildElasticIndex extends \Maintenance {
 		);
 
 		$this->jobQueue = $applicationFactory->getJobQueue();
-		$this->store = $applicationFactory->getStore( 'SMW\SQLStore\SQLStore' );
+		$this->store = $applicationFactory->getStore( SQLStore::class );
 		$elasticFactory = $applicationFactory->create( 'ElasticFactory' );
 		$messageReporter = $maintenanceFactory->newMessageReporter( [ $this, 'reportMessage' ] );
 
@@ -222,7 +228,7 @@ class rebuildElasticIndex extends \Maintenance {
 		parent::addDefaultParams();
 	}
 
-	protected function handleTermSignal( $signal ) {
+	protected function handleTermSignal( $signal ): never {
 		$this->reportMessage( "\n" . '   ... rebuild was terminated, start recovery process ...' );
 		$this->rebuilder->setDefaults();
 		$this->rebuilder->refresh();
@@ -409,9 +415,14 @@ class rebuildElasticIndex extends \Maintenance {
 			);
 		}
 
+		$statsFlusher = PeriodicStatsFlusher::newFromGlobalState();
+
 		foreach ( $res as $row ) {
+			$statsFlusher->tick();
 			$this->rebuildFromRow( ++$i, $count, $row, $last );
 		}
+
+		$this->rebuilder->flush();
 
 		// This is to match the last output to signal to the user that 100% were
 		// matched even in the case where last wasn't a "real" entity and would
@@ -433,7 +444,8 @@ class rebuildElasticIndex extends \Maintenance {
 
 		$this->reportMessage( '   ... done.' . "\n" );
 
-		if ( ( $count = $this->jobQueue->getQueueSize( 'smw.elasticIndexerRecovery' ) ) > 0 ) {
+		$count = $this->jobQueue->getQueueSize( 'smw.elasticIndexerRecovery' );
+		if ( $count > 0 ) {
 			$this->reportMessage(
 				$this->cliMsgFormatter->section( 'Job queue' )
 			);
@@ -457,7 +469,10 @@ class rebuildElasticIndex extends \Maintenance {
 			return $this->rebuilder->delete( $row->smw_id );
 		}
 
-		$this->autoRecovery->set( 'ar_id', (int)$row->smw_id );
+		// Documents are sent in batches, so a resumed run starts with the first one not yet sent
+		if ( !$this->rebuilder->hasPendingDocuments() ) {
+			$this->autoRecovery->set( 'ar_id', (int)$row->smw_id );
+		}
 
 		$dataItem = $this->store->getObjectIds()->getDataItemById(
 			$row->smw_id
@@ -500,9 +515,10 @@ class rebuildElasticIndex extends \Maintenance {
 
 		if ( $this->hasOption( 'page' ) ) {
 			$pages = explode( '|', $this->getOption( 'page' ) );
+			$titleFactory = $this->getServiceContainer()->getTitleFactory();
 
 			foreach ( $pages as $page ) {
-				$title = \Title::newFromText( $page );
+				$title = $titleFactory->newFromText( $page );
 
 				if ( $title === null ) {
 					continue;

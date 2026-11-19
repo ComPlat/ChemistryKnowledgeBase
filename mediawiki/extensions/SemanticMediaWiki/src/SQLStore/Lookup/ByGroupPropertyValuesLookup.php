@@ -2,17 +2,18 @@
 
 namespace SMW\SQLStore\Lookup;
 
+use SMW\DataItems\DataItem;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
 use SMW\DataTypeRegistry;
 use SMW\DataValueFactory;
-use SMW\DIProperty;
 use SMW\SQLStore\SQLStore;
 use SMW\SQLStore\TableBuilder\FieldType;
-use SMWDataItem as DataItem;
 
 /**
  * @private
  *
- * @license GNU GPL v2
+ * @license GPL-2.0-or-later
  * @since 3.2
  *
  * @author mwjames
@@ -20,35 +21,27 @@ use SMWDataItem as DataItem;
 class ByGroupPropertyValuesLookup {
 
 	/**
-	 * @var SQLStore
+	 * @var array
 	 */
-	private $store;
-
-	/**
-	 * @var
-	 */
-	private $cache = [];
+	private array $cache = [];
 
 	/**
 	 * @since 3.2
-	 *
-	 * @param SQLStore $store
 	 */
-	public function __construct( SQLStore $store ) {
-		$this->store = $store;
+	public function __construct( private readonly SQLStore $store ) {
 	}
 
 	/**
 	 * @since 3.2
 	 *
-	 * @param DIProperty $property
-	 * @param DIWikiPage[]|string[] $subjects
+	 * @param Property $property
+	 * @param WikiPage[]|string[] $subjects
 	 *
 	 * @return array
 	 */
-	public function findValueGroups( DIProperty $property, array $subjects ): array {
-		$diType = DataTypeRegistry::getInstance()->getDataItemId(
-			$property->findPropertyTypeID()
+	public function findValueGroups( Property $property, array $subjects ): array {
+		$diType = DataTypeRegistry::getInstance()->getDataItemByType(
+			$property->findPropertyValueType()
 		);
 
 		$diHandler = $this->store->getDataItemHandlerForDIType(
@@ -120,7 +113,7 @@ class ByGroupPropertyValuesLookup {
 		];
 	}
 
-	public function fetchValuesByGroup( DIProperty $property, $subjects ) {
+	public function fetchValuesByGroup( Property $property, $subjects ) {
 		$tableid = $this->store->findPropertyTableID( $property );
 		$entityIdManager = $this->store->getObjectIds();
 
@@ -158,7 +151,7 @@ class ByGroupPropertyValuesLookup {
 		$diType = $propTable->getDiType();
 
 		if ( $diType === DataItem::TYPE_WIKIPAGE ) {
-			$fields = [
+			$columns = [
 				'i.smw_id',
 				'i.smw_title',
 				'i.smw_namespace',
@@ -166,10 +159,10 @@ class ByGroupPropertyValuesLookup {
 				'i.smw_subobject',
 				'i.smw_hash',
 				'i.smw_sort',
-				"COUNT( $groupBy ) as count"
 			];
 
-			$groupBy = 'p.o_id, i.smw_id';
+			$fields = [ ...$columns, "COUNT( $groupBy ) as count" ];
+			$groupBy = [ 'p.o_id', ...$columns ];
 			$orderBy = 'count DESC, i.smw_sort ASC';
 		} elseif ( $diType === DataItem::TYPE_BLOB ) {
 			$fields = [ 'p.o_hash, p.o_blob', 'COUNT( p.o_hash ) as count' ];
@@ -189,50 +182,39 @@ class ByGroupPropertyValuesLookup {
 			$pid = $entityIdManager->getSMWPropertyID( $property );
 		}
 
+		// smw_hash is stored as raw binary; escape each value so it is a valid
+		// bytea literal on Postgres (no-op on other backends).
+		$subjects = array_map( [ $connection, 'escape_bytea' ], $subjects );
+
 		if ( $isIdField ) {
-			$res = $connection->select(
-				[
-					'o' => $connection->tableName( SQLStore::ID_TABLE ),
-					'p' => $connection->tableName( $propTable->getName() ),
-					'i' => $connection->tableName( SQLStore::ID_TABLE )
-				],
-				$fields,
-				[
+			$res = $connection->newSelectQueryBuilder()
+				->select( $fields )
+				->from( SQLStore::ID_TABLE, 'o' )
+				->join( $propTable->getName(), 'p', [ 'p.s_id=o.smw_id' ] )
+				->join( SQLStore::ID_TABLE, 'i', [ 'p.o_id=i.smw_id' ] )
+				->where( [
 					'o.smw_hash' => $subjects,
-					'o.smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWIW_OUTDATED ),
-					'o.smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW ),
-				] + ( $pid !== '' ? [ 'p.p_id' => $pid ] : [] ),
-				__METHOD__,
-				[
-					'GROUP BY' => $groupBy,
-					'ORDER BY' => $orderBy
-				],
-				[
-					'p' => [ 'INNER JOIN', [ 'p.s_id=o.smw_id' ] ],
-					'i' => [ 'INNER JOIN', [ 'p.o_id=i.smw_id' ] ],
-				]
-			);
+					$connection->expr( 'o.smw_iw', '!=', SMW_SQL3_SMWIW_OUTDATED ),
+					$connection->expr( 'o.smw_iw', '!=', SMW_SQL3_SMWDELETEIW ),
+				] + ( $pid !== '' ? [ 'p.p_id' => $pid ] : [] ) )
+				->groupBy( $groupBy )
+				->orderBy( $orderBy )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 		} else {
-			$res = $connection->select(
-				[
-					'o' => $connection->tableName( SQLStore::ID_TABLE ),
-					'p' => $connection->tableName( $propTable->getName() )
-				],
-				$fields,
-				[
+			$res = $connection->newSelectQueryBuilder()
+				->select( $fields )
+				->from( SQLStore::ID_TABLE, 'o' )
+				->join( $propTable->getName(), 'p', [ 'p.s_id=o.smw_id' ] )
+				->where( [
 					'o.smw_hash' => $subjects,
-					'o.smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWIW_OUTDATED ),
-					'o.smw_iw!=' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW ),
-				] + ( $pid !== '' ? [ 'p.p_id' => $pid ] : [] ),
-				__METHOD__,
-				[
-					'GROUP BY' => $groupBy,
-					'ORDER BY' => $orderBy
-				],
-				[
-					'p' => [ 'INNER JOIN', [ 'p.s_id=o.smw_id' ] ],
-				]
-			);
+					$connection->expr( 'o.smw_iw', '!=', SMW_SQL3_SMWIW_OUTDATED ),
+					$connection->expr( 'o.smw_iw', '!=', SMW_SQL3_SMWDELETEIW ),
+				] + ( $pid !== '' ? [ 'p.p_id' => $pid ] : [] ) )
+				->groupBy( $groupBy )
+				->orderBy( $orderBy )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 		}
 
 		return $res;

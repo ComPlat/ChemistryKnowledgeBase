@@ -2,19 +2,23 @@
 
 namespace SMW\Maintenance;
 
-use Exception;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use Onoi\MessageReporter\MessageReporter;
 use Onoi\MessageReporter\MessageReporterFactory;
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
 use SMW\Maintenance\DataRebuilder\OutdatedDisposer;
-use SMW\MediaWiki\TitleFactory;
+use SMW\MediaWiki\JobFactory;
 use SMW\Options;
 use SMW\Services\ServicesFactory as ApplicationFactory;
+use SMW\SPARQLStore\SPARQLStore;
 use SMW\SQLStore\Rebuilder\Rebuilder;
+use SMW\SQLStore\SQLStore;
 use SMW\Store;
 use SMW\Utils\CliMsgFormatter;
-use Title;
+use SMW\Utils\PeriodicStatsFlusher;
+use Throwable;
 
 /**
  * Is part of the `rebuildData.php` maintenance script to rebuild existing data
@@ -33,79 +37,63 @@ class DataRebuilder {
 	const AUTO_RECOVERY_LAST_START = 'ar_last_start';
 
 	/**
-	 * @var Store
+	 * IDs between two auto-recovery checkpoints, each a separate commit; a resumed
+	 * run repeats at most this many
 	 */
-	private $store;
+	private const AUTO_RECOVERY_INTERVAL = 100;
 
 	/**
-	 * @var TitleFactory
+	 * IDs dispatched per step with `--use-job`, so that each step queues its jobs in one insert
 	 */
-	private $titleFactory;
+	private const USE_JOB_DISPATCH_RANGE = 100;
 
-	/**
-	 * @var Options
-	 */
-	private $options;
+	private ?Options $options = null;
 
 	/**
 	 * @var MessageReporter
 	 */
 	private $reporter;
 
-	/**
-	 * @var AutoRecovery
-	 */
-	private $autoRecovery;
+	private ?AutoRecovery $autoRecovery = null;
 
-	/**
-	 * @var DistinctEntityDataRebuilder
-	 */
-	private $distinctEntityDataRebuilder;
+	private ?PeriodicStatsFlusher $statsFlusher = null;
 
-	/**
-	 * @var ExceptionFileLogger
-	 */
-	private $exceptionFileLogger;
+	private DistinctEntityDataRebuilder $distinctEntityDataRebuilder;
 
-	/**
-	 * @var CliMsgFormatter
-	 */
-	private $cliMsgFormatter;
+	private ExceptionFileLogger $exceptionFileLogger;
+
+	private CliMsgFormatter $cliMsgFormatter;
 
 	/**
 	 * @var int
 	 */
 	private $rebuildCount = 0;
 
-	/**
-	 * @var int
-	 */
-	private $exceptionCount = 0;
+	private int $exceptionCount = 0;
 
 	private $delay = false;
-	private $canWriteToIdFile = false;
+	private bool $canWriteToIdFile = false;
 	private $start = 1;
 	private $end = false;
 
 	/**
 	 * @var int[]
 	 */
-	private $filters = [];
-	private $verbose = false;
+	private array $filters = [];
+	private bool $verbose = false;
 	private $startIdFile = false;
 	private Rebuilder $entityRebuildDispatcher;
 
 	/**
 	 * @since 1.9.2
-	 *
-	 * @param Store $store
-	 * @param TitleFactory $titleFactory
 	 */
-	public function __construct( Store $store, TitleFactory $titleFactory ) {
-		$this->store = $store;
-		$this->titleFactory = $titleFactory;
+	public function __construct(
+		private readonly Store $store,
+		private readonly TitleFactory $titleFactory,
+		private readonly JobFactory $jobFactory,
+	) {
 		$this->reporter = MessageReporterFactory::getInstance()->newNullMessageReporter();
-		$this->distinctEntityDataRebuilder = new DistinctEntityDataRebuilder( $store, $titleFactory );
+		$this->distinctEntityDataRebuilder = new DistinctEntityDataRebuilder( $this->store, $this->titleFactory, $this->jobFactory );
 		$this->exceptionFileLogger = new ExceptionFileLogger( 'rebuilddata' );
 		$this->cliMsgFormatter = new CliMsgFormatter();
 	}
@@ -115,7 +103,7 @@ class DataRebuilder {
 	 *
 	 * @param MessageReporter $reporter
 	 */
-	public function setMessageReporter( MessageReporter $reporter ) {
+	public function setMessageReporter( MessageReporter $reporter ): void {
 		$this->reporter = $reporter;
 	}
 
@@ -124,8 +112,16 @@ class DataRebuilder {
 	 *
 	 * @param AutoRecovery $autoRecovery
 	 */
-	public function setAutoRecovery( AutoRecovery $autoRecovery ) {
+	public function setAutoRecovery( AutoRecovery $autoRecovery ): void {
 		$this->autoRecovery = $autoRecovery;
+	}
+
+	/**
+	 * @since 7.2.0
+	 */
+	public function setStatsFlusher( PeriodicStatsFlusher $statsFlusher ): void {
+		$this->statsFlusher = $statsFlusher;
+		$this->distinctEntityDataRebuilder->setStatsFlusher( $statsFlusher );
 	}
 
 	/**
@@ -133,7 +129,7 @@ class DataRebuilder {
 	 *
 	 * @param Options $options
 	 */
-	public function setOptions( Options $options ) {
+	public function setOptions( Options $options ): void {
 		$this->options = $options;
 
 		if ( $options->has( 'server' ) ) {
@@ -174,7 +170,7 @@ class DataRebuilder {
 	 *
 	 * @return bool
 	 */
-	public function rebuild() {
+	public function rebuild(): bool {
 		$this->reportMessage(
 			$this->cliMsgFormatter->section( 'Notice' )
 		);
@@ -217,13 +213,20 @@ class DataRebuilder {
 			$this->options->has( 'query' ) ||
 			$this->hasFilters() ||
 			$this->options->has( 'redirects' ) ) {
+
+			if ( $this->options->safeGet( 'use-job', false ) ) {
+				$this->reportMessage(
+					"\nNote: --use-job applies to full rebuilds only; the selected pages are processed inline.\n"
+				);
+			}
+
 			return $this->rebuildFromSelection();
 		}
 
 		return $this->rebuildAll();
 	}
 
-	private function hasFilters() {
+	private function hasFilters(): bool {
 		return $this->filters !== [];
 	}
 
@@ -232,7 +235,7 @@ class DataRebuilder {
 	 *
 	 * @return int
 	 */
-	public function getRebuildCount() {
+	public function getRebuildCount(): int {
 		return $this->rebuildCount;
 	}
 
@@ -241,11 +244,11 @@ class DataRebuilder {
 	 *
 	 * @return int
 	 */
-	public function getExceptionCount() {
+	public function getExceptionCount(): int {
 		return $this->exceptionCount;
 	}
 
-	private function rebuildFromSelection( $params = [] ) {
+	private function rebuildFromSelection( array $params = [] ): bool {
 		if ( $params !== [] ) {
 			foreach ( $params as $key => $value ) {
 				$this->options->set( $key, $value );
@@ -287,30 +290,40 @@ class DataRebuilder {
 		return true;
 	}
 
-	private function rebuildAll() {
+	private function rebuildAll(): bool {
 		$this->entityRebuildDispatcher = $this->store->refreshData(
 			$this->start,
 			1
 		);
-
-		$this->entityRebuildDispatcher->setDispatchRangeLimit( 1 );
 
 		$this->entityRebuildDispatcher->setOptions(
 			[
 				'shallow-update' => $this->options->safeGet( 'shallow-update', false ),
 				'force-update' => $this->options->safeGet( 'force-update', false ),
 				'revision-mode' => $this->options->safeGet( 'revision-mode', false ),
-				'use-job' => false
+				'use-job' => $this->options->safeGet( 'use-job', false )
 			]
 		);
 
 		// By default we expect the disposal action to take place whenever the
-		// script is run
-		$this->runOutdatedDisposer();
+		// script is run; --skip-dispose opts out so disposal can be run separately
+		// (e.g. sharded) without colliding with parallel ranged rebuilds.
+		$skipDispose = $this->options->safeGet( 'skip-dispose', false );
 
-		// Only expected the disposal action?
 		if ( $this->options->has( 'dispose-outdated' ) ) {
+			if ( $skipDispose ) {
+				$this->reportMessage(
+					"\nNote: --skip-dispose with --dispose-outdated does nothing; no disposal performed.\n"
+				);
+				return true;
+			}
+
+			$this->runOutdatedDisposer();
 			return true;
+		}
+
+		if ( !$skipDispose ) {
+			$this->runOutdatedDisposer();
 		}
 
 		if ( !$this->options->has( 'skip-properties' ) ) {
@@ -322,11 +335,13 @@ class DataRebuilder {
 		);
 
 		if ( $this->autoRecovery !== null && $this->autoRecovery->has( self::AUTO_RECOVERY_ID ) ) {
-			$this->start = $this->autoRecovery->get( self::AUTO_RECOVERY_ID );
+			// The stored ID less the safety margin can be below the first ID
+			$this->start = max( 1, $this->autoRecovery->get( self::AUTO_RECOVERY_ID ) );
 
 			$this->reportMessage( "Detecting an incomplete rebuild run ...\n" );
 
-			if ( ( $last_start = $this->autoRecovery->get( self::AUTO_RECOVERY_LAST_START ) ) ) {
+			$last_start = $this->autoRecovery->get( self::AUTO_RECOVERY_LAST_START );
+			if ( $last_start ) {
 				$this->reportMessage(
 					$this->cliMsgFormatter->twoCols( '   ... rebuild record from', $last_start )
 				);
@@ -340,6 +355,15 @@ class DataRebuilder {
 		}
 
 		$this->store->clear();
+
+		// Rebuilt property pages may declare a type for a fixed property that
+		// differs from the one its table was created with (#6833)
+		$sqlStore = $this->store instanceof SPARQLStore ? $this->store->baseStore : $this->store;
+
+		if ( $sqlStore instanceof SQLStore ) {
+			$sqlStore->updateFixedPropertyTables();
+		}
+
 		$maxId = $this->entityRebuildDispatcher->getMaxId();
 
 		if ( $this->start > 1 && $this->end === false ) {
@@ -365,29 +389,36 @@ class DataRebuilder {
 
 		$this->rebuildCount = $this->start;
 		$progress = 0;
-		$estimatedProgress = 0;
 		$skipped_update = 0;
-		$current_id = 0;
-		$max = ( $this->end ? "$this->end" : $maxId );
+		$nextCheckpointId = $id;
+		$last_id = 0;
+		$endId = $this->end ?: $maxId;
+		$max = $endId;
+
+		// Snapshot the exception count so the data-step failures can be
+		// distinguished from any logged during the preceding property rebuild.
+		$exceptionsBefore = $this->exceptionFileLogger->getExceptionCount();
 
 		while ( ( ( !$this->end ) || ( $id <= $this->end ) ) && ( $id > 0 ) ) {
 
-			if ( $this->autoRecovery !== null ) {
+			if ( $this->autoRecovery !== null && $id >= $nextCheckpointId ) {
 				$this->autoRecovery->set( self::AUTO_RECOVERY_ID, (int)$id );
+				$nextCheckpointId = $id + self::AUTO_RECOVERY_INTERVAL;
 			}
 
 			$current_id = $id;
+			$range = $this->getDispatchRange( $id, $endId );
 
 			// Changes the ID to next target!
-			$this->doUpdateById( $id );
+			$this->doUpdateById( $id, $range );
+			$last_id = $current_id + $range - 1;
 
-			// Refresh progressively
-			if ( $this->rebuildCount % round( log10( $this->rebuildCount ) * 100, 0 ) === 0 ) {
-				$estimatedProgress = $this->entityRebuildDispatcher->getEstimatedProgress();
-				$max = $this->end ? "$this->end" : $this->entityRebuildDispatcher->getMaxId();
+			// IDs created during the run extend it
+			if ( !$this->end && $last_id > $max ) {
+				$max = $this->entityRebuildDispatcher->getMaxId();
 			}
 
-			$progress = $this->cliMsgFormatter->progressCompact( $current_id, $max );
+			$progress = $this->cliMsgFormatter->progressCompact( $last_id, $max );
 
 			foreach ( $this->entityRebuildDispatcher->getDispatchedEntities() as $value ) {
 
@@ -412,7 +443,7 @@ class DataRebuilder {
 		}
 
 		if ( !$this->options->has( 'v' ) ) {
-			$progress = $this->cliMsgFormatter->progressCompact( $current_id, $max );
+			$progress = $this->cliMsgFormatter->progressCompact( $last_id, $max );
 
 			$this->reportMessage(
 				$this->cliMsgFormatter->twoColsOverride( '   ... updating ...', $progress )
@@ -428,15 +459,42 @@ class DataRebuilder {
 
 		$this->write_to_file( $id );
 
+		$failed = $this->exceptionFileLogger->getExceptionCount() - $exceptionsBefore;
+
 		$this->reportMessage(
-			$this->cliMsgFormatter->twoCols( '   ... refreshed (IDs)', sprintf( "%s", ( $this->rebuildCount - $this->start ) ) )
+			$this->cliMsgFormatter->twoCols( '   ... refreshed (IDs)', sprintf( "%s", ( $this->rebuildCount - $this->start ) - $failed ) )
 		);
 
 		$this->reportMessage(
 			$this->cliMsgFormatter->twoCols( '   ... skipped (IDs)', sprintf( "%s", $skipped_update ) )
 		);
 
-		$this->reportMessage( "   ... done.\n" );
+		if ( $failed > 0 ) {
+			$this->reportMessage(
+				$this->cliMsgFormatter->twoCols( '   ... failed (IDs)', sprintf( "%s", $failed ) )
+			);
+
+			$this->reportMessage( "   ... completed with errors.\n" );
+		} else {
+			$this->reportMessage( "   ... done.\n" );
+		}
+
+		if ( $this->options->safeGet( 'use-job', false ) ) {
+			$text = [
+				'Update jobs have been queued instead of run inline.',
+				"\n\n",
+				'Process them in parallel with the MediaWiki job runner, for example:',
+				"\n\n",
+				'   php maintenance/runJobs.php --type smw.update --procs <N>',
+				"\n\n",
+				'Tune <N> to what your database can absorb; more workers is not always',
+				'faster because all workers write the same tables.'
+			];
+
+			$this->reportMessage(
+				"\n" . $this->cliMsgFormatter->wordwrap( $text ) . "\n"
+			);
+		}
 
 		if ( $this->options->has( 'ignore-exceptions' ) && $this->exceptionFileLogger->getExceptionCount() > 0 ) {
 			$this->reportMessage(
@@ -459,15 +517,35 @@ class DataRebuilder {
 		return true;
 	}
 
-	private function doUpdateById( &$id ) {
+	private function getDispatchRange( int $id, int $endId ): int {
+		// --ignore-exceptions skips the whole step that failed, and -d waits after each
+		// step, so both need steps of one ID
+		$canBatch = $this->options->safeGet( 'use-job', false ) &&
+			!$this->options->has( 'ignore-exceptions' ) &&
+			$this->delay === false;
+
+		if ( !$canBatch ) {
+			return 1;
+		}
+
+		// IDs created after the run started are dispatched one at a time
+		return max( 1, min( self::USE_JOB_DISPATCH_RANGE, $endId - $id + 1 ) );
+	}
+
+	private function doUpdateById( &$id, int $range ): void {
+		$this->entityRebuildDispatcher->setDispatchRangeLimit( $range );
+
 		if ( !$this->options->has( 'ignore-exceptions' ) ) {
 			$this->entityRebuildDispatcher->rebuild( $id );
 		} else {
 
 			try {
 				$this->entityRebuildDispatcher->rebuild( $id );
-			} catch ( Exception $e ) {
+			} catch ( Throwable $e ) {
 				$this->exceptionFileLogger->recordException( $id, $e );
+
+				// Rebuilder::rebuild() advances $id only after running its jobs, so skip the failed step
+				$id += $range;
 			}
 		}
 
@@ -475,14 +553,25 @@ class DataRebuilder {
 			usleep( $this->delay );
 		}
 
-		if ( $this->rebuildCount % 100 === 0 ) { // every 100 pages only
+		$this->rebuildCount += $range;
+
+		if ( $this->hasCountPassedMultipleOf( 100, $range ) ) {
 			MediaWikiServices::getInstance()->getLinkCache()->clear(); // avoid memory leaks
 		}
 
-		$this->rebuildCount++;
+		if ( $this->statsFlusher !== null ) {
+			$this->statsFlusher->tick();
+		}
 	}
 
-	private function getHumanReadableTextFrom( $id, array $entities ) {
+	/**
+	 * Whether the rebuild count, just advanced by $range, passed a multiple of $interval
+	 */
+	private function hasCountPassedMultipleOf( int $interval, int $range ): bool {
+		return intdiv( $this->rebuildCount, $interval ) > intdiv( $this->rebuildCount - $range, $interval );
+	}
+
+	private function getHumanReadableTextFrom( $id, array $entities ): array {
 		if ( !$this->options->has( 'v' ) ) {
 			return [ '', '' ];
 		}
@@ -493,18 +582,18 @@ class DataRebuilder {
 		$prefix = isset( $entities['t'] ) ? 'T:' : 'S:';
 		$entity = end( $entities );
 
-		if ( $entity instanceof \Title ) {
+		if ( $entity instanceof Title ) {
 			return [ $text, "[$prefix " . $entity->getPrefixedDBKey() . ']' ];
 		}
 
-		if ( $entity instanceof DIWikiPage ) {
+		if ( $entity instanceof WikiPage ) {
 			return [ $text, "[$prefix " . $entity->getHash() . ']' ];
 		}
 
 		return [ $text, "[$prefix " . ( is_string( $entity ) && $entity !== '' ? $entity : 'N/A' ) . ']' ];
 	}
 
-	private function performFullDelete() {
+	private function performFullDelete(): bool {
 		$this->reportMessage(
 			$this->cliMsgFormatter->section( 'Delete data' )
 		);
@@ -580,24 +669,28 @@ class DataRebuilder {
 		return true;
 	}
 
-	private function runOutdatedDisposer() {
+	private function runOutdatedDisposer(): void {
 		$this->reportMessage(
 			$this->cliMsgFormatter->section( 'Disposal (outdated)', 3, '-', true ) . "\n"
 		);
 
-		$applicationFactory = ApplicationFactory::getInstance();
-		$title = Title::newFromText( __METHOD__ );
+		$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromText( __METHOD__ );
 
 		$outdatedDisposer = new OutdatedDisposer(
-			$applicationFactory->newJobFactory()->newEntityIdDisposerJob( $title ),
-			$applicationFactory->getIteratorFactory()
+			$this->jobFactory->newEntityIdDisposerJob( $title ),
+			ApplicationFactory::getInstance()->getIteratorFactory()
 		);
 
 		$outdatedDisposer->setMessageReporter( $this->reporter );
+
+		if ( $this->statsFlusher !== null ) {
+			$outdatedDisposer->setStatsFlusher( $this->statsFlusher );
+		}
+
 		$outdatedDisposer->run();
 	}
 
-	private function is_writable( $startIdFile ) {
+	private function is_writable( $startIdFile ): bool {
 		if ( !is_writable( file_exists( $startIdFile ) ? $startIdFile : dirname( $startIdFile ) ) ) {
 			die( "Cannot use a startidfile that we can't write to.\n" );
 		}
@@ -605,16 +698,13 @@ class DataRebuilder {
 		return true;
 	}
 
-	private function write_to_file( $id ) {
+	private function write_to_file( $id ): void {
 		if ( $this->canWriteToIdFile ) {
 			file_put_contents( $this->startIdFile, "$id" );
 		}
 	}
 
-	/**
-	 * @param array $options
-	 */
-	private function setFiltersFromOptions( Options $options ) {
+	private function setFiltersFromOptions( Options $options ): void {
 		$this->filters = [];
 
 		if ( $options->has( 'categories' ) ) {
@@ -630,7 +720,7 @@ class DataRebuilder {
 		}
 	}
 
-	private function reportMessage( $message, $output = true ) {
+	private function reportMessage( $message, bool $output = true ): void {
 		if ( $output ) {
 			$this->reporter->reportMessage( $message );
 		}

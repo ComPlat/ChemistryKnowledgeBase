@@ -3,7 +3,8 @@
 		"authors": [
 			"BigDareLibrary",
 			"Demmy",
-			"Oyatopeabioye"
+			"Oyatopeabioye",
+			"ToluAyo"
 		]
 	},
 	"mobile-frontend-editor-edit": "Àtúnṣe",
@@ -17,6 +18,7 @@
 	"mobile-frontend-main-menu-watchlist": "Ìtòjọ àmójútó",
 	"mobile-frontend-pageaction-edit-tooltip": "Àtúnṣe abala asíwájú ojúewé yìí.",
 	"mobile-frontend-placeholder": "Ṣ'àwáàrí {{ORUKO AAYE AYELUJARA}}",
-	"mobile-frontend-random-button": "laileto",
+	"mobile-frontend-random-button": "Laileto",
+	"minerva-page-actions-overflow": "Àwọn míì",
 	"skin-minerva-night-mode-unavailable": "Oju-iwe nikan wa ni akori awọ \"Ọjọ."
 }

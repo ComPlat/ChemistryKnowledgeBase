@@ -15,7 +15,9 @@
 			"Liridon",
 			"Ritam",
 			"Techlik",
-			"Vyolla"
+			"Vyolla",
+			"Xhulianoo",
+			"INNERLMNT"
 		]
 	},
 	"visualeditor-cite-tool-name-book": "Libër",
@@ -30,11 +32,11 @@
 	"cite-ve-changedesc-reflist-group-to": "Grupi i listës së referencave u ndryshua nga grupi i përgjithshëm në \"$1\"",
 	"cite-ve-changedesc-reflist-responsive-set": "U ndryshua listë referencash për t’u shfaqur në shtylla reaguese",
 	"cite-ve-changedesc-reflist-responsive-unset": "U ndryshua listë referencash për t’u shfaqur në një shtyllë të vetme",
-	"cite-ve-citationneeded-button": "Shtoni një citim",
+	"cite-ve-citationneeded-button": "Shto një citim",
 	"cite-ve-citationneeded-description": "Një editues ka treguar që kjo kërkesë ka nevojë për citimin me burim të besueshëm.",
 	"cite-ve-citationneeded-reason": "Arsyeja e dhënë:",
 	"cite-ve-citationneeded-title": "Ka nevojë për citim",
-	"cite-ve-dialog-reference-editing-reused": "Kjo referencë është përdorur {{PLURAL:$1|një herë|2=twice|$1 herë}} në këtë faqe.",
+	"cite-ve-dialog-reference-editing-reused": "Kjo referencë është përdorur {{PLURAL:$1|një herë|2=dy herë|$1 herë}} në këtë faqe.",
 	"cite-ve-dialog-reference-editing-reused-long": "Kjo referencë është përdorur {{PLURAL:$1|once|2=twice|$1 times}} në këtë faqe. Ndryshimet e bëra këtu do të zbatohen në të gjitha vendet ku do të ripërdoret kjo referencë.",
 	"cite-ve-dialog-reference-options-group-label": "Përdorni këtë grup",
 	"cite-ve-dialog-reference-options-group-placeholder": "Referenca të përgjithshme",

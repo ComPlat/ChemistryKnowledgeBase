@@ -2,8 +2,12 @@
 
 namespace SMW\MediaWiki\Specials;
 
-use Html;
-use ParamProcessor\Param;
+use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\SpecialPage\SpecialPage;
+use ParamProcessor\ProcessedParam;
+use SMW\Formatters\Infolink;
+use SMW\MediaWiki\Outputs;
 use SMW\MediaWiki\Specials\Ask\ErrorWidget;
 use SMW\MediaWiki\Specials\Ask\FormatListWidget;
 use SMW\MediaWiki\Specials\Ask\HelpWidget;
@@ -14,20 +18,16 @@ use SMW\MediaWiki\Specials\Ask\ParametersProcessor;
 use SMW\MediaWiki\Specials\Ask\ParametersWidget;
 use SMW\MediaWiki\Specials\Ask\SortWidget;
 use SMW\Query\PrintRequest;
+use SMW\Query\Query;
+use SMW\Query\QueryProcessor;
 use SMW\Query\QueryResult;
 use SMW\Query\QuerySourceFactory;
 use SMW\Query\RemoteRequest;
 use SMW\Query\Result\StringResult;
 use SMW\Query\ResultPrinterDependency;
-use SMW\Services\ServicesFactory as ApplicationFactory;
-use SMW\Services\ServicesFactory;
+use SMW\Settings;
 use SMW\Utils\HtmlModal;
 use SMW\Utils\UrlArgs;
-use SMWInfolink as Infolink;
-use SMWOutputs;
-use SMWQuery;
-use SMWQueryProcessor as QueryProcessor;
-use SpecialPage;
 
 /**
  * This special page for MediaWiki implements a customisable form for executing
@@ -44,44 +44,29 @@ use SpecialPage;
  */
 class SpecialAsk extends SpecialPage {
 
-	/**
-	 * @var QuerySourceFactory
-	 */
-	private $querySourceFactory;
+	private string $queryString = '';
+
+	private array $parameters = [];
+
+	private array $printouts = [];
+
+	private bool $isEditMode = false;
+
+	private bool $isBorrowedMode = false;
 
 	/**
-	 * @var string
+	 * @var ProcessedParam[]
 	 */
-	private $queryString = '';
+	private array $params = [];
 
 	/**
-	 * @var array
+	 * @since 7.0.0
 	 */
-	private $parameters = [];
-
-	/**
-	 * @var array
-	 */
-	private $printouts = [];
-
-	/**
-	 * @var bool
-	 */
-	private $isEditMode = false;
-
-	/**
-	 * @var bool
-	 */
-	private $isBorrowedMode = false;
-
-	/**
-	 * @var Param[]
-	 */
-	private $params = [];
-
-	public function __construct() {
+	public function __construct(
+		private readonly QuerySourceFactory $querySourceFactory,
+		private readonly Settings $settings
+	) {
 		parent::__construct( 'Ask' );
-		$this->querySourceFactory = ApplicationFactory::getInstance()->getQuerySourceFactory();
 	}
 
 	/**
@@ -89,7 +74,7 @@ class SpecialAsk extends SpecialPage {
 	 *
 	 * @return bool
 	 */
-	public function doesWrites() {
+	public function doesWrites(): bool {
 		return true;
 	}
 
@@ -100,7 +85,7 @@ class SpecialAsk extends SpecialPage {
 	 */
 	public function execute( $p ) {
 		$this->setHeaders();
-		$settings = ApplicationFactory::getInstance()->getSettings();
+		$settings = $this->settings;
 
 		$out = $this->getOutput();
 		$request = $this->getRequest();
@@ -170,21 +155,21 @@ class SpecialAsk extends SpecialPage {
 		$out->addHTML( HelpWidget::html() );
 
 		if ( $request->getCheck( 'bHelp' ) ) {
-			$helpLink = $this->msg( $request->getVal( 'bHelp' ) )->escaped();
+			$helpLink = $this->msg( $request->getVal( 'bHelp' ) )->text();
 		} else {
-			$helpLink = $this->msg( 'smw_ask_doculink' )->escaped();
+			$helpLink = $this->msg( 'smw_ask_doculink' )->text();
 		}
 
 		$this->addHelpLink( $helpLink, true );
 
 		// make sure locally collected output data is pushed to the output!
-		SMWOutputs::commitToOutputPage( $out );
+		Outputs::commitToOutputPage( $out );
 	}
 
 	/**
 	 * @see SpecialPage::getGroupName
 	 */
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'smw_group/search';
 	}
 
@@ -222,7 +207,7 @@ class SpecialAsk extends SpecialPage {
 			return $out->addHtml( ErrorWidget::sessionFailure() );
 		}
 
-		$settings = ApplicationFactory::getInstance()->getSettings();
+		$settings = $this->settings;
 
 		NavigationLinksWidget::setMaxInlineLimit(
 			$GLOBALS['smwgQMaxInlineLimit']
@@ -232,7 +217,7 @@ class SpecialAsk extends SpecialPage {
 			$GLOBALS['smwgResultFormats']
 		);
 
-		$userOptionsLookup = ServicesFactory::getInstance()->singleton( 'UserOptionsLookup' );
+		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
 		ParametersWidget::setTooltipDisplay(
 			$userOptionsLookup->getOption( $this->getUser(), 'smw-prefs-ask-options-tooltip-display' )
 		);
@@ -264,7 +249,7 @@ class SpecialAsk extends SpecialPage {
 	/**
 	 * @param string $p
 	 */
-	protected function extractQueryParameters( $p ) {
+	protected function extractQueryParameters( $p ): void {
 		$request = $this->getRequest();
 		$this->isEditMode = false;
 
@@ -288,10 +273,10 @@ class SpecialAsk extends SpecialPage {
 		}
 	}
 
-	protected function makeHTMLResult() {
+	protected function makeHTMLResult(): void {
 		$result = '';
 		$res = null;
-		$settings = ApplicationFactory::getInstance()->getSettings();
+		$settings = $this->settings;
 		$queryobj = null;
 
 		$navigation = '';
@@ -304,11 +289,20 @@ class SpecialAsk extends SpecialPage {
 		$printer = null;
 
 		if ( $this->queryString !== '' ) {
-			[ $result, $res, $duration ] = $this->fetchResults(
+			$fetched = $this->fetchResults(
 				$printer,
 				$queryobj,
 				$urlArgs
 			);
+
+			// A remote request (request_type) prints its output directly, disables
+			// the OutputPage, and returns the print() status (an int) rather than
+			// the [ result, res, duration ] triple. Destructuring that int is a
+			// fatal on PHP 8.5 ("Cannot use int as array"), so only unpack an
+			// actual result and leave the already emitted response untouched.
+			if ( is_array( $fetched ) ) {
+				[ $result, $res, $duration ] = $fetched;
+			}
 		}
 
 		if ( $printer !== null && $printer->isExportFormat() ) {
@@ -326,9 +320,11 @@ class SpecialAsk extends SpecialPage {
 				echo $printer->getResult( $res, $this->params, SMW_OUTPUT_HTML ) . RemoteRequest::REQUEST_ID;
 			} elseif ( $request_type === 'special_page' ) {
 				// Generate raw content when being requested from a remote special_page
+				$this->sendInertResponseContentType();
 				echo $printer->getResult( $res, $this->params, SMW_OUTPUT_FILE ) . RemoteRequest::REQUEST_ID;
 			} else {
-				return $printer->outputAsFile( $res, $this->params );
+				$printer->outputAsFile( $res, $this->params );
+				return;
 			}
 		}
 
@@ -373,7 +369,7 @@ class SpecialAsk extends SpecialPage {
 
 		$htmlForm->setCallbacks(
 			[
-				'code_handler' => function () {
+				'code_handler' => function (): string {
 					return $this->print_code();
 				}
 			]
@@ -416,7 +412,7 @@ class SpecialAsk extends SpecialPage {
 		);
 	}
 
-	private function fetchResults( &$printer, &$queryobj, &$urlArgs ) {
+	private function fetchResults( &$printer, &$queryobj, UrlArgs &$urlArgs ): array|int {
 		// Copy the printout to retain the original state while in case of no
 		// specific subject (THIS) request extend the query with a
 		// `PrintRequest::PRINT_THIS` column
@@ -456,9 +452,15 @@ class SpecialAsk extends SpecialPage {
 		if ( !$printer->isExportFormat() ) {
 			if ( $request_type !== '' ) {
 				$this->getOutput()->disable();
+
+				if ( $request_type === 'raw' ) {
+					$this->sendInertResponseContentType();
+				}
+
 				$output = '';
 
-				if ( ( $count = $res->getCount() ) > 0 ) {
+				$count = $res->getCount();
+				if ( $count > 0 ) {
 					$further = $res->hasFurtherResults();
 
 					if ( $request_type === 'raw' ) {
@@ -504,7 +506,11 @@ class SpecialAsk extends SpecialPage {
 			}
 		}
 
-		if ( $this->getRequest()->getVal( 'score_set', false ) && ( $scoreSet = $res->getScoreSet() ) !== null ) {
+		// A debug query (format=debug) returns the debug output as a string rather
+		// than a QueryResult, so only query results expose a score set.
+		$scoreSet = $res instanceof QueryResult ? $res->getScoreSet() : null;
+		if ( $this->getRequest()->getVal( 'score_set', false ) && $scoreSet !== null
+			&& $this->canViewQueryDebugOutput() ) {
 			$table = $scoreSet->asTable( 'sortable wikitable smwtable-striped broadtable' );
 
 			if ( $table !== '' ) {
@@ -513,20 +519,43 @@ class SpecialAsk extends SpecialPage {
 		}
 
 		if ( $native_result !== '' ) {
-			$result .= '<h2>Native result</h2>' . '<pre>' . $native_result . '</pre>';
+			$result .= '<h2>Native result</h2>' . '<pre>' . htmlspecialchars( $native_result ) . '</pre>';
 		}
 
 		return [ $result, $res, $duration ];
 	}
 
-	private function getQueryLog( $duration, $isFromCache = false ): array {
+	/**
+	 * A remote `request_type` response is echoed with the OutputPage disabled, so without an
+	 * explicit content type it defaults to text/html; the file-export and raw branches carry
+	 * user-supplied separators and stored property values verbatim, which then execute as markup.
+	 * Serve those branches as inert plain text instead. The `embed` branch stays HTML by design.
+	 */
+	private function sendInertResponseContentType(): void {
+		$response = $this->getRequest()->response();
+		$response->header( 'Content-Type: text/plain; charset=UTF-8' );
+		$response->header( 'X-Content-Type-Options: nosniff' );
+	}
+
+	/**
+	 * The `native_result`, `score_set` and `q_engine` request parameters expose
+	 * query-engine internals (including the raw backend response) and are intended
+	 * as administrative diagnostics, so honour them only for the `smw-admin`
+	 * administration right rather than for every reader.
+	 */
+	private function canViewQueryDebugOutput(): bool {
+		return $this->getAuthority()->isAllowed( 'smw-admin' );
+	}
+
+	private function getQueryLog( $duration, bool $isFromCache = false ): array {
 		$source = null;
 
 		if ( isset( $this->parameters['source'] ) ) {
 			$source = $this->parameters['source'];
 		}
 
-		if ( $this->getRequest()->getVal( 'q_engine' ) === 'sql_store' ) {
+		if ( $this->getRequest()->getVal( 'q_engine' ) === 'sql_store'
+			&& $this->canViewQueryDebugOutput() ) {
 			$source = 'sql_store';
 		}
 
@@ -547,11 +576,12 @@ class SpecialAsk extends SpecialPage {
 	 * The return value is not HTML-safe; the caller must take care of escaping it.
 	 * @return string
 	 */
-	private function print_code() {
+	private function print_code(): string {
 		$code = $this->queryString ? $this->queryString . "\n" : "\n";
 
 		foreach ( $this->printouts as $printout ) {
-			if ( ( $serialization = $printout->getSerialisation( true ) ) !== '' ) {
+			$serialization = $printout->getSerialisation( true );
+			if ( $serialization !== '' ) {
 				$code .= ' |' . $serialization . "\n";
 			}
 		}
@@ -571,7 +601,7 @@ class SpecialAsk extends SpecialPage {
 		return '{{#ask: ' . $code . '}}';
 	}
 
-	private function print_borrowed_msg( &$html, &$searchInfoText ) {
+	private function print_borrowed_msg( string &$html, string &$searchInfoText ): void {
 		if ( !$this->isBorrowedMode ) {
 			return;
 		}
@@ -605,7 +635,7 @@ class SpecialAsk extends SpecialPage {
 		}
 	}
 
-	private function newUrlArgs() {
+	private function newUrlArgs(): UrlArgs {
 		$urlArgs = new UrlArgs();
 
 		// build parameter strings for URLs, based on current settings
@@ -654,7 +684,7 @@ class SpecialAsk extends SpecialPage {
 		return $urlArgs;
 	}
 
-	private function fetchQueryResult( $params ) {
+	private function fetchQueryResult( array $params ): array {
 		$res = null;
 		$debug = '';
 		$duration = 0;
@@ -670,18 +700,20 @@ class SpecialAsk extends SpecialPage {
 		);
 
 		if ( $this->getRequest()->getVal( 'cache' ) === 'no' ) {
-			$queryobj->setOption( SMWQuery::NO_CACHE, true );
+			$queryobj->setOption( Query::NO_CACHE, true );
 		}
 
-		if ( $this->getRequest()->getVal( 'native_result', false ) ) {
+		if ( $this->getRequest()->getVal( 'native_result', false )
+			&& $this->canViewQueryDebugOutput() ) {
 			$queryobj->setOption( 'native_result', true );
 		}
 
-		$queryobj->setOption( SMWQuery::PROC_CONTEXT, 'SpecialAsk' );
+		$queryobj->setOption( Query::PROC_CONTEXT, 'SpecialAsk' );
 		$source = $params['source']->getValue();
 		$noSource = $source === '';
 
-		if ( $this->getRequest()->getVal( 'q_engine' ) === 'sql_store' ) {
+		if ( $this->getRequest()->getVal( 'q_engine' ) === 'sql_store'
+			&& $this->canViewQueryDebugOutput() ) {
 			$source = 'sql_store';
 		}
 
@@ -710,7 +742,8 @@ class SpecialAsk extends SpecialPage {
 			$queryobj
 		);
 
-		if ( $this->getRequest()->getVal( 'native_result', false ) && isset( $queryobj->native_result ) ) {
+		if ( $this->getRequest()->getVal( 'native_result', false ) && $this->canViewQueryDebugOutput()
+			&& $queryobj->native_result !== '' ) {
 			$native_result = $queryobj->native_result;
 		}
 

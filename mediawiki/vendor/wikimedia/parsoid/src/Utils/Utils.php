@@ -137,7 +137,7 @@ class Utils {
 			return '';
 		}
 		$c = $str[--$idx];
-		while ( ( ord( $c ) & 0xC0 ) === 0x80 ) {
+		while ( ( ord( $c[0] ) & 0xC0 ) === 0x80 ) {
 			$c = $str[--$idx] . $c;
 		}
 		return $c;
@@ -321,7 +321,9 @@ class Utils {
 	 */
 	public static function escapeHtml( string $s ): string {
 		// Only encodes five characters: " ' & < >
-		return htmlspecialchars( $s, ENT_QUOTES | ENT_HTML5 );
+		$s = htmlspecialchars( $s, ENT_QUOTES | ENT_HTML5 );
+		$s = str_replace( "\u{0338}", '&#x338;', $s );
+		return $s;
 	}
 
 	/**

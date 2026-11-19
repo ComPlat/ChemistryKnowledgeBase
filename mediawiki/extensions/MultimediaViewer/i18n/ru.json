@@ -20,7 +20,9 @@
 			"Tanzun",
 			"Toghrul Rahimli",
 			"Tucvbif",
-			"Wizardist"
+			"Wizardist",
+			"Yurina Tatiana",
+			"Shabe"
 		]
 	},
 	"multimediaviewer-desc": "Раскрывает эскизы в большие изображения на весь экран.",
@@ -34,10 +36,10 @@
 	"multimediaviewer-multiple-authors": "ещё {{PLURAL:$1|один автор|$1 автора|$1 авторов}}",
 	"multimediaviewer-multiple-authors-combine": "$1 и $2",
 	"multimediaviewer-metadata-error": "Не удалось загрузить сведения об изображении (ошибка: $1)",
+	"multimediaviewer-file-not-found-error": "Извините, файл $1 не может быть отображён, так как он отсутствует на текущей странице.",
 	"multimediaviewer-thumbnail-error": "Извините, файл не может быть отображён",
 	"multimediaviewer-thumbnail-error-description": "Похоже, возникла какая-то техническая проблема. Вы можете $1, если она будет повторяться. Ошибка: $2",
 	"multimediaviewer-thumbnail-error-retry": "повторить",
-	"multimediaviewer-thumbnail-error-report": "сообщить о проблеме",
 	"multimediaviewer-license-cc-pd": "Общественное достояние",
 	"multimediaviewer-license-pd": "Общественное достояние",
 	"multimediaviewer-license-default": "Посмотреть лицензию",
@@ -73,6 +75,7 @@
 	"multimediaviewer-reuse-copy-embed": "Выберите и (если поддерживается) скопируйте код для встраивания этого файла",
 	"multimediaviewer-share-tab": "Поделиться",
 	"multimediaviewer-embed-tab": "Вставить на страницу",
+	"multimediaviewer-download": "Скачать",
 	"multimediaviewer-download-link": "Скачать этот файл",
 	"multimediaviewer-download-preview-link-title": "Посмотреть в браузере",
 	"multimediaviewer-download-original-button-name": "Скачать исходный файл",
@@ -140,6 +143,5 @@
 	"multimediaviewer-enable-alert": "Медиа-просмотрщик сейчас отключён",
 	"multimediaviewer-disable-info-title": "Вы отключили Медиа-просмотрщик",
 	"multimediaviewer-disable-info": "Вы всё ещё можете просматривать отдельные файлы через Медиа-просмотрщик!",
-	"multimediaviewer-errorreport-privacywarning": "Подробная информация об ошибке прилагается к отчёту, который будет общедоступным. Если вас это не устраивает, вы можете отредактировать отчёт ниже и удалить все данные, которыми вы не хотите поделиться.",
 	"multimediaviewer-loading": "Загрузка средства просмотра медиафайлов."
 }

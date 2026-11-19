@@ -3,16 +3,18 @@
 namespace SMW\Protection;
 
 use MediaWiki\Permissions\PermissionManager as MwPermissionManager;
-use SMW\DIProperty;
-use SMW\DIWikiPage;
+use MediaWiki\Permissions\RestrictionStore;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
 use SMW\EntityCache;
 use SMW\Listener\ChangeListener\ChangeListeners\PropertyChangeListener;
 use SMW\Listener\ChangeListener\ChangeRecord;
+use SMW\MediaWiki\Jobs\ChangePropagationDispatchJob;
+use SMW\MediaWiki\PageCreator;
 use SMW\MediaWiki\PermissionManager;
-use SMW\Services\ServicesFactory;
 use SMW\Store;
-use Title;
-use User;
 
 /**
  * Handles protection validation.
@@ -25,21 +27,6 @@ use User;
 class ProtectionValidator {
 
 	/**
-	 * @var Store
-	 */
-	private $store;
-
-	/**
-	 * @var EntityCache
-	 */
-	private $entityCache;
-
-	/**
-	 * @var PermissionManager
-	 */
-	private $permissionManager;
-
-	/**
 	 * @var bool|string
 	 */
 	private $editProtectionRight = false;
@@ -49,32 +36,22 @@ class ProtectionValidator {
 	 */
 	private $createProtectionRight = false;
 
-	/**
-	 * @var bool|string
-	 */
-	private $changePropagationProtection = true;
+	private bool $changePropagationProtection = true;
 
-	/**
-	 * @var
-	 */
-	private $importPerformers = [];
+	private array $importPerformers = [];
 
-	/**
-	 * @var
-	 */
-	private $importPerformerProtectionLookupCache = [];
+	private array $importPerformerProtectionLookupCache = [];
 
 	/**
 	 * @since 2.5
-	 *
-	 * @param Store $store
-	 * @param EntityCache $entityCache
-	 * @param PermissionManager $permissionManager
 	 */
-	public function __construct( Store $store, EntityCache $entityCache, PermissionManager $permissionManager ) {
-		$this->store = $store;
-		$this->entityCache = $entityCache;
-		$this->permissionManager = $permissionManager;
+	public function __construct(
+		private readonly Store $store,
+		private readonly EntityCache $entityCache,
+		private readonly PermissionManager $permissionManager,
+		private readonly PageCreator $pageCreator,
+		private readonly RestrictionStore $restrictionStore,
+	) {
 	}
 
 	/**
@@ -82,17 +59,17 @@ class ProtectionValidator {
 	 *
 	 * @param PropertyChangeListener $propertyChangeListener
 	 */
-	public function registerPropertyChangeListener( PropertyChangeListener $propertyChangeListener ) {
-		$propertyChangeListener->addListenerCallback( new DIProperty( '_CHGPRO' ), [ $this, 'invalidateCache' ] );
+	public function registerPropertyChangeListener( PropertyChangeListener $propertyChangeListener ): void {
+		$propertyChangeListener->addListenerCallback( new Property( '_CHGPRO' ), [ $this, 'invalidateCache' ] );
 	}
 
 	/**
 	 * @since 3.2
 	 *
-	 * @param DIProperty $property
+	 * @param Property $property
 	 * @param ChangeRecord $changeRecord
 	 */
-	public function invalidateCache( DIProperty $property, ChangeRecord $changeRecord ) {
+	public function invalidateCache( Property $property, ChangeRecord $changeRecord ): void {
 		if ( $property->getKey() !== '_CHGPRO' ) {
 			return;
 		}
@@ -103,21 +80,9 @@ class ProtectionValidator {
 				continue;
 			}
 
-			$subject = $this->store->getObjectIds()->getDataItemById(
-				$record->get( 'row.s_id' )
+			$this->entityCache->invalidate(
+				$this->store->getObjectIds()->getDataItemById( $record->get( 'row.s_id' ) )
 			);
-
-			$key = $this->entityCache->makeCacheKey( 'protection', $subject->getHash() );
-
-			// If the change is an insert type then the `Change propagation` property
-			// was added hence use this as a short cut to store the state avoiding
-			// an extra lookup query and allow the state to be available as soon
-			// as possible.
-			if ( $record->has( 'is_insert' ) && $record->get( 'is_insert' ) === true ) {
-				$this->entityCache->save( $key, 'yes' );
-			} else {
-				$this->entityCache->delete( $key );
-			}
 		}
 	}
 
@@ -126,7 +91,7 @@ class ProtectionValidator {
 	 *
 	 * @param string|bool $editProtectionRight
 	 */
-	public function setEditProtectionRight( $editProtectionRight ) {
+	public function setEditProtectionRight( $editProtectionRight ): void {
 		$this->editProtectionRight = $editProtectionRight;
 	}
 
@@ -135,7 +100,7 @@ class ProtectionValidator {
 	 *
 	 * @return string|false
 	 */
-	public function getEditProtectionRight() {
+	public function getEditProtectionRight(): string|false {
 		return $this->editProtectionRight;
 	}
 
@@ -144,7 +109,7 @@ class ProtectionValidator {
 	 *
 	 * @param string|bool $createProtectionRight
 	 */
-	public function setCreateProtectionRight( $createProtectionRight ) {
+	public function setCreateProtectionRight( $createProtectionRight ): void {
 		$this->createProtectionRight = $createProtectionRight;
 	}
 
@@ -153,7 +118,7 @@ class ProtectionValidator {
 	 *
 	 * @return string|false
 	 */
-	public function getCreateProtectionRight() {
+	public function getCreateProtectionRight(): string|false {
 		return $this->createProtectionRight;
 	}
 
@@ -162,7 +127,7 @@ class ProtectionValidator {
 	 *
 	 * @param bool $changePropagationProtection
 	 */
-	public function setChangePropagationProtection( $changePropagationProtection ) {
+	public function setChangePropagationProtection( $changePropagationProtection ): void {
 		$this->changePropagationProtection = (bool)$changePropagationProtection;
 	}
 
@@ -171,7 +136,7 @@ class ProtectionValidator {
 	 *
 	 * @param array $importPerformers
 	 */
-	public function setImportPerformers( array $importPerformers ) {
+	public function setImportPerformers( array $importPerformers ): void {
 		$this->importPerformers = $importPerformers;
 	}
 
@@ -182,8 +147,8 @@ class ProtectionValidator {
 	 *
 	 * @return bool
 	 */
-	public function hasEditProtectionOnNamespace( Title $title ) {
-		$subject = DIWikiPage::newFromTitle(
+	public function hasEditProtectionOnNamespace( Title $title ): bool {
+		$subject = WikiPage::newFromTitle(
 			$title
 		);
 
@@ -219,12 +184,13 @@ class ProtectionValidator {
 			return $this->importPerformerProtectionLookupCache[$key];
 		}
 
-		$creator = ServicesFactory::getInstance()->newPageCreator()
+		$creator = $this->pageCreator
 			->createPage( $title )
 			->getCreator();
 
 		if ( !$creator instanceof User ) {
-			return $this->importPerformerProtectionLookupCache[$key] = false;
+			$this->importPerformerProtectionLookupCache[$key] = false;
+			return $this->importPerformerProtectionLookupCache[$key];
 		}
 
 		$importPerformers = array_flip( $this->importPerformers );
@@ -232,10 +198,12 @@ class ProtectionValidator {
 		// Was the creator a dedicated import performer?, if yes, it means
 		// only this user is allowed to alter the content
 		if ( !isset( $importPerformers[$creator->getName()] ) ) {
-			return $this->importPerformerProtectionLookupCache[$key] = false;
+			$this->importPerformerProtectionLookupCache[$key] = false;
+			return $this->importPerformerProtectionLookupCache[$key];
 		}
 
-		return $this->importPerformerProtectionLookupCache[$key] = !$creator->equals( $user );
+		$this->importPerformerProtectionLookupCache[$key] = !$creator->equals( $user );
+		return $this->importPerformerProtectionLookupCache[$key];
 	}
 
 	/**
@@ -245,19 +213,25 @@ class ProtectionValidator {
 	 *
 	 * @return bool
 	 */
-	public function hasChangePropagationProtection( Title $title ) {
-		$subject = DIWikiPage::newFromTitle( $title )->asBase();
+	public function hasChangePropagationProtection( Title $title ): bool {
+		$subject = WikiPage::newFromTitle( $title )->asBase();
 		$namespace = $subject->getNamespace();
 
 		if ( $namespace !== SMW_NS_PROPERTY && $namespace !== NS_CATEGORY ) {
 			return false;
 		}
 
-		if ( $this->changePropagationProtection === false ) {
+		if ( !$this->changePropagationProtection ) {
 			return false;
 		}
 
-		return $this->checkProtection( $subject, new DIProperty( '_CHGPRO' ) );
+		// The `_CHGPRO` marker only reflects an active lock while a change
+		// propagation is genuinely pending. A dispatch job that failed or was
+		// lost can leave the marker behind with no pending job, which used to
+		// lock the page indefinitely (#4344). Cross-check the job queue and
+		// treat a marker without any pending job as stale.
+		return $this->checkProtection( $subject, new Property( '_CHGPRO' ) )
+			&& ChangePropagationDispatchJob::hasPendingJobs( $subject );
 	}
 
 	/**
@@ -267,8 +241,8 @@ class ProtectionValidator {
 	 *
 	 * @return bool
 	 */
-	public function hasProtection( Title $title ) {
-		$subject = DIWikiPage::newFromTitle(
+	public function hasProtection( Title $title ): bool {
+		$subject = WikiPage::newFromTitle(
 			$title
 		);
 
@@ -282,7 +256,7 @@ class ProtectionValidator {
 	 *
 	 * @return bool
 	 */
-	public function hasCreateProtection( ?Title $title = null ) {
+	public function hasCreateProtection( ?Title $title = null ): bool {
 		if ( $title === null ) {
 			return false;
 		}
@@ -304,12 +278,12 @@ class ProtectionValidator {
 	 *
 	 * @return bool
 	 */
-	public function hasEditProtection( ?Title $title = null ) {
+	public function hasEditProtection( ?Title $title = null ): bool {
 		if ( $title === null ) {
 			return false;
 		}
 
-		$subject = DIWikiPage::newFromTitle(
+		$subject = WikiPage::newFromTitle(
 			$title
 		);
 
@@ -318,34 +292,67 @@ class ProtectionValidator {
 			&& $this->checkProtection( $subject->asBase() );
 	}
 
-	private function checkProtection( $subject, $property = null ) {
+	private function checkProtection( WikiPage $subject, $property = null ): bool {
 		if ( $property === null ) {
-			$property = new DIProperty( '_EDIP' );
+			$property = new Property( '_EDIP' );
 		}
 
-		$key = $this->entityCache->makeCacheKey( 'protection', $subject->getHash() );
-		$hasProtection = false;
+		// The property must be part of the key: `checkProtection()` is called for
+		// both `_CHGPRO` (change-propagation lock) and `_EDIP` (edit protection),
+		// and a shared slot let one concern's cached result be read for the other.
+		$hasProtection = $this->entityCache->getWithSetCallback(
+			$subject,
+			$this->entityCache->makeKey( 'protection', $subject->getHash(), $property->getKey() ),
+			// A check while replicas lag behind a new `_CHGPRO` finds no lock, and
+			// the job that removes `_CHGPRO` can be a long way off
+			$property->getKey() === '_CHGPRO' ? EntityCache::TTL_MINUTE : EntityCache::TTL_WEEK,
+			// As a literal, since a cached `false` would count as a miss
+			fn () => $this->findProtection( $subject, $property ) ? 'yes' : 'no'
+		);
 
-		if ( $this->entityCache->contains( $key ) ) {
-			return $this->entityCache->fetch( $key ) === 'yes';
+		if ( $hasProtection !== 'yes' ) {
+			return false;
 		}
 
+		// A stored `_EDIP` value only constitutes edit protection when the matching
+		// MediaWiki edit restriction is actually in place. Applying that restriction
+		// requires the configured edit-protection right (see EditProtectionUpdater),
+		// so a bare `[[Is edit protected::true]]` from an editor without the right
+		// records the value but leaves the page unrestricted and must not lock it.
+		if ( $property->getKey() === '_EDIP' ) {
+			return $this->hasActiveEditProtectionRestriction( $subject );
+		}
+
+		return true;
+	}
+
+	private function hasActiveEditProtectionRestriction( WikiPage $subject ): bool {
+		$title = $subject->getTitle();
+
+		if ( $title === null ) {
+			return false;
+		}
+
+		if ( !$this->restrictionStore->isProtected( $title, 'edit' ) ) {
+			return false;
+		}
+
+		$restrictions = array_flip( $this->restrictionStore->getRestrictions( $title, 'edit' ) );
+
+		return isset( $restrictions[$this->editProtectionRight] );
+	}
+
+	private function findProtection( WikiPage $subject, Property $property ): bool {
 		$dataItems = $this->store->getPropertyValues(
 			$subject,
 			$property
 		);
 
-		if ( $dataItems !== null && $dataItems !== [] ) {
-			$hasProtection = $property->getKey() === '_EDIP' ? end( $dataItems )->getBoolean() : true;
+		if ( $dataItems === null || $dataItems === [] ) {
+			return false;
 		}
 
-		// Store as literal so that the check avoids a `false` and is not
-		// attempting to read from the store on every check where it hasn't
-		// found a positive confirmation
-		$this->entityCache->save( $key, ( $hasProtection ? 'yes' : 'no' ) );
-		$this->entityCache->associate( $subject, $key );
-
-		return $hasProtection;
+		return $property->getKey() === '_EDIP' ? end( $dataItems )->getBoolean() : true;
 	}
 
 }

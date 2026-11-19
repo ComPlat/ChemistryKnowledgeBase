@@ -2,6 +2,9 @@
 
 namespace SMW\SQLStore\EntityStore;
 
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
+use SMW\DataItems\WikiPage;
 use SMW\MediaWiki\Connection\Database;
 use SMW\SQLStore\SQLStore;
 use SMW\Utils\HmacSerializer;
@@ -9,40 +12,31 @@ use SMW\Utils\HmacSerializer;
 /**
  * @private
  *
- * @license GNU GPL v2
+ * @license GPL-2.0-or-later
  * @since 3.2
  *
  * @author mwjames
  */
 class AuxiliaryFields {
 
+	use LoggerAwareTrait;
+
 	const COUNTMAP_CACHE_ID = 'count.map';
 
 	/**
-	 * @var Database
-	 */
-	private $connection;
-
-	/**
-	 * @var IdCacheManager
-	 */
-	private $idCacheManager;
-
-	/**
 	 * @since 3.2
-	 *
-	 * @param Database $connection
-	 * @param IdCacheManager $idCacheManager
 	 */
-	public function __construct( Database $connection, IdCacheManager $idCacheManager ) {
-		$this->connection = $connection;
-		$this->idCacheManager = $idCacheManager;
+	public function __construct(
+		private readonly Database $connection,
+		private readonly IdCacheManager $idCacheManager,
+	) {
+		$this->logger = new NullLogger();
 	}
 
 	/**
 	 * @since 3.2
 	 *
-	 * @param DIWikiPage[] $subjects
+	 * @param WikiPage[] $subjects
 	 *
 	 * @return FieldList
 	 */
@@ -68,12 +62,27 @@ class AuxiliaryFields {
 			$map = [];
 			$countmap = $this->connection->unescape_bytea( $row->smw_countmap );
 
-			if ( $countmap !== null ) {
+			// An empty map is stored as SQL NULL, which unescape_bytea() returns
+			// as null on MySQL but as '' on PostgreSQL; treat both as empty so a
+			// normal empty map is not run through uncompress() below.
+			if ( $countmap !== null && $countmap !== '' ) {
 				$map = HmacSerializer::uncompress( $countmap );
+
+				// uncompress() returns false when the stored blob cannot be
+				// deserialized (for example when it was written under a
+				// different $wgSecretKey); fall back to an empty map so the
+				// FieldList consumers iterate an array rather than a bool.
+				if ( !is_array( $map ) ) {
+					$this->logger->warning(
+						'Count map for entity {id} could not be deserialized and was treated as empty; this can happen after $wgSecretKey changed.',
+						[ 'id' => $row->smw_id ]
+					);
+					$map = [];
+				}
 			}
 
-			$cache->save( $row->smw_id, $map );
-			$countMaps[$hashMap[$row->smw_hash]] = [ $row->smw_id => $map ];
+			$cache->save( (string)$row->smw_id, $map );
+			$countMaps[$hashMap[(string)$this->connection->unescape_bytea( $row->smw_hash )]] = [ $row->smw_id => $map ];
 		}
 
 		return new FieldList( $countMaps );
@@ -86,7 +95,7 @@ class AuxiliaryFields {
 	 * @param array|null $seqmap
 	 * @param array|null $countmap
 	 */
-	public function setFieldMaps( $sid, ?array $seqmap = null, ?array $countmap = null ) {
+	public function setFieldMaps( $sid, ?array $seqmap = null, ?array $countmap = null ): void {
 		$cache = $this->idCacheManager->get( self::COUNTMAP_CACHE_ID );
 
 		if ( $seqmap !== [] ) {
@@ -105,45 +114,33 @@ class AuxiliaryFields {
 			$countmap = null;
 		}
 
-		$this->connection->upsert(
-			SQLStore::ID_AUXILIARY_TABLE,
-			[
+		$this->connection->newInsertQueryBuilder()
+			->insertInto( SQLStore::ID_AUXILIARY_TABLE )
+			->row( [
 				'smw_id' => $sid,
 				'smw_seqmap' => $seqmap,
 				'smw_countmap' => $countmap
-			],
-			'smw_id',
-			[
+			] )
+			->onDuplicateKeyUpdate()
+			->uniqueIndexFields( [ 'smw_id' ] )
+			->set( [
 				'smw_seqmap' => $seqmap,
 				'smw_countmap' => $countmap
-			],
-			__METHOD__
-		);
+			] )
+			->caller( __METHOD__ )
+			->execute();
 
-		$cache->save( $sid, $countmap );
+		$cache->save( (string)$sid, $countmap );
 	}
 
 	private function fetchCountMap( array $hashes ) {
-		return $this->connection->select(
-			[
-				// tableName conversion required by SQlite otherwise the
-				// integration tests fail
-				't' => $this->connection->tableName( SQLStore::ID_TABLE ),
-				'p' => $this->connection->tableName( SQLStore::ID_AUXILIARY_TABLE ) ],
-			[
-				't.smw_id',
-				't.smw_hash',
-				'p.smw_countmap',
-			],
-			[
-				't.smw_hash' => $hashes
-			],
-			__METHOD__,
-			[],
-			[
-				'p' => [ 'INNER JOIN', [ 'p.smw_id=t.smw_id' ] ],
-			]
-		);
+		return $this->connection->newSelectQueryBuilder()
+			->select( [ 't.smw_id', 't.smw_hash', 'p.smw_countmap' ] )
+			->from( SQLStore::ID_TABLE, 't' )
+			->join( SQLStore::ID_AUXILIARY_TABLE, 'p', 'p.smw_id=t.smw_id' )
+			->where( [ 't.smw_hash' => array_map( [ $this->connection, 'escape_bytea' ], $hashes ) ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 	}
 
 }

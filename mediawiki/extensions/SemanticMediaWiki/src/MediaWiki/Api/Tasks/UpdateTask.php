@@ -2,7 +2,7 @@
 
 namespace SMW\MediaWiki\Api\Tasks;
 
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
 use SMW\Enum;
 use SMW\MediaWiki\JobFactory;
 use SMW\MediaWiki\Jobs\UpdateJob;
@@ -16,32 +16,31 @@ use SMW\MediaWiki\Jobs\UpdateJob;
 class UpdateTask extends Task {
 
 	/**
-	 * @var JobFactory
+	 * @since 3.1
 	 */
-	private $jobFactory;
+	public function __construct( private readonly JobFactory $jobFactory ) {
+	}
 
 	/**
-	 * @since 3.1
+	 * Forces a store update for the subject, so the caller must be authorized
+	 * to edit that specific page rather than merely holding a wiki-wide right.
+	 * The legitimate post-edit flow acts on the page the caller just saved.
 	 *
-	 * @param JobFactory $jobFactory
+	 * @since 7.3.1
 	 */
-	public function __construct( JobFactory $jobFactory ) {
-		$this->jobFactory = $jobFactory;
+	public function getAuthorizationSubject( array $parameters ): ?string {
+		return $parameters['subject'] ?? '';
 	}
 
 	/**
 	 * @since 3.1
-	 *
-	 * @param array $parameters
-	 *
-	 * @return array
 	 */
-	public function process( array $parameters ) {
+	public function process( array $parameters ): array {
 		if ( !isset( $parameters['subject'] ) || $parameters['subject'] === '' ) {
 			return [ 'done' => false ];
 		}
 
-		$subject = DIWikiPage::doUnserialize( $parameters['subject'] );
+		$subject = WikiPage::doUnserialize( $parameters['subject'] );
 		$title = $subject->getTitle();
 		$log = [];
 
@@ -57,7 +56,7 @@ class UpdateTask extends Task {
 			$parameters['ref'] = [ $subject->getHash() ];
 		}
 
-		$isPost = isset( $parameters['post'] ) ? $parameters['post'] : false;
+		$isPost = $parameters['post'] ?? false;
 		$origin = [];
 
 		if ( isset( $parameters['origin'] ) ) {

@@ -2,8 +2,11 @@
 
 namespace SMW\Tests\Utils\JSONScript;
 
+use Article;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Parser\ParserOptions;
 use MediaWikiIntegrationTestCase;
-use SMW\DIWikiPage;
+use SMW\DataItems\WikiPage;
 use SMW\Tests\Utils\UtilityFactory;
 use SMW\Tests\Utils\Validators\HtmlValidator;
 
@@ -20,21 +23,12 @@ use SMW\Tests\Utils\Validators\HtmlValidator;
 class ParserHtmlTestCaseProcessor extends MediaWikiIntegrationTestCase {
 
 	/**
-	 * @var HtmlValidator
-	 */
-	private $htmlValidator;
-
-	/**
 	 * @var PageReader
 	 */
 	private $pageReader;
 
-	/**
-	 * @param HtmlValidator $htmlValidator
-	 */
-	public function __construct( HtmlValidator $htmlValidator ) {
+	public function __construct( private readonly HtmlValidator $htmlValidator ) {
 		parent::__construct();
-		$this->htmlValidator = $htmlValidator;
 		$this->pageReader = UtilityFactory::getInstance()->newPageReader();
 	}
 
@@ -99,7 +93,7 @@ class ParserHtmlTestCaseProcessor extends MediaWikiIntegrationTestCase {
 	 * @return string
 	 */
 	private function getOutputText( array $case ) {
-		$subject = DIWikiPage::newFromText(
+		$subject = WikiPage::newFromText(
 			$case[ 'subject' ],
 			isset( $case[ 'namespace' ] ) ? constant( $case[ 'namespace' ] ) : NS_MAIN
 		);
@@ -108,38 +102,23 @@ class ParserHtmlTestCaseProcessor extends MediaWikiIntegrationTestCase {
 			$subject->getTitle()
 		);
 
-		if ( !$this->isSetAndTrueish( $case[ 'assert-output' ], [ 'withOutputPageContext', 'onPageView' ] ) ) {
-			return $parserOutput->getText();
+		if ( !$this->isSetAndTrueish( $case[ 'assert-output' ], 'onPageView' ) ) {
+			return $parserOutput->runOutputPipeline( ParserOptions::newFromAnon() )->getContentHolderText();
 		}
 
-		$context = new \RequestContext();
+		$context = new RequestContext();
 		$context->setTitle( $subject->getTitle() );
 
-		if ( $this->isSetAndTrueish( $case[ 'assert-output' ], 'withOutputPageContext' ) ) {
-			// Ensures the OutputPageBeforeHTML hook is run
-			$context->getOutput()->addParserOutput( $parserOutput );
-		} else {
-			\Article::newFromTitle( $subject->getTitle(), $context )->view();
-		}
+		Article::newFromTitle( $subject->getTitle(), $context )->view();
 
 		return $context->getOutput()->getHTML();
 	}
 
 	/**
-	 * @param $array
-	 * @param string | string[] $keys
-	 * @return bool True if any of the $keys is defined in $array and true-ish
+	 * @return bool True if $key is defined in $array and true-ish
 	 */
-	private function isSetAndTrueish( $array, $keys ) {
-		$keys = (array)$keys;
-
-		foreach ( $keys as $key ) {
-			if ( isset( $array[ $key ] ) && $array[ $key ] ) {
-				return true;
-			}
-		}
-
-		return false;
+	private function isSetAndTrueish( array $array, string $key ): bool {
+		return !empty( $array[$key] );
 	}
 
 }

@@ -5,7 +5,7 @@
 			"Munajad.MH"
 		]
 	},
-	"echo-desc": "Sistem pratèla ḍâ' pangangghuy taghâut lajhing bân pokpara",
+	"echo-desc": "Sistem ka'angghuy martèla pangangghuy bhâb kagiyâdhân bân pessen",
 	"prefs-echo": "Pamratèla'an",
 	"prefs-description-echo": "Pèlè notifikasi ka'emma sè {{GENDER:|Abâ'na}} ka'anḍi' bân tarèka sobhâna.",
 	"prefs-emailsettings": "Opsi sorasa",
@@ -33,7 +33,7 @@
 	"echo-pref-dont-email-read-notifications": "Jhâ' sareng'aghi pamartèla kamaos ḍâlem sorasa panotèng",
 	"echo-learn-more": "Ladru abibârân",
 	"echo-log": "Cateṭṭan publik",
-	"echo-new-messages": "Abâ'na anḍi' lajhing anyar neng pelataran pakanḍhâ'ân",
+	"echo-new-messages": "Bâ'na anḍi' sèttong pessen anyar è kaca Pakanḍhâ'ân",
 	"echo-category-title-article-linked": "{{PLURAL:$1|Pranala}} pelataran",
 	"echo-category-title-reverted": "{{PLURAL:$1|Pangambâliân}} beccè'an",
 	"echo-category-title-mention-failure": "{{PLURAL:$1|sebbhutan}} burung",
@@ -44,12 +44,13 @@
 	"echo-category-title-system-emailonly": "{{PLURAL:$1|Sistem}}",
 	"echo-category-title-user-rights": "{{PLURAL:$1|Obâ'ân hak pangangghuy}}",
 	"echo-category-title-emailuser": "{{PLURAL:$1|Sorasa ḍâri pangangghuy laèn|Sorasa ḍâri para pangangghuy sepalèan}}",
-	"echo-category-title-article-reminder": "Halaman {{PLURAL:$1|Pamèmot}}",
+	"echo-category-title-article-reminder": "Kaca {{PLURAL:$1|paènga'}}",
 	"echo-category-title-thank-you-edit": "{{PLURAL:$1|riwayat}} beccè'an",
 	"echo-category-title-watchlist": "Beccè'an ḍâ' pelataran sèghârân",
 	"echo-category-title-minor-watchlist": "Beccè'an kèni' ḍâ' pelataran sèghârân",
 	"echo-category-title-api-triggered": "Pamartèlan sè èsolet API",
 	"tooltip-pt-notifications-alert": "Parèmotân {{GENDER:|Abâ'na}}",
 	"echo-displaynotificationsconfiguration": "Konfigurasi robâ pratèlan",
-	"echo-displaynotificationsconfiguration-summary": "Ariya aslèra ikhtisar konfigurasi partèlan ḍâ' ka wiki riya."
+	"echo-displaynotificationsconfiguration-summary": "Ariya aslèra ikhtisar konfigurasi partèlan ḍâ' ka wiki riya.",
+	"echo-displaynotificationsconfiguration-notifications-by-category-header": "Partèlan anot category"
 }

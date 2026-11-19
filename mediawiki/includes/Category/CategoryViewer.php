@@ -501,13 +501,7 @@ class CategoryViewer extends ContextSource {
 		if ( $rescnt > 0 ) {
 			# Showing subcategories
 			$r .= Html::openElement( 'div', [ 'id' => 'mw-subcategories' ] ) . "\n";
-            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-            $hookContainer->run('chem_catviewer_category', [$this->getOutput()->getTitle(), & $html]);
-            if (isset($html) && $html !== ''){
-                $r .= $html;
-            } else {
-                $r .= Html::rawElement('h2', [], $this->msg('subcategories')->parse()) . "\n";
-            }
+			$r .= Html::rawElement( 'h2', [], $this->msg( 'subcategories' )->parse() ) . "\n";
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'subcat' );
 			$r .= $this->formatList( $this->children, $this->children_start_char );
@@ -536,19 +530,11 @@ class CategoryViewer extends ContextSource {
 
 		if ( $rescnt > 0 ) {
 			$r .= Html::openElement( 'div', [ 'id' => 'mw-pages' ] ) . "\n";
-            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
-            $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
-            if (isset($html) && $html !== ''){
-                $r .= $html;
-            } else if ($html === '') {
-                return $r;
-            } else {
-                $r .= Html::rawElement(
-                        'h2',
-                        [],
-                        $this->msg('category_header')->rawParams($name)->parse()
-                    ) . "\n";
-            }
+			$r .= Html::rawElement(
+				'h2',
+				[],
+				$this->msg( 'category_header' )->rawParams( $name )->parse()
+			) . "\n";
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'page' );
 			$r .= $this->formatList( $this->articles, $this->articles_start_char );

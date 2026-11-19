@@ -6,7 +6,8 @@
 			"पर्वत सुबेदी",
 			"बडा काजी",
 			"सरोज कुमार ढकाल",
-			"हिमाल सुबेदी"
+			"हिमाल सुबेदी",
+			"Pratik11"
 		]
 	},
 	"multimediaviewer-repository-local": "अधिक जानकारी",
@@ -28,7 +29,7 @@
 	"multimediaviewer-geoloc-west": "प",
 	"multimediaviewer-geolocation": "स्थान: $1",
 	"multimediaviewer-reuse-loading-placeholder": "खुल्दै छ…",
-	"multimediaviewer-share-tab": "बाड्ने",
+	"multimediaviewer-share-tab": "साझा गर्नुहोस्",
 	"multimediaviewer-embed-wt": "विकिपाठ",
 	"multimediaviewer-embed-html": "HTML",
 	"multimediaviewer-text-embed-credit-text-bl": "$1, $2, $3 द्वारा",
@@ -40,10 +41,11 @@
 	"multimediaviewer-embed-license": "$1 मुनि लाइसेन्स प्राप्त।",
 	"multimediaviewer-embed-via": "$1 मार्फत।",
 	"multimediaviewer-original-embed-dimensions": "मूल फाइल $1",
-	"multimediaviewer-large-embed-dimensions": "ठूलो $1",
+	"multimediaviewer-large-embed-dimensions": "ठुलो $1",
 	"multimediaviewer-medium-embed-dimensions": "मध्यम $1",
 	"multimediaviewer-small-embed-dimensions": "सानो $1",
 	"multimediaviewer-description-page-button-text": "यस फाइलको बारेमा थप विवरणहरू",
+	"multimediaviewer-view-expanded": "मिडिया दर्शकमा खोल्नुहोस्",
 	"multimediaviewer-view-config": "अभिरुचिहरू",
 	"multimediaviewer-close-popup-text": "यो उपकरण बन्द गर्नुहोस् (Esc)",
 	"multimediaviewer-fullscreen-popup-text": "पूर्ण स्क्रिनमा देखाउनुहोस्",

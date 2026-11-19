@@ -2,15 +2,20 @@
 
 namespace SMW\Maintenance;
 
+use MediaWiki\Maintenance\Maintenance;
 use Onoi\MessageReporter\MessageReporter;
-use SMW\DIProperty;
-use SMW\DIWikiPage;
+use SMW\DataItems\Property;
+use SMW\DataItems\WikiPage;
+use SMW\EntityCache;
 use SMW\Exception\PredefinedPropertyLabelMismatchException;
 use SMW\Services\ServicesFactory as ApplicationFactory;
 use SMW\Setup;
 use SMW\SQLStore\SQLStore;
 use SMW\Store;
 use SMW\Utils\CliMsgFormatter;
+use SMW\Utils\PeriodicStatsFlusher;
+use Wikimedia\Rdbms\IExpression;
+use Wikimedia\Rdbms\IResultWrapper;
 
 /**
  * Load the required class
@@ -29,7 +34,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
  *
  * @author mwjames
  */
-class purgeEntityCache extends \Maintenance {
+class purgeEntityCache extends Maintenance {
 
 	/**
 	 * @var Store
@@ -47,16 +52,26 @@ class purgeEntityCache extends \Maintenance {
 	private $messageReporter;
 
 	/**
-	 * @var int
-	 */
-	private $lastId = 0;
-
-	/**
 	 * @since 3.1
 	 */
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( "Purge cache entries for known entities and their associated data." );
+		$this->setBatchSize( 1000 );
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setStore( Store $store ) {
+		$this->store = $store;
+	}
+
+	/**
+	 * @since 7.0.0
+	 */
+	public function setEntityCache( EntityCache $entityCache ) {
+		$this->entityCache = $entityCache;
 	}
 
 	/**
@@ -92,8 +107,8 @@ class purgeEntityCache extends \Maintenance {
 		$cliMsgFormatter = new CliMsgFormatter();
 		$applicationFactory = ApplicationFactory::getInstance();
 
-		$this->store = $applicationFactory->getStore();
-		$this->entityCache = $applicationFactory->getEntityCache();
+		$this->store ??= $applicationFactory->getStore();
+		$this->entityCache ??= $applicationFactory->getEntityCache();
 
 		$this->reportMessage(
 			"\n" . $cliMsgFormatter->head()
@@ -119,48 +134,67 @@ class purgeEntityCache extends \Maintenance {
 		$this->reportMessage( "\nSelecting entities ...\n" );
 
 		$this->reportMessage(
-			$cliMsgFormatter->firstCol( "... fetching rows from table ...", 3 )
+			$cliMsgFormatter->firstCol( "... counting rows in table ...", 3 )
 		);
 
-		$rows = $this->fetchRows();
+		$count = $this->countRows();
 
 		$this->reportMessage(
 			$cliMsgFormatter->secondCol( CliMsgFormatter::OK )
 		);
 
-		$this->doPurge( $rows );
+		$this->doPurge( $count );
 
 		$this->reportMessage( "   ... done.\n" );
 
 		return true;
 	}
 
-	private function fetchRows() {
-		$connection = $this->store->getConnection( 'mw.db' );
+	private function countRows(): int {
+		return (int)$this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( 'COUNT(*)' )
+			->from( SQLStore::ID_TABLE )
+			->where( $this->newConditions( 0 ) )
+			->caller( __METHOD__ )
+			->fetchField();
+	}
 
-		$this->lastId = (int)$connection->selectField(
-			SQLStore::ID_TABLE,
-			'MAX(smw_id)',
-			'',
-			__METHOD__
-		);
+	private function fetchLastId(): int {
+		return (int)$this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( 'MAX(smw_id)' )
+			->from( SQLStore::ID_TABLE )
+			->caller( __METHOD__ )
+			->fetchField();
+	}
 
-		return $connection->select(
-			SQLStore::ID_TABLE,
-			[
+	private function fetchBatch( int $afterId ): IResultWrapper {
+		return $this->store->getConnection( 'mw.db' )->newSelectQueryBuilder()
+			->select( [
 				'smw_id',
 				'smw_title',
 				'smw_namespace',
 				'smw_iw',
 				'smw_subobject'
-			],
-			[
-				"smw_subobject=''",
-				'smw_iw != ' . $connection->addQuotes( SMW_SQL3_SMWDELETEIW )
-			],
-			__METHOD__,
-			[ 'ORDER BY' => 'smw_id' ]
-		);
+			] )
+			->from( SQLStore::ID_TABLE )
+			->where( $this->newConditions( $afterId ) )
+			->orderBy( 'smw_id' )
+			->limit( $this->getBatchSize() )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+	}
+
+	/**
+	 * @return IExpression[]
+	 */
+	private function newConditions( int $afterId ): array {
+		$connection = $this->store->getConnection( 'mw.db' );
+
+		return [
+			$connection->expr( 'smw_subobject', '=', '' ),
+			$connection->expr( 'smw_iw', '!=', SMW_SQL3_SMWDELETEIW ),
+			$connection->expr( 'smw_id', '>', $afterId )
+		];
 	}
 
 	private function canExecute() {
@@ -180,32 +214,47 @@ class purgeEntityCache extends \Maintenance {
 		return true;
 	}
 
-	private function doPurge( \Iterator $rows ) {
+	private function doPurge( int $count ): void {
 		$cliMsgFormatter = new CliMsgFormatter();
 
-		$connection = $this->store->getConnection( 'mw.db' );
-
-		$count = $rows->numRows();
-		$i = 0;
-
-		if ( $count == 0 ) {
-			return $this->reportMessage( "   ... no entities selected ...\n" );
+		if ( $count === 0 ) {
+			$this->reportMessage( "   ... no entities selected ...\n" );
+			return;
 		}
 
 		$this->reportMessage(
 			$cliMsgFormatter->twoCols( "... entities matched ...", "(rows) $count", 3 )
 		);
 
-		foreach ( $rows as $row ) {
-			$i++;
+		$statsFlusher = PeriodicStatsFlusher::newFromGlobalState();
+		$lastId = $this->fetchLastId();
+		$afterId = 0;
+		$purged = 0;
+		$rows = $this->fetchBatch( $afterId );
 
-			$msg = $cliMsgFormatter->progressCompact( $i, $count, $row->smw_id, $this->lastId );
+		while ( $rows->numRows() > 0 ) {
+			$subjects = [];
+
+			foreach ( $rows as $row ) {
+				$statsFlusher->tick();
+				$afterId = (int)$row->smw_id;
+				$subjects[] = $this->newFromRow( $row );
+			}
+
+			// One cache write per batch: with the object cache in the database, each write is a commit
+			$this->entityCache->invalidateMulti( $subjects );
+			$purged += $rows->numRows();
 
 			$this->reportMessage(
-				$cliMsgFormatter->twoColsOverride( "... invalidating cache for ...", $msg, 3 )
+				$cliMsgFormatter->twoColsOverride(
+					"... invalidating cache for ...",
+					$cliMsgFormatter->progressCompact( $purged, $count, $afterId, $lastId ),
+					3
+				)
 			);
 
-			$this->entityCache->invalidate( $this->newFromRow( $row ) );
+			$this->waitForReplication();
+			$rows = $this->fetchBatch( $afterId );
 		}
 
 		$this->reportMessage( "\n" );
@@ -217,14 +266,14 @@ class purgeEntityCache extends \Maintenance {
 
 		if ( $namespace === SMW_NS_PROPERTY ) {
 			try {
-				$property = DIProperty::newFromUserLabel( $row->smw_title );
+				$property = Property::newFromUserLabel( $row->smw_title );
 				$title = str_replace( ' ', '_', $property->getLabel() );
-			} catch ( PredefinedPropertyLabelMismatchException $e ) {
+			} catch ( PredefinedPropertyLabelMismatchException ) {
 				//
 			}
 		}
 
-		$subject = new DIWikiPage(
+		$subject = new WikiPage(
 			$title,
 			$namespace,
 			$row->smw_iw,

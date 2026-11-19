@@ -1,0 +1,15 @@
+# The CI jobs in workflows/main.yml copy this file to build/, where
+# docker-compose-ci applies it to every compose call.
+services:
+  wiki:
+    environment:
+      # 1.43-php8.2, 1.44-php8.3 and 1.45-php8.4 are no longer rebuilt and still
+      # load Xdebug in coverage mode, which halves PHPUnit speed.
+      XDEBUG_MODE: "off"
+  mysql:
+    # On MySQL the integration tests use regular tables (see
+    # SMWIntegrationTestCase), so every teardown TRUNCATE hits the disk, and
+    # MySQL 8 also writes a binary log by default.
+    tmpfs:
+      - /var/lib/mysql
+    command: --skip-log-bin

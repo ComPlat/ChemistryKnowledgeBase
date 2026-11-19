@@ -465,11 +465,11 @@ class Sanitizer {
 		} elseif ( in_array( $name, [ 'lt;', 'gt;', 'amp;', 'quot;' ], true ) ) {
 			// Keep these in word form
 			return "&$name";
-		} elseif ( isset( HTMLData::$namedEntityTranslations[$name] ) ) {
+		} elseif ( isset( HTMLData::NAMED_ENTITY_TRANSLATION[$name] ) ) {
 			// Beware: some entities expand to more than 1 codepoint
 			return preg_replace_callback( '/./Ssu', function ( $m ) {
 				return '&#' . self::utf8ToCodepoint( $m[0] ) . ';';
-			}, HTMLData::$namedEntityTranslations[$name] );
+			}, HTMLData::NAMED_ENTITY_TRANSLATION[$name] );
 		} else {
 			return "&amp;$name";
 		}
@@ -605,7 +605,7 @@ class Sanitizer {
 		if ( isset( self::MW_ENTITY_ALIASES[$name] ) ) {
 			$name = self::MW_ENTITY_ALIASES[$name];
 		}
-		$trans = HTMLData::$namedEntityTranslations[$name] ?? null;
+		$trans = HTMLData::NAMED_ENTITY_TRANSLATION[$name] ?? null;
 		return $trans ?? "&$name";
 	}
 
@@ -958,7 +958,10 @@ class Sanitizer {
 				# * Disallow data attributes used by MediaWiki code
 				# * Ensure that the attribute is not namespaced by banning
 				#   colons.
-				if ( ( !preg_match( '/^data-[^:]*$/iD', $k ) && !isset( $list[$k] ) )
+				# * Ensure attribute name will be accepted by the HTML
+				#   parser; see
+				#   https://github.com/whatwg/dom/issues/849#issuecomment-1007541209
+				if ( ( !preg_match( '|^data-[^:= \t\r\n/>\0]*$|iD', $k ) && !isset( $list[$k] ) )
 					 || self::isReservedDataAttribute( $k )
 				) {
 					$newAttrs[$k] = [ null, $origV, $origK ];
@@ -975,6 +978,10 @@ class Sanitizer {
 			# Escape HTML id attributes
 			if ( $k === 'id' ) {
 				$v = self::escapeIdForAttribute( $v, self::ID_PRIMARY );
+				if ( $v === '' ) {
+					$newAttrs[$k] = [ null, $origV, $origK ];
+					continue;
+				}
 			}
 
 			# Escape HTML id reference lists

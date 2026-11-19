@@ -302,9 +302,7 @@ ve.ui.DesktopContext.prototype.updateDimensions = function () {
  * @param {jQuery.Event} e Scroll event
  */
 ve.ui.DesktopContext.prototype.onWindowScroll = function () {
-	if (this.lastSelectedNode && this.lastSelectedNode.type !== 'mwAlienInlineExtension') {
-		this.setPopupSizeAndPosition(true);
-	}
+	this.setPopupSizeAndPosition( true );
 };
 
 /**

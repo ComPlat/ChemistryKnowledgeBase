@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\AbuseFilter\View;
 
-use ChangesList;
 use LogicException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\AbuseFilter\AbuseFilterChangesList;
@@ -23,7 +22,6 @@ use MediaWiki\Extension\AbuseFilter\Variables\VariablesManager;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Linker\LinkRenderer;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use OOUI;
 use RecentChange;
@@ -229,7 +227,7 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 			return;
 		}
 
-		if ( !ChangesList::userCan( $rc, RevisionRecord::SUPPRESSED_ALL ) ) {
+		if ( !$this->afPermManager::hasRCEntryAccess( $rc, $this->getAuthority() ) ) {
 			$out->addWikiMsg( 'abusefilter-log-details-hidden-implicit' );
 			return;
 		}
@@ -276,7 +274,7 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 			$privacyLevel = $this->filterLookup->getFilter( $row->afl_filter_id, $row->afl_global )->getPrivacyLevel();
 		} catch ( CentralDBNotAvailableException $_ ) {
 			// Conservatively assume that it's hidden and protected, like in AbuseLogPager::doFormatRow
-			$privacyLevel = Flags::FILTER_HIDDEN & Flags::FILTER_USES_PROTECTED_VARS;
+			$privacyLevel = Flags::FILTER_HIDDEN | Flags::FILTER_USES_PROTECTED_VARS;
 		}
 		if ( !$this->afPermManager->canSeeLogDetailsForFilter( $performer, $privacyLevel ) ) {
 			$out->addWikiMsg( 'abusefilter-log-cannot-see-details' );
@@ -320,7 +318,7 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 		// instead only check for access to the protected variables and redact them if the
 		// user shouldn't see them.
 		$vars = $this->varBlobStore->loadVarDump( $row );
-		$varsArray = $this->varManager->dumpAllVars( $vars, true );
+		$varsArray = $this->varManager->dumpAllVars( $vars, $this->afPermManager->getProtectedVariables() );
 
 		foreach ( $this->afPermManager->getProtectedVariables() as $protectedVariable ) {
 			if ( isset( $varsArray[$protectedVariable] ) ) {
