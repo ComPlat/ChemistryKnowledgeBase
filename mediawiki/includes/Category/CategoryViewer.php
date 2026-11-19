@@ -501,7 +501,13 @@ class CategoryViewer extends ContextSource {
 		if ( $rescnt > 0 ) {
 			# Showing subcategories
 			$r .= Html::openElement( 'div', [ 'id' => 'mw-subcategories' ] ) . "\n";
-			$r .= Html::rawElement( 'h2', [], $this->msg( 'subcategories' )->parse() ) . "\n";
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->run('chem_catviewer_category', [$this->getOutput()->getTitle(), & $html]);
+            if (isset($html) && $html !== ''){
+                $r .= $html;
+            } else {
+                $r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
+            }
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'subcat' );
 			$r .= $this->formatList( $this->children, $this->children_start_char );
@@ -530,11 +536,16 @@ class CategoryViewer extends ContextSource {
 
 		if ( $rescnt > 0 ) {
 			$r .= Html::openElement( 'div', [ 'id' => 'mw-pages' ] ) . "\n";
-			$r .= Html::rawElement(
-				'h2',
-				[],
-				$this->msg( 'category_header' )->rawParams( $name )->parse()
-			) . "\n";
+
+            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+            $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
+            if (isset($html) && $html !== ''){
+                $r .= $html;
+            } else if ($html === '') {
+                return $r;
+            } else {
+                $r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
+            }
 			$r .= $countmsg;
 			$r .= $this->getSectionPagingLinks( 'page' );
 			$r .= $this->formatList( $this->articles, $this->articles_start_char );
@@ -836,7 +847,13 @@ class CategoryViewer extends ContextSource {
 			return $this->msg( "category-$type-count-limited" )->numParams( $rescnt )->parseAsBlock();
 		}
 		// Messages: category-subcat-count, category-article-count, category-file-count
-		return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+        $hookContainer->run('chem_category_count', [$this->getOutput()->getTitle(), & $isInTopic]);
+        if (!is_null($isInTopic) && $isInTopic) {
+            return $this->msg( "topic-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        } else {
+            return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
+        }
 	}
 }
 

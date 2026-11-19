@@ -1,12 +1,14 @@
+Subject: [PATCH] activated indexing via FS2
+---
 Index: mediawiki/includes/skins/Skin.php
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/mediawiki/includes/skins/Skin.php b/mediawiki/includes/skins/Skin.php
---- a/mediawiki/includes/skins/Skin.php	(revision f987b104d26e7a4b8638d7ee58f9b2545ef7c8d5)
-+++ b/mediawiki/includes/skins/Skin.php	(date 1688032578797)
-@@ -530,7 +530,9 @@
+--- a/mediawiki/includes/skins/Skin.php	(revision 92f95d26896bbb33127ba44b7a35fd9d91c7d21d)
++++ b/mediawiki/includes/skins/Skin.php	(date 1795095215226)
+@@ -785,7 +785,9 @@
  			$linkPage = $this->msg( 'pagecategorieslink' )->inContentLanguage()->text();
  			$pageCategoriesLinkTitle = Title::newFromText( $linkPage );
  			if ( $pageCategoriesLinkTitle ) {
@@ -17,34 +19,39 @@ diff --git a/mediawiki/includes/skins/Skin.php b/mediawiki/includes/skins/Skin.p
  			} else {
  				$link = $msg->escaped();
  			}
-Index: mediawiki/includes/CategoryViewer.php
+Index: mediawiki/includes/Category/CategoryViewer.php
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
-diff --git a/mediawiki/includes/CategoryViewer.php b/mediawiki/includes/CategoryViewer.php
---- a/mediawiki/includes/CategoryViewer.php	(revision f987b104d26e7a4b8638d7ee58f9b2545ef7c8d5)
-+++ b/mediawiki/includes/CategoryViewer.php	(date 1688035215260)
-@@ -414,7 +414,13 @@
+diff --git a/mediawiki/includes/Category/CategoryViewer.php b/mediawiki/includes/Category/CategoryViewer.php
+--- a/mediawiki/includes/Category/CategoryViewer.php	(revision 92f95d26896bbb33127ba44b7a35fd9d91c7d21d)
++++ b/mediawiki/includes/Category/CategoryViewer.php	(date 1795094704782)
+@@ -501,7 +501,13 @@
  		if ( $rescnt > 0 ) {
  			# Showing subcategories
- 			$r .= "<div id=\"mw-subcategories\">\n";
--			$r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
+ 			$r .= Html::openElement( 'div', [ 'id' => 'mw-subcategories' ] ) . "\n";
+-			$r .= Html::rawElement( 'h2', [], $this->msg( 'subcategories' )->parse() ) . "\n";
 +            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
 +            $hookContainer->run('chem_catviewer_category', [$this->getOutput()->getTitle(), & $html]);
 +            if (isset($html) && $html !== ''){
 +                $r .= $html;
 +            } else {
-+			    $r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
++                $r .= '<h2>' . $this->msg( 'subcategories' )->parse() . "</h2>\n";
 +            }
  			$r .= $countmsg;
  			$r .= $this->getSectionPagingLinks( 'subcat' );
  			$r .= $this->formatList( $this->children, $this->children_start_char );
-@@ -444,7 +450,13 @@
+@@ -530,11 +536,16 @@
  
  		if ( $rescnt > 0 ) {
- 			$r = "<div id=\"mw-pages\">\n";
--			$r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
+ 			$r .= Html::openElement( 'div', [ 'id' => 'mw-pages' ] ) . "\n";
+-			$r .= Html::rawElement(
+-				'h2',
+-				[],
+-				$this->msg( 'category_header' )->rawParams( $name )->parse()
+-			) . "\n";
++
 +            $hookContainer = MediaWikiServices::getInstance()->getHookContainer();
 +            $hookContainer->run('chem_catviewer_instances', [$this->getOutput()->getTitle(), & $html]);
 +            if (isset($html) && $html !== ''){
@@ -52,12 +59,12 @@ diff --git a/mediawiki/includes/CategoryViewer.php b/mediawiki/includes/Category
 +            } else if ($html === '') {
 +                return $r;
 +            } else {
-+			    $r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
++                $r .= '<h2>' . $this->msg( 'category_header' )->rawParams( $name )->parse() . "</h2>\n";
 +            }
  			$r .= $countmsg;
  			$r .= $this->getSectionPagingLinks( 'page' );
  			$r .= $this->formatList( $this->articles, $this->articles_start_char );
-@@ -748,6 +748,12 @@
+@@ -836,7 +847,13 @@
  			return $this->msg( "category-$type-count-limited" )->numParams( $rescnt )->parseAsBlock();
  		}
  		// Messages: category-subcat-count, category-article-count, category-file-count
@@ -67,7 +74,8 @@ diff --git a/mediawiki/includes/CategoryViewer.php b/mediawiki/includes/Category
 +        if (!is_null($isInTopic) && $isInTopic) {
 +            return $this->msg( "topic-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
 +        } else {
-+		    return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
++            return $this->msg( "category-$type-count" )->numParams( $rescnt, $totalcnt )->parseAsBlock();
 +        }
  	}
  }
+ 

@@ -66,7 +66,7 @@ class HtmlTags {
 			'table', 'td', 'th', 'time', 'tr', 'tt',
 			'u', 'ul',
 			'var',
-			'wbr',
+			'wbr','img','a'
 		];
 		// create an associative array where allowed tags are set as both keys and values used
 		// to create UI drop down list in SpecialLintErrors.php and for user search URL string

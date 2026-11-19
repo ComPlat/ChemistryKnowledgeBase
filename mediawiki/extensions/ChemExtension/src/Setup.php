@@ -32,6 +32,7 @@ use Skin;
 use SMW\ApplicationFactory;
 use SMW\DIProperty;
 use SMW\DIWikiPage;
+use SMW\Query\ResultPrinters\ResultPrinter;
 use SMW\Services\ServicesFactory;
 use Title;
 
@@ -211,6 +212,9 @@ class Setup {
             'messages' => [],
             'dependencies' => 'ext.guidedTour',
         );
+        # also allow iframe-tags in template expansion of query results
+        ResultPrinter::$maxRecursionDepth = 8;
+
     }
 
     private static function addTourModules(&$out): void

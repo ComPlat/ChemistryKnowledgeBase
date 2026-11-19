@@ -286,8 +286,6 @@ $smwgQConceptCaching = CONCEPT_CACHE_NONE;
 # lifetime in minutes, might be irrelevant for CONCEPT_CACHE_NONE
 $smwgQConceptCacheLifetime = 24 * 60;
 
-# also allow iframe-tags in template expansion of query results
-//\SMW\Query\ResultPrinters\ResultPrinter::$maxRecursionDepth = 8;
 
 # execute updates directly after page-save
 # cf. https://www.semantic-mediawiki.org/wiki/Deferred_updates
