@@ -263,9 +263,9 @@ wfLoadExtension( 'SemanticMediaWiki' );
 $smwgChangePropagationProtection = false;
 $smwgNamespacesWithSemanticLinks[NS_USER] = true;
 $smwgNamespacesWithSemanticLinks[NS_CATEGORY] = true;
-$smwgShowFactbox = SMW_FACTBOX_HIDDEN;
-$smwgShowFactboxEdit = SMW_FACTBOX_HIDDEN;
-$smwgBrowseFeatures = SMW_BROWSE_TLINK | SMW_BROWSE_SHOW_INCOMING | SMW_BROWSE_SHOW_GROUP | SMW_BROWSE_SHOW_SORTKEY | SMW_BROWSE_USE_API;
+$smwgShowFactbox = 'hidden';
+$smwgShowFactboxEdit = 'hidden';
+$smwgBrowseFeatures = [ 'toolbox-link', 'show-incoming', 'show-group', 'use-api', 'show-sortkey' ];
 $smwgPageSpecialProperties = array( '_MDAT', '_LEDT', '_CDAT', '_DTITLE', '_URI', '_IMPO' );
 
 ## extend allowed complexity of queries
