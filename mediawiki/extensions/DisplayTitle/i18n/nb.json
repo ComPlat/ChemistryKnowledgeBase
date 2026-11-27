@@ -1,9 +1,0 @@
-{
-	"@metadata": {
-		"authors": [
-			"Jon Harald Søby"
-		]
-	},
-	"displaytitle-desc": "Bruker sideegenskapen displaytitle i lenketekst, undertittel og diskusjonssidetittelen; tilbyr en parserfunksjon for å spørre om displaytitle.",
-	"displaytitle-talkpagetitle": "Diskuter $1"
-}
