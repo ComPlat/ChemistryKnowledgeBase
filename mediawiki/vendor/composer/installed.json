@@ -101,6 +101,7 @@
                 "symfony/process": "^5 || ^6 || ^7"
             },
             "time": "2024-06-24T20:46:46+00:00",
+            "published-time": "2024-06-24T21:01:36+00:00",
             "type": "composer-plugin",
             "extra": {
                 "class": "Composer\\Installers\\Plugin",
@@ -1223,17 +1224,17 @@
         },
         {
             "name": "guzzlehttp/promises",
-            "version": "2.6.0",
-            "version_normalized": "2.6.0.0",
+            "version": "2.6.2",
+            "version_normalized": "2.6.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/promises.git",
-                "reference": "3d88c829bd5f13d13847b39067dbf09a60af2154"
+                "reference": "72e93ed2b1f3d8c09d1460c950bd5726face7ccd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/promises/zipball/3d88c829bd5f13d13847b39067dbf09a60af2154",
-                "reference": "3d88c829bd5f13d13847b39067dbf09a60af2154",
+                "url": "https://api.github.com/repos/guzzle/promises/zipball/72e93ed2b1f3d8c09d1460c950bd5726face7ccd",
+                "reference": "72e93ed2b1f3d8c09d1460c950bd5726face7ccd",
                 "shasum": ""
             },
             "require": {
@@ -1244,8 +1245,8 @@
                 "bamarni/composer-bin-plugin": "^1.8.2",
                 "phpunit/phpunit": "^8.5.52 || ^9.6.34"
             },
-            "time": "2026-10-18T12:46:59+00:00",
-            "published-time": "2026-10-18T12:47:39+00:00",
+            "time": "2026-11-21T03:45:23+00:00",
+            "published-time": "2026-11-21T03:46:19+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -1291,7 +1292,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/promises/issues",
-                "source": "https://github.com/guzzle/promises/tree/2.6.0"
+                "source": "https://github.com/guzzle/promises/tree/2.6.2"
             },
             "funding": [
                 {
@@ -1311,17 +1312,17 @@
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.13.4",
-            "version_normalized": "2.13.4.0",
+            "version": "2.13.6",
+            "version_normalized": "2.13.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "ad5e3f872690e1151e1171de2963150fc45ea1e3"
+                "reference": "2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/ad5e3f872690e1151e1171de2963150fc45ea1e3",
-                "reference": "ad5e3f872690e1151e1171de2963150fc45ea1e3",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2",
+                "reference": "2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2",
                 "shasum": ""
             },
             "require": {
@@ -1345,8 +1346,8 @@
             "suggest": {
                 "laminas/laminas-httphandlerrunner": "Emit PSR-7 responses"
             },
-            "time": "2026-11-17T16:15:51+00:00",
-            "published-time": "2026-11-17T16:16:24+00:00",
+            "time": "2026-11-21T23:48:40+00:00",
+            "published-time": "2026-11-21T23:49:39+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -1414,7 +1415,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/2.13.4"
+                "source": "https://github.com/guzzle/psr7/tree/2.13.6"
             },
             "funding": [
                 {
@@ -1587,17 +1588,17 @@
         },
         {
             "name": "justinrainbow/json-schema",
-            "version": "5.3.1",
-            "version_normalized": "5.3.1.0",
+            "version": "5.3.4",
+            "version_normalized": "5.3.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jsonrainbow/json-schema.git",
-                "reference": "b5a44b6391a3bbb75c9f2b73e1ef03d6045e1e20"
+                "reference": "7df70ffaf31d98726801b4bc099e1fbdbe2e5e54"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/b5a44b6391a3bbb75c9f2b73e1ef03d6045e1e20",
-                "reference": "b5a44b6391a3bbb75c9f2b73e1ef03d6045e1e20",
+                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/7df70ffaf31d98726801b4bc099e1fbdbe2e5e54",
+                "reference": "7df70ffaf31d98726801b4bc099e1fbdbe2e5e54",
                 "shasum": ""
             },
             "require": {
@@ -1608,7 +1609,7 @@
                 "json-schema/json-schema-test-suite": "1.2.0",
                 "phpunit/phpunit": "^4.8.35"
             },
-            "time": "2025-12-12T08:56:22+00:00",
+            "time": "2026-05-04T18:54:58+00:00",
             "bin": [
                 "bin/validate-json"
             ],
@@ -1649,7 +1650,7 @@
             ],
             "support": {
                 "issues": "https://github.com/jsonrainbow/json-schema/issues",
-                "source": "https://github.com/jsonrainbow/json-schema/tree/5.3.1"
+                "source": "https://github.com/jsonrainbow/json-schema/tree/5.3.4"
             },
             "install-path": "../justinrainbow/json-schema"
         },
@@ -1745,6 +1746,7 @@
                 "psr/http-message": "^2.0"
             },
             "time": "2026-04-11T18:38:28+00:00",
+            "published-time": "2026-04-11T18:40:08+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1875,6 +1877,7 @@
                 "squizlabs/php_codesniffer": "^3.7"
             },
             "time": "2022-12-02T22:17:43+00:00",
+            "published-time": "2022-12-02T22:55:17+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2875,17 +2878,17 @@
         },
         {
             "name": "open-telemetry/api",
-            "version": "1.12.0",
-            "version_normalized": "1.12.0.0",
+            "version": "1.13.0",
+            "version_normalized": "1.13.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/opentelemetry-php/api.git",
-                "reference": "b0884741f3f9d5dc60477784c8671bd2acef4ceb"
+                "reference": "2dace793114f43ce879c15cbbd34411add11272d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/opentelemetry-php/api/zipball/b0884741f3f9d5dc60477784c8671bd2acef4ceb",
-                "reference": "b0884741f3f9d5dc60477784c8671bd2acef4ceb",
+                "url": "https://api.github.com/repos/opentelemetry-php/api/zipball/2dace793114f43ce879c15cbbd34411add11272d",
+                "reference": "2dace793114f43ce879c15cbbd34411add11272d",
                 "shasum": ""
             },
             "require": {
@@ -2900,8 +2903,8 @@
             "suggest": {
                 "symfony/config": "To implement a ComponentProvider for declarative configuration"
             },
-            "time": "2026-11-19T08:10:15+00:00",
-            "published-time": "2026-11-19T08:15:35+00:00",
+            "time": "2026-11-26T01:07:02+00:00",
+            "published-time": "2026-11-26T01:12:13+00:00",
             "type": "library",
             "extra": {
                 "spi": {
@@ -2914,7 +2917,7 @@
                     ]
                 },
                 "branch-alias": {
-                    "dev-main": "1.12.x-dev"
+                    "dev-main": "1.13.x-dev"
                 }
             },
             "installation-source": "dist",
@@ -3770,6 +3773,7 @@
                 "symfony/phpunit-bridge": "^6.4.4 || ^7.0.1"
             },
             "time": "2024-10-02T11:20:13+00:00",
+            "published-time": "2024-10-02T11:21:00+00:00",
             "type": "composer-plugin",
             "extra": {
                 "class": "Http\\Discovery\\Composer\\Plugin",
@@ -4014,6 +4018,7 @@
                 "phpunit/phpunit": ">=7"
             },
             "time": "2026-09-05T19:14:14+00:00",
+            "published-time": "2026-09-07T13:21:34+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -4073,6 +4078,7 @@
                 "phpunit/phpunit": "^7.0 || ^9.0"
             },
             "time": "2025-05-29T08:31:49+00:00",
+            "published-time": "2025-05-29T08:32:19+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -4137,6 +4143,7 @@
                 "phpoffice/wmf": "Allows adding WMF, EMF and EMF+ images (requires ext-gd)"
             },
             "time": "2026-11-09T05:53:24+00:00",
+            "published-time": "2026-11-09T05:53:29+00:00",
             "default-branch": true,
             "type": "library",
             "installation-source": "dist",
@@ -4241,6 +4248,7 @@
                 "tecnickcom/tcpdf": "Option for rendering PDF with PDF Writer"
             },
             "time": "2026-09-17T03:54:50+00:00",
+            "published-time": "2026-09-17T04:47:58+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -4335,6 +4343,7 @@
                 "ext-xsl": "Allows applying XSL style sheet to headers, to main document part, and to footers of an OOXML template"
             },
             "time": "2025-06-05T10:32:36+00:00",
+            "published-time": "2025-06-05T10:55:10+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -5002,6 +5011,7 @@
                 "symfony/polyfill-mbstring": "^1.18"
             },
             "time": "2026-10-13T08:49:45+00:00",
+            "published-time": "2026-10-13T09:05:15+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -5443,17 +5453,17 @@
         },
         {
             "name": "symfony/translation",
-            "version": "v6.4.50",
-            "version_normalized": "6.4.50.0",
+            "version": "v6.4.51",
+            "version_normalized": "6.4.51.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/translation.git",
-                "reference": "6a2ba8838bb815b90fe09f4487da9896d7128862"
+                "reference": "34f8f958f2935bae97477bdbeb819777d0f6cc8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/translation/zipball/6a2ba8838bb815b90fe09f4487da9896d7128862",
-                "reference": "6a2ba8838bb815b90fe09f4487da9896d7128862",
+                "url": "https://api.github.com/repos/symfony/translation/zipball/34f8f958f2935bae97477bdbeb819777d0f6cc8a",
+                "reference": "34f8f958f2935bae97477bdbeb819777d0f6cc8a",
                 "shasum": ""
             },
             "require": {
@@ -5490,7 +5500,8 @@
                 "symfony/service-contracts": "^2.5|^3",
                 "symfony/yaml": "^5.4|^6.0|^7.0"
             },
-            "time": "2026-11-01T19:42:58+00:00",
+            "time": "2026-11-23T09:10:55+00:00",
+            "published-time": "2026-11-25T09:19:51+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -5521,7 +5532,7 @@
             "description": "Provides tools to internationalize your application",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/translation/tree/v6.4.50"
+                "source": "https://github.com/symfony/translation/tree/v6.4.51"
             },
             "funding": [
                 {
@@ -5631,17 +5642,17 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v5.4.52",
-            "version_normalized": "5.4.52.0",
+            "version": "v5.4.56",
+            "version_normalized": "5.4.56.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "b0b27055f055f0d314c5c68ed0c10f0bbd90aee0"
+                "reference": "8ff81e554b0d78653a146b35e344e0a022d7e838"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/b0b27055f055f0d314c5c68ed0c10f0bbd90aee0",
-                "reference": "b0b27055f055f0d314c5c68ed0c10f0bbd90aee0",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/8ff81e554b0d78653a146b35e344e0a022d7e838",
+                "reference": "8ff81e554b0d78653a146b35e344e0a022d7e838",
                 "shasum": ""
             },
             "require": {
@@ -5658,7 +5669,8 @@
             "suggest": {
                 "symfony/console": "For validating YAML files using the lint command"
             },
-            "time": "2026-05-15T06:40:16+00:00",
+            "time": "2026-11-03T13:19:21+00:00",
+            "published-time": "2026-11-04T10:51:46+00:00",
             "bin": [
                 "Resources/bin/yaml-lint"
             ],
@@ -5689,7 +5701,7 @@
             "description": "Loads and dumps YAML files",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/yaml/tree/v5.4.52"
+                "source": "https://github.com/symfony/yaml/tree/v5.4.56"
             },
             "funding": [
                 {
@@ -6766,17 +6778,17 @@
         },
         {
             "name": "wikimedia/parsoid",
-            "version": "v0.20.10",
-            "version_normalized": "0.20.10.0",
+            "version": "v0.20.12",
+            "version_normalized": "0.20.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wikimedia/mediawiki-services-parsoid.git",
-                "reference": "e3c8b483a0682c87f7ffec7a2684ecc4ddbf91eb"
+                "reference": "19ed91c480c09163da17579acd721ba1d958ef8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wikimedia/mediawiki-services-parsoid/zipball/e3c8b483a0682c87f7ffec7a2684ecc4ddbf91eb",
-                "reference": "e3c8b483a0682c87f7ffec7a2684ecc4ddbf91eb",
+                "url": "https://api.github.com/repos/wikimedia/mediawiki-services-parsoid/zipball/19ed91c480c09163da17579acd721ba1d958ef8f",
+                "reference": "19ed91c480c09163da17579acd721ba1d958ef8f",
                 "shasum": ""
             },
             "require": {
@@ -6820,7 +6832,8 @@
             "suggest": {
                 "wikimedia/langconv": "Provides script conversion support"
             },
-            "time": "2026-10-01T09:53:39+00:00",
+            "time": "2026-11-19T16:34:22+00:00",
+            "published-time": "2026-11-19T21:21:57+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -6846,7 +6859,7 @@
             ],
             "support": {
                 "irc": "irc://irc.libera.chat/mediawiki-parsoid",
-                "source": "https://github.com/wikimedia/mediawiki-services-parsoid/tree/v0.20.10",
+                "source": "https://github.com/wikimedia/mediawiki-services-parsoid/tree/v0.20.12",
                 "wiki": "https://www.mediawiki.org/wiki/Parsoid"
             },
             "install-path": "../wikimedia/parsoid"
